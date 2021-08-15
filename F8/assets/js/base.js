@@ -29,7 +29,7 @@ let cdThumbAnimate = cdThumb.animate([{ transform: "rotate(360deg)" }], {
     iterations: Infinity
 });
 
-let indexMusic = 4;
+let indexMusic = 1;
 
 window.addEventListener("load", function() {
     loadMusic(indexMusic);
