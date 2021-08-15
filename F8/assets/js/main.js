@@ -16,8 +16,8 @@ let allMusic = [{
         img: "music-3",
         src: "music-3"
     }, {
-        name: "Attention",
-        artist: "Charlie Puth",
+        name: "Độ Tộc 2",
+        artist: "Masew x Phúc Du x Pháo x Độ Mixi",
         img: "music-4",
         src: "music-4"
     },
@@ -50,5 +50,11 @@ let allMusic = [{
         artist: "Remix",
         img: "music-9",
         src: "music-9"
+    },
+    {
+        name: "Độ Đúng Đời",
+        artist: "Thiện Hưng",
+        img: "music-10",
+        src: "music-10"
     }
 ]
