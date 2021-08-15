@@ -1,0 +1,62 @@
+#game{
+    
+}
+#game_content{
+    background-color: #ffffff;
+    border: 1px solid #999999;
+    height: 600px;
+    margin-top: -100px;
+}
+#game_control{
+    background-color: #999999;
+    color: #fffa90;
+}
+
+.game_cell{
+    border: 1px solid #dddddd;
+    border-radius: none;
+    margin:0px;
+    float: left;
+    color: #dddddd;
+}
+.game_cell.person{
+    background-image: url('../img/gamecaro/blue.png');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-origin: border-box;
+}
+.game_cell.machine{
+    background-image: url('../img/gamecaro/red.png');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-origin: border-box;
+}
+.game_cell[data-trongso='0']:not(.person):not(.machine){
+    /*opacity: 0.1;*/
+}
+.game_cell.currentcheck{
+    background-color: #6633ff;
+}
+.game_cell.win{
+    background-color: #fffa90;
+}
+.bg-contact100 {
+    width: 100%;  
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+  }
+  .container-contact100 {
+    width: 100%;  
+    min-height: 100vh;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    /* background: rgba(132,106,221,0.9); */
+  }
