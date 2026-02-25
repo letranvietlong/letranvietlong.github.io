@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Thu - Hoa Quả Tươi Ngon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2d5016;
+            --soft-green: #7fa650;
+            --cream: #fef8f0;
+            --peach: #ff9966;
+            --orange: #ff6b35;
+            --white: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-light: #666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            color: var(--text-dark);
+            background: var(--cream);
+            overflow-x: hidden;
+        }
+
+        /* Header & Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(254, 248, 240, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(45, 80, 22, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        header.scrolled {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            letter-spacing: 2px;
+            position: relative;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .logo::after {
+            content: '🍊';
+            position: absolute;
+            top: -10px;
+            right: -30px;
+            font-size: 1.2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 400;
+            font-size: 1rem;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--orange);
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        nav a:hover {
+            color: var(--orange);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 90px;
+            height: 90vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--cream) 0%, #fff5e6 100%);
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(127, 166, 80, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        .hero-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-text {
+            animation: fadeInLeft 1s ease;
+        }
+
+        .hero-text h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-text .highlight {
+            color: var(--orange);
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-text .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 107, 53, 0.2);
+            z-index: -1;
+            transform: skewX(-12deg);
+        }
+
+        .hero-text p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+
+        .hero-text .address {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            color: var(--soft-green);
+            font-weight: 600;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--orange);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-green);
+            border: 2px solid var(--primary-green);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .hero-images {
+            position: relative;
+            height: 600px;
+            animation: fadeInRight 1s ease;
+        }
+
+        .fruit-card {
+            position: absolute;
+            background: white;
+            border-radius: 25px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .fruit-card:hover {
+            transform: translateY(-10px) rotate(2deg);
+        }
+
+        .fruit-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .fruit-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .fruit-card .price {
+            color: var(--orange);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .fruit-card-1 {
+            top: 50px;
+            left: 0;
+            width: 280px;
+            animation: float 4s ease-in-out infinite;
+            animation-delay: 0s;
+        }
+
+        .fruit-card-2 {
+            top: 100px;
+            right: 50px;
+            width: 260px;
+            animation: float 4s ease-in-out infinite;
+            animation-delay: 1s;
+        }
+
+        .fruit-card-3 {
+            bottom: 80px;
+            left: 100px;
+            width: 240px;
+            animation: float 4s ease-in-out infinite;
+            animation-delay: 2s;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            background: var(--white);
+            position: relative;
+        }
+
+        .features::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, var(--cream), transparent);
+        }
+
+        .features-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.5rem;
+            color: var(--primary-green);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 2.5rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            background: var(--cream);
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.2s; }
+        .feature-card:nth-child(2) { animation-delay: 0.4s; }
+        .feature-card:nth-child(3) { animation-delay: 0.6s; }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .feature-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            color: var(--primary-green);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Products Section */
+        .products {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--cream) 0%, #fff9f0 100%);
+        }
+
+        .products-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            transition: all 0.4s ease;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .product-card:nth-child(1) { animation-delay: 0.1s; }
+        .product-card:nth-child(2) { animation-delay: 0.2s; }
+        .product-card:nth-child(3) { animation-delay: 0.3s; }
+        .product-card:nth-child(4) { animation-delay: 0.4s; }
+        .product-card:nth-child(5) { animation-delay: 0.5s; }
+        .product-card:nth-child(6) { animation-delay: 0.6s; }
+
+        .product-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+
+        .product-image {
+            position: relative;
+            height: 280px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.1);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--orange);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .product-info {
+            padding: 1.8rem;
+        }
+
+        .product-category {
+            color: var(--soft-green);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-info h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            color: var(--primary-green);
+            margin-bottom: 0.8rem;
+        }
+
+        .product-info p {
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 1.2rem;
+            font-size: 0.95rem;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--orange);
+        }
+
+        .product-price span {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .add-to-cart {
+            background: var(--primary-green);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .add-to-cart:hover {
+            background: var(--orange);
+            transform: scale(1.05);
+        }
+
+        /* Contact Section */
+        .contact {
+            padding: 6rem 2rem;
+            background: var(--white);
+        }
+
+        .contact-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .contact-info h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3rem;
+            color: var(--primary-green);
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info p {
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .contact-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.2rem;
+            background: var(--cream);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .contact-icon {
+            font-size: 2rem;
+        }
+
+        .contact-item-text h4 {
+            color: var(--primary-green);
+            margin-bottom: 0.3rem;
+        }
+
+        .contact-item-text p {
+            color: var(--text-light);
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .contact-form {
+            background: var(--cream);
+            padding: 2.5rem;
+            border-radius: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--primary-green);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid rgba(45, 80, 22, 0.1);
+            border-radius: 12px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--orange);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: var(--orange);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-green);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(45, 80, 22, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-green);
+            color: white;
+            padding: 3rem 2rem 1.5rem;
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section p,
+        .footer-section a {
+            color: rgba(255,255,255,0.8);
+            line-height: 1.8;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: var(--peach);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            display: inline-block;
+            width: 45px;
+            height: 45px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: var(--orange);
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-text h1 {
+                font-size: 3rem;
+            }
+
+            .hero-images {
+                height: 400px;
+                margin-top: 3rem;
+            }
+
+            .contact-container {
+                grid-template-columns: 1fr;
+            }
+
+            nav ul {
+                gap: 1.5rem;
+            }
+
+            .section-title h2 {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-text h1 {
+                font-size: 2.2rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <nav>
+            <div class="logo">Thanh Thu</div>
+            <ul>
+                <li><a href="#home">Trang chủ</a></li>
+                <li><a href="#about">Giới thiệu</a></li>
+                <li><a href="#products">Sản phẩm</a></li>
+                <li><a href="#contact">Liên hệ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Hoa Quả Tươi <span class="highlight">Ngon</span> Mỗi Ngày</h1>
+                <p>Chuyên cung cấp các loại trái cây và hoa tươi cao cấp, được chọn lọc kỹ càng từ những vườn trái cây uy tín nhất.</p>
+                <div class="address">
+                    <span>📍</span>
+                    <span>Chợ Miếu Bông, Đà Nẵng</span>
+                </div>
+                <div class="cta-buttons">
+                    <a href="#products" class="btn-primary">Xem sản phẩm</a>
+                    <a href="#contact" class="btn-secondary">Liên hệ ngay</a>
+                </div>
+            </div>
+            <div class="hero-images">
+                <div class="fruit-card fruit-card-1">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b6b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23c92a2a;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23g1)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='60' fill='white' text-anchor='middle' opacity='0.9'%3E🍓%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='20' fill='white' text-anchor='middle' font-weight='bold'%3EDâu Tây%3C/text%3E%3C/svg%3E" alt="Dâu tây">
+                    <h3>Dâu Tây Đà Lạt</h3>
+                    <p class="price">120.000đ/kg</p>
+                </div>
+                <div class="fruit-card fruit-card-2">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Cdefs%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ffd43b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23fab005;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23g2)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='60' fill='white' text-anchor='middle' opacity='0.9'%3E🥭%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='20' fill='white' text-anchor='middle' font-weight='bold'%3EXoài%3C/text%3E%3C/svg%3E" alt="Xoài">
+                    <h3>Xoài Cát Hòa Lộc</h3>
+                    <p class="price">85.000đ/kg</p>
+                </div>
+                <div class="fruit-card fruit-card-3">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Cdefs%3E%3ClinearGradient id='g3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ff922b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23fd7e14;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23g3)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='60' fill='white' text-anchor='middle' opacity='0.9'%3E🍊%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='20' fill='white' text-anchor='middle' font-weight='bold'%3ECam%3C/text%3E%3C/svg%3E" alt="Cam">
+                    <h3>Cam Sành Cao Phong</h3>
+                    <p class="price">45.000đ/kg</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="about">
+        <div class="features-container">
+            <div class="section-title">
+                <h2>Tại Sao Chọn Thanh Thu?</h2>
+                <p>Cam kết mang đến cho bạn những sản phẩm tốt nhất</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🍎</div>
+                    <h3>Tươi Ngon</h3>
+                    <p>Nhập khẩu trực tiếp từ vườn, đảm bảo độ tươi ngon và chất lượng cao nhất cho từng sản phẩm.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✨</div>
+                    <h3>Đa Dạng</h3>
+                    <p>Hơn 50+ loại trái cây và hoa tươi từ trong nước và quốc tế, phục vụ mọi nhu cầu của khách hàng.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💚</div>
+                    <h3>An Toàn</h3>
+                    <p>Sản phẩm được kiểm tra nghiêm ngặt, không chất bảo quản, an toàn cho sức khỏe gia đình bạn.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products" id="products">
+        <div class="products-container">
+            <div class="section-title">
+                <h2>Sản Phẩm Nổi Bật</h2>
+                <p>Những loại trái cây và hoa được yêu thích nhất</p>
+            </div>
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='apple'%3E%3Cstop offset='0%25' style='stop-color:%23e03131;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23c92a2a;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23apple)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🍎%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3ETáo Envy%3C/text%3E%3C/svg%3E" alt="Táo Envy">
+                        <span class="product-badge">Hot</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Trái Cây Nhập Khẩu</div>
+                        <h3>Táo Envy New Zealand</h3>
+                        <p>Táo giòn ngọt, thơm nồng, vỏ đỏ bóng đẹp mắt</p>
+                        <div class="product-footer">
+                            <div class="product-price">180.000đ <span>/kg</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='grape'%3E%3Cstop offset='0%25' style='stop-color:%235f3dc4;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%234c2889;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23grape)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🍇%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3ENho Đen%3C/text%3E%3C/svg%3E" alt="Nho">
+                        <span class="product-badge">New</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Trái Cây Cao Cấp</div>
+                        <h3>Nho Đen Không Hạt</h3>
+                        <p>Nho Mỹ ngọt mát, hạt nhỏ, vỏ mỏng giòn tan</p>
+                        <div class="product-footer">
+                            <div class="product-price">250.000đ <span>/kg</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='mango'%3E%3Cstop offset='0%25' style='stop-color:%23ffd43b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23fab005;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23mango)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🥭%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3EXoài Cát%3C/text%3E%3C/svg%3E" alt="Xoài">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Trái Cây Việt Nam</div>
+                        <h3>Xoài Cát Hòa Lộc</h3>
+                        <p>Xoài thơm ngọt đặc trưng vùng Tiền Giang</p>
+                        <div class="product-footer">
+                            <div class="product-price">85.000đ <span>/kg</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='pomelo'%3E%3Cstop offset='0%25' style='stop-color:%2382c91e;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%235c940d;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23pomelo)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🍈%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3EBưởi%3C/text%3E%3C/svg%3E" alt="Bưởi">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Đặc Sản Miền Nam</div>
+                        <h3>Bưởi Da Xanh Bến Tre</h3>
+                        <p>Bưởi ngọt thanh, múi mọng nước, ít hạt</p>
+                        <div class="product-footer">
+                            <div class="product-price">55.000đ <span>/kg</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='rose'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b9d;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23c92a68;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23rose)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🌹%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3EHoa Hồng%3C/text%3E%3C/svg%3E" alt="Hoa hồng">
+                        <span class="product-badge">Best Seller</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Hoa Tươi</div>
+                        <h3>Hoa Hồng Ecuador</h3>
+                        <p>Hoa hồng cao cấp, cánh dày, thời gian tươi lâu</p>
+                        <div class="product-footer">
+                            <div class="product-price">350.000đ <span>/bó</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 400'%3E%3Cdefs%3E%3CradialGradient id='strawberry'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b6b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23c92a2a;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='500' height='400' fill='url(%23strawberry)'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='100' fill='white' text-anchor='middle' opacity='0.9'%3E🍓%3C/text%3E%3Ctext x='50%25' y='65%25' font-family='Arial' font-size='24' fill='white' text-anchor='middle' font-weight='bold'%3EDâu Tây%3C/text%3E%3C/svg%3E" alt="Dâu">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">Trái Cây Đà Lạt</div>
+                        <h3>Dâu Tây Đà Lạt</h3>
+                        <p>Dâu tươi ngọt, mọng nước, hương thơm tự nhiên</p>
+                        <div class="product-footer">
+                            <div class="product-price">120.000đ <span>/kg</span></div>
+                            <button class="add-to-cart">Đặt hàng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="contact-container">
+            <div class="contact-info">
+                <h2>Liên Hệ Với Chúng Tôi</h2>
+                <p>Hãy để lại thông tin, chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để tư vấn và báo giá chi tiết.</p>
+                <div class="contact-details">
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div class="contact-item-text">
+                            <h4>Địa chỉ</h4>
+                            <p>Chợ Miếu Bông, Đà Nẵng</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📞</div>
+                        <div class="contact-item-text">
+                            <h4>Điện thoại</h4>
+                            <p>0905 xxx xxx</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">⏰</div>
+                        <div class="contact-item-text">
+                            <h4>Giờ mở cửa</h4>
+                            <p>Hàng ngày: 6:00 - 20:00</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-form">
+                <form>
+                    <div class="form-group">
+                        <label for="name">Họ và tên</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Số điện thoại</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Nội dung</label>
+                        <textarea id="message" name="message" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Gửi thông tin</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>Thanh Thu</h3>
+                <p>Cửa hàng hoa quả tươi ngon uy tín tại Đà Nẵng với hơn 10 năm kinh nghiệm phục vụ khách hàng.</p>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📸</a>
+                    <a href="#">🎬</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Liên kết</h3>
+                <a href="#home">Trang chủ</a>
+                <a href="#about">Giới thiệu</a>
+                <a href="#products">Sản phẩm</a>
+                <a href="#contact">Liên hệ</a>
+            </div>
+            <div class="footer-section">
+                <h3>Sản phẩm</h3>
+                <a href="#">Trái cây tươi</a>
+                <a href="#">Trái cây nhập khẩu</a>
+                <a href="#">Hoa tươi</a>
+                <a href="#">Quà tặng</a>
+            </div>
+            <div class="footer-section">
+                <h3>Thông tin</h3>
+                <p>📍 Chợ Miếu Bông, Đà Nẵng</p>
+                <p>📞 0905 xxx xxx</p>
+                <p>✉️ thanhthufruit@email.com</p>
+                <p>⏰ 6:00 - 20:00 (Hàng ngày)</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Thanh Thu Fruit Shop. Mọi quyền được bảo lưu.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll effect for header
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add to cart buttons
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                this.textContent = 'Đã thêm ✓';
+                this.style.background = '#7fa650';
+                setTimeout(() => {
+                    this.textContent = 'Đặt hàng';
+                    this.style.background = '';
+                }, 2000);
+            });
+        });
+
+        // Form submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể.');
+            this.reset();
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .product-card').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
