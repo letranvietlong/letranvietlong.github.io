@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dũng Pin - Chuyên cung cấp Pin & Máy móc chất lượng cao tại Đắk Lắk. Chính hãng, bảo hành uy tín, giao hàng nhanh.">
+    <meta name="author" content="Lê Trần Viết Long">
+    <meta name="developer" content="Lê Trần Viết Long">
+    <title>Dũng Pin - Chuyên cung cấp Pin & Máy móc tại Đắk Lắk</title>
+
+    <!-- Vietnamese-optimized fonts: Be Vietnam Pro + Lexend -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Lexend:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* =============================================
+           CSS CUSTOM PROPERTIES
+           ============================================= */
+        :root {
+            --primary:        #00E676;
+            --primary-dark:   #00C853;
+            --secondary:      #00BFA5;
+            --accent:         #FFD600;
+            --dark:           #0A0E27;
+            --dark-blue:      #151B3D;
+            --gray:           #1E2749;
+            --light-gray:     #F5F7FA;
+            --white:          #FFFFFF;
+            --text-gray:      #64748B;
+            --text-dark:      #1A1A2E;
+            --border-light:   rgba(0, 0, 0, 0.07);
+            --energy-gradient: linear-gradient(135deg, #00E676 0%, #00BFA5 100%);
+            --shadow-sm:      0 4px 16px rgba(0,0,0,0.06);
+            --shadow-md:      0 10px 40px rgba(0,0,0,0.10);
+            --shadow-lg:      0 20px 60px rgba(0,0,0,0.12);
+            --shadow-glow:    0 10px 40px rgba(0, 230, 118, 0.25);
+            --radius-sm:      8px;
+            --radius-md:      14px;
+            --radius-lg:      24px;
+            --radius-xl:      32px;
+            --transition:     all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-body:      'Be Vietnam Pro', sans-serif;
+            --font-display:   'Lexend', sans-serif;
+        }
+
+        /* =============================================
+           RESET & BASE
+           ============================================= */
+        *, *::before, *::after {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--text-dark);
+            background: var(--white);
+            line-height: 1.65;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        img { display: block; max-width: 100%; }
+        ul { list-style: none; }
+        button { font-family: var(--font-body); }
+
+        /* =============================================
+           UTILITIES
+           ============================================= */
+        .gradient-text {
+            background: var(--energy-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-label {
+            display: inline-block;
+            padding: 7px 18px;
+            background: rgba(0, 230, 118, 0.10);
+            color: var(--primary-dark);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 18px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 72px;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+            line-height: 1.15;
+        }
+
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-gray);
+            max-width: 560px;
+            margin: 0 auto;
+            line-height: 1.75;
+        }
+
+        /* =============================================
+           TOAST NOTIFICATION
+           ============================================= */
+        #toast {
+            position: fixed;
+            top: 90px;
+            right: 24px;
+            background: var(--energy-gradient);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-glow);
+            font-weight: 600;
+            font-size: 15px;
+            z-index: 99999;
+            opacity: 0;
+            transform: translateX(120%);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+            max-width: 320px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* =============================================
+           BACK TO TOP
+           ============================================= */
+        #backToTop {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 48px;
+            height: 48px;
+            background: var(--energy-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-glow);
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        #backToTop.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #backToTop:hover {
+            transform: translateY(-4px);
+        }
+
+        /* =============================================
+           HEADER / NAV
+           ============================================= */
+        header {
+            position: fixed;
+            top: 0; width: 100%;
+            z-index: 900;
+            background: rgba(10, 14, 39, 0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(0, 230, 118, 0.08);
+            transition: var(--transition);
+        }
+
+        header.scrolled {
+            background: rgba(10, 14, 39, 0.98);
+            box-shadow: 0 8px 32px rgba(0, 230, 118, 0.08);
+        }
+
+        nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--white);
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+        }
+
+        .logo-icon {
+            width: 38px; height: 38px;
+            background: var(--energy-gradient);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 36px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.75);
+            font-weight: 500;
+            font-size: 15px;
+            position: relative;
+            transition: color 0.25s;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 2px;
+            background: var(--energy-gradient);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover { color: var(--primary); }
+        .nav-links a:hover::after { width: 100%; }
+
+        .contact-btn {
+            padding: 11px 26px;
+            background: var(--energy-gradient);
+            color: var(--white) !important;
+            border-radius: var(--radius-sm);
+            font-weight: 700 !important;
+            font-size: 14px !important;
+            transition: var(--transition);
+            box-shadow: 0 4px 20px rgba(0, 230, 118, 0.28);
+        }
+
+        .contact-btn::after { display: none !important; }
+
+        .contact-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(0, 230, 118, 0.4);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none; border: none;
+            color: var(--white);
+            font-size: 26px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* =============================================
+           HERO
+           ============================================= */
+        .hero {
+            margin-top: 80px;
+            min-height: 100vh;
+            background: var(--dark);
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 15% 35%, rgba(0,230,118,0.14) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 85% 70%, rgba(0,191,165,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .grid-bg {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,230,118,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,230,118,0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 40px;
+            position: relative; z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hero-text h1 {
+            font-family: var(--font-display);
+            font-size: clamp(40px, 5.5vw, 70px);
+            font-weight: 900;
+            color: var(--white);
+            line-height: 1.08;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+        }
+
+        .hero-text .subtitle {
+            font-size: 19px;
+            color: rgba(255,255,255,0.68);
+            margin-bottom: 38px;
+            line-height: 1.85;
+            max-width: 520px;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 42px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            background: rgba(0,230,118,0.1);
+            border: 1px solid rgba(0,230,118,0.2);
+            border-radius: 30px;
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .badge-dot {
+            width: 8px; height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 34px;
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--energy-gradient);
+            color: var(--white);
+            box-shadow: 0 8px 32px rgba(0,230,118,0.30);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 40px rgba(0,230,118,0.40);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid rgba(255,255,255,0.18);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--primary);
+        }
+
+        /* Battery Visual */
+        .battery-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            height: 500px;
+        }
+
+        .battery-wrap {
+            position: relative;
+            width: 260px;
+        }
+
+        .battery-body {
+            width: 100%;
+            height: 380px;
+            background: rgba(255,255,255,0.04);
+            border: 3px solid rgba(0,230,118,0.25);
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .battery-cap {
+            position: absolute;
+            top: -24px; left: 50%;
+            transform: translateX(-50%);
+            width: 90px; height: 26px;
+            background: rgba(0,230,118,0.25);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .battery-fill {
+            position: absolute;
+            bottom: 0; width: 100%;
+            height: 85%;
+            background: var(--energy-gradient);
+            animation: charge 3s ease-in-out infinite;
+            box-shadow: 0 0 50px rgba(0,230,118,0.45);
+        }
+
+        .battery-pct {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            font-family: var(--font-display);
+            font-size: 60px;
+            font-weight: 900;
+            color: #fff;
+            z-index: 2;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute; inset: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: float 4s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        .particle:nth-child(1) { left: 5%;  animation-delay: 0s;    top: 80%; }
+        .particle:nth-child(2) { left: 25%; animation-delay: 1s;    top: 70%; }
+        .particle:nth-child(3) { left: 50%; animation-delay: 2s;    top: 90%; }
+        .particle:nth-child(4) { left: 75%; animation-delay: 1.5s;  top: 75%; }
+        .particle:nth-child(5) { left: 95%; animation-delay: 0.5s;  top: 85%; }
+
+        /* =============================================
+           MARQUEE TICKER
+           ============================================= */
+        .ticker {
+            background: var(--energy-gradient);
+            overflow: hidden;
+            padding: 12px 0;
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 60px;
+            animation: ticker 25s linear infinite;
+            white-space: nowrap;
+            width: max-content;
+        }
+
+        .ticker-item {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.3px;
+        }
+
+        .ticker-item span { opacity: 0.6; }
+
+        /* =============================================
+           PRODUCTS OVERVIEW
+           ============================================= */
+        .products {
+            padding: 110px 40px;
+            background: var(--light-gray);
+        }
+
+        .product-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 26px;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: var(--energy-gradient);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card:hover::before { transform: scaleX(1); }
+
+        .product-icon-wrap {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, rgba(0,230,118,0.1), rgba(0,191,165,0.1));
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-icon-wrap::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(0,230,118,0.2) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        .product-card h3 {
+            font-family: var(--font-display);
+            font-size: 21px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 12px;
+        }
+
+        .product-card > p {
+            color: var(--text-gray);
+            font-size: 14.5px;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+
+        .product-features {
+            margin-bottom: 26px;
+        }
+
+        .product-features li {
+            padding: 9px 0;
+            font-size: 14.5px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .product-features li:last-child { border-bottom: none; }
+
+        .product-features li::before {
+            content: '✓';
+            width: 22px; height: 22px;
+            background: rgba(0,230,118,0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-dark);
+            font-weight: 800;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .product-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--primary-dark);
+            font-weight: 700;
+            font-size: 14.5px;
+            transition: gap 0.25s;
+        }
+
+        .product-link:hover { gap: 12px; }
+
+        /* =============================================
+           PRODUCT CATALOG
+           ============================================= */
+        .catalog {
+            padding: 110px 40px;
+            background: var(--white);
+        }
+
+        .catalog-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 48px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+        }
+
+        .category-tabs::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            padding: 13px 24px;
+            background: var(--white);
+            border: 2px solid #E8EDF2;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 14.5px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            color: var(--dark);
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover { border-color: var(--primary); }
+
+        .tab-btn.active {
+            background: var(--energy-gradient);
+            border-color: transparent;
+            color: var(--white);
+            box-shadow: 0 8px 24px rgba(0,230,118,0.28);
+        }
+
+        .category-content { display: none; }
+        .category-content.active {
+            display: block;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .products-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+            gap: 24px;
+        }
+
+        .product-item {
+            background: var(--white);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.07);
+            transition: var(--transition);
+            display: flex;
+        }
+
+        .product-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(0,230,118,0.25);
+        }
+
+        .product-item-img {
+            width: 160px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(0,230,118,0.05), rgba(0,191,165,0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .img-placeholder { font-size: 56px; opacity: 0.85; }
+
+        .product-badge {
+            position: absolute;
+            top: 12px; right: 12px;
+            padding: 5px 12px;
+            background: var(--energy-gradient);
+            color: var(--white);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            box-shadow: 0 4px 12px rgba(0,230,118,0.38);
+        }
+
+        .product-badge.new { background: linear-gradient(135deg, #FFD600, #FFA000); }
+
+        .product-item-info {
+            padding: 22px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-item-info h4 {
+            font-family: var(--font-display);
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 10px;
+            line-height: 1.35;
+        }
+
+        .product-desc {
+            color: var(--text-gray);
+            font-size: 13.5px;
+            line-height: 1.65;
+            margin-bottom: 14px;
+            flex-grow: 1;
+        }
+
+        .product-specs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .spec-item {
+            padding: 5px 11px;
+            background: rgba(0,230,118,0.07);
+            border-radius: 6px;
+            font-size: 12.5px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .price-label { font-size: 12px; color: var(--text-gray); }
+
+        .price {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 800;
+            background: var(--energy-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .order-btn {
+            padding: 10px 20px;
+            background: var(--energy-gradient);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 700;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 14px rgba(0,230,118,0.28);
+        }
+
+        .order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(0,230,118,0.38);
+        }
+
+        /* =============================================
+           WHY US / FEATURES
+           ============================================= */
+        .features {
+            padding: 110px 40px;
+            background: var(--dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .features::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(circle at 80% 20%, rgba(0,230,118,0.09) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(0,191,165,0.09) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .features .section-header h2,
+        .features .section-header p { color: var(--white); }
+
+        .features-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            position: relative; z-index: 2;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 20px;
+            padding: 36px;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0,230,118,0.3);
+            background: rgba(0,230,118,0.04);
+        }
+
+        .feature-icon {
+            width: 56px; height: 56px;
+            background: var(--energy-gradient);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 22px;
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: rgba(255,255,255,0.62);
+            font-size: 14.5px;
+            line-height: 1.75;
+        }
+
+        /* =============================================
+           STATS
+           ============================================= */
+        .stats {
+            padding: 100px 40px;
+            background: var(--white);
+        }
+
+        .stats-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 46px 28px;
+            background: linear-gradient(135deg, rgba(0,230,118,0.04), rgba(0,191,165,0.04));
+            border-radius: 20px;
+            border: 1px solid rgba(0,230,118,0.15);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 14px 36px rgba(0,230,118,0.12);
+        }
+
+        .stat-number {
+            font-family: var(--font-display);
+            font-size: 52px;
+            font-weight: 900;
+            background: var(--energy-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 15px;
+            color: var(--text-gray);
+            font-weight: 500;
+        }
+
+        /* =============================================
+           TESTIMONIALS
+           ============================================= */
+        .testimonials {
+            padding: 110px 40px;
+            background: var(--light-gray);
+        }
+
+        .testimonials-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 26px;
+        }
+
+        .testimonial-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stars {
+            color: var(--accent);
+            font-size: 18px;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+
+        .testimonial-card blockquote {
+            font-size: 15px;
+            color: var(--text-gray);
+            line-height: 1.75;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .reviewer {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .reviewer-avatar {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: var(--energy-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--white);
+            font-family: var(--font-display);
+            flex-shrink: 0;
+        }
+
+        .reviewer-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--dark);
+        }
+
+        .reviewer-role {
+            font-size: 13px;
+            color: var(--text-gray);
+        }
+
+        /* =============================================
+           FAQ
+           ============================================= */
+        .faq {
+            padding: 110px 40px;
+            background: var(--white);
+        }
+
+        .faq-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid #E8EDF2;
+        }
+
+        .faq-question {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            padding: 22px 0;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            transition: color 0.25s;
+        }
+
+        .faq-question:hover { color: var(--primary-dark); }
+
+        .faq-icon {
+            width: 28px; height: 28px;
+            background: rgba(0,230,118,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--primary-dark);
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.open .faq-icon { transform: rotate(45deg); }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.3s ease;
+        }
+
+        .faq-answer.open {
+            max-height: 200px;
+            padding-bottom: 20px;
+        }
+
+        .faq-answer p {
+            font-size: 15px;
+            color: var(--text-gray);
+            line-height: 1.8;
+        }
+
+        /* =============================================
+           CONTACT
+           ============================================= */
+        .contact {
+            padding: 110px 40px;
+            background: var(--light-gray);
+        }
+
+        .contact-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 54px;
+            align-items: start;
+        }
+
+        .contact-cards { display: flex; flex-direction: column; gap: 18px; }
+
+        .contact-card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 26px;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+
+        .contact-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .contact-icon {
+            width: 46px; height: 46px;
+            background: var(--energy-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .contact-card h4 {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 6px;
+        }
+
+        .contact-card p {
+            color: var(--text-gray);
+            font-size: 14.5px;
+            line-height: 1.65;
+        }
+
+        .contact-form-wrap {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 46px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .contact-form-wrap h3 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        .form-group label {
+            display: block;
+            color: var(--dark);
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 13.5px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--light-gray);
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            color: var(--dark);
+            font-family: var(--font-body);
+            font-size: 14.5px;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 130px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 17px;
+            background: var(--energy-gradient);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 15.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 8px 24px rgba(0,230,118,0.28);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 36px rgba(0,230,118,0.38);
+        }
+
+        /* =============================================
+           FOOTER
+           ============================================= */
+        footer {
+            background: var(--dark);
+            padding: 72px 40px 0;
+            color: rgba(255,255,255,0.65);
+        }
+
+        .footer-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 56px;
+            padding-bottom: 48px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .footer-col h4 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--white);
+            margin-bottom: 22px;
+            font-weight: 700;
+        }
+
+        .footer-col p { line-height: 1.85; margin-bottom: 18px; font-size: 14.5px; }
+
+        .footer-col ul li { margin-bottom: 11px; }
+
+        .footer-col ul li a {
+            color: rgba(255,255,255,0.65);
+            font-size: 14.5px;
+            transition: color 0.25s;
+        }
+
+        .footer-col ul li a:hover { color: var(--primary); }
+
+        .footer-socials {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .social-btn {
+            width: 38px; height: 38px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .social-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-bottom p { font-size: 13.5px; }
+
+        .footer-dev {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .footer-dev a {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* =============================================
+           SUGGEST PANEL (DEMO)
+           ============================================= */
+        .suggest-panel {
+            position: fixed;
+            left: 24px;
+            bottom: 96px;
+            background: var(--dark);
+            border: 1px solid rgba(0,230,118,0.2);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            width: 280px;
+            box-shadow: var(--shadow-md);
+            z-index: 800;
+            display: none;
+        }
+
+        .suggest-panel.open { display: block; animation: fadeInUp 0.3s ease; }
+
+        .suggest-title {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 12px;
+        }
+
+        .suggest-item {
+            padding: 8px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .suggest-item:last-child { border-bottom: none; }
+
+        /* Toggle suggestion button */
+        #suggestToggle {
+            position: fixed;
+            left: 24px;
+            bottom: 32px;
+            background: var(--dark-blue);
+            border: 1px solid rgba(0,230,118,0.2);
+            color: rgba(255,255,255,0.8);
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 801;
+            font-family: var(--font-body);
+            transition: var(--transition);
+        }
+
+        #suggestToggle:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* =============================================
+           ANIMATIONS
+           ============================================= */
+        @keyframes shimmer {
+            0%   { transform: translateX(-150%); }
+            100% { transform: translateX(150%); }
+        }
+
+        @keyframes charge {
+            0%, 100% { height: 85%; }
+            50%       { height: 90%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0);     opacity: 0.7; }
+            50%       { transform: translateY(-28px); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,230,118,0.5); }
+            50%       { box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+        }
+
+        @keyframes ticker {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* =============================================
+           RESPONSIVE
+           ============================================= */
+        @media (max-width: 1100px) {
+            .hero-content { grid-template-columns: 1fr; gap: 0; }
+            .battery-visual { display: none; }
+            .contact-container { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 14px 20px; }
+            .nav-links { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--dark); flex-direction: column; padding: 20px; gap: 14px; border-top: 1px solid rgba(0,230,118,0.1); }
+            .nav-links.open { display: flex; }
+            .mobile-menu-toggle { display: block; }
+            .hero-content { padding: 80px 20px; }
+            .products, .catalog, .features, .stats, .testimonials, .faq, .contact { padding: 72px 20px; }
+            .products-list { grid-template-columns: 1fr; }
+            .product-item { flex-direction: column; }
+            .product-item-img { width: 100%; height: 160px; }
+            .form-row { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+            .contact-form-wrap { padding: 28px 20px; }
+            .footer-bottom { flex-direction: column; text-align: center; }
+            .suggest-panel, #suggestToggle { display: none !important; }
+            #backToTop { right: 20px; bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Back to Top -->
+    <button id="backToTop" title="Lên đầu trang" aria-label="Lên đầu trang">↑</button>
+
+    <!-- Suggestions Panel -->
+    <div class="suggest-panel" id="suggestPanel">
+        <div class="suggest-title">💡 Tính năng đề xuất bổ sung</div>
+        <div class="suggest-item">🔍 Tìm kiếm sản phẩm realtime</div>
+        <div class="suggest-item">🛒 Giỏ hàng & thanh toán online</div>
+        <div class="suggest-item">💬 Live chat / Chatbot tư vấn</div>
+        <div class="suggest-item">📊 Bảng so sánh sản phẩm</div>
+        <div class="suggest-item">❤️ Wishlist / Yêu thích</div>
+        <div class="suggest-item">⭐ Hệ thống đánh giá đa chiều</div>
+        <div class="suggest-item">📦 Tra cứu đơn hàng / vận chuyển</div>
+        <div class="suggest-item">🏷️ Trang khuyến mãi & flash sale</div>
+        <div class="suggest-item">🗺️ Google Maps tích hợp</div>
+        <div class="suggest-item">📱 PWA – Cài như ứng dụng</div>
+    </div>
+    <button id="suggestToggle" onclick="toggleSuggest()">💡 Đề xuất tính năng</button>
+
+    <!-- =========== HEADER =========== -->
+    <header id="header">
+        <nav>
+            <a href="#home" class="logo">
+                <div class="logo-icon">⚡</div>
+                <span>Dũng<span class="gradient-text">Pin</span></span>
+            </a>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()" aria-label="Menu">☰</button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Trang chủ</a></li>
+                <li><a href="#products">Sản phẩm</a></li>
+                <li><a href="#catalog">Danh mục</a></li>
+                <li><a href="#testimonials">Đánh giá</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#contact" class="contact-btn">Liên hệ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- =========== HERO =========== -->
+    <section class="hero" id="home">
+        <div class="grid-bg"></div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Năng lượng <span class="gradient-text">bền vững</span> cho mọi công việc</h1>
+                <p class="subtitle">Chuyên cung cấp pin chất lượng cao, máy móc chuyên nghiệp và thiết bị điện công nghiệp tại Đắk Lắk. Uy tín – Chính hãng – Giá tốt.</p>
+                <div class="hero-badges">
+                    <span class="badge"><span class="badge-dot"></span>Chính hãng 100%</span>
+                    <span class="badge"><span class="badge-dot"></span>Bảo hành uy tín</span>
+                    <span class="badge"><span class="badge-dot"></span>Giao hàng nhanh</span>
+                </div>
+                <div class="cta-buttons">
+                    <a href="#catalog" class="btn btn-primary">Khám phá sản phẩm →</a>
+                    <a href="#contact" class="btn btn-outline">Tư vấn miễn phí</a>
+                </div>
+            </div>
+            <div class="battery-visual">
+                <div class="battery-wrap">
+                    <div class="battery-cap"></div>
+                    <div class="battery-body">
+                        <div class="battery-fill"></div>
+                        <div class="battery-pct">85%</div>
+                    </div>
+                </div>
+                <div class="particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== TICKER =========== -->
+    <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+            <span class="ticker-item">⚡ Giao hàng miễn phí nội thành Buôn Ma Thuột <span>•</span></span>
+            <span class="ticker-item">🔋 Pin chính hãng – bảo hành đến 18 tháng <span>•</span></span>
+            <span class="ticker-item">🏷️ Giảm 10% cho đơn hàng từ 500k <span>•</span></span>
+            <span class="ticker-item">📞 Hotline hỗ trợ 7:00–19:00 mỗi ngày <span>•</span></span>
+            <span class="ticker-item">🚀 Hơn 1000 khách hàng tin tưởng lựa chọn <span>•</span></span>
+            <!-- Duplicate for seamless loop -->
+            <span class="ticker-item">⚡ Giao hàng miễn phí nội thành Buôn Ma Thuột <span>•</span></span>
+            <span class="ticker-item">🔋 Pin chính hãng – bảo hành đến 18 tháng <span>•</span></span>
+            <span class="ticker-item">🏷️ Giảm 10% cho đơn hàng từ 500k <span>•</span></span>
+            <span class="ticker-item">📞 Hotline hỗ trợ 7:00–19:00 mỗi ngày <span>•</span></span>
+            <span class="ticker-item">🚀 Hơn 1000 khách hàng tin tưởng lựa chọn <span>•</span></span>
+        </div>
+    </div>
+
+    <!-- =========== PRODUCTS OVERVIEW =========== -->
+    <section class="products" id="products">
+        <div class="section-header">
+            <span class="section-label">Sản phẩm</span>
+            <h2>Danh mục sản phẩm</h2>
+            <p>Cung cấp đa dạng các loại pin, máy móc và thiết bị chuyên nghiệp</p>
+        </div>
+        <div class="product-grid">
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">🔋</div>
+                <h3>Pin & Ắc Quy</h3>
+                <p>Pin lithium-ion, ắc quy khô và ướt cho mọi thiết bị từ gia dụng đến công nghiệp</p>
+                <ul class="product-features">
+                    <li>Pin AA, AAA chất lượng cao</li>
+                    <li>Pin sạc lithium-ion</li>
+                    <li>Ắc quy xe máy, ô tô</li>
+                    <li>Pin công nghiệp UPS</li>
+                </ul>
+                <a href="#catalog" class="product-link">Xem chi tiết →</a>
+            </div>
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">🔌</div>
+                <h3>Thiết Bị Sạc</h3>
+                <p>Bộ sạc thông minh, adapter và cáp sạc an toàn với công nghệ sạc nhanh hiện đại</p>
+                <ul class="product-features">
+                    <li>Sạc nhanh Quick Charge</li>
+                    <li>Sạc đa cổng USB-C/A</li>
+                    <li>Adapter chuyển đổi điện áp</li>
+                    <li>Cáp sạc chính hãng</li>
+                </ul>
+                <a href="#catalog" class="product-link">Xem chi tiết →</a>
+            </div>
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">⚙️</div>
+                <h3>Máy Cưa Điện</h3>
+                <p>Máy cưa cầm tay và công nghiệp từ các thương hiệu hàng đầu thế giới</p>
+                <ul class="product-features">
+                    <li>Máy cưa xích chạy pin</li>
+                    <li>Máy cưa đĩa đa năng</li>
+                    <li>Máy cưa gỗ chuyên nghiệp</li>
+                    <li>Lưỡi cưa &amp; phụ kiện</li>
+                </ul>
+                <a href="#catalog" class="product-link">Xem chi tiết →</a>
+            </div>
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">🔧</div>
+                <h3>Máy Móc Công Nghiệp</h3>
+                <p>Thiết bị cầm tay và máy móc chuyên dụng cho xây dựng và sản xuất</p>
+                <ul class="product-features">
+                    <li>Máy khoan, máy bắt vít</li>
+                    <li>Máy mài góc, máy cắt</li>
+                    <li>Máy hàn điện tử</li>
+                    <li>Dụng cụ đo lường</li>
+                </ul>
+                <a href="#catalog" class="product-link">Xem chi tiết →</a>
+            </div>
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">⚡</div>
+                <h3>Thiết Bị Điện</h3>
+                <p>Giải pháp điện năng toàn diện cho gia đình và doanh nghiệp</p>
+                <ul class="product-features">
+                    <li>Ổ cắm thông minh WiFi</li>
+                    <li>Dây cáp điện tiêu chuẩn</li>
+                    <li>Cầu dao, CB, MCCB</li>
+                    <li>Đèn LED tiết kiệm năng lượng</li>
+                </ul>
+                <a href="#catalog" class="product-link">Xem chi tiết →</a>
+            </div>
+            <div class="product-card fade-in">
+                <div class="product-icon-wrap">🛠️</div>
+                <h3>Dịch Vụ Bảo Hành</h3>
+                <p>Dịch vụ bảo trì, sửa chữa và hỗ trợ kỹ thuật chuyên nghiệp tận nơi</p>
+                <ul class="product-features">
+                    <li>Bảo hành chính hãng dài hạn</li>
+                    <li>Sửa chữa tận nơi</li>
+                    <li>Thay thế linh kiện chính hãng</li>
+                    <li>Tư vấn kỹ thuật 24/7</li>
+                </ul>
+                <a href="#contact" class="product-link">Liên hệ ngay →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== PRODUCT CATALOG =========== -->
+    <section class="catalog" id="catalog">
+        <div class="section-header">
+            <span class="section-label">Danh mục chi tiết</span>
+            <h2>Sản phẩm &amp; Giá cả</h2>
+            <p>Khám phá đầy đủ các sản phẩm với thông số kỹ thuật và giá bán cạnh tranh</p>
+        </div>
+        <div class="catalog-inner">
+            <div class="category-tabs" role="tablist">
+                <button class="tab-btn active" onclick="showTab('batteries', this)" role="tab">
+                    <span>🔋</span><span>Pin & Ắc Quy</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('chargers', this)" role="tab">
+                    <span>🔌</span><span>Thiết bị sạc</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('saws', this)" role="tab">
+                    <span>⚙️</span><span>Máy cưa</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('tools', this)" role="tab">
+                    <span>🔧</span><span>Máy móc</span>
+                </button>
+                <button class="tab-btn" onclick="showTab('electrical', this)" role="tab">
+                    <span>⚡</span><span>Thiết bị điện</span>
+                </button>
+            </div>
+
+            <!-- BATTERIES -->
+            <div class="category-content active" id="batteries">
+                <div class="products-list">
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div><span class="product-badge">Bán chạy</span></div>
+                        <div class="product-item-info">
+                            <h4>Pin AA Alkaline Duracell</h4>
+                            <p class="product-desc">Pin kiềm chất lượng cao, tuổi thọ lên đến 10 năm. Thích hợp cho đồ chơi, đèn pin, remote control.</p>
+                            <div class="product-specs"><span class="spec-item">📦 Hộp 4 viên</span><span class="spec-item">⚡ 1.5V</span><span class="spec-item">✓ Chính hãng</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">45.000đ</div></div><button class="order-btn" onclick="orderProduct('Pin AA Duracell')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div></div>
+                        <div class="product-item-info">
+                            <h4>Pin AAA Energizer Max</h4>
+                            <p class="product-desc">Pin kiềm cao cấp với công nghệ PowerSeal, giữ năng lượng lâu dài. Chống rò rỉ tuyệt đối.</p>
+                            <div class="product-specs"><span class="spec-item">📦 Hộp 4 viên</span><span class="spec-item">⚡ 1.5V</span><span class="spec-item">🛡️ Chống rò rỉ</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">42.000đ</div></div><button class="order-btn" onclick="orderProduct('Pin AAA Energizer')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div><span class="product-badge new">Mới</span></div>
+                        <div class="product-item-info">
+                            <h4>Pin sạc 18650 Samsung 3000mAh</h4>
+                            <p class="product-desc">Pin lithium-ion sạc lại, dung lượng cao 3000mAh. Chu kỳ sạc lên đến 500 lần. Dùng cho đèn pin LED, vape, thiết bị điện tử.</p>
+                            <div class="product-specs"><span class="spec-item">🔄 500 lần sạc</span><span class="spec-item">⚡ 3.7V – 3000mAh</span><span class="spec-item">🇰🇷 Hàn Quốc</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">85.000đ</div></div><button class="order-btn" onclick="orderProduct('Pin 18650 Samsung')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div><span class="product-badge">Hot</span></div>
+                        <div class="product-item-info">
+                            <h4>Ắc quy xe máy GS 12V-5Ah (GTZ6V)</h4>
+                            <p class="product-desc">Ắc quy khô bảo trì, công nghệ MF (Maintenance Free). Dòng điện khởi động cao, tuổi thọ 2-3 năm.</p>
+                            <div class="product-specs"><span class="spec-item">🏍️ 50–150cc</span><span class="spec-item">⚡ 12V – 5Ah</span><span class="spec-item">🛡️ BH 6 tháng</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">280.000đ</div></div><button class="order-btn" onclick="orderProduct('Ắc quy GS GTZ6V')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div></div>
+                        <div class="product-item-info">
+                            <h4>Ắc quy ô tô Varta 12V-60Ah</h4>
+                            <p class="product-desc">Ắc quy ô tô cao cấp từ Đức, công nghệ Silver Dynamic. Khả năng khởi động mạnh mẽ, bền bỉ trong mọi điều kiện.</p>
+                            <div class="product-specs"><span class="spec-item">🚗 Ô tô 4-5 chỗ</span><span class="spec-item">⚡ 12V–60Ah–540A</span><span class="spec-item">🛡️ BH 18 tháng</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">2.850.000đ</div></div><button class="order-btn" onclick="orderProduct('Ắc quy Varta 60Ah')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔋</div></div>
+                        <div class="product-item-info">
+                            <h4>Pin UPS 12V-9Ah Panasonic</h4>
+                            <p class="product-desc">Pin lưu điện cho UPS, hệ thống báo động, camera. Công nghệ VRLA, không cần bảo trì.</p>
+                            <div class="product-specs"><span class="spec-item">💼 UPS/Camera/Alarm</span><span class="spec-item">⚡ 12V – 9Ah</span><span class="spec-item">🛡️ BH 12 tháng</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">420.000đ</div></div><button class="order-btn" onclick="orderProduct('Pin UPS Panasonic 9Ah')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARGERS -->
+            <div class="category-content" id="chargers">
+                <div class="products-list">
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔌</div><span class="product-badge">Bán chạy</span></div>
+                        <div class="product-item-info">
+                            <h4>Sạc nhanh Anker PowerPort III 20W</h4>
+                            <p class="product-desc">Củ sạc USB-C 20W, hỗ trợ PD 3.0. Sạc iPhone 13 từ 0–50% trong 30 phút.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 20W PD 3.0</span><span class="spec-item">🔌 USB-C</span><span class="spec-item">📱 iPhone/Android</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">350.000đ</div></div><button class="order-btn" onclick="orderProduct('Sạc Anker 20W')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔌</div></div>
+                        <div class="product-item-info">
+                            <h4>Sạc đa cổng Baseus 65W GaN</h4>
+                            <p class="product-desc">Sạc 4 cổng (2 USB-C + 2 USB-A) công nghệ GaN nhỏ gọn. Sạc đồng thời laptop, phone, tablet.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 65W GaN</span><span class="spec-item">🔌 4 cổng</span><span class="spec-item">💻 Laptop</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">890.000đ</div></div><button class="order-btn" onclick="orderProduct('Sạc Baseus 65W')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔌</div></div>
+                        <div class="product-item-info">
+                            <h4>Cáp sạc Type-C to Lightning 1m</h4>
+                            <p class="product-desc">Cáp MFi chính hãng Apple, hỗ trợ sạc nhanh PD. Chip C94, bọc nylon bền bỉ.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ PD Fast Charge</span><span class="spec-item">🍎 MFi Certified</span><span class="spec-item">📏 1m</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">220.000đ</div></div><button class="order-btn" onclick="orderProduct('Cáp Type-C Lightning')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔌</div></div>
+                        <div class="product-item-info">
+                            <h4>Bộ sạc pin AA/AAA Panasonic BQ-CC55</h4>
+                            <p class="product-desc">Máy sạc thông minh 4 khe, tự ngắt khi đầy. LED hiển thị trạng thái. Sạc Ni-MH.</p>
+                            <div class="product-specs"><span class="spec-item">🔋 4 khe</span><span class="spec-item">⚡ Smart Charge</span><span class="spec-item">💡 LED</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">450.000đ</div></div><button class="order-btn" onclick="orderProduct('Sạc pin Panasonic')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAWS -->
+            <div class="category-content" id="saws">
+                <div class="products-list">
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚙️</div><span class="product-badge">Hot</span></div>
+                        <div class="product-item-info">
+                            <h4>Máy cưa đĩa Makita 5704R 1200W</h4>
+                            <p class="product-desc">Máy cưa đĩa cầm tay 1200W, lưỡi 190mm, độ sâu cắt 68mm. Thiết kế nhẹ, cân bằng tốt.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 1200W</span><span class="spec-item">📏 Lưỡi 190mm</span><span class="spec-item">🛡️ BH 12 tháng</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">2.450.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy cưa Makita 5704R')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚙️</div></div>
+                        <div class="product-item-info">
+                            <h4>Máy cưa lọng Bosch GST 650 450W</h4>
+                            <p class="product-desc">Cắt được gỗ, nhựa, kim loại mỏng. Tốc độ 0–3000 nhát/phút, điều chỉnh được.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 450W</span><span class="spec-item">🔄 3000 SPM</span><span class="spec-item">🪵 Gỗ/Kim loại</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">1.850.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy cưa Bosch GST650')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚙️</div><span class="product-badge new">Mới</span></div>
+                        <div class="product-item-info">
+                            <h4>Máy cưa xích pin Dewalt DCM575X1</h4>
+                            <p class="product-desc">Máy cưa xích không dây 54V, lưỡi 45cm, pin 9Ah. Không khói, không ồn, thân thiện môi trường.</p>
+                            <div class="product-specs"><span class="spec-item">🔋 54V 9Ah</span><span class="spec-item">📏 Lưỡi 45cm</span><span class="spec-item">🌱 Không khí thải</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">8.900.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy cưa Dewalt DCM575')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOOLS -->
+            <div class="category-content" id="tools">
+                <div class="products-list">
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔧</div><span class="product-badge">Bán chạy</span></div>
+                        <div class="product-item-info">
+                            <h4>Máy khoan động lực Bosch GSB 550</h4>
+                            <p class="product-desc">Khoan bê tông, gạch, gỗ, sắt. Tốc độ vô cấp, đảo chiều. Kèm 100 phụ kiện.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 550W</span><span class="spec-item">🔨 Khoan búa</span><span class="spec-item">🎁 100 phụ kiện</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">1.290.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy khoan Bosch GSB550')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔧</div></div>
+                        <div class="product-item-info">
+                            <h4>Máy mài góc Makita 9553HB 710W</h4>
+                            <p class="product-desc">Mài góc 100mm, cắt sắt, mài bóng kim loại. 710W, 11.000 vòng/phút.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 710W</span><span class="spec-item">📏 Đá 100mm</span><span class="spec-item">🔄 11000 RPM</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">980.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy mài Makita 9553HB')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">🔧</div></div>
+                        <div class="product-item-info">
+                            <h4>Máy bắn vít pin Dewalt DCD771C2 18V</h4>
+                            <p class="product-desc">Không dây 18V, 2 pin 1.3Ah, mô men xoắn 42Nm, đèn LED. Hộp nhựa cao cấp.</p>
+                            <div class="product-specs"><span class="spec-item">🔋 18V ×2 pin</span><span class="spec-item">⚡ 42Nm</span><span class="spec-item">💡 LED</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">3.650.000đ</div></div><button class="order-btn" onclick="orderProduct('Máy bắn vít Dewalt DCD771')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ELECTRICAL -->
+            <div class="category-content" id="electrical">
+                <div class="products-list">
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚡</div></div>
+                        <div class="product-item-info">
+                            <h4>Ổ cắm thông minh Xiaomi 3+2USB</h4>
+                            <p class="product-desc">WiFi, điều khiển từ xa qua app. 3 ổ AC + 2 USB. Bảo vệ quá tải, hẹn giờ.</p>
+                            <div class="product-specs"><span class="spec-item">📱 WiFi Smart</span><span class="spec-item">🔌 3AC+2USB</span><span class="spec-item">🛡️ Chống giật</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">420.000đ</div></div><button class="order-btn" onclick="orderProduct('Ổ cắm Xiaomi')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚡</div></div>
+                        <div class="product-item-info">
+                            <h4>Dây cáp điện Cadivi CVV 2×2.5mm² (100m)</h4>
+                            <p class="product-desc">Đồng nguyên chất, cách điện PVC chống cháy, cuộn 100m. Tiêu chuẩn TCVN.</p>
+                            <div class="product-specs"><span class="spec-item">📏 2×2.5mm²–100m</span><span class="spec-item">🔥 Chống cháy</span><span class="spec-item">✓ TCVN</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">1.850.000đ</div></div><button class="order-btn" onclick="orderProduct('Dây Cadivi 2x2.5')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚡</div></div>
+                        <div class="product-item-info">
+                            <h4>Aptomat Schneider C63 2P 63A</h4>
+                            <p class="product-desc">CB chống quá tải &amp; ngắn mạch, 2 pha 63A. Tiêu chuẩn IEC 60898. Made in France.</p>
+                            <div class="product-specs"><span class="spec-item">⚡ 2P 63A</span><span class="spec-item">🇫🇷 Schneider</span><span class="spec-item">🏭 Công nghiệp</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">680.000đ</div></div><button class="order-btn" onclick="orderProduct('Aptomat Schneider C63')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-item-img"><div class="img-placeholder">⚡</div></div>
+                        <div class="product-item-info">
+                            <h4>Đèn LED ốp trần Philips 24W</h4>
+                            <p class="product-desc">Tiết kiệm điện, tuổi thọ 15.000 giờ. Không nhấp nháy, bảo vệ mắt. Đường kính 30cm.</p>
+                            <div class="product-specs"><span class="spec-item">💡 24W</span><span class="spec-item">⏱️ 15000 giờ</span><span class="spec-item">📏 Φ30cm</span></div>
+                            <div class="product-footer"><div><div class="price-label">Giá bán</div><div class="price">320.000đ</div></div><button class="order-btn" onclick="orderProduct('Đèn LED Philips 24W')">Đặt hàng</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== WHY US =========== -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <span class="section-label">Ưu điểm</span>
+            <h2>Tại sao chọn Dũng Pin?</h2>
+            <p>Đối tác đáng tin cậy với cam kết chất lượng hàng đầu tại Đắk Lắk</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="feature-icon">✓</div>
+                <h3>Chính hãng 100%</h3>
+                <p>Mọi sản phẩm đều có nguồn gốc xuất xứ rõ ràng, tem nhãn đầy đủ từ nhà sản xuất</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">💰</div>
+                <h3>Giá cạnh tranh</h3>
+                <p>Cam kết giá tốt nhất khu vực với nhiều chương trình ưu đãi và khuyến mãi hấp dẫn</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🚚</div>
+                <h3>Giao hàng nhanh</h3>
+                <p>Giao hàng tận nơi trong 24h tại Đắk Lắk, hỗ trợ vận chuyển toàn quốc</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🛡️</div>
+                <h3>Bảo hành uy tín</h3>
+                <p>Chế độ bảo hành chính hãng, hỗ trợ kỹ thuật 24/7, đổi trả linh hoạt</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== STATS =========== -->
+    <section class="stats" id="stats">
+        <div class="section-header">
+            <span class="section-label">Về chúng tôi</span>
+            <h2>Dũng Pin trong con số</h2>
+            <p>Hành trình phát triển với sự tin tưởng của hàng nghìn khách hàng</p>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card fade-in"><div class="stat-number">10+</div><div class="stat-label">Năm kinh nghiệm</div></div>
+            <div class="stat-card fade-in"><div class="stat-number">1000+</div><div class="stat-label">Khách hàng tin tưởng</div></div>
+            <div class="stat-card fade-in"><div class="stat-number">500+</div><div class="stat-label">Sản phẩm đa dạng</div></div>
+            <div class="stat-card fade-in"><div class="stat-number">100%</div><div class="stat-label">Hài lòng</div></div>
+        </div>
+    </section>
+
+    <!-- =========== TESTIMONIALS =========== -->
+    <section class="testimonials" id="testimonials">
+        <div class="section-header">
+            <span class="section-label">Đánh giá</span>
+            <h2>Khách hàng nói gì?</h2>
+            <p>Hàng nghìn khách hàng đã tin tưởng và hài lòng với sản phẩm của Dũng Pin</p>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card fade-in">
+                <div class="stars">★★★★★</div>
+                <blockquote>"Mua ắc quy ô tô Varta tại đây, giá cạnh tranh, giao hàng nhanh. Nhân viên tư vấn rất nhiệt tình. Sẽ quay lại lần sau!"</blockquote>
+                <div class="reviewer">
+                    <div class="reviewer-avatar">T</div>
+                    <div><div class="reviewer-name">Anh Tuấn</div><div class="reviewer-role">Buôn Ma Thuột, Đắk Lắk</div></div>
+                </div>
+            </div>
+            <div class="testimonial-card fade-in">
+                <div class="stars">★★★★★</div>
+                <blockquote>"Mua máy khoan Bosch làm việc xây dựng. Sản phẩm chính hãng, đúng như mô tả. Dịch vụ bảo hành tốt. Cảm ơn Dũng Pin!"</blockquote>
+                <div class="reviewer">
+                    <div class="reviewer-avatar">H</div>
+                    <div><div class="reviewer-name">Chị Hương</div><div class="reviewer-role">EaHleo, Đắk Lắk</div></div>
+                </div>
+            </div>
+            <div class="testimonial-card fade-in">
+                <div class="stars">★★★★★</div>
+                <blockquote>"Đặt hàng online, nhận hàng hôm sau. Sản phẩm đúng chất lượng, đóng gói cẩn thận. Giá tốt hơn nhiều so với các nơi khác."</blockquote>
+                <div class="reviewer">
+                    <div class="reviewer-avatar">M</div>
+                    <div><div class="reviewer-name">Anh Minh</div><div class="reviewer-role">Krông Búk, Đắk Lắk</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== FAQ =========== -->
+    <section class="faq" id="faq">
+        <div class="section-header">
+            <span class="section-label">FAQ</span>
+            <h2>Câu hỏi thường gặp</h2>
+            <p>Giải đáp thắc mắc của bạn về sản phẩm và dịch vụ tại Dũng Pin</p>
+        </div>
+        <div class="faq-list">
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Dũng Pin có giao hàng toàn quốc không?
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Có! Dũng Pin giao hàng toàn quốc qua các đơn vị vận chuyển uy tín. Miễn phí giao hàng nội thành Buôn Ma Thuột và các đơn hàng từ 500.000đ trở lên.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Chính sách bảo hành như thế nào?
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Tất cả sản phẩm đều có bảo hành chính hãng từ 6–18 tháng tùy loại. Dũng Pin hỗ trợ đổi trả trong 7 ngày nếu sản phẩm lỗi do nhà sản xuất. Sửa chữa tận nơi trong khu vực Đắk Lắk.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Làm sao để xác nhận sản phẩm chính hãng?
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Mỗi sản phẩm đều kèm tem chống hàng giả, hóa đơn mua hàng và có thể tra cứu trên website nhà sản xuất. Dũng Pin cam kết 100% chính hãng – hoàn tiền nếu phát hiện hàng giả.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Có thể đặt hàng số lượng lớn được không?
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Dũng Pin hỗ trợ đặt hàng sỉ với giá ưu đãi đặc biệt cho đơn hàng số lượng lớn. Vui lòng liên hệ hotline hoặc gửi yêu cầu qua form để được báo giá tốt nhất.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Phương thức thanh toán nào được chấp nhận?
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Dũng Pin chấp nhận: tiền mặt, chuyển khoản ngân hàng, ví điện tử (MoMo, ZaloPay). Thanh toán khi nhận hàng (COD) áp dụng trong khu vực Đắk Lắk.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== CONTACT =========== -->
+    <section class="contact" id="contact">
+        <div class="section-header">
+            <span class="section-label">Liên hệ</span>
+            <h2>Kết nối với chúng tôi</h2>
+            <p>Đội ngũ tư vấn chuyên nghiệp luôn sẵn sàng hỗ trợ bạn 7 ngày/tuần</p>
+        </div>
+        <div class="contact-container">
+            <div class="contact-cards">
+                <div class="contact-card">
+                    <div class="contact-icon">📍</div>
+                    <div>
+                        <h4>Địa chỉ</h4>
+                        <p>EaHleo, Đắk Lắk<br>Việt Nam</p>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">📞</div>
+                    <div>
+                        <h4>Điện thoại</h4>
+                        <p>Hotline: <strong>0123 456 789</strong><br>Zalo: 0123 456 789</p>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">📧</div>
+                    <div>
+                        <h4>Email</h4>
+                        <p>info@dungpin.vn<br>support@dungpin.vn</p>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">⏰</div>
+                    <div>
+                        <h4>Giờ làm việc</h4>
+                        <p>Thứ 2 – Chủ nhật<br><strong>7:00 – 19:00</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form-wrap">
+                <h3>Gửi tin nhắn cho chúng tôi</h3>
+                <form id="contactForm" onsubmit="handleSubmit(event)" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Họ và tên *</label>
+                            <input type="text" id="name" name="name" required placeholder="Nhập họ và tên" autocomplete="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Số điện thoại *</label>
+                            <input type="tel" id="phone" name="phone" required placeholder="0xxx xxx xxx" autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="email@example.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="topic">Chủ đề</label>
+                        <select id="topic" name="topic">
+                            <option value="">-- Chọn chủ đề --</option>
+                            <option value="order">Đặt hàng sản phẩm</option>
+                            <option value="warranty">Bảo hành / Sửa chữa</option>
+                            <option value="wholesale">Mua sỉ / Đại lý</option>
+                            <option value="consult">Tư vấn kỹ thuật</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Nội dung *</label>
+                        <textarea id="message" name="message" required placeholder="Nhập nội dung cần tư vấn hoặc đặt hàng..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Gửi tin nhắn ✈</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== FOOTER =========== -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <a href="#home" class="logo" style="margin-bottom:18px;display:inline-flex;">
+                    <div class="logo-icon">⚡</div>
+                    <span style="color:#fff;font-family:var(--font-display);font-size:22px;font-weight:800;">Dũng<span class="gradient-text">Pin</span></span>
+                </a>
+                <p>Chuyên cung cấp pin, máy móc và thiết bị chất lượng cao tại Đắk Lắk. Đối tác tin cậy cho mọi nhu cầu năng lượng và công nghiệp.</p>
+                <div class="footer-socials">
+                    <a class="social-btn" href="#" title="Facebook" aria-label="Facebook">📘</a>
+                    <a class="social-btn" href="#" title="Zalo" aria-label="Zalo">💬</a>
+                    <a class="social-btn" href="#" title="YouTube" aria-label="YouTube">▶️</a>
+                    <a class="social-btn" href="#" title="TikTok" aria-label="TikTok">🎵</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Liên kết</h4>
+                <ul>
+                    <li><a href="#home">Trang chủ</a></li>
+                    <li><a href="#products">Sản phẩm</a></li>
+                    <li><a href="#catalog">Danh mục & Giá</a></li>
+                    <li><a href="#testimonials">Đánh giá</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#contact">Liên hệ</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Sản phẩm</h4>
+                <ul>
+                    <li><a href="#catalog">Pin & Ắc quy</a></li>
+                    <li><a href="#catalog">Thiết bị sạc</a></li>
+                    <li><a href="#catalog">Máy cưa điện</a></li>
+                    <li><a href="#catalog">Máy móc công nghiệp</a></li>
+                    <li><a href="#catalog">Thiết bị điện</a></li>
+                    <li><a href="#contact">Dịch vụ bảo hành</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <ul>
+                    <li>📍 EaHleo, Đắk Lắk</li>
+                    <li>📞 0123 456 789</li>
+                    <li>📧 info@dungpin.vn</li>
+                    <li>⏰ 7:00–19:00 (T2–CN)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 <strong style="color:rgba(255,255,255,0.85);">Dũng Pin</strong> — Tất cả quyền được bảo lưu.</p>
+            <p class="footer-dev">
+                Thiết kế &amp; phát triển bởi
+                <a href="mailto:levietlong@dev.vn" title="Liên hệ developer">Lê Trần Viết Long</a>
+                · Phiên bản 2.0.0 · 2026
+            </p>
+        </div>
+    </footer>
+
+    <!-- =========== JAVASCRIPT =========== -->
+    <script>
+    'use strict';
+
+    /* ─── DOM refs ─── */
+    const header      = document.getElementById('header');
+    const navLinks    = document.getElementById('navLinks');
+    const backToTop   = document.getElementById('backToTop');
+    const toast       = document.getElementById('toast');
+    const suggestPanel = document.getElementById('suggestPanel');
+
+    /* ─── Mobile menu ─── */
+    function toggleMenu() {
+        navLinks.classList.toggle('open');
+    }
+
+    /* Close menu on link click */
+    navLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => navLinks.classList.remove('open'));
+    });
+
+    /* ─── Scroll effects ─── */
+    const onScroll = () => {
+        const y = window.scrollY;
+        header.classList.toggle('scrolled', y > 50);
+        backToTop.classList.toggle('visible', y > 400);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    /* ─── Smooth anchor scroll ─── */
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            const target = document.querySelector(a.getAttribute('href'));
+            if (!target) return;
+            e.preventDefault();
+            const offset = header.offsetHeight + 12;
+            const top = target.getBoundingClientRect().top + window.scrollY - offset;
+            window.scrollTo({ top, behavior: 'smooth' });
+        });
+    });
+
+    /* ─── Toast notification ─── */
+    let toastTimer;
+    function showToast(msg) {
+        clearTimeout(toastTimer);
+        toast.textContent = msg;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    /* ─── Product tabs ─── */
+    function showTab(id, btn) {
+        document.querySelectorAll('.category-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    /* ─── Order product ─── */
+    function orderProduct(name) {
+        const msgEl  = document.getElementById('message');
+        const topicEl = document.getElementById('topic');
+        const contactSection = document.getElementById('contact');
+
+        topicEl.value = 'order';
+        msgEl.value   = `Tôi muốn đặt hàng sản phẩm: ${name}\n\nSố lượng: \nĐịa chỉ giao hàng: `;
+
+        contactSection.scrollIntoView({ behavior: 'smooth' });
+        showToast(`🛒 Đang chuyển đến form đặt hàng: ${name}`);
+
+        setTimeout(() => msgEl.focus(), 900);
+    }
+
+    /* ─── Contact form ─── */
+    function handleSubmit(e) {
+        e.preventDefault();
+        const name  = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+
+        if (!name || !phone) {
+            showToast('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!');
+            return;
+        }
+
+        showToast(`✅ Cảm ơn ${name}! Chúng tôi sẽ liên hệ lại sớm nhất.`);
+        e.target.reset();
+    }
+
+    /* ─── FAQ accordion ─── */
+    function toggleFaq(btn) {
+        const item   = btn.closest('.faq-item');
+        const answer = item.querySelector('.faq-answer');
+        const isOpen = item.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-item.open').forEach(i => {
+            i.classList.remove('open');
+            i.querySelector('.faq-answer').classList.remove('open');
+        });
+
+        if (!isOpen) {
+            item.classList.add('open');
+            answer.classList.add('open');
+        }
+    }
+
+    /* ─── Suggest panel ─── */
+    function toggleSuggest() {
+        suggestPanel.classList.toggle('open');
+    }
+
+    /* ─── Intersection Observer fade-in ─── */
+    const fadeObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+        el.style.cssText += 'opacity:0;transform:translateY(22px);transition:opacity 0.6s ease,transform 0.6s ease;';
+        fadeObserver.observe(el);
+    });
+
+    /* ─── Counter animation ─── */
+    const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el  = entry.target;
+            const raw = el.textContent.replace(/[^0-9]/g, '');
+            const max = parseInt(raw, 10);
+            if (!max) return;
+            const suffix = el.textContent.replace(/[0-9]/g, '');
+            let current  = 0;
+            const step   = Math.ceil(max / 60);
+            const timer  = setInterval(() => {
+                current = Math.min(current + step, max);
+                el.textContent = current + suffix;
+                if (current >= max) clearInterval(timer);
+            }, 20);
+            counterObserver.unobserve(el);
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
+    </script>
+</body>
+</html>
