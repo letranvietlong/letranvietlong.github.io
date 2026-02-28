@@ -6,149 +6,150 @@
 <title>VietLongCrypto — Thị Trường Tiền Ảo</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#080c14; --surface:#0d1320; --surface2:#111928;
-    --border:rgba(99,179,237,0.08);
-    --accent:#00d4ff; --accent2:#7c3aed;
-    --green:#00e676; --red:#ff3d57; --gold:#f59e0b;
-    --text:#e2e8f0; --muted:#64748b;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:Cambria,'Times New Roman',serif;min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
-  .orb{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;opacity:.1;}
-  .orb1{width:800px;height:800px;background:var(--accent2);top:-350px;right:-250px;}
-  .orb2{width:700px;height:700px;background:#0ea5e9;bottom:-350px;left:-200px;}
+:root{
+  --bg:#080c14;--surface:#0d1320;--surface2:#111928;
+  --border:rgba(99,179,237,0.08);
+  --accent:#00d4ff;--accent2:#7c3aed;
+  --green:#00e676;--red:#ff3d57;--gold:#f59e0b;
+  --text:#e2e8f0;--muted:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Cambria,'Times New Roman',serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;opacity:.1;}
+.orb1{width:800px;height:800px;background:var(--accent2);top:-350px;right:-250px;}
+.orb2{width:700px;height:700px;background:#0ea5e9;bottom:-350px;left:-200px;}
 
-  /* ── Ticker ── */
-  .ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;position:sticky;top:0;z-index:100;}
-  .ticker{display:flex;animation:tickAnim 120s linear infinite;white-space:nowrap;padding:9px 0;}
-  .ticker:hover{animation-play-state:paused;}
-  .ticker-item{display:inline-flex;align-items:center;gap:7px;padding:0 22px;font-size:11px;border-right:1px solid var(--border);flex-shrink:0;}
-  .tsym{color:var(--accent);font-weight:700;} .tup{color:var(--green);} .tdn{color:var(--red);}
-  @keyframes tickAnim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* Ticker */
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;position:sticky;top:0;z-index:100;}
+.ticker{display:flex;animation:tickAnim 180s linear infinite;white-space:nowrap;padding:8px 0;}
+.ticker:hover{animation-play-state:paused;}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 18px;font-size:11px;border-right:1px solid var(--border);flex-shrink:0;}
+.ticker-item img{width:14px;height:14px;border-radius:50%;object-fit:cover;}
+.tsym{color:var(--accent);font-weight:700;}.tup{color:var(--green);}.tdn{color:var(--red);}
+@keyframes tickAnim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-  /* ── Header ── */
-  header{position:relative;z-index:10;padding:14px 36px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(8,12,20,.65);backdrop-filter:blur(14px);}
-  .logo{display:flex;align-items:center;gap:13px;cursor:default;}
-  .logo-coin{width:42px;height:42px;flex-shrink:0;filter:drop-shadow(0 0 10px rgba(0,212,255,.5));animation:coinFlip 8s linear infinite;}
-  @keyframes coinFlip{0%,40%{transform:rotateY(0deg)}50%{transform:rotateY(90deg)}60%,100%{transform:rotateY(180deg)}}
-  .logo-text{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:900;letter-spacing:2px;line-height:1;background:linear-gradient(90deg,#00d4ff 0%,#a78bfa 50%,#00d4ff 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;filter:drop-shadow(0 0 8px rgba(0,212,255,.3));}
-  @keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
-  .header-right{display:flex;align-items:center;gap:24px;}
-  .header-stats{display:flex;gap:24px;}
-  .header-stat .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-  .header-stat .value{font-size:13px;margin-top:2px;font-weight:600;}
-  .live-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.22);border-radius:20px;padding:4px 13px;font-size:11px;color:var(--green);font-weight:700;letter-spacing:1px;}
-  .live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
+/* Header */
+header{position:relative;z-index:10;padding:14px 36px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(8,12,20,.65);backdrop-filter:blur(14px);}
+.logo{display:flex;align-items:center;gap:13px;cursor:default;}
+.logo-coin{width:42px;height:42px;flex-shrink:0;filter:drop-shadow(0 0 10px rgba(0,212,255,.5));animation:coinFlip 8s linear infinite;}
+@keyframes coinFlip{0%,40%{transform:rotateY(0deg)}50%{transform:rotateY(90deg)}60%,100%{transform:rotateY(180deg)}}
+.logo-text{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:900;letter-spacing:2px;line-height:1;background:linear-gradient(90deg,#00d4ff 0%,#a78bfa 50%,#00d4ff 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;filter:drop-shadow(0 0 8px rgba(0,212,255,.3));}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+.header-right{display:flex;align-items:center;gap:22px;}
+.header-stats{display:flex;gap:22px;}
+.header-stat .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.header-stat .value{font-size:13px;margin-top:2px;font-weight:600;}
+.clock{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;}
+.clock .tz{font-size:9px;color:var(--muted);opacity:.7;margin-left:4px;}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.22);border-radius:20px;padding:4px 13px;font-size:11px;color:var(--green);font-weight:700;letter-spacing:1px;}
+.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
 
-  /* ── Layout ── */
-  main{position:relative;z-index:10;max-width:1600px;margin:0 auto;padding:28px 36px;display:grid;grid-template-columns:1fr 350px;gap:22px;}
-  .stats-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:0;}
-  .market-col{grid-column:1;}
-  .news-col{grid-column:2;grid-row:2/4;}
+/* Layout */
+main{position:relative;z-index:10;max-width:1640px;margin:0 auto;padding:24px 36px;display:grid;grid-template-columns:1fr 350px;gap:20px;}
+.stats-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.market-col{grid-column:1;}
+.news-col{grid-column:2;grid-row:2/4;}
 
-  /* ── Stat Cards ── */
-  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:17px 19px;position:relative;overflow:hidden;transition:border-color .25s,transform .25s;}
-  .stat-card:hover{border-color:rgba(0,212,255,.2);transform:translateY(-2px);}
-  .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .25s;}
-  .stat-card:hover::after{opacity:1;}
-  .sc-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;}
-  .sc-value{font-size:18px;font-weight:700;}
-  .sc-sub{font-size:11px;color:var(--muted);margin-top:3px;}
-  .sc-emoji{position:absolute;top:13px;right:15px;font-size:22px;opacity:.1;}
+/* Stat Cards */
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .25s,transform .25s;}
+.stat-card:hover{border-color:rgba(0,212,255,.2);transform:translateY(-2px);}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .25s;}
+.stat-card:hover::after{opacity:1;}
+.sc-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;}
+.sc-value{font-size:18px;font-weight:700;}
+.sc-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.sc-emoji{position:absolute;top:13px;right:15px;font-size:22px;opacity:.1;}
 
-  /* ── Table ── */
-  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
-  .table-toolbar{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  .tabs{display:flex;gap:3px;background:var(--surface2);border-radius:7px;padding:3px;}
-  .tab{padding:5px 13px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;border:none;background:none;color:var(--muted);}
-  .tab.active{background:var(--accent);color:#000;}
-  .tab:hover:not(.active){color:var(--text);}
-  .search-box{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;width:185px;transition:border-color .2s;}
-  .search-box:focus-within{border-color:rgba(0,212,255,.3);}
-  .search-box input{background:none;border:none;outline:none;color:var(--text);font-family:Cambria,'Times New Roman',serif;font-size:13px;width:100%;}
-  .search-box input::placeholder{color:var(--muted);}
-  .ws-status{font-size:10px;color:var(--muted);letter-spacing:.5px;}
-  .coin-count-badge{font-size:10px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:2px 9px;}
+/* Table */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.table-toolbar{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.tabs{display:flex;gap:3px;background:var(--surface2);border-radius:7px;padding:3px;}
+.tab{padding:5px 12px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;border:none;background:none;color:var(--muted);}
+.tab.active{background:var(--accent);color:#000;}
+.tab:hover:not(.active){color:var(--text);}
+.search-box{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;width:180px;transition:border-color .2s;}
+.search-box:focus-within{border-color:rgba(0,212,255,.3);}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:Cambria,'Times New Roman',serif;font-size:12px;width:100%;}
+.search-box input::placeholder{color:var(--muted);}
+.ws-status{font-size:10px;color:var(--muted);}
+.coin-count-badge{font-size:10px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.14);border-radius:10px;padding:2px 9px;}
+.table-scroll{overflow-y:auto;max-height:700px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.table-scroll::-webkit-scrollbar{width:4px;}
+.table-scroll::-webkit-scrollbar-thumb{background:rgba(99,179,237,.15);border-radius:2px;}
+table{width:100%;border-collapse:collapse;}
+thead th{position:sticky;top:0;background:var(--surface2);padding:9px 14px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;z-index:2;}
+thead th.r{text-align:right;}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.02);transition:background .12s;}
+tbody tr:hover{background:rgba(0,212,255,.04);}
+tbody tr:last-child{border-bottom:none;}
+td{padding:9px 14px;font-size:12px;white-space:nowrap;}
+td.r{text-align:right;}
+.rank{color:var(--muted);font-size:10px;}
+.coin-cell{display:flex;align-items:center;gap:9px;}
+/* Real logo image */
+.coin-logo{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--surface2);}
+.coin-logo-fallback{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.coin-name{font-weight:700;font-size:12px;}
+.coin-sym{font-size:10px;color:var(--muted);margin-top:1px;}
+.price-val{font-size:12px;font-weight:700;}
+.flash-green{animation:fG .55s ease;}
+.flash-red{animation:fR .55s ease;}
+@keyframes fG{0%,100%{color:var(--text)}40%{color:var(--green)}}
+@keyframes fR{0%,100%{color:var(--text)}40%{color:var(--red)}}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block;min-width:66px;text-align:center;}
+.badge.up{color:var(--green);background:rgba(0,230,118,.09);}
+.badge.down{color:var(--red);background:rgba(255,61,87,.09);}
+.badge.neu{color:var(--muted);background:rgba(100,116,139,.09);}
+.num{font-size:10px;color:var(--muted);}
 
-  /* Table body — scrollable */
-  .table-scroll{overflow-y:auto;max-height:680px;}
-  .table-scroll::-webkit-scrollbar{width:4px;}
-  .table-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-  table{width:100%;border-collapse:collapse;}
-  thead th{position:sticky;top:0;background:var(--surface);padding:10px 16px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;z-index:2;}
-  thead th.r{text-align:right;}
-  tbody tr{border-bottom:1px solid rgba(255,255,255,.02);transition:background .13s;}
-  tbody tr:hover{background:rgba(0,212,255,.035);}
-  tbody tr:last-child{border-bottom:none;}
-  td{padding:10px 16px;font-size:12px;white-space:nowrap;}
-  td.r{text-align:right;}
-  .rank{color:var(--muted);font-size:11px;}
-  .coin-cell{display:flex;align-items:center;gap:9px;}
-  .coin-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
-  .coin-name{font-weight:700;font-size:12px;}
-  .coin-sym{font-size:10px;color:var(--muted);margin-top:1px;}
-  .price-val{font-size:12px;font-weight:700;}
-  .flash-green{animation:fG .55s ease;}
-  .flash-red{animation:fR .55s ease;}
-  @keyframes fG{0%,100%{color:var(--text)}40%{color:var(--green)}}
-  @keyframes fR{0%,100%{color:var(--text)}40%{color:var(--red)}}
-  .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;display:inline-block;min-width:64px;text-align:center;}
-  .badge.up{color:var(--green);background:rgba(0,230,118,.09);}
-  .badge.down{color:var(--red);background:rgba(255,61,87,.09);}
-  .badge.neu{color:var(--muted);background:rgba(100,116,139,.09);}
-  .num{font-size:10px;color:var(--muted);}
-
-  /* ── News Panel ── */
-  .news-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;max-height:780px;}
-  .news-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-  .news-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;}
-  .news-title svg{width:15px;height:15px;fill:var(--accent);}
-  .news-source-tabs{display:flex;gap:4px;padding:10px 18px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
-  .news-source-tab{font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;}
-  .news-source-tab.active{border-color:rgba(0,212,255,.4);color:var(--accent);background:rgba(0,212,255,.07);}
-  .news-refresh-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--muted);font-size:10px;cursor:pointer;transition:all .2s;font-family:Cambria,'Times New Roman',serif;}
-  .news-refresh-btn:hover{color:var(--accent);border-color:rgba(0,212,255,.3);}
-  .news-refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
-  .news-feed{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-  .news-feed::-webkit-scrollbar{width:4px;}
-  .news-feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-  .news-item{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
-  .news-item:hover{background:rgba(0,212,255,.03);}
-  .news-item:last-child{border-bottom:none;}
-  .news-meta{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;}
-  .news-src-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.15);}
-  .news-sentiment{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;}
-  .news-sentiment.bullish{color:var(--green);background:rgba(0,230,118,.1);}
-  .news-sentiment.bearish{color:var(--red);background:rgba(255,61,87,.1);}
-  .news-sentiment.neutral{color:var(--gold);background:rgba(245,158,11,.1);}
-  .news-time{font-size:9px;color:var(--muted);margin-left:auto;}
-  .news-headline{font-size:12px;font-weight:600;line-height:1.45;color:var(--text);margin-bottom:5px;}
-  .news-summary{font-size:11px;color:var(--muted);line-height:1.5;}
-  .news-coins{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap;}
-  .news-coin-tag{font-size:9px;color:var(--accent);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.12);border-radius:3px;padding:1px 5px;}
-  .news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;gap:10px;color:var(--muted);font-size:12px;}
-  .news-spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
-
-  /* ── State ── */
-  .state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;gap:12px;color:var(--muted);font-size:12px;text-align:center;}
-  .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  footer{position:relative;z-index:10;text-align:center;padding:20px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);}
-  footer .hl{color:var(--accent);}
-
-  @media(max-width:1100px){main{grid-template-columns:1fr;} .news-col{grid-column:1;grid-row:auto;} .news-panel{max-height:500px;}}
-  @media(max-width:768px){header{padding:12px 14px;} .header-stats{display:none;} main{padding:14px;} .stats-row{grid-template-columns:repeat(2,1fr);} .hide-sm{display:none!important;}}
+/* News Panel */
+.news-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;max-height:790px;}
+.news-header{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.news-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;gap:7px;}
+.news-title svg{width:14px;height:14px;fill:var(--accent);}
+.news-source-tabs{display:flex;gap:4px;padding:9px 17px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.news-source-tabs::-webkit-scrollbar{display:none;}
+.news-source-tab{font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.news-source-tab.active{border-color:rgba(0,212,255,.4);color:var(--accent);background:rgba(0,212,255,.07);}
+.news-refresh-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--muted);font-size:10px;cursor:pointer;transition:all .2s;font-family:Cambria,'Times New Roman',serif;}
+.news-refresh-btn:hover{color:var(--accent);border-color:rgba(0,212,255,.3);}
+.news-refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
+.news-feed{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.news-feed::-webkit-scrollbar{width:4px;}
+.news-feed::-webkit-scrollbar-thumb{background:rgba(99,179,237,.15);border-radius:2px;}
+.news-item{padding:13px 17px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .13s;text-decoration:none;display:block;color:inherit;}
+.news-item:hover{background:rgba(0,212,255,.04);}
+.news-item:last-child{border-bottom:none;}
+.news-img{width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:9px;display:block;}
+.news-meta{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.news-src-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.14);}
+.news-sentiment{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;}
+.news-sentiment.bullish{color:var(--green);background:rgba(0,230,118,.1);}
+.news-sentiment.bearish{color:var(--red);background:rgba(255,61,87,.1);}
+.news-sentiment.neutral{color:var(--gold);background:rgba(245,158,11,.1);}
+.news-time{font-size:9px;color:var(--muted);margin-left:auto;}
+.news-headline{font-size:12px;font-weight:600;line-height:1.45;color:var(--text);margin-bottom:4px;}
+.news-summary{font-size:11px;color:var(--muted);line-height:1.5;}
+.news-coins{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
+.news-coin-tag{font-size:9px;color:var(--accent);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.12);border-radius:3px;padding:1px 5px;}
+.news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;gap:10px;color:var(--muted);font-size:12px;text-align:center;}
+.news-spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;gap:12px;color:var(--muted);font-size:12px;text-align:center;}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{position:relative;z-index:10;text-align:center;padding:18px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);}
+footer .hl{color:var(--accent);}
+@media(max-width:1100px){main{grid-template-columns:1fr;}.news-col{grid-column:1;grid-row:auto;}.news-panel{max-height:500px;}}
+@media(max-width:768px){header{padding:12px 14px;}.header-stats{display:none;}main{padding:12px;}.stats-row{grid-template-columns:repeat(2,1fr);}.hide-sm{display:none!important;}}
 </style>
 </head>
 <body>
 <div class="orb orb1"></div><div class="orb orb2"></div>
 
 <!-- Ticker -->
-<div class="ticker-wrap"><div class="ticker" id="ticker"><span class="ticker-item"><span class="tsym">⏳ Đang kết nối Binance...</span></span></div></div>
+<div class="ticker-wrap"><div class="ticker" id="ticker"><span class="ticker-item"><span class="tsym">⏳ Đang tải dữ liệu...</span></span></div></div>
 
 <!-- Header -->
 <header>
@@ -164,26 +165,25 @@
       <circle cx="22" cy="22" r="18.5" fill="url(#cf)"/>
       <circle cx="22" cy="22" r="18.5" fill="url(#cs)"/>
       <circle cx="22" cy="22" r="16" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.6"/>
-      <text x="22" y="18" text-anchor="middle" font-family="Cambria,'Times New Roman',serif" font-weight="800" font-size="6" fill="url(#cg)" filter="url(#gl)">VLC</text>
+      <text x="22" y="18" text-anchor="middle" font-family="Cambria" font-weight="800" font-size="6" fill="url(#cg)" filter="url(#gl)">VLC</text>
       <path d="M14 22 L22 30 L30 22" fill="none" stroke="url(#cg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#gl)"/>
     </svg>
     <div class="logo-text">VietLongCrypto</div>
   </div>
   <div class="header-right">
     <div class="header-stats">
-      <div class="header-stat"><div class="label">Vốn Hóa TT</div><div class="value" id="hMcap">—</div></div>
-      <div class="header-stat"><div class="label">KL 24h</div><div class="value" id="hVol">—</div></div>
-      <div class="header-stat"><div class="label">BTC Dom.</div><div class="value" id="hBtcDom">—</div></div>
+      <div class="header-stat"><div class="label">KL Giao Dịch 24h</div><div class="value" id="hVol">—</div></div>
+      <div class="header-stat"><div class="label">BTC Dominance</div><div class="value" id="hBtcDom">—</div></div>
       <div class="header-stat"><div class="label">Theo Dõi</div><div class="value" id="hCount">—</div></div>
     </div>
+    <div class="clock" id="clock">—<span class="tz">UTC+7</span></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
 </header>
 
 <main>
-  <!-- Stats -->
   <div class="stats-row">
-    <div class="stat-card"><div class="sc-label">Coins Đang Theo Dõi</div><div class="sc-value" id="sCoinCount">—</div><div class="sc-sub" id="sLastUpdate">Đang kết nối...</div><div class="sc-emoji">📡</div></div>
+    <div class="stat-card"><div class="sc-label">Coins Đang Theo Dõi</div><div class="sc-value" id="sCoinCount">—</div><div class="sc-sub" id="sLastUpdate">Đang kết nối Binance...</div><div class="sc-emoji">📡</div></div>
     <div class="stat-card"><div class="sc-label">Tăng Mạnh Nhất 24h</div><div class="sc-value" id="sTopGain" style="color:var(--green)">—</div><div class="sc-sub" id="sTopGainName">—</div><div class="sc-emoji">🚀</div></div>
     <div class="stat-card"><div class="sc-label">Giảm Mạnh Nhất 24h</div><div class="sc-value" id="sTopLoss" style="color:var(--red)">—</div><div class="sc-sub" id="sTopLossName">—</div><div class="sc-emoji">📉</div></div>
     <div class="stat-card"><div class="sc-label">Tăng / Giảm / Ngang</div><div class="sc-value" id="sRatio">—</div><div class="sc-sub">Trong danh sách theo dõi</div><div class="sc-emoji">⚖️</div></div>
@@ -199,7 +199,7 @@
             <button class="tab" onclick="setTab(this,'gainers')">🟢 Tăng</button>
             <button class="tab" onclick="setTab(this,'losers')">🔴 Giảm</button>
           </div>
-          <span class="coin-count-badge" id="coinCountBadge">0 coins</span>
+          <span class="coin-count-badge" id="coinCountBadge">—</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="ws-status" id="wsStatus">⏳ Đang kết nối...</span>
@@ -210,7 +210,7 @@
         </div>
       </div>
       <div class="table-scroll">
-        <div id="tableArea"><div class="state-box"><div class="spinner"></div><div>Đang tải 100 coin từ Binance...</div></div></div>
+        <div id="tableArea"><div class="state-box"><div class="spinner"></div><div>Đang tải top 100 coins từ Binance...</div></div></div>
       </div>
     </div>
   </div>
@@ -225,11 +225,11 @@
         </div>
         <button class="news-refresh-btn" id="newsRefreshBtn" onclick="fetchNews()">↻ Làm mới</button>
       </div>
-      <div class="news-source-tabs" id="newsSourceTabs">
-        <button class="news-source-tab active" onclick="filterNewsBySource(this,'all')">Tất Cả</button>
-        <button class="news-source-tab" onclick="filterNewsBySource(this,'CoinDesk')">CoinDesk</button>
-        <button class="news-source-tab" onclick="filterNewsBySource(this,'CoinTelegraph')">CoinTelegraph</button>
-        <button class="news-source-tab" onclick="filterNewsBySource(this,'Decrypt')">Decrypt</button>
+      <div class="news-source-tabs">
+        <button class="news-source-tab active" onclick="filterNews(this,'all')">Tất Cả</button>
+        <button class="news-source-tab" onclick="filterNews(this,'CoinDesk')">CoinDesk</button>
+        <button class="news-source-tab" onclick="filterNews(this,'CoinTelegraph')">CoinTelegraph</button>
+        <button class="news-source-tab" onclick="filterNews(this,'Bitcoin Mag')">Bitcoin Mag</button>
       </div>
       <div class="news-feed" id="newsFeed">
         <div class="news-loading"><div class="news-spinner"></div><div>Đang tải tin tức...</div></div>
@@ -238,144 +238,47 @@
   </div>
 </main>
 
-<footer>Giá realtime từ <span class="hl">Binance WebSocket</span> · Tin tức từ <span class="hl">CoinDesk · CoinTelegraph · Decrypt</span> · © 2026 <span class="hl">VietLongCrypto</span> · Không phải tư vấn đầu tư</footer>
+<footer>Giá realtime từ <span class="hl">Binance</span> · Logo & Tin tức từ <span class="hl">CoinGecko</span> · Múi giờ <span class="hl">UTC+7 (Hà Nội)</span> · © 2026 <span class="hl">VietLongCrypto</span></footer>
 
 <script>
-// ══════════════════════════════════════════════════
-//  100 COINS — Binance USDT pairs by market cap
-// ══════════════════════════════════════════════════
-const SYMBOLS = [
-  'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
-  'DOGEUSDT','ADAUSDT','AVAXUSDT','SHIBUSDT','DOTUSDT',
-  'LTCUSDT','LINKUSDT','UNIUSDT','NEARUSDT','MATICUSDT',
-  'TRXUSDT','ETCUSDT','APTUSDT','ARBUSDT','OPUSDT',
-  'ATOMUSDT','FILUSDT','VETUSDT','HBARUSDT','MKRUSDT',
-  'AAVEUSDT','GRTUSDT','SNXUSDT','COMPUSDT','CRVUSDT',
-  'ALGOUSDT','XTZUSDT','EGLDUSDT','THETAUSDT','FTMUSDT',
-  'AXSUSDT','SANDUSDT','MANAUSDT','ENJUSDT','CHZUSDT',
-  'GALAUSDT','FLOWUSDT','IMXUSDT','APEUSDT','GMTUSDT',
-  'SOLUSDT','STXUSDT','MINAUSDT','ZECUSDT','DASHUSDT',
-  'XMRUSDT','WAVEUSDT','QNTUSDT','INJUSDT','SUIUSDT',
-  'SEIUSDT','TIAUSDT','BONKUSDT','WIFUSDT','JUPUSDT',
-  'PYTHUSDT','JITOUSDT','RENDERUSDT','FETUSDT','AGIXUSDT',
-  'OCEANUSDT','TAOUSDT','WLDUSDT','CFXUSDT','RUNEUSDT',
-  'KAVAUSDT','ZILUSDT','ONTUSDT','IOSTUSDT','ANKRUSDT',
-  'COTIUSDT','STORJUSDT','CTSIUSDT','BANDUSDT','LRCUSDT',
-  'SKLUSDT','CVCUSDT','REQUSDT','NMRUSDT','RPLUSDT',
-  'CELOUSDT','RAYUSDT','ORCAUSDT','KSMUSDT','ACMUSDT',
-  'BAKEUSDT','ALPACAUSDT','LITUSDT','SUSHIUSDT','YFIUSDT',
-  'DYDXUSDT','PERLUSDT','HNTUSDT','ROSAUSDT','MOVRUSDT'
-];
+/* ═══════════════════════════════════════════════
+   UTC+7 CLOCK
+═══════════════════════════════════════════════ */
+function tickClock(){
+  const now = new Date();
+  // UTC+7 offset = UTC + 7 hours
+  const utc7 = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+  const hh = String(utc7.getUTCHours()).padStart(2,'0');
+  const mm = String(utc7.getUTCMinutes()).padStart(2,'0');
+  const ss = String(utc7.getUTCSeconds()).padStart(2,'0');
+  const dd = String(utc7.getUTCDate()).padStart(2,'0');
+  const mo = String(utc7.getUTCMonth()+1).padStart(2,'0');
+  const yyyy = utc7.getUTCFullYear();
+  document.getElementById('clock').innerHTML =
+    `${hh}:${mm}:${ss} &nbsp;${dd}/${mo}/${yyyy}<span class="tz">UTC+7</span>`;
+}
+setInterval(tickClock, 1000);
+tickClock();
 
-// Remove duplicates
-const UNIQUE_SYMBOLS = [...new Set(SYMBOLS)];
-
-// Color palette for unknown coins
-const COLOR_PALETTE = [
-  '#e2761b','#6c86eb','#f59e0b','#10b981','#ef4444',
-  '#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899',
-  '#14b8a6','#a855f7','#3b82f6','#22c55e','#eab308',
-];
-
-// Known coin metadata
-const KNOWN_META = {
-  BTC:{name:'Bitcoin',icon:'₿',color:'#f7931a'},
-  ETH:{name:'Ethereum',icon:'Ξ',color:'#627eea'},
-  BNB:{name:'BNB',icon:'B',color:'#f3ba2f'},
-  SOL:{name:'Solana',icon:'◎',color:'#9945ff'},
-  XRP:{name:'XRP',icon:'✕',color:'#346aa9'},
-  DOGE:{name:'Dogecoin',icon:'Ð',color:'#c2a633'},
-  ADA:{name:'Cardano',icon:'₳',color:'#0033ad'},
-  AVAX:{name:'Avalanche',icon:'Δ',color:'#e84142'},
-  SHIB:{name:'Shiba Inu',icon:'S',color:'#ffa409'},
-  DOT:{name:'Polkadot',icon:'●',color:'#e6007a'},
-  LTC:{name:'Litecoin',icon:'Ł',color:'#bfbbbb'},
-  LINK:{name:'Chainlink',icon:'⬡',color:'#375bd2'},
-  UNI:{name:'Uniswap',icon:'U',color:'#ff007a'},
-  NEAR:{name:'NEAR Protocol',icon:'N',color:'#00c1de'},
-  MATIC:{name:'Polygon',icon:'M',color:'#8247e5'},
-  POL:{name:'Polygon',icon:'M',color:'#8247e5'},
-  TRX:{name:'TRON',icon:'T',color:'#ef0027'},
-  ETC:{name:'Ethereum Classic',icon:'Ξ',color:'#328332'},
-  APT:{name:'Aptos',icon:'A',color:'#00b5d8'},
-  ARB:{name:'Arbitrum',icon:'R',color:'#2d9ee0'},
-  OP:{name:'Optimism',icon:'O',color:'#ff0420'},
-  ATOM:{name:'Cosmos',icon:'⚛',color:'#2e3148'},
-  FIL:{name:'Filecoin',icon:'F',color:'#0090ff'},
-  VET:{name:'VeChain',icon:'V',color:'#15bdff'},
-  HBAR:{name:'Hedera',icon:'H',color:'#00b8a9'},
-  MKR:{name:'Maker',icon:'M',color:'#1aab9b'},
-  AAVE:{name:'Aave',icon:'A',color:'#b6509e'},
-  GRT:{name:'The Graph',icon:'G',color:'#6f4cff'},
-  SNX:{name:'Synthetix',icon:'S',color:'#00d1ff'},
-  COMP:{name:'Compound',icon:'C',color:'#00d395'},
-  CRV:{name:'Curve',icon:'C',color:'#40649f'},
-  ALGO:{name:'Algorand',icon:'A',color:'#000000'},
-  XTZ:{name:'Tezos',icon:'ꜩ',color:'#2c7df7'},
-  EGLD:{name:'MultiversX',icon:'E',color:'#23f7dd'},
-  THETA:{name:'Theta',icon:'θ',color:'#2ab8e6'},
-  FTM:{name:'Fantom',icon:'F',color:'#1969ff'},
-  AXS:{name:'Axie Infinity',icon:'A',color:'#0055d4'},
-  SAND:{name:'The Sandbox',icon:'S',color:'#04adef'},
-  MANA:{name:'Decentraland',icon:'M',color:'#ff2d55'},
-  ENJ:{name:'Enjin',icon:'E',color:'#7866d5'},
-  CHZ:{name:'Chiliz',icon:'C',color:'#cd0124'},
-  GALA:{name:'Gala',icon:'G',color:'#0b0b0b'},
-  FLOW:{name:'Flow',icon:'F',color:'#00ef8b'},
-  IMX:{name:'Immutable',icon:'I',color:'#17b5cb'},
-  APE:{name:'ApeCoin',icon:'A',color:'#0054f9'},
-  GMT:{name:'STEPN',icon:'G',color:'#89d629'},
-  STX:{name:'Stacks',icon:'S',color:'#5546ff'},
-  MINA:{name:'Mina',icon:'M',color:'#e39844'},
-  ZEC:{name:'Zcash',icon:'Z',color:'#f4b728'},
-  DASH:{name:'Dash',icon:'D',color:'#008ce7'},
-  XMR:{name:'Monero',icon:'ɱ',color:'#ff6600'},
-  QNT:{name:'Quant',icon:'Q',color:'#0f1b44'},
-  INJ:{name:'Injective',icon:'I',color:'#00b4d8'},
-  SUI:{name:'Sui',icon:'S',color:'#6fbcf0'},
-  SEI:{name:'Sei',icon:'S',color:'#9d1d1d'},
-  TIA:{name:'Celestia',icon:'T',color:'#7b2d8b'},
-  BONK:{name:'Bonk',icon:'B',color:'#f7931a'},
-  WIF:{name:'dogwifhat',icon:'W',color:'#9945ff'},
-  JUP:{name:'Jupiter',icon:'J',color:'#c7d2fe'},
-  PYTH:{name:'Pyth Network',icon:'P',color:'#8a2be2'},
-  RENDER:{name:'Render',icon:'R',color:'#ff4500'},
-  FET:{name:'Fetch.ai',icon:'F',color:'#1a1f71'},
-  AGIX:{name:'SingularityNET',icon:'A',color:'#5f4bb6'},
-  OCEAN:{name:'Ocean Protocol',icon:'O',color:'#141414'},
-  TAO:{name:'Bittensor',icon:'T',color:'#a0a0a0'},
-  WLD:{name:'Worldcoin',icon:'W',color:'#000000'},
-  RUNE:{name:'THORChain',icon:'R',color:'#33ff99'},
-  KAVA:{name:'Kava',icon:'K',color:'#ff433e'},
-  ZIL:{name:'Zilliqa',icon:'Z',color:'#41b8d5'},
-  ANKR:{name:'Ankr',icon:'A',color:'#357ceb'},
-  STORJ:{name:'Storj',icon:'S',color:'#2683ff'},
-  LRC:{name:'Loopring',icon:'L',color:'#1c60ff'},
-  SUSHI:{name:'SushiSwap',icon:'S',color:'#e05abc'},
-  YFI:{name:'Yearn.finance',icon:'Y',color:'#006ae3'},
-  DYDX:{name:'dYdX',icon:'D',color:'#6966ff'},
-  HNT:{name:'Helium',icon:'H',color:'#474dff'},
-  KSM:{name:'Kusama',icon:'K',color:'#000000'},
-  RAY:{name:'Raydium',icon:'R',color:'#2bcbd6'},
-};
-
-function getMeta(sym) {
-  const base = sym.replace('USDT','');
-  if (KNOWN_META[base]) return { sym:base, ...KNOWN_META[base] };
-  const idx = base.charCodeAt(0) % COLOR_PALETTE.length;
-  return { sym:base, name:base, icon:base[0], color:COLOR_PALETTE[idx] };
+/* ═══════════════════════════════════════════════
+   TIME AGO — UTC+7 aware
+═══════════════════════════════════════════════ */
+function timeAgo(ms){
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if(s < 60)    return s + 'g trước';
+  if(s < 3600)  return Math.floor(s/60) + ' phút trước';
+  if(s < 86400) return Math.floor(s/3600) + ' giờ trước';
+  return Math.floor(s/86400) + ' ngày trước';
 }
 
-// ── State ──
-const coins = {};
-UNIQUE_SYMBOLS.forEach(s => { coins[s] = {price:0,prev:0,change24h:0,high:0,low:0,vol:0}; });
-const priceHistory = {};
-UNIQUE_SYMBOLS.forEach(s => { priceHistory[s] = []; });
+function fmtDateVN(ms){
+  const d = new Date(ms + 7*3600000); // shift to UTC+7
+  return d.toUTCString().replace('GMT','').trim().slice(0,-4)+' ICT';
+}
 
-let currentTab = 'all';
-let ws = null, reconnectTimer = null, firstData = false;
-
-// ── Formatters ──
+/* ═══════════════════════════════════════════════
+   FORMATTERS
+═══════════════════════════════════════════════ */
 function fmtP(p){
   if(!p) return '—';
   if(p>=10000) return '$'+p.toLocaleString('en',{maximumFractionDigits:0});
@@ -392,91 +295,218 @@ function fmtB(n){
   return '$'+(n/1e3).toFixed(2)+'K';
 }
 function sign(n){ return n>=0?'+':''; }
-function timeAgo(ms){
-  const s=Math.floor((Date.now()-ms)/1000);
-  if(s<60) return s+'s trước';
-  if(s<3600) return Math.floor(s/60)+'p trước';
-  if(s<86400) return Math.floor(s/3600)+'h trước';
-  return Math.floor(s/86400)+'d trước';
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let SYMBOLS   = [];   // ['BTCUSDT', ...]
+const coins   = {};   // sym → {price,prev,change24h,high,low,vol}
+const hist    = {};   // sym → [price, ...]
+const logoMap = {};   // base → imageURL from CoinGecko
+const nameMap = {};   // base → full name
+const colorMap= {};   // base → fallback color
+
+let currentTab = 'all';
+let ws = null, reconnTimer = null;
+let firstData = false;
+
+const FALLBACK_COLORS = ['#e2761b','#6c86eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
+
+/* ═══════════════════════════════════════════════
+   STEP 1: Binance REST → top 100 USDT by volume
+═══════════════════════════════════════════════ */
+async function loadTop100(){
+  try{
+    const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    if(!res.ok) throw new Error('Binance HTTP '+res.status);
+    const data = await res.json();
+
+    const stables = new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD','USDE','USDX']);
+    const filtered = data
+      .filter(t => t.symbol.endsWith('USDT'))
+      .filter(t => {
+        const b = t.symbol.replace('USDT','');
+        return !stables.has(b) && !/^(UP|DOWN|BULL|BEAR)\w+USDT$/.test(t.symbol);
+      })
+      .sort((a,b) => parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
+      .slice(0,100);
+
+    SYMBOLS = filtered.map(t => t.symbol);
+    filtered.forEach(t => {
+      const base = t.symbol.replace('USDT','');
+      coins[t.symbol] = {
+        price:     parseFloat(t.lastPrice)||0,
+        prev:      parseFloat(t.lastPrice)||0,
+        change24h: parseFloat(t.priceChangePercent)||0,
+        high:      parseFloat(t.highPrice)||0,
+        low:       parseFloat(t.lowPrice)||0,
+        vol:       parseFloat(t.quoteVolume)||0,
+      };
+      hist[t.symbol] = [];
+      colorMap[base] = FALLBACK_COLORS[base.charCodeAt(0) % FALLBACK_COLORS.length];
+      nameMap[base]  = base;
+    });
+
+    firstData = true;
+    render();
+
+    // Step 2: enrich with CoinGecko logos+names (no API key needed)
+    loadCoinGeckoLogos();
+    connectWS();
+
+  }catch(e){
+    document.getElementById('tableArea').innerHTML=
+      '<div class="state-box"><div style="font-size:26px">⚠️</div><div>Không thể tải dữ liệu Binance.<br>Vui lòng tải lại trang.</div></div>';
+  }
 }
 
-// ── Sparkline ──
-function addHist(sym, p){ const h=priceHistory[sym]; h.push(p); if(h.length>30)h.shift(); }
-function sparkSVG(sym){
-  const h=priceHistory[sym];
-  if(h.length<2) return '<svg width="70" height="24"></svg>';
-  const mn=Math.min(...h),mx=Math.max(...h),rng=mx-mn||1;
-  const pts=h.map((v,i)=>{
-    const x=2+(i/(h.length-1))*66, y=22-((v-mn)/rng)*20;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-  const clr=h[h.length-1]>=h[0]?'#00e676':'#ff3d57';
-  return `<svg width="70" height="24" viewBox="0 0 70 24" style="display:block"><polyline points="${pts}" fill="none" stroke="${clr}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+/* ═══════════════════════════════════════════════
+   STEP 2: CoinGecko — logos + names (free, CORS ok)
+   /api/v3/coins/markets — returns 250 coins per page
+═══════════════════════════════════════════════ */
+async function loadCoinGeckoLogos(){
+  try{
+    // fetch page 1 + page 2 to cover top 200 by market cap
+    const urls = [
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
+    ];
+    const res  = await fetch(urls[0]);
+    if(!res.ok) return; // silent — logos are optional enhancement
+    const data = await res.json();
+    data.forEach(c => {
+      const sym = c.symbol.toUpperCase();
+      if(logoMap[sym] === undefined){
+        logoMap[sym] = c.image;        // e.g. https://assets.coingecko.com/...
+        nameMap[sym] = c.name;
+      }
+    });
+    render(); // re-render with real logos
+  }catch(e){
+    // logos failed silently — fallback icons still show
+  }
 }
 
-// ── Binance WebSocket (batch streams) ──
-function connect(){
-  // Binance allows max 200 streams per connection
-  const streams = UNIQUE_SYMBOLS.map(s=>s.toLowerCase()+'@ticker').join('/');
+/* ═══════════════════════════════════════════════
+   STEP 3: Binance WebSocket realtime
+═══════════════════════════════════════════════ */
+function connectWS(){
+  const streams = SYMBOLS.map(s=>s.toLowerCase()+'@ticker').join('/');
   ws = new WebSocket('wss://stream.binance.com:9443/stream?streams='+streams);
+
   ws.onopen = ()=>{
-    document.getElementById('wsStatus').textContent='🟢 Đã kết nối';
-    document.getElementById('sLastUpdate').textContent='Dữ liệu thời gian thực';
-    clearTimeout(reconnectTimer);
+    document.getElementById('wsStatus').textContent='🟢 Đang cập nhật realtime';
+    document.getElementById('sLastUpdate').textContent='Dữ liệu thời gian thực từ Binance';
+    clearTimeout(reconnTimer);
   };
   ws.onmessage = (evt)=>{
     try{
-      const d=JSON.parse(evt.data).data;
+      const d = JSON.parse(evt.data).data;
       if(!d||!d.s||!coins[d.s]) return;
-      const c=coins[d.s];
-      c.prev=c.price;
-      c.price=parseFloat(d.c)||0;
-      c.change24h=parseFloat(d.P)||0;
-      c.high=parseFloat(d.h)||0;
-      c.low=parseFloat(d.l)||0;
-      c.vol=parseFloat(d.q)||0;
-      addHist(d.s,c.price);
-      if(!firstData&&c.price>0){firstData=true;render();}
+      const c = coins[d.s];
+      c.prev      = c.price;
+      c.price     = parseFloat(d.c)||0;
+      c.change24h = parseFloat(d.P)||0;
+      c.high      = parseFloat(d.h)||0;
+      c.low       = parseFloat(d.l)||0;
+      c.vol       = parseFloat(d.q)||0;
+      const h = hist[d.s]||(hist[d.s]=[]);
+      h.push(c.price); if(h.length>30) h.shift();
     }catch(e){}
   };
-  ws.onerror=()=>{ document.getElementById('wsStatus').textContent='🔴 Lỗi kết nối'; };
-  ws.onclose=()=>{
+  ws.onerror = ()=>{ document.getElementById('wsStatus').textContent='🔴 Lỗi kết nối'; };
+  ws.onclose = ()=>{
     document.getElementById('wsStatus').textContent='🟡 Đang thử lại...';
-    reconnectTimer=setTimeout(connect,4000);
+    reconnTimer = setTimeout(connectWS, 4000);
   };
 }
 
-// ── Render ──
+/* ═══════════════════════════════════════════════
+   SPARKLINE
+═══════════════════════════════════════════════ */
+function sparkSVG(sym){
+  const h = hist[sym]||[];
+  if(h.length<2) return '<svg width="68" height="22"></svg>';
+  const mn=Math.min(...h),mx=Math.max(...h),rng=mx-mn||1;
+  const pts=h.map((v,i)=>{
+    const x=2+(i/(h.length-1))*64, y=20-((v-mn)/rng)*18;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const clr=h[h.length-1]>=h[0]?'#00e676':'#ff3d57';
+  return `<svg width="68" height="22" viewBox="0 0 68 22" style="display:block"><polyline points="${pts}" fill="none" stroke="${clr}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* ═══════════════════════════════════════════════
+   COIN LOGO HTML
+═══════════════════════════════════════════════ */
+function coinLogoHTML(base){
+  if(logoMap[base]){
+    return `<img class="coin-logo" src="${logoMap[base]}" alt="${base}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="coin-logo-fallback" style="display:none;background:${colorMap[base]}22;border:1px solid ${colorMap[base]}40;color:${colorMap[base]}">${base[0]}</div>`;
+  }
+  return `<div class="coin-logo-fallback" style="background:${colorMap[base]}22;border:1px solid ${colorMap[base]}40;color:${colorMap[base]}">${base[0]}</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER TABLE
+═══════════════════════════════════════════════ */
 function render(){
-  const q=(document.getElementById('searchInput').value||'').toLowerCase().trim();
-  let list=UNIQUE_SYMBOLS.map(s=>({sym:s,m:getMeta(s),...coins[s]})).filter(c=>c.price>0);
+  if(!firstData) return;
+  const q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+
+  let list = SYMBOLS.map(s=>{
+    const base = s.replace('USDT','');
+    return { sym:s, base, ...coins[s] };
+  });
 
   if(currentTab==='gainers') list=list.filter(c=>c.change24h>0).sort((a,b)=>b.change24h-a.change24h);
   else if(currentTab==='losers') list=list.filter(c=>c.change24h<0).sort((a,b)=>a.change24h-b.change24h);
-  else list.sort((a,b)=>b.vol-a.vol); // sort by volume
+  else list.sort((a,b)=>b.vol-a.vol);
 
-  if(q) list=list.filter(c=>c.m.name.toLowerCase().includes(q)||c.m.sym.toLowerCase().includes(q));
+  if(q) list=list.filter(c=>{
+    const name=(nameMap[c.base]||'').toLowerCase();
+    return name.includes(q)||c.base.toLowerCase().includes(q);
+  });
 
-  updateStats(list);
+  // Update stats
+  const all = SYMBOLS.map(s=>({base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
+  if(all.length){
+    const sorted = [...all].sort((a,b)=>b.change24h-a.change24h);
+    const top=sorted[0], bot=sorted[sorted.length-1];
+    const up=all.filter(c=>c.change24h>0.01).length;
+    const dn=all.filter(c=>c.change24h<-0.01).length;
+    const totalVol=all.reduce((s,c)=>s+c.vol,0);
+    const btc=all.find(c=>c.base==='BTC');
+    const btcMcap=btc?btc.price*19700000:0;
+    const totalMcap=all.reduce((s,c)=>s+c.price*(c.base==='BTC'?19700000:c.base==='ETH'?120000000:1e9),0);
+
+    document.getElementById('sCoinCount').textContent   = all.length+' Coins';
+    document.getElementById('sTopGain').textContent     = `+${(top.change24h||0).toFixed(2)}%`;
+    document.getElementById('sTopGainName').textContent = nameMap[top.base]||top.base;
+    document.getElementById('sTopLoss').textContent     = `${(bot.change24h||0).toFixed(2)}%`;
+    document.getElementById('sTopLossName').textContent = nameMap[bot.base]||bot.base;
+    document.getElementById('sRatio').textContent       = `${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`;
+    document.getElementById('hVol').textContent         = fmtB(totalVol);
+    document.getElementById('hBtcDom').textContent      = totalMcap?((btcMcap/totalMcap)*100).toFixed(1)+'%':'—';
+    document.getElementById('hCount').textContent       = all.length+' coins';
+    document.getElementById('coinCountBadge').textContent = list.length+' coins';
+  }
+
   updateTicker();
 
-  const badge=document.getElementById('coinCountBadge');
-  if(badge) badge.textContent=list.length+' coins';
-
-  if(!firstData) return;
   if(!list.length){
     document.getElementById('tableArea').innerHTML='<div class="state-box"><div>Không tìm thấy kết quả</div></div>';
     return;
   }
 
-  const rows=list.map((c,i)=>{
-    const cls=c.change24h>0.01?'up':c.change24h<-0.01?'down':'neu';
-    const fl=c.price!==c.prev&&c.prev>0?(c.price>c.prev?'flash-green':'flash-red'):'';
+  const rows = list.map((c,i)=>{
+    const cls = c.change24h>0.01?'up':c.change24h<-0.01?'down':'neu';
+    const fl  = c.price&&c.prev&&c.price!==c.prev?(c.price>c.prev?'flash-green':'flash-red'):'';
+    const fullName = nameMap[c.base]||c.base;
     return `<tr>
       <td><span class="rank">${i+1}</span></td>
       <td><div class="coin-cell">
-        <div class="coin-icon" style="background:${c.m.color}20;border:1px solid ${c.m.color}35;color:${c.m.color}">${c.m.icon}</div>
-        <div><div class="coin-name">${c.m.name}</div><div class="coin-sym">${c.m.sym}</div></div>
+        ${coinLogoHTML(c.base)}
+        <div><div class="coin-name">${fullName}</div><div class="coin-sym">${c.base}</div></div>
       </div></td>
       <td class="r"><span class="price-val ${fl}">${fmtP(c.price)}</span></td>
       <td class="r"><span class="badge ${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></td>
@@ -490,7 +520,7 @@ function render(){
   document.getElementById('tableArea').innerHTML=`
     <table>
       <thead><tr>
-        <th style="width:36px">#</th><th>Coin</th>
+        <th style="width:34px">#</th><th>Coin</th>
         <th class="r">Giá</th><th class="r">24h %</th>
         <th class="r hide-sm">Cao 24h</th><th class="r hide-sm">Thấp 24h</th>
         <th class="r hide-sm">KL 24h</th><th class="r hide-sm">Biến Động</th>
@@ -499,38 +529,17 @@ function render(){
     </table>`;
 }
 
-function updateStats(list){
-  const all=UNIQUE_SYMBOLS.map(s=>({...coins[s],...getMeta(s),wsym:s})).filter(c=>c.price>0);
-  if(!all.length) return;
-  const sorted=[...all].sort((a,b)=>b.change24h-a.change24h);
-  const top=sorted[0],bot=sorted[sorted.length-1];
-  const up=all.filter(c=>c.change24h>0.01).length;
-  const dn=all.filter(c=>c.change24h<-0.01).length;
-  const totalVol=all.reduce((s,c)=>s+c.vol,0);
-  const btc=all.find(c=>c.sym==='BTC');
-  const btcMcap=btc?btc.price*19700000:0;
-  const totalMcap=all.reduce((s,c)=>s+c.price*1e9,0); // rough
-
-  document.getElementById('sCoinCount').textContent=all.length+' Coins';
-  document.getElementById('sTopGain').textContent=`+${(top.change24h||0).toFixed(2)}%`;
-  document.getElementById('sTopGainName').textContent=top.name;
-  document.getElementById('sTopLoss').textContent=`${(bot.change24h||0).toFixed(2)}%`;
-  document.getElementById('sTopLossName').textContent=bot.name;
-  document.getElementById('sRatio').textContent=`${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`;
-  document.getElementById('hVol').textContent=fmtB(totalVol);
-  document.getElementById('hMcap').textContent=fmtB(totalMcap);
-  document.getElementById('hBtcDom').textContent=totalMcap?((btcMcap/totalMcap)*100).toFixed(1)+'%':'—';
-  document.getElementById('hCount').textContent=all.length+' coins';
-}
-
 function updateTicker(){
-  const list=UNIQUE_SYMBOLS.map(s=>({...coins[s],...getMeta(s)})).filter(c=>c.price>0);
+  const list = SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
   if(!list.length) return;
-  const html=list.map(c=>{
-    const cls=c.change24h>=0?'tup':'tdn';
-    return `<span class="ticker-item"><span class="tsym">${c.sym}</span><span>${fmtP(c.price)}</span><span class="${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></span>`;
+  const html = list.map(c=>{
+    const cls = c.change24h>=0?'tup':'tdn';
+    const logo = logoMap[c.base]
+      ? `<img src="${logoMap[c.base]}" alt="${c.base}" width="14" height="14" style="border-radius:50%;object-fit:cover" loading="lazy">`
+      : '';
+    return `<span class="ticker-item">${logo}<span class="tsym">${c.base}</span><span>${fmtP(c.price)}</span><span class="${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></span>`;
   }).join('');
-  document.getElementById('ticker').innerHTML=html+html;
+  document.getElementById('ticker').innerHTML = html+html;
 }
 
 function setTab(el,tab){
@@ -538,154 +547,126 @@ function setTab(el,tab){
   el.classList.add('active'); currentTab=tab; render();
 }
 
-// ══════════════════════════════════════════════════
-//  NEWS — RSS via allorigins CORS proxy (no API key)
-// ══════════════════════════════════════════════════
-const NEWS_FEEDS = [
-  { source:'CoinDesk',      url:'https://www.coindesk.com/arc/outboundfeeds/rss/',             color:'#5b8dee' },
-  { source:'CoinTelegraph', url:'https://cointelegraph.com/rss',                               color:'#f5a623' },
-  { source:'Decrypt',       url:'https://decrypt.co/feed',                                      color:'#ff5a5f' },
-];
+/* ═══════════════════════════════════════════════
+   NEWS — CoinGecko /news API (free, no proxy, CORS ok)
+═══════════════════════════════════════════════ */
+let allNews = [], currentNewsSource = 'all', fetchingNews = false;
 
-// Use allorigins as CORS proxy — completely free, no key needed
-const PROXY = 'https://api.allorigins.win/get?url=';
-
-let allNews = [];
-let currentNewsSource = 'all';
-let isFetchingNews = false;
+// Source filter mapping from CoinGecko news categories
+const SOURCE_MAP = {
+  'CoinDesk':     'coindesk',
+  'CoinTelegraph':'cointelegraph',
+  'Bitcoin Mag':  'bitcoin-magazine',
+};
 
 function detectSentiment(text){
   const t=(text||'').toLowerCase();
-  const bull=['surge','rally','soar','gain','bull','rise','pump','ath','record','growth','breakout','positive','optimist','buy','adoption','approve','launch','upgrade'];
-  const bear=['crash','drop','fall','plunge','bear','decline','dump','loss','hack','ban','restrict','sec','lawsuit','concern','risk','fear','sell','regulation','warning'];
+  const bull=['surge','rally','soar','gain','bull','rise','pump','ath','record','growth','breakout','positive','buy','adoption','approve','launch','upgrade','recover','milestone','partnership'];
+  const bear=['crash','drop','fall','plunge','bear','decline','dump','loss','hack','ban','restrict','lawsuit','concern','risk','fear','sell','warning','exploit','fraud','scam','breach'];
   const bs=bull.filter(w=>t.includes(w)).length;
-  const brs=bear.filter(w=>t.includes(w)).length;
-  if(bs>brs) return 'bullish';
-  if(brs>bs) return 'bearish';
-  return 'neutral';
+  const br=bear.filter(w=>t.includes(w)).length;
+  return bs>br?'bullish':br>bs?'bearish':'neutral';
 }
 
 function extractCoins(text){
   const t=(text||'').toUpperCase();
   const found=[];
-  ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','DOT','LINK','UNI','MATIC','TRX','NEAR','ARB','OP','APT','SUI','INJ','ATOM'].forEach(c=>{
-    if(t.includes(c)&&!found.includes(c)) found.push(c);
+  ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','DOT','LINK','UNI','MATIC','TRX','ARB','OP','APT','SUI','INJ','ATOM','NEAR','TON','SHIB'].forEach(c=>{
+    if(new RegExp('\\b'+c+'\\b').test(t)&&!found.includes(c)) found.push(c);
   });
   return found.slice(0,4);
 }
 
-function parseRSS(xml, source){
-  const items=[];
-  const parser=new DOMParser();
-  const doc=parser.parseFromString(xml,'text/xml');
-  const entries=doc.querySelectorAll('item');
-  entries.forEach((item,i)=>{
-    if(i>=8) return;
-    const title=item.querySelector('title')?.textContent||'';
-    const desc=item.querySelector('description')?.textContent||'';
-    const link=item.querySelector('link')?.textContent||'#';
-    const pubDate=item.querySelector('pubDate')?.textContent||'';
-    const cleanDesc=desc.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ').trim().slice(0,160)+'…';
-    const pub=pubDate?new Date(pubDate).getTime():Date.now()-(i*15*60000);
-    items.push({
-      headline:title.trim(),
-      summary:cleanDesc,
-      source,
-      link,
-      pub,
-      sentiment:detectSentiment(title+' '+desc),
-      coins:extractCoins(title+' '+desc)
-    });
-  });
-  return items;
-}
-
-async function fetchOneFeed(feed){
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), 9000);
-  try{
-    const proxyUrl=PROXY+encodeURIComponent(feed.url);
-    const res=await fetch(proxyUrl,{signal:controller.signal});
-    clearTimeout(timer);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json=await res.json();
-    return parseRSS(json.contents, feed.source);
-  }catch(e){
-    clearTimeout(timer);
-    console.warn('Feed failed:',feed.source,e.message);
-    return [];
-  }
-}
-
 async function fetchNews(){
-  if(isFetchingNews) return;
-  isFetchingNews=true;
-  const btn=document.getElementById('newsRefreshBtn');
+  if(fetchingNews) return;
+  fetchingNews = true;
+  const btn = document.getElementById('newsRefreshBtn');
   btn.disabled=true; btn.textContent='⏳ Đang tải...';
-  document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div class="news-spinner"></div><div>Đang tải tin tức từ các nguồn...</div></div>';
+  document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div class="news-spinner"></div><div>Đang tải tin tức từ CoinGecko...</div></div>';
 
   try{
-    const results=await Promise.allSettled(NEWS_FEEDS.map(f=>fetchOneFeed(f)));
-    const allItems=[];
-    results.forEach(r=>{ if(r.status==='fulfilled') allItems.push(...r.value); });
-    // sort by publish time descending
-    allItems.sort((a,b)=>b.pub-a.pub);
-    allNews=allItems;
+    // CoinGecko /news endpoint — free tier, supports CORS, no API key
+    const res = await fetch('https://api.coingecko.com/api/v3/news?per_page=50');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+
+    // data is array of news objects
+    const items = (Array.isArray(data) ? data : (data.data||[])).map(n=>{
+      const pub = n.updated_at
+        ? new Date(n.updated_at*1000).getTime()
+        : (n.created_at ? new Date(n.created_at*1000).getTime() : Date.now());
+
+      // Determine source label
+      const author = (n.author||{});
+        const srcName = author.name||n.news_site||'CoinGecko';
+
+      return {
+        headline:  n.title||'',
+        summary:   (n.description||n.text||'').slice(0,180).replace(/<[^>]+>/g,'')+'…',
+        source:    srcName,
+        link:      n.url||'#',
+        image:     n.thumb_2x||n.image||'',
+        pub,
+        sentiment: detectSentiment((n.title||'')+' '+(n.description||'')),
+        coins:     extractCoins((n.title||'')+' '+(n.description||'')),
+      };
+    }).filter(n=>n.headline);
+
+    allNews = items;
     renderNews();
   }catch(e){
-    showNewsError();
+    document.getElementById('newsFeed').innerHTML=`
+      <div class="news-loading">
+        <div style="font-size:26px">⚠️</div>
+        <div>Không thể tải tin tức.<br><small style="opacity:.6">${e.message}</small><br><br>
+        <button onclick="fetchNews()" style="margin-top:4px;padding:6px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--accent);cursor:pointer;font-size:11px">Thử lại</button></div>
+      </div>`;
   }
 
   btn.disabled=false; btn.textContent='↻ Làm mới';
-  isFetchingNews=false;
-}
-
-function showNewsError(){
-  document.getElementById('newsFeed').innerHTML=`
-    <div class="news-loading">
-      <div style="font-size:26px">⚠️</div>
-      <div>Không thể tải tin tức.<br>Kiểm tra kết nối và thử lại.</div>
-    </div>`;
+  fetchingNews=false;
 }
 
 function renderNews(){
-  let items=allNews;
-  if(currentNewsSource!=='all') items=items.filter(n=>n.source===currentNewsSource);
+  const sentLabel={bullish:'📈 Tích Cực',bearish:'📉 Tiêu Cực',neutral:'⚖️ Trung Lập'};
+  let items = allNews;
+  if(currentNewsSource!=='all'){
+    items = items.filter(n=>n.source.toLowerCase().includes(currentNewsSource.toLowerCase()));
+  }
   if(!items.length){
-    document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div>Không có tin tức.</div></div>';
+    document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div>Không có tin tức từ nguồn này.</div></div>';
     return;
   }
-  const sentLabel={bullish:'📈 Tích Cực',bearish:'📉 Tiêu Cực',neutral:'⚖️ Trung Lập'};
-  const html=items.map((n,i)=>{
-    const coins=(n.coins||[]).map(c=>`<span class="news-coin-tag">${c}</span>`).join('');
-    return `<div class="news-item" onclick="window.open('${n.link}','_blank')" style="animation-delay:${i*.04}s">
+  const html = items.map((n,i)=>{
+    const tags=(n.coins||[]).map(c=>`<span class="news-coin-tag">${c}</span>`).join('');
+    const imgHtml = n.image?`<img class="news-img" src="${n.image}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
+    return `<a class="news-item" href="${n.link}" target="_blank" rel="noopener noreferrer">
+      ${imgHtml}
       <div class="news-meta">
         <span class="news-src-tag">${n.source}</span>
-        <span class="news-sentiment ${n.sentiment}">${sentLabel[n.sentiment]||n.sentiment}</span>
+        <span class="news-sentiment ${n.sentiment}">${sentLabel[n.sentiment]}</span>
         <span class="news-time">${timeAgo(n.pub)}</span>
       </div>
       <div class="news-headline">${n.headline}</div>
-      <div class="news-summary">${n.summary}</div>
-      ${coins?`<div class="news-coins">${coins}</div>`:''}
-    </div>`;
+      ${n.summary?`<div class="news-summary">${n.summary}</div>`:''}
+      ${tags?`<div class="news-coins">${tags}</div>`:''}
+    </a>`;
   }).join('');
   document.getElementById('newsFeed').innerHTML=html;
 }
 
-function filterNewsBySource(el, src){
+function filterNews(el,src){
   document.querySelectorAll('.news-source-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  currentNewsSource=src;
-  renderNews();
+  el.classList.add('active'); currentNewsSource=src; renderNews();
 }
 
-// ══════════════════════════════════════════════════
-//  BOOT
-// ══════════════════════════════════════════════════
-connect();
+/* ═══════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════ */
+loadTop100();
 setInterval(render, 2000);
 fetchNews();
-setInterval(fetchNews, 5*60*1000); // refresh news every 5 min
+setInterval(fetchNews, 5*60*1000);
 </script>
 </body>
 </html>
