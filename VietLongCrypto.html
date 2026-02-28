@@ -1040,6 +1040,7 @@ async function loadAllCoins(){
       volHistory[t.symbol]=[parseFloat(t.quoteVolume)||0];
     });
     sortCol='vol'; sortDir=1; render(); // sort by volume asc
+    initVolBaseline();
     loadCoinGeckoLogos();
     connectWS();
     updateWhaleTracker();
@@ -1106,7 +1107,20 @@ function connectWS(){
         const h=hist[d.s]||(hist[d.s]=[]);
         h.push(c.price); if(h.length>30) h.shift();
         // Update chart price if this is the selected coin
-        if(d.s===selectedSym) updateChartHeader();
+        if(d.s===selectedSym){
+          updateChartHeader();
+          // Cập nhật candle cuối trên chart realtime
+          if(candleSeries&&c.price){
+            try{
+              const now=Math.floor(Date.now()/1000);
+              // Snap về đầu nến hiện tại theo timeframe
+              const tfSecs={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400};
+              const tf=tfSecs[currentTf]||60;
+              const candleTime=now-now%tf;
+              candleSeries.update({time:candleTime,open:c.prev||c.price,high:Math.max(c.high||c.price,c.price),low:Math.min(c.low||c.price,c.price),close:c.price});
+            }catch(e){}
+          }
+        }
       }catch(e){}
     };
     sock.onerror=()=>{document.getElementById('wsStatus').textContent='🔴 Lỗi kết nối';};
@@ -1167,7 +1181,8 @@ function render(){
     const up=all.filter(c=>c.change24h>0.01).length,dn=all.filter(c=>c.change24h<-0.01).length;
     const tv=all.reduce((s,c)=>s+c.vol,0);
     const btc=all.find(c=>c.base==='BTC');
-    const bm=btc?btc.price*19700000:0,tm=all.reduce((s,c)=>s+c.price*(c.base==='BTC'?19700000:c.base==='ETH'?120000000:1e9),0);
+    // BTC dominance by volume: BTC vol / total vol (proxy, đơn giản & chính xác)
+    const btcVolDom=btc&&tv>0?(btc.vol/tv*100).toFixed(1)+'%':'—';
     document.getElementById('sCoinCount').textContent=all.length+' Coin';
     document.getElementById('sTopGain').textContent=`+${(top.change24h||0).toFixed(2)}%`;
     document.getElementById('sTopGainName').textContent=nameMap[top.base]||top.base;
@@ -1175,7 +1190,7 @@ function render(){
     document.getElementById('sTopLossName').textContent=nameMap[bot.base]||bot.base;
     document.getElementById('sRatio').textContent=`${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`;
     document.getElementById('hVol').textContent=fmtB(tv);
-    document.getElementById('hBtcDom').textContent=tm?((bm/tm)*100).toFixed(1)+'%':'—';
+    document.getElementById('hBtcDom').textContent=btcVolDom;
     document.getElementById('hCount').textContent=all.length;
     document.getElementById('countBadge').textContent=list.length+' coins';
   }
@@ -1270,9 +1285,11 @@ function clearSearch(){
   currentPage=1; render();
 }
 
+let tickerNeedsUpdate=true;
 function updateTicker(){
   const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
-  if(!list.length) return;
+  if(!list.length||!tickerNeedsUpdate) return;
+  tickerNeedsUpdate=false;
   const html=list.map(c=>{
     const cls=c.change24h>=0?'tup':'tdn';
     const lg=logoMap[c.base]?`<img src="${logoMap[c.base]}" width="14" height="14" style="border-radius:50%;object-fit:cover" loading="lazy">`:'';
@@ -1280,6 +1297,8 @@ function updateTicker(){
   }).join('');
   document.getElementById('ticker').innerHTML=html+html;
 }
+// Reset ticker update flag mỗi 10s để refresh giá mới
+setInterval(()=>{tickerNeedsUpdate=true;},10000);
 
 /* ═══════════════════════════════════════════════════
    FEAR & GREED
@@ -1292,7 +1311,9 @@ async function loadFearGreed(){
     const items=data.data||[];
     const cur=items[0];
     const val=parseInt(cur.value);
-    const label=cur.value_classification;
+    // Dịch label sang tiếng Việt
+    const labelMap={'Extreme Fear':'Cực Kỳ Sợ Hãi','Fear':'Sợ Hãi','Neutral':'Trung Lập','Greed':'Tham Lam','Extreme Greed':'Cực Kỳ Tham Lam'};
+    const label=labelMap[cur.value_classification]||cur.value_classification;
 
     // Color based on value
     const col=val<=25?'#ff3d57':val<=45?'#fb923c':val<=55?'#f59e0b':val<=75?'#84cc16':'#00e676';
@@ -1324,16 +1345,25 @@ async function loadFearGreed(){
 /* ═══════════════════════════════════════════════════
    WHALE TRACKER — detect volume spikes
 ═══════════════════════════════════════════════════ */
+/* Lưu snapshot volume tại thời điểm load để làm baseline whale detection */
+const volBaseline={}; // sym → vol lúc mới load (từ REST 24h)
+function initVolBaseline(){SYMBOLS.forEach(s=>{if(coins[s]?.vol&&!volBaseline[s]) volBaseline[s]=coins[s].vol;});}
+
 function updateWhaleTracker(){
-  // Compare current volume to historical average
+  // So sánh vol WS realtime với baseline vol lúc mới load
+  // Nếu WS chưa cập nhật đủ, dùng change24h làm tín hiệu phụ
   const candidates=SYMBOLS.map(s=>{
     const c=coins[s];if(!c||!c.vol) return null;
     const base=s.replace('USDT','');
-    const vh=volHistory[s]||[];
-    const avg=vh.length>1?vh.slice(0,-1).reduce((a,b)=>a+b,0)/(vh.length-1):c.vol;
-    const mult=avg>0?c.vol/avg:1;
-    return{sym:s,base,vol:c.vol,mult,change24h:c.change24h};
-  }).filter(c=>c&&c.mult>1.5).sort((a,b)=>b.mult-a.mult).slice(0,15);
+    const baseline=volBaseline[s]||c.vol;
+    // vol từ WS là vol 24h rolling — so sánh với baseline từ REST
+    const mult=baseline>0?c.vol/baseline:1;
+    // Tín hiệu phụ: change24h tuyệt đối lớn + vol lớn
+    const absChg=Math.abs(c.change24h||0);
+    const score=mult+(absChg>10?0.5:absChg>5?0.2:0);
+    return{sym:s,base,vol:c.vol,mult:score,rawMult:mult,change24h:c.change24h,absChg};
+  }).filter(c=>c&&(c.mult>1.15||c.absChg>8)&&c.vol>100000)
+    .sort((a,b)=>b.mult-a.mult).slice(0,15);
 
   if(!candidates.length){
     document.getElementById('whaleList').innerHTML='<div class="news-loading"><div style="font-size:20px">🔍</div><div>Chưa phát hiện biến động bất thường</div></div>';
@@ -1623,8 +1653,8 @@ async function runScreener(){
   const needInd=fRsi!=='all'||fMacd!=='all';
   if(needInd){
     const uncached=SYMBOLS.slice(0,100).filter(s=>!rsiCache[s]);
-    for(let i=0;i<Math.min(uncached.length,30);i++){
-      await new Promise(r=>setTimeout(r,150));
+    for(let i=0;i<Math.min(uncached.length,60);i++){
+      if(i>0) await new Promise(r=>setTimeout(r,120));
       await fetchIndicators(uncached[i]);
     }
   }
@@ -1783,6 +1813,7 @@ async function fetchNews(manual=false){
     },
     /* Strategy 3: Tổng hợp từ dữ liệu Binance trực tiếp — luôn hoạt động */
     async()=>{
+      if(SYMBOLS.length<10) throw new Error('SYMBOLS not ready yet');
       const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0&&c.change24h!=null);
       if(list.length<5) throw new Error('not enough binance data');
       const sorted=[...list].sort((a,b)=>b.change24h-a.change24h);
@@ -1958,6 +1989,7 @@ function addAlert(){
     createdAt: Date.now(),
     status: 'active',
     triggeredAt: null,
+    createdPrice: coins[alertSelectedSym]?.price || 0,
   };
 
   alerts.unshift(alert);
@@ -2025,10 +2057,11 @@ function updateAlertPrices(){
     const c = coins[a.sym];
     if(!c || !c.price) return;
     el.textContent = 'Hiện tại: ' + fmtP(c.price);
-    // Progress bar
+    // Progress bar: % tiến độ từ giá tạo alert đến mục tiêu
+    const createdPrice = a.createdPrice || c.price;
     const pct = a.condition === 'above'
-      ? Math.min(100, ((c.price - (a.target * 0.9)) / (a.target * 0.1)) * 100)
-      : Math.min(100, ((a.target * 1.1 - c.price) / (a.target * 0.1)) * 100);
+      ? (a.target > createdPrice ? Math.min(100,(c.price-createdPrice)/(a.target-createdPrice)*100) : 100)
+      : (a.target < createdPrice ? Math.min(100,(createdPrice-c.price)/(createdPrice-a.target)*100) : 100);
     prog.style.width = Math.max(0, pct).toFixed(1) + '%';
   });
 }
