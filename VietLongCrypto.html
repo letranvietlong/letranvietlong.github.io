@@ -73,6 +73,9 @@ main{position:relative;z-index:10;max-width:1640px;margin:0 auto;padding:24px 36
 .search-box:focus-within{border-color:rgba(0,212,255,.3);}
 .search-box input{background:none;border:none;outline:none;color:var(--text);font-family:Cambria,'Times New Roman',serif;font-size:12px;width:100%;}
 .search-box input::placeholder{color:var(--muted);}
+.clear-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px;transition:color .15s;display:none;flex-shrink:0;}
+.clear-btn:hover{color:var(--red);}
+.clear-btn.visible{display:block;}
 .ws-status{font-size:10px;color:var(--muted);}
 .coin-count-badge{font-size:10px;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.14);border-radius:10px;padding:2px 9px;}
 .table-scroll{overflow-y:auto;max-height:700px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
@@ -122,7 +125,6 @@ td.r{text-align:right;}
 .news-item{padding:13px 17px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .13s;text-decoration:none;display:block;color:inherit;}
 .news-item:hover{background:rgba(0,212,255,.04);}
 .news-item:last-child{border-bottom:none;}
-.news-img{width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:9px;display:block;}
 .news-meta{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
 .news-src-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.14);}
 .news-sentiment{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;}
@@ -139,6 +141,12 @@ td.r{text-align:right;}
 .state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;gap:12px;color:var(--muted);font-size:12px;text-align:center;}
 .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.pg-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:4px 10px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:Cambria,'Times New Roman',serif;}
+.pg-btn:hover:not(:disabled){border-color:rgba(0,212,255,.35);color:var(--accent);}
+.pg-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
+.pg-btn:disabled{opacity:.35;cursor:not-allowed;}
+.pg-info{font-size:11px;color:var(--muted);margin:0 8px;}
 footer{position:relative;z-index:10;text-align:center;padding:18px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);}
 footer .hl{color:var(--accent);}
 @media(max-width:1100px){main{grid-template-columns:1fr;}.news-col{grid-column:1;grid-row:auto;}.news-panel{max-height:500px;}}
@@ -183,7 +191,7 @@ footer .hl{color:var(--accent);}
 
 <main>
   <div class="stats-row">
-    <div class="stat-card"><div class="sc-label">Coins Đang Theo Dõi</div><div class="sc-value" id="sCoinCount">—</div><div class="sc-sub" id="sLastUpdate">Đang kết nối Binance...</div><div class="sc-emoji">📡</div></div>
+    <div class="stat-card"><div class="sc-label">Coins Đang Theo Dõi</div><div class="sc-value" id="sCoinCount">—</div><div class="sc-sub" id="sLastUpdate">Đang tải dữ liệu...</div><div class="sc-emoji">📡</div></div>
     <div class="stat-card"><div class="sc-label">Tăng Mạnh Nhất 24h</div><div class="sc-value" id="sTopGain" style="color:var(--green)">—</div><div class="sc-sub" id="sTopGainName">—</div><div class="sc-emoji">🚀</div></div>
     <div class="stat-card"><div class="sc-label">Giảm Mạnh Nhất 24h</div><div class="sc-value" id="sTopLoss" style="color:var(--red)">—</div><div class="sc-sub" id="sTopLossName">—</div><div class="sc-emoji">📉</div></div>
     <div class="stat-card"><div class="sc-label">Tăng / Giảm / Ngang</div><div class="sc-value" id="sRatio">—</div><div class="sc-sub">Trong danh sách theo dõi</div><div class="sc-emoji">⚖️</div></div>
@@ -205,12 +213,13 @@ footer .hl{color:var(--accent);}
           <span class="ws-status" id="wsStatus">⏳ Đang kết nối...</span>
           <div class="search-box">
             <span style="color:var(--muted);font-size:12px">🔍</span>
-            <input type="text" id="searchInput" placeholder="Tìm coin..." oninput="render()">
+            <input type="text" id="searchInput" placeholder="Tìm coin..." oninput="onSearch()" onkeydown="if(event.key==='Escape')clearSearch()">
+            <button class="clear-btn" id="clearBtn" onclick="clearSearch()" title="Xóa tìm kiếm">✕</button>
           </div>
         </div>
       </div>
       <div class="table-scroll">
-        <div id="tableArea"><div class="state-box"><div class="spinner"></div><div>Đang tải top 100 coins từ Binance...</div></div></div>
+        <div id="tableArea"><div class="state-box"><div class="spinner"></div><div>Đang tải tất cả coins từ Binance...</div></div></div>
       </div>
     </div>
   </div>
@@ -309,6 +318,8 @@ const colorMap= {};   // base → fallback color
 let currentTab = 'all';
 let ws = null, reconnTimer = null;
 let firstData = false;
+let currentPage = 1;
+const PAGE_SIZE = 100; // rows per page — renders fast, user can page through all coins
 
 const FALLBACK_COLORS = ['#e2761b','#6c86eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
 
@@ -321,15 +332,18 @@ async function loadTop100(){
     if(!res.ok) throw new Error('Binance HTTP '+res.status);
     const data = await res.json();
 
-    const stables = new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD','USDE','USDX']);
+    const stables = new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD','USDE','USDX','USDD','GUSD','FRAX','LUSD']);
+    // Keep ALL valid USDT pairs — no slice limit
     const filtered = data
       .filter(t => t.symbol.endsWith('USDT'))
       .filter(t => {
         const b = t.symbol.replace('USDT','');
-        return !stables.has(b) && !/^(UP|DOWN|BULL|BEAR)\w+USDT$/.test(t.symbol);
+        return !stables.has(b)
+          && !/^(UP|DOWN|BULL|BEAR)\w+USDT$/.test(t.symbol)
+          && parseFloat(t.quoteVolume) > 0;   // must have some volume
       })
-      .sort((a,b) => parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
-      .slice(0,100);
+      .sort((a,b) => parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume));
+    // No .slice() — take everything
 
     SYMBOLS = filtered.map(t => t.symbol);
     filtered.forEach(t => {
@@ -350,8 +364,9 @@ async function loadTop100(){
     firstData = true;
     render();
 
-    // Step 2: enrich with CoinGecko logos+names (no API key needed)
+    // Enrich with CoinGecko logos+names
     loadCoinGeckoLogos();
+    // Connect WebSocket(s) — split into chunks of 180 streams per connection
     connectWS();
 
   }catch(e){
@@ -365,59 +380,87 @@ async function loadTop100(){
    /api/v3/coins/markets — returns 250 coins per page
 ═══════════════════════════════════════════════ */
 async function loadCoinGeckoLogos(){
-  try{
-    // fetch page 1 + page 2 to cover top 200 by market cap
-    const urls = [
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
-    ];
-    const res  = await fetch(urls[0]);
-    if(!res.ok) return; // silent — logos are optional enhancement
-    const data = await res.json();
-    data.forEach(c => {
-      const sym = c.symbol.toUpperCase();
-      if(logoMap[sym] === undefined){
-        logoMap[sym] = c.image;        // e.g. https://assets.coingecko.com/...
-        nameMap[sym] = c.name;
-      }
-    });
-    render(); // re-render with real logos
-  }catch(e){
-    // logos failed silently — fallback icons still show
+  // Fetch multiple pages to get logos for as many coins as possible
+  // CoinGecko free tier: 250 per page, we fetch pages 1-4 sequentially
+  const pages = [1,2,3,4];
+  for(const page of pages){
+    try{
+      // Small delay between requests to respect rate limits
+      if(page > 1) await new Promise(r=>setTimeout(r, 1200));
+      const res = await fetch(
+        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false`
+      );
+      if(!res.ok) break; // stop on rate limit or error
+      const data = await res.json();
+      if(!data.length) break;
+      data.forEach(c => {
+        const sym = c.symbol.toUpperCase();
+        if(!logoMap[sym]){
+          logoMap[sym] = c.image;
+          nameMap[sym] = c.name;
+        }
+      });
+      render(); // re-render after each page
+    }catch(e){
+      break; // silent fail — logos are enhancement only
+    }
   }
 }
 
 /* ═══════════════════════════════════════════════
    STEP 3: Binance WebSocket realtime
 ═══════════════════════════════════════════════ */
-function connectWS(){
-  const streams = SYMBOLS.map(s=>s.toLowerCase()+'@ticker').join('/');
-  ws = new WebSocket('wss://stream.binance.com:9443/stream?streams='+streams);
+// Binance allows max 200 streams per WebSocket connection
+// We split SYMBOLS into chunks and open multiple WS connections
+const wsConnections = [];
 
-  ws.onopen = ()=>{
-    document.getElementById('wsStatus').textContent='🟢 Đang cập nhật realtime';
-    document.getElementById('sLastUpdate').textContent='Dữ liệu thời gian thực từ Binance';
-    clearTimeout(reconnTimer);
-  };
-  ws.onmessage = (evt)=>{
-    try{
-      const d = JSON.parse(evt.data).data;
-      if(!d||!d.s||!coins[d.s]) return;
-      const c = coins[d.s];
-      c.prev      = c.price;
-      c.price     = parseFloat(d.c)||0;
-      c.change24h = parseFloat(d.P)||0;
-      c.high      = parseFloat(d.h)||0;
-      c.low       = parseFloat(d.l)||0;
-      c.vol       = parseFloat(d.q)||0;
-      const h = hist[d.s]||(hist[d.s]=[]);
-      h.push(c.price); if(h.length>30) h.shift();
-    }catch(e){}
-  };
-  ws.onerror = ()=>{ document.getElementById('wsStatus').textContent='🔴 Lỗi kết nối'; };
-  ws.onclose = ()=>{
-    document.getElementById('wsStatus').textContent='🟡 Đang thử lại...';
-    reconnTimer = setTimeout(connectWS, 4000);
-  };
+function handleWsMessage(evt){
+  try{
+    const d = JSON.parse(evt.data).data;
+    if(!d||!d.s||!coins[d.s]) return;
+    const c = coins[d.s];
+    c.prev      = c.price;
+    c.price     = parseFloat(d.c)||0;
+    c.change24h = parseFloat(d.P)||0;
+    c.high      = parseFloat(d.h)||0;
+    c.low       = parseFloat(d.l)||0;
+    c.vol       = parseFloat(d.q)||0;
+    const h = hist[d.s]||(hist[d.s]=[]);
+    h.push(c.price); if(h.length>30) h.shift();
+  }catch(e){}
+}
+
+function connectWS(){
+  // Close any existing connections
+  wsConnections.forEach(w=>{ try{w.close();}catch(e){} });
+  wsConnections.length = 0;
+
+  const CHUNK = 180; // safe below Binance's 200 limit
+  let openCount = 0;
+
+  for(let i=0; i<SYMBOLS.length; i+=CHUNK){
+    const chunk = SYMBOLS.slice(i, i+CHUNK);
+    const streams = chunk.map(s=>s.toLowerCase()+'@ticker').join('/');
+    const sock = new WebSocket('wss://stream.binance.com:9443/stream?streams='+streams);
+
+    sock.onopen = ()=>{
+      openCount++;
+      const total = Math.ceil(SYMBOLS.length/CHUNK);
+      document.getElementById('wsStatus').textContent=`🟢 ${openCount}/${total} kết nối live`;
+      document.getElementById('sLastUpdate').textContent='Dữ liệu thời gian thực từ Binance';
+      clearTimeout(reconnTimer);
+    };
+    sock.onmessage = handleWsMessage;
+    sock.onerror = ()=>{ document.getElementById('wsStatus').textContent='🔴 Một kết nối lỗi'; };
+    sock.onclose = ()=>{
+      openCount = Math.max(0, openCount-1);
+      document.getElementById('wsStatus').textContent='🟡 Đang thử lại...';
+      // Reconnect all after short delay
+      clearTimeout(reconnTimer);
+      reconnTimer = setTimeout(connectWS, 5000);
+    };
+    wsConnections.push(sock);
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -498,12 +541,18 @@ function render(){
     return;
   }
 
-  const rows = list.map((c,i)=>{
+  // Pagination
+  const totalPages = Math.ceil(list.length / PAGE_SIZE);
+  if(currentPage > totalPages) currentPage = 1;
+  const startIdx = (currentPage-1)*PAGE_SIZE;
+  const pageList = list.slice(startIdx, startIdx+PAGE_SIZE);
+
+  const rows = pageList.map((c,i)=>{
     const cls = c.change24h>0.01?'up':c.change24h<-0.01?'down':'neu';
     const fl  = c.price&&c.prev&&c.price!==c.prev?(c.price>c.prev?'flash-green':'flash-red'):'';
     const fullName = nameMap[c.base]||c.base;
     return `<tr>
-      <td><span class="rank">${i+1}</span></td>
+      <td><span class="rank">${startIdx+i+1}</span></td>
       <td><div class="coin-cell">
         ${coinLogoHTML(c.base)}
         <div><div class="coin-name">${fullName}</div><div class="coin-sym">${c.base}</div></div>
@@ -517,6 +566,26 @@ function render(){
     </tr>`;
   }).join('');
 
+  // Build pagination controls
+  let pgHtml = '';
+  if(totalPages > 1){
+    const maxBtns = 7;
+    let startPg = Math.max(1, currentPage - Math.floor(maxBtns/2));
+    let endPg   = Math.min(totalPages, startPg + maxBtns - 1);
+    if(endPg - startPg < maxBtns - 1) startPg = Math.max(1, endPg - maxBtns + 1);
+
+    pgHtml = '<div class="pagination">';
+    pgHtml += `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+    if(startPg > 1) pgHtml += `<button class="pg-btn" onclick="goPage(1)">1</button>${startPg>2?'<span class="pg-info">…</span>':''}`;
+    for(let p=startPg; p<=endPg; p++){
+      pgHtml += `<button class="pg-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
+    }
+    if(endPg < totalPages) pgHtml += `${endPg<totalPages-1?'<span class="pg-info">…</span>':''}<button class="pg-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+    pgHtml += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
+    pgHtml += `<span class="pg-info">${list.length} coins · Trang ${currentPage}/${totalPages}</span>`;
+    pgHtml += '</div>';
+  }
+
   document.getElementById('tableArea').innerHTML=`
     <table>
       <thead><tr>
@@ -526,7 +595,19 @@ function render(){
         <th class="r hide-sm">KL 24h</th><th class="r hide-sm">Biến Động</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>
+    ${pgHtml}`;
+}
+
+function goPage(p){
+  const totalCoins = SYMBOLS.filter(s=>coins[s]&&coins[s].price>0).length;
+  const totalPages = Math.ceil(totalCoins / PAGE_SIZE);
+  if(p<1||p>totalPages) return;
+  currentPage = p;
+  render();
+  // Scroll table to top
+  const scroll = document.querySelector('.table-scroll');
+  if(scroll) scroll.scrollTop = 0;
 }
 
 function updateTicker(){
@@ -542,9 +623,23 @@ function updateTicker(){
   document.getElementById('ticker').innerHTML = html+html;
 }
 
+function onSearch(){
+  const val = document.getElementById('searchInput').value;
+  document.getElementById('clearBtn').classList.toggle('visible', val.length > 0);
+  currentPage = 1;
+  render();
+}
+
+function clearSearch(){
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').classList.remove('visible');
+  currentPage = 1;
+  render();
+}
+
 function setTab(el,tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); currentTab=tab; render();
+  el.classList.add('active'); currentTab=tab; currentPage=1; render();
 }
 
 /* ═══════════════════════════════════════════════
@@ -700,9 +795,7 @@ function renderNews(){
   }
   const html = items.map((n,i)=>{
     const tags=(n.coins||[]).map(c=>`<span class="news-coin-tag">${c}</span>`).join('');
-    const imgHtml = n.image?`<img class="news-img" src="${n.image}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
     return `<a class="news-item" href="${n.link}" target="_blank" rel="noopener noreferrer">
-      ${imgHtml}
       <div class="news-meta">
         <span class="news-src-tag">${n.source}</span>
         <span class="news-sentiment ${n.sentiment}">${sentLabel[n.sentiment]}</span>
