@@ -961,40 +961,40 @@ footer .hl{color:var(--accent);}
 
 <script>
 /* ═══════════════════════════════════════════════════
-   CLOCK UTC+7
+   ĐỒNG HỒ UTC+7
 ═══════════════════════════════════════════════════ */
 function tickClock(){
   const u7=new Date(Date.now()+(7*3600000));
   const hh=String(u7.getUTCHours()).padStart(2,'0');
   const mm=String(u7.getUTCMinutes()).padStart(2,'0');
   const ss=String(u7.getUTCSeconds()).padStart(2,'0');
-  document.getElementById('clock').textContent=`${hh}:${mm}:${ss}`;
+  const el=document.getElementById('clock');
+  if(el) el.textContent=`${hh}:${mm}:${ss}`;
 }
 setInterval(tickClock,1000); tickClock();
 
 /* ═══════════════════════════════════════════════════
-   FORMATTERS
+   HELPERS
 ═══════════════════════════════════════════════════ */
 const fmtP=p=>{
-  if(!p) return '—';
-  if(p>=10000) return '$'+p.toLocaleString('en',{maximumFractionDigits:0});
-  if(p>=1000)  return '$'+p.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(p>=1)     return '$'+p.toFixed(4);
-  if(p>=0.001) return '$'+p.toFixed(5);
+  if(!p||isNaN(p)) return '—';
+  if(p>=1000) return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p>=1)    return '$'+p.toFixed(4);
+  if(p>=0.01) return '$'+p.toFixed(5);
   return '$'+p.toFixed(8);
 };
 const fmtB=n=>{
-  if(!n) return '—';
-  if(n>=1e12) return '$'+(n/1e12).toFixed(2)+'T';
-  if(n>=1e9)  return '$'+(n/1e9).toFixed(2)+'B';
-  if(n>=1e6)  return '$'+(n/1e6).toFixed(2)+'M';
-  return '$'+(n/1e3).toFixed(2)+'K';
+  if(!n||isNaN(n)) return '—';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+n.toFixed(0);
 };
 const sign=n=>n>=0?'+':'';
 const timeAgo=ms=>{
   const s=Math.floor((Date.now()-ms)/1000);
   if(s<60) return s+'s trước';
-  if(s<3600) return Math.floor(s/60)+'p trước';
+  if(s<3600) return Math.floor(s/60)+'m trước';
   if(s<86400) return Math.floor(s/3600)+'h trước';
   return Math.floor(s/86400)+'d trước';
 };
@@ -1004,18 +1004,19 @@ const timeAgo=ms=>{
 ═══════════════════════════════════════════════════ */
 let SYMBOLS=[];
 const coins={}, hist={}, logoMap={}, nameMap={}, colorMap={};
-const volHistory={}; // sym → last 24 vol snapshots for whale detection
-const rsiCache={};   // sym → {rsi, macd, bb, signal}
+const volHistory={};   // sym → rolling 24 snapshots
+const volBaseline={};  // sym → vol tại thời điểm load (baseline whale)
+const rsiCache={};     // sym → {rsi, macd, bb, signal, price, ts}
 
 let currentTab='all', currentPage=1;
 const PAGE_SIZE=100;
-let sortCol='vol', sortDir=1;
+let sortCol='vol', sortDir=1; // default: vol tăng dần
 
 const COLORS=['#e2761b','#6c86eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
 const STABLES=new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD','USDE','USDX','USDD','GUSD','FRAX','LUSD']);
 
 /* ═══════════════════════════════════════════════════
-   LOAD ALL COINS FROM BINANCE
+   LOAD ALL COINS FROM BINANCE 24HR TICKER
 ═══════════════════════════════════════════════════ */
 async function loadAllCoins(){
   try{
@@ -1033,66 +1034,83 @@ async function loadAllCoins(){
     SYMBOLS=filtered.map(t=>t.symbol);
     filtered.forEach(t=>{
       const base=t.symbol.replace('USDT','');
-      coins[t.symbol]={price:parseFloat(t.lastPrice)||0,prev:parseFloat(t.lastPrice)||0,change24h:parseFloat(t.priceChangePercent)||0,high:parseFloat(t.highPrice)||0,low:parseFloat(t.lowPrice)||0,vol:parseFloat(t.quoteVolume)||0};
+      coins[t.symbol]={
+        price:parseFloat(t.lastPrice)||0,
+        prev:parseFloat(t.lastPrice)||0,
+        change24h:parseFloat(t.priceChangePercent)||0,
+        high:parseFloat(t.highPrice)||0,
+        low:parseFloat(t.lowPrice)||0,
+        vol:parseFloat(t.quoteVolume)||0
+      };
       hist[t.symbol]=[];
       colorMap[base]=COLORS[base.charCodeAt(0)%COLORS.length];
       nameMap[base]=base;
       volHistory[t.symbol]=[parseFloat(t.quoteVolume)||0];
+      volBaseline[t.symbol]=parseFloat(t.quoteVolume)||0; // baseline cho whale
     });
-    sortCol='vol'; sortDir=1; render(); // sort by volume asc
-    initVolBaseline();
+
+    sortCol='vol'; sortDir=1;
+    render();
     loadCoinGeckoLogos();
     connectWS();
     updateWhaleTracker();
   }catch(e){
-    document.getElementById('tableArea').innerHTML='<div class="state-box"><div style="font-size:24px">⚠️</div><div>Không thể tải dữ liệu Binance</div></div>';
+    const el=document.getElementById('tableArea');
+    if(el) el.innerHTML='<div class="state-box"><div style="font-size:24px">⚠️</div><div>Không thể tải dữ liệu từ Binance. Vui lòng thử lại.</div></div>';
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   COINGECKO LOGOS (2 trang, delay 3s, bắt 429)
+═══════════════════════════════════════════════════ */
 async function loadCoinGeckoLogos(){
-  /* Chỉ tải 2 trang (500 coin top) để tránh 429 rate limit.
-     Delay 3s giữa các request. Nếu gặp 429 → dừng hẳn. */
   for(let page=1;page<=2;page++){
     try{
       if(page>1) await new Promise(r=>setTimeout(r,3000));
-      const res=await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false`,{signal:AbortSignal.timeout(10000)});
-      if(res.status===429){console.warn('CoinGecko rate limit — dừng tải logo');break;}
+      const res=await fetch(
+        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false`,
+        {signal:AbortSignal.timeout(12000)}
+      );
+      if(res.status===429){console.warn('CoinGecko 429 — dừng logo');break;}
       if(!res.ok) break;
       const data=await res.json();
       if(!Array.isArray(data)||!data.length) break;
       data.forEach(c=>{
         const sym=c.symbol.toUpperCase();
-        if(!logoMap[sym]){logoMap[sym]=c.image;nameMap[sym]=c.name;}
+        if(!logoMap[sym]){logoMap[sym]=c.image; nameMap[sym]=c.name;}
       });
       render(); renderChartCoinList();
-    }catch(e){
-      console.warn('loadCoinGeckoLogos error page',page,e.message);
-      break;
-    }
+    }catch(e){console.warn('Logo page',page,'error:',e.message); break;}
   }
 }
 
 /* ═══════════════════════════════════════════════════
-   WEBSOCKET (multi-connection)
+   WEBSOCKET — multi-connection, auto-reconnect
 ═══════════════════════════════════════════════════ */
 const wsConns=[];
 let reconnTimer=null;
+
 function connectWS(){
   wsConns.forEach(w=>{try{w.close();}catch(e){}});
   wsConns.length=0;
   const CHUNK=180;
   let openCount=0;
+
   for(let i=0;i<SYMBOLS.length;i+=CHUNK){
     const chunk=SYMBOLS.slice(i,i+CHUNK);
     const streams=chunk.map(s=>s.toLowerCase()+'@ticker').join('/');
     const sock=new WebSocket('wss://stream.binance.com:9443/stream?streams='+streams);
+
     sock.onopen=()=>{
       openCount++;
       const total=Math.ceil(SYMBOLS.length/CHUNK);
-      document.getElementById('wsStatus').textContent=`🟢 ${openCount}/${total} kết nối`;
-      document.getElementById('sLastUpdate').textContent='Dữ liệu thời gian thực từ Binance';
+      const wsEl=document.getElementById('wsStatus');
+      if(wsEl) wsEl.textContent=`🟢 ${openCount}/${total} kết nối`;
+      const luEl=document.getElementById('sLastUpdate');
+      if(luEl) luEl.textContent='Dữ liệu thời gian thực từ Binance';
       clearTimeout(reconnTimer);
     };
+
     sock.onmessage=(evt)=>{
       try{
         const d=JSON.parse(evt.data).data;
@@ -1106,24 +1124,36 @@ function connectWS(){
         c.vol=parseFloat(d.q)||0;
         const h=hist[d.s]||(hist[d.s]=[]);
         h.push(c.price); if(h.length>30) h.shift();
-        // Update chart price if this is the selected coin
+        tickerNeedsUpdate=true;
+
+        // Realtime chart update cho coin đang xem
         if(d.s===selectedSym){
           updateChartHeader();
-          // Cập nhật candle cuối trên chart realtime
           if(candleSeries&&c.price){
             try{
               const now=Math.floor(Date.now()/1000);
-              // Snap về đầu nến hiện tại theo timeframe
               const tfSecs={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400};
               const tf=tfSecs[currentTf]||60;
-              const candleTime=now-now%tf;
-              candleSeries.update({time:candleTime,open:c.prev||c.price,high:Math.max(c.high||c.price,c.price),low:Math.min(c.low||c.price,c.price),close:c.price});
+              const candleTime=now-(now%tf);
+              candleSeries.update({
+                time:candleTime,
+                open:c.prev||c.price,
+                high:Math.max(c.high||c.price,c.price),
+                low:Math.min(c.low||c.price,c.price),
+                close:c.price
+              });
             }catch(e){}
           }
         }
+        // Kiểm tra alert
+        checkAlertForSym(d.s);
       }catch(e){}
     };
-    sock.onerror=()=>{document.getElementById('wsStatus').textContent='🔴 Lỗi kết nối';};
+
+    sock.onerror=()=>{
+      const el=document.getElementById('wsStatus');
+      if(el) el.textContent='🔴 Lỗi kết nối';
+    };
     sock.onclose=()=>{
       openCount=Math.max(0,openCount-1);
       clearTimeout(reconnTimer);
@@ -1134,7 +1164,7 @@ function connectWS(){
 }
 
 /* ═══════════════════════════════════════════════════
-   SPARKLINE
+   SPARKLINE SVG
 ═══════════════════════════════════════════════════ */
 function sparkSVG(sym){
   const h=hist[sym]||[];
@@ -1150,12 +1180,13 @@ function sparkSVG(sym){
 ═══════════════════════════════════════════════════ */
 function logoHTML(base,size=28){
   const color=colorMap[base]||'#00d4ff';
-  if(logoMap[base]) return `<img class="coin-logo" src="${logoMap[base]}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-logo-fb" style="display:none;width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color}">${base[0]}</div>`;
-  return `<div class="coin-logo-fb" style="width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color};font-size:${Math.round(size*.45)}px">${base[0]}</div>`;
+  const fbStyle=`width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color};font-size:${Math.round(size*.45)}px`;
+  if(logoMap[base]) return `<img class="coin-logo" src="${logoMap[base]}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
+  return `<div class="coin-logo-fb" style="${fbStyle}">${base[0]}</div>`;
 }
 
 /* ═══════════════════════════════════════════════════
-   RENDER MARKET TABLE
+   RENDER BẢNG THỊ TRƯỜNG
 ═══════════════════════════════════════════════════ */
 function render(){
   if(!SYMBOLS.length) return;
@@ -1166,23 +1197,22 @@ function render(){
   else if(currentTab==='losers') list=list.filter(c=>c.change24h<0);
   if(q) list=list.filter(c=>(nameMap[c.base]||'').toLowerCase().includes(q)||c.base.toLowerCase().includes(q));
 
-  // Sorting
   list.sort((a,b)=>{
     let av=a[sortCol]??0, bv=b[sortCol]??0;
-    if(sortCol==='rsi'){av=rsiCache[a.sym]?.rsi??50;bv=rsiCache[b.sym]?.rsi??50;}
+    if(sortCol==='rsi'){av=rsiCache[a.sym]?.rsi??50; bv=rsiCache[b.sym]?.rsi??50;}
     return sortDir*(bv-av);
   });
 
-  // Stats
+  // Stats header
   const all=SYMBOLS.map(s=>({base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
   if(all.length){
     const sorted=[...all].sort((a,b)=>b.change24h-a.change24h);
-    const top=sorted[0],bot=sorted[sorted.length-1];
-    const up=all.filter(c=>c.change24h>0.01).length,dn=all.filter(c=>c.change24h<-0.01).length;
+    const top=sorted[0], bot=sorted[sorted.length-1];
+    const up=all.filter(c=>c.change24h>0.01).length;
+    const dn=all.filter(c=>c.change24h<-0.01).length;
     const tv=all.reduce((s,c)=>s+c.vol,0);
     const btc=all.find(c=>c.base==='BTC');
-    // BTC dominance by volume: BTC vol / total vol (proxy, đơn giản & chính xác)
-    const btcVolDom=btc&&tv>0?(btc.vol/tv*100).toFixed(1)+'%':'—';
+    const btcDom=btc&&tv>0?((btc.vol/tv)*100).toFixed(1)+'%':'—';
     document.getElementById('sCoinCount').textContent=all.length+' Coin';
     document.getElementById('sTopGain').textContent=`+${(top.change24h||0).toFixed(2)}%`;
     document.getElementById('sTopGainName').textContent=nameMap[top.base]||top.base;
@@ -1190,18 +1220,21 @@ function render(){
     document.getElementById('sTopLossName').textContent=nameMap[bot.base]||bot.base;
     document.getElementById('sRatio').textContent=`${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`;
     document.getElementById('hVol').textContent=fmtB(tv);
-    document.getElementById('hBtcDom').textContent=btcVolDom;
+    document.getElementById('hBtcDom').textContent=btcDom;
     document.getElementById('hCount').textContent=all.length;
     document.getElementById('countBadge').textContent=list.length+' coins';
   }
   updateTicker();
 
-  const totalPages=Math.ceil(list.length/PAGE_SIZE);
+  const totalPages=Math.ceil(list.length/PAGE_SIZE)||1;
   if(currentPage>totalPages) currentPage=1;
   const start=(currentPage-1)*PAGE_SIZE;
   const pageList=list.slice(start,start+PAGE_SIZE);
 
-  if(!pageList.length){document.getElementById('tableArea').innerHTML='<div class="state-box"><div>Không tìm thấy kết quả</div></div>';return;}
+  if(!pageList.length){
+    document.getElementById('tableArea').innerHTML='<div class="state-box"><div>Không tìm thấy kết quả</div></div>';
+    return;
+  }
 
   const thSort=(col,label)=>{
     const active=sortCol===col?'sort-active':'';
@@ -1219,7 +1252,7 @@ function render(){
       <td><span class="rank">${start+i+1}</span></td>
       <td><div class="coin-cell">${logoHTML(c.base)}<div><div class="cn">${nameMap[c.base]||c.base}</div><div class="cs">${c.base}</div></div></div></td>
       <td class="r"><span class="pv ${fl}">${fmtP(c.price)}</span></td>
-      <td class="r"><span class="badge ${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></td>
+      <td class="r"><span class="badge ${cls}">${sign(c.change24h)}${(c.change24h||0).toFixed(2)}%</span></td>
       <td class="r hide-sm"><span class="num">${fmtB(c.vol)}</span></td>
       <td class="r hide-sm">${rsiBadge}</td>
       <td class="r hide-sm">${sigBadge}</td>
@@ -1227,10 +1260,9 @@ function render(){
     </tr>`;
   }).join('');
 
-  // Pagination
   let pgHtml='';
   if(totalPages>1){
-    const maxB=7,sp=Math.max(1,currentPage-Math.floor(maxB/2)),ep=Math.min(totalPages,sp+maxB-1);
+    const maxB=7,sp=Math.max(1,currentPage-3),ep=Math.min(totalPages,sp+maxB-1);
     pgHtml='<div class="pagination">';
     pgHtml+=`<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
     if(sp>1) pgHtml+=`<button class="pg-btn" onclick="goPage(1)">1</button>${sp>2?'<span class="pg-info">…</span>':''}`;
@@ -1258,22 +1290,19 @@ function render(){
 
 function sortBy(col){
   if(sortCol===col) sortDir*=-1;
-  else{sortCol=col;sortDir=-1;}
+  else{sortCol=col; sortDir=-1;}
   currentPage=1; render();
 }
-
 function goPage(p){
-  const tot=Math.ceil(SYMBOLS.filter(s=>coins[s]&&coins[s].price>0).length/PAGE_SIZE);
+  const tot=Math.ceil(SYMBOLS.filter(s=>coins[s]?.price>0).length/PAGE_SIZE)||1;
   if(p<1||p>tot) return;
   currentPage=p; render();
   document.querySelector('.tbl-scroll')?.scrollTo(0,0);
 }
-
 function setTab(el,tab){
   document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); currentTab=tab; currentPage=1; render();
 }
-
 function onSearch(){
   const val=document.getElementById('searchInput').value;
   document.getElementById('clearBtn').classList.toggle('visible',val.length>0);
@@ -1285,119 +1314,129 @@ function clearSearch(){
   currentPage=1; render();
 }
 
+/* ═══════════════════════════════════════════════════
+   TICKER (throttle — chỉ re-render khi có thay đổi)
+═══════════════════════════════════════════════════ */
 let tickerNeedsUpdate=true;
 function updateTicker(){
+  if(!tickerNeedsUpdate) return;
   const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
-  if(!list.length||!tickerNeedsUpdate) return;
+  if(!list.length) return;
   tickerNeedsUpdate=false;
   const html=list.map(c=>{
     const cls=c.change24h>=0?'tup':'tdn';
     const lg=logoMap[c.base]?`<img src="${logoMap[c.base]}" width="14" height="14" style="border-radius:50%;object-fit:cover" loading="lazy">`:'';
-    return `<span class="ticker-item">${lg}<span class="tsym">${c.base}</span><span>${fmtP(c.price)}</span><span class="${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></span>`;
+    return `<span class="ticker-item">${lg}<span class="tsym">${c.base}</span><span>${fmtP(c.price)}</span><span class="${cls}">${sign(c.change24h)}${(c.change24h||0).toFixed(2)}%</span></span>`;
   }).join('');
-  document.getElementById('ticker').innerHTML=html+html;
+  const el=document.getElementById('ticker');
+  if(el) el.innerHTML=html+html;
 }
-// Reset ticker update flag mỗi 10s để refresh giá mới
 setInterval(()=>{tickerNeedsUpdate=true;},10000);
 
 /* ═══════════════════════════════════════════════════
-   FEAR & GREED
+   FEAR & GREED INDEX
 ═══════════════════════════════════════════════════ */
 async function loadFearGreed(){
   try{
-    const res=await fetch('https://api.alternative.me/fng/?limit=4');
-    if(!res.ok) throw new Error();
+    const res=await fetch('https://api.alternative.me/fng/?limit=4',{signal:AbortSignal.timeout(8000)});
+    if(!res.ok) throw new Error('FNG '+res.status);
     const data=await res.json();
     const items=data.data||[];
+    if(!items.length) throw new Error('empty');
     const cur=items[0];
     const val=parseInt(cur.value);
-    // Dịch label sang tiếng Việt
-    const labelMap={'Extreme Fear':'Cực Kỳ Sợ Hãi','Fear':'Sợ Hãi','Neutral':'Trung Lập','Greed':'Tham Lam','Extreme Greed':'Cực Kỳ Tham Lam'};
+    const labelMap={
+      'Extreme Fear':'Cực Kỳ Sợ Hãi',
+      'Fear':'Sợ Hãi',
+      'Neutral':'Trung Lập',
+      'Greed':'Tham Lam',
+      'Extreme Greed':'Cực Kỳ Tham Lam'
+    };
     const label=labelMap[cur.value_classification]||cur.value_classification;
-
-    // Color based on value
     const col=val<=25?'#ff3d57':val<=45?'#fb923c':val<=55?'#f59e0b':val<=75?'#84cc16':'#00e676';
+
     document.getElementById('fgNum').textContent=val;
     document.getElementById('fgNum').style.color=col;
     document.getElementById('fgLabel').textContent=label;
     document.getElementById('fgLabel').style.color=col;
 
-    // Gauge needle rotation: val 0→-90deg, val 100→+90deg
+    // Gauge needle: val 0→-90°, val 100→+90°
     const angle=-90+(val/100)*180;
     document.getElementById('fgNeedle').setAttribute('transform',`rotate(${angle},80,75)`);
-    // Arc fill
     const arcLen=220*(val/100);
     document.getElementById('fgArc').setAttribute('stroke-dashoffset',220-arcLen);
 
-    // History
+    // Lịch sử 3 ngày
     const histHtml=items.slice(1,4).map(h=>{
       const v=parseInt(h.value);
-      const c=v<=25?'#ff3d57':v<=45?'#fb923c':v<=55?'#f59e0b':v<=75?'#84cc16':'#00e676';
+      const c2=v<=25?'#ff3d57':v<=45?'#fb923c':v<=55?'#f59e0b':v<=75?'#84cc16':'#00e676';
       const ago=Math.round((Date.now()/1000-parseInt(h.timestamp))/86400);
-      return `<div class="fg-hist-item"><div class="fg-hist-val" style="color:${c}">${v}</div><div class="fg-hist-lbl">${ago}d trước</div></div>`;
+      return `<div class="fg-hist-item"><div class="fg-hist-val" style="color:${c2}">${v}</div><div class="fg-hist-lbl">${ago}d trước</div></div>`;
     }).join('');
     document.getElementById('fgHistory').innerHTML=histHtml;
   }catch(e){
-    document.getElementById('fgLabel').textContent='Không thể tải';
+    const el=document.getElementById('fgLabel');
+    if(el) el.textContent='Không thể tải';
   }
 }
 
 /* ═══════════════════════════════════════════════════
-   WHALE TRACKER — detect volume spikes
+   WHALE TRACKER — phát hiện volume đột biến
 ═══════════════════════════════════════════════════ */
-/* Lưu snapshot volume tại thời điểm load để làm baseline whale detection */
-const volBaseline={}; // sym → vol lúc mới load (từ REST 24h)
-function initVolBaseline(){SYMBOLS.forEach(s=>{if(coins[s]?.vol&&!volBaseline[s]) volBaseline[s]=coins[s].vol;});}
-
 function updateWhaleTracker(){
-  // So sánh vol WS realtime với baseline vol lúc mới load
-  // Nếu WS chưa cập nhật đủ, dùng change24h làm tín hiệu phụ
+  // Dùng volBaseline (snapshot lúc load) để so sánh với vol WS hiện tại
+  // Vol Binance WS = quoteVolume 24h rolling → so sánh với vol 24h ban đầu
   const candidates=SYMBOLS.map(s=>{
-    const c=coins[s];if(!c||!c.vol) return null;
+    const c=coins[s]; if(!c||!c.vol) return null;
     const base=s.replace('USDT','');
     const baseline=volBaseline[s]||c.vol;
-    // vol từ WS là vol 24h rolling — so sánh với baseline từ REST
     const mult=baseline>0?c.vol/baseline:1;
-    // Tín hiệu phụ: change24h tuyệt đối lớn + vol lớn
     const absChg=Math.abs(c.change24h||0);
-    const score=mult+(absChg>10?0.5:absChg>5?0.2:0);
-    return{sym:s,base,vol:c.vol,mult:score,rawMult:mult,change24h:c.change24h,absChg};
-  }).filter(c=>c&&(c.mult>1.15||c.absChg>8)&&c.vol>100000)
-    .sort((a,b)=>b.mult-a.mult).slice(0,15);
+    // Kết hợp vol spike + biến động giá lớn
+    const score=mult+(absChg>15?0.8:absChg>10?0.5:absChg>5?0.2:0);
+    if(score<1.1&&absChg<5) return null; // lọc bỏ coin bình thường
+    return{sym:s,base,vol:c.vol,score,mult,change24h:c.change24h,absChg};
+  }).filter(Boolean)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,15);
 
+  const el=document.getElementById('whaleList');
+  if(!el) return;
   if(!candidates.length){
-    document.getElementById('whaleList').innerHTML='<div class="news-loading"><div style="font-size:20px">🔍</div><div>Chưa phát hiện biến động bất thường</div></div>';
+    el.innerHTML='<div class="news-loading"><div style="font-size:20px">🔍</div><div>Chưa phát hiện biến động bất thường</div></div>';
     return;
   }
-
-  const html=candidates.map(c=>{
-    const cls=c.mult>=5?'mega':c.mult>=3?'extreme':'high';
-    const icon=c.mult>=5?'🚨':c.mult>=3?'🐋':'📊';
-    const dir=c.change24h>=0?'<span style="color:var(--green)">▲</span>':'<span style="color:var(--red)">▼</span>';
+  el.innerHTML=candidates.map(c=>{
+    const icon=c.score>=5?'🚨':c.score>=3?'🐋':'📊';
+    const dir=c.change24h>=0?`<span style="color:var(--green)">▲</span>`:`<span style="color:var(--red)">▼</span>`;
+    const multLabel=c.mult>1.05?`×${c.mult.toFixed(2)}`:'~1.0';
+    const cls=c.score>=5?'mega':c.score>=3?'extreme':'high';
     return `<div class="whale-item">
       <div class="whale-icon">${icon}</div>
       <div>
-        <div class="whale-sym">${logoHTML(c.base,18).replace(/width="\d+"/g,'width="18"').replace(/height="\d+"/g,'height="18"')} ${c.base} ${dir}</div>
+        <div class="whale-sym">${logoHTML(c.base,18)} ${c.base} ${dir}</div>
         <div class="whale-vol">${fmtB(c.vol)}</div>
       </div>
       <div style="text-align:right">
-        <span class="whale-mult ${cls}">×${c.mult.toFixed(1)}</span>
-        <div class="whale-time">${c.change24h.toFixed(2)}%</div>
+        <span class="whale-mult ${cls}">${multLabel}</span>
+        <div class="whale-time">${(c.change24h||0).toFixed(2)}%</div>
       </div>
     </div>`;
   }).join('');
-  document.getElementById('whaleList').innerHTML=html;
 
-  // Update vol history
+  // Cập nhật baseline định kỳ (mỗi 30 phút) để phát hiện spike mới
   SYMBOLS.forEach(s=>{
     if(!volHistory[s]) volHistory[s]=[];
-    if(coins[s]?.vol){volHistory[s].push(coins[s].vol); if(volHistory[s].length>24) volHistory[s].shift();}
+    if(coins[s]?.vol){
+      volHistory[s].push(coins[s].vol);
+      if(volHistory[s].length>48) volHistory[s].shift();
+    }
   });
 }
 setInterval(updateWhaleTracker,30000);
 
 /* ═══════════════════════════════════════════════════
-   TECHNICAL INDICATORS (calculated from Binance klines)
+   TECHNICAL INDICATORS — RSI, MACD, Bollinger Bands
 ═══════════════════════════════════════════════════ */
 function calcRSI(closes,period=14){
   if(closes.length<period+1) return 50;
@@ -1406,7 +1445,7 @@ function calcRSI(closes,period=14){
     const d=closes[i]-closes[i-1];
     if(d>0) gains+=d; else losses-=d;
   }
-  let avgG=gains/period,avgL=losses/period;
+  let avgG=gains/period, avgL=losses/period;
   for(let i=period+1;i<closes.length;i++){
     const d=closes[i]-closes[i-1];
     avgG=(avgG*(period-1)+(d>0?d:0))/period;
@@ -1417,20 +1456,24 @@ function calcRSI(closes,period=14){
 }
 
 function calcEMA(data,period){
+  if(data.length<period) return data.map(()=>null);
   const k=2/(period+1);
   let ema=data.slice(0,period).reduce((a,b)=>a+b,0)/period;
   const result=[...Array(period-1).fill(null),ema];
-  for(let i=period;i<data.length;i++){ema=data[i]*k+ema*(1-k);result.push(ema);}
+  for(let i=period;i<data.length;i++){ema=data[i]*k+ema*(1-k); result.push(ema);}
   return result;
 }
 
 function calcMACD(closes){
-  const ema12=calcEMA(closes,12),ema26=calcEMA(closes,26);
-  const macdLine=closes.map((_,i)=>(ema12[i]!==null&&ema26[i]!==null)?ema12[i]-ema26[i]:null).filter(v=>v!==null);
-  const signal=calcEMA(macdLine,9);
-  const hist=macdLine.map((v,i)=>signal[i]!==null?v-signal[i]:null);
+  const ema12=calcEMA(closes,12), ema26=calcEMA(closes,26);
+  const macdLine=closes.map((_,i)=>(ema12[i]!=null&&ema26[i]!=null)?ema12[i]-ema26[i]:null).filter(v=>v!=null);
+  if(macdLine.length<9) return{macd:0,signal:0,hist:0,cross:'none'};
+  const sigLine=calcEMA(macdLine,9);
+  const histLine=macdLine.map((v,i)=>sigLine[i]!=null?v-sigLine[i]:null);
   const last=macdLine.length-1;
-  return{macd:macdLine[last]||0,signal:signal[last]||0,hist:hist[last]||0,cross:hist[last]>0&&hist[last-1]<=0?'bull':hist[last]<0&&hist[last-1]>=0?'bear':'none'};
+  const cross=histLine[last]>0&&histLine[last-1]!=null&&histLine[last-1]<=0?'bull':
+               histLine[last]<0&&histLine[last-1]!=null&&histLine[last-1]>=0?'bear':'none';
+  return{macd:macdLine[last]||0, signal:sigLine[last]||0, hist:histLine[last]||0, cross};
 }
 
 function calcBB(closes,period=20,mult=2){
@@ -1438,67 +1481,62 @@ function calcBB(closes,period=20,mult=2){
   const slice=closes.slice(-period);
   const mean=slice.reduce((a,b)=>a+b,0)/period;
   const std=Math.sqrt(slice.reduce((a,b)=>a+(b-mean)**2,0)/period);
-  return{upper:mean+mult*std,middle:mean,lower:mean-mult*std};
+  return{upper:mean+mult*std, middle:mean, lower:mean-mult*std};
 }
 
 async function fetchIndicators(sym){
+  // Dùng cache nếu < 5 phút tuổi
+  const cached=rsiCache[sym];
+  if(cached&&cached.ts&&Date.now()-cached.ts<5*60*1000) return cached;
   try{
-    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=100`);
-    if(!res.ok) return null;
+    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=100`,
+      {signal:AbortSignal.timeout(8000)});
+    if(!res.ok) return cached||null;
     const data=await res.json();
+    if(!data||data.length<30) return cached||null;
     const closes=data.map(k=>parseFloat(k[4]));
     const rsi=calcRSI(closes);
     const macd=calcMACD(closes);
     const bb=calcBB(closes);
     const price=closes[closes.length-1];
-
-    let signal='hold';
     let score=0;
     if(rsi<30) score+=2; else if(rsi>70) score-=2;
     if(macd.cross==='bull') score+=2; else if(macd.cross==='bear') score-=2;
     else if(macd.hist>0) score+=1; else score-=1;
     if(price<bb.lower) score+=1; else if(price>bb.upper) score-=1;
-    if(score>=2) signal='buy'; else if(score<=-2) signal='sell';
-
-    rsiCache[sym]={rsi,macd,bb,signal,price};
-    return{rsi,macd,bb,signal,price};
-  }catch(e){return null;}
+    const signal=score>=2?'buy':score<=-2?'sell':'hold';
+    const result={rsi,macd,bb,signal,price,ts:Date.now()};
+    rsiCache[sym]=result;
+    return result;
+  }catch(e){return cached||null;}
 }
 
-/* Batch fetch indicators for top 50 coins (background) */
 async function batchFetchIndicators(){
   const top=SYMBOLS.slice(0,50);
   for(let i=0;i<top.length;i++){
     if(i>0) await new Promise(r=>setTimeout(r,200));
     await fetchIndicators(top[i]);
-    if(i%10===9) render(); // re-render every 10
+    if(i%10===9) render();
   }
 }
 
 /* ═══════════════════════════════════════════════════
    CHART PAGE
 ═══════════════════════════════════════════════════ */
-let selectedSym=null, lwChart=null, candleSeries=null, currentTf='1m';
+let selectedSym=null, lwChart=null, candleSeries=null, currentTf='1h';
 
 function renderChartCoinList(){
   const q=(document.getElementById('chartSearch')?.value||'').toLowerCase();
   const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]}))
     .filter(c=>c.price>0&&(!q||c.base.toLowerCase().includes(q)||(nameMap[c.base]||'').toLowerCase().includes(q)))
     .slice(0,200);
-
   const html=list.map(c=>{
     const cls=c.sym===selectedSym?' active':'';
     const chgCol=c.change24h>=0?'var(--green)':'var(--red)';
     return `<div class="cli${cls}" onclick="openChart('${c.sym}')">
       ${logoHTML(c.base,24)}
-      <div class="cli-info">
-        <div class="cli-sym">${c.base}</div>
-        <div class="cli-name">${nameMap[c.base]||c.base}</div>
-      </div>
-      <div class="cli-price">
-        <div class="cli-pv">${fmtP(c.price)}</div>
-        <div class="cli-chg" style="color:${chgCol}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</div>
-      </div>
+      <div class="cli-info"><div class="cli-sym">${c.base}</div><div class="cli-name">${nameMap[c.base]||c.base}</div></div>
+      <div class="cli-price"><div class="cli-pv">${fmtP(c.price)}</div><div class="cli-chg" style="color:${chgCol}">${sign(c.change24h)}${(c.change24h||0).toFixed(2)}%</div></div>
     </div>`;
   }).join('');
   const el=document.getElementById('chartCoinList');
@@ -1510,66 +1548,63 @@ function filterChartList(){renderChartCoinList();}
 async function openChart(sym){
   selectedSym=sym;
   const base=sym.replace('USDT','');
-  showPage('chart', document.querySelector('[onclick*="chart"]'));
-
-  // Update header
-  const c=coins[sym]||{};
+  showPage('chart',document.querySelector('[onclick*="\'chart\'"]'));
   document.getElementById('chartCoinName').textContent=nameMap[base]||base;
   document.getElementById('chartCoinSym').textContent=base+'/USDT';
   updateChartHeader();
-
-  // Logo
   if(logoMap[base]){
     const img=document.getElementById('chartLogo');
-    img.src=logoMap[base]; img.style.display='block';
-    document.getElementById('chartLogoFb').style.display='none';
-  } else {
-    document.getElementById('chartLogo').style.display='none';
+    if(img){img.src=logoMap[base]; img.style.display='block';}
     const fb=document.getElementById('chartLogoFb');
-    fb.style.display='flex'; fb.textContent=base[0];
-    fb.style.background=`${colorMap[base]||'#00d4ff'}22`;
-    fb.style.color=colorMap[base]||'#00d4ff';
+    if(fb) fb.style.display='none';
+  }else{
+    const img=document.getElementById('chartLogo');
+    if(img) img.style.display='none';
+    const fb=document.getElementById('chartLogoFb');
+    if(fb){fb.style.display='flex'; fb.textContent=base[0]; fb.style.background=`${colorMap[base]||'#00d4ff'}22`; fb.style.color=colorMap[base]||'#00d4ff';}
   }
-
   renderChartCoinList();
-  await loadCandleData(sym, currentTf);
+  await loadCandleData(sym,currentTf);
   await loadChartIndicators(sym);
 }
 
 function updateChartHeader(){
   if(!selectedSym) return;
   const c=coins[selectedSym]||{};
-  document.getElementById('chartPrice').textContent=fmtP(c.price);
+  const prEl=document.getElementById('chartPrice');
+  if(prEl) prEl.textContent=fmtP(c.price);
   const chgEl=document.getElementById('chartChg');
-  chgEl.textContent=`${sign(c.change24h)}${(c.change24h||0).toFixed(2)}%`;
-  chgEl.style.color=c.change24h>=0?'var(--green)':'var(--red)';
+  if(chgEl){
+    chgEl.textContent=`${sign(c.change24h||0)}${(c.change24h||0).toFixed(2)}%`;
+    chgEl.style.color=(c.change24h||0)>=0?'var(--green)':'var(--red)';
+  }
 }
 
-async function loadCandleData(sym, tf){
+async function loadCandleData(sym,tf){
   const loading=document.getElementById('chartLoading');
-  loading.style.display='flex'; loading.innerHTML='<div class="chart-spinner"></div><span>Đang tải biểu đồ...</span>';
-
+  if(loading){loading.style.display='flex'; loading.innerHTML='<div class="chart-spinner"></div><span>Đang tải biểu đồ...</span>';}
   try{
-    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=200`);
-    if(!res.ok) throw new Error();
+    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=300`,
+      {signal:AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error('klines '+res.status);
     const data=await res.json();
-    const candles=data.map(k=>({time:Math.floor(parseInt(k[0])/1000),open:parseFloat(k[1]),high:parseFloat(k[2]),low:parseFloat(k[3]),close:parseFloat(k[4])}));
-
+    if(!data||!data.length) throw new Error('empty klines');
+    const candles=data.map(k=>({
+      time:Math.floor(parseInt(k[0])/1000),
+      open:parseFloat(k[1]),high:parseFloat(k[2]),
+      low:parseFloat(k[3]),close:parseFloat(k[4])
+    }));
     const container=document.getElementById('chartContainer');
-
-    // Destroy old chart
     if(lwChart){try{lwChart.remove();}catch(e){} lwChart=null; candleSeries=null;}
-    container.innerHTML='';
-
+    if(container) container.innerHTML='';
     lwChart=LightweightCharts.createChart(container,{
       layout:{background:{color:'#0c1118'},textColor:'#94a3b8'},
       grid:{vertLines:{color:'rgba(99,179,237,.04)'},horzLines:{color:'rgba(99,179,237,.04)'}},
       crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
       rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
       timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true,secondsVisible:tf==='1m'||tf==='5m'},
-      width:container.clientWidth, height:container.clientHeight||400,
+      width:container.clientWidth,height:container.clientHeight||400,
     });
-
     candleSeries=lwChart.addCandlestickSeries({
       upColor:'#00e676',downColor:'#ff3d57',
       borderUpColor:'#00e676',borderDownColor:'#ff3d57',
@@ -1577,63 +1612,63 @@ async function loadCandleData(sym, tf){
     });
     candleSeries.setData(candles);
     lwChart.timeScale().fitContent();
-
-    // Responsive resize
     new ResizeObserver(()=>{
-      if(lwChart) lwChart.applyOptions({width:container.clientWidth,height:container.clientHeight||400});
+      if(lwChart&&container) lwChart.applyOptions({width:container.clientWidth,height:container.clientHeight||400});
     }).observe(container);
-
-    loading.style.display='none';
+    if(loading) loading.style.display='none';
   }catch(e){
-    loading.innerHTML='<span>Không thể tải dữ liệu biểu đồ</span>';
+    if(loading) loading.innerHTML='<span>⚠️ Không thể tải biểu đồ: '+e.message+'</span>';
   }
 }
 
 async function loadChartIndicators(sym){
   const ind=await fetchIndicators(sym);
   if(!ind) return;
-  const {rsi,macd,bb,signal,price}=ind;
-
+  const{rsi,macd,bb,signal,price}=ind;
   // RSI
-  document.getElementById('rsiVal').textContent=rsi.toFixed(2);
-  document.getElementById('rsiVal').style.color=rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--gold)';
-  document.getElementById('rsiBar').style.width=rsi+'%';
-  document.getElementById('rsiBar').style.background=rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--gold)';
-  const rsiSig=rsi>70?'sell':rsi<30?'buy':'hold';
-  document.getElementById('rsiSignal').className=`ind-signal ${rsiSig}`;
-  document.getElementById('rsiSignal').textContent=rsi>70?'⚠️ RSI Quá Mua — Cân nhắc bán':rsi<30?'✅ RSI Quá Bán — Cân nhắc mua':'⏸ RSI Trung Lập';
-
+  const rsiEl=document.getElementById('rsiVal');
+  if(rsiEl){rsiEl.textContent=rsi.toFixed(2); rsiEl.style.color=rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--gold)';}
+  const rsiBar=document.getElementById('rsiBar');
+  if(rsiBar){rsiBar.style.width=rsi+'%'; rsiBar.style.background=rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--gold)';}
+  const rsiSig=document.getElementById('rsiSignal');
+  if(rsiSig){
+    const rs=rsi>70?'sell':rsi<30?'buy':'hold';
+    rsiSig.className=`ind-signal ${rs}`;
+    rsiSig.textContent=rsi>70?'⚠️ RSI Quá Mua — Cân nhắc bán':rsi<30?'✅ RSI Quá Bán — Cân nhắc mua':'⏸ RSI Trung Lập';
+  }
   // MACD
-  document.getElementById('macdLine').textContent=macd.macd.toFixed(6);
-  document.getElementById('macdLine').style.color=macd.macd>0?'var(--green)':'var(--red)';
-  document.getElementById('macdSignal').textContent=macd.signal.toFixed(6);
-  document.getElementById('macdHist').textContent=macd.hist.toFixed(6);
-  document.getElementById('macdHist').style.color=macd.hist>0?'var(--green)':'var(--red)';
-  const macdSig=macd.cross==='bull'?'buy':macd.cross==='bear'?'sell':macd.hist>0?'buy':'sell';
-  document.getElementById('macdSignalBox').className=`ind-signal ${macdSig}`;
-  document.getElementById('macdSignalBox').textContent=macd.cross==='bull'?'✅ MACD Giao Cắt Lên — Tín Hiệu Mua':macd.cross==='bear'?'🔻 MACD Giao Cắt Xuống — Tín Hiệu Bán':macd.hist>0?'📈 MACD Động Lực Dương':'📉 MACD Động Lực Âm';
-
+  const mlEl=document.getElementById('macdLine'); if(mlEl){mlEl.textContent=macd.macd.toFixed(6); mlEl.style.color=macd.macd>0?'var(--green)':'var(--red)';}
+  const msEl=document.getElementById('macdSignal'); if(msEl) msEl.textContent=macd.signal.toFixed(6);
+  const mhEl=document.getElementById('macdHist'); if(mhEl){mhEl.textContent=macd.hist.toFixed(6); mhEl.style.color=macd.hist>0?'var(--green)':'var(--red)';}
+  const msbEl=document.getElementById('macdSignalBox');
+  if(msbEl){
+    const ms2=macd.cross==='bull'?'buy':macd.cross==='bear'?'sell':macd.hist>0?'buy':'sell';
+    msbEl.className=`ind-signal ${ms2}`;
+    msbEl.textContent=macd.cross==='bull'?'✅ MACD Giao Cắt Lên — Tín Hiệu Mua':macd.cross==='bear'?'🔻 MACD Giao Cắt Xuống — Tín Hiệu Bán':macd.hist>0?'📈 MACD Động Lực Dương':'📉 MACD Động Lực Âm';
+  }
   // BB
-  document.getElementById('bbUpper').textContent=fmtP(bb.upper);
-  document.getElementById('bbMiddle').textContent=fmtP(bb.middle);
-  document.getElementById('bbLower').textContent=fmtP(bb.lower);
-  document.getElementById('bbPrice').textContent=fmtP(price);
-  const bbSig=price>bb.upper?'sell':price<bb.lower?'buy':'hold';
-  document.getElementById('bbSignal').className=`ind-signal ${bbSig}`;
-  document.getElementById('bbSignal').textContent=price>bb.upper?'⚠️ BB: Giá trên dải trên — Quá mua':price<bb.lower?'✅ BB: Giá dưới dải dưới — Quá bán':'⏸ BB: Giá trong vùng bình thường';
-
+  const bbU=document.getElementById('bbUpper'); if(bbU) bbU.textContent=fmtP(bb.upper);
+  const bbM=document.getElementById('bbMiddle'); if(bbM) bbM.textContent=fmtP(bb.middle);
+  const bbL=document.getElementById('bbLower'); if(bbL) bbL.textContent=fmtP(bb.lower);
+  const bbP=document.getElementById('bbPrice'); if(bbP) bbP.textContent=fmtP(price);
+  const bbSEl=document.getElementById('bbSignal');
+  if(bbSEl){
+    const bs=price>bb.upper?'sell':price<bb.lower?'buy':'hold';
+    bbSEl.className=`ind-signal ${bs}`;
+    bbSEl.textContent=price>bb.upper?'⚠️ BB: Giá trên dải trên — Quá mua':price<bb.lower?'✅ BB: Giá dưới dải dưới — Quá bán':'⏸ BB: Giá trong vùng bình thường';
+  }
   // Overall
-  document.getElementById('overallSignal').className=`ind-signal ${signal}`;
-  document.getElementById('overallSignal').textContent=signal==='buy'?'✅ TÍN HIỆU TỔNG HỢP: MUA':signal==='sell'?'🔴 TÍN HIỆU TỔNG HỢP: BÁN':'⏸ TỔNG HỢP: TRUNG LẬP — CHỜ XEM';
+  const ovEl=document.getElementById('overallSignal');
+  if(ovEl){
+    ovEl.className=`ind-signal ${signal}`;
+    ovEl.textContent=signal==='buy'?'✅ TÍN HIỆU TỔNG HỢP: MUA':signal==='sell'?'🔴 TÍN HIỆU TỔNG HỢP: BÁN':'⏸ TỔNG HỢP: TRUNG LẬP — CHỜ XEM';
+  }
 }
 
-async function setTf(el, tf){
+async function setTf(el,tf){
   document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active'); currentTf=tf;
-  if(selectedSym){
-    await loadCandleData(selectedSym,tf);
-    await loadChartIndicators(selectedSym);
-  }
+  if(selectedSym){await loadCandleData(selectedSym,tf); await loadChartIndicators(selectedSym);}
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1645,17 +1680,17 @@ async function runScreener(){
   const fRsi=document.getElementById('fRsi').value;
   const fMacd=document.getElementById('fMacd').value;
   const fWhale=document.getElementById('fWhale').value;
-  const fName=document.getElementById('fName').value.toLowerCase().trim();
+  const fName=(document.getElementById('fName').value||'').toLowerCase().trim();
 
-  document.getElementById('screenerTable').innerHTML='<div class="state-box"><div class="spinner"></div><div>Đang lọc...</div></div>';
+  const tbl=document.getElementById('screenerTable');
+  if(tbl) tbl.innerHTML='<div class="state-box"><div class="spinner"></div><div>Đang lọc...</div></div>';
 
-  // Need RSI/MACD for filter — fetch top 100 if not cached
-  const needInd=fRsi!=='all'||fMacd!=='all';
-  if(needInd){
-    const uncached=SYMBOLS.slice(0,100).filter(s=>!rsiCache[s]);
-    for(let i=0;i<Math.min(uncached.length,60);i++){
+  // Fetch indicators nếu cần RSI/MACD filter
+  if(fRsi!=='all'||fMacd!=='all'){
+    const need=SYMBOLS.slice(0,100).filter(s=>!rsiCache[s]||Date.now()-rsiCache[s].ts>5*60*1000);
+    for(let i=0;i<Math.min(need.length,60);i++){
       if(i>0) await new Promise(r=>setTimeout(r,120));
-      await fetchIndicators(uncached[i]);
+      await fetchIndicators(need[i]);
     }
   }
 
@@ -1663,30 +1698,32 @@ async function runScreener(){
     const base=s.replace('USDT','');
     const c=coins[s]||{};
     const rc=rsiCache[s];
-    return{sym:s,base,name:nameMap[base]||base,...c,rsi:rc?.rsi,macdCross:rc?.macd?.cross,signal:rc?.signal,isWhale:(volHistory[s]?.length>1&&c.vol>(volHistory[s].slice(0,-1).reduce((a,b)=>a+b,0)/(volHistory[s].length-1))*2)};
+    const vh=volHistory[s]||[];
+    const baseline=volBaseline[s]||c.vol;
+    const isWhale=baseline>0&&c.vol>baseline*1.2;
+    return{sym:s,base,name:nameMap[base]||base,...c,rsi:rc?.rsi,macdCross:rc?.macd?.cross,signal:rc?.signal,isWhale};
   }).filter(c=>c.price>0);
 
-  // Apply filters
   if(fChg!=='all') list=list.filter(c=>{
-    if(fChg==='gt5') return c.change24h>5;
+    if(fChg==='gt5')  return c.change24h>5;
     if(fChg==='gt10') return c.change24h>10;
     if(fChg==='lt-5') return c.change24h<-5;
-    if(fChg==='lt-10') return c.change24h<-10;
+    if(fChg==='lt-10')return c.change24h<-10;
     if(fChg==='1to5') return c.change24h>=1&&c.change24h<=5;
     return true;
   });
   if(fVol!=='all') list=list.filter(c=>{
-    if(fVol==='gt1b') return c.vol>1e9;
-    if(fVol==='gt100m') return c.vol>1e8;
+    if(fVol==='gt1b')  return c.vol>1e9;
+    if(fVol==='gt100m')return c.vol>1e8;
     if(fVol==='gt10m') return c.vol>1e7;
-    if(fVol==='lt1m') return c.vol<1e6;
+    if(fVol==='lt1m')  return c.vol<1e6;
     return true;
   });
   if(fRsi!=='all') list=list.filter(c=>{
     if(!c.rsi) return false;
-    if(fRsi==='ob') return c.rsi>70;
-    if(fRsi==='os') return c.rsi<30;
-    if(fRsi==='neutral') return c.rsi>=30&&c.rsi<=70;
+    if(fRsi==='ob')     return c.rsi>70;
+    if(fRsi==='os')     return c.rsi<30;
+    if(fRsi==='neutral')return c.rsi>=30&&c.rsi<=70;
     return true;
   });
   if(fMacd!=='all') list=list.filter(c=>{
@@ -1699,20 +1736,22 @@ async function runScreener(){
   if(fName) list=list.filter(c=>c.base.toLowerCase().includes(fName)||c.name.toLowerCase().includes(fName));
 
   list.sort((a,b)=>b.vol-a.vol);
-  document.getElementById('scrCount').textContent=list.length;
+  const scrCnt=document.getElementById('scrCount');
+  if(scrCnt) scrCnt.textContent=list.length;
 
-  if(!list.length){document.getElementById('screenerTable').innerHTML='<div class="state-box"><div>Không có coin nào phù hợp với bộ lọc</div></div>';return;}
-
+  if(!list.length){
+    if(tbl) tbl.innerHTML='<div class="state-box"><div>Không có coin nào phù hợp với bộ lọc</div></div>';
+    return;
+  }
   const rows=list.map((c,i)=>{
     const cls=c.change24h>0?'up':'down';
     const rsiCls=c.rsi?(c.rsi>70?'rsi-ob':c.rsi<30?'rsi-os':'rsi-n'):'rsi-n';
     const sigCls=c.signal||'hold';
-    const whaleMark=c.isWhale?'🐋 ':'';
     return `<tr onclick="openChart('${c.sym}')" style="cursor:pointer">
       <td><span class="rank">${i+1}</span></td>
-      <td><div class="coin-cell">${logoHTML(c.base)}<div><div class="cn">${whaleMark}${c.name}</div><div class="cs">${c.base}</div></div></div></td>
+      <td><div class="coin-cell">${logoHTML(c.base)}<div><div class="cn">${c.isWhale?'🐋 ':''}${c.name}</div><div class="cs">${c.base}</div></div></div></td>
       <td class="r"><span class="pv">${fmtP(c.price)}</span></td>
-      <td class="r"><span class="badge ${cls}">${sign(c.change24h)}${c.change24h.toFixed(2)}%</span></td>
+      <td class="r"><span class="badge ${cls}">${sign(c.change24h)}${(c.change24h||0).toFixed(2)}%</span></td>
       <td class="r"><span class="num">${fmtB(c.vol)}</span></td>
       <td class="r"><span class="rsi-badge ${rsiCls}">${c.rsi?.toFixed(0)||'—'}</span></td>
       <td class="r"><span class="sig ${sigCls}">${sigCls==='buy'?'MUA':sigCls==='sell'?'BÁN':'GIỮ'}</span></td>
@@ -1720,40 +1759,40 @@ async function runScreener(){
       <td class="r"><span class="num">${fmtP(c.low)}</span></td>
     </tr>`;
   }).join('');
-
-  document.getElementById('screenerTable').innerHTML=`
-    <table>
-      <thead><tr>
-        <th style="width:30px">#</th><th>Coin</th>
-        <th class="r">Giá</th><th class="r">24h %</th>
-        <th class="r">KL 24h</th><th class="r">RSI</th>
-        <th class="r">Tín Hiệu</th><th class="r">Cao 24h</th><th class="r">Thấp 24h</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  if(tbl) tbl.innerHTML=`<table><thead><tr>
+    <th style="width:30px">#</th><th>Coin</th>
+    <th class="r">Giá</th><th class="r">24h%</th>
+    <th class="r">KL 24h</th><th class="r">RSI</th>
+    <th class="r">Tín Hiệu</th><th class="r">Cao 24h</th><th class="r">Thấp 24h</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function resetScreener(){
-  ['fChg','fVol','fRsi','fMacd','fWhale'].forEach(id=>{document.getElementById(id).value='all';});
-  document.getElementById('fName').value='';
-  document.getElementById('screenerTable').innerHTML='<div class="state-box"><div>Nhấn 🔬 Lọc để bắt đầu tìm kiếm</div></div>';
-  document.getElementById('scrCount').textContent='—';
+  ['fChg','fVol','fRsi','fMacd','fWhale'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='all';});
+  const fn=document.getElementById('fName'); if(fn) fn.value='';
+  const tbl=document.getElementById('screenerTable'); if(tbl) tbl.innerHTML='<div class="state-box"><div>Nhấn 🔬 Lọc để bắt đầu tìm kiếm</div></div>';
+  const sc=document.getElementById('scrCount'); if(sc) sc.textContent='—';
 }
 
 /* ═══════════════════════════════════════════════════
-   NEWS
+   NEWS — 3 tầng fallback
 ═══════════════════════════════════════════════════ */
-let allNews=[],currentNewsSource='all',fetchingNews=false;
+let allNews=[], currentNewsSource='all', fetchingNews=false;
 
 function detectSentiment(t){
   const tx=(t||'').toLowerCase();
-  const b=['surge','rally','gain','bull','rise','pump','ath','growth','breakout','buy','adoption','approve','launch','upgrade','recover'];
-  const br=['crash','drop','fall','plunge','bear','decline','dump','loss','hack','ban','restrict','lawsuit','fear','sell','warning','exploit'];
-  return b.filter(w=>tx.includes(w)).length>br.filter(w=>tx.includes(w)).length?'bullish':br.filter(w=>tx.includes(w)).length>b.filter(w=>tx.includes(w)).length?'bearish':'neutral';
+  const b=['surge','rally','gain','bull','rise','pump','ath','growth','breakout','buy','adoption','approve','launch','upgrade','recover','soar','jump'];
+  const br=['crash','drop','fall','plunge','bear','decline','dump','loss','hack','ban','restrict','lawsuit','fear','sell','warning','exploit','scam','collapse'];
+  const bs=b.filter(w=>tx.includes(w)).length;
+  const brs=br.filter(w=>tx.includes(w)).length;
+  return bs>brs?'bullish':brs>bs?'bearish':'neutral';
 }
+
 function extractCoins(t){
   const tx=(t||'').toUpperCase(),found=[];
-  ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','DOT','LINK','UNI','TRX','ARB','OP','SUI','INJ','ATOM','NEAR','SHIB','TON'].forEach(c=>{if(new RegExp('\\b'+c+'\\b').test(tx)&&!found.includes(c))found.push(c);});
+  ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','DOT','LINK','UNI','TRX','ARB','OP','SUI','INJ','ATOM','NEAR','SHIB','TON','MATIC','FTM','APT','SEI'].forEach(c=>{
+    if(new RegExp('\\b'+c+'\\b').test(tx)&&!found.includes(c)) found.push(c);
+  });
   return found.slice(0,4);
 }
 
@@ -1765,12 +1804,11 @@ async function fetchNews(manual=false){
   const grid=document.getElementById('newsGrid');
   if(grid&&manual) grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức...</div></div>';
 
-  /* RSS helper — parse feed XML into news items */
   const parseRSS=(xml,sourceName)=>{
-    const items=[]; let m;
-    const re=/<item[\s\S]*?<\/item>/g;
+    const items=[];
+    const re=/<item[\s\S]*?<\/item>/g; let m;
     while((m=re.exec(xml))!==null){
-      const tag=(t,x)=>{const r=new RegExp('<'+t+'(?:[^>]*)><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\/'+t+'>|<'+t+'(?:[^>]*)>([^<]*)<\/'+t+'>','i');const mr=r.exec(x);return(mr?.(mr[1]||mr[2])||'').trim();};
+      const tag=(t,x)=>{const r=new RegExp('<'+t+'(?:[^>]*)><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/'+t+'>|<'+t+'(?:[^>]*)>([^<]*)<\\/'+t+'>','i');const mr=r.exec(x);return(mr?.(mr[1]||mr[2])||'').trim();};
       const title=tag('title',m[0]); const link=tag('link',m[0])||tag('guid',m[0]);
       const pub=tag('pubDate',m[0]); const ms=pub?new Date(pub).getTime():Date.now();
       if(title) items.push({headline:title,source:sourceName,link:link||'#',pub:ms,sentiment:detectSentiment(title),coins:extractCoins(title)});
@@ -1786,74 +1824,81 @@ async function fetchNews(manual=false){
   ];
 
   const strategies=[
-    /* Strategy 1: RSS feeds qua CORS proxy */
+    // Strategy 1: RSS qua CORS proxy
     async()=>{
       const results=await Promise.allSettled(
-        RSS_FEEDS.map(f=>fetch(PROXY+encodeURIComponent(f.url),{signal:AbortSignal.timeout(8000)})
-          .then(r=>{if(!r.ok)throw new Error(r.status);return r.text();})
-          .then(xml=>parseRSS(xml,f.name)))
+        RSS_FEEDS.map(f=>
+          fetch(PROXY+encodeURIComponent(f.url),{signal:AbortSignal.timeout(9000)})
+            .then(r=>{if(!r.ok) throw new Error(r.status); return r.text();})
+            .then(xml=>parseRSS(xml,f.name))
+        )
       );
       const items=results.flatMap(r=>r.status==='fulfilled'?r.value:[]);
-      if(items.length<3) throw new Error('not enough rss items: '+items.length);
+      if(items.length<3) throw new Error('RSS: '+items.length+' items only');
       return items.sort((a,b)=>b.pub-a.pub).slice(0,60);
     },
-    /* Strategy 2: CoinGecko trending + thị trường (không cần news endpoint) */
+    // Strategy 2: CoinGecko trending (không dùng /news endpoint)
     async()=>{
-      const [t,m]=await Promise.allSettled([
-        fetch('https://api.coingecko.com/api/v3/search/trending',{signal:AbortSignal.timeout(6000)}).then(r=>r.ok?r.json():null),
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(6000)}).then(r=>r.ok?r.json():null)
+      const [tr,mr]=await Promise.allSettled([
+        fetch('https://api.coingecko.com/api/v3/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null),
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null)
       ]);
       const items=[];
-      const td=t.status==='fulfilled'?t.value:null;
-      const md=m.status==='fulfilled'?m.value:null;
-      if(td?.coins) td.coins.slice(0,8).forEach((e,i)=>{const c=e.item||{};const sym=(c.symbol||'').toUpperCase();const chg=c.data?.price_change_percentage_24h?.usd||0;items.push({headline:`${c.name||sym} đang trending trên CoinGecko — ${chg>=0?'tăng':'giảm'} ${Math.abs(chg).toFixed(2)}% trong 24h`,source:'CoinGecko Trending',link:`https://www.coingecko.com/en/coins/${c.id||''}`,pub:Date.now()-i*8*60000,sentiment:chg>2?'bullish':chg<-2?'bearish':'neutral',coins:sym?[sym]:[]});});
-      if(md) md.slice(0,8).forEach((c,i)=>{const chg=c.price_change_percentage_24h||0;items.push({headline:`${c.name} (${(c.symbol||'').toUpperCase()}) — Giá $${c.current_price?.toLocaleString('en-US')||'—'}, ${chg>=0?'📈 tăng':'📉 giảm'} ${Math.abs(chg).toFixed(2)}% trong 24h`,source:'CoinGecko Market',link:`https://www.coingecko.com/en/coins/${c.id}`,pub:Date.now()-(i+8)*6*60000,sentiment:chg>3?'bullish':chg<-3?'bearish':'neutral',coins:[(c.symbol||'').toUpperCase()]});});
-      if(!items.length) throw new Error('no coingecko items');
+      const td=tr.status==='fulfilled'?tr.value:null;
+      const md=mr.status==='fulfilled'?mr.value:null;
+      if(td?.coins) td.coins.slice(0,8).forEach((e,i)=>{
+        const c=e.item||{}; const sym=(c.symbol||'').toUpperCase();
+        const chg=c.data?.price_change_percentage_24h?.usd||0;
+        items.push({headline:`${c.name||sym} đang trending trên CoinGecko — ${chg>=0?'tăng':'giảm'} ${Math.abs(chg).toFixed(2)}% trong 24h`,source:'CoinGecko',link:`https://www.coingecko.com/en/coins/${c.id||''}`,pub:Date.now()-i*8*60000,sentiment:chg>2?'bullish':chg<-2?'bearish':'neutral',coins:sym?[sym]:[]});
+      });
+      if(md) md.slice(0,8).forEach((c,i)=>{
+        const chg=c.price_change_percentage_24h||0;
+        items.push({headline:`${c.name} (${(c.symbol||'').toUpperCase()}) — $${c.current_price?.toLocaleString('en-US')||'—'}, ${chg>=0?'📈 +':'📉 '}${Math.abs(chg).toFixed(2)}% (24h)`,source:'CoinGecko',link:`https://www.coingecko.com/en/coins/${c.id}`,pub:Date.now()-(i+8)*6*60000,sentiment:chg>3?'bullish':chg<-3?'bearish':'neutral',coins:[(c.symbol||'').toUpperCase()]});
+      });
+      if(!items.length) throw new Error('CoinGecko: 0 items');
       return items;
     },
-    /* Strategy 3: Tổng hợp từ dữ liệu Binance trực tiếp — luôn hoạt động */
+    // Strategy 3: Binance live data — luôn hoạt động
     async()=>{
-      if(SYMBOLS.length<10) throw new Error('SYMBOLS not ready yet');
+      if(SYMBOLS.length<10) throw new Error('SYMBOLS not ready');
       const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0&&c.change24h!=null);
-      if(list.length<5) throw new Error('not enough binance data');
-      const sorted=[...list].sort((a,b)=>b.change24h-a.change24h);
-      const topGainers=sorted.slice(0,8);
-      const topLosers=sorted.slice(-8).reverse();
-      const topVol=[...list].sort((a,b)=>b.vol-a.vol).slice(0,6);
-      const items=[
-        ...topGainers.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) tăng mạnh +${c.change24h.toFixed(2)}% trong 24h — Giá hiện tại ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-i*5*60000,sentiment:'bullish',coins:[c.base]})),
-        ...topLosers.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) giảm ${c.change24h.toFixed(2)}% trong 24h — Giá hiện tại ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+8)*5*60000,sentiment:'bearish',coins:[c.base]})),
-        ...topVol.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) dẫn đầu khối lượng giao dịch 24h với ${fmtB(c.vol)} USDT`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+16)*4*60000,sentiment:c.change24h>0?'bullish':c.change24h<0?'bearish':'neutral',coins:[c.base]})),
+      if(list.length<5) throw new Error('Not enough data');
+      const topG=[...list].sort((a,b)=>b.change24h-a.change24h).slice(0,8);
+      const topL=[...list].sort((a,b)=>a.change24h-b.change24h).slice(0,8);
+      const topV=[...list].sort((a,b)=>b.vol-a.vol).slice(0,6);
+      return[
+        ...topG.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) tăng mạnh +${c.change24h.toFixed(2)}% — Giá: ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-i*5*60000,sentiment:'bullish',coins:[c.base]})),
+        ...topL.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) giảm ${c.change24h.toFixed(2)}% — Giá: ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+8)*5*60000,sentiment:'bearish',coins:[c.base]})),
+        ...topV.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) dẫn đầu khối lượng 24h — ${fmtB(c.vol)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+16)*4*60000,sentiment:c.change24h>0?'bullish':c.change24h<0?'bearish':'neutral',coins:[c.base]})),
       ];
-      return items;
     }
   ];
 
   let ok=false;
-  for(const s of strategies){try{allNews=await s();renderNews();renderNewsPage();ok=true;break;}catch(e){console.warn(e);}}
-  if(!ok){const g=document.getElementById('newsGrid');if(g)g.innerHTML='<div class="state-box" style="grid-column:1/-1"><div style="font-size:24px">⚠️</div><div>Không thể tải tin tức lúc này</div></div>';}
-
-  if(btn){btn.disabled=false; btn.textContent='↻ Làm mới';} fetchingNews=false;
+  for(const s of strategies){
+    try{allNews=await s(); renderNewsPage(); ok=true; break;}
+    catch(e){console.warn('News strategy failed:',e.message);}
+  }
+  if(!ok){
+    const g=document.getElementById('newsGrid');
+    if(g) g.innerHTML='<div class="state-box" style="grid-column:1/-1"><div style="font-size:24px">⚠️</div><div>Không thể tải tin tức. Vui lòng thử lại sau.</div></div>';
+  }
+  if(btn){btn.disabled=false; btn.textContent='↻ Làm mới';}
+  fetchingNews=false;
 }
 
-function renderNews(){
-  // Delegated to renderNewsPage() — news is now its own tab page
-  renderNewsPage();
-}
-
+function renderNews(){ renderNewsPage(); }
 function filterNews(el,src){
   document.querySelectorAll('.nst').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); currentNewsSource=src; renderNews();
+  el.classList.add('active'); currentNewsSource=src; renderNewsPage();
 }
 
-/* ── NEWS PAGE functions ── */
 let newsPageSource='all', newsPageSentiment='all';
-
-function setNewsSource(el, src){
+function setNewsSource(el,src){
   document.querySelectorAll('#newsSourceGroup .news-filter-btn').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); newsPageSource=src; renderNewsPage();
 }
-function setSentFilter(el, sent){
+function setSentFilter(el,sent){
   document.querySelectorAll('#newsSentGroup .news-filter-btn').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); newsPageSentiment=sent; renderNewsPage();
 }
@@ -1864,348 +1909,263 @@ function renderNewsPage(){
   if(newsPageSource!=='all') items=items.filter(n=>n.source.toLowerCase().includes(newsPageSource.toLowerCase()));
   if(newsPageSentiment!=='all') items=items.filter(n=>n.sentiment===newsPageSentiment);
 
-  // Update stats
-  document.getElementById('newsTotal').textContent=allNews.length;
-  document.getElementById('newsBullish').textContent=allNews.filter(n=>n.sentiment==='bullish').length;
-  document.getElementById('newsBearish').textContent=allNews.filter(n=>n.sentiment==='bearish').length;
+  const setEl=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  setEl('newsTotal',allNews.length);
+  setEl('newsBullish',allNews.filter(n=>n.sentiment==='bullish').length);
+  setEl('newsBearish',allNews.filter(n=>n.sentiment==='bearish').length);
 
   const grid=document.getElementById('newsGrid');
   if(!grid) return;
-  if(!items.length){
-    grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div>Không có tin tức phù hợp.</div></div>';
-    return;
-  }
+  if(!items.length){grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div>Không có tin tức phù hợp.</div></div>'; return;}
   grid.innerHTML=items.map(n=>{
     const tags=(n.coins||[]).map(c=>`<span class="news-card-coin">${c}</span>`).join('');
     return `<a class="news-card-item" href="${n.link}" target="_blank" rel="noopener noreferrer">
       <div class="news-card-body">
         <div class="news-card-meta">
           <span class="news-card-src">${n.source}</span>
-          <span class="news-card-sent ${n.sentiment}">${sentLabel[n.sentiment]}</span>
+          <span class="news-card-sent ${n.sentiment}">${sentLabel[n.sentiment]||'⚖️ Trung Lập'}</span>
           <span class="news-card-time">${timeAgo(n.pub)}</span>
         </div>
         <div class="news-card-headline">${n.headline}</div>
         ${n.summary?`<div class="news-card-summary">${n.summary}</div>`:''}
       </div>
-      ${tags?`<div class="news-card-footer">${tags}<span class="news-card-link">Đọc thêm ↗</span></div>`:'<div class="news-card-footer"><span class="news-card-link" style="margin-left:0">Đọc thêm ↗</span></div>'}
+      <div class="news-card-footer">${tags||''}<span class="news-card-link" style="${tags?'':'margin-left:0'}">Đọc thêm ↗</span></div>
     </a>`;
   }).join('');
 }
 
 /* ═══════════════════════════════════════════════════
-   PAGE NAVIGATION
-═══════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════
    PRICE ALERT SYSTEM
 ═══════════════════════════════════════════════════ */
-let alerts = JSON.parse(localStorage.getItem('vlc_alerts') || '[]');
-let alertSelectedSym = null;
-let toastQueue = [];
+let alerts=[];
+try{alerts=JSON.parse(localStorage.getItem('vlc_alerts')||'[]');}catch(e){alerts=[];}
+let alertSelectedSym=null;
 
-function saveAlerts(){ localStorage.setItem('vlc_alerts', JSON.stringify(alerts)); }
+function saveAlerts(){try{localStorage.setItem('vlc_alerts',JSON.stringify(alerts));}catch(e){}}
 
-/* Coin input suggest */
 function onAlertCoinInput(){
-  const q = document.getElementById('alertCoinInput').value.toUpperCase().trim();
-  alertSelectedSym = null;
-  document.getElementById('alertCurrentPrice').value = '';
-  if(!q){ hideSuggest(); return; }
-
-  const matches = SYMBOLS
-    .map(s=>({ sym:s, base:s.replace('USDT',''), ...coins[s] }))
-    .filter(c => c.base.startsWith(q) || (nameMap[c.base]||'').toUpperCase().includes(q))
-    .sort((a,b) => b.vol - a.vol)
-    .slice(0, 8);
-
-  if(!matches.length){ hideSuggest(); return; }
-
-  const sl = document.getElementById('suggestList');
-  sl.innerHTML = matches.map(c => `
+  const q=document.getElementById('alertCoinInput').value.toUpperCase().trim();
+  alertSelectedSym=null;
+  const el=document.getElementById('alertCurrentPrice'); if(el) el.value='';
+  if(!q){hideSuggest(); return;}
+  const matches=SYMBOLS
+    .map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]}))
+    .filter(c=>c.base.startsWith(q)||(nameMap[c.base]||'').toUpperCase().includes(q))
+    .sort((a,b)=>b.vol-a.vol).slice(0,8);
+  if(!matches.length){hideSuggest(); return;}
+  const sl=document.getElementById('suggestList');
+  sl.innerHTML=matches.map(c=>`
     <div class="suggest-item" onmousedown="selectAlertCoin('${c.sym}')">
-      ${logoHTML(c.base, 22)}
-      <div>
-        <div class="suggest-sym">${c.base}</div>
-        <div style="font-size:10px;color:var(--muted)">${nameMap[c.base]||c.base}</div>
-      </div>
+      ${logoHTML(c.base,22)}
+      <div><div class="suggest-sym">${c.base}</div><div style="font-size:10px;color:var(--muted)">${nameMap[c.base]||c.base}</div></div>
       <div class="suggest-price">${fmtP(c.price)}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
   sl.classList.add('show');
 }
 
 function selectAlertCoin(sym){
-  alertSelectedSym = sym;
-  const base = sym.replace('USDT','');
-  document.getElementById('alertCoinInput').value = base + ' — ' + (nameMap[base]||base);
-  document.getElementById('alertCurrentPrice').value = fmtP(coins[sym]?.price || 0).replace('$','');
+  alertSelectedSym=sym;
+  const base=sym.replace('USDT','');
+  const inp=document.getElementById('alertCoinInput'); if(inp) inp.value=base+' — '+(nameMap[base]||base);
+  const cur=document.getElementById('alertCurrentPrice'); if(cur) cur.value=(coins[sym]?.price||0).toPrecision(6);
   hideSuggest();
-  // Auto-fill sensible default target price
-  const price = coins[sym]?.price || 0;
-  const cond = document.getElementById('alertCondition').value;
-  if(price && !document.getElementById('alertPrice').value){
-    const target = cond === 'above' ? price * 1.05 : price * 0.95;
-    document.getElementById('alertPrice').value = target.toPrecision(6);
+  const price=coins[sym]?.price||0;
+  const cond=document.getElementById('alertCondition')?.value;
+  const priceInp=document.getElementById('alertPrice');
+  if(price&&priceInp&&!priceInp.value){
+    priceInp.value=(cond==='above'?price*1.05:price*0.95).toPrecision(6);
   }
 }
 
-function hideSuggest(){ document.getElementById('suggestList').classList.remove('show'); }
+function hideSuggest(){const sl=document.getElementById('suggestList'); if(sl) sl.classList.remove('show');}
 
-/* Auto-update current price in form */
-setInterval(() => {
-  if(alertSelectedSym && coins[alertSelectedSym]){
-    document.getElementById('alertCurrentPrice').value = fmtP(coins[alertSelectedSym].price).replace('$','');
+// Cập nhật giá hiện tại trong form mỗi 2s
+setInterval(()=>{
+  if(alertSelectedSym&&coins[alertSelectedSym]){
+    const el=document.getElementById('alertCurrentPrice');
+    if(el) el.value=(coins[alertSelectedSym].price||0).toPrecision(6);
   }
-}, 2000);
+},2000);
 
-/* Add alert */
 function addAlert(){
-  if(!alertSelectedSym){ showToast('warning','⚠️ Chưa chọn coin','Vui lòng chọn coin từ danh sách gợi ý.'); return; }
-  const targetRaw = parseFloat(document.getElementById('alertPrice').value);
-  if(!targetRaw || targetRaw <= 0){ showToast('warning','⚠️ Giá không hợp lệ','Vui lòng nhập giá mục tiêu lớn hơn 0.'); return; }
-  const condition = document.getElementById('alertCondition').value;
-  const note = document.getElementById('alertNote').value.trim();
-  const base = alertSelectedSym.replace('USDT','');
-  const currentPrice = coins[alertSelectedSym]?.price || 0;
-
-  // Validate logic
-  if(condition === 'above' && targetRaw <= currentPrice){
-    showToast('warning','⚠️ Giá mục tiêu quá thấp',`Giá Hiện Tại ${fmtP(currentPrice)}. Cảnh báo "vượt lên trên" cần mục tiêu cao hơn giá hiện tại.`);
-    return;
+  if(!alertSelectedSym){showToast('warning','⚠️ Chưa chọn coin','Vui lòng chọn coin từ danh sách gợi ý.'); return;}
+  const targetRaw=parseFloat(document.getElementById('alertPrice')?.value);
+  if(!targetRaw||targetRaw<=0){showToast('warning','⚠️ Giá không hợp lệ','Vui lòng nhập giá mục tiêu lớn hơn 0.'); return;}
+  const condition=document.getElementById('alertCondition')?.value||'above';
+  const note=(document.getElementById('alertNote')?.value||'').trim();
+  const base=alertSelectedSym.replace('USDT','');
+  const currentPrice=coins[alertSelectedSym]?.price||0;
+  if(condition==='above'&&targetRaw<=currentPrice){
+    showToast('warning','⚠️ Giá mục tiêu không hợp lệ',`Giá hiện tại ${fmtP(currentPrice)}. Cảnh báo "vượt lên" cần mục tiêu CAO hơn giá hiện tại.`); return;
   }
-  if(condition === 'below' && targetRaw >= currentPrice){
-    showToast('warning','⚠️ Giá mục tiêu quá cao',`Giá Hiện Tại ${fmtP(currentPrice)}. Cảnh báo "rớt xuống dưới" cần mục tiêu thấp hơn giá hiện tại.`);
-    return;
+  if(condition==='below'&&targetRaw>=currentPrice){
+    showToast('warning','⚠️ Giá mục tiêu không hợp lệ',`Giá hiện tại ${fmtP(currentPrice)}. Cảnh báo "rớt xuống" cần mục tiêu THẤP hơn giá hiện tại.`); return;
   }
-
-  const alert = {
-    id: Date.now(),
-    sym: alertSelectedSym,
-    base,
-    name: nameMap[base] || base,
-    condition,
-    target: targetRaw,
-    note,
-    createdAt: Date.now(),
-    status: 'active',
-    triggeredAt: null,
-    createdPrice: coins[alertSelectedSym]?.price || 0,
-  };
-
-  alerts.unshift(alert);
+  alerts.unshift({id:Date.now(),sym:alertSelectedSym,base,name:nameMap[base]||base,condition,target:targetRaw,note,createdAt:Date.now(),createdPrice:currentPrice,status:'active',triggeredAt:null});
   saveAlerts();
-
-  // Reset form
-  document.getElementById('alertCoinInput').value = '';
-  document.getElementById('alertPrice').value = '';
-  document.getElementById('alertNote').value = '';
-  document.getElementById('alertCurrentPrice').value = '';
-  alertSelectedSym = null;
-
+  ['alertCoinInput','alertPrice','alertNote','alertCurrentPrice'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  alertSelectedSym=null;
   renderAlertList();
-  showToast('success', '✅ Cảnh báo đã được tạo',
-    `${base}: ${condition === 'above' ? 'Tăng lên' : 'Giảm xuống'} ${fmtP(targetRaw)}`);
+  showToast('success','✅ Cảnh báo đã được tạo',`${base}: ${condition==='above'?'Tăng lên':'Giảm xuống'} ${fmtP(targetRaw)}`);
 }
 
-/* Delete alert */
-function deleteAlert(id){
-  alerts = alerts.filter(a => a.id !== id);
-  saveAlerts();
-  renderAlertList();
-}
+function deleteAlert(id){alerts=alerts.filter(a=>a.id!==id); saveAlerts(); renderAlertList();}
 
-/* Clear triggered */
 function clearTriggeredAlerts(){
-  const before = alerts.length;
-  alerts = alerts.filter(a => a.status !== 'triggered');
-  saveAlerts();
-  renderAlertList();
-  const removed = before - alerts.length;
-  if(removed > 0) showToast('success', '🗑 Đã xoá', `${removed} cảnh báo đã kích hoạt.`);
+  const before=alerts.length;
+  alerts=alerts.filter(a=>a.status!=='triggered'); saveAlerts(); renderAlertList();
+  const removed=before-alerts.length;
+  if(removed>0) showToast('success','🗑 Đã xoá',`${removed} cảnh báo đã kích hoạt.`);
 }
 
-/* Check alerts against current prices — called every 3s */
-function checkAlerts(){
-  let changed = false;
-  alerts.forEach(a => {
-    if(a.status !== 'active') return;
-    const c = coins[a.sym];
-    if(!c || !c.price) return;
-    const triggered = a.condition === 'above' ? c.price >= a.target : c.price <= a.target;
+// Kiểm tra alert cho 1 sym cụ thể (gọi từ WS onmessage — realtime)
+function checkAlertForSym(sym){
+  let changed=false;
+  alerts.forEach(a=>{
+    if(a.sym!==sym||a.status!=='active') return;
+    const c=coins[sym]; if(!c||!c.price) return;
+    const triggered=a.condition==='above'?c.price>=a.target:c.price<=a.target;
     if(triggered){
-      a.status = 'triggered';
-      a.triggeredAt = Date.now();
-      changed = true;
-      // Play sound
+      a.status='triggered'; a.triggeredAt=Date.now(); changed=true;
       playAlertSound();
-      // Show prominent toast
-      showToast('triggered', `🔔 Cảnh Báo Kích Hoạt!`,
-        `${a.name} (${a.base}) ${a.condition === 'above' ? '📈 đã vượt lên' : '📉 đã rớt xuống'} ${fmtP(a.target)}
-Giá Hiện Tại: ${fmtP(c.price)}`);
+      showToast('triggered','🔔 Cảnh Báo Kích Hoạt!',
+        `${a.name} (${a.base}) ${a.condition==='above'?'📈 vượt lên':'📉 rớt xuống'} ${fmtP(a.target)}\nGiá hiện tại: ${fmtP(c.price)}`);
     }
   });
-  if(changed){ saveAlerts(); renderAlertList(); }
-  // Update current prices in list (without full re-render)
-  updateAlertPrices();
+  if(changed){saveAlerts(); renderAlertList();}
 }
 
+// checkAlerts toàn bộ (gọi định kỳ backup)
+function checkAlerts(){
+  SYMBOLS.forEach(s=>checkAlertForSym(s));
+  updateAlertPrices();
+}
+setInterval(checkAlerts,5000);
+
 function updateAlertPrices(){
-  alerts.forEach(a => {
-    const el = document.getElementById(`alert-cur-${a.id}`);
-    const prog = document.getElementById(`alert-prog-${a.id}`);
-    if(!el || !prog) return;
-    const c = coins[a.sym];
-    if(!c || !c.price) return;
-    el.textContent = 'Hiện tại: ' + fmtP(c.price);
-    // Progress bar: % tiến độ từ giá tạo alert đến mục tiêu
-    const createdPrice = a.createdPrice || c.price;
-    const pct = a.condition === 'above'
-      ? (a.target > createdPrice ? Math.min(100,(c.price-createdPrice)/(a.target-createdPrice)*100) : 100)
-      : (a.target < createdPrice ? Math.min(100,(createdPrice-c.price)/(createdPrice-a.target)*100) : 100);
-    prog.style.width = Math.max(0, pct).toFixed(1) + '%';
+  alerts.forEach(a=>{
+    const curEl=document.getElementById(`alert-cur-${a.id}`);
+    const progEl=document.getElementById(`alert-prog-${a.id}`);
+    if(!curEl||!progEl) return;
+    const c=coins[a.sym]; if(!c||!c.price) return;
+    curEl.textContent='Hiện tại: '+fmtP(c.price);
+    const created=a.createdPrice||c.price;
+    let pct=0;
+    if(a.condition==='above'&&a.target>created) pct=(c.price-created)/(a.target-created)*100;
+    else if(a.condition==='below'&&a.target<created) pct=(created-c.price)/(created-a.target)*100;
+    progEl.style.width=Math.max(0,Math.min(100,pct)).toFixed(1)+'%';
   });
 }
 
 function renderAlertList(){
-  const active   = alerts.filter(a => a.status === 'active').length;
-  const triggered = alerts.filter(a => a.status === 'triggered').length;
-  document.getElementById('alertCountActive').textContent = active;
-  document.getElementById('alertCountTriggered').textContent = triggered;
-  document.getElementById('alertCountTotal').textContent = alerts.length;
-
+  const setEl=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  setEl('alertCountActive',alerts.filter(a=>a.status==='active').length);
+  setEl('alertCountTriggered',alerts.filter(a=>a.status==='triggered').length);
+  setEl('alertCountTotal',alerts.length);
+  const container=document.getElementById('alertListContainer');
+  if(!container) return;
   if(!alerts.length){
-    document.getElementById('alertListContainer').innerHTML =
-      '<div class="alert-empty"><div class="alert-empty-icon">🔔</div><div>Chưa có cảnh báo nào.<br><small>Thêm cảnh báo để theo dõi biến động giá.</small></div></div>';
+    container.innerHTML='<div class="alert-empty"><div class="alert-empty-icon">🔔</div><div>Chưa có cảnh báo nào.<br><small>Thêm cảnh báo để theo dõi biến động giá.</small></div></div>';
     return;
   }
-
-  const html = alerts.map(a => {
-    const c = coins[a.sym] || {};
-    const isAbove = a.condition === 'above';
-    const isTrig  = a.status === 'triggered';
-    const pct = c.price ? (isAbove
-      ? Math.min(100, ((c.price - a.target * 0.9) / (a.target * 0.1)) * 100)
-      : Math.min(100, ((a.target * 1.1 - c.price) / (a.target * 0.1)) * 100)) : 0;
-    const progColor = isAbove ? 'var(--green)' : 'var(--red)';
-    const condLabel = isAbove ? '▲ Vượt lên' : '▼ Rớt xuống';
-    const createdStr = new Date(a.createdAt + 7*3600000).toUTCString().slice(5,17);
-    const trigStr = a.triggeredAt ? '✅ ' + new Date(a.triggeredAt + 7*3600000).toUTCString().slice(5,17) : '';
-
+  container.innerHTML=alerts.map(a=>{
+    const c=coins[a.sym]||{};
+    const isAbove=a.condition==='above', isTrig=a.status==='triggered';
+    const created=a.createdPrice||c.price||0;
+    let pct=0;
+    if(c.price){
+      if(isAbove&&a.target>created) pct=(c.price-created)/(a.target-created)*100;
+      else if(!isAbove&&a.target<created) pct=(created-c.price)/(created-a.target)*100;
+    }
+    const progColor=isAbove?'var(--green)':'var(--red)';
+    const condLabel=isAbove?'▲ Vượt lên':'▼ Rớt xuống';
+    const dateStr=new Date(a.createdAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const trigStr=a.triggeredAt?'✅ '+new Date(a.triggeredAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     return `<div class="alert-item" id="alert-${a.id}">
-      <div class="alert-coin-info">
-        ${logoHTML(a.base, 26)}
-        <div>
-          <div style="font-weight:700;font-size:12px">${a.base}</div>
-          <div style="font-size:9px;color:var(--muted)">${a.name}</div>
-        </div>
-      </div>
+      <div class="alert-coin-info">${logoHTML(a.base,26)}<div><div style="font-weight:700;font-size:12px">${a.base}</div><div style="font-size:9px;color:var(--muted)">${a.name}</div></div></div>
       <div>
         <span class="alert-badge ${a.condition}">${condLabel}</span>
         <div class="alert-target">${fmtP(a.target)}</div>
         <div class="alert-current" id="alert-cur-${a.id}">Hiện tại: ${fmtP(c.price||0)}</div>
-        ${a.note ? `<div class="alert-note">📝 ${a.note}</div>` : ''}
+        ${a.note?`<div class="alert-note">📝 ${a.note}</div>`:''}
       </div>
       <div class="alert-progress">
-        <div style="font-size:9px;color:var(--muted)">${isTrig ? trigStr : createdStr}</div>
-        <div class="alert-prog-bar">
-          <div class="alert-prog-fill" id="alert-prog-${a.id}" style="width:${Math.max(0,Math.min(100,pct)).toFixed(1)}%;background:${progColor}"></div>
-        </div>
+        <div style="font-size:9px;color:var(--muted)">${isTrig?trigStr:dateStr}</div>
+        <div class="alert-prog-bar"><div class="alert-prog-fill" id="alert-prog-${a.id}" style="width:${Math.max(0,Math.min(100,pct)).toFixed(1)}%;background:${progColor}"></div></div>
         <div style="font-size:9px;color:var(--muted);margin-top:3px">${Math.max(0,Math.min(100,pct)).toFixed(0)}% đến mục tiêu</div>
       </div>
-      <span class="alert-status ${a.status}">${isTrig ? '✅ Đã kích hoạt' : '⏳ Đang theo dõi'}</span>
-      <button class="alert-delete" onclick="deleteAlert(${a.id})" title="Xoá cảnh báo">✕</button>
+      <span class="alert-status ${a.status}">${isTrig?'✅ Đã kích hoạt':'⏳ Đang theo dõi'}</span>
+      <button class="alert-delete" onclick="deleteAlert(${a.id})" title="Xoá">✕</button>
     </div>`;
   }).join('');
-
-  document.getElementById('alertListContainer').innerHTML = html;
 }
 
-/* Alert sound — Web Audio API */
 function playAlertSound(){
   try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1047].forEach((freq,i)=>{
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      const t = ctx.currentTime + i * 0.12;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.3, t + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-      osc.start(t); osc.stop(t + 0.3);
+      osc.frequency.value=freq; osc.type='sine';
+      const t=ctx.currentTime+i*0.12;
+      gain.gain.setValueAtTime(0,t);
+      gain.gain.linearRampToValueAtTime(0.3,t+0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+      osc.start(t); osc.stop(t+0.3);
     });
   }catch(e){}
 }
 
-/* Toast notification system */
-function showToast(type, title, msg){
-  const wrap = document.getElementById('toastWrap');
-  const id = 'toast-' + Date.now();
-  const icons = { success:'✅', warning:'⚠️', triggered:'🔔' };
-  const div = document.createElement('div');
-  div.className = `toast ${type}`;
-  div.id = id;
-  div.innerHTML = `
-    <div class="toast-icon">${icons[type]||'ℹ️'}</div>
-    <div class="toast-body">
-      <div class="toast-title">${title}</div>
-      <div class="toast-msg">${msg.replace(/\n/g,'<br>')}</div>
-    </div>
-    <button class="toast-close" onclick="removeToast('${id}')">×</button>
-  `;
+function showToast(type,title,msg){
+  const wrap=document.getElementById('toastWrap'); if(!wrap) return;
+  const id='toast-'+Date.now();
+  const icons={success:'✅',warning:'⚠️',triggered:'🔔'};
+  const div=document.createElement('div');
+  div.className=`toast ${type}`; div.id=id;
+  div.innerHTML=`<div class="toast-icon">${icons[type]||'ℹ️'}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg.replace(/\n/g,'<br>')}</div></div><button class="toast-close" onclick="removeToast('${id}')">×</button>`;
   wrap.appendChild(div);
-  // Auto-remove after delay
-  const delay = type === 'triggered' ? 12000 : 4500;
-  setTimeout(() => removeToast(id), delay);
+  setTimeout(()=>removeToast(id),type==='triggered'?12000:5000);
 }
-
 function removeToast(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.classList.add('removing');
-  setTimeout(() => el.remove(), 300);
+  const el=document.getElementById(id); if(!el) return;
+  el.classList.add('removing'); setTimeout(()=>el.remove(),300);
 }
-
-// Init alert list on load
-renderAlertList();
-setInterval(checkAlerts, 3000);
 
 function copyBankAcc(){
-  const num = '02406850401';
-  navigator.clipboard.writeText(num).then(()=>{
-    showToast('success','✅ Đã sao chép!','Số tài khoản <strong>0240 6850 401</strong> đã được sao chép vào clipboard.');
+  navigator.clipboard.writeText('02406850401').then(()=>{
+    showToast('success','✅ Đã sao chép!','Số tài khoản <strong>0240 6850 401</strong> đã được sao chép.');
   }).catch(()=>{
-    // fallback
-    const el = document.getElementById('bankAccNum');
-    if(el){ const r=document.createRange(); r.selectNode(el); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); document.execCommand('copy'); window.getSelection().removeAllRanges(); showToast('success','✅ Đã sao chép!','Số tài khoản đã được sao chép.'); }
+    const el=document.getElementById('bankAccNum');
+    if(el){const r=document.createRange(); r.selectNode(el); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); document.execCommand('copy'); window.getSelection().removeAllRanges(); showToast('success','✅ Đã sao chép!','Số tài khoản đã được sao chép.');}
   });
 }
 
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════ */
 function showPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
   if(el) el.classList.add('active');
   if(id==='chart') renderChartCoinList();
-  if(id==='news') renderNewsPage();
+  if(id==='news')  renderNewsPage();
 }
 
 /* ═══════════════════════════════════════════════════
-   BOOT
+   BOOT — khởi động tất cả chức năng
 ═══════════════════════════════════════════════════ */
-loadAllCoins();
-setInterval(render, 2500);
-setInterval(updateWhaleTracker, 30000);
-fetchNews();
-setInterval(fetchNews, 5*60*1000);
-loadFearGreed();
-setInterval(loadFearGreed, 5*60*1000);
-// Background indicator fetch after data loaded
-setTimeout(batchFetchIndicators, 8000);
-setInterval(batchFetchIndicators, 10*60*1000);
+renderAlertList();            // render alerts từ localStorage ngay lập tức
+loadAllCoins();               // Binance 24hr REST → SYMBOLS, coins, rồi WS
+setInterval(render, 2500);    // re-render bảng giá mỗi 2.5s
+loadFearGreed();              // Fear & Greed ngay lập tức
+setInterval(loadFearGreed, 5*60*1000); // refresh mỗi 5 phút
+setTimeout(()=>{              // Sau 3s: fetch news (đợi page load xong)
+  fetchNews();
+  setInterval(fetchNews, 5*60*1000);
+}, 3000);
+setTimeout(batchFetchIndicators, 10000);          // Sau 10s: fetch RSI/MACD top 50
+setInterval(batchFetchIndicators, 10*60*1000);    // Refresh indicators mỗi 10 phút
 </script>
 </body>
 </html>
