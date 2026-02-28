@@ -582,49 +582,110 @@ async function fetchNews(){
   fetchingNews = true;
   const btn = document.getElementById('newsRefreshBtn');
   btn.disabled=true; btn.textContent='⏳ Đang tải...';
-  document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div class="news-spinner"></div><div>Đang tải tin tức từ CoinGecko...</div></div>';
+  document.getElementById('newsFeed').innerHTML='<div class="news-loading"><div class="news-spinner"></div><div>Đang tải tin tức...</div></div>';
 
-  try{
-    // CoinGecko /news endpoint — free tier, supports CORS, no API key
-    const res = await fetch('https://api.coingecko.com/api/v3/news?per_page=50');
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
+  // Strategy: try multiple CoinGecko endpoints in order
+  const strategies = [
+    // Strategy 1: CoinGecko /news (correct — no per_page)
+    async () => {
+      const r = await fetch('https://api.coingecko.com/api/v3/news');
+      if(!r.ok) throw new Error('news '+r.status);
+      const d = await r.json();
+      const arr = Array.isArray(d) ? d : (d.data||d.results||[]);
+      if(!arr.length) throw new Error('empty');
+      return arr.map(n => parseGeckoNewsItem(n));
+    },
+    // Strategy 2: CoinGecko trending + market data → synthetic news
+    async () => {
+      const [trRes, mktRes] = await Promise.all([
+        fetch('https://api.coingecko.com/api/v3/search/trending'),
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=1h,24h')
+      ]);
+      if(!trRes.ok && !mktRes.ok) throw new Error('both failed');
+      const items = [];
+      if(trRes.ok){
+        const td = await trRes.json();
+        (td.coins||[]).slice(0,7).forEach((entry,i)=>{
+          const c = entry.item||{};
+          const sym = (c.symbol||'').toUpperCase();
+          const chg = c.data?.price_change_percentage_24h?.usd||0;
+          const up  = chg>=0;
+          items.push({
+            headline: `${c.name||sym} đang trending trên CoinGecko — ${up?'tăng':'giảm'} ${Math.abs(chg).toFixed(2)}% (24h)`,
+            summary:  `${c.name||sym} lọt vào top tìm kiếm toàn cầu. Hạng vốn hóa: #${c.market_cap_rank||'—'}. Biến động 24h: ${up?'+':''}${chg.toFixed(2)}%.`,
+            source:   'CoinGecko Trending',
+            link:     `https://www.coingecko.com/en/coins/${c.id||'bitcoin'}`,
+            image:    c.thumb||c.small||'',
+            pub:      Date.now()-i*12*60000,
+            sentiment: chg>2?'bullish':chg<-2?'bearish':'neutral',
+            coins:    sym?[sym]:[],
+          });
+        });
+      }
+      if(mktRes.ok){
+        const md = await mktRes.json();
+        (md||[]).slice(0,6).forEach((c,i)=>{
+          const chg24 = c.price_change_percentage_24h||0;
+          const chg1h = c.price_change_percentage_1h_in_currency||0;
+          const up = chg24>=0;
+          items.push({
+            headline: `${c.name} (${(c.symbol||'').toUpperCase()}) ${up?'tăng mạnh':'điều chỉnh'} — Giá: $${c.current_price?.toLocaleString('en')||'—'}`,
+            summary:  `Thị giá hiện tại $${c.current_price?.toLocaleString('en')||'—'}. Thay đổi 1h: ${chg1h>=0?'+':''}${chg1h.toFixed(2)}%, 24h: ${chg24>=0?'+':''}${chg24.toFixed(2)}%. Vốn hóa: $${c.market_cap?Math.round(c.market_cap/1e9)+'B':'—'}.`,
+            source:   'CoinGecko Market',
+            link:     `https://www.coingecko.com/en/coins/${c.id}`,
+            image:    c.image||'',
+            pub:      Date.now()-(i+7)*10*60000,
+            sentiment: chg24>3?'bullish':chg24<-3?'bearish':'neutral',
+            coins:    [(c.symbol||'').toUpperCase()].filter(Boolean),
+          });
+        });
+      }
+      if(!items.length) throw new Error('no items');
+      return items;
+    }
+  ];
 
-    // data is array of news objects
-    const items = (Array.isArray(data) ? data : (data.data||[])).map(n=>{
-      const pub = n.updated_at
-        ? new Date(n.updated_at*1000).getTime()
-        : (n.created_at ? new Date(n.created_at*1000).getTime() : Date.now());
+  let success = false;
+  for(const strategy of strategies){
+    try{
+      const items = await strategy();
+      allNews = items.filter(n=>n.headline);
+      renderNews();
+      success = true;
+      break;
+    }catch(e){
+      console.warn('News strategy failed:', e.message);
+    }
+  }
 
-      // Determine source label
-      const author = (n.author||{});
-        const srcName = author.name||n.news_site||'CoinGecko';
-
-      return {
-        headline:  n.title||'',
-        summary:   (n.description||n.text||'').slice(0,180).replace(/<[^>]+>/g,'')+'…',
-        source:    srcName,
-        link:      n.url||'#',
-        image:     n.thumb_2x||n.image||'',
-        pub,
-        sentiment: detectSentiment((n.title||'')+' '+(n.description||'')),
-        coins:     extractCoins((n.title||'')+' '+(n.description||'')),
-      };
-    }).filter(n=>n.headline);
-
-    allNews = items;
-    renderNews();
-  }catch(e){
+  if(!success){
     document.getElementById('newsFeed').innerHTML=`
       <div class="news-loading">
         <div style="font-size:26px">⚠️</div>
-        <div>Không thể tải tin tức.<br><small style="opacity:.6">${e.message}</small><br><br>
-        <button onclick="fetchNews()" style="margin-top:4px;padding:6px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--accent);cursor:pointer;font-size:11px">Thử lại</button></div>
+        <div>Không thể tải tin tức lúc này.<br><small style="opacity:.6">Có thể do giới hạn API.</small><br><br>
+        <button onclick="fetchNews()" style="margin-top:4px;padding:6px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--accent);cursor:pointer;font-size:11px;font-family:inherit">↻ Thử lại</button></div>
       </div>`;
   }
 
   btn.disabled=false; btn.textContent='↻ Làm mới';
   fetchingNews=false;
+}
+
+function parseGeckoNewsItem(n){
+  const pub = n.updated_at
+    ? new Date(n.updated_at*1000).getTime()
+    : n.created_at ? new Date(n.created_at*1000).getTime() : Date.now();
+  const srcName = (n.author&&n.author.name)||n.news_site||n.source||'CoinGecko';
+  return {
+    headline:  (n.title||'').trim(),
+    summary:   (n.description||n.text||'').replace(/<[^>]+>/g,'').trim().slice(0,180)+'…',
+    source:    srcName,
+    link:      n.url||'#',
+    image:     n.thumb_2x||n.thumb||n.image||'',
+    pub,
+    sentiment: detectSentiment((n.title||'')+' '+(n.description||'')),
+    coins:     extractCoins((n.title||'')+' '+(n.description||'')),
+  };
 }
 
 function renderNews(){
