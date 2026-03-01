@@ -2441,12 +2441,6 @@ async function fetchNews(manual=false){
   const grid=document.getElementById('newsGrid');
   if(grid&&manual) grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức...</div></div>';
 
-      const title=tag('title',m[0]); const link=tag('link',m[0])||tag('guid',m[0]);
-      const pub=tag('pubDate',m[0]); const ms=pub?new Date(pub).getTime():Date.now();
-      if(title) items.push({headline:title,source:sourceName,link:link||'#',pub:ms,sentiment:detectSentiment(title),coins:extractCoins(title)});
-    }
-    return items;
-  };
 
   const strategies=[
     // ── Strategy 1: CryptoCompare News API (JSON, có CORS, miễn phí) ──
