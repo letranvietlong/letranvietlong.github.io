@@ -1338,6 +1338,9 @@ async function loadAllCoins(){
    COINGECKO LOGOS (2 trang, delay 3s, bắt 429)
 ═══════════════════════════════════════════════════ */
 async function loadCoinGeckoLogos(){
+  let loaded=0;
+
+  /* ── Nguồn 1: CoinGecko (trang 1 + 2) ── */
   for(let page=1;page<=2;page++){
     try{
       if(page>1) await new Promise(r=>setTimeout(r,3000));
@@ -1345,17 +1348,74 @@ async function loadCoinGeckoLogos(){
         `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false`,
         {signal:AbortSignal.timeout(12000)}
       );
-      if(res.status===429){console.warn('CoinGecko 429 — dừng logo');break;}
+      if(res.status===429){console.warn('CoinGecko 429');break;}
       if(!res.ok) break;
       const data=await res.json();
       if(!Array.isArray(data)||!data.length) break;
       data.forEach(c=>{
         const sym=c.symbol.toUpperCase();
-        if(!logoMap[sym]){logoMap[sym]=c.image; nameMap[sym]=c.name;}
+        if(!logoMap[sym]&&c.image&&!c.image.includes('missing_large')){
+          logoMap[sym]=c.image; nameMap[sym]=c.name; loaded++;
+        }
       });
       render(); renderChartCoinList();
-    }catch(e){console.warn('Logo page',page,'error:',e.message); break;}
+    }catch(e){console.warn('CoinGecko logo page',page,e.message); break;}
   }
+
+  /* ── Nguồn 2: CoinCap API (free, no key) ── */
+  if(loaded<50){
+    try{
+      const res=await fetch('https://api.coincap.io/v2/assets?limit=200',
+        {signal:AbortSignal.timeout(10000)});
+      if(res.ok){
+        const json=await res.json();
+        (json.data||[]).forEach(c=>{
+          const sym=(c.symbol||'').toUpperCase();
+          // CoinCap dùng id để build URL logo từ CoinGecko CDN
+          if(!logoMap[sym]&&c.id){
+            logoMap[sym]=`https://assets.coincap.io/assets/icons/${c.symbol.toLowerCase()}@2x.png`;
+            if(!nameMap[sym]) nameMap[sym]=c.name;
+            loaded++;
+          }
+        });
+        render(); renderChartCoinList();
+      }
+    }catch(e){console.warn('CoinCap logo error',e.message);}
+  }
+
+  /* ── Nguồn 3: CryptoCompare (CDN ảnh trực tiếp) ── */
+  if(loaded<100){
+    try{
+      const res=await fetch('https://min-api.cryptocompare.com/data/all/coinlist?limit=200&summary=true',
+        {signal:AbortSignal.timeout(10000)});
+      if(res.ok){
+        const json=await res.json();
+        const base='https://www.cryptocompare.com';
+        Object.values(json.Data||{}).forEach(c=>{
+          const sym=(c.Symbol||'').toUpperCase();
+          if(!logoMap[sym]&&c.ImageUrl){
+            logoMap[sym]=base+c.ImageUrl;
+            if(!nameMap[sym]) nameMap[sym]=c.CoinName||sym;
+            loaded++;
+          }
+        });
+        render(); renderChartCoinList();
+      }
+    }catch(e){console.warn('CryptoCompare logo error',e.message);}
+  }
+
+  /* ── Nguồn 4: URL trực tiếp từ Binance icon CDN ── */
+  // Binance lưu icon tại: https://bin.bnbstatic.com/image/admin_mgs_image_upload/...
+  // Dùng CDN đã biết cho các coin phổ biến chưa có logo
+  const binanceCDN='https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/';
+  SYMBOLS.slice(0,50).forEach(sym=>{
+    const base=sym.replace('USDT','').toLowerCase();
+    if(!logoMap[base.toUpperCase()]){
+      logoMap[base.toUpperCase()]=`${binanceCDN}${base}.png`;
+    }
+  });
+  render(); renderChartCoinList();
+  console.log(`✅ Logo loaded: ${Object.keys(logoMap).length} coins`);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1455,8 +1515,12 @@ function sparkSVG(sym){
 function logoHTML(base,size=28){
   const color=colorMap[base]||'#00d4ff';
   const fbStyle=`width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color};font-size:${Math.round(size*.45)}px`;
-  if(logoMap[base]) return `<img class="coin-logo" src="${logoMap[base]}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
-  return `<div class="coin-logo-fb" style="${fbStyle}">${base[0]}</div>`;
+  const bl=base.toLowerCase();
+  // Fallback chain: logo từ map → cryptocurrency-icons CDN → chữ cái đầu
+  const fallbackUrl=`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${bl}.png`;
+  const onErr=`this.onerror=null;this.src='${fallbackUrl}';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex';}`;
+  const src=logoMap[base]||fallbackUrl;
+  return `<img class="coin-logo" src="${src}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="${onErr}"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2090,22 +2154,42 @@ async function fetchNews(manual=false){
     return items;
   };
 
-  const PROXY='https://corsproxy.io/?url=';
+  // Danh sách CORS proxy — thử lần lượt nếu cái trước lỗi
+  const PROXIES=[
+    'https://api.allorigins.win/raw?url=',
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://thingproxy.freeboard.io/fetch/',
+    'https://corsproxy.io/?url=',
+  ];
+
   const RSS_FEEDS=[
     {url:'https://cointelegraph.com/rss',name:'CoinTelegraph'},
     {url:'https://coindesk.com/arc/outboundfeeds/rss/',name:'CoinDesk'},
     {url:'https://decrypt.co/feed',name:'Decrypt'},
+    {url:'https://cryptonews.com/news/feed/',name:'CryptoNews'},
+    {url:'https://bitcoinmagazine.com/.rss/full/',name:'Bitcoin Magazine'},
   ];
 
+  // Thử fetch 1 feed qua lần lượt các proxy cho đến khi thành công
+  async function fetchRSSWithFallback(feed){
+    for(const proxy of PROXIES){
+      try{
+        const url=proxy+encodeURIComponent(feed.url);
+        const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(!r.ok) continue;
+        const xml=await r.text();
+        const items=parseRSS(xml,feed.name);
+        if(items.length>0) return items;
+      }catch(e){/* thử proxy tiếp theo */}
+    }
+    return [];
+  }
+
   const strategies=[
-    // Strategy 1: RSS qua CORS proxy
+    // Strategy 1: RSS qua proxy chain tự động fallback
     async()=>{
       const results=await Promise.allSettled(
-        RSS_FEEDS.map(f=>
-          fetch(PROXY+encodeURIComponent(f.url),{signal:AbortSignal.timeout(9000)})
-            .then(r=>{if(!r.ok) throw new Error(r.status); return r.text();})
-            .then(xml=>parseRSS(xml,f.name))
-        )
+        RSS_FEEDS.map(f=>fetchRSSWithFallback(f))
       );
       const items=results.flatMap(r=>r.status==='fulfilled'?r.value:[]);
       if(items.length<3) throw new Error('RSS: '+items.length+' items only');
