@@ -1252,10 +1252,18 @@ setInterval(tickClock,1000); tickClock();
 ═══════════════════════════════════════════════════ */
 const fmtP=p=>{
   if(!p||isNaN(p)) return '—';
-  if(p>=1000) return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(p>=1)    return '$'+p.toFixed(4);
-  if(p>=0.01) return '$'+p.toFixed(5);
-  return '$'+p.toFixed(8);
+  if(p>=1000)  return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p>=1)     return '$'+p.toFixed(4);
+  if(p>=0.1)   return '$'+p.toFixed(5);
+  if(p>=0.01)  return '$'+p.toFixed(6);
+  if(p>=0.001) return '$'+p.toFixed(7);
+  if(p>=0.0001)return '$'+p.toFixed(8);
+  // Coin giá rất thấp (PEPE, SHIB, BONK...) — hiển thị đủ chữ số có nghĩa
+  const s=p.toFixed(12).replace(/0+$/,''); // bỏ trailing zeros
+  const match=s.match(/^0\.(0*)/);
+  const zeros=match?match[1].length:0;
+  const decimals=Math.min(zeros+4, 12); // giữ 4 chữ số sau số 0 đầu tiên có nghĩa
+  return '$'+p.toFixed(decimals);
 };
 const fmtB=n=>{
   if(!n||isNaN(n)) return '—';
@@ -2020,18 +2028,40 @@ async function loadCandleData(sym,tf){
     const container=document.getElementById('chartContainer');
     if(lwChart){try{lwChart.remove();}catch(e){} lwChart=null; candleSeries=null;}
     if(container) container.innerHTML='';
+
+    // Tính số chữ số thập phân phù hợp với giá coin
+    const coinData=coins[sym];
+    const price=coinData?.price||1;
+    let precision=2, minMove=0.01;
+    if(price<0.00001){precision=10; minMove=0.0000000001;}
+    else if(price<0.0001){precision=8; minMove=0.00000001;}
+    else if(price<0.001){precision=7; minMove=0.0000001;}
+    else if(price<0.01){precision=6; minMove=0.000001;}
+    else if(price<0.1){precision=5; minMove=0.00001;}
+    else if(price<1){precision=4; minMove=0.0001;}
+    else if(price<10){precision=4; minMove=0.0001;}
+    else if(price<1000){precision=2; minMove=0.01;}
+    else{precision=2; minMove=0.01;}
+
     lwChart=LightweightCharts.createChart(container,{
       layout:{background:{color:'#0c1118'},textColor:'#94a3b8'},
       grid:{vertLines:{color:'rgba(99,179,237,.04)'},horzLines:{color:'rgba(99,179,237,.04)'}},
       crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-      rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
+      rightPriceScale:{
+        borderColor:'rgba(99,179,237,.1)',
+        minimumWidth: precision>=8 ? 120 : precision>=6 ? 100 : 80,
+        autoScale:true,
+        entireTextOnly:true,
+      },
       timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true,secondsVisible:tf==='1m'||tf==='5m'},
-      width:container.clientWidth,height:container.clientHeight||400,
+      width:container.clientWidth,
+      height:container.clientHeight||400,
     });
     candleSeries=lwChart.addCandlestickSeries({
       upColor:'#00e676',downColor:'#ff3d57',
       borderUpColor:'#00e676',borderDownColor:'#ff3d57',
       wickUpColor:'#00e676',wickDownColor:'#ff3d57',
+      priceFormat:{type:'price', precision, minMove},
     });
     candleSeries.setData(candles);
     lwChart.timeScale().fitContent();
