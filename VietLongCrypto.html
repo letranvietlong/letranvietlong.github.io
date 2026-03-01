@@ -17,7 +17,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:Cambria,'Times New Roman',serif;min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.018) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;}
-.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0;}
 .orb1{width:700px;height:700px;background:var(--accent2);top:-300px;right:-200px;opacity:.08;}
 .orb2{width:600px;height:600px;background:#0ea5e9;bottom:-300px;left:-150px;opacity:.07;}
 
@@ -157,6 +157,22 @@ td.r{text-align:right;}
 .fg-hist-val{font-size:13px;font-weight:700;}
 .fg-hist-lbl{font-size:9px;color:var(--muted);margin-top:2px;}
 
+/* Whale Tracker */
+.whale-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.whale-list{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.whale-list::-webkit-scrollbar{width:3px;}
+.whale-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.whale-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.025);}
+.whale-item:last-child{border-bottom:none;}
+.whale-icon{font-size:16px;flex-shrink:0;}
+.whale-sym{font-weight:700;font-size:12px;flex:1;}
+.whale-vol{font-size:11px;font-family:monospace;color:var(--accent);}
+.whale-mult{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:700;}
+.whale-mult.high{color:var(--orange);background:rgba(251,146,60,.12);}
+.whale-mult.extreme{color:var(--red);background:rgba(255,61,87,.12);}
+.whale-mult.mega{color:#ff00ff;background:rgba(255,0,255,.1);}
+.whale-time{font-size:9px;color:var(--muted);text-align:right;}
+
 /* News */
 .news-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;max-height:440px;}
 .news-toolbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
@@ -242,57 +258,6 @@ td.r{text-align:right;}
 .bb-row{display:flex;justify-content:space-between;font-size:10px;}
 .bb-lbl{color:var(--muted);}
 .bb-v{font-weight:700;font-family:monospace;}
-
-/* ══ ORDER BOOK ══ */
-.ob-tabs{display:flex;gap:2px;margin-bottom:10px;}
-.ob-tab{flex:1;padding:5px;font-size:10px;font-weight:700;text-align:center;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:none;color:var(--muted);font-family:Cambria,'Times New Roman',serif;transition:all .2s;}
-.ob-tab.active{background:var(--accent);border-color:var(--accent);color:#000;}
-.ob-header{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 2px;margin-bottom:5px;}
-.ob-rows{display:flex;flex-direction:column;gap:1px;}
-.ob-row{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;padding:2px 4px;border-radius:3px;position:relative;font-size:10px;font-family:monospace;cursor:default;}
-.ob-row:hover{background:rgba(255,255,255,.04);}
-.ob-bar-ask{position:absolute;right:0;top:0;bottom:0;background:rgba(255,61,87,.12);border-radius:3px;transition:width .3s;}
-.ob-bar-bid{position:absolute;left:0;top:0;bottom:0;background:rgba(0,230,118,.12);border-radius:3px;transition:width .3s;}
-.ob-price-ask{color:var(--red);font-weight:700;text-align:center;z-index:1;position:relative;}
-.ob-price-bid{color:var(--green);font-weight:700;text-align:center;z-index:1;position:relative;}
-.ob-qty{color:var(--text2);z-index:1;position:relative;}
-.ob-qty.right{text-align:right;}
-.ob-spread{text-align:center;padding:4px;font-size:9px;color:var(--gold);background:rgba(245,158,11,.08);border-radius:4px;margin:4px 0;font-weight:700;}
-.ob-depth{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
-.ob-depth-bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:4px;display:flex;}
-.ob-depth-bid{height:100%;background:var(--green);transition:width .4s;}
-.ob-depth-ask{height:100%;background:var(--red);}
-.ob-depth-lbl{display:flex;justify-content:space-between;font-size:9px;margin-top:3px;color:var(--muted);}
-
-/* ══ AI PREDICTION PANEL ══ */
-.ai-pred-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:2px;}
-.ai-pred-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:8px;}
-.ai-pred-score{font-size:28px;font-weight:700;font-family:monospace;text-align:center;line-height:1;}
-.ai-pred-label{font-size:10px;text-align:center;margin-top:4px;font-weight:700;}
-.ai-pred-bars{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
-.ai-pred-row{display:flex;align-items:center;gap:6px;font-size:9px;}
-.ai-pred-row span:first-child{width:52px;color:var(--muted);flex-shrink:0;}
-.ai-pred-fill{height:4px;border-radius:2px;transition:width .5s;}
-.ai-pred-pct{width:28px;text-align:right;font-weight:700;}
-
-/* ══ DAILY MARKET REPORT ══ */
-.daily-report-card{background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(139,92,246,.04));border:1px solid rgba(0,212,255,.2);border-radius:14px;padding:18px;margin-bottom:20px;position:relative;overflow:hidden;}
-.daily-report-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);}
-.dr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.dr-title{font-size:13px;font-weight:700;color:var(--accent);}
-.dr-date{font-size:10px;color:var(--muted);}
-.dr-generate-btn{padding:6px 14px;font-size:10px;font-weight:700;background:linear-gradient(135deg,var(--accent),rgba(139,92,246,.8));border:none;border-radius:6px;color:#000;cursor:pointer;font-family:Cambria,'Times New Roman',serif;transition:opacity .2s;}
-.dr-generate-btn:hover{opacity:.85;}
-.dr-generate-btn:disabled{opacity:.5;cursor:default;}
-.dr-loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;}
-.dr-sections{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
-.dr-section{background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;}
-.dr-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
-.dr-section-body{font-size:11px;line-height:1.65;color:var(--text2);}
-.dr-metrics{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;}
-.dr-metric{text-align:center;background:rgba(255,255,255,.03);border-radius:8px;padding:8px 14px;flex:1;min-width:70px;}
-.dr-metric-val{font-size:16px;font-weight:700;font-family:monospace;}
-.dr-metric-lbl{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.8px;}
 
 /* ══ PAGE: SCREENER ══ */
 .screener-layout{max-width:1700px;margin:0 auto;padding:20px 32px;}
@@ -592,6 +557,21 @@ footer .hl{color:var(--accent);}
 .ai-send-btn:hover{opacity:.85;}
 .ai-send-btn:disabled{opacity:.4;cursor:not-allowed;}
 
+/* ── AI News ── */
+.ai-news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:16px 18px;}
+.ai-news-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;transition:border-color .2s,transform .15s;}
+.ai-news-card:hover{border-color:rgba(0,212,255,.2);transform:translateY(-1px);}
+.ai-news-headline{font-size:12px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:9px;}
+.ai-news-analysis{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:9px;background:rgba(0,212,255,.03);border-left:2px solid rgba(0,212,255,.2);padding:7px 10px;border-radius:0 6px 6px 0;}
+.ai-news-impacts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.ai-news-impact{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+.ai-news-impact.bullish{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.ai-news-impact.bearish{background:rgba(255,61,87,.1);color:var(--red);border:1px solid rgba(255,61,87,.2);}
+.ai-news-impact.neutral{background:rgba(245,158,11,.08);color:var(--gold);border:1px solid rgba(245,158,11,.15);}
+.ai-news-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ai-news-source{font-size:9px;color:var(--accent);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.12);border-radius:3px;padding:1px 5px;font-weight:700;}
+.ai-news-time{font-size:9px;color:var(--muted);}
+.ai-news-loading{display:flex;align-items:center;justify-content:center;min-height:180px;flex-direction:column;gap:12px;color:var(--muted);grid-column:1/-1;}
 
 @media(max-width:1200px){
   .ai-summary-grid{grid-template-columns:repeat(3,1fr);}
@@ -600,34 +580,9 @@ footer .hl{color:var(--accent);}
 @media(max-width:768px){
   .ai-layout{padding:14px;}
   .ai-summary-grid{grid-template-columns:repeat(2,1fr);}
+  .ai-news-grid{grid-template-columns:1fr;padding:12px;}
 }
 
-
-/* ── PERFORMANCE CSS ── */
-/* Các trang ẩn dùng content-visibility để browser skip layout/paint */
-.page:not(.active){content-visibility:auto;}
-/* Table rows: chỉ layout trong container, giảm reflow lan rộng */
-.tbl-scroll{contain:strict;}
-.ai-tbl-scroll{contain:strict;}
-/* Orb: tách layer GPU riêng */
-.orb{will-change:transform;contain:layout style;}
-/* Ticker animation: GPU layer */
-.ticker{will-change:transform;}
-/* Flash animation: tách layer */
-.pv{will-change:color;}
-/* Stat cards hover: tách transform */
-.stat-card{will-change:transform;}
-.ai-sum-card{will-change:transform;}
-
-/* Accessibility + performance: tôn trọng system reduce-motion */
-@media (prefers-reduced-motion: reduce){
-  .ticker{animation:none;overflow-x:auto;}
-  .orb{display:none;}
-  .logo-coin{animation:none;}
-  .logo-text{animation:none;}
-  .live-dot{animation:none;opacity:1;}
-  .spinner{animation:none;}
-}
 </style>
 </head>
 <body>
@@ -657,7 +612,9 @@ footer .hl{color:var(--accent);}
   </div>
   <div class="header-right">
     <div class="header-stats">
-
+      <div class="hstat"><div class="lbl">KL 24h</div><div class="val" id="hVol">—</div></div>
+      <div class="hstat"><div class="lbl">BTC Dom.</div><div class="val" id="hBtcDom">—</div></div>
+      <div class="hstat"><div class="lbl">Coins</div><div class="val" id="hCount">—</div></div>
     </div>
     <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội</span></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
@@ -672,6 +629,7 @@ footer .hl{color:var(--accent);}
   <button class="nav-tab" onclick="showPage('alert',this)"><span class="tab-icon">🔔</span>Cảnh Báo Giá</button>
   <button class="nav-tab" onclick="showPage('news',this)"><span class="tab-icon">📰</span>Tin Tức</button>
   <button class="nav-tab" onclick="showPage('ai',this)"><span class="tab-icon">🤖</span>AI Phân Tích</button>
+  <button class="nav-tab" onclick="showPage('donate',this)"><span class="tab-icon">💛</span>Ủng Hộ</button>
 </div>
 
 <!-- ══════════════ PAGE: MARKET ══════════════ -->
@@ -711,7 +669,7 @@ footer .hl{color:var(--accent);}
     </div>
   </div>
 
-  <!-- Right: Fear & Greed -->
+  <!-- Right: FG + Whale + News -->
   <div class="market-side">
     <!-- Fear & Greed -->
     <div class="fg-card">
@@ -740,6 +698,18 @@ footer .hl{color:var(--accent);}
       <div class="fg-label" id="fgLabel">Đang tải tin tức...</div>
       <div class="fg-sub" id="fgSub"></div>
       <div class="fg-history" id="fgHistory"></div>
+    </div>
+
+    <!-- Whale Tracker -->
+    <div class="whale-card">
+      <div class="card-title" style="margin-bottom:10px;">
+        <svg viewBox="0 0 24 24" style="fill:var(--orange)"><path d="M21.4 11.6C21.1 11.2 18 7 12 7s-9.1 4.2-9.4 4.6L2 13l.6.4c.3.4 3.4 4.6 9.4 4.6s9.1-4.2 9.4-4.6l.6-.4-.6-1.4zM12 16c-3.5 0-6.3-2.3-7.5-3C5.7 12.2 8.5 10 12 10s6.3 2.3 7.5 3c-1.2.7-4 3-7.5 3zm0-7a4 4 0 0 0 0 8 4 4 0 0 0 0-8zm0 6a2 2 0 0 1 0-4 2 2 0 0 1 0 4z"/></svg>
+        Phát Hiện Cá Voi
+        <span style="font-size:9px;color:var(--orange);margin-left:auto;">Volume đột biến</span>
+      </div>
+      <div class="whale-list" id="whaleList">
+        <div class="news-loading"><div class="ns"></div><div>Đang phân tích dữ liệu...</div></div>
+      </div>
     </div>
 
   </div>
@@ -782,69 +752,43 @@ footer .hl{color:var(--accent);}
     </div>
   </div>
 
-  <!-- Right Panel: Chỉ Báo / Order Book / AI Dự Đoán -->
+  <!-- Indicators -->
   <div class="indicators-panel" id="indicatorsPanel">
-    <div class="ob-tabs" style="flex-shrink:0;">
-      <button class="ob-tab active" onclick="switchRightPanel('ind',this)">📊 Chỉ Báo</button>
-      <button class="ob-tab" onclick="switchRightPanel('ob',this)">📖 Order Book</button>
+    <div class="ind-section">
+      <div class="ind-title">RSI (14)</div>
+      <div class="ind-row">
+        <span class="ind-name">Giá trị</span>
+        <span class="ind-val" id="rsiVal">—</span>
+      </div>
+      <div class="ind-bar"><div class="ind-bar-fill" id="rsiBar" style="width:50%;background:var(--gold)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0 Quá bán</span><span>50</span><span>Quá mua 100</span></div>
+      <div class="ind-signal hold" id="rsiSignal" style="margin-top:10px;">Đang tính...</div>
     </div>
 
-    <!-- Chỉ Báo -->
-    <div id="rp-ind">
-      <div class="ind-section">
-        <div class="ind-title">RSI (14)</div>
-        <div class="ind-row"><span class="ind-name">Giá trị</span><span class="ind-val" id="rsiVal">—</span></div>
-        <div class="ind-bar"><div class="ind-bar-fill" id="rsiBar" style="width:50%;background:var(--gold)"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0 Quá bán</span><span>50</span><span>Quá mua 100</span></div>
-        <div class="ind-signal hold" id="rsiSignal" style="margin-top:10px;">Đang tính...</div>
-      </div>
-      <div class="ind-section">
-        <div class="ind-title">MACD (12,26,9)</div>
-        <div class="macd-row"><span class="macd-lbl">MACD Line</span><span class="macd-val" id="macdLine">—</span></div>
-        <div class="macd-row"><span class="macd-lbl">Signal Line</span><span class="macd-val" id="macdSignal">—</span></div>
-        <div class="macd-row"><span class="macd-lbl">Histogram</span><span class="macd-val" id="macdHist">—</span></div>
-        <div class="ind-signal hold" id="macdSignalBox" style="margin-top:10px;">Đang tính...</div>
-      </div>
-      <div class="ind-section">
-        <div class="ind-title">Bollinger Bands (20,2)</div>
-        <div class="bb-visual" id="bbPanel">
-          <div class="bb-row"><span class="bb-lbl">Dải Trên</span><span class="bb-v" id="bbUpper">—</span></div>
-          <div class="bb-row"><span class="bb-lbl">Trung Bình (SMA20)</span><span class="bb-v" id="bbMiddle">—</span></div>
-          <div class="bb-row"><span class="bb-lbl">Dải Dưới</span><span class="bb-v" id="bbLower">—</span></div>
-          <div class="bb-row"><span class="bb-lbl">Giá Hiện Tại</span><span class="bb-v" id="bbPrice">—</span></div>
-        </div>
-        <div class="ind-signal hold" id="bbSignal" style="margin-top:10px;">Đang tính...</div>
-      </div>
-      <div class="ind-section">
-        <div class="ind-title">Tín Hiệu Tổng Hợp</div>
-        <div class="ind-signal hold" id="overallSignal" style="font-size:14px;padding:14px;">Chưa có dữ liệu phân tích</div>
-        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">Tổng hợp RSI + MACD + BB</div>
-      </div>
+    <div class="ind-section">
+      <div class="ind-title">MACD (12,26,9)</div>
+      <div class="macd-row"><span class="macd-lbl">MACD Line</span><span class="macd-val" id="macdLine">—</span></div>
+      <div class="macd-row"><span class="macd-lbl">Signal Line</span><span class="macd-val" id="macdSignal">—</span></div>
+      <div class="macd-row"><span class="macd-lbl">Histogram</span><span class="macd-val" id="macdHist">—</span></div>
+      <div class="ind-signal hold" id="macdSignalBox" style="margin-top:10px;">Đang tính...</div>
     </div>
 
-    <!-- Order Book -->
-    <div id="rp-ob" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);">Order Book Realtime</span>
-        <span style="font-size:9px;color:var(--accent);font-weight:700;" id="obCoinLabel">—</span>
+    <div class="ind-section">
+      <div class="ind-title">Bollinger Bands (20,2)</div>
+      <div class="bb-visual" id="bbPanel">
+        <div class="bb-row"><span class="bb-lbl">Dải Trên</span><span class="bb-v" id="bbUpper">—</span></div>
+        <div class="bb-row"><span class="bb-lbl">Trung Bình (SMA20)</span><span class="bb-v" id="bbMiddle">—</span></div>
+        <div class="bb-row"><span class="bb-lbl">Dải Dưới</span><span class="bb-v" id="bbLower">—</span></div>
+        <div class="bb-row"><span class="bb-lbl">Giá Hiện Tại</span><span class="bb-v" id="bbPrice">—</span></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:3px;">
-        <span style="color:var(--green);font-weight:700;" id="obBidPct">—% Mua</span>
-        <span style="color:var(--muted);">Áp Lực</span>
-        <span style="color:var(--red);font-weight:700;" id="obAskPct">Bán —%</span>
-      </div>
-      <div class="ob-depth-bar" style="margin-bottom:10px;">
-        <div class="ob-depth-bid" id="obDepthBid" style="width:50%"></div>
-        <div class="ob-depth-ask" id="obDepthAsk" style="width:50%"></div>
-      </div>
-      <div class="ob-header"><span>Qty</span><span>Giá Ask</span><span style="text-align:right">USDT</span></div>
-      <div class="ob-rows" id="obAsks"></div>
-      <div class="ob-spread" id="obSpread">Spread: —</div>
-      <div class="ob-header"><span>Qty</span><span>Giá Bid</span><span style="text-align:right">USDT</span></div>
-      <div class="ob-rows" id="obBids"></div>
-      <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px;">🔴 Cập nhật mỗi 2 giây</div>
+      <div class="ind-signal hold" id="bbSignal" style="margin-top:10px;">Đang tính...</div>
     </div>
 
+    <div class="ind-section">
+      <div class="ind-title">Tín Hiệu Tổng Hợp</div>
+      <div class="ind-signal hold" id="overallSignal" style="font-size:14px;padding:14px;">Chưa có dữ liệu phân tích</div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">Tổng hợp RSI + MACD + BB</div>
+    </div>
   </div>
 </div>
 </div>
@@ -1001,20 +945,6 @@ footer .hl{color:var(--accent);}
 <div class="news-layout">
 
   <!-- Stats bar -->
-  <!-- Daily Market Report — Compact Card -->
-  <div class="daily-report-card" id="dailyReportCard">
-    <div class="dr-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div>
-          <div class="dr-title">📋 Tóm Tắt Thị Trường Hôm Nay</div>
-          <div class="dr-date" id="drDate">—</div>
-        </div>
-      </div>
-      <button class="dr-generate-btn" id="drBtn" onclick="generateDailyReport()">✨ Tạo Tóm Tắt AI</button>
-    </div>
-    <div id="drContent" style="color:var(--muted);font-size:11px;line-height:1.6;">Nhấn <strong style="color:var(--accent)">✨ Tạo Tóm Tắt AI</strong> để nhận tóm tắt thị trường hôm nay — BTC, altcoin nổi bật, tâm lý và điểm cần chú ý.</div>
-  </div>
-
   <div class="news-stats-bar">
     <div class="news-stat">
       <div class="news-stat-val" id="newsTotal" style="color:var(--accent)">—</div>
@@ -1073,7 +1003,6 @@ footer .hl{color:var(--accent);}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="ai-badge"><div class="ai-badge-dot"></div><span>Claude AI Powered</span></div>
       <button class="ai-refresh-btn" id="aiRefreshBtn" onclick="runAISignals()">⚡ Phân Tích Ngay</button>
-      <button class="ai-refresh-btn" id="runAllAIPredsBtn" onclick="runAllAIPreds()" style="background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(0,212,255,.06));border-color:rgba(139,92,246,.3);color:#a78bfa;">🤖 Dự Đoán 30 Coin</button>
     </div>
   </div>
 
@@ -1177,6 +1106,24 @@ footer .hl{color:var(--accent);}
     </div>
 
   </div><!-- /ai-main-grid -->
+
+  <!-- [3] AI News Analysis -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h12v2H6zm0 4h8v2H6z"/></svg>
+        📰 AI Phân Tích Tác Động Tin Tức → Giá
+      </div>
+      <button class="ai-refresh-btn" id="aiNewsBtn" onclick="runAINewsAnalysis()">🔍 Phân Tích Tin Tức</button>
+    </div>
+    <div id="aiNewsGrid" class="ai-news-grid">
+      <div class="ai-news-loading">
+        <div style="font-size:32px">📰</div>
+        <div style="text-align:center;">Nhấn <strong style="color:var(--accent)">🔍 Phân Tích Tin Tức</strong><br>để AI đánh giá tác động của tin tức lên giá coin</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /ai-layout -->
 </div><!-- /page-ai -->
 
@@ -1298,25 +1245,17 @@ function tickClock(){
   const el=document.getElementById('clock');
   if(el) el.textContent=`${hh}:${mm}:${ss}`;
 }
-setInterval(tickClock,5000); tickClock(); // giảm từ 1s→5s
+setInterval(tickClock,1000); tickClock();
 
 /* ═══════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════ */
 const fmtP=p=>{
   if(!p||isNaN(p)) return '—';
-  if(p>=1000)  return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(p>=1)     return '$'+p.toFixed(4);
-  if(p>=0.1)   return '$'+p.toFixed(5);
-  if(p>=0.01)  return '$'+p.toFixed(6);
-  if(p>=0.001) return '$'+p.toFixed(7);
-  if(p>=0.0001)return '$'+p.toFixed(8);
-  // Coin giá rất thấp (PEPE, SHIB, BONK...) — hiển thị đủ chữ số có nghĩa
-  const s=p.toFixed(12).replace(/0+$/,''); // bỏ trailing zeros
-  const match=s.match(/^0\.(0*)/);
-  const zeros=match?match[1].length:0;
-  const decimals=Math.min(zeros+4, 12); // giữ 4 chữ số sau số 0 đầu tiên có nghĩa
-  return '$'+p.toFixed(decimals);
+  if(p>=1000) return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p>=1)    return '$'+p.toFixed(4);
+  if(p>=0.01) return '$'+p.toFixed(5);
+  return '$'+p.toFixed(8);
 };
 const fmtB=n=>{
   if(!n||isNaN(n)) return '—';
@@ -1393,6 +1332,7 @@ async function loadAllCoins(){
         low:parseFloat(t.lowPrice)||0,
         vol:parseFloat(t.quoteVolume)||0
       };
+      hist[t.symbol]=[];
       colorMap[base]=COLORS[base.charCodeAt(0)%COLORS.length];
       nameMap[base]=base;
       volHistory[t.symbol]=[parseFloat(t.quoteVolume)||0];
@@ -1403,6 +1343,7 @@ async function loadAllCoins(){
     render();
     loadCoinGeckoLogos();
     connectWS();
+    updateWhaleTracker();
     // Tính lại KL & % theo ngày UTC+7 (00:00 VN → hiện tại)
     loadDailyVN();
   }catch(e){
@@ -1427,7 +1368,7 @@ async function loadDailyVN(){
 
   // Batch fetch klines 1d cho top 200 coin, mỗi lần 10 coin song song
   const top=SYMBOLS.slice(0,200);
-  const BATCH=20; // tăng từ 10→20 song song
+  const BATCH=10;
   for(let i=0;i<top.length;i+=BATCH){
     const batch=top.slice(i,i+BATCH);
     await Promise.allSettled(batch.map(async sym=>{
@@ -1452,9 +1393,9 @@ async function loadDailyVN(){
       }catch(e){}
     }));
     if(i===0) render(); // render ngay sau batch đầu tiên
-    if(i>0&&i%80===0) await new Promise(r=>setTimeout(r,300)); // throttle nhẹ
+    if(i>0&&i%50===0) await new Promise(r=>setTimeout(r,200)); // tránh rate limit
   }
-  _forceFullRender();
+  render();
   if(luEl) luEl.textContent=`Dữ liệu thời gian thực · KL & % theo ngày VN (UTC+7)`;
 }
 
@@ -1485,7 +1426,7 @@ async function loadCoinGeckoLogos(){
           logoMap[sym]=c.image; nameMap[sym]=c.name; loaded++;
         }
       });
-      _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+      render(); renderChartCoinList();
     }catch(e){console.warn('CoinGecko logo page',page,e.message); break;}
   }
 
@@ -1505,7 +1446,7 @@ async function loadCoinGeckoLogos(){
             loaded++;
           }
         });
-        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+        render(); renderChartCoinList();
       }
     }catch(e){console.warn('CoinCap logo error',e.message);}
   }
@@ -1526,7 +1467,7 @@ async function loadCoinGeckoLogos(){
             loaded++;
           }
         });
-        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+        render(); renderChartCoinList();
       }
     }catch(e){console.warn('CryptoCompare logo error',e.message);}
   }
@@ -1541,7 +1482,7 @@ async function loadCoinGeckoLogos(){
       logoMap[base.toUpperCase()]=`${binanceCDN}${base}.png`;
     }
   });
-  _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+  render(); renderChartCoinList();
   console.log(`✅ Logo loaded: ${Object.keys(logoMap).length} coins`);
 }
 
@@ -1554,7 +1495,7 @@ let reconnTimer=null;
 function connectWS(){
   wsConns.forEach(w=>{try{w.close();}catch(e){}});
   wsConns.length=0;
-  const CHUNK=200; // max streams per connection
+  const CHUNK=180;
   let openCount=0;
 
   for(let i=0;i<SYMBOLS.length;i+=CHUNK){
@@ -1589,16 +1530,9 @@ function connectWS(){
           // changeVN được tính realtime trong hàm chg() từ c.price & c.openVN
           // Cập nhật volVN xấp xỉ: giữ nguyên giá trị từ klines (refresh 10p/lần)
         }
+        const h=hist[d.s]||(hist[d.s]=[]);
+        h.push(c.price); if(h.length>30) h.shift();
         tickerNeedsUpdate=true;
-        // Schedule patch update qua RAF để batch nhiều WS messages trong 1 frame
-        if(!_rafPending){
-          _rafPending=true;
-          requestAnimationFrame(()=>{
-            _rafPending=false;
-            if(_tableBuilt) patchRender();
-            else{renderDirty=true;}
-          });
-        }
 
         // Realtime chart update cho coin đang xem
         if(d.s===selectedSym){
@@ -1637,6 +1571,17 @@ function connectWS(){
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   SPARKLINE SVG
+═══════════════════════════════════════════════════ */
+function sparkSVG(sym){
+  const h=hist[sym]||[];
+  if(h.length<2) return '<svg width="64" height="20"></svg>';
+  const mn=Math.min(...h),mx=Math.max(...h),rng=mx-mn||1;
+  const pts=h.map((v,i)=>`${(2+(i/(h.length-1))*60).toFixed(1)},${(18-((v-mn)/rng)*16).toFixed(1)}`).join(' ');
+  const clr=h[h.length-1]>=h[0]?'#00e676':'#ff3d57';
+  return `<svg width="64" height="20" viewBox="0 0 64 20" style="display:block"><polyline points="${pts}" fill="none" stroke="${clr}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
 
 /* ═══════════════════════════════════════════════════
    LOGO HTML
@@ -1655,22 +1600,15 @@ function logoHTML(base,size=28){
 /* ═══════════════════════════════════════════════════
    RENDER BẢNG THỊ TRƯỜNG
 ═══════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════
-   RENDER ENGINE — 2 tầng: fullRender + patchRender
-   fullRender: build HTML đầy đủ (khi sort/filter/page đổi)
-   patchRender: chỉ update text của ô giá/% đã thay đổi
-═══════════════════════════════════════════════════ */
-
-// State để biết có cần full rebuild không
-let _lastSortCol=null,_lastSortDir=null,_lastTab=null,_lastPage=null,_lastQuery=null,_tableBuilt=false;
-
-// Hàm dùng chung: tính list đã filter+sort
-function _buildList(){
+function render(){
+  if(!SYMBOLS.length) return;
   const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-  let list=SYMBOLS.map(s=>{const base=s.replace('USDT','');return{sym:s,base,...coins[s]};}).filter(c=>c.price>0);
+
+  let list=SYMBOLS.map(s=>{const base=s.replace('USDT','');return{sym:s,base,...coins[s]};});
   if(currentTab==='gainers') list=list.filter(c=>chg(c.sym)>0);
   else if(currentTab==='losers') list=list.filter(c=>chg(c.sym)<0);
   if(q) list=list.filter(c=>(nameMap[c.base]||'').toLowerCase().includes(q)||c.base.toLowerCase().includes(q));
+
   list.sort((a,b)=>{
     let av,bv;
     if(sortCol==='change24h'){av=chg(a.sym); bv=chg(b.sym);}
@@ -1679,50 +1617,34 @@ function _buildList(){
     else{av=a[sortCol]??0; bv=b[sortCol]??0;}
     return sortDir*(bv-av);
   });
-  return list;
-}
 
-// Update stats cards (nhanh, chỉ text nodes)
-function _updateStats(list){
-  const all=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),_chg:chg(s),_vol:kvol(s),...coins[s]})).filter(c=>c.price>0);
-  if(!all.length) return;
-  const sorted=[...all].sort((a,b)=>b._chg-a._chg);
-  const top=sorted[0],bot=sorted[sorted.length-1];
-  const up=all.filter(c=>c._chg>0.01).length;
-  const dn=all.filter(c=>c._chg<-0.01).length;
-  const _s=(id,v)=>{const e=document.getElementById(id);if(e&&e.textContent!==String(v))e.textContent=v;};
-  _s('sCoinCount',all.length+' Coin');
-  _s('sTopGain',`+${(top._chg||0).toFixed(2)}%`);
-  _s('sTopGainName',nameMap[top.base]||top.base);
-  _s('sTopLoss',`${(bot._chg||0).toFixed(2)}%`);
-  _s('sTopLossName',nameMap[bot.base]||bot.base);
-  _s('sRatio',`${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`);
-  _s('countBadge',list.length+' coins');
-  // Stats color
-  const tgEl=document.getElementById('sTopGain');
-  if(tgEl) tgEl.style.color='var(--green)';
-  const tlEl=document.getElementById('sTopLoss');
-  if(tlEl) tlEl.style.color='var(--red)';
-}
-
-function render(){
-  if(!SYMBOLS.length) return;
-  if(!renderDirty) return;
-  renderDirty=false;
-
-  const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-  const needFull=!_tableBuilt||
-    sortCol!==_lastSortCol||sortDir!==_lastSortDir||
-    currentTab!==_lastTab||currentPage!==_lastPage||q!==_lastQuery;
-
-  if(needFull) fullRender(q);
-  else patchRender();
-}
-
-function fullRender(q){
-  if(q===undefined) q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-  const list=_buildList();
-  _updateStats(list);
+  // Stats header
+  // Stats — dùng UTC+7: chg(sym) & kvol(sym)
+  const all=SYMBOLS.map(s=>{
+    const base=s.replace('USDT','');
+    return {sym:s,base,...coins[s],_chg:chg(s),_vol:kvol(s)};
+  }).filter(c=>c.price>0);
+  if(all.length){
+    const sorted=[...all].sort((a,b)=>b._chg-a._chg);
+    const top=sorted[0], bot=sorted[sorted.length-1];
+    const up=all.filter(c=>c._chg>0.01).length;
+    const dn=all.filter(c=>c._chg<-0.01).length;
+    const tv=all.reduce((s,c)=>s+c._vol,0);
+    const btc=all.find(c=>c.base==='BTC');
+    const btcDom=btc&&tv>0?((kvol('BTCUSDT')/tv)*100).toFixed(1)+'%':'—';
+    // Nhãn KL: nếu đã có dữ liệu VN thì thêm "(VN)" 
+    const hasVN=coins['BTCUSDT']?.volVN>0;
+    document.getElementById('sCoinCount').textContent=all.length+' Coin';
+    document.getElementById('sTopGain').textContent=`+${(top._chg||0).toFixed(2)}%`;
+    document.getElementById('sTopGainName').textContent=nameMap[top.base]||top.base;
+    document.getElementById('sTopLoss').textContent=`${(bot._chg||0).toFixed(2)}%`;
+    document.getElementById('sTopLossName').textContent=nameMap[bot.base]||bot.base;
+    document.getElementById('sRatio').textContent=`${up} ▲ / ${dn} ▼ / ${all.length-up-dn} —`;
+    document.getElementById('hVol').textContent=fmtB(tv)+(hasVN?' (VN)':'');
+    document.getElementById('hBtcDom').textContent=btcDom;
+    document.getElementById('hCount').textContent=all.length;
+    document.getElementById('countBadge').textContent=list.length+' coins';
+  }
   updateTicker();
 
   const totalPages=Math.ceil(list.length/PAGE_SIZE)||1;
@@ -1732,7 +1654,6 @@ function fullRender(q){
 
   if(!pageList.length){
     document.getElementById('tableArea').innerHTML='<div class="state-box"><div>Không tìm thấy kết quả</div></div>';
-    _tableBuilt=false;
     return;
   }
 
@@ -1745,17 +1666,19 @@ function fullRender(q){
   const rows=pageList.map((c,i)=>{
     const _c=chg(c.sym), _v=kvol(c.sym);
     const cls=_c>0.01?'up':_c<-0.01?'down':'neu';
+    const fl=c.price&&c.prev&&c.price!==c.prev?(c.price>c.prev?'flash-g':'flash-r'):'';
     const rc=rsiCache[c.sym];
     const rsiBadge=rc?`<span class="rsi-badge ${rc.rsi>70?'rsi-ob':rc.rsi<30?'rsi-os':'rsi-n'}">${rc.rsi.toFixed(0)}</span>`:'<span class="rsi-badge rsi-n">—</span>';
     const sigBadge=rc?`<span class="sig ${rc.signal}">${rc.signal==='buy'?'MUA':rc.signal==='sell'?'BÁN':'GIỮ'}</span>`:'<span class="sig hold">—</span>';
-    return `<tr data-sym="${c.sym}" onclick="openChart('${c.sym}')">
+    return `<tr onclick="openChart('${c.sym}')">
       <td><span class="rank">${start+i+1}</span></td>
       <td><div class="coin-cell">${logoHTML(c.base)}<div><div class="cn">${nameMap[c.base]||c.base}</div><div class="cs">${c.base}</div></div></div></td>
-      <td class="r"><span class="pv" data-price="${c.sym}">${fmtP(c.price)}</span></td>
-      <td class="r"><span class="badge ${cls}" data-chg="${c.sym}">${sign(_c)}${_c.toFixed(2)}%</span></td>
-      <td class="r hide-sm"><span class="num" data-vol="${c.sym}">${fmtB(_v)}</span></td>
-      <td class="r hide-sm" data-rsi-cell="${c.sym}">${rsiBadge}</td>
-      <td class="r hide-sm" data-sig-cell="${c.sym}">${sigBadge}</td>
+      <td class="r"><span class="pv ${fl}">${fmtP(c.price)}</span></td>
+      <td class="r"><span class="badge ${cls}">${sign(_c)}${_c.toFixed(2)}%</span></td>
+      <td class="r hide-sm"><span class="num">${fmtB(_v)}</span></td>
+      <td class="r hide-sm">${rsiBadge}</td>
+      <td class="r hide-sm">${sigBadge}</td>
+      <td class="r hide-sm">${sparkSVG(c.sym)}</td>
     </tr>`;
   }).join('');
 
@@ -1781,105 +1704,16 @@ function fullRender(q){
         ${thSort('vol','KL 24h')}
         <th class="r hide-sm">RSI</th>
         <th class="r hide-sm">Tín Hiệu</th>
+        <th class="r hide-sm">Biến Động</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>${pgHtml}`;
-
-  _tableBuilt=true;
-  _lastSortCol=sortCol; _lastSortDir=sortDir;
-  _lastTab=currentTab; _lastPage=currentPage; _lastQuery=q;
 }
 
-// patchRender: update CHỈ những ô đã thay đổi — không rebuild DOM
-function patchRender(){
-  const area=document.getElementById('tableArea');
-  if(!area) return;
-
-  // Update stats (nhanh)
-  const list=_buildList();
-  _updateStats(list);
-  updateTicker();
-
-  // Patch từng ô giá/% trên trang hiện tại
-  const start=(currentPage-1)*PAGE_SIZE;
-  const pageList=list.slice(start,start+PAGE_SIZE);
-
-  pageList.forEach(c=>{
-    const _c=chg(c.sym);
-    const _v=kvol(c.sym);
-
-    // Giá — update nếu khác
-    const priceEl=area.querySelector(`[data-price="${c.sym}"]`);
-    if(priceEl){
-      const newPrice=fmtP(c.price);
-      if(priceEl.textContent!==newPrice){
-        priceEl.textContent=newPrice;
-        // Flash effect
-        const flash=c.price>(coins[c.sym]?.prev||0)?'flash-g':'flash-r';
-        priceEl.className='pv '+flash;
-        setTimeout(()=>{if(priceEl) priceEl.className='pv';},600);
-      }
-    }
-
-    // % thay đổi
-    const chgEl=area.querySelector(`[data-chg="${c.sym}"]`);
-    if(chgEl){
-      const newChg=`${sign(_c)}${_c.toFixed(2)}%`;
-      if(chgEl.textContent!==newChg){
-        chgEl.textContent=newChg;
-        const cls=_c>0.01?'up':_c<-0.01?'down':'neu';
-        chgEl.className=`badge ${cls}`;
-      }
-    }
-
-    // Volume
-    const volEl=area.querySelector(`[data-vol="${c.sym}"]`);
-    if(volEl){
-      const newVol=fmtB(_v);
-      if(volEl.textContent!==newVol) volEl.textContent=newVol;
-    }
-
-    // RSI — update nếu cache mới
-    const rsiCell=area.querySelector(`[data-rsi-cell="${c.sym}"]`);
-    if(rsiCell){
-      const rc=rsiCache[c.sym];
-      if(rc){
-        const rsiStr=rc.rsi.toFixed(0);
-        const rsiClass=rc.rsi>70?'rsi-ob':rc.rsi<30?'rsi-os':'rsi-n';
-        const span=rsiCell.querySelector('.rsi-badge');
-        if(span&&(span.textContent!==rsiStr||!span.classList.contains(rsiClass))){
-          span.textContent=rsiStr;
-          span.className=`rsi-badge ${rsiClass}`;
-        }
-      }
-    }
-
-    // Signal
-    const sigCell=area.querySelector(`[data-sig-cell="${c.sym}"]`);
-    if(sigCell){
-      const rc=rsiCache[c.sym];
-      if(rc){
-        const sigTxt=rc.signal==='buy'?'MUA':rc.signal==='sell'?'BÁN':'GIỮ';
-        const span=sigCell.querySelector('.sig');
-        if(span&&(span.textContent!==sigTxt||span.className!==`sig ${rc.signal}`)){
-          span.textContent=sigTxt;
-          span.className=`sig ${rc.signal}`;
-        }
-      }
-    }
-  });
-
-  // Cập nhật _last state (không thay đổi sort/filter)
-  _lastSortCol=sortCol; _lastSortDir=sortDir;
-  _lastTab=currentTab; _lastPage=currentPage;
-}
-
-// Khi sort/filter thay đổi → force full rebuild
-function _forceFullRender(){_tableBuilt=false; renderDirty=true; render();}
 function sortBy(col){
   if(sortCol===col) sortDir*=-1;
   else{sortCol=col; sortDir=-1;}
-  currentPage=1; _forceFullRender();
+  currentPage=1; render();
 }
 function goPage(p){
   const tot=Math.ceil(SYMBOLS.filter(s=>coins[s]?.price>0).length/PAGE_SIZE)||1;
@@ -1889,84 +1723,37 @@ function goPage(p){
 }
 function setTab(el,tab){
   document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); currentTab=tab; currentPage=1; _forceFullRender();
+  el.classList.add('active'); currentTab=tab; currentPage=1; render();
 }
 function onSearch(){
   const val=document.getElementById('searchInput').value;
   document.getElementById('clearBtn').classList.toggle('visible',val.length>0);
-  currentPage=1; _forceFullRender();
+  currentPage=1; render();
 }
 function clearSearch(){
   document.getElementById('searchInput').value='';
   document.getElementById('clearBtn').classList.remove('visible');
-  currentPage=1; _forceFullRender();
+  currentPage=1; render();
 }
 
 /* ═══════════════════════════════════════════════════
-   TICKER — smart update: chỉ patch text khi cần
+   TICKER (throttle — chỉ re-render khi có thay đổi)
 ═══════════════════════════════════════════════════ */
 let tickerNeedsUpdate=true;
-let renderDirty=true;
-let lastRenderHash='';
-let _rafPending=false;
-let _tickerBuilt=false;
-let _tickerSymCount=0;
-
 function updateTicker(){
   if(!tickerNeedsUpdate) return;
   const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
   if(!list.length) return;
   tickerNeedsUpdate=false;
-
+  const html=list.map(c=>{
+    const _tc=chg(c.sym); const cls=_tc>=0?'tup':'tdn';
+    const lg=logoMap[c.base]?`<img src="${logoMap[c.base]}" width="14" height="14" style="border-radius:50%;object-fit:cover" loading="lazy">`:'';
+    return `<span class="ticker-item">${lg}<span class="tsym">${c.base}</span><span>${fmtP(c.price)}</span><span class="${cls}">${sign(_tc)}${_tc.toFixed(2)}%</span></span>`;
+  }).join('');
   const el=document.getElementById('ticker');
-  if(!el) return;
-
-  // Rebuild toàn bộ chỉ khi số lượng coin thay đổi (lần đầu / logo mới)
-  if(!_tickerBuilt||_tickerSymCount!==list.length){
-    const html=list.map(c=>{
-      const _tc=chg(c.sym); const cls=_tc>=0?'tup':'tdn';
-      const lg=logoMap[c.base]?`<img src="${logoMap[c.base]}" width="14" height="14" style="border-radius:50%;object-fit:cover" loading="lazy">`:'';
-      return `<span class="ticker-item" data-tsym="${c.sym}">${lg}<span class="tsym">${c.base}</span><span class="tprice">${fmtP(c.price)}</span><span class="tchange ${cls}">${sign(_tc)}${_tc.toFixed(2)}%</span></span>`;
-    }).join('');
-    el.innerHTML=html+html; // duplicate for seamless loop
-    _tickerBuilt=true;
-    _tickerSymCount=list.length;
-    return;
-  }
-
-  // Patch mode: update chỉ giá/% đã thay đổi (tránh layout reflow)
-  // Chỉ update bản sao đầu tiên (CSS animation sẽ tự sync bản 2)
-  const items=el.querySelectorAll('[data-tsym]');
-  const half=Math.floor(items.length/2); // chỉ update nửa đầu
-  for(let i=0;i<half;i++){
-    const item=items[i];
-    const sym=item.dataset.tsym;
-    if(!sym||!coins[sym]) continue;
-    const _tc=chg(sym);
-    const cls=_tc>=0?'tup':'tdn';
-    const priceEl=item.querySelector('.tprice');
-    const chgEl=item.querySelector('.tchange');
-    const newPrice=fmtP(coins[sym].price);
-    const newChg=`${sign(_tc)}${_tc.toFixed(2)}%`;
-    if(priceEl&&priceEl.textContent!==newPrice) priceEl.textContent=newPrice;
-    if(chgEl){
-      if(chgEl.textContent!==newChg) chgEl.textContent=newChg;
-      if(chgEl.className!==`tchange ${cls}`) chgEl.className=`tchange ${cls}`;
-    }
-    // Sync bản 2 (duplicate) luôn
-    const item2=items[i+half];
-    if(item2){
-      const p2=item2.querySelector('.tprice');
-      const c2=item2.querySelector('.tchange');
-      if(p2&&p2.textContent!==newPrice) p2.textContent=newPrice;
-      if(c2){
-        if(c2.textContent!==newChg) c2.textContent=newChg;
-        if(c2.className!==`tchange ${cls}`) c2.className=`tchange ${cls}`;
-      }
-    }
-  }
+  if(el) el.innerHTML=html+html;
 }
-setInterval(()=>{tickerNeedsUpdate=true;},5000); // ticker update 5s (giảm từ 10s)
+setInterval(()=>{tickerNeedsUpdate=true;},10000);
 
 /* ═══════════════════════════════════════════════════
    FEAR & GREED INDEX
@@ -2015,6 +1802,61 @@ async function loadFearGreed(){
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   WHALE TRACKER — phát hiện volume đột biến
+═══════════════════════════════════════════════════ */
+function updateWhaleTracker(){
+  // Dùng volBaseline (snapshot lúc load) để so sánh với vol WS hiện tại
+  // Vol Binance WS = quoteVolume 24h rolling → so sánh với vol 24h ban đầu
+  const candidates=SYMBOLS.map(s=>{
+    const c=coins[s]; if(!c||!c.vol) return null;
+    const base=s.replace('USDT','');
+    const baseline=volBaseline[s]||c.vol;
+    const mult=baseline>0?c.vol/baseline:1;
+    const absChg=Math.abs(chg(c.sym)||0);
+    // Kết hợp vol spike + biến động giá lớn
+    const score=mult+(absChg>15?0.8:absChg>10?0.5:absChg>5?0.2:0);
+    if(score<1.1&&absChg<5) return null; // lọc bỏ coin bình thường
+    const _wchg=chg(s);
+    return{sym:s,base,vol:kvol(s),score,mult,change24h:_wchg,absChg:Math.abs(_wchg||0)};
+  }).filter(Boolean)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,15);
+
+  const el=document.getElementById('whaleList');
+  if(!el) return;
+  if(!candidates.length){
+    el.innerHTML='<div class="news-loading"><div style="font-size:20px">🔍</div><div>Chưa phát hiện biến động bất thường</div></div>';
+    return;
+  }
+  el.innerHTML=candidates.map(c=>{
+    const icon=c.score>=5?'🚨':c.score>=3?'🐋':'📊';
+    const _wdir=chg(c.sym); const dir=_wdir>=0?`<span style="color:var(--green)">▲</span>`:`<span style="color:var(--red)">▼</span>`;
+    const multLabel=c.mult>1.05?`×${c.mult.toFixed(2)}`:'~1.0';
+    const cls=c.score>=5?'mega':c.score>=3?'extreme':'high';
+    return `<div class="whale-item">
+      <div class="whale-icon">${icon}</div>
+      <div>
+        <div class="whale-sym">${logoHTML(c.base,18)} ${c.base} ${dir}</div>
+        <div class="whale-vol">${fmtB(c.vol)}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="whale-mult ${cls}">${multLabel}</span>
+        <div class="whale-time">${chg(c.sym).toFixed(2)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Cập nhật baseline định kỳ (mỗi 30 phút) để phát hiện spike mới
+  SYMBOLS.forEach(s=>{
+    if(!volHistory[s]) volHistory[s]=[];
+    if(coins[s]?.vol){
+      volHistory[s].push(coins[s].vol);
+      if(volHistory[s].length>48) volHistory[s].shift();
+    }
+  });
+}
+setInterval(updateWhaleTracker,30000);
 
 /* ═══════════════════════════════════════════════════
    TECHNICAL INDICATORS — RSI, MACD, Bollinger Bands
@@ -2092,56 +1934,25 @@ async function fetchIndicators(sym){
   }catch(e){return cached||null;}
 }
 
-// Update RSI/Signal cells trực tiếp sau khi fetch indicators
-function _patchRSICells(syms){
-  const area=document.getElementById('tableArea');
-  if(!area) return;
-  (syms||[]).forEach(sym=>{
-    const rc=rsiCache[sym]; if(!rc) return;
-    const rsiCell=area.querySelector(`[data-rsi-cell="${sym}"]`);
-    if(rsiCell){
-      const rsiStr=rc.rsi.toFixed(0);
-      const rsiClass=`rsi-badge ${rc.rsi>70?'rsi-ob':rc.rsi<30?'rsi-os':'rsi-n'}`;
-      rsiCell.innerHTML=`<span class="${rsiClass}">${rsiStr}</span>`;
-    }
-    const sigCell=area.querySelector(`[data-sig-cell="${sym}"]`);
-    if(sigCell){
-      const sigTxt=rc.signal==='buy'?'MUA':rc.signal==='sell'?'BÁN':'GIỮ';
-      sigCell.innerHTML=`<span class="sig ${rc.signal}">${sigTxt}</span>`;
-    }
-  });
+async function batchFetchIndicators(){
+  const top=SYMBOLS.slice(0,50);
+  for(let i=0;i<top.length;i++){
+    if(i>0) await new Promise(r=>setTimeout(r,200));
+    await fetchIndicators(top[i]);
+    if(i%10===9) render();
+  }
 }
 
-async function batchFetchIndicators(){
-  // Fetch song song theo nhóm 5 — nhanh hơn sequential, nhưng tránh rate limit
-  const need=SYMBOLS.slice(0,30).filter(s=>!rsiCache[s]||Date.now()-rsiCache[s].ts>5*60*1000);
-  const BATCH_SIZE=5;
-  for(let i=0;i<need.length;i+=BATCH_SIZE){
-    const batch=need.slice(i,i+BATCH_SIZE);
-    await Promise.allSettled(batch.map(s=>fetchIndicators(s)));
-    if(i+BATCH_SIZE<need.length) await new Promise(r=>setTimeout(r,300));
-    // Update RSI cells trực tiếp, không rebuild toàn bảng
-    _patchRSICells(batch);
-  }
-  _patchRSICells(need); // final pass
-}
 /* ═══════════════════════════════════════════════════
    CHART PAGE
 ═══════════════════════════════════════════════════ */
 let selectedSym=null, lwChart=null, candleSeries=null, currentTf='1h';
 
-let _lastChartListHash='';
 function renderChartCoinList(){
   const q=(document.getElementById('chartSearch')?.value||'').toLowerCase();
   const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]}))
     .filter(c=>c.price>0&&(!q||c.base.toLowerCase().includes(q)||(nameMap[c.base]||'').toLowerCase().includes(q)))
     .slice(0,200);
-
-  // Hash nhanh để skip nếu không thay đổi
-  const hash=list.slice(0,5).map(c=>c.sym+fmtP(c.price)).join('|');
-  if(hash===_lastChartListHash&&!q) return;
-  _lastChartListHash=hash;
-
   const html=list.map(c=>{
     const cls=c.sym===selectedSym?' active':'';
     const _cchg=chg(c.sym); const chgCol=_cchg>=0?'var(--green)':'var(--red)';
@@ -2154,6 +1965,7 @@ function renderChartCoinList(){
   const el=document.getElementById('chartCoinList');
   if(el) el.innerHTML=html||'<div class="state-box" style="padding:20px"><div>Không tìm thấy coin</div></div>';
 }
+
 function filterChartList(){renderChartCoinList();}
 
 async function openChart(sym){
@@ -2177,8 +1989,6 @@ async function openChart(sym){
   renderChartCoinList();
   await loadCandleData(sym,currentTf);
   await loadChartIndicators(sym);
-  // Nếu đang ở tab Order Book → restart với coin mới
-  if(currentRightPanel==='ob') startOrderBook(sym);
 }
 
 function updateChartHeader(){
@@ -2210,48 +2020,24 @@ async function loadCandleData(sym,tf){
     const container=document.getElementById('chartContainer');
     if(lwChart){try{lwChart.remove();}catch(e){} lwChart=null; candleSeries=null;}
     if(container) container.innerHTML='';
-
-    // Tính số chữ số thập phân phù hợp với giá coin
-    const coinData=coins[sym];
-    const price=coinData?.price||1;
-    let precision=2, minMove=0.01;
-    if(price<0.00001){precision=10; minMove=0.0000000001;}
-    else if(price<0.0001){precision=8; minMove=0.00000001;}
-    else if(price<0.001){precision=7; minMove=0.0000001;}
-    else if(price<0.01){precision=6; minMove=0.000001;}
-    else if(price<0.1){precision=5; minMove=0.00001;}
-    else if(price<1){precision=4; minMove=0.0001;}
-    else if(price<10){precision=4; minMove=0.0001;}
-    else if(price<1000){precision=2; minMove=0.01;}
-    else{precision=2; minMove=0.01;}
-
     lwChart=LightweightCharts.createChart(container,{
       layout:{background:{color:'#0c1118'},textColor:'#94a3b8'},
       grid:{vertLines:{color:'rgba(99,179,237,.04)'},horzLines:{color:'rgba(99,179,237,.04)'}},
       crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-      rightPriceScale:{
-        borderColor:'rgba(99,179,237,.1)',
-        minimumWidth: precision>=8 ? 120 : precision>=6 ? 100 : 80,
-        autoScale:true,
-        entireTextOnly:true,
-      },
+      rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
       timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true,secondsVisible:tf==='1m'||tf==='5m'},
-      width:container.clientWidth,
-      height:container.clientHeight||400,
+      width:container.clientWidth,height:container.clientHeight||400,
     });
     candleSeries=lwChart.addCandlestickSeries({
       upColor:'#00e676',downColor:'#ff3d57',
       borderUpColor:'#00e676',borderDownColor:'#ff3d57',
       wickUpColor:'#00e676',wickDownColor:'#ff3d57',
-      priceFormat:{type:'price', precision, minMove},
     });
     candleSeries.setData(candles);
     lwChart.timeScale().fitContent();
-    if(window._chartResizeObserver) window._chartResizeObserver.disconnect();
-    window._chartResizeObserver = new ResizeObserver(()=>{
+    new ResizeObserver(()=>{
       if(lwChart&&container) lwChart.applyOptions({width:container.clientWidth,height:container.clientHeight||400});
-    });
-    window._chartResizeObserver.observe(container);
+    }).observe(container);
     if(loading) loading.style.display='none';
   }catch(e){
     if(loading) loading.innerHTML='<span>⚠️ Không thể tải biểu đồ: '+e.message+'</span>';
@@ -2441,6 +2227,17 @@ async function fetchNews(manual=false){
   const grid=document.getElementById('newsGrid');
   if(grid&&manual) grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức...</div></div>';
 
+  const parseRSS=(xml,sourceName)=>{
+    const items=[];
+    const re=/<item[\s\S]*?<\/item>/g; let m;
+    while((m=re.exec(xml))!==null){
+      const tag=(t,x)=>{const r=new RegExp('<'+t+'(?:[^>]*)><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/'+t+'>|<'+t+'(?:[^>]*)>([^<]*)<\\/'+t+'>','i');const mr=r.exec(x);return(mr?.(mr[1]||mr[2])||'').trim();};
+      const title=tag('title',m[0]); const link=tag('link',m[0])||tag('guid',m[0]);
+      const pub=tag('pubDate',m[0]); const ms=pub?new Date(pub).getTime():Date.now();
+      if(title) items.push({headline:title,source:sourceName,link:link||'#',pub:ms,sentiment:detectSentiment(title),coins:extractCoins(title)});
+    }
+    return items;
+  };
 
   const strategies=[
     // ── Strategy 1: CryptoCompare News API (JSON, có CORS, miễn phí) ──
@@ -2603,231 +2400,6 @@ function renderNewsPage(){
 }
 
 /* ═══════════════════════════════════════════════════
-   RIGHT PANEL — TABS (Chỉ Báo / Order Book / AI Pred)
-═══════════════════════════════════════════════════ */
-let currentRightPanel='ind';
-function switchRightPanel(panel, btn){
-  currentRightPanel=panel;
-  document.querySelectorAll('.ob-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('rp-ind').style.display=panel==='ind'?'':'none';
-  document.getElementById('rp-ob').style.display=panel==='ob'?'':'none';
-  if(panel==='ob'&&selectedSym) startOrderBook(selectedSym);
-  if(panel!=='ob') stopOrderBook();
-}
-
-/* ═══════════════════════════════════════════════════
-   ORDER BOOK — Binance Depth WebSocket
-═══════════════════════════════════════════════════ */
-let obWs=null, obSym=null, obTimer=null;
-
-function startOrderBook(sym){
-  if(obSym===sym&&obWs&&obWs.readyState===1) return; // đã kết nối
-  stopOrderBook();
-  obSym=sym;
-  const lbl=document.getElementById('obCoinLabel');
-  if(lbl) lbl.textContent=sym.replace('USDT','/USDT');
-  fetchDepthSnapshot(sym);
-  // WebSocket depth stream (100ms updates)
-  obWs=new WebSocket(`wss://stream.binance.com:9443/ws/${sym.toLowerCase()}@depth20@100ms`);
-  let _obRaf=false;
-  obWs.onmessage=(e)=>{
-    if(_obRaf) return; // throttle 60fps — skip nếu frame chưa render
-    _obRaf=true;
-    try{
-      const d=JSON.parse(e.data);
-      requestAnimationFrame(()=>{ _obRaf=false; renderOrderBook(d.asks||[], d.bids||[]); });
-    }catch(ex){ _obRaf=false; }
-  };
-  obWs.onerror=()=>{ stopOrderBook(); setTimeout(()=>{if(currentRightPanel==='ob'&&selectedSym) startOrderBook(selectedSym);},3000); };
-}
-
-function stopOrderBook(){
-  if(obWs){try{obWs.close();}catch(e){} obWs=null;}
-  if(obTimer){clearInterval(obTimer); obTimer=null;}
-  obSym=null;
-}
-
-async function fetchDepthSnapshot(sym){
-  try{
-    const r=await fetch(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`);
-    if(!r.ok) return;
-    const d=await r.json();
-    renderOrderBook(d.asks||[],d.bids||[]);
-  }catch(e){}
-}
-
-function renderOrderBook(asks,bids){
-  const fmtQ=n=>{const f=parseFloat(n); return f>=1000?f.toFixed(0):f>=1?f.toFixed(2):f.toFixed(4);};
-  const fmtV=n=>{const v=parseFloat(n); return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v.toFixed(0);};
-
-  // Lấy top 10 ask (giá tăng dần, hiển thị từ trên xuống gần spread)
-  const topAsks=asks.slice(0,10).reverse(); // asks đã sort giá tăng dần
-  const topBids=bids.slice(0,10);
-
-  // Tính max qty để vẽ bar
-  const allQty=[...topAsks,...topBids].map(r=>parseFloat(r[1]));
-  const maxQ=Math.max(...allQty)||1;
-
-  // Render asks (đỏ)
-  const askEl=document.getElementById('obAsks');
-  if(askEl) askEl.innerHTML=topAsks.map(([p,q])=>{
-    const pf=parseFloat(p), qf=parseFloat(q), vf=pf*qf;
-    const barW=Math.round(qf/maxQ*100);
-    return `<div class="ob-row">
-      <span class="ob-qty">${fmtQ(q)}</span>
-      <span class="ob-price-ask">${fmtP(pf)}</span>
-      <span class="ob-qty right">${fmtV(vf)}</span>
-      <div class="ob-bar-ask" style="width:${barW}%"></div>
-    </div>`;
-  }).join('');
-
-  // Spread
-  const bestAsk=parseFloat(asks[0]?.[0]||0);
-  const bestBid=parseFloat(bids[0]?.[0]||0);
-  const spread=bestAsk-bestBid;
-  const spreadPct=bestBid>0?((spread/bestBid)*100).toFixed(3):'—';
-  const spreadEl=document.getElementById('obSpread');
-  if(spreadEl) spreadEl.textContent=`Spread: ${fmtP(spread)} (${spreadPct}%)`;
-
-  // Render bids (xanh)
-  const bidEl=document.getElementById('obBids');
-  if(bidEl) bidEl.innerHTML=topBids.map(([p,q])=>{
-    const pf=parseFloat(p), qf=parseFloat(q), vf=pf*qf;
-    const barW=Math.round(qf/maxQ*100);
-    return `<div class="ob-row">
-      <span class="ob-qty">${fmtQ(q)}</span>
-      <span class="ob-price-bid">${fmtP(pf)}</span>
-      <span class="ob-qty right">${fmtV(vf)}</span>
-      <div class="ob-bar-bid" style="width:${barW}%"></div>
-    </div>`;
-  }).join('');
-
-  // Depth ratio
-  const totalBid=topBids.reduce((s,[,q])=>s+parseFloat(q)*parseFloat(bids[topBids.indexOf([,q])]?.[0]||0),0);
-  const totalAsk=topAsks.reduce((s,[,q])=>s+parseFloat(q)*parseFloat(asks[topAsks.indexOf([,q])]?.[0]||0),0);
-  // Đơn giản hơn: cộng USDT value
-  const bidUSDT=topBids.reduce((s,[p,q])=>s+parseFloat(p)*parseFloat(q),0);
-  const askUSDT=topAsks.reduce((s,[p,q])=>s+parseFloat(p)*parseFloat(q),0);
-  const totalUSDT=bidUSDT+askUSDT||1;
-  const bidPct=Math.round(bidUSDT/totalUSDT*100);
-  const askPct=100-bidPct;
-  const dbid=document.getElementById('obDepthBid'); if(dbid) dbid.style.width=bidPct+'%';
-  const dask=document.getElementById('obDepthAsk'); if(dask) dask.style.width=askPct+'%';
-  const bpEl=document.getElementById('obBidPct'); if(bpEl) bpEl.textContent=bidPct+'% Mua';
-  const apEl=document.getElementById('obAskPct'); if(apEl) apEl.textContent='Bán '+askPct+'%';
-}
-
-/* ═══════════════════════════════════════════════════
-   AI DỰ ĐOÁN XU HƯỚNG — Chart Panel
-═══════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════
-   BÁO CÁO THỊ TRƯỜNG HÀNG NGÀY — AI
-═══════════════════════════════════════════════════ */
-let dailyReportGenerated=false;
-
-async function generateDailyReport(){
-  const btn=document.getElementById('drBtn');
-  const content=document.getElementById('drContent');
-  const dateEl=document.getElementById('drDate');
-  if(btn){btn.disabled=true; btn.textContent='⏳ Đang tạo...';}
-
-  // Set date
-  const now=new Date();
-  const dateStr=now.toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
-  if(dateEl) dateEl.textContent=dateStr;
-
-  if(content) content.innerHTML='<div class="dr-loading"><div class="spinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>AI đang phân tích dữ liệu thị trường hôm nay...</div>';
-
-  try{
-    // Thu thập dữ liệu thị trường
-    const all=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
-    const sorted=[...all].sort((a,b)=>chg(b.sym)-chg(a.sym));
-    const topG=sorted.slice(0,5).map(c=>`${c.base}(+${chg(c.sym).toFixed(1)}%)`).join(', ');
-    const topL=sorted.slice(-5).reverse().map(c=>`${c.base}(${chg(c.sym).toFixed(1)}%)`).join(', ');
-    const topVol=[...all].sort((a,b)=>kvol(b.sym)-kvol(a.sym)).slice(0,5).map(c=>`${c.base}(${fmtB(kvol(c.sym))})`).join(', ');
-    const upCount=all.filter(c=>chg(c.sym)>0).length;
-    const dnCount=all.filter(c=>chg(c.sym)<0).length;
-    const totalVol=all.reduce((s,c)=>s+kvol(c.sym),0);
-    const btc=coins['BTCUSDT']||{};
-    const eth=coins['ETHUSDT']||{};
-    const fgEl=document.getElementById('fgNum');
-    const fgLbl=document.getElementById('fgLabel');
-    const fgVal=fgEl?fgEl.textContent:'—';
-    const fgLabel=fgLbl?fgLbl.textContent:'—';
-
-    const prompt=`Hôm nay là ${dateStr}. Bạn là chuyên gia phân tích thị trường crypto tại Việt Nam. Hãy viết báo cáo thị trường hôm nay bằng tiếng Việt, ngắn gọn và chuyên nghiệp.
-
-DỮ LIỆU NGÀY HÔM NAY (UTC+7):
-- BTC: ${fmtP(btc.price)} (${chg('BTCUSDT').toFixed(2)}% hôm nay)
-- ETH: ${fmtP(eth.price)} (${chg('ETHUSDT').toFixed(2)}% hôm nay)
-- Coin tăng: ${upCount} | Coin giảm: ${dnCount} | Tổng KL: ${fmtB(totalVol)}
-- Fear & Greed Index: ${fgVal} — ${fgLabel}
-- Top tăng: ${topG}
-- Top giảm: ${topL}
-- Top khối lượng: ${topVol}
-
-Viết báo cáo theo đúng định dạng JSON sau (không thêm text bên ngoài):
-{
-  "headline": "tiêu đề 1 dòng mô tả tổng quan thị trường hôm nay",
-  "overview": "2-3 câu tóm tắt tổng quan thị trường ngày hôm nay",
-  "btc_analysis": "2-3 câu phân tích BTC hôm nay, xu hướng và điểm quan trọng",
-  "altcoin": "2 câu về altcoin nổi bật và thị trường altcoin",
-  "sentiment": "1-2 câu về tâm lý thị trường dựa trên F&G và dữ liệu",
-  "watchlist": ["coin1 - lý do ngắn", "coin2 - lý do ngắn", "coin3 - lý do ngắn"],
-  "caution": "1-2 câu cảnh báo rủi ro hoặc điểm cần chú ý hôm nay",
-  "outlook": "1 câu nhận định xu hướng ngắn hạn",
-  "market_mood": "Tích cực" | "Thận trọng" | "Tiêu cực" | "Hỗn hợp"
-}`;
-
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:'Bạn là chuyên gia phân tích crypto tại Việt Nam. Chỉ trả lời bằng JSON hợp lệ, không có markdown hay text bên ngoài JSON.',
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data=await resp.json();
-    const raw=data.content?.[0]?.text||'{}';
-    let r;
-    try{r=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-    catch(e){throw new Error('Lỗi parse JSON: '+raw.substring(0,100));}
-
-    const moodColor=r.market_mood==='Tích cực'?'var(--green)':r.market_mood==='Tiêu cực'?'var(--red)':'var(--gold)';
-
-    // Compact card: metrics row + 2 dòng tóm tắt + watchlist + outlook
-    const btcChgNow=chg('BTCUSDT');
-    content.innerHTML=`
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.4;">${r.headline||''}</div>
-      <div class="dr-metrics">
-        <div class="dr-metric"><div class="dr-metric-val" style="color:${btcChgNow>=0?'var(--green)':'var(--red)'}">${btcChgNow.toFixed(2)}%</div><div class="dr-metric-lbl">BTC hôm nay</div></div>
-        <div class="dr-metric"><div class="dr-metric-val">${upCount}↑ ${dnCount}↓</div><div class="dr-metric-lbl">Tăng / Giảm</div></div>
-        <div class="dr-metric"><div class="dr-metric-val" style="color:${moodColor}">${r.market_mood||'—'}</div><div class="dr-metric-lbl">Tâm lý</div></div>
-        <div class="dr-metric"><div class="dr-metric-val">${fgVal}</div><div class="dr-metric-lbl">Fear & Greed</div></div>
-      </div>
-      <div style="font-size:11px;line-height:1.65;color:var(--text2);margin-bottom:8px;">${r.overview||''} ${r.btc_analysis||''}</div>
-      ${r.watchlist?.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${r.watchlist.map(w=>`<span style="font-size:10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:5px;padding:2px 8px;color:var(--accent);">👀 ${w}</span>`).join('')}</div>`:''}
-      <div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;margin-top:2px;">
-        <span style="color:var(--red);font-weight:700;">⚠️</span> ${r.caution||''} &nbsp;·&nbsp; <span style="color:var(--accent);font-weight:700;">🔭</span> ${r.outlook||''}
-      </div>`;
-
-    dailyReportGenerated=true;
-  }catch(e){
-    if(content) content.innerHTML=`<div style="color:var(--red);font-size:11px;">⚠️ Không thể tạo báo cáo: ${e.message}</div>`;
-  }finally{
-    if(btn){btn.disabled=false; btn.textContent='🔄 Tạo Lại';}
-  }
-}
-
-// Auto-tạo báo cáo khi vào tab Tin Tức lần đầu nếu có đủ dữ liệu
-function maybeTriggerDailyReport(){
-  if(!dailyReportGenerated&&SYMBOLS.length>10) generateDailyReport();
-}
-
-/* ═══════════════════════════════════════════════════
    PRICE ALERT SYSTEM
 ═══════════════════════════════════════════════════ */
 let alerts=[];
@@ -2928,13 +2500,12 @@ function checkAlertForSym(sym){
   if(changed){saveAlerts(); renderAlertList();}
 }
 
-// checkAlerts — chỉ check các sym có alert active (không duyệt tất cả SYMBOLS)
+// checkAlerts toàn bộ (gọi định kỳ backup)
 function checkAlerts(){
-  const activeSyms=new Set(alerts.filter(a=>a.status==='active').map(a=>a.sym));
-  activeSyms.forEach(s=>checkAlertForSym(s));
-  if(document.getElementById('page-alert')?.classList.contains('active')) updateAlertPrices();
+  SYMBOLS.forEach(s=>checkAlertForSym(s));
+  updateAlertPrices();
 }
-setInterval(checkAlerts,3000); // giảm 5s→3s vì check nhẹ hơn
+setInterval(checkAlerts,5000);
 
 function updateAlertPrices(){
   alerts.forEach(a=>{
@@ -3042,9 +2613,8 @@ function showPage(id,el){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
   if(el) el.classList.add('active');
-  if(id!=='chart') stopOrderBook();
   if(id==='chart') renderChartCoinList();
-  if(id==='news'){renderNewsPage(); maybeTriggerDailyReport();}
+  if(id==='news')  renderNewsPage();
   if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals(); // auto-run khi vào lần đầu
 }
 
@@ -3062,6 +2632,7 @@ let aiScores=[];         // [{sym,base,score,signal,factors,rsi,macd,bb,vol,chg}
 let aiTabMode='top-buy'; // top-buy | top-sell | all-scores
 let chatHistory=[];      // [{role,content}]
 let aiChatBusy=false;
+let aiNewsBusy=false;
 let aiSignalBusy=false;
 
 /* ═══════════════════════════════════════════
@@ -3204,76 +2775,6 @@ function setAITab(el,mode){
   el.classList.add('active'); aiTabMode=mode; renderAITable();
 }
 
-/* ── AI Predictions cache cho bảng AI tab ── */
-const aiPredCache={}; // sym → {signal, prob_up, prob_down, ts}
-let aiPredRunning=false;
-
-function renderAIPredCell(sym){
-  const p=aiPredCache[sym];
-  if(!p) return `<button onclick="event.stopPropagation();requestAIPred('${sym}')" style="font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:Cambria,serif;" title="Dự đoán AI 24h">Phân tích</button>`;
-  const col=p.signal==='TĂNG MẠNH'||p.signal==='TĂNG'?'var(--green)':p.signal==='GIẢM MẠNH'||p.signal==='GIẢM'?'var(--red)':'var(--gold)';
-  const arrow=p.signal==='TĂNG MẠNH'?'🚀':p.signal==='TĂNG'?'📈':p.signal==='GIẢM MẠNH'?'🔴':p.signal==='GIẢM'?'📉':'⚖️';
-  return `<div title="↑${p.prob_up}% ⚖${p.prob_neutral}% ↓${p.prob_down}%\n${p.summary||''}" style="cursor:help;text-align:center;">
-    <div style="font-size:11px;font-weight:700;color:${col}">${arrow} ${p.signal}</div>
-    <div style="font-size:9px;color:var(--muted);margin-top:1px;">↑${p.prob_up}% / ↓${p.prob_down}%</div>
-  </div>`;
-}
-
-async function requestAIPred(sym){
-  if(aiPredCache[sym]) return; // đã có
-  // Update cell về loading
-  renderAITable();
-  const coin=sym.replace('USDT','');
-  const cv=coins[sym]||{};
-  const ind=rsiCache[sym]||{};
-  if(!ind.rsi) await fetchIndicators(sym);
-  const rc=rsiCache[sym]||{};
-  const price=cv.price||0;
-  const changeVal=chg(sym);
-  const rsi=rc.rsi||50;
-  const macd=rc.macd||{};
-  const bb=rc.bb||{};
-
-  try{
-    const prompt=`Phân tích kỹ thuật ngắn gọn cho ${coin}/USDT. Trả về JSON:
-{"signal":"TĂNG MẠNH"|"TĂNG"|"TRUNG LẬP"|"GIẢM"|"GIẢM MẠNH","prob_up":0-100,"prob_neutral":0-100,"prob_down":0-100,"summary":"1 câu tiếng Việt"}
-
-Dữ liệu: Giá=${fmtP(price)}, thay đổi=${changeVal.toFixed(2)}%, RSI=${rsi.toFixed(1)}, MACD cross=${macd.cross||'none'}, MACD hist=${macd.hist?.toFixed(5)||0}, BB vị trí=${bb.upper&&bb.lower?((price-bb.lower)/(bb.upper-bb.lower)*100).toFixed(0):50}%`;
-
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        system:'Chỉ trả lời bằng JSON hợp lệ, không có text nào khác.',
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data=await resp.json();
-    const raw=data.content?.[0]?.text||'{}';
-    const pred=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    aiPredCache[sym]={...pred, ts:Date.now()};
-  }catch(e){
-    aiPredCache[sym]={signal:'TRUNG LẬP',prob_up:33,prob_neutral:34,prob_down:33,summary:'Không thể phân tích.',ts:Date.now()};
-  }
-  renderAITable(); // re-render để cập nhật cell
-}
-
-// Nút "Dự đoán tất cả" — phân tích top 30 coin song song (rate limit friendly)
-async function runAllAIPreds(){
-  const btn=document.getElementById('runAllAIPredsBtn');
-  if(btn){btn.disabled=true; btn.textContent='⏳ Đang phân tích...';}
-  const toProcess=aiScores.slice(0,30).map(s=>s.sym).filter(s=>!aiPredCache[s]);
-  // batch 3 cùng lúc
-  for(let i=0;i<toProcess.length;i+=3){
-    const batch=toProcess.slice(i,i+3);
-    await Promise.allSettled(batch.map(s=>requestAIPred(s)));
-    if(i+3<toProcess.length) await new Promise(r=>setTimeout(r,800));
-  }
-  if(btn){btn.disabled=false; btn.textContent='🤖 Dự Đoán 30 Coin';}
-}
-
 function renderAITable(){
   if(!aiScores.length) return;
   let list=[...aiScores];
@@ -3326,7 +2827,6 @@ function renderAITable(){
       <td class="r" style="font-size:11px">${macdStr}</td>
       <td class="r">${volStr}</td>
       <td class="r hide-sm"><div class="ai-factors">${factHtml}</div></td>
-      <td class="r">${renderAIPredCell(c.sym)}</td>
     </tr>`;
   }).join('');
 
@@ -3341,7 +2841,6 @@ function renderAITable(){
       <th class="r">MACD</th>
       <th class="r">Vol ×</th>
       <th class="r hide-sm">Lý Do</th>
-      <th class="r" style="min-width:80px">Dự Đoán 24h</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -3503,17 +3002,134 @@ function clearChat(){
    Dùng Claude API để phân tích impact lên giá
 ═══════════════════════════════════════════ */
 
+async function runAINewsAnalysis(){
+  if(aiNewsBusy) return;
+  if(!allNews.length){
+    // Fetch news trước
+    await fetchNews(false);
+    if(!allNews.length){
+      document.getElementById('aiNewsGrid').innerHTML=
+        '<div class="ai-news-loading" style="grid-column:1/-1"><div>⚠️</div><div>Chưa có tin tức để phân tích. Vui lòng thử lại.</div></div>';
+      return;
+    }
+  }
+  aiNewsBusy=true;
+  const btn=document.getElementById('aiNewsBtn');
+  if(btn){btn.disabled=true; btn.textContent='⏳ AI đang phân tích...';}
+
+  const grid=document.getElementById('aiNewsGrid');
+  grid.innerHTML=`<div class="ai-news-loading" style="grid-column:1/-1">
+    <div class="spinner"></div>
+    <div>AI đang đọc và phân tích ${Math.min(allNews.length,12)} tin tức mới nhất...</div>
+  </div>`;
+
+  // Lấy top 12 tin mới nhất
+  const newsToAnalyze=allNews.slice(0,12);
+
+  // Gửi toàn bộ sang Claude để phân tích 1 lần (tiết kiệm API call)
+  const newsList=newsToAnalyze.map((n,i)=>
+    `[${i+1}] ${n.headline} (nguồn: ${n.source})`
+  ).join('\n');
+
+  const marketCtx=getMarketContext();
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        messages:[{
+          role:'user',
+          content:`Bạn là chuyên gia phân tích tin tức crypto. Phân tích tác động của từng tin tức sau lên giá tiền điện tử.
+
+${marketCtx}
+
+DANH SÁCH TIN TỨC CẦN PHÂN TÍCH:
+${newsList}
+
+Hãy trả về JSON (KHÔNG có markdown, chỉ JSON thuần):
+{
+  "analyses": [
+    {
+      "index": 1,
+      "vi_headline": "tiêu đề ngắn tiếng Việt",
+      "impact": "bullish|bearish|neutral",
+      "impact_level": "cao|trung bình|thấp",
+      "affected_coins": ["BTC","ETH"],
+      "price_effect": "+5% đến +10% trong 24-48h",
+      "analysis_vi": "phân tích tác động ngắn gọn 1-2 câu tiếng Việt",
+      "recommendation": "Mua|Bán|Chờ|Tích Lũy",
+      "confidence": 75
+    }
+  ]
+}`
+        }]
+      })
+    });
+    const data=await res.json();
+    const rawText=data?.content?.[0]?.text||'';
+
+    // Parse JSON từ response
+    let analyses=[];
+    try{
+      const clean=rawText.replace(/```json|```/g,'').trim();
+      const parsed=JSON.parse(clean);
+      analyses=parsed.analyses||[];
+    }catch(e){
+      // fallback: extract JSON object
+      const match=rawText.match(/\{[\s\S]*\}/);
+      if(match){
+        try{analyses=JSON.parse(match[0]).analyses||[];}catch(e2){}
+      }
+    }
+
+    if(!analyses.length) throw new Error('No analyses returned');
+
+    // Render kết quả
+    const html=analyses.map((a,i)=>{
+      const news=newsToAnalyze[a.index-1]||newsToAnalyze[i];
+      const impactCls=a.impact==='bullish'?'bullish':a.impact==='bearish'?'bearish':'neutral';
+      const impactLabel=a.impact==='bullish'?`📈 Bullish (${a.impact_level})`:a.impact==='bearish'?`📉 Bearish (${a.impact_level})`:`⚖️ Trung Lập`;
+      const coinsHtml=(a.affected_coins||[]).map(c=>`<span class="ai-news-impact ${impactCls}">${c} ${a.price_effect||''}</span>`).join('');
+      const confColor=a.confidence>=70?'var(--green)':a.confidence>=50?'var(--gold)':'var(--red)';
+      const recColor=a.recommendation==='Mua'||a.recommendation==='Tích Lũy'?'var(--green)':a.recommendation==='Bán'?'var(--red)':'var(--gold)';
+
+      return `<div class="ai-news-card">
+        <div class="ai-news-headline">${a.vi_headline||news?.headline||'Tin tức'}</div>
+        <div class="ai-news-analysis">${a.analysis_vi||''}</div>
+        <div class="ai-news-impacts">
+          <span class="ai-news-impact ${impactCls}">${impactLabel}</span>
+          ${coinsHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:${recColor};background:${recColor}18;border:1px solid ${recColor}30;border-radius:8px;padding:2px 8px;">→ ${a.recommendation||'Chờ'}</span>
+          <span style="font-size:10px;color:var(--muted);">Độ tin cậy: <span style="color:${confColor};font-weight:700;">${a.confidence||0}%</span></span>
+        </div>
+        <div class="ai-news-meta">
+          <span class="ai-news-source">${news?.source||'AI'}</span>
+          <span class="ai-news-time">${news?timeAgo(news.pub):''}</span>
+          ${news?.link&&news.link!=='#'?`<a href="${news.link}" target="_blank" rel="noopener" style="font-size:10px;color:var(--muted);margin-left:auto;text-decoration:none;">Đọc thêm ↗</a>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    grid.innerHTML=html||'<div class="ai-news-loading" style="grid-column:1/-1"><div>Không thể phân tích tin tức</div></div>';
+
+  }catch(e){
+    grid.innerHTML=`<div class="ai-news-loading" style="grid-column:1/-1"><div style="font-size:24px">⚠️</div><div>Lỗi phân tích: ${e.message}</div></div>`;
+  }
+  if(btn){btn.disabled=false; btn.textContent='🔄 Cập Nhật';}
+  aiNewsBusy=false;
+}
+
 /* ═══════════════════════════════════════════════════
    BOOT — khởi động tất cả chức năng
 ═══════════════════════════════════════════════════ */
 renderAlertList();            // render alerts từ localStorage ngay lập tức
 loadAllCoins();               // Binance 24hr REST → SYMBOLS, coins, rồi WS
-// Interval chỉ để re-sort bảng khi sort theo vol/change (không re-render từng ô nữa)
-setInterval(()=>{
-  if(sortCol==='vol'||sortCol==='change24h'||sortCol==='price'){
-    _forceFullRender(); // re-sort vì thứ tự coin có thể đổi
-  }
-}, 6000); // 6s là đủ để bảng luôn đúng thứ tự    // re-render bảng giá mỗi 2.5s
+setInterval(render, 2500);    // re-render bảng giá mỗi 2.5s
 loadFearGreed();              // Fear & Greed ngay lập tức
 setInterval(loadFearGreed, 5*60*1000); // refresh mỗi 5 phút
 setTimeout(()=>{              // Sau 3s: fetch news (đợi page load xong)
@@ -3521,13 +3137,7 @@ setTimeout(()=>{              // Sau 3s: fetch news (đợi page load xong)
   setInterval(fetchNews, 5*60*1000);
 }, 3000);
 setTimeout(batchFetchIndicators, 10000);          // Sau 10s: fetch RSI/MACD top 50
-setInterval(batchFetchIndicators, 15*60*1000);    // Refresh indicators mỗi 15 phút (tối ưu)
+setInterval(batchFetchIndicators, 10*60*1000);    // Refresh indicators mỗi 10 phút
 </script>
-
-<!-- Footer donate link -->
-<div style="text-align:center;padding:10px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);background:var(--surface);">
-  Made with ❤️ by <strong style="color:var(--accent)">VietLongCrypto</strong> &nbsp;·&nbsp;
-  <span onclick="showPage('donate',null)" style="color:var(--accent);cursor:pointer;text-decoration:underline;">💛 Ủng Hộ Tác Giả</span>
-</div>
 </body>
 </html>
