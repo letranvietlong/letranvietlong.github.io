@@ -448,6 +448,141 @@ footer .hl{color:var(--accent);}
   .hide-sm{display:none!important;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ═══════════════════════════════════════════════════════
+   🤖 AI PHÂN TÍCH — CSS (injected correctly)
+═══════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ── */
+#page-ai{display:none;position:relative;z-index:10;}
+#page-ai.active{display:block;}
+.ai-layout{max-width:1500px;margin:0 auto;padding:20px 32px;display:flex;flex-direction:column;gap:18px;}
+
+/* ── AI Header row ── */
+.ai-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.ai-page-title{font-size:18px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.ai-page-sub{font-size:11px;color:var(--muted);}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(124,58,237,.12));border:1px solid rgba(0,212,255,.25);border-radius:20px;padding:5px 14px;font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.8px;}
+.ai-badge-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite;}
+.ai-refresh-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(124,58,237,.08));border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:8px 18px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;font-family:Cambria,'Times New Roman',serif;white-space:nowrap;}
+.ai-refresh-btn:hover{background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(124,58,237,.15));border-color:rgba(0,212,255,.4);}
+.ai-refresh-btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ── Summary 5 cards ── */
+.ai-summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.ai-sum-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s,border-color .2s;}
+.ai-sum-card:hover{transform:translateY(-2px);}
+.ai-sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
+.ai-sum-card.strong-buy::before{background:linear-gradient(90deg,#00e676,#06b6d4);}
+.ai-sum-card.buy::before{background:#06b6d4;}
+.ai-sum-card.hold::before{background:var(--gold);}
+.ai-sum-card.sell::before{background:var(--orange);}
+.ai-sum-card.strong-sell::before{background:linear-gradient(90deg,#ff3d57,#f97316);}
+.ai-sum-icon{position:absolute;top:12px;right:14px;font-size:22px;opacity:.12;}
+.ai-sum-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:8px;}
+.ai-sum-val{font-size:28px;font-weight:700;line-height:1;margin-bottom:4px;}
+.ai-sum-sub{font-size:10px;color:var(--muted);}
+
+/* ── Main 2-col grid ── */
+.ai-main-grid{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;}
+
+/* ── Signal section card ── */
+.ai-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.ai-card-header{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface);}
+.ai-card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.ai-tabs{display:flex;gap:2px;background:var(--surface2);border-radius:6px;padding:2px;}
+.ai-tab{padding:4px 11px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .2s;font-family:Cambria,'Times New Roman',serif;}
+.ai-tab.active{background:var(--accent);color:#000;}
+.ai-tab:hover:not(.active){color:var(--text);}
+
+/* ── Signal table ── */
+.ai-tbl-scroll{overflow-y:auto;max-height:500px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.ai-tbl-scroll::-webkit-scrollbar{width:4px;}
+.ai-tbl-scroll::-webkit-scrollbar-thumb{background:rgba(99,179,237,.1);border-radius:2px;}
+.ai-tbl-scroll table{width:100%;border-collapse:collapse;}
+.ai-tbl-scroll thead th{position:sticky;top:0;background:var(--surface2);padding:8px 12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;z-index:2;text-align:left;}
+.ai-tbl-scroll thead th.r{text-align:right;}
+.ai-tbl-scroll tbody tr{border-bottom:1px solid rgba(255,255,255,.025);cursor:pointer;transition:background .1s;}
+.ai-tbl-scroll tbody tr:hover{background:rgba(0,212,255,.03);}
+.ai-tbl-scroll td{padding:9px 12px;font-size:12px;vertical-align:middle;}
+.ai-tbl-scroll td.r{text-align:right;}
+
+/* ── AI Score donut ── */
+.ai-donut{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:40px;height:40px;}
+.ai-donut svg{transform:rotate(-90deg);position:absolute;}
+.ai-donut-label{font-size:10px;font-weight:700;text-align:center;position:relative;z-index:1;}
+
+/* ── Signal badges ── */
+.ai-sig{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;}
+.ai-sig.strong-buy{background:rgba(0,230,118,.12);color:#00e676;border:1px solid rgba(0,230,118,.3);}
+.ai-sig.buy{background:rgba(6,182,212,.1);color:#06b6d4;border:1px solid rgba(6,182,212,.25);}
+.ai-sig.hold{background:rgba(245,158,11,.08);color:var(--gold);border:1px solid rgba(245,158,11,.2);}
+.ai-sig.sell{background:rgba(251,146,60,.1);color:var(--orange);border:1px solid rgba(251,146,60,.25);}
+.ai-sig.strong-sell{background:rgba(255,61,87,.1);color:var(--red);border:1px solid rgba(255,61,87,.3);}
+
+/* ── Factor tags ── */
+.ai-factors{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;}
+.af{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;white-space:nowrap;}
+.af.pos{background:rgba(0,230,118,.1);color:var(--green);}
+.af.neg{background:rgba(255,61,87,.1);color:var(--red);}
+.af.neu{background:rgba(245,158,11,.08);color:var(--gold);}
+
+/* ── Chat section ── */
+.ai-chat-body{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-height:380px;min-height:200px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.ai-chat-body::-webkit-scrollbar{width:4px;}
+.ai-chat-body::-webkit-scrollbar-thumb{background:rgba(99,179,237,.1);border-radius:2px;}
+.chat-msg{display:flex;gap:9px;max-width:95%;}
+.chat-msg.user{align-self:flex-end;flex-direction:row-reverse;}
+.chat-msg.ai{align-self:flex-start;}
+.chat-msg.user .chat-bubble{background:linear-gradient(135deg,rgba(0,212,255,.13),rgba(124,58,237,.1));border:1px solid rgba(0,212,255,.18);border-radius:14px 4px 14px 14px;}
+.chat-msg.ai .chat-bubble{background:var(--surface2);border:1px solid var(--border);border-radius:4px 14px 14px 14px;}
+.chat-bubble{padding:9px 13px;font-size:12px;line-height:1.6;color:var(--text);}
+.chat-avatar{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:2px;}
+.chat-avatar.ai-av{background:linear-gradient(135deg,rgba(0,212,255,.18),rgba(124,58,237,.18));border:1px solid rgba(0,212,255,.2);}
+.chat-avatar.user-av{background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.2);}
+.chat-time{font-size:9px;color:var(--muted);margin-top:2px;padding:0 4px;}
+.chat-typing{display:flex;gap:4px;padding:10px 14px;align-items:center;}
+.chat-typing span{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:typingBounce .9s infinite;display:block;}
+.chat-typing span:nth-child(2){animation-delay:.2s;}
+.chat-typing span:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,80%,100%{transform:scale(0.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+.ai-quick-btns{padding:8px 14px 2px;display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+.ai-quick-btn{font-size:10px;padding:4px 10px;border-radius:12px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.1);color:var(--text2);cursor:pointer;font-family:Cambria,'Times New Roman',serif;transition:all .15s;white-space:nowrap;}
+.ai-quick-btn:hover{background:rgba(0,212,255,.13);color:var(--accent);border-color:rgba(0,212,255,.3);}
+.ai-chat-footer{border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:9px;align-items:flex-end;}
+.ai-chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:12px;font-family:Cambria,'Times New Roman',serif;resize:none;outline:none;line-height:1.5;max-height:100px;transition:border-color .2s;}
+.ai-chat-input:focus{border-color:rgba(0,212,255,.35);}
+.ai-chat-input::placeholder{color:var(--muted);}
+.ai-send-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .2s;color:#000;font-size:15px;}
+.ai-send-btn:hover{opacity:.85;}
+.ai-send-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── AI News ── */
+.ai-news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:16px 18px;}
+.ai-news-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;transition:border-color .2s,transform .15s;}
+.ai-news-card:hover{border-color:rgba(0,212,255,.2);transform:translateY(-1px);}
+.ai-news-headline{font-size:12px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:9px;}
+.ai-news-analysis{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:9px;background:rgba(0,212,255,.03);border-left:2px solid rgba(0,212,255,.2);padding:7px 10px;border-radius:0 6px 6px 0;}
+.ai-news-impacts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.ai-news-impact{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+.ai-news-impact.bullish{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.ai-news-impact.bearish{background:rgba(255,61,87,.1);color:var(--red);border:1px solid rgba(255,61,87,.2);}
+.ai-news-impact.neutral{background:rgba(245,158,11,.08);color:var(--gold);border:1px solid rgba(245,158,11,.15);}
+.ai-news-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ai-news-source{font-size:9px;color:var(--accent);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.12);border-radius:3px;padding:1px 5px;font-weight:700;}
+.ai-news-time{font-size:9px;color:var(--muted);}
+.ai-news-loading{display:flex;align-items:center;justify-content:center;min-height:180px;flex-direction:column;gap:12px;color:var(--muted);grid-column:1/-1;}
+
+@media(max-width:1200px){
+  .ai-summary-grid{grid-template-columns:repeat(3,1fr);}
+  .ai-main-grid{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  .ai-layout{padding:14px;}
+  .ai-summary-grid{grid-template-columns:repeat(2,1fr);}
+  .ai-news-grid{grid-template-columns:1fr;padding:12px;}
+}
+
 </style>
 </head>
 <body>
@@ -493,6 +628,7 @@ footer .hl{color:var(--accent);}
   <button class="nav-tab" onclick="showPage('screener',this)"><span class="tab-icon">🔬</span>Bộ Lọc Coin</button>
   <button class="nav-tab" onclick="showPage('alert',this)"><span class="tab-icon">🔔</span>Cảnh Báo Giá</button>
   <button class="nav-tab" onclick="showPage('news',this)"><span class="tab-icon">📰</span>Tin Tức</button>
+  <button class="nav-tab" onclick="showPage('ai',this)"><span class="tab-icon">🤖</span>AI Phân Tích</button>
   <button class="nav-tab" onclick="showPage('donate',this)"><span class="tab-icon">💛</span>Ủng Hộ</button>
 </div>
 
@@ -853,6 +989,144 @@ footer .hl{color:var(--accent);}
 </div>
 
 <!-- ══════════════ PAGE: DONATE ══════════════ -->
+
+<!-- ══════════════ PAGE: AI PHÂN TÍCH ══════════════ -->
+<div class="page" id="page-ai">
+<div class="ai-layout">
+
+  <!-- ── Header ── -->
+  <div class="ai-header">
+    <div>
+      <div class="ai-page-title">🤖 AI Phân Tích & Tín Hiệu Đầu Tư</div>
+      <div class="ai-page-sub">Phân tích đa chiều: Kỹ thuật (RSI · MACD · BB) + Khối lượng + Tâm lý thị trường</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="ai-badge"><div class="ai-badge-dot"></div><span>Claude AI Powered</span></div>
+      <button class="ai-refresh-btn" id="aiRefreshBtn" onclick="runAISignals()">⚡ Phân Tích Ngay</button>
+    </div>
+  </div>
+
+  <!-- ── 5 Summary Cards ── -->
+  <div class="ai-summary-grid">
+    <div class="ai-sum-card strong-buy">
+      <div class="ai-sum-icon">🚀</div>
+      <div class="ai-sum-lbl">Mua Mạnh</div>
+      <div class="ai-sum-val" id="sumStrongBuy" style="color:#00e676">—</div>
+      <div class="ai-sum-sub">Score ≥ 80</div>
+    </div>
+    <div class="ai-sum-card buy">
+      <div class="ai-sum-icon">📈</div>
+      <div class="ai-sum-lbl">Nên Mua</div>
+      <div class="ai-sum-val" id="sumBuy" style="color:#06b6d4">—</div>
+      <div class="ai-sum-sub">Score 60–79</div>
+    </div>
+    <div class="ai-sum-card hold">
+      <div class="ai-sum-icon">⏸</div>
+      <div class="ai-sum-lbl">Chờ Xem</div>
+      <div class="ai-sum-val" id="sumHold" style="color:var(--gold)">—</div>
+      <div class="ai-sum-sub">Score 40–59</div>
+    </div>
+    <div class="ai-sum-card sell">
+      <div class="ai-sum-icon">📉</div>
+      <div class="ai-sum-lbl">Nên Bán</div>
+      <div class="ai-sum-val" id="sumSell" style="color:var(--orange)">—</div>
+      <div class="ai-sum-sub">Score 20–39</div>
+    </div>
+    <div class="ai-sum-card strong-sell">
+      <div class="ai-sum-icon">🔴</div>
+      <div class="ai-sum-lbl">Bán Mạnh</div>
+      <div class="ai-sum-val" id="sumStrongSell" style="color:var(--red)">—</div>
+      <div class="ai-sum-sub">Score &lt; 20</div>
+    </div>
+  </div>
+
+  <!-- ── Main: Signal Table + Chat ── -->
+  <div class="ai-main-grid">
+
+    <!-- [1] AI Signal Dashboard -->
+    <div class="ai-card">
+      <div class="ai-card-header">
+        <div class="ai-card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 8.01-4-4L2 16.99z"/></svg>
+          📊 Bảng Xếp Hạng Cơ Hội AI
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="ai-tabs">
+            <button class="ai-tab active" onclick="setAITab(this,'top-buy')">🚀 Mua Tốt</button>
+            <button class="ai-tab" onclick="setAITab(this,'top-sell')">🔴 Bán Mạnh</button>
+            <button class="ai-tab" onclick="setAITab(this,'all-scores')">📋 Tất Cả</button>
+          </div>
+          <span id="aiScoreCount" style="font-size:10px;color:var(--muted);">— coin</span>
+        </div>
+      </div>
+      <div class="ai-tbl-scroll" id="aiSignalTable">
+        <div class="state-box">
+          <div style="font-size:28px">🤖</div>
+          <div>Nhấn <strong style="color:var(--accent)">⚡ Phân Tích Ngay</strong><br>để AI tính điểm cho tất cả coin</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- [2] AI Chat Tư Vấn -->
+    <div class="ai-card" style="display:flex;flex-direction:column;">
+      <div class="ai-card-header">
+        <div class="ai-card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          💬 AI Tư Vấn (Tiếng Việt)
+        </div>
+        <button onclick="clearChat()" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;font-family:inherit;">🗑 Xóa</button>
+      </div>
+      <div class="ai-quick-btns">
+        <button class="ai-quick-btn" onclick="quickAsk('Thị trường hôm nay đang như thế nào?')">📊 Tổng quan</button>
+        <button class="ai-quick-btn" onclick="quickAsk('Top 5 coin có tín hiệu mua mạnh nhất?')">🚀 Top mua</button>
+        <button class="ai-quick-btn" onclick="quickAsk('BTC đang ở giai đoạn nào và nên làm gì?')">₿ BTC</button>
+        <button class="ai-quick-btn" onclick="quickAsk('Coin nào đang có khối lượng đột biến?')">🐋 Whale</button>
+        <button class="ai-quick-btn" onclick="quickAsk('Nên phân bổ danh mục như thế nào lúc này?')">💼 Danh mục</button>
+      </div>
+      <div class="ai-chat-body" id="chatBody">
+        <div class="chat-msg ai">
+          <div class="chat-avatar ai-av">🤖</div>
+          <div>
+            <div class="chat-bubble">
+              Xin chào! Tôi là AI tư vấn của <strong style="color:var(--accent)">VietLongCrypto</strong>.<br><br>
+              Tôi có thể giúp bạn phân tích thị trường realtime, đề xuất coin tiềm năng, giải thích tín hiệu kỹ thuật và lập chiến lược đầu tư.<br><br>
+              <span style="color:var(--muted);font-size:10px;">⚠️ Tư vấn tham khảo, không phải lời khuyên tài chính chính thức.</span>
+            </div>
+            <div class="chat-time">Vừa xong</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-chat-footer">
+        <textarea class="ai-chat-input" id="chatInput"
+          placeholder="Hỏi về coin, thị trường, chiến lược đầu tư..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="ai-send-btn" id="chatSendBtn" onclick="sendChat()" title="Gửi (Enter)">▶</button>
+      </div>
+    </div>
+
+  </div><!-- /ai-main-grid -->
+
+  <!-- [3] AI News Analysis -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h12v2H6zm0 4h8v2H6z"/></svg>
+        📰 AI Phân Tích Tác Động Tin Tức → Giá
+      </div>
+      <button class="ai-refresh-btn" id="aiNewsBtn" onclick="runAINewsAnalysis()">🔍 Phân Tích Tin Tức</button>
+    </div>
+    <div id="aiNewsGrid" class="ai-news-grid">
+      <div class="ai-news-loading">
+        <div style="font-size:32px">📰</div>
+        <div style="text-align:center;">Nhấn <strong style="color:var(--accent)">🔍 Phân Tích Tin Tức</strong><br>để AI đánh giá tác động của tin tức lên giá coin</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /ai-layout -->
+</div><!-- /page-ai -->
+
 <div class="page" id="page-donate">
 <div class="donate-layout">
 
@@ -2150,6 +2424,513 @@ function showPage(id,el){
   if(el) el.classList.add('active');
   if(id==='chart') renderChartCoinList();
   if(id==='news')  renderNewsPage();
+  if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals(); // auto-run khi vào lần đầu
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   🤖 AI PHÂN TÍCH & TÍN HIỆU — JAVASCRIPT
+   Tích hợp Claude API (claude-sonnet-4-20250514)
+   Tính năng 1: AI Signal Dashboard
+   Tính năng 2: AI Chat Tư Vấn
+   Tính năng 3: AI News Analyzer
+═══════════════════════════════════════════════════════════════ */
+
+/* ── STATE AI ── */
+let aiScores=[];         // [{sym,base,score,signal,factors,rsi,macd,bb,vol,chg}]
+let aiTabMode='top-buy'; // top-buy | top-sell | all-scores
+let chatHistory=[];      // [{role,content}]
+let aiChatBusy=false;
+let aiNewsBusy=false;
+let aiSignalBusy=false;
+
+/* ═══════════════════════════════════════════
+   TÍNH NĂNG 1: AI SIGNAL DASHBOARD
+   Tính điểm AI tổng hợp 0-100 cho từng coin
+═══════════════════════════════════════════ */
+
+/* Hàm tính AI Score đa chiều */
+function calcAIScore(sym){
+  const c=coins[sym];
+  if(!c||!c.price) return null;
+  const base=sym.replace('USDT','');
+  const rc=rsiCache[sym];
+  let score=50; // bắt đầu từ 50 (trung lập)
+  const factors=[];
+
+  /* ── 1. RSI (max ±20 điểm) ── */
+  if(rc?.rsi!=null){
+    const rsi=rc.rsi;
+    if(rsi<25){score+=20; factors.push({label:'RSI Quá Bán',type:'pos'});}
+    else if(rsi<35){score+=12; factors.push({label:'RSI Thấp',type:'pos'});}
+    else if(rsi<45){score+=5;}
+    else if(rsi>75){score-=20; factors.push({label:'RSI Quá Mua',type:'neg'});}
+    else if(rsi>65){score-=12; factors.push({label:'RSI Cao',type:'neg'});}
+    else if(rsi>55){score-=5;}
+    else{factors.push({label:'RSI Trung Lập',type:'neu'});}
+  }
+
+  /* ── 2. MACD (max ±18 điểm) ── */
+  if(rc?.macd){
+    const m=rc.macd;
+    if(m.cross==='bull'){score+=18; factors.push({label:'MACD Golden Cross',type:'pos'});}
+    else if(m.cross==='bear'){score-=18; factors.push({label:'MACD Death Cross',type:'neg'});}
+    else if(m.hist>0&&m.macd>0){score+=8; factors.push({label:'MACD Dương',type:'pos'});}
+    else if(m.hist<0&&m.macd<0){score-=8; factors.push({label:'MACD Âm',type:'neg'});}
+  }
+
+  /* ── 3. Bollinger Bands (max ±12 điểm) ── */
+  if(rc?.bb&&c.price){
+    const {upper,lower,middle}=rc.bb;
+    const bw=upper-lower;
+    const pos=(c.price-lower)/(upper-lower||1); // 0=đáy BB, 1=đỉnh BB
+    if(pos<0.15){score+=12; factors.push({label:'Dưới BB',type:'pos'});}
+    else if(pos<0.35){score+=6;}
+    else if(pos>0.85){score-=12; factors.push({label:'Trên BB',type:'neg'});}
+    else if(pos>0.65){score-=6;}
+    // BB squeeze (biến động thấp → sắp bứt phá)
+    if(middle>0&&bw/middle<0.05){score+=5; factors.push({label:'BB Squeeze',type:'pos'});}
+  }
+
+  /* ── 4. Volume & Momentum (max ±15 điểm) ── */
+  const baseline=volBaseline[sym]||c.vol;
+  const volRatio=baseline>0?c.vol/baseline:1;
+  if(volRatio>1.5&&c.change24h>0){score+=15; factors.push({label:'Vol Đột Biến+',type:'pos'});}
+  else if(volRatio>1.2&&c.change24h>0){score+=8; factors.push({label:'Vol Tăng',type:'pos'});}
+  else if(volRatio>1.5&&c.change24h<0){score-=10; factors.push({label:'Vol Đột Biến-',type:'neg'});}
+  else if(volRatio<0.6){score-=5; factors.push({label:'Vol Thấp',type:'neg'});}
+
+  /* ── 5. Price Momentum 24h (max ±12 điểm) ── */
+  const chg=c.change24h||0;
+  if(chg>15){score+=12; factors.push({label:'+'+chg.toFixed(1)+'%',type:'pos'});}
+  else if(chg>8){score+=8;}
+  else if(chg>3){score+=4;}
+  else if(chg<-15){score-=12; factors.push({label:chg.toFixed(1)+'%',type:'neg'});}
+  else if(chg<-8){score-=8;}
+  else if(chg<-3){score-=4;}
+
+  /* ── 6. Sparkline Trend (max ±8 điểm) ── */
+  const h=hist[sym]||[];
+  if(h.length>=5){
+    const half=Math.floor(h.length/2);
+    const avgRecent=h.slice(half).reduce((a,b)=>a+b,0)/(h.length-half);
+    const avgOld=h.slice(0,half).reduce((a,b)=>a+b,0)/half;
+    if(avgOld>0){
+      const trend=(avgRecent-avgOld)/avgOld*100;
+      if(trend>2){score+=8; factors.push({label:'Xu Hướng↑',type:'pos'});}
+      else if(trend<-2){score-=8; factors.push({label:'Xu Hướng↓',type:'neg'});}
+    }
+  }
+
+  /* ── 7. Fear & Greed context (max ±5 điểm) ── */
+  const fgEl=document.getElementById('fgNum');
+  const fgVal=fgEl?parseInt(fgEl.textContent)||50:50;
+  if(fgVal<30&&chg<0){score+=5; factors.push({label:'F&G Cực Sợ',type:'pos'});} // cơ hội
+  else if(fgVal>75&&chg>10){score-=5; factors.push({label:'F&G Tham Lam',type:'neg'});} // cảnh báo
+
+  score=Math.max(0,Math.min(100,Math.round(score)));
+
+  let signal='hold';
+  if(score>=80) signal='strong-buy';
+  else if(score>=60) signal='buy';
+  else if(score<=20) signal='strong-sell';
+  else if(score<=40) signal='sell';
+
+  return{sym,base,score,signal,factors:factors.slice(0,4),
+    rsi:rc?.rsi,macdCross:rc?.macd?.cross,macdHist:rc?.macd?.hist,
+    vol:c.vol,change24h:chg,price:c.price,volRatio};
+}
+
+async function runAISignals(){
+  if(aiSignalBusy) return;
+  aiSignalBusy=true;
+  const btn=document.getElementById('aiRefreshBtn');
+  if(btn){btn.disabled=true; btn.textContent='⏳ Đang phân tích...';}
+  document.getElementById('aiSignalTable').innerHTML=
+    '<div class="state-box"><div class="spinner" style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite"></div><div>AI đang tính điểm cho tất cả coin...</div></div>';
+
+  // Fetch indicators cho top 80 coin nếu chưa có
+  const need=SYMBOLS.slice(0,80).filter(s=>!rsiCache[s]||Date.now()-rsiCache[s].ts>5*60*1000);
+  for(let i=0;i<Math.min(need.length,50);i++){
+    if(i>0) await new Promise(r=>setTimeout(r,100));
+    await fetchIndicators(need[i]);
+  }
+
+  // Tính điểm cho tất cả coin có đủ dữ liệu
+  aiScores=SYMBOLS
+    .map(s=>calcAIScore(s))
+    .filter(s=>s&&s.price>0&&s.vol>500000) // lọc coin quá nhỏ
+    .sort((a,b)=>b.score-a.score);
+
+  // Cập nhật summary
+  const sb=aiScores.filter(s=>s.signal==='strong-buy').length;
+  const b=aiScores.filter(s=>s.signal==='buy').length;
+  const h=aiScores.filter(s=>s.signal==='hold').length;
+  const se=aiScores.filter(s=>s.signal==='sell').length;
+  const ss=aiScores.filter(s=>s.signal==='strong-sell').length;
+  document.getElementById('sumStrongBuy').textContent=sb;
+  document.getElementById('sumBuy').textContent=b;
+  document.getElementById('sumHold').textContent=h;
+  document.getElementById('sumSell').textContent=se;
+  document.getElementById('sumStrongSell').textContent=ss;
+
+  renderAITable();
+  if(btn){btn.disabled=false; btn.textContent='🔄 Cập Nhật';}
+  aiSignalBusy=false;
+}
+
+function setAITab(el,mode){
+  document.querySelectorAll('.ai-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); aiTabMode=mode; renderAITable();
+}
+
+function renderAITable(){
+  if(!aiScores.length) return;
+  let list=[...aiScores];
+  if(aiTabMode==='top-buy') list=list.filter(s=>s.signal==='strong-buy'||s.signal==='buy').slice(0,40);
+  else if(aiTabMode==='top-sell') list=list.filter(s=>s.signal==='strong-sell'||s.signal==='sell').sort((a,b)=>a.score-b.score).slice(0,40);
+  else list=list.slice(0,150);
+
+  const cntEl=document.getElementById('aiScoreCount');
+  if(cntEl) cntEl.textContent=list.length+' coin';
+  const tbl=document.getElementById('aiSignalTable');
+  if(!tbl) return;
+  if(!list.length){tbl.innerHTML='<div class="state-box"><div>Không có coin phù hợp bộ lọc</div></div>';return;}
+
+  const SIG={
+    'strong-buy':'🚀 Mua Mạnh','buy':'📈 Nên Mua',
+    'hold':'⏸ Chờ','sell':'📉 Nên Bán','strong-sell':'🔴 Bán Mạnh'
+  };
+  const SC=s=>s>=80?'#00e676':s>=60?'#06b6d4':s<=20?'#ff3d57':s<=40?'#fb923c':'#f59e0b';
+
+  const rows=list.map((c,i)=>{
+    const sc=SC(c.score);
+    // Donut SVG (circumference ~100 for r=16)
+    const circ=100.5; // 2*PI*16
+    const off=circ-(c.score/100*circ);
+    const factHtml=(c.factors||[]).slice(0,3).map(f=>`<span class="af ${f.type}">${f.label}</span>`).join('');
+    const rsiStr=c.rsi!=null?c.rsi.toFixed(0):'—';
+    const rsiCol=c.rsi>70?'var(--red)':c.rsi<30?'var(--green)':'var(--text2)';
+    const macdStr=c.macdCross==='bull'?'<span style="color:var(--green)">▲ Bull</span>':c.macdCross==='bear'?'<span style="color:var(--red)">▼ Bear</span>':c.macdHist>0?'<span style="color:var(--green)">+</span>':'<span style="color:var(--red)">−</span>';
+    const volStr=c.volRatio>=1.5?`<span style="color:var(--orange);font-weight:700">${c.volRatio.toFixed(1)}×</span>`:c.volRatio?`<span style="color:var(--text2)">${c.volRatio.toFixed(1)}×</span>`:'—';
+    const chgCol=c.change24h>=0?'var(--green)':'var(--red)';
+    return `<tr onclick="openChart('${c.sym}')">
+      <td><span class="rank">${i+1}</span></td>
+      <td><div class="coin-cell">${logoHTML(c.base,26)}<div><div class="cn">${nameMap[c.base]||c.base}</div><div class="cs">${c.base}</div></div></div></td>
+      <td class="r">
+        <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;">
+          <div class="ai-donut">
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="4"/>
+              <circle cx="20" cy="20" r="16" fill="none" stroke="${sc}" stroke-width="4"
+                stroke-dasharray="${circ}" stroke-dashoffset="${off.toFixed(1)}"
+                stroke-linecap="round" transform="rotate(-90 20 20)"/>
+            </svg>
+            <div class="ai-donut-label" style="color:${sc}">${c.score}</div>
+          </div>
+        </div>
+      </td>
+      <td class="r"><span class="ai-sig ${c.signal}">${SIG[c.signal]||c.signal}</span></td>
+      <td class="r"><span style="color:${chgCol};font-weight:700;font-size:11px">${c.change24h>=0?'+':''}${(c.change24h||0).toFixed(2)}%</span></td>
+      <td class="r"><span style="color:${rsiCol};font-size:11px;font-weight:600">${rsiStr}</span></td>
+      <td class="r" style="font-size:11px">${macdStr}</td>
+      <td class="r">${volStr}</td>
+      <td class="r hide-sm"><div class="ai-factors">${factHtml}</div></td>
+    </tr>`;
+  }).join('');
+
+  tbl.innerHTML=`<table>
+    <thead><tr>
+      <th style="width:32px;padding-left:14px">#</th>
+      <th>Coin</th>
+      <th class="r" style="min-width:60px">Score</th>
+      <th class="r">Tín Hiệu</th>
+      <th class="r">24h %</th>
+      <th class="r">RSI</th>
+      <th class="r">MACD</th>
+      <th class="r">Vol ×</th>
+      <th class="r hide-sm">Lý Do</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function getMarketContext(){
+  const all=SYMBOLS.map(s=>({base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
+  if(!all.length) return '';
+  const tv=all.reduce((s,c)=>s+c.vol,0);
+  const up=all.filter(c=>c.change24h>0).length;
+  const dn=all.filter(c=>c.change24h<0).length;
+  const sorted=[...all].sort((a,b)=>b.change24h-a.change24h);
+  const topG=sorted.slice(0,5).map(c=>`${c.base}(+${c.change24h.toFixed(1)}%)`).join(', ');
+  const topL=sorted.slice(-5).map(c=>`${c.base}(${c.change24h.toFixed(1)}%)`).join(', ');
+  const btc=all.find(c=>c.base==='BTC');
+  const eth=all.find(c=>c.base==='ETH');
+  const sol=all.find(c=>c.base==='SOL');
+  const fgEl=document.getElementById('fgNum');
+  const fgLbl=document.getElementById('fgLabel');
+  const fgVal=fgEl?fgEl.textContent:'—';
+  const fgLabel=fgLbl?fgLbl.textContent:'—';
+
+  // Top AI scores nếu có
+  let aiTop='';
+  if(aiScores.length){
+    const topBuy=aiScores.filter(s=>s.signal==='strong-buy'||s.signal==='buy').slice(0,5)
+      .map(s=>`${s.base}(score:${s.score})`).join(', ');
+    const topSell=aiScores.filter(s=>s.signal==='strong-sell'||s.signal==='sell').slice(0,3)
+      .map(s=>`${s.base}(score:${s.score})`).join(', ');
+    aiTop=`\nAI Score cao nhất: ${topBuy}\nAI Score thấp nhất: ${topSell}`;
+  }
+
+  return `=== DỮ LIỆU THỊ TRƯỜNG REALTIME ===
+Tổng KL 24h: ${fmtB(tv)} | Coin tăng: ${up} | Coin giảm: ${dn}
+BTC: ${btc?fmtP(btc.price)+' ('+btc.change24h.toFixed(2)+'%)':'—'}
+ETH: ${eth?fmtP(eth.price)+' ('+eth.change24h.toFixed(2)+'%)':'—'}
+SOL: ${sol?fmtP(sol.price)+' ('+sol.change24h.toFixed(2)+'%)':'—'}
+Fear & Greed: ${fgVal} (${fgLabel})
+Top tăng: ${topG}
+Top giảm: ${topL}${aiTop}`;
+}
+
+function buildSystemPrompt(){
+  return `Bạn là AI tư vấn đầu tư crypto của VietLongCrypto — một chuyên gia phân tích kỹ thuật và thị trường tiền điện tử có kinh nghiệm. Bạn LUÔN trả lời bằng tiếng Việt, ngắn gọn, súc tích, và có cấu trúc rõ ràng.
+
+Phong cách trả lời:
+- Sử dụng emoji để làm nổi bật điểm quan trọng
+- Chia câu trả lời thành các phần nhỏ dễ đọc
+- Luôn đưa ra quan điểm cụ thể, không mơ hồ
+- Đề xuất hành động rõ ràng: Mua / Bán / Chờ / Tích lũy
+- Nêu mức rủi ro và stop-loss khi đề xuất mua
+- Kết thúc bằng disclaimer ngắn nếu đề xuất cụ thể
+
+${getMarketContext()}
+
+Lưu ý quan trọng: Đây là công cụ hỗ trợ phân tích, không phải lời khuyên tài chính chính thức. Người dùng tự chịu trách nhiệm về quyết định đầu tư của mình.`;
+}
+
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const msg=(input?.value||'').trim();
+  if(!msg||aiChatBusy) return;
+  input.value=''; input.style.height='auto';
+  await sendMessage(msg);
+}
+
+function quickAsk(question){
+  document.getElementById('chatInput').value=question;
+  sendChat();
+}
+
+async function sendMessage(userMsg){
+  if(aiChatBusy) return;
+  aiChatBusy=true;
+  const sendBtn=document.getElementById('chatSendBtn');
+  if(sendBtn) sendBtn.disabled=true;
+
+  // Hiển thị tin người dùng
+  appendChatMsg('user',userMsg);
+  chatHistory.push({role:'user',content:userMsg});
+
+  // Hiển thị typing indicator
+  const typingId='typing-'+Date.now();
+  appendTyping(typingId);
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:buildSystemPrompt(),
+        messages:chatHistory.slice(-10) // giữ 10 tin gần nhất
+      })
+    });
+    const data=await res.json();
+    const reply=data?.content?.[0]?.text||'Xin lỗi, tôi không thể trả lời lúc này.';
+    removeTyping(typingId);
+    appendChatMsg('ai',reply);
+    chatHistory.push({role:'assistant',content:reply});
+  }catch(e){
+    removeTyping(typingId);
+    appendChatMsg('ai','⚠️ Lỗi kết nối. Vui lòng thử lại sau.');
+  }
+  aiChatBusy=false;
+  if(sendBtn) sendBtn.disabled=false;
+}
+
+function appendChatMsg(role,text){
+  const body=document.getElementById('chatBody');
+  if(!body) return;
+  const now=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+  const isAI=role==='ai';
+  const div=document.createElement('div');
+  div.className=`chat-msg ${role}`;
+  // Convert markdown-like formatting
+  const formatted=text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
+  div.innerHTML=`
+    <div class="chat-avatar ${isAI?'ai-av':'user-av'}">${isAI?'🤖':'👤'}</div>
+    <div>
+      <div class="chat-bubble">${formatted}</div>
+      <div class="chat-time">${now}</div>
+    </div>`;
+  body.appendChild(div);
+  body.scrollTop=body.scrollHeight;
+}
+
+function appendTyping(id){
+  const body=document.getElementById('chatBody');
+  if(!body) return;
+  const div=document.createElement('div');
+  div.className='chat-msg ai'; div.id=id;
+  div.innerHTML=`<div class="chat-avatar ai-av">🤖</div><div class="chat-bubble chat-typing"><span></span><span></span><span></span></div>`;
+  body.appendChild(div);
+  body.scrollTop=body.scrollHeight;
+}
+
+function removeTyping(id){
+  const el=document.getElementById(id);
+  if(el) el.remove();
+}
+
+function clearChat(){
+  chatHistory=[];
+  const body=document.getElementById('chatBody');
+  if(!body) return;
+  body.innerHTML=`<div class="chat-msg ai">
+    <div class="chat-avatar ai-av">🤖</div>
+    <div><div class="chat-bubble">Chat đã được xóa. Tôi sẵn sàng tư vấn cho bạn! 🚀</div><div class="chat-time">Vừa xong</div></div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   TÍNH NĂNG 3: AI PHÂN TÍCH TIN TỨC
+   Dùng Claude API để phân tích impact lên giá
+═══════════════════════════════════════════ */
+
+async function runAINewsAnalysis(){
+  if(aiNewsBusy) return;
+  if(!allNews.length){
+    // Fetch news trước
+    await fetchNews(false);
+    if(!allNews.length){
+      document.getElementById('aiNewsGrid').innerHTML=
+        '<div class="ai-news-loading" style="grid-column:1/-1"><div>⚠️</div><div>Chưa có tin tức để phân tích. Vui lòng thử lại.</div></div>';
+      return;
+    }
+  }
+  aiNewsBusy=true;
+  const btn=document.getElementById('aiNewsBtn');
+  if(btn){btn.disabled=true; btn.textContent='⏳ AI đang phân tích...';}
+
+  const grid=document.getElementById('aiNewsGrid');
+  grid.innerHTML=`<div class="ai-news-loading" style="grid-column:1/-1">
+    <div class="spinner"></div>
+    <div>AI đang đọc và phân tích ${Math.min(allNews.length,12)} tin tức mới nhất...</div>
+  </div>`;
+
+  // Lấy top 12 tin mới nhất
+  const newsToAnalyze=allNews.slice(0,12);
+
+  // Gửi toàn bộ sang Claude để phân tích 1 lần (tiết kiệm API call)
+  const newsList=newsToAnalyze.map((n,i)=>
+    `[${i+1}] ${n.headline} (nguồn: ${n.source})`
+  ).join('\n');
+
+  const marketCtx=getMarketContext();
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        messages:[{
+          role:'user',
+          content:`Bạn là chuyên gia phân tích tin tức crypto. Phân tích tác động của từng tin tức sau lên giá tiền điện tử.
+
+${marketCtx}
+
+DANH SÁCH TIN TỨC CẦN PHÂN TÍCH:
+${newsList}
+
+Hãy trả về JSON (KHÔNG có markdown, chỉ JSON thuần):
+{
+  "analyses": [
+    {
+      "index": 1,
+      "vi_headline": "tiêu đề ngắn tiếng Việt",
+      "impact": "bullish|bearish|neutral",
+      "impact_level": "cao|trung bình|thấp",
+      "affected_coins": ["BTC","ETH"],
+      "price_effect": "+5% đến +10% trong 24-48h",
+      "analysis_vi": "phân tích tác động ngắn gọn 1-2 câu tiếng Việt",
+      "recommendation": "Mua|Bán|Chờ|Tích Lũy",
+      "confidence": 75
+    }
+  ]
+}`
+        }]
+      })
+    });
+    const data=await res.json();
+    const rawText=data?.content?.[0]?.text||'';
+
+    // Parse JSON từ response
+    let analyses=[];
+    try{
+      const clean=rawText.replace(/```json|```/g,'').trim();
+      const parsed=JSON.parse(clean);
+      analyses=parsed.analyses||[];
+    }catch(e){
+      // fallback: extract JSON object
+      const match=rawText.match(/\{[\s\S]*\}/);
+      if(match){
+        try{analyses=JSON.parse(match[0]).analyses||[];}catch(e2){}
+      }
+    }
+
+    if(!analyses.length) throw new Error('No analyses returned');
+
+    // Render kết quả
+    const html=analyses.map((a,i)=>{
+      const news=newsToAnalyze[a.index-1]||newsToAnalyze[i];
+      const impactCls=a.impact==='bullish'?'bullish':a.impact==='bearish'?'bearish':'neutral';
+      const impactLabel=a.impact==='bullish'?`📈 Bullish (${a.impact_level})`:a.impact==='bearish'?`📉 Bearish (${a.impact_level})`:`⚖️ Trung Lập`;
+      const coinsHtml=(a.affected_coins||[]).map(c=>`<span class="ai-news-impact ${impactCls}">${c} ${a.price_effect||''}</span>`).join('');
+      const confColor=a.confidence>=70?'var(--green)':a.confidence>=50?'var(--gold)':'var(--red)';
+      const recColor=a.recommendation==='Mua'||a.recommendation==='Tích Lũy'?'var(--green)':a.recommendation==='Bán'?'var(--red)':'var(--gold)';
+
+      return `<div class="ai-news-card">
+        <div class="ai-news-headline">${a.vi_headline||news?.headline||'Tin tức'}</div>
+        <div class="ai-news-analysis">${a.analysis_vi||''}</div>
+        <div class="ai-news-impacts">
+          <span class="ai-news-impact ${impactCls}">${impactLabel}</span>
+          ${coinsHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;color:${recColor};background:${recColor}18;border:1px solid ${recColor}30;border-radius:8px;padding:2px 8px;">→ ${a.recommendation||'Chờ'}</span>
+          <span style="font-size:10px;color:var(--muted);">Độ tin cậy: <span style="color:${confColor};font-weight:700;">${a.confidence||0}%</span></span>
+        </div>
+        <div class="ai-news-meta">
+          <span class="ai-news-source">${news?.source||'AI'}</span>
+          <span class="ai-news-time">${news?timeAgo(news.pub):''}</span>
+          ${news?.link&&news.link!=='#'?`<a href="${news.link}" target="_blank" rel="noopener" style="font-size:10px;color:var(--muted);margin-left:auto;text-decoration:none;">Đọc thêm ↗</a>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    grid.innerHTML=html||'<div class="ai-news-loading" style="grid-column:1/-1"><div>Không thể phân tích tin tức</div></div>';
+
+  }catch(e){
+    grid.innerHTML=`<div class="ai-news-loading" style="grid-column:1/-1"><div style="font-size:24px">⚠️</div><div>Lỗi phân tích: ${e.message}</div></div>`;
+  }
+  if(btn){btn.disabled=false; btn.textContent='🔄 Cập Nhật';}
+  aiNewsBusy=false;
 }
 
 /* ═══════════════════════════════════════════════════
