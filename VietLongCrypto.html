@@ -259,6 +259,57 @@ td.r{text-align:right;}
 .bb-lbl{color:var(--muted);}
 .bb-v{font-weight:700;font-family:monospace;}
 
+/* ══ ORDER BOOK ══ */
+.ob-tabs{display:flex;gap:2px;margin-bottom:10px;}
+.ob-tab{flex:1;padding:5px;font-size:10px;font-weight:700;text-align:center;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:none;color:var(--muted);font-family:Cambria,'Times New Roman',serif;transition:all .2s;}
+.ob-tab.active{background:var(--accent);border-color:var(--accent);color:#000;}
+.ob-header{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 2px;margin-bottom:5px;}
+.ob-rows{display:flex;flex-direction:column;gap:1px;}
+.ob-row{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;padding:2px 4px;border-radius:3px;position:relative;font-size:10px;font-family:monospace;cursor:default;}
+.ob-row:hover{background:rgba(255,255,255,.04);}
+.ob-bar-ask{position:absolute;right:0;top:0;bottom:0;background:rgba(255,61,87,.12);border-radius:3px;transition:width .3s;}
+.ob-bar-bid{position:absolute;left:0;top:0;bottom:0;background:rgba(0,230,118,.12);border-radius:3px;transition:width .3s;}
+.ob-price-ask{color:var(--red);font-weight:700;text-align:center;z-index:1;position:relative;}
+.ob-price-bid{color:var(--green);font-weight:700;text-align:center;z-index:1;position:relative;}
+.ob-qty{color:var(--text2);z-index:1;position:relative;}
+.ob-qty.right{text-align:right;}
+.ob-spread{text-align:center;padding:4px;font-size:9px;color:var(--gold);background:rgba(245,158,11,.08);border-radius:4px;margin:4px 0;font-weight:700;}
+.ob-depth{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.ob-depth-bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:4px;display:flex;}
+.ob-depth-bid{height:100%;background:var(--green);transition:width .4s;}
+.ob-depth-ask{height:100%;background:var(--red);}
+.ob-depth-lbl{display:flex;justify-content:space-between;font-size:9px;margin-top:3px;color:var(--muted);}
+
+/* ══ AI PREDICTION PANEL ══ */
+.ai-pred-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:2px;}
+.ai-pred-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:8px;}
+.ai-pred-score{font-size:28px;font-weight:700;font-family:monospace;text-align:center;line-height:1;}
+.ai-pred-label{font-size:10px;text-align:center;margin-top:4px;font-weight:700;}
+.ai-pred-bars{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.ai-pred-row{display:flex;align-items:center;gap:6px;font-size:9px;}
+.ai-pred-row span:first-child{width:52px;color:var(--muted);flex-shrink:0;}
+.ai-pred-fill{height:4px;border-radius:2px;transition:width .5s;}
+.ai-pred-pct{width:28px;text-align:right;font-weight:700;}
+
+/* ══ DAILY MARKET REPORT ══ */
+.daily-report-card{background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(139,92,246,.04));border:1px solid rgba(0,212,255,.2);border-radius:14px;padding:18px;margin-bottom:20px;position:relative;overflow:hidden;}
+.daily-report-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);}
+.dr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.dr-title{font-size:13px;font-weight:700;color:var(--accent);}
+.dr-date{font-size:10px;color:var(--muted);}
+.dr-generate-btn{padding:6px 14px;font-size:10px;font-weight:700;background:linear-gradient(135deg,var(--accent),rgba(139,92,246,.8));border:none;border-radius:6px;color:#000;cursor:pointer;font-family:Cambria,'Times New Roman',serif;transition:opacity .2s;}
+.dr-generate-btn:hover{opacity:.85;}
+.dr-generate-btn:disabled{opacity:.5;cursor:default;}
+.dr-loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;}
+.dr-sections{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.dr-section{background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;}
+.dr-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.dr-section-body{font-size:11px;line-height:1.65;color:var(--text2);}
+.dr-metrics{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;}
+.dr-metric{text-align:center;background:rgba(255,255,255,.03);border-radius:8px;padding:8px 14px;flex:1;min-width:70px;}
+.dr-metric-val{font-size:16px;font-weight:700;font-family:monospace;}
+.dr-metric-lbl{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.8px;}
+
 /* ══ PAGE: SCREENER ══ */
 .screener-layout{max-width:1700px;margin:0 auto;padding:20px 32px;}
 .screener-filters{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
@@ -750,43 +801,69 @@ footer .hl{color:var(--accent);}
     </div>
   </div>
 
-  <!-- Indicators -->
+  <!-- Right Panel: Chỉ Báo / Order Book / AI Dự Đoán -->
   <div class="indicators-panel" id="indicatorsPanel">
-    <div class="ind-section">
-      <div class="ind-title">RSI (14)</div>
-      <div class="ind-row">
-        <span class="ind-name">Giá trị</span>
-        <span class="ind-val" id="rsiVal">—</span>
+    <div class="ob-tabs" style="flex-shrink:0;">
+      <button class="ob-tab active" onclick="switchRightPanel('ind',this)">📊 Chỉ Báo</button>
+      <button class="ob-tab" onclick="switchRightPanel('ob',this)">📖 Order Book</button>
+    </div>
+
+    <!-- Chỉ Báo -->
+    <div id="rp-ind">
+      <div class="ind-section">
+        <div class="ind-title">RSI (14)</div>
+        <div class="ind-row"><span class="ind-name">Giá trị</span><span class="ind-val" id="rsiVal">—</span></div>
+        <div class="ind-bar"><div class="ind-bar-fill" id="rsiBar" style="width:50%;background:var(--gold)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0 Quá bán</span><span>50</span><span>Quá mua 100</span></div>
+        <div class="ind-signal hold" id="rsiSignal" style="margin-top:10px;">Đang tính...</div>
       </div>
-      <div class="ind-bar"><div class="ind-bar-fill" id="rsiBar" style="width:50%;background:var(--gold)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0 Quá bán</span><span>50</span><span>Quá mua 100</span></div>
-      <div class="ind-signal hold" id="rsiSignal" style="margin-top:10px;">Đang tính...</div>
-    </div>
-
-    <div class="ind-section">
-      <div class="ind-title">MACD (12,26,9)</div>
-      <div class="macd-row"><span class="macd-lbl">MACD Line</span><span class="macd-val" id="macdLine">—</span></div>
-      <div class="macd-row"><span class="macd-lbl">Signal Line</span><span class="macd-val" id="macdSignal">—</span></div>
-      <div class="macd-row"><span class="macd-lbl">Histogram</span><span class="macd-val" id="macdHist">—</span></div>
-      <div class="ind-signal hold" id="macdSignalBox" style="margin-top:10px;">Đang tính...</div>
-    </div>
-
-    <div class="ind-section">
-      <div class="ind-title">Bollinger Bands (20,2)</div>
-      <div class="bb-visual" id="bbPanel">
-        <div class="bb-row"><span class="bb-lbl">Dải Trên</span><span class="bb-v" id="bbUpper">—</span></div>
-        <div class="bb-row"><span class="bb-lbl">Trung Bình (SMA20)</span><span class="bb-v" id="bbMiddle">—</span></div>
-        <div class="bb-row"><span class="bb-lbl">Dải Dưới</span><span class="bb-v" id="bbLower">—</span></div>
-        <div class="bb-row"><span class="bb-lbl">Giá Hiện Tại</span><span class="bb-v" id="bbPrice">—</span></div>
+      <div class="ind-section">
+        <div class="ind-title">MACD (12,26,9)</div>
+        <div class="macd-row"><span class="macd-lbl">MACD Line</span><span class="macd-val" id="macdLine">—</span></div>
+        <div class="macd-row"><span class="macd-lbl">Signal Line</span><span class="macd-val" id="macdSignal">—</span></div>
+        <div class="macd-row"><span class="macd-lbl">Histogram</span><span class="macd-val" id="macdHist">—</span></div>
+        <div class="ind-signal hold" id="macdSignalBox" style="margin-top:10px;">Đang tính...</div>
       </div>
-      <div class="ind-signal hold" id="bbSignal" style="margin-top:10px;">Đang tính...</div>
+      <div class="ind-section">
+        <div class="ind-title">Bollinger Bands (20,2)</div>
+        <div class="bb-visual" id="bbPanel">
+          <div class="bb-row"><span class="bb-lbl">Dải Trên</span><span class="bb-v" id="bbUpper">—</span></div>
+          <div class="bb-row"><span class="bb-lbl">Trung Bình (SMA20)</span><span class="bb-v" id="bbMiddle">—</span></div>
+          <div class="bb-row"><span class="bb-lbl">Dải Dưới</span><span class="bb-v" id="bbLower">—</span></div>
+          <div class="bb-row"><span class="bb-lbl">Giá Hiện Tại</span><span class="bb-v" id="bbPrice">—</span></div>
+        </div>
+        <div class="ind-signal hold" id="bbSignal" style="margin-top:10px;">Đang tính...</div>
+      </div>
+      <div class="ind-section">
+        <div class="ind-title">Tín Hiệu Tổng Hợp</div>
+        <div class="ind-signal hold" id="overallSignal" style="font-size:14px;padding:14px;">Chưa có dữ liệu phân tích</div>
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">Tổng hợp RSI + MACD + BB</div>
+      </div>
     </div>
 
-    <div class="ind-section">
-      <div class="ind-title">Tín Hiệu Tổng Hợp</div>
-      <div class="ind-signal hold" id="overallSignal" style="font-size:14px;padding:14px;">Chưa có dữ liệu phân tích</div>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">Tổng hợp RSI + MACD + BB</div>
+    <!-- Order Book -->
+    <div id="rp-ob" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);">Order Book Realtime</span>
+        <span style="font-size:9px;color:var(--accent);font-weight:700;" id="obCoinLabel">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:3px;">
+        <span style="color:var(--green);font-weight:700;" id="obBidPct">—% Mua</span>
+        <span style="color:var(--muted);">Áp Lực</span>
+        <span style="color:var(--red);font-weight:700;" id="obAskPct">Bán —%</span>
+      </div>
+      <div class="ob-depth-bar" style="margin-bottom:10px;">
+        <div class="ob-depth-bid" id="obDepthBid" style="width:50%"></div>
+        <div class="ob-depth-ask" id="obDepthAsk" style="width:50%"></div>
+      </div>
+      <div class="ob-header"><span>Qty</span><span>Giá Ask</span><span style="text-align:right">USDT</span></div>
+      <div class="ob-rows" id="obAsks"></div>
+      <div class="ob-spread" id="obSpread">Spread: —</div>
+      <div class="ob-header"><span>Qty</span><span>Giá Bid</span><span style="text-align:right">USDT</span></div>
+      <div class="ob-rows" id="obBids"></div>
+      <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px;">🔴 Cập nhật mỗi 2 giây</div>
     </div>
+
   </div>
 </div>
 </div>
@@ -943,6 +1020,20 @@ footer .hl{color:var(--accent);}
 <div class="news-layout">
 
   <!-- Stats bar -->
+  <!-- Daily Market Report — Compact Card -->
+  <div class="daily-report-card" id="dailyReportCard">
+    <div class="dr-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div>
+          <div class="dr-title">📋 Tóm Tắt Thị Trường Hôm Nay</div>
+          <div class="dr-date" id="drDate">—</div>
+        </div>
+      </div>
+      <button class="dr-generate-btn" id="drBtn" onclick="generateDailyReport()">✨ Tạo Tóm Tắt AI</button>
+    </div>
+    <div id="drContent" style="color:var(--muted);font-size:11px;line-height:1.6;">Nhấn <strong style="color:var(--accent)">✨ Tạo Tóm Tắt AI</strong> để nhận tóm tắt thị trường hôm nay — BTC, altcoin nổi bật, tâm lý và điểm cần chú ý.</div>
+  </div>
+
   <div class="news-stats-bar">
     <div class="news-stat">
       <div class="news-stat-val" id="newsTotal" style="color:var(--accent)">—</div>
@@ -1001,6 +1092,7 @@ footer .hl{color:var(--accent);}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="ai-badge"><div class="ai-badge-dot"></div><span>Claude AI Powered</span></div>
       <button class="ai-refresh-btn" id="aiRefreshBtn" onclick="runAISignals()">⚡ Phân Tích Ngay</button>
+      <button class="ai-refresh-btn" id="runAllAIPredsBtn" onclick="runAllAIPreds()" style="background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(0,212,255,.06));border-color:rgba(139,92,246,.3);color:#a78bfa;">🤖 Dự Đoán 30 Coin</button>
     </div>
   </div>
 
@@ -1995,6 +2087,8 @@ async function openChart(sym){
   renderChartCoinList();
   await loadCandleData(sym,currentTf);
   await loadChartIndicators(sym);
+  // Nếu đang ở tab Order Book → restart với coin mới
+  if(currentRightPanel==='ob') startOrderBook(sym);
 }
 
 function updateChartHeader(){
@@ -2428,6 +2522,228 @@ function renderNewsPage(){
 }
 
 /* ═══════════════════════════════════════════════════
+   RIGHT PANEL — TABS (Chỉ Báo / Order Book / AI Pred)
+═══════════════════════════════════════════════════ */
+let currentRightPanel='ind';
+function switchRightPanel(panel, btn){
+  currentRightPanel=panel;
+  document.querySelectorAll('.ob-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rp-ind').style.display=panel==='ind'?'':'none';
+  document.getElementById('rp-ob').style.display=panel==='ob'?'':'none';
+  if(panel==='ob'&&selectedSym) startOrderBook(selectedSym);
+  if(panel!=='ob') stopOrderBook();
+}
+
+/* ═══════════════════════════════════════════════════
+   ORDER BOOK — Binance Depth WebSocket
+═══════════════════════════════════════════════════ */
+let obWs=null, obSym=null, obTimer=null;
+
+function startOrderBook(sym){
+  if(obSym===sym&&obWs&&obWs.readyState===1) return; // đã kết nối
+  stopOrderBook();
+  obSym=sym;
+  const lbl=document.getElementById('obCoinLabel');
+  if(lbl) lbl.textContent=sym.replace('USDT','/USDT');
+  fetchDepthSnapshot(sym);
+  // WebSocket depth stream (100ms updates)
+  obWs=new WebSocket(`wss://stream.binance.com:9443/ws/${sym.toLowerCase()}@depth20@100ms`);
+  obWs.onmessage=(e)=>{
+    try{
+      const d=JSON.parse(e.data);
+      renderOrderBook(d.asks||[], d.bids||[]);
+    }catch(ex){}
+  };
+  obWs.onerror=()=>{ stopOrderBook(); setTimeout(()=>{if(currentRightPanel==='ob'&&selectedSym) startOrderBook(selectedSym);},3000); };
+}
+
+function stopOrderBook(){
+  if(obWs){try{obWs.close();}catch(e){} obWs=null;}
+  if(obTimer){clearInterval(obTimer); obTimer=null;}
+  obSym=null;
+}
+
+async function fetchDepthSnapshot(sym){
+  try{
+    const r=await fetch(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`);
+    if(!r.ok) return;
+    const d=await r.json();
+    renderOrderBook(d.asks||[],d.bids||[]);
+  }catch(e){}
+}
+
+function renderOrderBook(asks,bids){
+  const fmtQ=n=>{const f=parseFloat(n); return f>=1000?f.toFixed(0):f>=1?f.toFixed(2):f.toFixed(4);};
+  const fmtV=n=>{const v=parseFloat(n); return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v.toFixed(0);};
+
+  // Lấy top 10 ask (giá tăng dần, hiển thị từ trên xuống gần spread)
+  const topAsks=asks.slice(0,10).reverse(); // asks đã sort giá tăng dần
+  const topBids=bids.slice(0,10);
+
+  // Tính max qty để vẽ bar
+  const allQty=[...topAsks,...topBids].map(r=>parseFloat(r[1]));
+  const maxQ=Math.max(...allQty)||1;
+
+  // Render asks (đỏ)
+  const askEl=document.getElementById('obAsks');
+  if(askEl) askEl.innerHTML=topAsks.map(([p,q])=>{
+    const pf=parseFloat(p), qf=parseFloat(q), vf=pf*qf;
+    const barW=Math.round(qf/maxQ*100);
+    return `<div class="ob-row">
+      <span class="ob-qty">${fmtQ(q)}</span>
+      <span class="ob-price-ask">${fmtP(pf)}</span>
+      <span class="ob-qty right">${fmtV(vf)}</span>
+      <div class="ob-bar-ask" style="width:${barW}%"></div>
+    </div>`;
+  }).join('');
+
+  // Spread
+  const bestAsk=parseFloat(asks[0]?.[0]||0);
+  const bestBid=parseFloat(bids[0]?.[0]||0);
+  const spread=bestAsk-bestBid;
+  const spreadPct=bestBid>0?((spread/bestBid)*100).toFixed(3):'—';
+  const spreadEl=document.getElementById('obSpread');
+  if(spreadEl) spreadEl.textContent=`Spread: ${fmtP(spread)} (${spreadPct}%)`;
+
+  // Render bids (xanh)
+  const bidEl=document.getElementById('obBids');
+  if(bidEl) bidEl.innerHTML=topBids.map(([p,q])=>{
+    const pf=parseFloat(p), qf=parseFloat(q), vf=pf*qf;
+    const barW=Math.round(qf/maxQ*100);
+    return `<div class="ob-row">
+      <span class="ob-qty">${fmtQ(q)}</span>
+      <span class="ob-price-bid">${fmtP(pf)}</span>
+      <span class="ob-qty right">${fmtV(vf)}</span>
+      <div class="ob-bar-bid" style="width:${barW}%"></div>
+    </div>`;
+  }).join('');
+
+  // Depth ratio
+  const totalBid=topBids.reduce((s,[,q])=>s+parseFloat(q)*parseFloat(bids[topBids.indexOf([,q])]?.[0]||0),0);
+  const totalAsk=topAsks.reduce((s,[,q])=>s+parseFloat(q)*parseFloat(asks[topAsks.indexOf([,q])]?.[0]||0),0);
+  // Đơn giản hơn: cộng USDT value
+  const bidUSDT=topBids.reduce((s,[p,q])=>s+parseFloat(p)*parseFloat(q),0);
+  const askUSDT=topAsks.reduce((s,[p,q])=>s+parseFloat(p)*parseFloat(q),0);
+  const totalUSDT=bidUSDT+askUSDT||1;
+  const bidPct=Math.round(bidUSDT/totalUSDT*100);
+  const askPct=100-bidPct;
+  const dbid=document.getElementById('obDepthBid'); if(dbid) dbid.style.width=bidPct+'%';
+  const dask=document.getElementById('obDepthAsk'); if(dask) dask.style.width=askPct+'%';
+  const bpEl=document.getElementById('obBidPct'); if(bpEl) bpEl.textContent=bidPct+'% Mua';
+  const apEl=document.getElementById('obAskPct'); if(apEl) apEl.textContent='Bán '+askPct+'%';
+}
+
+/* ═══════════════════════════════════════════════════
+   AI DỰ ĐOÁN XU HƯỚNG — Chart Panel
+═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   BÁO CÁO THỊ TRƯỜNG HÀNG NGÀY — AI
+═══════════════════════════════════════════════════ */
+let dailyReportGenerated=false;
+
+async function generateDailyReport(){
+  const btn=document.getElementById('drBtn');
+  const content=document.getElementById('drContent');
+  const dateEl=document.getElementById('drDate');
+  if(btn){btn.disabled=true; btn.textContent='⏳ Đang tạo...';}
+
+  // Set date
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
+  if(dateEl) dateEl.textContent=dateStr;
+
+  if(content) content.innerHTML='<div class="dr-loading"><div class="spinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>AI đang phân tích dữ liệu thị trường hôm nay...</div>';
+
+  try{
+    // Thu thập dữ liệu thị trường
+    const all=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
+    const sorted=[...all].sort((a,b)=>chg(b.sym)-chg(a.sym));
+    const topG=sorted.slice(0,5).map(c=>`${c.base}(+${chg(c.sym).toFixed(1)}%)`).join(', ');
+    const topL=sorted.slice(-5).reverse().map(c=>`${c.base}(${chg(c.sym).toFixed(1)}%)`).join(', ');
+    const topVol=[...all].sort((a,b)=>kvol(b.sym)-kvol(a.sym)).slice(0,5).map(c=>`${c.base}(${fmtB(kvol(c.sym))})`).join(', ');
+    const upCount=all.filter(c=>chg(c.sym)>0).length;
+    const dnCount=all.filter(c=>chg(c.sym)<0).length;
+    const totalVol=all.reduce((s,c)=>s+kvol(c.sym),0);
+    const btc=coins['BTCUSDT']||{};
+    const eth=coins['ETHUSDT']||{};
+    const fgEl=document.getElementById('fgNum');
+    const fgLbl=document.getElementById('fgLabel');
+    const fgVal=fgEl?fgEl.textContent:'—';
+    const fgLabel=fgLbl?fgLbl.textContent:'—';
+
+    const prompt=`Hôm nay là ${dateStr}. Bạn là chuyên gia phân tích thị trường crypto tại Việt Nam. Hãy viết báo cáo thị trường hôm nay bằng tiếng Việt, ngắn gọn và chuyên nghiệp.
+
+DỮ LIỆU NGÀY HÔM NAY (UTC+7):
+- BTC: ${fmtP(btc.price)} (${chg('BTCUSDT').toFixed(2)}% hôm nay)
+- ETH: ${fmtP(eth.price)} (${chg('ETHUSDT').toFixed(2)}% hôm nay)
+- Coin tăng: ${upCount} | Coin giảm: ${dnCount} | Tổng KL: ${fmtB(totalVol)}
+- Fear & Greed Index: ${fgVal} — ${fgLabel}
+- Top tăng: ${topG}
+- Top giảm: ${topL}
+- Top khối lượng: ${topVol}
+
+Viết báo cáo theo đúng định dạng JSON sau (không thêm text bên ngoài):
+{
+  "headline": "tiêu đề 1 dòng mô tả tổng quan thị trường hôm nay",
+  "overview": "2-3 câu tóm tắt tổng quan thị trường ngày hôm nay",
+  "btc_analysis": "2-3 câu phân tích BTC hôm nay, xu hướng và điểm quan trọng",
+  "altcoin": "2 câu về altcoin nổi bật và thị trường altcoin",
+  "sentiment": "1-2 câu về tâm lý thị trường dựa trên F&G và dữ liệu",
+  "watchlist": ["coin1 - lý do ngắn", "coin2 - lý do ngắn", "coin3 - lý do ngắn"],
+  "caution": "1-2 câu cảnh báo rủi ro hoặc điểm cần chú ý hôm nay",
+  "outlook": "1 câu nhận định xu hướng ngắn hạn",
+  "market_mood": "Tích cực" | "Thận trọng" | "Tiêu cực" | "Hỗn hợp"
+}`;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Bạn là chuyên gia phân tích crypto tại Việt Nam. Chỉ trả lời bằng JSON hợp lệ, không có markdown hay text bên ngoài JSON.',
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'{}';
+    let r;
+    try{r=JSON.parse(raw.replace(/```json|```/g,'').trim());}
+    catch(e){throw new Error('Lỗi parse JSON: '+raw.substring(0,100));}
+
+    const moodColor=r.market_mood==='Tích cực'?'var(--green)':r.market_mood==='Tiêu cực'?'var(--red)':'var(--gold)';
+
+    // Compact card: metrics row + 2 dòng tóm tắt + watchlist + outlook
+    const btcChgNow=chg('BTCUSDT');
+    content.innerHTML=`
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.4;">${r.headline||''}</div>
+      <div class="dr-metrics">
+        <div class="dr-metric"><div class="dr-metric-val" style="color:${btcChgNow>=0?'var(--green)':'var(--red)'}">${btcChgNow.toFixed(2)}%</div><div class="dr-metric-lbl">BTC hôm nay</div></div>
+        <div class="dr-metric"><div class="dr-metric-val">${upCount}↑ ${dnCount}↓</div><div class="dr-metric-lbl">Tăng / Giảm</div></div>
+        <div class="dr-metric"><div class="dr-metric-val" style="color:${moodColor}">${r.market_mood||'—'}</div><div class="dr-metric-lbl">Tâm lý</div></div>
+        <div class="dr-metric"><div class="dr-metric-val">${fgVal}</div><div class="dr-metric-lbl">Fear & Greed</div></div>
+      </div>
+      <div style="font-size:11px;line-height:1.65;color:var(--text2);margin-bottom:8px;">${r.overview||''} ${r.btc_analysis||''}</div>
+      ${r.watchlist?.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${r.watchlist.map(w=>`<span style="font-size:10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:5px;padding:2px 8px;color:var(--accent);">👀 ${w}</span>`).join('')}</div>`:''}
+      <div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;margin-top:2px;">
+        <span style="color:var(--red);font-weight:700;">⚠️</span> ${r.caution||''} &nbsp;·&nbsp; <span style="color:var(--accent);font-weight:700;">🔭</span> ${r.outlook||''}
+      </div>`;
+
+    dailyReportGenerated=true;
+  }catch(e){
+    if(content) content.innerHTML=`<div style="color:var(--red);font-size:11px;">⚠️ Không thể tạo báo cáo: ${e.message}</div>`;
+  }finally{
+    if(btn){btn.disabled=false; btn.textContent='🔄 Tạo Lại';}
+  }
+}
+
+// Auto-tạo báo cáo khi vào tab Tin Tức lần đầu nếu có đủ dữ liệu
+function maybeTriggerDailyReport(){
+  if(!dailyReportGenerated&&SYMBOLS.length>10) generateDailyReport();
+}
+
+/* ═══════════════════════════════════════════════════
    PRICE ALERT SYSTEM
 ═══════════════════════════════════════════════════ */
 let alerts=[];
@@ -2641,8 +2957,9 @@ function showPage(id,el){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
   if(el) el.classList.add('active');
+  if(id!=='chart') stopOrderBook();
   if(id==='chart') renderChartCoinList();
-  if(id==='news')  renderNewsPage();
+  if(id==='news'){renderNewsPage(); maybeTriggerDailyReport();}
   if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals(); // auto-run khi vào lần đầu
 }
 
@@ -2803,6 +3120,76 @@ function setAITab(el,mode){
   el.classList.add('active'); aiTabMode=mode; renderAITable();
 }
 
+/* ── AI Predictions cache cho bảng AI tab ── */
+const aiPredCache={}; // sym → {signal, prob_up, prob_down, ts}
+let aiPredRunning=false;
+
+function renderAIPredCell(sym){
+  const p=aiPredCache[sym];
+  if(!p) return `<button onclick="event.stopPropagation();requestAIPred('${sym}')" style="font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:Cambria,serif;" title="Dự đoán AI 24h">Phân tích</button>`;
+  const col=p.signal==='TĂNG MẠNH'||p.signal==='TĂNG'?'var(--green)':p.signal==='GIẢM MẠNH'||p.signal==='GIẢM'?'var(--red)':'var(--gold)';
+  const arrow=p.signal==='TĂNG MẠNH'?'🚀':p.signal==='TĂNG'?'📈':p.signal==='GIẢM MẠNH'?'🔴':p.signal==='GIẢM'?'📉':'⚖️';
+  return `<div title="↑${p.prob_up}% ⚖${p.prob_neutral}% ↓${p.prob_down}%\n${p.summary||''}" style="cursor:help;text-align:center;">
+    <div style="font-size:11px;font-weight:700;color:${col}">${arrow} ${p.signal}</div>
+    <div style="font-size:9px;color:var(--muted);margin-top:1px;">↑${p.prob_up}% / ↓${p.prob_down}%</div>
+  </div>`;
+}
+
+async function requestAIPred(sym){
+  if(aiPredCache[sym]) return; // đã có
+  // Update cell về loading
+  renderAITable();
+  const coin=sym.replace('USDT','');
+  const cv=coins[sym]||{};
+  const ind=rsiCache[sym]||{};
+  if(!ind.rsi) await fetchIndicators(sym);
+  const rc=rsiCache[sym]||{};
+  const price=cv.price||0;
+  const changeVal=chg(sym);
+  const rsi=rc.rsi||50;
+  const macd=rc.macd||{};
+  const bb=rc.bb||{};
+
+  try{
+    const prompt=`Phân tích kỹ thuật ngắn gọn cho ${coin}/USDT. Trả về JSON:
+{"signal":"TĂNG MẠNH"|"TĂNG"|"TRUNG LẬP"|"GIẢM"|"GIẢM MẠNH","prob_up":0-100,"prob_neutral":0-100,"prob_down":0-100,"summary":"1 câu tiếng Việt"}
+
+Dữ liệu: Giá=${fmtP(price)}, thay đổi=${changeVal.toFixed(2)}%, RSI=${rsi.toFixed(1)}, MACD cross=${macd.cross||'none'}, MACD hist=${macd.hist?.toFixed(5)||0}, BB vị trí=${bb.upper&&bb.lower?((price-bb.lower)/(bb.upper-bb.lower)*100).toFixed(0):50}%`;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        system:'Chỉ trả lời bằng JSON hợp lệ, không có text nào khác.',
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'{}';
+    const pred=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    aiPredCache[sym]={...pred, ts:Date.now()};
+  }catch(e){
+    aiPredCache[sym]={signal:'TRUNG LẬP',prob_up:33,prob_neutral:34,prob_down:33,summary:'Không thể phân tích.',ts:Date.now()};
+  }
+  renderAITable(); // re-render để cập nhật cell
+}
+
+// Nút "Dự đoán tất cả" — phân tích top 30 coin song song (rate limit friendly)
+async function runAllAIPreds(){
+  const btn=document.getElementById('runAllAIPredsBtn');
+  if(btn){btn.disabled=true; btn.textContent='⏳ Đang phân tích...';}
+  const toProcess=aiScores.slice(0,30).map(s=>s.sym).filter(s=>!aiPredCache[s]);
+  // batch 3 cùng lúc
+  for(let i=0;i<toProcess.length;i+=3){
+    const batch=toProcess.slice(i,i+3);
+    await Promise.allSettled(batch.map(s=>requestAIPred(s)));
+    if(i+3<toProcess.length) await new Promise(r=>setTimeout(r,800));
+  }
+  if(btn){btn.disabled=false; btn.textContent='🤖 Dự Đoán 30 Coin';}
+}
+
 function renderAITable(){
   if(!aiScores.length) return;
   let list=[...aiScores];
@@ -2855,6 +3242,7 @@ function renderAITable(){
       <td class="r" style="font-size:11px">${macdStr}</td>
       <td class="r">${volStr}</td>
       <td class="r hide-sm"><div class="ai-factors">${factHtml}</div></td>
+      <td class="r">${renderAIPredCell(c.sym)}</td>
     </tr>`;
   }).join('');
 
@@ -2869,6 +3257,7 @@ function renderAITable(){
       <th class="r">MACD</th>
       <th class="r">Vol ×</th>
       <th class="r hide-sm">Lý Do</th>
+      <th class="r" style="min-width:80px">Dự Đoán 24h</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
