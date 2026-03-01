@@ -2692,14 +2692,13 @@ function calcAIScore(sym){
   else if(volRatio<0.6){score-=5; factors.push({label:'Vol Thấp',type:'neg'});}
 
   /* ── 5. Price Momentum 24h (max ±12 điểm) ── */
-  const chgVN=chg(sym); // UTC+7
-  const chg=chgVN;
-  if(chg>15){score+=12; factors.push({label:'+'+chg.toFixed(1)+'%',type:'pos'});}
-  else if(chg>8){score+=8;}
-  else if(chg>3){score+=4;}
-  else if(chg<-15){score-=12; factors.push({label:chg.toFixed(1)+'%',type:'neg'});}
-  else if(chg<-8){score-=8;}
-  else if(chg<-3){score-=4;}
+  const chgVN=chg(sym); // UTC+7 — dùng helper toàn cục
+  if(chgVN>15){score+=12; factors.push({label:'+'+chgVN.toFixed(1)+'%',type:'pos'});}
+  else if(chgVN>8){score+=8;}
+  else if(chgVN>3){score+=4;}
+  else if(chgVN<-15){score-=12; factors.push({label:chgVN.toFixed(1)+'%',type:'neg'});}
+  else if(chgVN<-8){score-=8;}
+  else if(chgVN<-3){score-=4;}
 
   /* ── 6. Sparkline Trend (max ±8 điểm) ── */
   const h=hist[sym]||[];
@@ -2717,8 +2716,8 @@ function calcAIScore(sym){
   /* ── 7. Fear & Greed context (max ±5 điểm) ── */
   const fgEl=document.getElementById('fgNum');
   const fgVal=fgEl?parseInt(fgEl.textContent)||50:50;
-  if(fgVal<30&&chg<0){score+=5; factors.push({label:'F&G Cực Sợ',type:'pos'});} // cơ hội
-  else if(fgVal>75&&chg>10){score-=5; factors.push({label:'F&G Tham Lam',type:'neg'});} // cảnh báo
+  if(fgVal<30&&chgVN<0){score+=5; factors.push({label:'F&G Cực Sợ',type:'pos'});} // cơ hội
+  else if(fgVal>75&&chgVN>10){score-=5; factors.push({label:'F&G Tham Lam',type:'neg'});} // cảnh báo
 
   score=Math.max(0,Math.min(100,Math.round(score)));
 
@@ -2730,7 +2729,7 @@ function calcAIScore(sym){
 
   return{sym,base,score,signal,factors:factors.slice(0,4),
     rsi:rc?.rsi,macdCross:rc?.macd?.cross,macdHist:rc?.macd?.hist,
-    vol:c.vol,change24h:chg,price:c.price,volRatio};
+    vol:c.vol,change24h:chgVN,price:c.price,volRatio};
 }
 
 async function runAISignals(){
