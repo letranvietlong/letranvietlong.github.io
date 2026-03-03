@@ -4840,60 +4840,57 @@ const VN_NAMES = {
   SHS:'SHS CK',CEO:'C.E.O',DGC:'Hóa chất Đức Giang',MBS:'MB Securities',
 };
 
-/* VN Stock API — TCBS + SSI public endpoints (CORS enabled) */
+/* VN Stock Engine — CORS Proxy + TCBS/VNDirect verified endpoints */
 const TCBS_BASE='https://apipubaws.tcbs.com.vn';
-const SSI_BASE='https://iboard-query.ssi.com.vn';
-
-async function tcbsFetch(url,timeout){
+const VN_PROXIES=[
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://thingproxy.freeboard.io/fetch/'+u,
+];
+async function vnProxyFetch(url,timeout){
   if(!timeout)timeout=12000;
-  const ctrl=new AbortController();
-  const tid=setTimeout(()=>ctrl.abort(),timeout);
-  try{
-    const r=await fetch(url,{signal:ctrl.signal,headers:{Accept:'application/json'}});
-    clearTimeout(tid); if(!r.ok) throw new Error('HTTP '+r.status);
-    return await r.json();
-  }catch(e){clearTimeout(tid);throw e;}
+  for(const pFn of VN_PROXIES){
+    const ctrl=new AbortController(),tid=setTimeout(()=>ctrl.abort(),timeout);
+    try{
+      const r=await fetch(pFn(url),{signal:ctrl.signal});
+      clearTimeout(tid); if(!r.ok) throw new Error('HTTP '+r.status);
+      const txt=await r.text(); const j=JSON.parse(txt);
+      if(j&&typeof j.contents==='string') return JSON.parse(j.contents);
+      return j;
+    }catch(e){clearTimeout(tid);}
+  }
+  throw new Error('All proxies failed: '+url);
 }
 
 async function vnFetchIndex(sym){
   try{
-    const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/market/overview',10000);
+    const tcbsSym={VNINDEX:'VNINDEX',HNXINDEX:'HNXINDEX',UPCOMINDEX:'UPCOMINDEX'}[sym];
+    const now=Math.floor(Date.now()/1000),from=now-10*86400;
+    const url=TCBS_BASE+'/stock-insight/v1/stock/bars-long-term?ticker='+tcbsSym+'&type=index&resolution=D&from='+from+'&to='+now;
+    const d=await vnProxyFetch(url,10000);
     const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
-    if(arr){
-      const codes={VNINDEX:['VNINDEX','VNI'],HNXINDEX:['HNXINDEX','HNX'],UPCOMINDEX:['UPCOMINDEX','UPCOM','UPC']};
-      const entry=arr.find(x=>(codes[sym]||[]).some(c2=>(x.indexId||x.code||x.index||'').toUpperCase().includes(c2)));
-      if(entry){
-        const val=+(entry.indexValue||entry.value||entry.lastValue||0);
-        if(val>0) return{value:val,chg:+(entry.indexChange||entry.change||0),
-          pct:+(entry.percentIndexChange||entry.pctChange||entry.changePercent||0),
-          vol:+(entry.totalVolume||entry.volume||0),val:0,
-          hi:+(entry.highestIndex||entry.high||val),lo:+(entry.lowestIndex||entry.low||val)};
+    if(arr&&arr.length>0){
+      const last=arr[arr.length-1],prev=arr.length>1?arr[arr.length-2]:last;
+      const val=+(last.close||last.c||0);
+      if(val>0){
+        const pval=+(prev.close||prev.c||val),chg=val-pval,pct=pval>0?(chg/pval)*100:0;
+        return{value:val,chg,pct,vol:+(last.volume||last.v||0),val:0,
+          hi:+(last.high||last.h||val),lo:+(last.low||last.l||val)};
       }
     }
   }catch(e){}
   try{
-    const ssiCode={VNINDEX:'VNI',HNXINDEX:'HNX',UPCOMINDEX:'UPC'};
-    const d=await tcbsFetch(SSI_BASE+'/v2/stock/marketwatch?indexId='+ssiCode[sym]+'&type=IDX',8000);
+    const vndSym={VNINDEX:'VNINDEX',HNXINDEX:'HNXINDEX',UPCOMINDEX:'UPCOMINDEX'}[sym];
+    const url='https://finfo-api.vndirect.com.vn/v4/stock_prices/?sort=-date&size=2&page=1&q=code:'+vndSym;
+    const d=await vnProxyFetch(url,10000);
     if(d&&d.data&&d.data.length){
-      const r=d.data[0];const val=+(r.lastValue||r.indexValue||r.c||0);
+      const r=d.data[0],val=+(r.close||r.adClose||0);
       if(val>0){
-        const ref=+(r.refValue||r.r||val);
-        const chg=+(r.change||r.indexChange||val-ref);
-        const pct=+(r.changePercent||r.pctChange||(ref>0?(chg/ref)*100:0));
-        return{value:val,chg,pct,vol:+(r.totalVolume||r.vol||0),val:0,
-          hi:+(r.highestValue||r.h||val),lo:+(r.lowestValue||r.l||val)};
+        const pv=d.data[1]?(+(d.data[1].close||val)):val,chg=val-pv,pct=pv>0?(chg/pv)*100:0;
+        return{value:val,chg,pct,vol:+(r.nmVolume||r.volume||0),val:0,hi:+(r.high||val),lo:+(r.low||val)};
       }
     }
   }catch(e2){}
-  try{
-    const vndCode={VNINDEX:'01',HNXINDEX:'02',UPCOMINDEX:'03'};
-    const d=await tcbsFetch('https://finfo-api.vndirect.com.vn/v4/market-stats?marketCode='+vndCode[sym]+'&fields=indexValue,indexChange,pctIndexChange,totalDealVolume',8000);
-    if(d&&d.data&&d.data.length){
-      const r=d.data[0];const val=+(r.indexValue||0);
-      if(val>0) return{value:val,chg:+(r.indexChange||0),pct:+(r.pctIndexChange||0),
-        vol:+(r.totalDealVolume||0),val:0,hi:val,lo:val};
-    }
-  }catch(e3){}
   return null;
 }
 
@@ -4902,14 +4899,14 @@ async function vnFetchChart(sym,tf){
   if(VN.chartData[key])return VN.chartData[key];
   const isIdx=sym==='VNINDEX'||sym==='HNXINDEX'||sym==='UPCOMINDEX';
   const now=Math.floor(Date.now()/1000);
-  const resM={'1D':'1','1W':'15','1M':'D','3M':'D','1Y':'W'};
-  const daysM={'1D':2,'1W':10,'1M':35,'3M':100,'1Y':400};
-  const res=resM[tf]||'D';
-  const from=now-(daysM[tf]||200)*86400;
+  const resM={'1D':'D','1W':'D','1M':'D','3M':'D','1Y':'W'};
+  const daysM={'1D':2,'1W':10,'1M':40,'3M':100,'1Y':400};
+  const res=resM[tf]||'D',from=now-(daysM[tf]||200)*86400;
   const ticker=isIdx?{VNINDEX:'VNINDEX',HNXINDEX:'HNXINDEX',UPCOMINDEX:'UPCOMINDEX'}[sym]:sym;
   const type=isIdx?'index':'stock';
   try{
-    const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/stock/bars-long-term?ticker='+ticker+'&type='+type+'&resolution='+res+'&from='+from+'&to='+now,12000);
+    const url=TCBS_BASE+'/stock-insight/v1/stock/bars-long-term?ticker='+ticker+'&type='+type+'&resolution='+res+'&from='+from+'&to='+now;
+    const d=await vnProxyFetch(url,12000);
     const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
     if(arr&&arr.length>2){
       const bars=arr.map(b=>({
@@ -4920,6 +4917,17 @@ async function vnFetchChart(sym,tf){
       if(bars.length>2){VN.chartData[key]=bars;return bars;}
     }
   }catch(e){}
+  try{
+    const url2='https://finfo-api.vndirect.com.vn/v4/stock_prices/?sort=-date&size='+(daysM[tf]||200)+'&page=1&q=code:'+sym;
+    const d=await vnProxyFetch(url2,10000);
+    if(d&&d.data&&d.data.length>2){
+      const bars=d.data.map(b=>({
+        t:Math.floor(new Date(b.date||b.tradingDate).getTime()/1000),
+        o:+(b.open||0),h:+(b.high||0),l:+(b.low||0),c:+(b.close||b.adClose||0),v:+(b.nmVolume||0)
+      })).filter(b=>b.c>0&&b.t>0).sort((a,b2)=>a.t-b2.t);
+      if(bars.length>2){VN.chartData[key]=bars;return bars;}
+    }
+  }catch(e2){}
   return null;
 }
 
@@ -4927,67 +4935,47 @@ async function vnFetchStocks(mode){
   const HNX_SYMS=["SHB","PVS","NTP","VCS","TNG","SHS","CEO","DGC","MBS","HUT","VGC","KLF","BVS","IDJ","PVI","SCR","PGI","VIF","WSS","HHC"];
   const baseSyms=mode==="hnx"?HNX_SYMS:VN30_SYMS;
   let all=[];
-  for(let i=0;i<baseSyms.length;i+=15){
-    const chunk=baseSyms.slice(i,i+15);
-    const tickers=chunk.join(',');
-    let ok=false;
+  for(let i=0;i<baseSyms.length;i+=10){
+    const chunk=baseSyms.slice(i,i+10);
     try{
-      const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/industry/analysis/filter?type=priceAndVolume&tickers='+tickers,10000);
-      const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
-      if(arr&&arr.length>0){
-        const parsed=arr.map(q=>{
-          const sym=(q.ticker||q.stockCode||q.code||'').toUpperCase();
-          if(!sym) return null;
-          let p=+(q.lastPrice||q.price||q.closePrice||0),r=+(q.referencePrice||q.refPrice||p);
-          if(p>0&&p<1000){p*=1000;r*=1000;}
-          return{sym,name:VN_NAMES[sym]||q.organName||sym,price:p,ref:r,
-            ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
-            chg:+(q.priceChange||q.change||0)*(+(q.lastPrice||1)<1000?1000:1),
-            pct:+(q.percentPriceChange||q.pctChange||0),
-            vol:+(q.totalVolume||q.volume||0),val:+(q.totalValue||0),
-            hi:+(q.highestPrice||q.high||0)*(+(q.lastPrice||1)<1000?1000:1),
-            lo:+(q.lowestPrice||q.low||0)*(+(q.lastPrice||1)<1000?1000:1),floor_id:mode};
-        }).filter(s=>s&&s.sym&&s.price>0);
-        if(parsed.length>0){all=all.concat(parsed);ok=true;}
-      }
-    }catch(e){}
-    if(ok) continue;
-    try{
-      const market=mode==='hnx'?'HNX':'HOSE';
-      const d=await tcbsFetch(SSI_BASE+'/v2/stock/price-board?market='+market+'&symbols='+tickers,8000);
-      const arr=d&&Array.isArray(d.data)?d.data:null;
-      if(arr&&arr.length>0){
-        const parsed=arr.map(q=>{
-          const sym=(q.Symbol||q.symbol||q.ticker||'').toUpperCase().replace('.VN','');
-          const p=+(q.LastPrice||q.lastPrice||q.last||0);
-          const r=+(q.RefPrice||q.refPrice||q.ref||p);
+      const qStr=chunk.map(s=>"code:"+s).join("~or~");
+      const url="https://finfo-api.vndirect.com.vn/v4/stock_prices/?sort=-date&size="+chunk.length+"&page=1&q="+encodeURIComponent(qStr);
+      const d=await vnProxyFetch(url,10000);
+      if(d&&d.data&&d.data.length>0){
+        const parsed=d.data.map(q=>{
+          const sym=q.code||q.symbol||"";
+          const p=+(q.close||q.adClose||0);
+          const r=+(q.refPrice||q.open||p);
           return{sym,name:VN_NAMES[sym]||sym,price:p,ref:r,
             ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
-            chg:p-r,pct:r>0?((p-r)/r)*100:0,
-            vol:+(q.TotalVolume||q.totalVolume||0),val:+(q.TotalValue||q.totalValue||0),
-            hi:+(q.Highest||q.highest||p),lo:+(q.Lowest||q.lowest||p),floor_id:mode};
+            chg:+(q.change||p-r),pct:+(q.pctChange||(r>0?(p-r)/r*100:0)),
+            vol:+(q.nmVolume||q.volume||0),val:+(q.nmValue||q.value||0),
+            hi:+(q.high||p),lo:+(q.low||p),floor_id:mode};
         }).filter(s=>s.sym&&s.price>0);
-        if(parsed.length>0){all=all.concat(parsed);ok=true;}
+        if(parsed.length>0){all=all.concat(parsed);continue;}
       }
-    }catch(e2){}
-    if(ok) continue;
+    }catch(e){}
+    // Fallback: TCBS bars-long-term per stock
     for(const sym of chunk){
       try{
-        const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/stock/'+sym+'/price-diff',6000);
-        if(d){
-          let p=+(d.price||d.lastPrice||0),r=+(d.refPrice||d.referencePrice||p);
-          if(p>0&&p<1000){p*=1000;r*=1000;}
-          if(p>0) all.push({sym,name:VN_NAMES[sym]||sym,price:p,ref:r,
-            ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
-            chg:+(d.change||0)*(+(d.price||1)<1000?1000:1),pct:+(d.pctChange||0),
-            vol:+(d.volume||0),val:+(d.value||0),hi:+(d.high||p),lo:+(d.low||p),floor_id:mode});
+        const now=Math.floor(Date.now()/1000),from=now-7*86400;
+        const url=TCBS_BASE+"/stock-insight/v1/stock/bars-long-term?ticker="+sym+"&type=stock&resolution=D&from="+from+"&to="+now;
+        const d=await vnProxyFetch(url,8000);
+        const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
+        if(arr&&arr.length>0){
+          const last=arr[arr.length-1],prev=arr.length>1?arr[arr.length-2]:last;
+          const p=+(last.close||last.c||0),r2=+(prev.close||prev.c||p);
+          if(p>0) all.push({sym,name:VN_NAMES[sym]||sym,price:p,ref:r2,
+            ceil:Math.round(r2*1.07),floor:Math.round(r2*0.93),
+            chg:p-r2,pct:r2>0?((p-r2)/r2)*100:0,
+            vol:+(last.volume||last.v||0),val:0,
+            hi:+(last.high||last.h||p),lo:+(last.low||last.l||p),floor_id:mode});
         }
-      }catch(e3){}
+      }catch(e2){}
     }
   }
   return all.filter(s=>s.price>0);
 }
-
 
 function vnRenderIdxCard(sym,data){
   const map={
