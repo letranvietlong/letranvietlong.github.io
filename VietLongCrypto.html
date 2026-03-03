@@ -2515,27 +2515,26 @@ setInterval(loadDailyVN, 10*60*1000);
 async function loadCoinGeckoLogos(){
   let loaded=0;
 
-  /* ── Nguồn 1: CoinGecko (trang 1 + 2) ── */
-  for(let page=1;page<=2;page++){
-    try{
-      if(page>1) await new Promise(r=>setTimeout(r,3000));
-      const res=await fetch(
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false`,
-        {signal:AbortSignal.timeout(12000)}
-      );
-      if(res.status===429){console.warn('CoinGecko 429');break;}
-      if(!res.ok) break;
+  /* ── Nguồn 1: CoinGecko (chỉ page 1, tránh 429) ── */
+  try{
+    await new Promise(r=>setTimeout(r,1500));
+    const res=await fetch(
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
+      {signal:AbortSignal.timeout(15000)}
+    );
+    if(res.ok&&res.status!==429){
       const data=await res.json();
-      if(!Array.isArray(data)||!data.length) break;
-      data.forEach(c=>{
-        const sym=c.symbol.toUpperCase();
-        if(!logoMap[sym]&&c.image&&!c.image.includes('missing_large')){
-          logoMap[sym]=c.image; nameMap[sym]=c.name; loaded++;
-        }
-      });
-      _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-    }catch(e){console.warn('CoinGecko logo page',page,e.message); break;}
-  }
+      if(Array.isArray(data)){
+        data.forEach(c=>{
+          const sym=c.symbol.toUpperCase();
+          if(!logoMap[sym]&&c.image&&!c.image.includes('missing_large')){
+            logoMap[sym]=c.image; nameMap[sym]=c.name; loaded++;
+          }
+        });
+        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+      }
+    }
+  }catch(e){console.warn('CoinGecko logo error',e.message);}
 
   /* ── Nguồn 2: CoinCap API (free, no key) ── */
   if(loaded<50){
@@ -4871,19 +4870,23 @@ const VN_NAMES = {
 
 /* VN Stock API - Yahoo Finance PRIMARY (no proxy needed) */
 const VN_YAHOO_MAP={VNINDEX:"^VNINDEX",HNXINDEX:"^HNX",UPCOMINDEX:"^UPCOM"};
+const VN_CORS_PROXIES=[u=>"https://api.allorigins.win/get?url="+encodeURIComponent(u),u=>"https://corsproxy.io/?url="+encodeURIComponent(u),u=>"https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(u)];
 async function vnFetch(url,timeout){
   if(!timeout)timeout=10000;
-  const ctrl=new AbortController();
-  const tid=setTimeout(()=>ctrl.abort(),timeout);
-  try{
-    const r=await fetch(url,{signal:ctrl.signal});
+  async function tryUrl(u){
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),timeout);
+    const r=await fetch(u,{signal:ctrl.signal});
     clearTimeout(tid);
     if(!r.ok)throw new Error("HTTP "+r.status);
     const text=await r.text();
     const j=JSON.parse(text);
     if(j&&j.contents)return JSON.parse(j.contents);
     return j;
-  }catch(e){clearTimeout(tid);throw e;}
+  }
+  try{return await tryUrl(url);}catch(e){}
+  for(const pFn of VN_CORS_PROXIES){try{return await tryUrl(pFn(url));}catch(e){}}
+  throw new Error("vnFetch failed: "+url);
 }
 function vnYahooChartUrl(t,i,r){return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(t)+"?interval="+i+"&range="+r+"&includePrePost=false";}
 function vnYahooQuoteUrl(syms){return "https://query1.finance.yahoo.com/v7/finance/quote?symbols="+syms.map(encodeURIComponent).join(",")+"&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,regularMarketDayHigh,regularMarketDayLow,regularMarketPreviousClose,shortName";}
