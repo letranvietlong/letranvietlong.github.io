@@ -872,13 +872,255 @@ footer .hl{color:var(--accent);}
   .live-dot{animation:none;opacity:1;}
   .spinner{animation:none;}
 }
+
+/* ── Daily Report ── */
+.daily-report-card{
+  background:var(--surface);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:16px 18px;margin-bottom:14px;
+}
+.dr-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;}
+.dr-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.dr-date{font-size:11px;color:var(--muted);}
+.dr-generate-btn{
+  background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(139,92,246,.08));
+  border:1px solid rgba(0,212,255,.25);color:var(--accent);
+  padding:7px 14px;border-radius:8px;font-size:11px;font-weight:700;
+  cursor:pointer;white-space:nowrap;transition:all .2s;
+}
+.dr-generate-btn:hover{background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(139,92,246,.12));border-color:rgba(0,212,255,.4);}
+.dr-generate-btn:disabled{opacity:.5;cursor:not-allowed;}
+.dr-apikey-row{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;margin-bottom:10px;
+  background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);
+  border-radius:8px;
+}
+.dr-loading{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;padding:8px 0;}
+
+/* dr-metrics */
+.dr-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;}
+.dr-metric{background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;text-align:center;}
+.dr-metric-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);}
+.dr-metric-lbl{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ════════════════════════════════════
+   PAGE: CK VIỆT NAM
+════════════════════════════════════ */
+.vn-layout{display:flex;flex-direction:column;gap:14px;padding:16px;max-width:1400px;margin:0 auto;width:100%;}
+
+/* Index bar */
+.vn-index-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.vn-idx-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:4px;
+  transition:border-color .2s;cursor:default;
+}
+.vn-idx-card:hover{border-color:rgba(0,212,255,.2);}
+.vn-idx-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.vn-idx-name::before{content:'';width:2px;height:8px;border-radius:1px;background:var(--accent);display:block;}
+.vn-idx-value{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.1;}
+.vn-idx-change{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+.vn-idx-pts{font-size:10px;color:var(--muted);margin-top:1px;}
+.vn-idx-vol{font-size:10px;color:var(--muted);}
+.vn-idx-up{color:var(--green);}
+.vn-idx-dn{color:var(--red);}
+.vn-idx-nc{color:var(--muted);}
+
+/* Session status */
+.vn-session-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:10px 16px;
+}
+.vn-session-status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;}
+.vn-session-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.vn-session-dot.open{background:var(--green);box-shadow:0 0 6px rgba(0,230,118,.5);animation:pulse 1.5s infinite;}
+.vn-session-dot.ato,.vn-session-dot.atc{background:var(--gold);box-shadow:0 0 6px rgba(245,158,11,.5);}
+.vn-session-dot.closed{background:var(--red);}
+.vn-session-time{font-size:11px;color:var(--muted);}
+.vn-breadth{display:flex;gap:12px;font-size:11px;}
+.vn-breadth-item{display:flex;align-items:center;gap:4px;}
+.vn-breadth-dot{width:6px;height:6px;border-radius:50%;}
+
+/* Chart mini */
+.vn-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.vn-mini-chart-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;display:flex;flex-direction:column;gap:8px;
+}
+.vn-mini-chart-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center;}
+.vn-mini-chart-canvas{height:70px;position:relative;overflow:hidden;}
+.vn-mini-loading{text-align:center;color:var(--muted);font-size:10px;padding:20px 0;}
+
+/* Timeframe btns */
+.vn-tf-group{display:flex;gap:4px;}
+.vn-tf-btn{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;}
+.vn-tf-btn.active{background:var(--accent);border-color:var(--accent);color:#000;}
+.vn-tf-btn:hover:not(.active){color:var(--text);border-color:rgba(255,255,255,.2);}
+
+/* Bottom 2-col: top movers + table */
+.vn-bottom-grid{display:grid;grid-template-columns:280px 1fr;gap:12px;align-items:start;}
+
+/* Top movers */
+.vn-movers{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.vn-movers-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.vn-movers-tabs{display:flex;gap:0;background:rgba(0,0,0,.3);border-radius:6px;padding:2px;margin-bottom:10px;}
+.vn-movers-tab{flex:1;padding:4px;font-size:10px;font-weight:700;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:4px;font-family:inherit;transition:all .15s;}
+.vn-movers-tab.active{background:var(--surface);color:var(--text);}
+.vn-mover-row{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.03);gap:8px;}
+.vn-mover-row:last-child{border-bottom:none;}
+.vn-mover-rank{font-size:10px;color:var(--muted);width:16px;text-align:center;flex-shrink:0;}
+.vn-mover-sym{font-size:12px;font-weight:700;color:var(--text);width:44px;flex-shrink:0;}
+.vn-mover-price{font-size:11px;color:var(--muted);flex:1;font-variant-numeric:tabular-nums;}
+.vn-mover-chg{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;min-width:52px;text-align:right;}
+
+/* VN30 Table */
+.vn-table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;overflow:hidden;}
+.vn-table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
+.vn-tbl-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.vn-search{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--text);font-size:11px;outline:none;width:120px;font-family:inherit;}
+.vn-tbl-scroll{overflow-x:auto;overflow-y:auto;max-height:380px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+.vn-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.vn-tbl th{position:sticky;top:0;padding:7px 10px;text-align:right;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;background:var(--surface);border-bottom:1px solid var(--border2);cursor:pointer;white-space:nowrap;}
+.vn-tbl th:first-child,.vn-tbl th:nth-child(2){text-align:left;}
+.vn-tbl th:hover{color:var(--text);}
+.vn-tbl td{padding:7px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.03);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.vn-tbl td:first-child,.vn-tbl td:nth-child(2){text-align:left;}
+.vn-tbl tr:hover td{background:rgba(255,255,255,.03);}
+.vn-tbl tr:last-child td{border-bottom:none;}
+.vn-sym-cell{font-weight:700;color:var(--accent);font-size:12px;}
+.vn-name-cell{color:var(--muted);font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+.vn-ceil{color:rgba(180,100,220,.9);}  /* trần — tím */
+.vn-ref{color:var(--gold);}            /* tham chiếu — vàng */
+.vn-floor{color:rgba(60,180,220,.9);} /* sàn — xanh lam */
+.vn-up{color:var(--green);}
+.vn-dn{color:var(--red);}
+.vn-nc{color:var(--gold);}
+.vn-cell-bar{position:relative;display:flex;align-items:center;gap:6px;}
+.vn-vol-bar{height:3px;border-radius:2px;background:rgba(0,212,255,.3);min-width:2px;}
+.vn-disclaimer{font-size:9px;color:var(--muted);text-align:right;margin-top:8px;opacity:.6;}
+.vn-refresh-btn{font-size:10px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px;}
+.vn-refresh-btn:hover{color:var(--accent);border-color:rgba(0,212,255,.3);}
+.vn-spin{animation:spin .8s linear infinite;display:inline-block;}
+@media(max-width:900px){
+  .vn-index-bar{grid-template-columns:1fr 1fr;}
+  .vn-charts-row{grid-template-columns:1fr;}
+  .vn-bottom-grid{grid-template-columns:1fr;}
+}
+
+/* ════════════════════════════════════════
+   2-TIER NAVIGATION
+════════════════════════════════════════ */
+.market-switcher{
+  position:relative;z-index:101;
+  background:linear-gradient(180deg,var(--surface) 0%,rgba(12,17,24,.95) 100%);
+  border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;gap:0;padding:0 32px;
+}
+.mkt-btn{
+  padding:10px 28px;font-size:13px;font-weight:800;cursor:pointer;
+  border:none;background:none;color:var(--muted);
+  border-bottom:3px solid transparent;transition:all .2s;
+  display:flex;align-items:center;gap:8px;letter-spacing:.3px;
+  font-family:Cambria,'Times New Roman',serif;
+}
+.mkt-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+.mkt-btn:hover:not(.active){color:var(--text2);}
+.mkt-btn .mkt-icon{font-size:16px;}
+.mkt-btn .mkt-badge{
+  font-size:8px;font-family:inherit;font-weight:700;
+  padding:1px 5px;border-radius:10px;letter-spacing:.5px;
+  background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.2);
+}
+.mkt-btn.vn-active{color:var(--text);border-bottom-color:var(--gold);}
+.mkt-btn.vn-active .mkt-badge{background:rgba(245,158,11,.12);color:var(--gold);border-color:rgba(245,158,11,.2);}
+.mkt-divider{width:1px;height:20px;background:var(--border2);margin:0 8px;align-self:center;}
+.mkt-spacer{flex:1;}
+
+.nav-tabs{
+  position:relative;z-index:100;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;gap:0;padding:0 24px;
+  transition:all .2s;
+}
+.nav-tabs.vn-mode .nav-tab.active{
+  color:var(--gold);border-bottom-color:var(--gold);
+}
+.nav-tab{padding:9px 16px;font-size:11px;font-weight:700;cursor:pointer;
+  border:none;background:none;color:var(--muted);
+  border-bottom:2px solid transparent;transition:all .15s;
+  display:flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-tab:hover:not(.active){color:var(--text2);}
+.tab-icon{font-size:13px;}
+/* Ẩn/hiện theo market */
+.nav-tab[data-market="crypto"],.nav-tab[data-market="vn"]{display:none;}
+body.market-crypto .nav-tab[data-market="crypto"]{display:flex;}
+body.market-vn .nav-tab[data-market="vn"]{display:flex;}
+/* Tabs không có data-market (donate) luôn hiện */
+.nav-tab:not([data-market]){display:flex;}
+
+/* ══════════════════════════════════
+   MARKET SWITCHER — clean single source
+══════════════════════════════════ */
+#marketSwitcher{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:stretch;
+  padding:0;
+}
+.mkt-btn{
+  flex:1;                        /* ← 2 button chiếm đều nhau */
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:12px 0;
+  border:none;border-bottom:3px solid transparent;
+  background:none;color:var(--muted);
+  font-size:13px;font-weight:800;letter-spacing:.3px;
+  font-family:Cambria,'Times New Roman',serif;
+  cursor:pointer;transition:all .2s;
+  white-space:nowrap;
+}
+.mkt-btn:hover:not(.active):not(.vn-active){color:var(--text2);}
+.mkt-btn.active{
+  color:var(--text);
+  border-bottom-color:var(--accent);
+  background:rgba(0,212,255,.04);
+}
+.mkt-btn.vn-active{
+  color:var(--text);
+  border-bottom-color:var(--gold);
+  background:rgba(245,158,11,.04);
+}
+.mkt-btn .mkt-icon{font-size:17px;}
+.mkt-badge{
+  font-size:8px;font-weight:700;padding:2px 6px;
+  border-radius:4px;letter-spacing:.5px;
+  background:rgba(0,212,255,.12);color:var(--accent);
+  border:1px solid rgba(0,212,255,.2);
+}
+.mkt-btn.vn-active .mkt-badge{
+  background:rgba(245,158,11,.12);color:var(--gold);
+  border-color:rgba(245,158,11,.2);
+}
+.mkt-divider{width:1px;background:var(--border);align-self:stretch;flex-shrink:0;}
+.mkt-spacer{flex:1;}
+
+/* ── Sub Navigation ── */
+.sub-nav{display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border);padding:0 8px;overflow-x:auto;}
+.sub-nav::-webkit-scrollbar{display:none;}
+.sub-tab{display:flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;}
+.sub-tab:hover{color:var(--text);}
+.sub-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+#subNavVN .sub-tab.active{border-bottom-color:var(--gold);color:var(--text);}
 </style>
 </head>
-<body>
+<body class="market-crypto">
 <div class="orb orb1"></div><div class="orb orb2"></div>
 
 <!-- TICKER -->
-<div class="ticker-wrap"><div class="ticker" id="ticker"><span class="ticker-item"><span class="tsym">⏳ Đang tải dữ liệu...</span></span></div></div>
+
 
 <!-- HEADER -->
 <header>
@@ -904,18 +1146,45 @@ footer .hl{color:var(--accent);}
 
     </div>
     <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội</span></div>
+    <button onclick="showPage('donate',this)" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;transition:all .2s;font-family:inherit;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--gold)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">💛 Ủng Hộ</button>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
 </header>
 
 <!-- NAV -->
-<div class="nav-tabs">
-  <button class="nav-tab active" onclick="showPage('market',this)"><span class="tab-icon">📊</span>Thị Trường</button>
-  <button class="nav-tab" onclick="showPage('chart',this)"><span class="tab-icon">📈</span>Biểu Đồ & Chỉ Báo</button>
-  <button class="nav-tab" onclick="showPage('screener',this)"><span class="tab-icon">🔬</span>Bộ Lọc Coin</button>
-  <button class="nav-tab" onclick="showPage('alert',this)"><span class="tab-icon">🔔</span>Cảnh Báo Giá</button>
-  <button class="nav-tab" onclick="showPage('news',this)"><span class="tab-icon">📰</span>Tin Tức</button>
-  <button class="nav-tab" onclick="showPage('ai',this)"><span class="tab-icon">🤖</span>AI Phân Tích</button>
+<!-- MARKET SWITCHER -->
+<div id="marketSwitcher">
+  <button class="mkt-btn active" id="mktBtnCrypto" onclick="switchMarket('crypto',this)">
+    <span class="mkt-icon">🌐</span>
+    Crypto Thế Giới
+    <span class="mkt-badge">LIVE</span>
+  </button>
+  <div class="mkt-divider"></div>
+  <button class="mkt-btn" id="mktBtnVN" onclick="switchMarket('vn',this)">
+    <span class="mkt-icon">🏛️</span>
+    Chứng Khoán Việt Nam
+    <span class="mkt-badge" id="vnSessionBadge">HOSE · HNX</span>
+  </button>
+</div>
+
+<!-- SUB-NAV CRYPTO (Level 2) -->
+<div class="sub-nav" id="subNavCrypto">
+  <button class="sub-tab active" id="stab-market"    onclick="showPage('market',this)"><span class="tab-icon">📊</span>Thị Trường</button>
+  <button class="sub-tab"        id="stab-chart"     onclick="showPage('chart',this)"><span class="tab-icon">📈</span>Biểu Đồ</button>
+  <button class="sub-tab"        id="stab-screener"  onclick="showPage('screener',this)"><span class="tab-icon">🔬</span>Bộ Lọc</button>
+  <button class="sub-tab"        id="stab-alert"     onclick="showPage('alert',this)"><span class="tab-icon">🔔</span>Cảnh Báo</button>
+  <button class="sub-tab"        id="stab-news"      onclick="showPage('news',this)"><span class="tab-icon">📰</span>Tin Tức</button>
+  <button class="sub-tab"        id="stab-ai"        onclick="showPage('ai',this)"><span class="tab-icon">🤖</span>AI Phân Tích</button>
+</div>
+
+<!-- SUB-NAV VN (Level 2) -->
+<div class="sub-nav" id="subNavVN" style="display:none;">
+  <button class="sub-tab active" id="stab-vn-market"   onclick="showPage('vn-market',this)"><span class="tab-icon">📊</span>Thị Trường</button>
+  <button class="sub-tab"        id="stab-vn-chart"    onclick="showPage('vn-chart',this)"><span class="tab-icon">📈</span>Biểu Đồ</button>
+  <button class="sub-tab"        id="stab-vn-screener" onclick="showPage('vn-screener',this)"><span class="tab-icon">🔬</span>Bộ Lọc</button>
+  <button class="sub-tab"        id="stab-vn-alert"    onclick="showPage('vn-alert',this)"><span class="tab-icon">🔔</span>Cảnh Báo</button>
+  <button class="sub-tab"        id="stab-vn-news"     onclick="showPage('vn-news',this)"><span class="tab-icon">📰</span>Tin Tức</button>
+  <button class="sub-tab"        id="stab-vn-ai"       onclick="showPage('vn-ai',this)"><span class="tab-icon">🤖</span>AI Tín Hiệu</button>
 </div>
 
 <!-- ══════════════ PAGE: MARKET ══════════════ -->
@@ -1341,6 +1610,15 @@ footer .hl{color:var(--accent);}
       </div>
       <button class="dr-generate-btn" id="drBtn" onclick="generateDailyReport()">✨ Tạo Tóm Tắt AI</button>
     </div>
+    <!-- API Key inline input -->
+    <div class="dr-apikey-row" id="drApiKeyRow" style="display:none;">
+      <span style="font-size:10px;color:var(--muted);flex-shrink:0;">🔑 API Key:</span>
+      <input type="password" id="drApiKeyInput" placeholder="sk-ant-api03-..."
+        style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;
+               padding:5px 9px;color:var(--text);font-size:11px;font-family:monospace;outline:none;min-width:0;"
+        oninput="onDrApiKeyInput(this.value)">
+      <span id="drApiKeyStatus" style="font-size:10px;color:var(--muted);flex-shrink:0;white-space:nowrap;">Chưa có key</span>
+    </div>
     <div id="drContent" style="color:var(--muted);font-size:11px;line-height:1.6;">Nhấn <strong style="color:var(--accent)">✨ Tạo Tóm Tắt AI</strong> để nhận tóm tắt thị trường hôm nay — BTC, altcoin nổi bật, tâm lý và điểm cần chú ý.</div>
   </div>
 
@@ -1488,15 +1766,15 @@ footer .hl{color:var(--accent);}
           <div class="chat-avatar ai-av">🤖</div>
           <div>
             <div class="chat-bubble">
-              Xin chào! Tôi là AI tư vấn của <strong style="color:var(--accent)">VietLongCrypto</strong>.<br><br>
-              Tôi có thể giúp bạn phân tích thị trường realtime, đề xuất coin tiềm năng, giải thích tín hiệu kỹ thuật và lập chiến lược đầu tư.<br><br>
-              <span style="color:var(--muted);font-size:10px;">⚠️ Tư vấn tham khảo, không phải lời khuyên tài chính chính thức.</span>
+              Xin chào! Tôi là trợ lý phân tích của <strong style="color:var(--accent)">VietLongCrypto</strong>.<br><br>
+              Hỏi tôi về: <strong>tổng quan thị trường</strong>, phân tích coin cụ thể, top tăng/giảm, Fear &amp; Greed, chiến lược đầu tư...<br><br>
+              <span style="color:var(--muted);font-size:10px;">⚡ Phân tích từ dữ liệu realtime · Không phải lời khuyên tài chính.</span>
             </div>
             <div class="chat-time">Vừa xong</div>
           </div>
         </div>
       </div>
-      <div class="ai-apikey-bar" id="aiApiKeyBar">
+      <div class="ai-apikey-bar" id="aiApiKeyBar" style="display:none;">
         <span style="font-size:10px;color:var(--muted);">🔑 Anthropic API Key:</span>
         <input type="password" id="aiApiKeyInput" placeholder="sk-ant-..." 
           style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 8px;color:var(--text);font-size:11px;font-family:monospace;outline:none;"
@@ -1515,6 +1793,438 @@ footer .hl{color:var(--accent);}
   </div><!-- /ai-main-grid -->
 </div><!-- /ai-layout -->
 </div><!-- /page-ai -->
+
+
+<!-- ══════════════ PAGE: CK VIỆT NAM ══════════════ -->
+<div class="page" id="page-vn-market">
+<div class="vn-layout">
+
+  <!-- Session Status Bar -->
+  <div class="vn-session-bar">
+    <div class="vn-session-status">
+      <div class="vn-session-dot" id="vnSessionDot"></div>
+      <span id="vnSessionLabel" style="color:var(--text);">Đang kiểm tra...</span>
+    </div>
+    <div class="vn-breadth" id="vnBreadthBar">
+      <div class="vn-breadth-item"><div class="vn-breadth-dot" style="background:var(--green)"></div><span id="vnUpCount" style="color:var(--green)">—</span> tăng</div>
+      <div class="vn-breadth-item"><div class="vn-breadth-dot" style="background:var(--gold)"></div><span id="vnRefCount" style="color:var(--gold)">—</span> tham chiếu</div>
+      <div class="vn-breadth-item"><div class="vn-breadth-dot" style="background:var(--red)"></div><span id="vnDnCount" style="color:var(--red)">—</span> giảm</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="vn-session-time" id="vnLastUpdate">—</span>
+      <button class="vn-refresh-btn" onclick="vnRefreshAll()">
+        <span id="vnRefreshIcon">↻</span> Cập nhật
+      </button>
+    </div>
+  </div>
+
+  <!-- Index Cards -->
+  <div class="vn-index-bar">
+    <div class="vn-idx-card" id="vnIdxVNI">
+      <div class="vn-idx-name">VN-Index · HOSE</div>
+      <div class="vn-idx-value" id="vnVNIVal">—</div>
+      <div class="vn-idx-change vn-idx-nc" id="vnVNIChg">+0.00 (0.00%)</div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;">
+        <span class="vn-idx-pts" id="vnVNIHiLo">H: — · L: —</span>
+        <span class="vn-idx-vol" id="vnVNIVol">KL: —</span>
+      </div>
+    </div>
+    <div class="vn-idx-card" id="vnIdxHNX">
+      <div class="vn-idx-name">HNX-Index · HNX</div>
+      <div class="vn-idx-value" id="vnHNXVal">—</div>
+      <div class="vn-idx-change vn-idx-nc" id="vnHNXChg">+0.00 (0.00%)</div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;">
+        <span class="vn-idx-pts" id="vnHNXHiLo">H: — · L: —</span>
+        <span class="vn-idx-vol" id="vnHNXVol">KL: —</span>
+      </div>
+    </div>
+    <div class="vn-idx-card" id="vnIdxUPC">
+      <div class="vn-idx-name">UPCOM Index · UPC</div>
+      <div class="vn-idx-value" id="vnUPCVal">—</div>
+      <div class="vn-idx-change vn-idx-nc" id="vnUPCChg">+0.00 (0.00%)</div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;">
+        <span class="vn-idx-pts" id="vnUPCHiLo">H: — · L: —</span>
+        <span class="vn-idx-vol" id="vnUPCVol">KL: —</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Charts Row -->
+  <div class="vn-charts-row">
+    <div class="vn-mini-chart-card">
+      <div class="vn-mini-chart-title">
+        <span>VN-Index</span>
+        <div class="vn-tf-group" id="vnTfGroupVNI">
+          <button class="vn-tf-btn active" onclick="vnSetTf('VNINDEX','1D',this)">1T</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('VNINDEX','1W',this)">1W</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('VNINDEX','1M',this)">1M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('VNINDEX','3M',this)">3M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('VNINDEX','1Y',this)">1N</button>
+        </div>
+      </div>
+      <div class="vn-mini-chart-canvas" id="vnChartVNI"><div class="vn-mini-loading">Đang tải...</div></div>
+    </div>
+    <div class="vn-mini-chart-card">
+      <div class="vn-mini-chart-title">
+        <span>HNX-Index</span>
+        <div class="vn-tf-group" id="vnTfGroupHNX">
+          <button class="vn-tf-btn active" onclick="vnSetTf('HNXINDEX','1D',this)">1T</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('HNXINDEX','1W',this)">1W</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('HNXINDEX','1M',this)">1M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('HNXINDEX','3M',this)">3M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('HNXINDEX','1Y',this)">1N</button>
+        </div>
+      </div>
+      <div class="vn-mini-chart-canvas" id="vnChartHNX"><div class="vn-mini-loading">Đang tải...</div></div>
+    </div>
+    <div class="vn-mini-chart-card">
+      <div class="vn-mini-chart-title">
+        <span>UPCOM</span>
+        <div class="vn-tf-group" id="vnTfGroupUPC">
+          <button class="vn-tf-btn active" onclick="vnSetTf('UPCOMINDEX','1D',this)">1T</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('UPCOMINDEX','1W',this)">1W</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('UPCOMINDEX','1M',this)">1M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('UPCOMINDEX','3M',this)">3M</button>
+          <button class="vn-tf-btn" onclick="vnSetTf('UPCOMINDEX','1Y',this)">1N</button>
+        </div>
+      </div>
+      <div class="vn-mini-chart-canvas" id="vnChartUPC"><div class="vn-mini-loading">Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- Bottom: Top Movers + VN30 Table -->
+  <div class="vn-bottom-grid">
+
+    <!-- Top Movers -->
+    <div class="vn-movers">
+      <div class="vn-movers-title">🔥 Top Biến Động</div>
+      <div class="vn-movers-tabs">
+        <button class="vn-movers-tab active" onclick="vnMoversTab('up',this)">Top Tăng</button>
+        <button class="vn-movers-tab" onclick="vnMoversTab('dn',this)">Top Giảm</button>
+        <button class="vn-movers-tab" onclick="vnMoversTab('vol',this)">Cao Điểm</button>
+      </div>
+      <div id="vnMoversList"><div style="color:var(--muted);font-size:11px;padding:12px 0;text-align:center;">Đang tải...</div></div>
+    </div>
+
+    <!-- VN30 / HOSE Table -->
+    <div class="vn-table-card">
+      <div class="vn-table-header">
+        <div class="vn-tbl-title" id="vnTableTitle">📋 Bảng Giá VN30</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="vn-search" type="text" placeholder="Tìm mã..." id="vnSearch" oninput="vnFilterTable(this.value)">
+          <div style="display:flex;gap:4px;">
+            <button class="vn-tf-btn" style="font-size:10px;padding:3px 8px;" onclick="vnSwitchList('vn30',this)" id="vnListBtnVN30">VN30</button>
+            <button class="vn-tf-btn active" style="font-size:10px;padding:3px 8px;" onclick="vnSwitchList('hose',this)" id="vnListBtnHOSE">HOSE Top</button>
+            <button class="vn-tf-btn" style="font-size:10px;padding:3px 8px;" onclick="vnSwitchList('hnx',this)" id="vnListBtnHNX">HNX Top</button>
+          </div>
+        </div>
+      </div>
+      <div class="vn-tbl-scroll">
+        <table class="vn-tbl" id="vnTable">
+          <thead>
+            <tr>
+              <th onclick="vnSort('sym')">Mã ↕</th>
+              <th onclick="vnSort('name')">Tên</th>
+              <th onclick="vnSort('price')">Giá</th>
+              <th onclick="vnSort('chg')">+/−</th>
+              <th onclick="vnSort('pct')">%</th>
+              <th onclick="vnSort('vol')">KL Giao Dịch</th>
+              <th onclick="vnSort('val')">Giá Trị</th>
+              <th onclick="vnSort('hi')">Cao</th>
+              <th onclick="vnSort('lo')">Thấp</th>
+            </tr>
+          </thead>
+          <tbody id="vnTableBody">
+            <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px;">Nhấn <strong style="color:var(--accent)">Cập nhật</strong> để tải dữ liệu</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="vn-disclaimer" id="vnDisclaimer">⚡ Dữ liệu từ SSI/TCBS · Có thể delay 15 phút · Không phải lời khuyên đầu tư</div>
+    </div>
+
+  </div><!-- /bottom-grid -->
+
+</div><!-- /vn-layout -->
+</div><!-- /page-vn -->
+
+<!-- ══════════════ PAGE: VN BIỂU ĐỒ ══════════════ -->
+<div class="page" id="page-vn-chart">
+<div class="chart-layout">
+  <div class="coin-list-panel">
+    <div class="coin-list-search"><input type="text" id="vnChartSearch" placeholder="🔍 Tìm cổ phiếu..." oninput="vnFilterChartList()"></div>
+    <div class="coin-list-items" id="vnChartCoinList"><div class="state-box" style="padding:20px"><div class="spinner"></div></div></div>
+  </div>
+  <div class="chart-main">
+    <div class="chart-header">
+      <div class="chart-coin-info">
+        <div class="chart-coin-logo-wrap" style="position:relative;width:36px;height:36px;flex-shrink:0;">
+          <img id="vnChartLogo" src="" width="36" height="36"
+            style="border-radius:8px;object-fit:contain;background:#fff;display:none;position:absolute;top:0;left:0;"
+            onerror="this.style.display='none';document.getElementById('vnChartLogoFb').style.display='flex';">
+          <div class="chart-coin-logo-fb" id="vnChartLogoFb" style="display:flex;width:36px;height:36px;border-radius:8px;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:rgba(245,158,11,.12);color:var(--gold);">V</div>
+        </div>
+        <div>
+          <div class="chart-coin-name" id="vnChartCoinName">Chọn cổ phiếu</div>
+          <div class="chart-coin-sym" id="vnChartCoinSym" style="font-size:11px;color:var(--muted);">HOSE / HNX</div>
+        </div>
+      </div>
+      <div class="chart-price-wrap">
+        <div class="chart-price" id="vnChartPrice">—</div>
+        <div class="chart-change" id="vnChartChange">—</div>
+      </div>
+      <div class="chart-stats-bar" id="vnChartStats"></div>
+    </div>
+    <div class="chart-tf-bar">
+      <div class="tf-group">
+        <button class="tf-btn" onclick="vnLoadCandle(null,'1')">1P</button>
+        <button class="tf-btn" onclick="vnLoadCandle(null,'15')">15P</button>
+        <button class="tf-btn" onclick="vnLoadCandle(null,'60')">1H</button>
+        <button class="tf-btn active" onclick="vnLoadCandle(null,'D')">1D</button>
+        <button class="tf-btn" onclick="vnLoadCandle(null,'W')">1W</button>
+      </div>
+    </div>
+    <div style="position:relative;flex:1;min-height:0;">
+      <div id="vnChartContainer" style="width:100%;height:100%;"></div>
+      <div id="vnChartLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg);font-size:12px;color:var(--muted);"><div class="chart-spinner"></div><span>Chọn cổ phiếu để xem biểu đồ</span></div>
+    </div>
+    <div class="chart-indicator-panel" id="vnChartIndicators" style="display:none;"></div>
+  </div>
+</div>
+</div><!-- /page-vn-chart -->
+
+<!-- ══════════════ PAGE: VN BỘ LỌC ══════════════ -->
+<div class="page" id="page-vn-screener">
+<div class="screener-layout">
+  <div class="screener-filters">
+    <div class="filter-group">
+      <div class="filter-label">% Thay Đổi</div>
+      <select class="filter-select" id="vnFChg">
+        <option value="all">Tất cả</option>
+        <option value="ceil">Kịch trần 🟣</option>
+        <option value="gt3">Tăng > 3%</option>
+        <option value="gt1">Tăng > 1%</option>
+        <option value="ref">Tham chiếu 🟡</option>
+        <option value="lt-1">Giảm > 1%</option>
+        <option value="floor">Kịch sàn 🔵</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Khối Lượng</div>
+      <select class="filter-select" id="vnFVol">
+        <option value="all">Tất cả</option>
+        <option value="gt5m">> 5 triệu CP</option>
+        <option value="gt1m">> 1 triệu CP</option>
+        <option value="gt500k">> 500K CP</option>
+        <option value="lt100k">< 100K CP (thanh khoản thấp)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">RSI (14)</div>
+      <select class="filter-select" id="vnFRsi">
+        <option value="all">Tất cả</option>
+        <option value="ob">Quá Mua (RSI > 70)</option>
+        <option value="os">Quá Bán (RSI < 30)</option>
+        <option value="neutral">Trung Lập (30–70)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Tín Hiệu MACD</div>
+      <select class="filter-select" id="vnFMacd">
+        <option value="all">Tất cả</option>
+        <option value="bull">Giao Cắt Lên ↑</option>
+        <option value="bear">Giao Cắt Xuống ↓</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Sàn Niêm Yết</div>
+      <select class="filter-select" id="vnFExchange">
+        <option value="all">Tất cả</option>
+        <option value="hose">HOSE</option>
+        <option value="hnx">HNX</option>
+        <option value="upcom">UPCOM</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Tìm Mã</div>
+      <input class="filter-input" id="vnFName" placeholder="VCB, HPG, TCB...">
+    </div>
+    <div class="filter-group" style="justify-content:flex-end;">
+      <button class="btn-primary" onclick="runVNScreener()">🔬 Lọc</button>
+      <button class="btn-ghost" onclick="resetVNScreener()" style="margin-top:5px;">Đặt lại</button>
+    </div>
+  </div>
+  <div class="screener-results">
+    <div class="screener-toolbar">
+      <div class="screener-count">Tìm thấy <span id="vnScrCount">—</span> cổ phiếu</div>
+      <div style="font-size:10px;color:var(--muted);">Chỉ số RSI/MACD từ dữ liệu TCBS · Màu giá theo chuẩn sàn VN</div>
+    </div>
+    <div class="scr-tbl-wrap">
+      <div id="vnScreenerTable"><div class="state-box"><div>Nhấn 🔬 Lọc để bắt đầu</div></div></div>
+    </div>
+  </div>
+</div>
+</div><!-- /page-vn-screener -->
+
+<!-- ══════════════ PAGE: VN CẢNH BÁO ══════════════ -->
+<div class="page" id="page-vn-alert">
+<div class="alert-layout">
+  <div class="alert-form-card">
+    <div class="alert-form-title">
+      <svg viewBox="0 0 24 24"><path d="M18 16v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-6 6c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/></svg>
+      Thêm Cảnh Báo Cổ Phiếu
+    </div>
+    <div class="form-row coin-suggest">
+      <label class="form-label">Chọn Cổ Phiếu</label>
+      <input class="form-control" id="vnAlertInput" placeholder="Nhập mã CK (VD: VCB, HPG, TCB...)" oninput="onVNAlertInput()" onblur="setTimeout(()=>hideVNSuggest(),200)" autocomplete="off">
+      <div class="suggest-list" id="vnSuggestList"></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Điều Kiện</label>
+      <select class="form-control" id="vnAlertCondition">
+        <option value="above">📈 Giá vượt lên trên</option>
+        <option value="below">📉 Giá rớt xuống dưới</option>
+      </select>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Giá Mục Tiêu (nghìn đồng)</label>
+        <input class="form-control" id="vnAlertPrice" type="number" placeholder="0.0" min="0" step="0.1">
+      </div>
+      <div>
+        <label class="form-label">Giá Hiện Tại</label>
+        <input class="form-control" id="vnAlertCurrentPrice" readonly placeholder="—" style="color:var(--gold);cursor:default;">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Ghi Chú</label>
+      <input class="form-control" id="vnAlertNote" placeholder="VD: Kháng cự mạnh, vùng tích lũy...">
+    </div>
+    <button class="btn-add-alert" onclick="addVNAlert()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#000"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Thêm Cảnh Báo
+    </button>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:14px;">
+      <div style="flex:1;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--gold)" id="vnAlertCountActive">0</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Đang Theo Dõi</div></div>
+      <div style="flex:1;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--green)" id="vnAlertCountTriggered">0</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Đã Kích Hoạt</div></div>
+      <div style="flex:1;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--gold)" id="vnAlertCountTotal">0</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Tổng Cộng</div></div>
+    </div>
+  </div>
+  <div class="alert-list-card">
+    <div class="alert-list-header">
+      <div class="alert-list-title">📋 Cảnh Báo Cổ Phiếu</div>
+      <button class="btn-ghost" onclick="clearTriggeredVNAlerts()" style="font-size:10px;padding:4px 10px;">🗑 Xoá đã kích hoạt</button>
+    </div>
+    <div id="vnAlertListContainer">
+      <div class="alert-empty"><div class="alert-empty-icon">🔔</div><div>Chưa có cảnh báo nào.<br><small>Thêm cảnh báo để theo dõi biến động giá cổ phiếu.</small></div></div>
+    </div>
+  </div>
+</div>
+</div><!-- /page-vn-alert -->
+
+<!-- ══════════════ PAGE: VN TIN TỨC ══════════════ -->
+<div class="page" id="page-vn-news">
+<div class="news-layout">
+  <div class="daily-report-card" id="vnDailyReportCard">
+    <div class="dr-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div>
+          <div class="dr-title">📋 Tóm Tắt TTCK Việt Nam Hôm Nay</div>
+          <div class="dr-date" id="vnDrDate">—</div>
+        </div>
+      </div>
+      <button class="dr-generate-btn" id="vnDrBtn" onclick="generateVNReport()" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border-color:rgba(245,158,11,.3);color:var(--gold);">✨ Tạo Tóm Tắt</button>
+    </div>
+    <div id="vnDrContent" style="color:var(--muted);font-size:11px;line-height:1.6;">Nhấn <strong style="color:var(--gold)">✨ Tạo Tóm Tắt</strong> để nhận phân tích TTCK Việt Nam hôm nay.</div>
+  </div>
+  <div class="news-stats-bar">
+    <div class="news-stat"><div class="news-stat-val" id="vnNewsTotal" style="color:var(--gold)">—</div><div class="news-stat-lbl">Tổng Tin</div></div>
+    <div class="news-stat"><div class="news-stat-val" id="vnNewsBull" style="color:var(--green)">—</div><div class="news-stat-lbl">📈 Tích Cực</div></div>
+    <div class="news-stat"><div class="news-stat-val" id="vnNewsBear" style="color:var(--red)">—</div><div class="news-stat-lbl">📉 Tiêu Cực</div></div>
+  </div>
+  <div class="news-page-header">
+    <div class="news-page-title" style="color:var(--gold);">📰 Tin Tức Chứng Khoán Việt Nam</div>
+    <div class="news-page-controls">
+      <div class="news-filter-group">
+        <button class="news-filter-btn active" onclick="setVNNewsSource(this,'all')">Tất Cả</button>
+        <button class="news-filter-btn" onclick="setVNNewsSource(this,'cafef')">CafeF</button>
+        <button class="news-filter-btn" onclick="setVNNewsSource(this,'vietstock')">Vietstock</button>
+        <button class="news-filter-btn" onclick="setVNNewsSource(this,'ndh')">NDH</button>
+        <button class="news-filter-btn" onclick="setVNNewsSource(this,'tinnhanhchungkhoan')">TNCK</button>
+      </div>
+      <button class="btn-primary" id="vnNewsRefreshBtn" onclick="fetchVNNews(true)" style="padding:6px 16px;font-size:11px;background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(245,158,11,.05));border-color:rgba(245,158,11,.3);color:var(--gold);">↻ Làm mới</button>
+    </div>
+  </div>
+  <div class="news-grid" id="vnNewsGrid">
+    <div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức TTCK...</div></div>
+  </div>
+</div>
+</div><!-- /page-vn-news -->
+
+<!-- ══════════════ PAGE: VN AI TÍN HIỆU ══════════════ -->
+<div class="page" id="page-vn-ai">
+<div class="ai-layout">
+  <div class="ai-header">
+    <div>
+      <div class="ai-page-title" style="color:var(--gold);">🤖 AI Tín Hiệu Chứng Khoán VN</div>
+      <div class="ai-page-sub">Phân tích kỹ thuật: RSI · MACD · Bollinger Bands · Khối lượng · Biến động giá</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="ai-badge" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);"><div class="ai-badge-dot" style="background:var(--gold);box-shadow:0 0 6px rgba(245,158,11,.5);"></div><span style="color:var(--gold);">Rule-Based AI</span></div>
+      <button class="ai-refresh-btn" id="vnAIRefreshBtn" onclick="runVNAISignals()" style="border-color:rgba(245,158,11,.3);color:var(--gold);">⚡ Phân Tích Ngay</button>
+    </div>
+  </div>
+  <div class="ai-main-grid">
+    <!-- Summary -->
+    <div class="ai-summary-bar" id="vnAISummary">
+      <div class="ai-sum-item strong-buy"><div class="ai-sum-val" id="vnSumStrongBuy">—</div><div class="ai-sum-lbl">Mua Mạnh</div></div>
+      <div class="ai-sum-item buy"><div class="ai-sum-val" id="vnSumBuy">—</div><div class="ai-sum-lbl">Nên Mua</div></div>
+      <div class="ai-sum-item hold"><div class="ai-sum-val" id="vnSumHold">—</div><div class="ai-sum-lbl">Chờ</div></div>
+      <div class="ai-sum-item sell"><div class="ai-sum-val" id="vnSumSell">—</div><div class="ai-sum-lbl">Nên Bán</div></div>
+      <div class="ai-sum-item strong-sell"><div class="ai-sum-val" id="vnSumStrongSell">—</div><div class="ai-sum-lbl">Bán Mạnh</div></div>
+    </div>
+    <!-- Table tabs -->
+    <div class="ai-table-section">
+      <div class="ai-table-header">
+        <div style="display:flex;gap:6px;">
+          <button class="ai-tab active" onclick="setVNAITab(this,'top-buy')">🚀 Mua Mạnh</button>
+          <button class="ai-tab" onclick="setVNAITab(this,'top-sell')">🔴 Bán Mạnh</button>
+          <button class="ai-tab" onclick="setVNAITab(this,'all-scores')">📊 Tất Cả</button>
+        </div>
+        <span class="ai-score-count" id="vnAIScoreCount">—</span>
+      </div>
+      <div id="vnAISignalTable"><div class="state-box"><div>Nhấn ⚡ Phân Tích Ngay để bắt đầu</div></div></div>
+    </div>
+    <!-- Chat -->
+    <div class="ai-chat-section">
+      <div class="ai-chat-header">
+        <div class="ai-chat-title">💬 Hỏi Đáp TTCK VN</div>
+      </div>
+      <div class="chat-body" id="vnChatBody">
+        <div class="chat-msg ai">
+          <div class="chat-avatar ai-av">🤖</div>
+          <div><div class="chat-bubble">Xin chào! Hỏi tôi về <strong style="color:var(--gold)">cổ phiếu VN</strong>: phân tích mã, VN-Index hôm nay, top tăng giảm...</div></div>
+        </div>
+      </div>
+      <div class="chat-quick-asks">
+        <button class="quick-ask-btn" onclick="vnQuickAsk('VN-Index hôm nay thế nào?')">📊 VN-Index</button>
+        <button class="quick-ask-btn" onclick="vnQuickAsk('Cổ phiếu tăng mạnh nhất hôm nay?')">🚀 Top tăng</button>
+        <button class="quick-ask-btn" onclick="vnQuickAsk('Phân tích VCB')">🏦 Phân tích VCB</button>
+        <button class="quick-ask-btn" onclick="vnQuickAsk('Chiến lược đầu tư hôm nay?')">💼 Chiến lược</button>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="vnChatInput" placeholder="Hỏi về cổ phiếu VN..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();vnSendChat()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="chat-send-btn" id="vnChatSendBtn" onclick="vnSendChat()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /page-vn-ai -->
+
+
 
 <div class="page" id="page-donate">
 <div class="donate-layout">
@@ -1707,7 +2417,7 @@ const STABLES=new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD',
 ═══════════════════════════════════════════════════ */
 async function loadAllCoins(){
   try{
-    const res=await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const res=await fetch('https://api.binance.com/api/v3/ticker/24hr',{signal:AbortSignal.timeout(12000)});
     if(!res.ok) throw new Error('Binance '+res.status);
     const data=await res.json();
     const filtered=data
@@ -1878,7 +2588,7 @@ async function loadCoinGeckoLogos(){
     }
   });
   _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-  console.log(`✅ Logo loaded: ${Object.keys(logoMap).length} coins`);
+  // logo loaded
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2459,17 +3169,17 @@ function _patchRSICells(syms){
 }
 
 async function batchFetchIndicators(){
-  // Fetch song song theo nhóm 5 — nhanh hơn sequential, nhưng tránh rate limit
-  const need=SYMBOLS.slice(0,30).filter(s=>!rsiCache[s]||Date.now()-rsiCache[s].ts>5*60*1000);
-  const BATCH_SIZE=5;
-  for(let i=0;i<need.length;i+=BATCH_SIZE){
-    const batch=need.slice(i,i+BATCH_SIZE);
-    await Promise.allSettled(batch.map(s=>fetchIndicators(s)));
-    if(i+BATCH_SIZE<need.length) await new Promise(r=>setTimeout(r,300));
-    // Update RSI cells trực tiếp, không rebuild toàn bảng
-    _patchRSICells(batch);
-  }
-  _patchRSICells(need); // final pass
+  try{
+    const need=SYMBOLS.slice(0,30).filter(s=>!rsiCache[s]||Date.now()-rsiCache[s].ts>5*60*1000);
+    const BATCH_SIZE=5;
+    for(let i=0;i<need.length;i+=BATCH_SIZE){
+      const batch=need.slice(i,i+BATCH_SIZE);
+      await Promise.allSettled(batch.map(s=>fetchIndicators(s)));
+      if(i+BATCH_SIZE<need.length) await new Promise(r=>setTimeout(r,300));
+      _patchRSICells(batch);
+    }
+    _patchRSICells(need);
+  }catch(e){}
 }
 /* ═══════════════════════════════════════════════════
    CHART PAGE
@@ -2566,7 +3276,7 @@ async function loadCandleData(sym,tf){
     const h=container.clientHeight||container.offsetHeight||500;
 
     // Fetch klines từ Binance
-    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=500`);
+    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=500`,{signal:AbortSignal.timeout(10000)});
     if(!res.ok) throw new Error('Binance klines '+res.status);
     const raw=await res.json();
     const candles=raw.map(k=>({
@@ -2775,13 +3485,13 @@ async function loadChartIndicators(sym){
   if(chipBb){chipBb.className=`ind-chip ${bbC}`; chipBb.textContent=`BB ${bbC==='buy'?'↓':'bbC'==='sell'?'↑':'–'}`;
     chipBb.textContent=`BB ${bbC==='buy'?'Dưới':bbC==='sell'?'Trên':'OK'}`;
   }
-}
+  }
 
 async function setTf(el,tf){
   document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active'); currentTf=tf;
   if(selectedSym){await loadCandleData(selectedSym,tf); await loadChartIndicators(selectedSym);}
-}
+  }
 
 /* ═══════════════════════════════════════════════════
    SCREENER
@@ -2877,7 +3587,7 @@ async function runScreener(){
     <th class="r">KL 24h</th><th class="r">RSI</th>
     <th class="r">Tín Hiệu</th><th class="r">Cao 24h</th><th class="r">Thấp 24h</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
-}
+  }
 
 function resetScreener(){
   ['fChg','fVol','fRsi','fMacd','fWhale'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='all';});
@@ -3026,7 +3736,7 @@ async function fetchNews(manual=false){
   }
   if(btn){btn.disabled=false; btn.textContent='↻ Làm mới';}
   fetchingNews=false;
-}
+  }
 
 function renderNews(){ renderNewsPage(); }
 function filterNews(el,src){
@@ -3131,7 +3841,7 @@ function stopOrderBook(){
 
 async function fetchDepthSnapshot(sym){
   try{
-    const r=await fetch(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`);
+    const r=await fetch(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`,{signal:AbortSignal.timeout(8000)});
     if(!r.ok) return;
     const d=await r.json();
     renderOrderBook(d.asks||[],d.bids||[]);
@@ -3211,97 +3921,92 @@ async function generateDailyReport(){
   const btn=document.getElementById('drBtn');
   const content=document.getElementById('drContent');
   const dateEl=document.getElementById('drDate');
-  if(btn){btn.disabled=true; btn.textContent='⏳ Đang tạo...';}
+  if(btn){btn.disabled=true; btn.textContent='⏳ Đang phân tích...';}
 
-  if(!getApiKey()){
-    if(content) content.innerHTML='<div style="color:var(--gold);padding:12px;font-size:12px;">🔑 Vui lòng nhập Anthropic API Key trong tab <b>AI Phân Tích</b> → ô bên dưới chat.</div>';
-    if(btn){btn.disabled=false; btn.textContent='🔄 Tạo Lại';}
-    return;
-  }
   const now=new Date();
   const dateStr=now.toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
   if(dateEl) dateEl.textContent=dateStr;
-
-  if(content) content.innerHTML='<div class="dr-loading"><div class="spinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>AI đang phân tích dữ liệu thị trường hôm nay...</div>';
+  if(content) content.innerHTML='<div class="dr-loading"><div class="spinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>Đang phân tích dữ liệu thị trường...</div>';
+  await new Promise(r=>setTimeout(r,400));
 
   try{
-    // Thu thập dữ liệu thị trường
     const all=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
+    if(all.length<5) throw new Error('Chưa có đủ dữ liệu giá — vui lòng chờ dữ liệu load');
     const sorted=[...all].sort((a,b)=>chg(b.sym)-chg(a.sym));
-    const topG=sorted.slice(0,5).map(c=>`${c.base}(+${chg(c.sym).toFixed(1)}%)`).join(', ');
-    const topL=sorted.slice(-5).reverse().map(c=>`${c.base}(${chg(c.sym).toFixed(1)}%)`).join(', ');
-    const topVol=[...all].sort((a,b)=>kvol(b.sym)-kvol(a.sym)).slice(0,5).map(c=>`${c.base}(${fmtB(kvol(c.sym))})`).join(', ');
+    const topG=sorted.slice(0,5);
+    const topVol=[...all].sort((a,b)=>kvol(b.sym)-kvol(a.sym)).slice(0,5);
     const upCount=all.filter(c=>chg(c.sym)>0).length;
     const dnCount=all.filter(c=>chg(c.sym)<0).length;
     const totalVol=all.reduce((s,c)=>s+kvol(c.sym),0);
     const btc=coins['BTCUSDT']||{};
     const eth=coins['ETHUSDT']||{};
-    const fgEl=document.getElementById('fgNum');
-    const fgLbl=document.getElementById('fgLabel');
-    const fgVal=fgEl?fgEl.textContent:'—';
-    const fgLabel=fgLbl?fgLbl.textContent:'—';
+    const btcChg=chg('BTCUSDT'); const ethChg=chg('ETHUSDT');
+    const fgNum=parseInt(document.getElementById('fgNum')?.textContent)||50;
+    const fgLabelTxt=document.getElementById('fgLabel')?.textContent||'—';
+    const bullRatio=upCount/(upCount+dnCount||1);
 
-    const prompt=`Hôm nay là ${dateStr}. Bạn là chuyên gia phân tích thị trường crypto tại Việt Nam. Hãy viết báo cáo thị trường hôm nay bằng tiếng Việt, ngắn gọn và chuyên nghiệp.
+    // ── Tâm lý ──
+    let mood,moodColor,moodEmoji;
+    if(fgNum>=70&&bullRatio>0.6&&btcChg>2){mood='Tích cực';moodColor='var(--green)';moodEmoji='🟢';}
+    else if(fgNum<=30&&bullRatio<0.4&&btcChg<-2){mood='Tiêu cực';moodColor='var(--red)';moodEmoji='🔴';}
+    else if(btcChg>0&&bullRatio>0.5){mood='Thận trọng tích cực';moodColor='var(--gold)';moodEmoji='🟡';}
+    else if(btcChg<0&&bullRatio<0.5){mood='Thận trọng tiêu cực';moodColor='var(--orange)';moodEmoji='🟠';}
+    else{mood='Hỗn hợp';moodColor='var(--muted)';moodEmoji='⚪';}
 
-DỮ LIỆU NGÀY HÔM NAY (UTC+7):
-- BTC: ${fmtP(btc.price)} (${chg('BTCUSDT').toFixed(2)}% hôm nay)
-- ETH: ${fmtP(eth.price)} (${chg('ETHUSDT').toFixed(2)}% hôm nay)
-- Coin tăng: ${upCount} | Coin giảm: ${dnCount} | Tổng KL: ${fmtB(totalVol)}
-- Fear & Greed Index: ${fgVal} — ${fgLabel}
-- Top tăng: ${topG}
-- Top giảm: ${topL}
-- Top khối lượng: ${topVol}
+    // ── Headline ──
+    let headline;
+    if(Math.abs(btcChg)>5) headline=`BTC ${btcChg>0?'bứt phá +':'lao dốc '}${Math.abs(btcChg).toFixed(1)}% — Thị trường ${mood.toLowerCase()}`;
+    else if(upCount>dnCount*2) headline=`Altcoin bùng nổ — ${upCount}/${all.length} coin xanh, tâm lý ${mood.toLowerCase()}`;
+    else if(dnCount>upCount*2) headline=`Áp lực bán lan rộng — chỉ ${upCount}/${all.length} coin giữ được sắc xanh`;
+    else headline=`Thị trường phân hóa — BTC ${btcChg>=0?'+':''}${btcChg.toFixed(2)}%, tâm lý ${mood.toLowerCase()}`;
 
-Viết báo cáo theo đúng định dạng JSON sau (không thêm text bên ngoài):
-{
-  "headline": "tiêu đề 1 dòng mô tả tổng quan thị trường hôm nay",
-  "overview": "2-3 câu tóm tắt tổng quan thị trường ngày hôm nay",
-  "btc_analysis": "2-3 câu phân tích BTC hôm nay, xu hướng và điểm quan trọng",
-  "altcoin": "2 câu về altcoin nổi bật và thị trường altcoin",
-  "sentiment": "1-2 câu về tâm lý thị trường dựa trên F&G và dữ liệu",
-  "watchlist": ["coin1 - lý do ngắn", "coin2 - lý do ngắn", "coin3 - lý do ngắn"],
-  "caution": "1-2 câu cảnh báo rủi ro hoặc điểm cần chú ý hôm nay",
-  "outlook": "1 câu nhận định xu hướng ngắn hạn",
-  "market_mood": "Tích cực" | "Thận trọng" | "Tiêu cực" | "Hỗn hợp"
-}`;
+    // ── Overview ──
+    const overview=`${moodEmoji} Hôm nay ghi nhận <strong>${upCount} coin tăng / ${dnCount} coin giảm</strong> với tổng KL giao dịch <strong>${fmtB(totalVol)}</strong>. Fear & Greed Index ở mức <strong>${fgNum} — ${fgLabelTxt}</strong>.`;
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:anthropicHeaders(),
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:'Bạn là chuyên gia phân tích crypto tại Việt Nam. Chỉ trả lời bằng JSON hợp lệ, không có markdown hay text bên ngoài JSON.',
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data=await resp.json();
-    const raw=data.content?.[0]?.text||'{}';
-    let r;
-    try{r=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-    catch(e){throw new Error('Lỗi parse JSON: '+raw.substring(0,100));}
+    // ── BTC analysis ──
+    let btcTxt;
+    if(btcChg>5) btcTxt=`📈 <strong>BTC</strong> tăng mạnh <strong style="color:var(--green)">+${btcChg.toFixed(2)}%</strong> lên ${fmtP(btc.price)} — tín hiệu bullish, altcoin thường theo sau.`;
+    else if(btcChg>2) btcTxt=`📊 <strong>BTC</strong> tăng nhẹ <strong style="color:var(--green)">+${btcChg.toFixed(2)}%</strong> lên ${fmtP(btc.price)} — xu hướng tích cực nhưng cần theo dõi thêm.`;
+    else if(btcChg>-2) btcTxt=`⏸ <strong>BTC</strong> đi ngang quanh ${fmtP(btc.price)} (${btcChg.toFixed(2)}%) — thị trường đang tích lũy, chưa có tín hiệu rõ ràng.`;
+    else if(btcChg>-5) btcTxt=`📉 <strong>BTC</strong> điều chỉnh <strong style="color:var(--red)">${btcChg.toFixed(2)}%</strong> về ${fmtP(btc.price)} — pullback bình thường hoặc cảnh báo giảm.`;
+    else btcTxt=`🔴 <strong>BTC</strong> lao dốc <strong style="color:var(--red)">${btcChg.toFixed(2)}%</strong> xuống ${fmtP(btc.price)} — rủi ro cao, quản lý vốn chặt.`;
 
-    const moodColor=r.market_mood==='Tích cực'?'var(--green)':r.market_mood==='Tiêu cực'?'var(--red)':'var(--gold)';
+    // ── Watchlist ──
+    const watchlist=[];
+    topG.slice(0,2).forEach(c=>{if(chg(c.sym)>3) watchlist.push(`${c.base} +${chg(c.sym).toFixed(1)}%`);});
+    topVol.filter(c=>c.base!=='BTC'&&c.base!=='ETH').slice(0,2).forEach(c=>watchlist.push(`${c.base} Vol ${fmtB(kvol(c.sym))}`));
 
-    // Compact card: metrics row + 2 dòng tóm tắt + watchlist + outlook
-    const btcChgNow=chg('BTCUSDT');
+    // ── Caution ──
+    let caution;
+    if(fgNum>=75) caution=`F&G ở vùng Tham Lam Cực Độ (${fgNum}) — không FOMO, đặt stop-loss chặt.`;
+    else if(fgNum<=25) caution=`Thị trường Sợ Hãi Cực Độ (${fgNum}) — cơ hội tích lũy dần nhưng đừng bắt dao rơi.`;
+    else if(dnCount>upCount*1.5) caution=`${dnCount}/${all.length} coin đang giảm — áp lực bán lan rộng, ưu tiên bảo vệ vốn.`;
+    else caution=`Không có tín hiệu cực đoan — duy trì kỷ luật, tránh over-trading và đòn bẩy cao.`;
+
+    // ── Outlook ──
+    let outlook;
+    if(mood==='Tích cực') outlook=`🔭 Ngắn hạn thiên tích cực — theo dõi BTC giữ trên ${fmtP(Math.round(btc.price*0.97))}.`;
+    else if(mood==='Tiêu cực') outlook=`🔭 Thận trọng 24–48h tới — chờ tín hiệu đảo chiều xác nhận trước khi vào lệnh.`;
+    else outlook=`🔭 Thị trường cần thêm xác nhận — giao dịch theo xu hướng nhỏ, không overtrading.`;
+
     content.innerHTML=`
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.4;">${r.headline||''}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.4;">${headline}</div>
       <div class="dr-metrics">
-        <div class="dr-metric"><div class="dr-metric-val" style="color:${btcChgNow>=0?'var(--green)':'var(--red)'}">${btcChgNow.toFixed(2)}%</div><div class="dr-metric-lbl">BTC hôm nay</div></div>
-        <div class="dr-metric"><div class="dr-metric-val">${upCount}↑ ${dnCount}↓</div><div class="dr-metric-lbl">Tăng / Giảm</div></div>
-        <div class="dr-metric"><div class="dr-metric-val" style="color:${moodColor}">${r.market_mood||'—'}</div><div class="dr-metric-lbl">Tâm lý</div></div>
-        <div class="dr-metric"><div class="dr-metric-val">${fgVal}</div><div class="dr-metric-lbl">Tâm Lý Thị Trường</div></div>
+        <div class="dr-metric"><div class="dr-metric-val" style="color:${btcChg>=0?'var(--green)':'var(--red)'}">${btcChg>=0?'+':''}${btcChg.toFixed(2)}%</div><div class="dr-metric-lbl">BTC hôm nay</div></div>
+        <div class="dr-metric"><div class="dr-metric-val">${upCount}<span style="color:var(--green)">↑</span> ${dnCount}<span style="color:var(--red)">↓</span></div><div class="dr-metric-lbl">Tăng / Giảm</div></div>
+        <div class="dr-metric"><div class="dr-metric-val" style="color:${moodColor}">${mood}</div><div class="dr-metric-lbl">Tâm lý</div></div>
+        <div class="dr-metric"><div class="dr-metric-val" style="color:${fgNum>=60?'var(--green)':fgNum<=40?'var(--red)':'var(--gold)'}">${fgNum}</div><div class="dr-metric-lbl">${fgLabelTxt}</div></div>
       </div>
-      <div style="font-size:11px;line-height:1.65;color:var(--text2);margin-bottom:8px;">${r.overview||''} ${r.btc_analysis||''}</div>
-      ${r.watchlist?.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${r.watchlist.map(w=>`<span style="font-size:10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:5px;padding:2px 8px;color:var(--accent);">👀 ${w}</span>`).join('')}</div>`:''}
-      <div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;margin-top:2px;">
-        <span style="color:var(--red);font-weight:700;">⚠️</span> ${r.caution||''} &nbsp;·&nbsp; <span style="color:var(--accent);font-weight:700;">🔭</span> ${r.outlook||''}
-      </div>`;
-
+      <div style="font-size:11px;line-height:1.7;color:var(--text2);margin-bottom:7px;">${overview}</div>
+      <div style="font-size:11px;line-height:1.7;color:var(--text2);margin-bottom:8px;">${btcTxt}</div>
+      ${watchlist.length?`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">👀 Theo Dõi Hôm Nay</div><div style="display:flex;gap:5px;flex-wrap:wrap;">${watchlist.map(w=>`<span style="font-size:10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:5px;padding:3px 9px;color:var(--accent);">${w}</span>`).join('')}</div></div>`:''}
+      <div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;line-height:1.65;">
+        <span style="color:var(--red);font-weight:700;">⚠️</span> ${caution}<br>${outlook}
+      </div>
+      <div style="font-size:9px;color:rgba(100,116,139,.4);margin-top:8px;text-align:right;">⚡ Phân tích từ dữ liệu realtime · Không phải lời khuyên tài chính</div>`;
     dailyReportGenerated=true;
   }catch(e){
-    if(content) content.innerHTML=`<div style="color:var(--red);font-size:11px;">⚠️ Không thể tạo báo cáo: ${e.message}</div>`;
+    if(content) content.innerHTML=`<div style="color:var(--red);font-size:11px;">⚠️ ${e.message}</div>`;
   }finally{
     if(btn){btn.disabled=false; btn.textContent='🔄 Tạo Lại';}
   }
@@ -3527,10 +4232,20 @@ function showPage(id,el){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
   if(el) el.classList.add('active');
-  if(id!=='chart') stopOrderBook();
+  // Highlight stab- button
+  const stabId='stab-'+id;
+  const stabEl=document.getElementById(stabId);
+  if(stabEl) stabEl.classList.add('active');
+  document.querySelectorAll('.sub-tab').forEach(t=>{if(t.id!==stabId) t.classList.remove('active');});
+  if(id!=='chart'&&id!=='vn-chart') stopOrderBook();
   if(id==='chart') renderChartCoinList();
   if(id==='news'){renderNewsPage(); maybeTriggerDailyReport();}
-  if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals(); // auto-run khi vào lần đầu
+  if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals();
+  if(id==='vn-market'&&typeof VN!=='undefined'&&!VN.loaded) vnRefreshAll();
+  if(id==='vn-chart'){if(typeof vnInitChart==='function') vnInitChart();}
+  if(id==='vn-news'){if(typeof fetchVNNews==='function'&&!vnAllNews?.length) fetchVNNews();}
+  if(id==='vn-ai'){if(typeof runVNAISignals==='function'&&VN?.stocks?.length&&!vnAIScores?.length) runVNAISignals();}
+  if(id==='vn-screener'){const el2=document.getElementById('vnScreenerTable');if(el2&&el2.innerHTML.includes('Nhấn')) resetVNScreener();}
 }
 
 
@@ -3546,21 +4261,33 @@ function showPage(id,el){
 let aiScores=[];         // [{sym,base,score,signal,factors,rsi,macd,bb,vol,chg}]
 let aiTabMode='top-buy'; // top-buy | top-sell | all-scores
 /* ── API KEY MANAGEMENT ── */
-function getApiKey(){ return localStorage.getItem('vlc_anthropic_key')||''; }
+function getApiKey(){ try{return localStorage.getItem('vlc_anthropic_key')||'';}catch(e){return '';} }
 function saveApiKey(val){
   const key=val.trim();
-  if(key) localStorage.setItem('vlc_anthropic_key',key);
-  else localStorage.removeItem('vlc_anthropic_key');
-  const st=document.getElementById('aiApiKeyStatus');
-  if(st) st.textContent=key?'✅ Đã lưu':'Chưa có key';
-  if(st) st.style.color=key?'var(--green)':'var(--muted)';
+  if(key) try{localStorage.setItem('vlc_anthropic_key',key);}catch(e){}
+  else try{localStorage.removeItem('vlc_anthropic_key');}catch(e){}
+  // Sync tất cả UI key inputs + status
+  _syncApiKeyUI(key);
 }
-function initApiKeyUI(){
+function onDrApiKeyInput(val){
+  // Gọi từ ô nhập key trong tab Tin Tức
+  saveApiKey(val);
+}
+function _syncApiKeyUI(key){
+  // Tab AI Phân Tích
   const inp=document.getElementById('aiApiKeyInput');
   const st=document.getElementById('aiApiKeyStatus');
+  if(inp && !inp.matches(':focus')) inp.value=key;
+  if(st){ st.textContent=key?'✅ Đã lưu':'Chưa có key'; st.style.color=key?'var(--green)':'var(--muted)'; }
+  // Tab Tin Tức
+  const drInp=document.getElementById('drApiKeyInput');
+  const drSt=document.getElementById('drApiKeyStatus');
+  if(drInp && !drInp.matches(':focus')) drInp.value=key;
+  if(drSt){ drSt.textContent=key?'✅ Đã lưu':'Chưa có key'; drSt.style.color=key?'var(--green)':'var(--muted)'; }
+}
+function initApiKeyUI(){
   const k=getApiKey();
-  if(inp&&k) inp.value=k;
-  if(st){ st.textContent=k?'✅ Đã lưu':'Chưa có key'; st.style.color=k?'var(--green)':'var(--muted)'; }
+  _syncApiKeyUI(k);
 }
 function anthropicHeaders(){
   return {
@@ -3708,7 +4435,7 @@ async function runAISignals(){
   renderAITable();
   if(btn){btn.disabled=false; btn.textContent='🔄 Cập Nhật';}
   aiSignalBusy=false;
-}
+  }
 
 function setAITab(el,mode){
   document.querySelectorAll('.ai-tab').forEach(t=>t.classList.remove('active'));
@@ -3731,45 +4458,41 @@ function renderAIPredCell(sym){
 }
 
 async function requestAIPred(sym){
-  if(aiPredCache[sym]) return; // đã có
-  // Update cell về loading
-  renderAITable();
-  const coin=sym.replace('USDT','');
+  if(aiPredCache[sym]) return;
   const cv=coins[sym]||{};
-  const ind=rsiCache[sym]||{};
-  if(!ind.rsi) await fetchIndicators(sym);
+  if(!rsiCache[sym]) await fetchIndicators(sym);
   const rc=rsiCache[sym]||{};
-  const price=cv.price||0;
-  const changeVal=chg(sym);
-  const rsi=rc.rsi||50;
-  const macd=rc.macd||{};
-  const bb=rc.bb||{};
+  const score=calcAIScore(sym);
+  const s=score||{score:50,signal:'hold'};
 
-  try{
-    const prompt=`Phân tích kỹ thuật ngắn gọn cho ${coin}/USDT. Trả về JSON:
-{"signal":"TĂNG MẠNH"|"TĂNG"|"TRUNG LẬP"|"GIẢM"|"GIẢM MẠNH","prob_up":0-100,"prob_neutral":0-100,"prob_down":0-100,"summary":"1 câu tiếng Việt"}
+  // Tính prob từ score (0–100) dùng hàm sigmoid-like
+  const raw=s.score;
+  let prob_up, prob_down, prob_neutral;
+  if(raw>=70){prob_up=Math.round(40+(raw-70)*2);prob_down=Math.max(5,100-prob_up-15);prob_neutral=100-prob_up-prob_down;}
+  else if(raw<=30){prob_down=Math.round(40+(30-raw)*2);prob_up=Math.max(5,100-prob_down-15);prob_neutral=100-prob_up-prob_down;}
+  else{prob_neutral=Math.round(35+(raw>50?raw-50:50-raw));prob_up=Math.round((100-prob_neutral)*(raw/100));prob_down=100-prob_up-prob_neutral;}
+  // Normalize
+  const tot=prob_up+prob_neutral+prob_down||100;
+  prob_up=Math.round(prob_up/tot*100); prob_down=Math.round(prob_down/tot*100); prob_neutral=100-prob_up-prob_down;
 
-Dữ liệu: Giá=${fmtP(price)}, thay đổi=${changeVal.toFixed(2)}%, RSI=${rsi.toFixed(1)}, MACD cross=${macd.cross||'none'}, MACD hist=${macd.hist?.toFixed(5)||0}, BB vị trí=${bb.upper&&bb.lower?((price-bb.lower)/(bb.upper-bb.lower)*100).toFixed(0):50}%`;
+  const SIG_MAP={'strong-buy':'TĂNG MẠNH','buy':'TĂNG','hold':'TRUNG LẬP','sell':'GIẢM','strong-sell':'GIẢM MẠNH'};
+  const signal=SIG_MAP[s.signal]||'TRUNG LẬP';
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:anthropicHeaders(),
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        system:'Chỉ trả lời bằng JSON hợp lệ, không có text nào khác.',
-        messages:[{role:'user',content:prompt}]
-      })
-    });
-    const data=await resp.json();
-    const raw=data.content?.[0]?.text||'{}';
-    const pred=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    aiPredCache[sym]={...pred, ts:Date.now()};
-  }catch(e){
-    aiPredCache[sym]={signal:'TRUNG LẬP',prob_up:33,prob_neutral:34,prob_down:33,summary:'Không thể phân tích.',ts:Date.now()};
+  // Summary từ factors
+  const posF=(s.factors||[]).filter(f=>f.type==='pos').map(f=>f.label).join(', ');
+  const negF=(s.factors||[]).filter(f=>f.type==='neg').map(f=>f.label).join(', ');
+  const base=sym.replace('USDT','');
+  let summary;
+  if(s.signal==='strong-buy'||s.signal==='buy')
+    summary=`${base} có điểm kỹ thuật cao (${raw}/100)${posF?', tín hiệu: '+posF:''}.`;
+  else if(s.signal==='strong-sell'||s.signal==='sell')
+    summary=`${base} cho tín hiệu giảm (điểm ${raw}/100)${negF?', chú ý: '+negF:''}.`;
+  else
+    summary=`${base} đang trung lập (điểm ${raw}/100), chờ thêm xác nhận từ thị trường.`;
+
+  aiPredCache[sym]={signal, prob_up, prob_neutral, prob_down, summary, ts:Date.now()};
+  renderAITable();
   }
-  renderAITable(); // re-render để cập nhật cell
-}
 
 // Nút "Dự đoán tất cả" — phân tích top 30 coin song song (rate limit friendly)
 async function runAllAIPreds(){
@@ -3783,7 +4506,7 @@ async function runAllAIPreds(){
     if(i+3<toProcess.length) await new Promise(r=>setTimeout(r,800));
   }
   if(btn){btn.disabled=false; btn.textContent='🤖 Dự Đoán 30 Coin';}
-}
+  }
 
 function renderAITable(){
   if(!aiScores.length) return;
@@ -3929,45 +4652,112 @@ async function sendMessage(userMsg){
   aiChatBusy=true;
   const sendBtn=document.getElementById('chatSendBtn');
   if(sendBtn) sendBtn.disabled=true;
-
-  // Hiển thị tin người dùng
   appendChatMsg('user',userMsg);
-  chatHistory.push({role:'user',content:userMsg});
-
-  // Hiển thị typing indicator
   const typingId='typing-'+Date.now();
   appendTyping(typingId);
+  await new Promise(r=>setTimeout(r,600));
 
-  if(!getApiKey()){
-    removeTyping(typingId);
-    appendChatMsg('ai','🔑 Vui lòng nhập **Anthropic API Key** vào ô bên dưới để sử dụng AI Tư Vấn.\n\nLấy key miễn phí tại: console.anthropic.com');
-    aiChatBusy=false;
-    if(sendBtn) sendBtn.disabled=false;
-    return;
-  }
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:anthropicHeaders(),
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:buildSystemPrompt(),
-        messages:chatHistory.slice(-10) // giữ 10 tin gần nhất
-      })
-    });
-    const data=await res.json();
-    const reply=data?.content?.[0]?.text||'Xin lỗi, tôi không thể trả lời lúc này.';
+    const reply=ruleBasedChat(userMsg);
     removeTyping(typingId);
     appendChatMsg('ai',reply);
-    chatHistory.push({role:'assistant',content:reply});
   }catch(e){
     removeTyping(typingId);
-    appendChatMsg('ai','⚠️ Lỗi kết nối. Vui lòng thử lại sau.');
+    appendChatMsg('ai','⚠️ Có lỗi xảy ra, vui lòng thử lại.');
   }
   aiChatBusy=false;
   if(sendBtn) sendBtn.disabled=false;
 }
+
+function ruleBasedChat(msg){
+  const m=msg.toLowerCase();
+  const all=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
+  const btc=coins['BTCUSDT']||{}; const eth=coins['ETHUSDT']||{};
+  const btcChg=chg('BTCUSDT'); const ethChg=chg('ETHUSDT');
+  const fgNum=parseInt(document.getElementById('fgNum')?.textContent)||50;
+  const sorted=[...all].sort((a,b)=>chg(b.sym)-chg(a.sym));
+  const upCount=all.filter(c=>chg(c.sym)>0).length;
+  const dnCount=all.filter(c=>chg(c.sym)<0).length;
+
+  // ── Nhận diện coin cụ thể ──
+  const mentionedCoin=SYMBOLS.find(s=>{
+    const base=s.replace('USDT','').toLowerCase();
+    const name=(nameMap[s.replace('USDT','')]||'').toLowerCase();
+    return m.includes(base)||m.includes(name);
+  });
+
+  // ── Tổng quan thị trường ──
+  if(/tổng quan|thị trường|hôm nay|tình hình|market/.test(m)){
+    const mood=fgNum>=60?'tích cực':(fgNum<=40?'tiêu cực':'trung lập');
+    return `📊 **Tổng quan thị trường hôm nay:**\n\n🔸 BTC: ${fmtP(btc.price)} (${btcChg>=0?'+':''}${btcChg.toFixed(2)}%)\n🔸 ETH: ${fmtP(eth.price)} (${ethChg>=0?'+':''}${ethChg.toFixed(2)}%)\n🔸 Fear & Greed: ${fgNum} — ${document.getElementById('fgLabel')?.textContent||'—'}\n🔸 Coin tăng: ${upCount} | Giảm: ${dnCount}\n\nTâm lý thị trường hiện tại **${mood}**. ${fgNum>=70?'Cẩn thận vùng tham lam cao — rủi ro điều chỉnh tăng.':fgNum<=30?'Vùng sợ hãi — có thể là cơ hội tích lũy dài hạn.':'Chưa có tín hiệu cực đoan, giao dịch cẩn thận.'}\n\n_💡 Dùng nút "Tổng quan" để xem phân tích chi tiết hơn._`;
+  }
+
+  // ── Phân tích coin cụ thể ──
+  if(mentionedCoin||(/(phân tích|analyze|xem|check|rsi|macd)/.test(m)&&!/top|danh|list/.test(m))){
+    const sym=mentionedCoin||'BTCUSDT';
+    const base=sym.replace('USDT','');
+    const c=coins[sym]||{}; const rc=rsiCache[sym];
+    const cChg=chg(sym);
+    if(!c.price) return `⚠️ Chưa có dữ liệu cho ${base}. Vui lòng chờ dữ liệu load hoặc click vào coin trong tab Biểu Đồ.`;
+    const score=calcAIScore(sym)||{score:50,signal:'hold',factors:[]};
+    let signal='';
+    if(score.signal==='strong-buy') signal='🚀 **Mua Mạnh** — Tín hiệu kỹ thuật rất tích cực';
+    else if(score.signal==='buy') signal='📈 **Nên Xem Xét Mua** — Các chỉ báo hỗ trợ xu hướng tăng';
+    else if(score.signal==='sell') signal='📉 **Cẩn Thận** — Chỉ báo cho tín hiệu giảm';
+    else if(score.signal==='strong-sell') signal='🔴 **Tránh / Cân Nhắc Bán** — Áp lực giảm mạnh';
+    else signal='⏸ **Chờ Xem** — Chưa có tín hiệu rõ ràng';
+
+    const rsiTxt=rc?.rsi?`RSI(14): ${rc.rsi.toFixed(1)} ${rc.rsi>70?'(Quá mua ⚠️)':rc.rsi<30?'(Quá bán ✅)':'(Trung lập)'}`:null;
+    const macdTxt=rc?.macd?`MACD: ${rc.macd.cross==='bull'?'Giao cắt lên ✅':rc.macd.cross==='bear'?'Giao cắt xuống ⚠️':rc.macd.hist>0?'Histogram dương':'Histogram âm'}`:null;
+    const indLines=[rsiTxt,macdTxt].filter(Boolean).map(t=>`🔹 ${t}`).join('\n');
+
+    return `🔍 **Phân tích ${nameMap[base]||base} (${base}/USDT)**\n\n💰 Giá: ${fmtP(c.price)} (${cChg>=0?'+':''}${cChg.toFixed(2)}%)\n📊 Điểm kỹ thuật: **${score.score}/100**\n${signal}\n\n${indLines?indLines+'\n\n':''}${(score.factors||[]).length?'**Yếu tố:**\n'+score.factors.map(f=>`${f.type==='pos'?'✅':f.type==='neg'?'❌':'➖'} ${f.label}`).join('\n')+'\n\n':''}_⚠️ Đây là phân tích kỹ thuật tự động, không phải lời khuyên đầu tư. DYOR!_`;
+  }
+
+  // ── Top coin tăng/giảm ──
+  if(/(top|tăng nhất|tăng mạnh|gainer|pump)/.test(m)&&!/(giảm|bán|sell|bear)/.test(m)){
+    const top=sorted.slice(0,7);
+    return `🚀 **Top coin tăng hôm nay:**\n\n${top.map((c,i)=>`${i+1}. **${c.base}** +${chg(c.sym).toFixed(2)}% — ${fmtP(c.price)}`).join('\n')}\n\n_Click vào coin trong tab Biểu Đồ để phân tích chi tiết._`;
+  }
+  if(/(giảm nhất|giảm mạnh|loser|dump|bán|sell)/.test(m)){
+    const bot=sorted.slice(-7).reverse();
+    return `📉 **Top coin giảm hôm nay:**\n\n${bot.map((c,i)=>`${i+1}. **${c.base}** ${chg(c.sym).toFixed(2)}% — ${fmtP(c.price)}`).join('\n')}\n\n_Cẩn thận với coin đang giảm mạnh — kiểm tra volume và tin tức trước khi vào lệnh._`;
+  }
+
+  // ── BTC/ETH specific ──
+  if(/(btc|bitcoin)/.test(m)){
+    return `₿ **Bitcoin (BTC)**\n\n💰 Giá: ${fmtP(btc.price)}\n📈 Hôm nay: ${btcChg>=0?'+':''}${btcChg.toFixed(2)}%\n🌡️ F&G: ${fgNum}\n\n${btcChg>3?'BTC đang có đà tăng tốt. Altcoin thường tăng theo sau khi BTC dẫn dắt.':btcChg<-3?'BTC đang điều chỉnh. Thận trọng với altcoin trong giai đoạn này.':'BTC đi ngang — thị trường đang tìm hướng. Theo dõi breakout khỏi vùng tích lũy.'}\n\n_Dùng tab Biểu Đồ để xem chart BTCUSDT chi tiết._`;
+  }
+
+  // ── Fear & Greed ──
+  if(/(fear|greed|tâm lý|sợ|tham lam|f.g|fng)/.test(m)){
+    const advice=fgNum>=75?'⚠️ Cực kỳ tham lam — lịch sử cho thấy đây là vùng rủi ro cao. Cân nhắc chốt lời một phần.':fgNum>=55?'Tham lam nhẹ — thị trường đang tích cực nhưng đừng FOMO.':fgNum<=25?'✅ Cực kỳ sợ hãi — cơ hội tích lũy dài hạn. Warren Buffett: "Mua khi người khác sợ hãi."':fgNum<=45?'Sợ hãi nhẹ — thị trường thận trọng. Cơ hội tốt cho người kiên nhẫn.':'Trung lập — không có tín hiệu cực đoan.';
+    return `😨😍 **Fear & Greed Index: ${fgNum}**\n📊 Trạng thái: _${document.getElementById('fgLabel')?.textContent||'—'}_\n\n${advice}`;
+  }
+
+  // ── Volume / whale ──
+  if(/(volume|khối lượng|vol|whale|cá voi|đột biến)/.test(m)){
+    const topV=sorted.map(c=>({...c,vol:kvol(c.sym)})).sort((a,b)=>b.vol-a.vol).slice(0,5);
+    return `🐋 **Khối lượng giao dịch hôm nay:**\n\n${topV.map((c,i)=>`${i+1}. **${c.base}**: ${fmtB(c.vol)}`).join('\n')}\n\n_Volume lớn thường đi kèm với chuyển động giá mạnh. Dùng tab Bộ Lọc Coin → Whale Detector để xem tín hiệu cá voi._`;
+  }
+
+  // ── Chiến lược / lời khuyên ──
+  if(/(chiến lược|strategy|nên làm|làm gì|đầu tư|portfolio|danh mục)/.test(m)){
+    const bullish=btcChg>2&&upCount>dnCount;
+    const bearish=btcChg<-2&&dnCount>upCount;
+    return `💼 **Chiến lược tham khảo hôm nay:**\n\n${bullish?`🟢 **Thị trường đang tích cực:**\n✅ BTC/ETH: Giữ position hoặc mua thêm vùng hỗ trợ\n✅ Altcoin: Theo dõi coin có RSI chưa quá mua\n⚠️ Đặt stop-loss và không dùng đòn bẩy cao`:bearish?`🔴 **Thị trường đang tiêu cực:**\n✅ Ưu tiên USDT / giảm exposure\n✅ Không bắt đáy vội — đợi tín hiệu đảo chiều\n✅ Nếu giữ coin, đặt stop-loss nghiêm túc`:`⚪ **Thị trường hỗn hợp:**\n✅ Giao dịch theo xu hướng nhỏ\n✅ Không over-invest một lệnh\n✅ Kiểm tra chỉ báo kỹ thuật trước khi vào lệnh`}\n\n_⚠️ Đây là phân tích tự động — DYOR và tự chịu trách nhiệm về quyết định đầu tư._`;
+  }
+
+  // ── Greet / hello ──
+  if(/(xin chào|hello|hi|hey|chào|alo)/.test(m)){
+    return `👋 Xin chào! Tôi là trợ lý phân tích crypto của **VietLongCrypto**.\n\nTôi có thể giúp bạn:\n📊 **Tổng quan thị trường** — hỏi "thị trường hôm nay thế nào?"\n🔍 **Phân tích coin** — hỏi "phân tích BTC" hoặc "ETH có nên mua không?"\n🚀 **Top coin** — hỏi "coin tăng nhất hôm nay"\n😨 **Tâm lý** — hỏi "Fear & Greed bao nhiêu?"\n💼 **Chiến lược** — hỏi "nên làm gì hôm nay?"\n\n_Hoặc dùng các nút gợi ý phía trên!_ 👆`;
+  }
+
+  // ── Default fallback ──
+  const upTrend=btcChg>0&&upCount>dnCount;
+  return `🤖 Tôi hiểu bạn hỏi về: _"${msg}"_\n\n📊 **Tóm tắt nhanh thị trường:**\nBTC ${btcChg>=0?'+':''}${btcChg.toFixed(2)}% | ${upCount} coin tăng / ${dnCount} coin giảm | F&G: ${fgNum}\n\n${upTrend?'Xu hướng hiện tại thiên về tích cực.':'Thị trường đang thận trọng.'}\n\n💡 **Thử hỏi cụ thể hơn:**\n• "Phân tích BTC hôm nay"\n• "Top 5 coin tăng mạnh nhất"\n• "Thị trường hôm nay thế nào?"\n• "Chiến lược đầu tư hôm nay"`;
+}
+
 
 function appendChatMsg(role,text){
   const body=document.getElementById('chatBody');
@@ -4025,6 +4815,8 @@ function clearChat(){
    BOOT — khởi động tất cả chức năng
 ═══════════════════════════════════════════════════ */
 initApiKeyUI();               // khởi tạo UI API key từ localStorage
+  window.addEventListener('beforeunload',()=>{try{if(typeof sock!=='undefined'&&sock?.readyState<2)sock.close();}catch(e){}});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&typeof obWs!=='undefined'&&obWs?.readyState<2){try{obWs.close();}catch(e){}}});
 renderAlertList();            // render alerts từ localStorage ngay lập tức
 loadAllCoins();               // Binance 24hr REST → SYMBOLS, coins, rồi WS
 // Interval re-sort + đảm bảo bảng luôn được build nếu chưa có
@@ -4042,12 +4834,1234 @@ setTimeout(()=>{              // Sau 3s: fetch news (đợi page load xong)
 }, 3000);
 setTimeout(batchFetchIndicators, 10000);          // Sau 10s: fetch RSI/MACD top 50
 setInterval(batchFetchIndicators, 15*60*1000);    // Refresh indicators mỗi 15 phút (tối ưu)
+
+
+
+/* ════════════════════════════════════
+   VN SHARED: State + CORS + Fetch
+════════════════════════════════════ */
+const VN = {
+  indices: { VNINDEX:{}, HNXINDEX:{}, UPCOMINDEX:{} },
+  stocks: [], moversMode:'up', listMode:'hose',
+  sortKey:'vol', sortDir:-1, filterQ:'',
+  chartTf:{VNINDEX:'1D',HNXINDEX:'1D',UPCOMINDEX:'1D'},
+  chartData:{}, loaded:false, lastFetch:0,
+};
+
+const VN30_SYMS = [
+  'ACB','BCM','BID','BVH','CTG','FPT','GAS','GVR','HDB','HPG',
+  'MBB','MSN','MWG','NVL','PDR','PLX','PNJ','POW','SAB','SHB',
+  'SSI','STB','TCB','TPB','VCB','VHM','VIB','VIC','VJC','VNM',
+  'VPB','VRE','VND','KDH','DXG',
+];
+const VN_NAMES = {
+  ACB:'Á Châu',BCM:'Becamex',BID:'BIDV',BVH:'Bảo Việt',CTG:'Vietinbank',
+  FPT:'FPT Corp',GAS:'PV Gas',GVR:'Cao Su VN',HDB:'HDBank',HPG:'Hòa Phát',
+  MBB:'MB Bank',MSN:'Masan',MWG:'Thế Giới Di Động',NVL:'Novaland',PDR:'Phát Đạt',
+  PLX:'Petrolimex',PNJ:'PNJ',POW:'PV Power',SAB:'Sabeco',
+  SSI:'SSI CK',STB:'Sacombank',TCB:'Techcombank',TPB:'TPBank',
+  VCB:'Vietcombank',VHM:'Vinhomes',VIB:'VIB',VIC:'Vingroup',VJC:'Vietjet',
+  VNM:'Vinamilk',VPB:'VPBank',VRE:'Vincom Retail',VND:'VNDirect',
+  KDH:'Khang Điền',DXG:'Đất Xanh',SHB:'SHB',
+  PVS:'PV Technic',NTP:'Nhựa TP',VCS:'Vicostone',TNG:'TNG Fashion',
+  SHS:'SHS CK',CEO:'C.E.O',DGC:'Hóa chất Đức Giang',MBS:'MB Securities',
+};
+
+/* CORS proxies — thử lần lượt */
+const VN_CORS_PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => url,
+];
+
+async function vnFetch(url, timeout=10000) {
+  let lastErr;
+  for(const proxyFn of VN_CORS_PROXIES) {
+    const proxied = proxyFn(url);
+    const ctrl = new AbortController();
+    const tid = setTimeout(()=>ctrl.abort(), timeout);
+    try {
+      const r = await fetch(proxied, {signal:ctrl.signal, headers:{'Accept':'application/json'}});
+      clearTimeout(tid);
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const text = await r.text();
+      try {
+        const j = JSON.parse(text);
+        if(j?.contents) return JSON.parse(j.contents);
+        return j;
+      } catch { return JSON.parse(text); }
+    } catch(e) { clearTimeout(tid); lastErr=e; }
+  }
+  throw lastErr;
+}
+
+function vnTCBSUrl(sym, tf) {
+  const now=Math.floor(Date.now()/1000);
+  const ranges={'1D':86400,'1W':604800,'1M':2592000,'3M':7776000,'1Y':31536000};
+  const from=now-(ranges[tf]||86400);
+  const res=tf==='1D'?'15':tf==='1W'?'60':'D';
+  return `https://apipubaws.tcbs.com.vn/stock-insight/v2/index/${sym}/historical-price?resolution=${res}&toDate=${now}&fromDate=${from}`;
+}
+function vnTCBSPriceUrl(syms){
+  return `https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/ticker?tickers=${syms.join(',')}`;
+}
+function vnSSIUrl(sym, tf) {
+  const now=Math.floor(Date.now()/1000);
+  const ranges={'1D':86400,'1W':604800,'1M':2592000,'3M':7776000,'1Y':31536000};
+  const from=now-(ranges[tf]||86400);
+  const res=tf==='1D'?'15':tf==='1W'?'60':'D';
+  return `https://iboard-query.ssi.com.vn/v2/stock/bars-long-term?symbol=${sym}&resolution=${res}&from=${from}&to=${now}`;
+}
+
+
+function vnSession(){
+  const vn=new Date(Date.now()+7*3600000);
+  const h=vn.getUTCHours(),m=vn.getUTCMinutes(),d=vn.getUTCDay();
+  const hm=h*100+m;
+  if(d===0||d===6) return{label:'Ngày nghỉ',cls:'closed'};
+  if(hm<900) return{label:'Chưa mở cửa',cls:'closed'};
+  if(hm<915) return{label:'🕘 ATO',cls:'ato'};
+  if(hm<1130) return{label:'🟢 Liên tục sáng',cls:'open'};
+  if(hm<1300) return{label:'Nghỉ trưa',cls:'closed'};
+  if(hm<1445) return{label:'🟢 Liên tục chiều',cls:'open'};
+  if(hm<1500) return{label:'🔔 ATC',cls:'atc'};
+  return{label:'Đã đóng cửa',cls:'closed'};
+}
+function vnUpdateSessionUI(){
+  const s=vnSession();
+  const dot=document.getElementById('vnSessionDot');
+  const lbl=document.getElementById('vnSessionLabel');
+  if(dot) dot.className='vn-session-dot '+s.cls;
+  if(lbl){lbl.textContent=s.label;lbl.style.color=s.cls==='open'?'var(--green)':s.cls==='closed'?'var(--red)':'var(--gold)';}
+  const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Asia/Ho_Chi_Minh'});
+  const el=document.getElementById('vnLastUpdate'); if(el) el.textContent=`UTC+7 ${t}`;
+  // Update session badge in switcher
+  const badge=document.getElementById('vnSessionBadge');
+  if(badge) badge.textContent=s.cls==='open'?'🟢 ĐANG MỞ CỬA':s.cls==='closed'?'⛔ ĐÓNG CỬA':'🟡 '+s.label;
+}
+
+async function vnFetchIndex(sym){
+  const url=`https://apipubaws.tcbs.com.vn/stock-insight/v2/market/indices-intraday?indexId=${sym}&type=index`;
+  try{
+    const d=await vnFetch(url);
+    const r=d?.data||d;
+    if(r?.indexValue) return{value:+r.indexValue,chg:+r.change||0,pct:+r.perChange||0,vol:+r.totalVolume||0,val:+r.totalValue||0,hi:+r.ceiling||0,lo:+r.floor||0};
+  }catch(e){}
+  const url2=`https://apipubaws.tcbs.com.vn/stock-insight/v1/market/market-overview?exchange=${sym==='VNINDEX'?'HOSE':sym==='HNXINDEX'?'HNX':'UPCOM'}`;
+  try{
+    const d2=await vnFetch(url2);
+    const r2=Array.isArray(d2?.data)?d2.data[0]:d2?.data||d2;
+    if(r2?.indexValue||r2?.value) return{value:+(r2.indexValue||r2.value||0),chg:+(r2.change||r2.indexChange||0),pct:+(r2.perChange||r2.changePercent||0),vol:+(r2.totalVolume||0),val:+(r2.totalValue||0),hi:0,lo:0};
+  }catch(e2){}
+  return null;
+}
+
+async function vnFetchChart(sym,tf){
+  const key=sym+'_'+tf;
+  if(VN.chartData[key]) return VN.chartData[key];
+  try{
+    const d=await vnFetch(vnTCBSUrl(sym,tf));
+    const arr=d?.data||[];
+    let bars=[];
+    if(Array.isArray(arr)) bars=arr.map(b=>({t:b.tradingDate||b.t,o:+b.open||+b.o,h:+b.high||+b.h,l:+b.low||+b.l,c:+b.close||+b.c,v:+b.volume||+b.v})).filter(b=>b.c>0);
+    else if(d?.t) for(let i=0;i<d.t.length;i++) bars.push({t:d.t[i],o:+d.o[i],h:+d.h[i],l:+d.l[i],c:+d.c[i],v:+(d.v?d.v[i]:0)});
+    bars=bars.filter(b=>b.c>0);
+    if(bars.length>2){VN.chartData[key]=bars;return bars;}
+  }catch(e){}
+  try{
+    const d2=await vnFetch(vnSSIUrl(sym,tf));
+    let bars=[];
+    if(d2?.t) for(let i=0;i<d2.t.length;i++) bars.push({t:d2.t[i],o:+d2.o[i],h:+d2.h[i],l:+d2.l[i],c:+d2.c[i],v:+(d2.v?d2.v[i]:0)});
+    bars=bars.filter(b=>b.c>0);
+    if(bars.length>2){VN.chartData[key]=bars;return bars;}
+  }catch(e2){}
+  return null;
+}
+
+async function vnFetchStocks(mode){
+  const syms=mode==='hnx'?['SHB','PVS','NTP','VCS','TNG','SHS','CEO','DGC','MBS','HUT','VGC','KLF','BVS','IDJ','PVI','SCR','PGI','VIF','WSS','HHC']:VN30_SYMS;
+  try{
+    const d=await vnFetch(vnTCBSPriceUrl(syms));
+    const arr=d?.data||d?.tickers||d;
+    if(Array.isArray(arr)&&arr.length>0){
+      const stocks=arr.map(s=>({
+        sym:s.ticker||s.symbol||'',name:VN_NAMES[s.ticker||s.symbol]||s.name||s.companyName||'',
+        price:+(s.lastPrice||s.price||s.close||0)*1000,ref:+(s.referencePrice||s.ref||0)*1000,
+        ceil:+(s.ceilingPrice||s.ceil||0)*1000,floor:+(s.floorPrice||s.floor||0)*1000,
+        chg:+(s.priceChange||s.change||0)*1000,
+        pct:(()=>{const r=+(s.priceChangeRatio||s.pct||s.changePercent||0);return Math.abs(r)>50?r:r*100;})(),
+        vol:+(s.totalVolumeTraded||s.volume||s.vol||0),val:+(s.totalValueTraded||s.value||0),
+        hi:+(s.highest||s.high||s.hi||0)*1000,lo:+(s.lowest||s.low||s.lo||0)*1000,
+        floor_id:mode,
+      })).filter(s=>s.sym&&s.price>0);
+      if(stocks.length>0) return stocks;
+    }
+  }catch(e){}
+  return[];
+}
+
+function vnRenderIdxCard(sym,data){
+  const map={
+    VNINDEX:{val:'vnVNIVal',chg:'vnVNIChg',hilo:'vnVNIHiLo',vol:'vnVNIVol',card:'vnIdxVNI'},
+    HNXINDEX:{val:'vnHNXVal',chg:'vnHNXChg',hilo:'vnHNXHiLo',vol:'vnHNXVol',card:'vnIdxHNX'},
+    UPCOMINDEX:{val:'vnUPCVal',chg:'vnUPCChg',hilo:'vnUPCHiLo',vol:'vnUPCVol',card:'vnIdxUPC'},
+  };
+  const ids=map[sym];if(!ids||!data)return;
+  const up=data.chg>=0,s=up?'+':'',cls=up?'vn-idx-up':'vn-idx-dn';
+  const el=(id)=>document.getElementById(id);
+  if(el(ids.val)) el(ids.val).textContent=data.value.toFixed(2);
+  if(el(ids.chg)){el(ids.chg).textContent=`${s}${data.chg.toFixed(2)} (${s}${data.pct.toFixed(2)}%)`;el(ids.chg).className=`vn-idx-change ${cls}`;}
+  if(el(ids.hilo)) el(ids.hilo).textContent=data.hi&&data.lo?`H: ${data.hi.toFixed(2)} · L: ${data.lo.toFixed(2)}`:'';
+  if(el(ids.vol)) el(ids.vol).textContent=data.vol?`KL: ${fmtB(data.vol)}`:'';
+  if(el(ids.card)) el(ids.card).style.borderColor=up?'rgba(0,230,118,.2)':'rgba(255,61,87,.2)';
+  VN.indices[sym]=data;
+}
+function vnRenderIdxError(sym){
+  const m={VNINDEX:{val:'vnVNIVal',chg:'vnVNIChg'},HNXINDEX:{val:'vnHNXVal',chg:'vnHNXChg'},UPCOMINDEX:{val:'vnUPCVal',chg:'vnUPCChg'}};
+  const ids=m[sym];if(!ids)return;
+  const el=(id)=>document.getElementById(id);
+  if(el(ids.val)){el(ids.val).textContent='—';el(ids.val).style.color='var(--muted)';}
+  if(el(ids.chg)){el(ids.chg).textContent='Không có dữ liệu';el(ids.chg).className='vn-idx-change vn-idx-nc';}
+}
+function vnDrawSparkline(cid,bars,isUp){
+  const el=document.getElementById(cid);if(!el)return;
+  if(!bars||bars.length<2){el.innerHTML='<div class="vn-mini-loading">Không có dữ liệu</div>';return;}
+  const W=el.offsetWidth||260,H=70;
+  const vals=bars.map(b=>b.c);
+  const mn=Math.min(...vals),mx=Math.max(...vals);
+  const scX=(i)=>2+(i/(vals.length-1))*(W-4);
+  const scY=(v)=>H-2-((v-mn)/(mx-mn||1))*(H-4);
+  const pts=vals.map((v,i)=>`${scX(i).toFixed(1)},${scY(v).toFixed(1)}`).join(' ');
+  const fp=`${scX(0).toFixed(1)},${H} ${pts} ${scX(vals.length-1).toFixed(1)},${H}`;
+  const col=isUp?'#00e676':'#ff3d57';const gid='vng'+cid;
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity=".25"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="${fp}" fill="url(#${gid})"/>
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+function vnRenderMovers(){
+  const el=document.getElementById('vnMoversList');if(!el)return;
+  if(!VN.stocks.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;text-align:center;padding:8px;">Chưa có dữ liệu</div>';return;}
+  let list=[...VN.stocks];
+  if(VN.moversMode==='up') list=list.filter(s=>s.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,10);
+  else if(VN.moversMode==='dn') list=list.filter(s=>s.pct<0).sort((a,b)=>a.pct-b.pct).slice(0,10);
+  else list=list.sort((a,b)=>b.vol-a.vol).slice(0,10);
+  if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;text-align:center;padding:8px;">Không có dữ liệu</div>';return;}
+  el.innerHTML=list.map((s,i)=>{
+    const up=s.pct>0,dn=s.pct<0,cls=up?'vn-up':dn?'vn-dn':'vn-nc',sign=up?'+':'';
+    return `<div class="vn-mover-row">
+      <span class="vn-mover-rank">${i+1}</span>
+      <div style="position:relative;width:20px;height:20px;flex-shrink:0;">
+        <img src="${vnLogoUrl(s.sym)}" width="20" height="20"
+          style="border-radius:3px;object-fit:contain;background:#fff;display:block;"
+          onerror="this.style.display='none';this.nextSibling.style.display='flex';" loading="lazy">
+        <div style="display:none;width:20px;height:20px;border-radius:3px;background:rgba(245,158,11,.15);color:var(--gold);align-items:center;justify-content:center;font-size:8px;font-weight:800;">${s.sym[0]}</div>
+      </div>
+      <span class="vn-mover-sym">${s.sym}</span>
+      <span class="vn-mover-price">${s.price>=1000?(s.price/1000).toFixed(1)+'k':s.price.toFixed(0)}</span>
+      <span class="vn-mover-chg ${cls}">${sign}${s.pct.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+  const up=VN.stocks.filter(s=>s.pct>0).length,ref=VN.stocks.filter(s=>s.pct===0).length,dn=VN.stocks.filter(s=>s.pct<0).length;
+  const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setEl('vnUpCount',up);setEl('vnRefCount',ref);setEl('vnDnCount',dn);
+}
+function vnRenderTable(){
+  const tbody=document.getElementById('vnTableBody');if(!tbody)return;
+  let list=[...VN.stocks];
+  if(VN.filterQ) list=list.filter(s=>s.sym.includes(VN.filterQ.toUpperCase())||s.name?.toLowerCase().includes(VN.filterQ.toLowerCase()));
+  const k=VN.sortKey,d=VN.sortDir;
+  list.sort((a,b)=>typeof(a[k])===typeof''?a[k].localeCompare(b[k])*d:(b[k]-a[k])*-d);
+  if(!list.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;">Không có kết quả</td></tr>';return;}
+  const maxVol=Math.max(...list.map(s=>s.vol));
+  tbody.innerHTML=list.map(s=>{
+    const up=s.pct>0,dn=s.pct<0,cls=up?'vn-up':dn?'vn-dn':'vn-nc';
+    const isCeil=s.price>0&&s.ceil>0&&s.price>=s.ceil,isFloor=s.price>0&&s.floor>0&&s.price<=s.floor;
+    const pCls=isCeil?'vn-ceil':isFloor?'vn-floor':cls;
+    const fmt=(v)=>v>0?(v/1000).toFixed(1):'—';
+    const fmtV=(v)=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v>0?v:'—';
+    const barW=maxVol>0?Math.round(s.vol/maxVol*40):0;
+    const sign=up?'+':'';
+    return `<tr>
+      <td class="vn-sym-cell" style="cursor:pointer" onclick="switchMarket('vn');setTimeout(()=>showPage('vn-chart',document.querySelector('[onclick*=vn-chart]')),50);vnOpenChart('${s.sym}','${s.name||s.sym}','HOSE')">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="position:relative;width:22px;height:22px;flex-shrink:0;">
+            <img src="${vnLogoUrl(s.sym)}" width="22" height="22"
+              style="border-radius:4px;object-fit:contain;background:#fff;display:block;"
+              onerror="this.style.display='none';this.nextSibling.style.display='flex';" loading="lazy">
+            <div style="display:none;width:22px;height:22px;border-radius:4px;background:rgba(245,158,11,.15);color:var(--gold);align-items:center;justify-content:center;font-size:9px;font-weight:800;">${s.sym[0]}</div>
+          </div>
+          <span style="font-weight:700">${s.sym}</span>
+        </div>
+      </td>
+      <td class="vn-name-cell">${s.name||'—'}</td>
+      <td class="${pCls}" style="font-weight:700">${fmt(s.price)}</td>
+      <td class="${cls}">${sign}${(s.chg>=1000||s.chg<=-1000?(s.chg/1000).toFixed(1):(s.chg/1000).toFixed(2))}</td>
+      <td class="${cls}">${sign}${s.pct.toFixed(2)}%</td>
+      <td><div class="vn-cell-bar">${barW?`<div class="vn-vol-bar" style="width:${barW}px"></div>`:''}<span>${fmtV(s.vol)}</span></div></td>
+      <td>${s.val>=1e9?(s.val/1e9).toFixed(1)+'B':s.val>=1e6?(s.val/1e6).toFixed(0)+'M':'—'}</td>
+      <td style="color:var(--muted)">${fmt(s.hi)}</td>
+      <td style="color:var(--muted)">${fmt(s.lo)}</td>
+    </tr>`;
+  }).join('');
+}
+function vnMoversTab(mode,el){VN.moversMode=mode;document.querySelectorAll('.vn-movers-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');vnRenderMovers();}
+async function vnSwitchList(mode,el){
+  VN.listMode=mode;
+  document.querySelectorAll('#vnListBtnVN30,#vnListBtnHOSE,#vnListBtnHNX').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={'vn30':'📋 Bảng Giá VN30','hose':'📋 Top HOSE','hnx':'📋 Top HNX'};
+  const tEl=document.getElementById('vnTableTitle');if(tEl)tEl.textContent=titles[mode]||'';
+  VN.stocks=[];
+  const tbody=document.getElementById('vnTableBody');
+  if(tbody)tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;"><div class="spinner" style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 6px"></div>Đang tải...</td></tr>';
+  VN.stocks=await vnFetchStocks(mode);
+  vnRenderTable();vnRenderMovers();
+  }
+function vnSort(key){if(VN.sortKey===key)VN.sortDir*=-1;else{VN.sortKey=key;VN.sortDir=-1;}vnRenderTable();}
+function vnFilterTable(q){VN.filterQ=q.trim();vnRenderTable();}
+async function vnSetTf(sym,tf,el){
+  VN.chartTf[sym]=tf;
+  const grpId='vnTfGroup'+sym.replace('INDEX','');
+  document.querySelectorAll(`#${grpId} .vn-tf-btn`).forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  delete VN.chartData[sym+'_'+tf];
+  const cid='vnChart'+sym.replace('INDEX','');
+  const cel=document.getElementById(cid);if(cel)cel.innerHTML='<div class="vn-mini-loading">Đang tải...</div>';
+  const bars=await vnFetchChart(sym,tf);
+  const last=bars?bars[bars.length-1]:null,first=bars?bars[0]:null;
+  vnDrawSparkline(cid,bars,!last||!first||last.c>=first.c);
+  }
+async function vnRefreshAll(){
+  const iconEl=document.getElementById('vnRefreshIcon');
+  if(iconEl){iconEl.textContent='↻';iconEl.className='vn-spin';}
+  vnUpdateSessionUI();
+  const[vni,hnx,upc]=await Promise.allSettled([vnFetchIndex('VNINDEX'),vnFetchIndex('HNXINDEX'),vnFetchIndex('UPCOMINDEX')]);
+  if(vni.status==='fulfilled'&&vni.value)vnRenderIdxCard('VNINDEX',vni.value);else vnRenderIdxError('VNINDEX');
+  if(hnx.status==='fulfilled'&&hnx.value)vnRenderIdxCard('HNXINDEX',hnx.value);else vnRenderIdxError('HNXINDEX');
+  if(upc.status==='fulfilled'&&upc.value)vnRenderIdxCard('UPCOMINDEX',upc.value);else vnRenderIdxError('UPCOMINDEX');
+  const[bVNI,bHNX,bUPC]=await Promise.allSettled([
+    vnFetchChart('VNINDEX',VN.chartTf.VNINDEX),
+    vnFetchChart('HNXINDEX',VN.chartTf.HNXINDEX),
+    vnFetchChart('UPCOMINDEX',VN.chartTf.UPCOMINDEX),
+  ]);
+  vnDrawSparkline('vnChartVNI',bVNI.value||null,(VN.indices.VNINDEX?.chg||0)>=0);
+  vnDrawSparkline('vnChartHNX',bHNX.value||null,(VN.indices.HNXINDEX?.chg||0)>=0);
+  vnDrawSparkline('vnChartUPC',bUPC.value||null,(VN.indices.UPCOMINDEX?.chg||0)>=0);
+  if(!VN.stocks.length||Date.now()-VN.lastFetch>3*60*1000){
+    VN.stocks=await vnFetchStocks(VN.listMode);VN.lastFetch=Date.now();
+  }
+  vnRenderTable();vnRenderMovers();
+  VN.loaded=true;
+  if(iconEl){iconEl.textContent='↻';iconEl.className='';}
+  }
+setInterval(()=>{
+  if(document.getElementById('page-vn-market')?.classList.contains('active')){
+    vnUpdateSessionUI();
+    if(Date.now()-VN.lastFetch>3*60*1000)vnRefreshAll();
+  }
+},60*1000);
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  VietLongCrypto — CK VIỆT NAM FULL ENGINE                   ║
+   ║  switchMarket · vn-chart · vn-screener · vn-alert           ║
+   ║  vn-news · vn-ai                                            ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/* ── MARKET SWITCHER ── */
+let currentMarket = 'crypto';
+
+function switchMarket(market, btnEl) {
+  currentMarket = market;
+  document.body.className = document.body.className
+    .replace(/market-\w+/g,'').trim() + ` market-${market}`;
+
+  // Market switcher buttons
+  document.getElementById('mktBtnCrypto')?.classList.remove('active','vn-active');
+  document.getElementById('mktBtnVN')?.classList.remove('active','vn-active');
+  if(market==='crypto'){
+    document.getElementById('mktBtnCrypto')?.classList.add('active');
+    const sNC=document.getElementById('subNavCrypto');
+    const sNV=document.getElementById('subNavVN');
+    if(sNC) sNC.style.display='flex';
+    if(sNV) sNV.style.display='none';
+    // Chuyển về tab đầu tiên của Crypto
+    const firstCryptoTab = sNC?.querySelector('.sub-tab');
+    if(firstCryptoTab) showPage('market', firstCryptoTab);
+  } else {
+    document.getElementById('mktBtnVN')?.classList.add('active','vn-active');
+    const sNC=document.getElementById('subNavCrypto');
+    const sNV=document.getElementById('subNavVN');
+    if(sNC) sNC.style.display='none';
+    if(sNV) sNV.style.display='flex';
+    // Chuyển về tab đầu tiên của VN
+    const firstVNTab = sNV?.querySelector('.sub-tab');
+    if(firstVNTab) showPage('vn-market', firstVNTab);
+  }
+}
+
+/* showPage đã tích hợp đầy đủ ở hàm gốc bên trên */
+
+/* ══════════════════════════════════════════════════
+   1. VN CHART — Biểu đồ nến cổ phiếu
+══════════════════════════════════════════════════ */
+let vnChart=null, vnCandleSeries=null, vnVolSeries=null;
+let vnSelectedSym='', vnCurrentTf='D';
+let vnChartLoadVer=0;
+const vnRsiCache={};
+
+// Danh sách tất cả cổ phiếu (VN30 + HNX top)
+const VN_ALL_STOCKS = [
+  {sym:'ACB',name:'Á Châu',ex:'HOSE'},{sym:'BCM',name:'Becamex',ex:'HOSE'},
+  {sym:'BID',name:'BIDV',ex:'HOSE'},{sym:'BVH',name:'Bảo Việt',ex:'HOSE'},
+  {sym:'CTG',name:'Vietinbank',ex:'HOSE'},{sym:'FPT',name:'FPT Corp',ex:'HOSE'},
+  {sym:'GAS',name:'PV Gas',ex:'HOSE'},{sym:'GVR',name:'Cao Su VN',ex:'HOSE'},
+  {sym:'HDB',name:'HDBank',ex:'HOSE'},{sym:'HPG',name:'Hòa Phát',ex:'HOSE'},
+  {sym:'MBB',name:'MB Bank',ex:'HOSE'},{sym:'MSN',name:'Masan',ex:'HOSE'},
+  {sym:'MWG',name:'Thế Giới Di Động',ex:'HOSE'},{sym:'NVL',name:'Novaland',ex:'HOSE'},
+  {sym:'PLX',name:'Petrolimex',ex:'HOSE'},{sym:'PNJ',name:'PNJ',ex:'HOSE'},
+  {sym:'POW',name:'PV Power',ex:'HOSE'},{sym:'SAB',name:'Sabeco',ex:'HOSE'},
+  {sym:'SHB',name:'SHB',ex:'HNX'},{sym:'SSI',name:'SSI Chứng Khoán',ex:'HOSE'},
+  {sym:'STB',name:'Sacombank',ex:'HOSE'},{sym:'TCB',name:'Techcombank',ex:'HOSE'},
+  {sym:'TPB',name:'TPBank',ex:'HOSE'},{sym:'VCB',name:'Vietcombank',ex:'HOSE'},
+  {sym:'VHM',name:'Vinhomes',ex:'HOSE'},{sym:'VIB',name:'VIB',ex:'HOSE'},
+  {sym:'VIC',name:'Vingroup',ex:'HOSE'},{sym:'VJC',name:'Vietjet',ex:'HOSE'},
+  {sym:'VNM',name:'Vinamilk',ex:'HOSE'},{sym:'VPB',name:'VPBank',ex:'HOSE'},
+  {sym:'VRE',name:'Vincom Retail',ex:'HOSE'},{sym:'KDH',name:'Khang Điền',ex:'HOSE'},
+  {sym:'DXG',name:'Đất Xanh',ex:'HOSE'},{sym:'PDR',name:'Phát Đạt',ex:'HOSE'},
+  {sym:'PVS',name:'PV Technic',ex:'HNX'},{sym:'NTP',name:'Nhựa TP',ex:'HNX'},
+  {sym:'VCS',name:'Vicostone',ex:'HNX'},{sym:'TNG',name:'TNG Fashion',ex:'HNX'},
+  {sym:'SHS',name:'SHS CK',ex:'HNX'},{sym:'CEO',name:'C.E.O',ex:'HNX'},
+  {sym:'DGC',name:'Hóa chất Đức Giang',ex:'HNX'},{sym:'MBS',name:'MB Securities',ex:'HNX'},
+];
+
+/* ══ VN STOCK LOGO ══ */
+function vnLogoUrl(sym) {
+  // TCBS là nguồn chính xác nhất cho logo cổ phiếu VN
+  return `https://apipubaws.tcbs.com.vn/stock-insight/v1/company/${sym}/logo`;
+}
+function vnLogoImg(sym, size=28) {
+  // img với fallback về chữ cái đầu nếu load lỗi
+  return `<img src="${vnLogoUrl(sym)}" width="${size}" height="${size}"
+    style="border-radius:50%;object-fit:contain;background:#fff;flex-shrink:0;"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+    loading="lazy">
+  <div style="display:none;width:${size}px;height:${size}px;border-radius:50%;
+    background:rgba(245,158,11,.12);color:var(--gold);
+    align-items:center;justify-content:center;
+    font-size:${Math.round(size*0.4)}px;font-weight:700;flex-shrink:0;">${sym[0]}</div>`;
+}
+
+
+function vnInitChart() {
+  if(VN_ALL_STOCKS.length) vnRenderChartList();
+  if(!vnSelectedSym) {
+    const load=document.getElementById('vnChartLoading');
+    if(load) load.innerHTML='<span style="color:var(--muted);font-size:12px;">← Chọn cổ phiếu để xem biểu đồ</span>';
+  }
+}
+
+function vnRenderChartList(filter='') {
+  const container=document.getElementById('vnChartCoinList');
+  if(!container) return;
+  const q=filter.toLowerCase();
+  const list=q ? VN_ALL_STOCKS.filter(s=>s.sym.toLowerCase().includes(q)||s.name.toLowerCase().includes(q)) : VN_ALL_STOCKS;
+  container.innerHTML=list.map(s=>{
+    const stk=VN.stocks.find(x=>x.sym===s.sym)||{};
+    const pct=stk.pct||0;
+    const up=pct>0,dn=pct<0;
+    const cls=up?'vn-up':dn?'vn-dn':'vn-nc';
+    const sign=up?'+':'';
+    const price=stk.price?(stk.price/1000).toFixed(1):'—';
+    const active=s.sym===vnSelectedSym?'class="coin-list-item active"':'class="coin-list-item"';
+    return `<div ${active} onclick="vnOpenChart('${s.sym}','${s.name}','${s.ex}')">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:center;flex-shrink:0;">${vnLogoImg(s.sym,28)}</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${s.sym}</div>
+            <div style="font-size:9px;color:var(--muted);">${s.ex}</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:11px;font-weight:700;color:var(--text);">${price}</div>
+        <div style="font-size:10px;font-weight:700;" class="${cls}">${pct?sign+pct.toFixed(2)+'%':'—'}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">Không tìm thấy</div>';
+}
+
+function vnFilterChartList() {
+  const q=document.getElementById('vnChartSearch')?.value||'';
+  vnRenderChartList(q);
+}
+
+async function vnOpenChart(sym, name, ex) {
+  vnSelectedSym=sym;
+  document.getElementById('vnChartCoinName').textContent=name||sym;
+  document.getElementById('vnChartCoinSym').textContent=`${sym} · ${ex}`;
+  const vnLogoEl=document.getElementById('vnChartLogo');
+  const vnLogoFb=document.getElementById('vnChartLogoFb');
+  if(vnLogoEl){
+    vnLogoEl.src=vnLogoUrl(sym);
+    vnLogoEl.style.display='block';
+    vnLogoEl.onerror=()=>{vnLogoEl.style.display='none';if(vnLogoFb){vnLogoFb.style.display='flex';vnLogoFb.textContent=sym[0];}};
+    if(vnLogoFb) vnLogoFb.style.display='none';
+  } else if(vnLogoFb) { vnLogoFb.textContent=sym[0]; }
+  vnRenderChartList(document.getElementById('vnChartSearch')?.value||'');
+  await vnLoadCandle(sym, vnCurrentTf);
+}
+
+async function vnLoadCandle(sym, tf) {
+  if(tf) vnCurrentTf=tf;
+  sym=sym||vnSelectedSym;
+  if(!sym) return;
+
+  // Highlight TF button
+  document.querySelectorAll('#page-vn-chart .tf-btn').forEach(b=>{
+    b.classList.toggle('active', b.onclick?.toString().includes(`'${vnCurrentTf}'`));
+  });
+
+  const myVer=++vnChartLoadVer;
+  const loadEl=document.getElementById('vnChartLoading');
+  if(loadEl){loadEl.style.display='flex';loadEl.innerHTML='<div class="chart-spinner"></div><span>Đang tải...</span>';}
+
+  try {
+    const bars = await vnFetchChart(sym, vnCurrentTf==='1'?'1D':vnCurrentTf==='15'?'1D':vnCurrentTf==='60'?'1W':vnCurrentTf==='D'?'1Y':vnCurrentTf==='W'?'1Y':'1Y');
+    if(myVer!==vnChartLoadVer) return;
+
+    if(!bars||bars.length<2){
+      if(loadEl){loadEl.style.display='flex';loadEl.innerHTML='<span style="color:var(--muted)">Không có dữ liệu — API CK VN cần kết nối internet</span>';}
+      return;
+    }
+
+    // Khởi tạo chart nếu chưa có
+    const container=document.getElementById('vnChartContainer');
+    if(!container) return;
+    if(container.clientWidth===0){await new Promise(r=>requestAnimationFrame(r));}
+
+    if(window.LightweightCharts) {
+      if(vnChart){vnChart.remove(); vnChart=null; vnCandleSeries=null;}
+      vnChart=LightweightCharts.createChart(container,{
+        width:container.clientWidth, height:container.clientHeight||480,
+        layout:{background:{color:'#060a10'},textColor:'#94a3b8'},
+        grid:{vertLines:{color:'rgba(99,179,237,.04)'},horzLines:{color:'rgba(99,179,237,.04)'}},
+        crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+        rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
+        timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true},
+      });
+      vnCandleSeries=vnChart.addCandlestickSeries({
+        upColor:'#00e676',downColor:'#ff3d57',
+        borderUpColor:'#00e676',borderDownColor:'#ff3d57',
+        wickUpColor:'#00e676',wickDownColor:'#ff3d57',
+      });
+      // Convert bars: timestamp → seconds
+      const data=bars.map(b=>{
+        const t=typeof b.t==='string'?Math.floor(new Date(b.t).getTime()/1000):b.t;
+        return {time:t,open:b.o,high:b.h,low:b.l,close:b.c};
+      }).filter(d=>d.time&&d.open>0).sort((a,b)=>a.time-b.time);
+      vnCandleSeries.setData(data);
+      vnChart.timeScale().fitContent();
+
+      // Update header price
+      const last=bars[bars.length-1];
+      const prev=bars[bars.length-2];
+      const chgPct=prev?((last.c-prev.c)/prev.c*100):0;
+      const priceEl=document.getElementById('vnChartPrice');
+      const chgEl=document.getElementById('vnChartChange');
+      if(priceEl) priceEl.textContent=(last.c/1000).toFixed(1)+'k';
+      if(chgEl){
+        chgEl.textContent=(chgPct>=0?'+':'')+chgPct.toFixed(2)+'%';
+        chgEl.style.color=chgPct>=0?'var(--green)':'var(--red)';
+      }
+      // Update stats
+      const statsEl=document.getElementById('vnChartStats');
+      if(statsEl) statsEl.innerHTML=`
+        <span style="color:var(--muted);font-size:10px;">O: <span style="color:var(--text)">${(last.o/1000).toFixed(1)}k</span></span>
+        <span style="color:var(--muted);font-size:10px;">H: <span style="color:var(--green)">${(last.h/1000).toFixed(1)}k</span></span>
+        <span style="color:var(--muted);font-size:10px;">L: <span style="color:var(--red)">${(last.l/1000).toFixed(1)}k</span></span>
+        <span style="color:var(--muted);font-size:10px;">C: <span style="color:var(--text)">${(last.c/1000).toFixed(1)}k</span></span>`;
+    }
+    if(loadEl) loadEl.style.display='none';
+  } catch(e) {
+    if(myVer!==vnChartLoadVer) return;
+    if(loadEl){loadEl.style.display='flex';loadEl.innerHTML=`<span style="color:var(--red);font-size:11px;">Lỗi tải dữ liệu: ${e.message}</span>`;}
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   2. VN SCREENER — Bộ lọc cổ phiếu
+══════════════════════════════════════════════════ */
+const vnScrRsiCache={};
+
+async function runVNScreener() {
+  const fChg=document.getElementById('vnFChg')?.value||'all';
+  const fVol=document.getElementById('vnFVol')?.value||'all';
+  const fRsi=document.getElementById('vnFRsi')?.value||'all';
+  const fMacd=document.getElementById('vnFMacd')?.value||'all';
+  const fEx=document.getElementById('vnFExchange')?.value||'all';
+  const fName=(document.getElementById('vnFName')?.value||'').toUpperCase().trim();
+  const tbl=document.getElementById('vnScreenerTable');
+  if(tbl) tbl.innerHTML='<div class="state-box"><div class="spinner"></div><div>Đang lọc...</div></div>';
+
+  // Nếu chưa có stocks, fetch trước
+  if(!VN.stocks.length) {
+    await vnFetchStocks('hose').then(s=>{VN.stocks=s; VN.lastFetch=Date.now();});
+  }
+
+  let list=[...VN.stocks];
+
+  // Fetch RSI nếu cần
+  if(fRsi!=='all'||fMacd!=='all') {
+    for(const s of list.slice(0,30)) {
+      if(!vnScrRsiCache[s.sym]) {
+        try {
+          const bars=await vnFetchChart(s.sym,'3M');
+          if(bars&&bars.length>20) {
+            const closes=bars.map(b=>b.c);
+            vnScrRsiCache[s.sym]={
+              rsi:calcRSI(closes),
+              macd:calcMACD(closes),
+            };
+          }
+        } catch(e){}
+      }
+    }
+  }
+
+  // Filters
+  if(fEx!=='all') list=list.filter(s=>s.floor_id===fEx||VN_ALL_STOCKS.find(x=>x.sym===s.sym)?.ex?.toLowerCase()===fEx);
+  if(fName) list=list.filter(s=>s.sym.includes(fName)||s.name?.toLowerCase().includes(fName.toLowerCase()));
+
+  list=list.filter(s=>{
+    if(fChg==='ceil') return s.ceil&&s.price>=s.ceil;
+    if(fChg==='floor') return s.floor&&s.price<=s.floor;
+    if(fChg==='ref') return s.pct===0;
+    if(fChg==='gt3') return s.pct>3;
+    if(fChg==='gt1') return s.pct>1&&s.pct<=3;
+    if(fChg==='lt-1') return s.pct<-1;
+    return true;
+  });
+  list=list.filter(s=>{
+    if(fVol==='gt5m') return s.vol>=5000000;
+    if(fVol==='gt1m') return s.vol>=1000000;
+    if(fVol==='gt500k') return s.vol>=500000;
+    if(fVol==='lt100k') return s.vol<100000;
+    return true;
+  });
+  if(fRsi!=='all') list=list.filter(s=>{
+    const rc=vnScrRsiCache[s.sym]; if(!rc) return false;
+    if(fRsi==='ob') return rc.rsi>70;
+    if(fRsi==='os') return rc.rsi<30;
+    if(fRsi==='neutral') return rc.rsi>=30&&rc.rsi<=70;
+  });
+  if(fMacd!=='all') list=list.filter(s=>{
+    const rc=vnScrRsiCache[s.sym]; if(!rc||!rc.macd) return false;
+    if(fMacd==='bull') return rc.macd.hist>0&&rc.macd.prevHist<=0;
+    if(fMacd==='bear') return rc.macd.hist<0&&rc.macd.prevHist>=0;
+  });
+
+  const countEl=document.getElementById('vnScrCount');
+  if(countEl) countEl.textContent=list.length;
+
+  if(!list.length){
+    if(tbl) tbl.innerHTML='<div class="state-box"><div>Không tìm thấy cổ phiếu phù hợp</div></div>';
+    return;
+  }
+
+  const fmt=(v)=>v>0?(v/1000).toFixed(1):'—';
+  const fmtV=(v)=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v>0?v:'—';
+  if(tbl) tbl.innerHTML=`<table class="vn-tbl">
+    <thead><tr>
+      <th>Mã</th><th>Tên</th><th>Giá</th><th>%</th>
+      <th>KL</th><th>RSI</th><th>Tín Hiệu</th><th>Hành Động</th>
+    </tr></thead>
+    <tbody>${list.map(s=>{
+      const up=s.pct>0,dn=s.pct<0;
+      const cls=up?'vn-up':dn?'vn-dn':'vn-nc';
+      const isCeil=s.ceil&&s.price>=s.ceil;
+      const isFloor=s.floor&&s.price<=s.floor;
+      const priceCls=isCeil?'vn-ceil':isFloor?'vn-floor':cls;
+      const rc=vnScrRsiCache[s.sym]||{};
+      const rsiVal=rc.rsi?rc.rsi.toFixed(0):'—';
+      const rsiCls=rc.rsi>70?'vn-dn':rc.rsi<30?'vn-up':'';
+      const macdSig=rc.macd?.hist>0&&rc.macd?.prevHist<=0?'<span style="color:var(--green);font-size:10px;">▲ Mua</span>':
+                    rc.macd?.hist<0&&rc.macd?.prevHist>=0?'<span style="color:var(--red);font-size:10px;">▼ Bán</span>':
+                    rc.macd?'<span style="color:var(--muted);font-size:10px;">— Chờ</span>':'—';
+      return `<tr>
+        <td class="vn-sym-cell" style="cursor:pointer;text-decoration:underline" onclick="switchMarket('vn');showPage('vn-chart');vnOpenChart('${s.sym}','${s.name||s.sym}','HOSE')">${s.sym}</td>
+        <td class="vn-name-cell">${s.name||'—'}</td>
+        <td class="${priceCls}" style="font-weight:700">${fmt(s.price)}</td>
+        <td class="${cls}">${s.pct>=0?'+':''}${s.pct.toFixed(2)}%</td>
+        <td>${fmtV(s.vol)}</td>
+        <td class="${rsiCls}">${rsiVal}</td>
+        <td>${macdSig}</td>
+        <td><button class="btn-ghost" style="font-size:9px;padding:3px 8px;" onclick="vnAddAlertFromScr('${s.sym}','${s.name||s.sym}')">🔔</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function resetVNScreener() {
+  ['vnFChg','vnFVol','vnFRsi','vnFMacd','vnFExchange'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='all';
+  });
+  const nm=document.getElementById('vnFName'); if(nm) nm.value='';
+  const tbl=document.getElementById('vnScreenerTable');
+  if(tbl) tbl.innerHTML='<div class="state-box"><div>Nhấn 🔬 Lọc để bắt đầu</div></div>';
+  const cnt=document.getElementById('vnScrCount'); if(cnt) cnt.textContent='—';
+}
+
+function vnAddAlertFromScr(sym, name) {
+  showPage('vn-alert', document.querySelector('[onclick*="vn-alert"]'));
+  const inp=document.getElementById('vnAlertInput');
+  if(inp){inp.value=sym; vnAlertSelectedSym=sym;}
+  const stk=VN.stocks.find(s=>s.sym===sym);
+  if(stk) {
+    const cur=document.getElementById('vnAlertCurrentPrice');
+    if(cur) cur.value=(stk.price/1000).toFixed(1);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   3. VN ALERT — Cảnh báo giá cổ phiếu
+══════════════════════════════════════════════════ */
+let vnAlerts=[];
+let vnAlertSelectedSym=null;
+
+function loadVNAlerts(){try{vnAlerts=JSON.parse(localStorage.getItem('vnAlerts')||'[]');}catch{vnAlerts=[];}}
+function saveVNAlerts(){try{localStorage.setItem('vnAlerts',JSON.stringify(vnAlerts));}catch{}}
+
+loadVNAlerts();
+
+function onVNAlertInput() {
+  const q=(document.getElementById('vnAlertInput')?.value||'').toUpperCase();
+  const list=document.getElementById('vnSuggestList');
+  if(!list) return;
+  if(!q){list.style.display='none'; vnAlertSelectedSym=null; return;}
+  const matches=VN_ALL_STOCKS.filter(s=>s.sym.startsWith(q)||s.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!matches.length){list.style.display='none'; return;}
+  list.style.display='block';
+  list.innerHTML=matches.map(s=>{
+    const stk=VN.stocks.find(x=>x.sym===s.sym)||{};
+    const price=stk.price?(stk.price/1000).toFixed(1)+'k':'—';
+    return `<div class="suggest-item" onmousedown="selectVNAlertSym('${s.sym}','${s.name}')">
+      <span style="font-weight:700;color:var(--gold)">${s.sym}</span>
+      <span style="color:var(--muted);font-size:10px;margin-left:4px;">${s.name}</span>
+      <span style="float:right;color:var(--text);font-size:10px;">${price}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectVNAlertSym(sym, name) {
+  vnAlertSelectedSym=sym;
+  const inp=document.getElementById('vnAlertInput');
+  if(inp) inp.value=`${sym} — ${name}`;
+  const list=document.getElementById('vnSuggestList');
+  if(list) list.style.display='none';
+  const stk=VN.stocks.find(s=>s.sym===sym)||{};
+  const cur=document.getElementById('vnAlertCurrentPrice');
+  if(cur) cur.value=stk.price?(stk.price/1000).toFixed(1):'—';
+}
+
+function hideVNSuggest(){
+  const l=document.getElementById('vnSuggestList'); if(l) l.style.display='none';
+}
+
+function addVNAlert() {
+  if(!vnAlertSelectedSym){showToast('warning','⚠️ Chưa chọn cổ phiếu','Vui lòng chọn mã từ danh sách.'); return;}
+  const targetRaw=parseFloat(document.getElementById('vnAlertPrice')?.value);
+  if(!targetRaw||targetRaw<=0){showToast('warning','⚠️ Giá không hợp lệ','Vui lòng nhập giá mục tiêu.'); return;}
+  const condition=document.getElementById('vnAlertCondition')?.value||'above';
+  const note=(document.getElementById('vnAlertNote')?.value||'').trim();
+  const stk=VN_ALL_STOCKS.find(s=>s.sym===vnAlertSelectedSym)||{};
+  const stkData=VN.stocks.find(s=>s.sym===vnAlertSelectedSym)||{};
+  const curPrice=stkData.price?(stkData.price/1000):0;
+  if(condition==='above'&&curPrice&&targetRaw<=curPrice){showToast('warning','⚠️ Giá không hợp lệ',`Giá hiện tại ${curPrice.toFixed(1)}k. Cần mục tiêu cao hơn.`); return;}
+  if(condition==='below'&&curPrice&&targetRaw>=curPrice){showToast('warning','⚠️ Giá không hợp lệ',`Giá hiện tại ${curPrice.toFixed(1)}k. Cần mục tiêu thấp hơn.`); return;}
+  vnAlerts.unshift({
+    id:Date.now(),sym:vnAlertSelectedSym,name:stk.name||vnAlertSelectedSym,
+    condition,target:targetRaw,note,
+    createdAt:Date.now(),createdPrice:curPrice,status:'active',triggeredAt:null,
+  });
+  saveVNAlerts();
+  ['vnAlertInput','vnAlertPrice','vnAlertNote','vnAlertCurrentPrice'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  vnAlertSelectedSym=null;
+  renderVNAlertList();
+  showToast('success','✅ Cảnh báo đã tạo',`${vnAlerts[0].sym}: ${condition==='above'?'Tăng lên':'Giảm xuống'} ${targetRaw.toFixed(1)}k`);
+}
+
+function renderVNAlertList() {
+  const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setEl('vnAlertCountActive',vnAlerts.filter(a=>a.status==='active').length);
+  setEl('vnAlertCountTriggered',vnAlerts.filter(a=>a.status==='triggered').length);
+  setEl('vnAlertCountTotal',vnAlerts.length);
+  const c=document.getElementById('vnAlertListContainer');
+  if(!c) return;
+  if(!vnAlerts.length){c.innerHTML='<div class="alert-empty"><div class="alert-empty-icon">🔔</div><div>Chưa có cảnh báo nào.</div></div>';return;}
+  c.innerHTML=vnAlerts.map(a=>{
+    const isUp=a.condition==='above',isTrig=a.status==='triggered';
+    return `<div class="alert-item${isTrig?' triggered':''}">
+      <div class="alert-item-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,.12);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${a.sym[0]}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">${a.sym}</div>
+            <div style="font-size:10px;color:var(--muted);">${a.name||''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="alert-status-badge ${a.status}">${isTrig?'✅ Đã kích hoạt':'🔔 Đang theo dõi'}</div>
+          <button class="alert-del-btn" onclick="deleteVNAlert(${a.id})">✕</button>
+        </div>
+      </div>
+      <div class="alert-condition">
+        ${isUp?'📈':'📉'} ${isUp?'Tăng lên':'Giảm xuống'} <strong style="color:${isUp?'var(--green)':'var(--red)'};">${a.target.toFixed(1)}k VNĐ</strong>
+        ${a.note?`<span style="color:var(--muted);font-size:10px;margin-left:8px;">· ${a.note}</span>`:''}
+      </div>
+      <div class="alert-progress-wrap">
+        <div class="alert-progress-bar">
+          <div class="alert-progress-fill" id="vna-prog-${a.id}" style="width:0%;background:${isUp?'var(--green)':'var(--red)'}"></div>
+        </div>
+        <span class="alert-cur-price" id="vna-cur-${a.id}">—</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteVNAlert(id){vnAlerts=vnAlerts.filter(a=>a.id!==id);saveVNAlerts();renderVNAlertList();}
+function clearTriggeredVNAlerts(){vnAlerts=vnAlerts.filter(a=>a.status!=='triggered');saveVNAlerts();renderVNAlertList();}
+
+// Check VN alerts mỗi 30s (dữ liệu CK VN không realtime)
+setInterval(()=>{
+  const active=vnAlerts.filter(a=>a.status==='active');
+  active.forEach(a=>{
+    const stk=VN.stocks.find(s=>s.sym===a.sym);
+    if(!stk||!stk.price) return;
+    const cur=stk.price/1000;
+    // Update progress
+    const curEl=document.getElementById(`vna-cur-${a.id}`);
+    const progEl=document.getElementById(`vna-prog-${a.id}`);
+    if(curEl) curEl.textContent=`Hiện tại: ${cur.toFixed(1)}k`;
+    if(progEl){
+      const cp=a.createdPrice||cur;
+      let pct=0;
+      if(a.condition==='above'&&a.target>cp) pct=(cur-cp)/(a.target-cp)*100;
+      else if(a.condition==='below'&&a.target<cp) pct=(cp-cur)/(cp-a.target)*100;
+      progEl.style.width=Math.max(0,Math.min(100,pct)).toFixed(1)+'%';
+    }
+    // Trigger
+    if(a.condition==='above'&&cur>=a.target||a.condition==='below'&&cur<=a.target){
+      a.status='triggered'; a.triggeredAt=Date.now();
+      saveVNAlerts(); renderVNAlertList();
+      showToast('success',`🔔 Cảnh báo CK: ${a.sym}`,`Đã ${a.condition==='above'?'tăng lên':'giảm xuống'} ${a.target.toFixed(1)}k`);
+    }
+  });
+  if(document.getElementById('page-vn-alert')?.classList.contains('active')) renderVNAlertList();
+},30000);
+
+/* ══════════════════════════════════════════════════
+   4. VN NEWS — Tin tức TTCK
+══════════════════════════════════════════════════ */
+let vnAllNews=[], vnNewsSource='all', vnNewsFetching=false;
+
+const VN_NEWS_FEEDS = [
+  // CafeF RSS
+  {src:'CafeF', url:'https://cafef.vn/rss/chung-khoan.rss'},
+  // Vietstock RSS
+  {src:'Vietstock', url:'https://vietstock.vn/830/chung-khoan.rss'},
+  // NDH
+  {src:'NDH', url:'https://ndh.vn/chung-khoan.rss'},
+  // Tin Nhanh Chứng Khoán
+  {src:'TNCK', url:'https://tinnhanhchungkhoan.vn/rss/thi-truong-chung-khoan.rss'},
+];
+
+async function fetchVNNews(manual=false) {
+  if(vnNewsFetching&&!manual) return;
+  vnNewsFetching=true;
+  const btn=document.getElementById('vnNewsRefreshBtn');
+  if(btn){btn.disabled=true; btn.textContent='⏳ Đang tải...';}
+  const grid=document.getElementById('vnNewsGrid');
+  if(grid&&(manual||!vnAllNews.length)) grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức TTCK...</div></div>';
+
+  try {
+    const results=await Promise.allSettled(VN_NEWS_FEEDS.map(async({src,url})=>{
+      const proxied=`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const r=await fetch(proxied,{signal:AbortSignal.timeout(10000)});
+      const txt=await r.text();
+      const parser=new DOMParser();
+      const doc=parser.parseFromString(txt,'application/xml');
+      const items=[...doc.querySelectorAll('item')].slice(0,15);
+      return items.map(item=>{
+        const title=item.querySelector('title')?.textContent||'';
+        const link=item.querySelector('link')?.textContent||item.querySelector('guid')?.textContent||'#';
+        const desc=(item.querySelector('description')?.textContent||'').replace(/<[^>]+>/g,'').slice(0,200);
+        const pubDate=item.querySelector('pubDate')?.textContent||'';
+        const img=(item.querySelector('enclosure')?.getAttribute('url'))||
+                  (item.querySelector('content')?.getAttribute('url'))||
+                  (desc.match(/<img[^>]+src="([^"]+)"/)?.[1])||'';
+        const tl=title.toLowerCase();
+        const sentiment=
+          /tăng|tích cực|khởi sắc|lạc quan|phục hồi|tăng trưởng|hồi phục|breakout|đột phá/.test(tl)?'bullish':
+          /giảm|tiêu cực|lo ngại|rủi ro|bán tháo|sụt|áp lực|cảnh báo|giảm sâu/.test(tl)?'bearish':'neutral';
+        return {headline:title,summary:desc,source:src,link,pub:new Date(pubDate).getTime()||Date.now(),sentiment,img};
+      });
+    }));
+
+    const all=results.flatMap(r=>r.status==='fulfilled'?r.value:[]).sort((a,b)=>b.pub-a.pub);
+    if(all.length>0) vnAllNews=all;
+    else if(!vnAllNews.length) throw new Error('Không nhận được dữ liệu từ các nguồn');
+  } catch(e) {
+    if(!vnAllNews.length) {
+      if(grid) grid.innerHTML=`<div class="state-box" style="grid-column:1/-1"><div style="color:var(--red)">Không tải được tin tức: ${e.message}</div></div>`;
+      vnNewsFetching=false;
+      if(btn){btn.disabled=false;btn.innerHTML='↻ Làm mới';}
+      return;
+    }
+  }
+
+  renderVNNews();
+  if(btn){btn.disabled=false;btn.innerHTML='↻ Làm mới';}
+  vnNewsFetching=false;
+
+  const dateEl=document.getElementById('vnDrDate');
+  if(dateEl) dateEl.textContent=new Date().toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
+}
+
+function setVNNewsSource(el, src) {
+  vnNewsSource=src;
+  document.querySelectorAll('#page-vn-news .news-filter-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderVNNews();
+}
+
+function renderVNNews() {
+  let items=[...vnAllNews];
+  if(vnNewsSource!=='all') items=items.filter(n=>n.source.toLowerCase()===vnNewsSource.toLowerCase());
+  const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setEl('vnNewsTotal',vnAllNews.length);
+  setEl('vnNewsBull',vnAllNews.filter(n=>n.sentiment==='bullish').length);
+  setEl('vnNewsBear',vnAllNews.filter(n=>n.sentiment==='bearish').length);
+  const grid=document.getElementById('vnNewsGrid');
+  if(!grid) return;
+  if(!items.length){grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div>Không có tin tức phù hợp.</div></div>';return;}
+  const sentLabel={bullish:'📈 Tích Cực',bearish:'📉 Tiêu Cực',neutral:'⚖️ Trung Lập'};
+  const sentColor={bullish:'var(--green)',bearish:'var(--red)',neutral:'var(--muted)'};
+  grid.innerHTML=items.slice(0,40).map(n=>{
+    const ago=Math.round((Date.now()-n.pub)/60000);
+    const timeStr=ago<60?`${ago} phút trước`:ago<1440?`${Math.round(ago/60)} giờ trước`:`${Math.round(ago/1440)} ngày trước`;
+    const thumb=n.img?`<div style="width:100%;height:130px;overflow:hidden;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;"><img src="${n.img}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';
+    return `<a class="news-card-item" href="${n.link}" target="_blank" rel="noopener noreferrer">
+      ${thumb}
+      <div class="news-card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,.1);color:var(--gold);">${n.source}</span>
+          <span style="font-size:9px;color:var(--muted);">${timeStr}</span>
+        </div>
+        <div class="news-card-title">${n.headline}</div>
+        <div class="news-card-summary">${n.summary}</div>
+        <div style="margin-top:8px;">
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.05);color:${sentColor[n.sentiment]||'var(--muted)'};">${sentLabel[n.sentiment]||'⚖️ Trung Lập'}</span>
+        </div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function generateVNReport() {
+  const btn=document.getElementById('vnDrBtn');
+  const content=document.getElementById('vnDrContent');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Đang phân tích...';}
+  if(content) content.innerHTML='<div class="dr-loading"><div class="spinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>Đang phân tích dữ liệu TTCK...</div>';
+
+  setTimeout(()=>{
+    try {
+      const idxVNI=VN.indices.VNINDEX||{};
+      const idxHNX=VN.indices.HNXINDEX||{};
+      const stocks=VN.stocks;
+      if(!stocks.length){content.innerHTML='<div style="color:var(--red)">Chưa có dữ liệu — vui lòng tải tab Thị Trường trước.</div>';if(btn){btn.disabled=false;btn.textContent='✨ Tạo Tóm Tắt';}return;}
+      const up=stocks.filter(s=>s.pct>0).length, dn=stocks.filter(s=>s.pct<0).length;
+      const bullRatio=up/(up+dn||1);
+      const vniChg=idxVNI.chg||0, vniPct=idxVNI.pct||0;
+      const topG=[...stocks].sort((a,b)=>b.pct-a.pct).slice(0,3);
+      const topL=[...stocks].sort((a,b)=>a.pct-b.pct).slice(0,3);
+      const topVol=[...stocks].sort((a,b)=>b.vol-a.vol).slice(0,3);
+      const sess=vnSession();
+
+      let mood,moodColor,moodEmoji;
+      if(vniPct>1&&bullRatio>0.6){mood='Tích Cực';moodColor='var(--green)';moodEmoji='🟢';}
+      else if(vniPct<-1&&bullRatio<0.4){mood='Tiêu Cực';moodColor='var(--red)';moodEmoji='🔴';}
+      else if(vniPct>0&&bullRatio>0.5){mood='Thận Trọng Tích Cực';moodColor='var(--green)';moodEmoji='🟡';}
+      else if(vniPct<0&&bullRatio<0.5){mood='Thận Trọng Tiêu Cực';moodColor='var(--red)';moodEmoji='🟡';}
+      else{mood='Hỗn Hợp';moodColor='var(--gold)';moodEmoji='⚪';}
+
+      const s=vniPct>=0?'+':'';
+      content.innerHTML=`
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          <div class="dr-metric"><div class="dr-metric-val" style="color:${vniPct>=0?'var(--green)':'var(--red)'}">${s}${vniPct.toFixed(2)}%</div><div class="dr-metric-lbl">VN-Index</div></div>
+          <div class="dr-metric"><div class="dr-metric-val" style="color:var(--green)">${up}</div><div class="dr-metric-lbl">Mã tăng</div></div>
+          <div class="dr-metric"><div class="dr-metric-val" style="color:var(--red)">${dn}</div><div class="dr-metric-lbl">Mã giảm</div></div>
+          <div class="dr-metric"><div class="dr-metric-val" style="color:${moodColor}">${moodEmoji}</div><div class="dr-metric-lbl">${mood}</div></div>
+        </div>
+        <p style="margin-bottom:8px;"><strong style="color:var(--gold)">📊 VN-Index</strong> ${vniChg>=0?'tăng':'giảm'} <strong style="color:${vniChg>=0?'var(--green)':'var(--red)'}">${s}${vniChg.toFixed(2)} điểm (${s}${vniPct.toFixed(2)}%)</strong>${idxVNI.value?`, đóng cửa ở mức <strong>${idxVNI.value.toFixed(2)}</strong> điểm`:''}.
+        Có <span style="color:var(--green)">${up} mã tăng</span> và <span style="color:var(--red)">${dn} mã giảm</span> trong phiên. Tâm lý thị trường: <strong style="color:${moodColor}">${moodEmoji} ${mood}</strong>.</p>
+        <p style="margin-bottom:8px;"><strong style="color:var(--gold)">🚀 Cổ phiếu nổi bật:</strong>
+        ${topG.map(s=>`<span style="color:var(--green);font-weight:700">${s.sym} +${s.pct.toFixed(1)}%</span>`).join(' · ')}
+        <span style="color:var(--muted)"> | Giảm mạnh: </span>
+        ${topL.map(s=>`<span style="color:var(--red);font-weight:700">${s.sym} ${s.pct.toFixed(1)}%</span>`).join(' · ')}</p>
+        <p style="margin-bottom:8px;"><strong style="color:var(--gold)">💹 Top khối lượng:</strong> ${topVol.map(s=>`${s.sym} (${s.vol>=1e6?(s.vol/1e6).toFixed(1)+'M':s.vol>=1e3?(s.vol/1e3).toFixed(0)+'K':s.vol})`).join(' · ')}</p>
+        <p style="color:var(--muted);font-size:10px;margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">⚠️ Chỉ mang tính tham khảo. Không phải lời khuyên đầu tư.</p>`;
+    } catch(e){
+      if(content) content.innerHTML=`<div style="color:var(--red)">Lỗi: ${e.message}</div>`;
+    }
+    if(btn){btn.disabled=false;btn.textContent='✨ Tạo Tóm Tắt';}
+  },600);
+}
+
+/* ══════════════════════════════════════════════════
+   5. VN AI — Tín hiệu phân tích kỹ thuật
+══════════════════════════════════════════════════ */
+let vnAIScores=[], vnAITab='top-buy';
+
+function calcVNAIScore(sym) {
+  const stk=VN.stocks.find(s=>s.sym===sym);
+  if(!stk||!stk.price) return null;
+  const rc=vnScrRsiCache[sym]||vnRsiCache[sym]||{};
+  let score=50;
+  const factors=[];
+
+  // RSI
+  if(rc.rsi!=null){
+    const r=rc.rsi;
+    if(r<25){score+=18;factors.push({label:'RSI Quá Bán',type:'pos'});}
+    else if(r<35){score+=10;factors.push({label:'RSI Thấp',type:'pos'});}
+    else if(r>75){score-=18;factors.push({label:'RSI Quá Mua',type:'neg'});}
+    else if(r>65){score-=8;factors.push({label:'RSI Cao',type:'neg'});}
+  }
+  // MACD
+  if(rc.macd?.hist!=null){
+    const h=rc.macd.hist,ph=rc.macd.prevHist||0;
+    if(h>0&&ph<=0){score+=15;factors.push({label:'MACD Giao Cắt Lên',type:'pos'});}
+    else if(h>0){score+=5;}
+    else if(h<0&&ph>=0){score-=15;factors.push({label:'MACD Giao Cắt Xuống',type:'neg'});}
+    else if(h<0){score-=5;}
+  }
+  // % thay đổi
+  const p=stk.pct||0;
+  if(stk.ceil&&stk.price>=stk.ceil){score-=5;factors.push({label:'Kịch Trần',type:'neg'});}
+  else if(stk.floor&&stk.price<=stk.floor){score+=5;factors.push({label:'Kịch Sàn (Lực Cầu)',type:'pos'});}
+  else if(p>3){score+=8;factors.push({label:'Tăng Mạnh Hôm Nay',type:'pos'});}
+  else if(p<-3){score-=8;factors.push({label:'Giảm Mạnh Hôm Nay',type:'neg'});}
+  // Volume
+  const avgVol=1000000;
+  if(stk.vol>avgVol*3){score+=10;factors.push({label:'Khối Lượng Đột Biến',type:'pos'});}
+  else if(stk.vol<avgVol*0.2){score-=5;factors.push({label:'Thanh Khoản Thấp',type:'neg'});}
+
+  score=Math.max(0,Math.min(100,score));
+  let signal,signalVN,color;
+  if(score>=70){signal='strong-buy';signalVN='MUA MẠNH';color='var(--green)';}
+  else if(score>=58){signal='buy';signalVN='NÊN MUA';color='#4ade80';}
+  else if(score>=42){signal='hold';signalVN='TRUNG LẬP';color='var(--gold)';}
+  else if(score>=30){signal='sell';signalVN='NÊN BÁN';color='#f87171';}
+  else{signal='strong-sell';signalVN='BÁN MẠNH';color='var(--red)';}
+
+  return {sym,score,signal,signalVN,color,factors,price:stk.price,pct:stk.pct};
+}
+
+async function runVNAISignals() {
+  const btn=document.getElementById('vnAIRefreshBtn');
+  const tbl=document.getElementById('vnAISignalTable');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Đang phân tích...';}
+  if(tbl) tbl.innerHTML='<div class="state-box"><div class="spinner"></div><div>Đang phân tích cổ phiếu...</div></div>';
+
+  if(!VN.stocks.length) {
+    const stocks=await vnFetchStocks('hose');
+    VN.stocks=stocks; VN.lastFetch=Date.now();
+  }
+
+  // Fetch RSI/MACD cho top 20 cổ phiếu
+  for(const stk of VN.stocks.slice(0,20)){
+    if(!vnScrRsiCache[stk.sym]){
+      try {
+        const bars=await vnFetchChart(stk.sym,'3M');
+        if(bars&&bars.length>20){
+          const closes=bars.map(b=>b.c);
+          vnScrRsiCache[stk.sym]={rsi:calcRSI(closes),macd:calcMACD(closes)};
+        }
+      } catch(e){}
+    }
+  }
+
+  vnAIScores=VN.stocks.map(s=>calcVNAIScore(s.sym)).filter(Boolean);
+
+  // Update summary
+  const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setEl('vnSumStrongBuy',vnAIScores.filter(s=>s.signal==='strong-buy').length);
+  setEl('vnSumBuy',vnAIScores.filter(s=>s.signal==='buy').length);
+  setEl('vnSumHold',vnAIScores.filter(s=>s.signal==='hold').length);
+  setEl('vnSumSell',vnAIScores.filter(s=>s.signal==='sell').length);
+  setEl('vnSumStrongSell',vnAIScores.filter(s=>s.signal==='strong-sell').length);
+  setEl('vnAIScoreCount',`${vnAIScores.length} cổ phiếu`);
+
+  renderVNAITable();
+  if(btn){btn.disabled=false;btn.textContent='⚡ Phân Tích Ngay';}
+}
+
+function setVNAITab(el, tab) {
+  vnAITab=tab;
+  document.querySelectorAll('#page-vn-ai .ai-tab').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderVNAITable();
+}
+
+function renderVNAITable() {
+  const tbl=document.getElementById('vnAISignalTable');
+  if(!tbl||!vnAIScores.length) return;
+  let list=[...vnAIScores];
+  if(vnAITab==='top-buy') list=list.filter(s=>s.signal==='strong-buy'||s.signal==='buy').sort((a,b)=>b.score-a.score).slice(0,20);
+  else if(vnAITab==='top-sell') list=list.filter(s=>s.signal==='strong-sell'||s.signal==='sell').sort((a,b)=>a.score-b.score).slice(0,20);
+  else list=list.sort((a,b)=>b.score-a.score);
+
+  if(!list.length){tbl.innerHTML='<div class="state-box"><div>Không có kết quả</div></div>';return;}
+  tbl.innerHTML=`<table class="ai-scores-table">
+    <thead><tr><th>Mã</th><th>Giá</th><th>%</th><th>Điểm</th><th>Tín Hiệu</th><th>Nhân Tố</th></tr></thead>
+    <tbody>${list.map(s=>{
+      const priceFmt=(s.price/1000).toFixed(1)+'k';
+      const pct=s.pct||0; const sign=pct>=0?'+':'';
+      const pctCls=pct>0?'vn-up':pct<0?'vn-dn':'vn-nc';
+      const scoreBar=`<div style="display:flex;align-items:center;gap:6px;">
+        <div style="flex:1;height:4px;background:var(--border);border-radius:2px;min-width:40px;">
+          <div style="height:100%;width:${s.score}%;background:${s.color};border-radius:2px;transition:width .3s;"></div>
+        </div>
+        <span style="font-size:10px;color:${s.color};font-weight:700;width:24px;">${Math.round(s.score)}</span>
+      </div>`;
+      const factorTags=s.factors.slice(0,2).map(f=>`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${f.type==='pos'?'rgba(0,230,118,.1)':'rgba(255,61,87,.1)'};color:${f.type==='pos'?'var(--green)':'var(--red)'};">${f.label}</span>`).join(' ');
+      return `<tr>
+        <td style="cursor:pointer;color:var(--gold);font-weight:700;text-decoration:underline" onclick="vnOpenChart('${s.sym}','${VN_ALL_STOCKS.find(x=>x.sym===s.sym)?.name||s.sym}','HOSE');showPage('vn-chart')">${s.sym}</td>
+        <td style="color:var(--text)">${priceFmt}</td>
+        <td class="${pctCls}">${sign}${pct.toFixed(2)}%</td>
+        <td>${scoreBar}</td>
+        <td><span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;background:${s.color}22;color:${s.color};">${s.signalVN}</span></td>
+        <td>${factorTags||'<span style="color:var(--muted);font-size:10px;">—</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+/* ══ VN AI CHAT ══ */
+function vnSendChat() {
+  const inp=document.getElementById('vnChatInput');
+  const msg=(inp?.value||'').trim();
+  if(!msg) return;
+  if(inp){inp.value=''; inp.style.height='auto';}
+  vnAppendChat('user',msg);
+  const btn=document.getElementById('vnChatSendBtn');
+  if(btn) btn.disabled=true;
+  setTimeout(()=>{
+    const reply=vnRuleChat(msg);
+    vnAppendChat('ai',reply);
+    if(btn) btn.disabled=false;
+  },500);
+}
+
+function vnQuickAsk(msg) {
+  const inp=document.getElementById('vnChatInput');
+  if(inp) inp.value=msg;
+  vnSendChat();
+}
+
+function vnAppendChat(role, text) {
+  const body=document.getElementById('vnChatBody');
+  if(!body) return;
+  const div=document.createElement('div');
+  div.className=`chat-msg ${role}`;
+  div.innerHTML=role==='user'
+    ? `<div><div class="chat-bubble user-bubble">${text}</div></div><div class="chat-avatar user-av">👤</div>`
+    : `<div class="chat-avatar ai-av">🤖</div><div><div class="chat-bubble">${text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div></div>`;
+  body.appendChild(div);
+  body.scrollTop=body.scrollHeight;
+}
+
+function vnRuleChat(msg) {
+  const m=msg.toLowerCase();
+  const stocks=VN.stocks;
+  const vni=VN.indices.VNINDEX||{};
+  const hnx=VN.indices.HNXINDEX||{};
+
+  // Tổng quan VN-Index
+  if(/vnindex|vn.?index|thị trường|hôm nay|tổng quan|overview/.test(m)){
+    const up=stocks.filter(s=>s.pct>0).length, dn=stocks.filter(s=>s.pct<0).length;
+    const vniVal=vni.value?vni.value.toFixed(2):'—';
+    const vniPct=vni.pct?(vni.pct>=0?'+':'')+vni.pct.toFixed(2)+'%':'—';
+    const s=vnSession();
+    return `**📊 VN-Index hôm nay:**\n${vniVal} điểm, ${vniPct}\nHNX: ${hnx.value?hnx.value.toFixed(2):'—'} (${hnx.pct?(hnx.pct>=0?'+':'')+hnx.pct.toFixed(2)+'%':'—'})\n\n**Độ rộng thị trường:** 🟢 ${up} tăng · 🔴 ${dn} giảm · **Phiên:** ${s.label}`;
+  }
+
+  // Phân tích cổ phiếu cụ thể
+  const foundStock=VN_ALL_STOCKS.find(s=>m.includes(s.sym.toLowerCase())||m.includes(s.name.toLowerCase()));
+  if(foundStock||(/(phân tích|analyze|chart|nhận xét)/.test(m)&&stocks.length)){
+    const sym=(foundStock?.sym)||(stocks[0]?.sym);
+    const stk=stocks.find(s=>s.sym===sym)||{};
+    const score=calcVNAIScore(sym);
+    const fmt=(v)=>v>0?(v/1000).toFixed(1)+'k':'—';
+    return `**📈 Phân tích ${sym}:**\nGiá: **${fmt(stk.price)}** (${stk.pct>=0?'+':''}${(stk.pct||0).toFixed(2)}%)\nKhối lượng: ${stk.vol>=1e6?(stk.vol/1e6).toFixed(1)+'M':stk.vol}\n\n**Điểm AI: ${score?Math.round(score.score):50}/100** — ${score?.signalVN||'TRUNG LẬP'}\n${score?.factors.map(f=>(f.type==='pos'?'✅':'⚠️')+' '+f.label).join('\n')||'Chưa đủ dữ liệu kỹ thuật'}`;
+  }
+
+  // Top tăng
+  if(/tăng nhất|tăng mạnh|top tăng|gainer|pump|mua/.test(m)&&!/bán|giảm/.test(m)){
+    const top=[...stocks].filter(s=>s.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,5);
+    if(!top.length) return 'Hiện chưa có dữ liệu. Vui lòng tải tab **Thị Trường** trước.';
+    return `**🚀 Top tăng hôm nay:**\n${top.map((s,i)=>`${i+1}. **${s.sym}** +${s.pct.toFixed(2)}% — ${(s.price/1000).toFixed(1)}k`).join('\n')}`;
+  }
+
+  // Top giảm
+  if(/giảm nhất|giảm mạnh|top giảm|loser|dump|bán/.test(m)){
+    const top=[...stocks].filter(s=>s.pct<0).sort((a,b)=>a.pct-b.pct).slice(0,5);
+    if(!top.length) return 'Chưa có dữ liệu cổ phiếu giảm.';
+    return `**📉 Top giảm hôm nay:**\n${top.map((s,i)=>`${i+1}. **${s.sym}** ${s.pct.toFixed(2)}% — ${(s.price/1000).toFixed(1)}k`).join('\n')}`;
+  }
+
+  // Volume / khối lượng
+  if(/volume|khối lượng|thanh khoản|giao dịch/.test(m)){
+    const top=[...stocks].sort((a,b)=>b.vol-a.vol).slice(0,5);
+    return `**💹 Top khối lượng:**\n${top.map((s,i)=>`${i+1}. **${s.sym}** — ${s.vol>=1e6?(s.vol/1e6).toFixed(1)+'M CP':s.vol>=1e3?(s.vol/1e3).toFixed(0)+'K CP':s.vol+' CP'}`).join('\n')}`;
+  }
+
+  // Chiến lược
+  if(/chiến lược|strategy|nên|đầu tư|mua gì/.test(m)){
+    const vniPct=vni.pct||0;
+    const up=stocks.filter(s=>s.pct>0).length, dn=stocks.filter(s=>s.pct<0).length;
+    const bullRatio=up/(up+dn||1);
+    if(vniPct>1&&bullRatio>0.6) return `**💼 Thị trường TÍCH CỰC** — VN-Index +${vniPct.toFixed(2)}%\n✅ Tâm lý tốt, có thể xem xét các cổ phiếu kỹ thuật tốt\n✅ Ưu tiên mã có RSI chưa quá mua (< 70)\n⚠️ Không đuổi mua giá trần\n⚠️ Đặt stop-loss bảo vệ vốn`;
+    if(vniPct<-1&&bullRatio<0.4) return `**💼 Thị trường TIÊU CỰC** — VN-Index ${vniPct.toFixed(2)}%\n⚠️ Áp lực bán mạnh, thận trọng\n✅ Chờ tín hiệu hồi phục trước khi mua\n✅ Cơ hội mua các mã đang kịch sàn có nền tảng tốt\n❌ Tránh sử dụng đòn bẩy`;
+    return `**💼 Thị trường HỖN HỢP**\n⚖️ Giao dịch phân hóa, chọn lọc cổ phiếu\n✅ Dùng tab 🔬 Bộ Lọc để tìm cơ hội\n✅ Ưu tiên mã có volume tốt và RSI hợp lý`;
+  }
+
+  // Trần sàn
+  if(/trần|sàn|kịch trần|kịch sàn/.test(m)){
+    const ceil=stocks.filter(s=>s.ceil&&s.price>=s.ceil);
+    const floor=stocks.filter(s=>s.floor&&s.price<=s.floor);
+    return `**🟣 Kịch trần (${ceil.length}):** ${ceil.slice(0,5).map(s=>s.sym).join(', ')||'Không có'}\n**🔵 Kịch sàn (${floor.length}):** ${floor.slice(0,5).map(s=>s.sym).join(', ')||'Không có'}`;
+  }
+
+  // Xin chào
+  if(/xin chào|hello|hi|chào/.test(m)){
+    return `Xin chào! 👋 Tôi có thể giúp bạn:\n📊 **VN-Index** — Tổng quan thị trường\n🔍 **Phân tích mã** — "phân tích VCB"\n🚀 **Top tăng/giảm** — "cổ phiếu tăng nhất"\n💹 **Khối lượng** — "khối lượng cao nhất"\n💼 **Chiến lược** — "chiến lược hôm nay"\n🟣 **Trần/sàn** — "cổ phiếu kịch trần"`;
+  }
+
+  // Fallback
+  const up=stocks.filter(s=>s.pct>0).length, dn=stocks.filter(s=>s.pct<0).length;
+  return `Thị trường hiện có **${up} mã tăng**, **${dn} mã giảm**. VN-Index: **${vni.value?vni.value.toFixed(2):'—'} điểm** (${vni.pct?(vni.pct>=0?'+':'')+vni.pct.toFixed(2)+'%':'—'}).\n\nHỏi tôi: "phân tích HPG", "top tăng hôm nay", "chiến lược đầu tư"...`;
+}
+
+/* ── Auto fetch VN news mỗi 15 phút ── */
+setInterval(()=>{
+  if(document.getElementById('page-vn-news')?.classList.contains('active')) fetchVNNews();
+},15*60*1000);
+
 </script>
 
 <!-- Footer donate link -->
-<div style="text-align:center;padding:10px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);background:var(--surface);">
-  Made with ❤️ by <strong style="color:var(--accent)">VietLongCrypto</strong> &nbsp;·&nbsp;
-  <span onclick="showPage('donate',null)" style="color:var(--accent);cursor:pointer;text-decoration:underline;">💛 Ủng Hộ Tác Giả</span>
-</div>
+
 </body>
 </html>
