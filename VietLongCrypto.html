@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VietLongCrypto — Phân Tích Thị Trường</title>
+<title>VietLongCrypto</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='cg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%2300d4ff'/><stop offset='50%25' stop-color='%237c3aed'/><stop offset='100%25' stop-color='%2300d4ff'/></linearGradient><linearGradient id='cf' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%231e3a5f'/><stop offset='100%25' stop-color='%230d1320'/></linearGradient><radialGradient id='cs' cx='35%25' cy='30%25'><stop offset='0%25' stop-color='rgba(0,212,255,0.25)'/><stop offset='100%25' stop-color='rgba(0,0,0,0)'/></radialGradient></defs><circle cx='32' cy='32' r='31' fill='url(%23cg)'/><circle cx='32' cy='32' r='27' fill='url(%23cf)'/><circle cx='32' cy='32' r='27' fill='url(%23cs)'/><text x='32' y='27' text-anchor='middle' font-family='Arial Black,sans-serif' font-weight='900' font-size='9' fill='url(%23cg)' letter-spacing='1'>VLC</text><path d='M20 33 L32 45 L44 33' fill='none' stroke='url(%23cg)' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
@@ -1010,112 +1010,84 @@ footer .hl{color:var(--accent);}
   .vn-bottom-grid{grid-template-columns:1fr;}
 }
 
-/* ════════════════════════════════════════
-   2-TIER NAVIGATION
-════════════════════════════════════════ */
-.market-switcher{
-  position:relative;z-index:101;
-  background:linear-gradient(180deg,var(--surface) 0%,rgba(12,17,24,.95) 100%);
-  border-bottom:1px solid var(--border2);
-  display:flex;align-items:center;gap:0;padding:0 32px;
-}
-.mkt-btn{
-  padding:10px 28px;font-size:13px;font-weight:800;cursor:pointer;
-  border:none;background:none;color:var(--muted);
-  border-bottom:3px solid transparent;transition:all .2s;
-  display:flex;align-items:center;gap:8px;letter-spacing:.3px;
-  font-family:Cambria,'Times New Roman',serif;
-}
-.mkt-btn.active{color:var(--text);border-bottom-color:var(--accent);}
-.mkt-btn:hover:not(.active){color:var(--text2);}
-.mkt-btn .mkt-icon{font-size:16px;}
-.mkt-btn .mkt-badge{
-  font-size:8px;font-family:inherit;font-weight:700;
-  padding:1px 5px;border-radius:10px;letter-spacing:.5px;
-  background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.2);
-}
-.mkt-btn.vn-active{color:var(--text);border-bottom-color:var(--gold);}
-.mkt-btn.vn-active .mkt-badge{background:rgba(245,158,11,.12);color:var(--gold);border-color:rgba(245,158,11,.2);}
-.mkt-divider{width:1px;height:20px;background:var(--border2);margin:0 8px;align-self:center;}
-.mkt-spacer{flex:1;}
 
-.nav-tabs{
-  position:relative;z-index:100;
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  display:flex;gap:0;padding:0 24px;
-  transition:all .2s;
-}
-.nav-tabs.vn-mode .nav-tab.active{
-  color:var(--gold);border-bottom-color:var(--gold);
-}
-.nav-tab{padding:9px 16px;font-size:11px;font-weight:700;cursor:pointer;
-  border:none;background:none;color:var(--muted);
-  border-bottom:2px solid transparent;transition:all .15s;
-  display:flex;align-items:center;gap:5px;white-space:nowrap;
-}
-.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.nav-tab:hover:not(.active){color:var(--text2);}
-.tab-icon{font-size:13px;}
-/* Ẩn/hiện theo market */
-.nav-tab[data-market="crypto"],.nav-tab[data-market="vn"]{display:none;}
-body.market-crypto .nav-tab[data-market="crypto"]{display:flex;}
-body.market-vn .nav-tab[data-market="vn"]{display:flex;}
-/* Tabs không có data-market (donate) luôn hiện */
-.nav-tab:not([data-market]){display:flex;}
 
-/* ══════════════════════════════════
-   MARKET SWITCHER — clean single source
-══════════════════════════════════ */
+/* NAVIGATION */
 #marketSwitcher{
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:stretch;
+  background:rgba(8,12,20,1);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;
+  justify-content:space-evenly;
   padding:0;
 }
 .mkt-btn{
-  flex:1;                        /* ← 2 button chiếm đều nhau */
-  display:flex;align-items:center;justify-content:center;
-  gap:8px;padding:12px 0;
-  border:none;border-bottom:3px solid transparent;
-  background:none;color:var(--muted);
-  font-size:13px;font-weight:800;letter-spacing:.3px;
-  font-family:Cambria,'Times New Roman',serif;
-  cursor:pointer;transition:all .2s;
-  white-space:nowrap;
+  flex:1;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 0;
+  border:none;border-bottom:2px solid transparent;
+  background:none;color:rgba(180,190,210,.5);
+  font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  font-family:inherit;cursor:pointer;transition:all .18s;white-space:nowrap;
 }
-.mkt-btn:hover:not(.active):not(.vn-active){color:var(--text2);}
+.mkt-btn:hover:not(.active):not(.vn-active){
+  color:rgba(180,190,210,.85);
+  background:rgba(255,255,255,.03);
+}
 .mkt-btn.active{
-  color:var(--text);
+  color:#fff;
   border-bottom-color:var(--accent);
-  background:rgba(0,212,255,.04);
 }
 .mkt-btn.vn-active{
-  color:var(--text);
+  color:#fff;
   border-bottom-color:var(--gold);
-  background:rgba(245,158,11,.04);
 }
-.mkt-btn .mkt-icon{font-size:17px;}
+.mkt-btn .mkt-icon{font-size:14px;}
 .mkt-badge{
-  font-size:8px;font-weight:700;padding:2px 6px;
-  border-radius:4px;letter-spacing:.5px;
-  background:rgba(0,212,255,.12);color:var(--accent);
-  border:1px solid rgba(0,212,255,.2);
+  font-size:7px;font-weight:800;padding:1px 5px;
+  border-radius:3px;letter-spacing:.8px;
+  background:rgba(0,212,255,.1);color:var(--accent);
+  border:1px solid rgba(0,212,255,.15);
 }
 .mkt-btn.vn-active .mkt-badge{
-  background:rgba(245,158,11,.12);color:var(--gold);
-  border-color:rgba(245,158,11,.2);
+  background:rgba(245,158,11,.1);color:var(--gold);
+  border-color:rgba(245,158,11,.15);
 }
-.mkt-divider{width:1px;background:var(--border);align-self:stretch;flex-shrink:0;}
-.mkt-spacer{flex:1;}
+.mkt-divider{width:1px;height:14px;background:rgba(255,255,255,.1);margin:0 4px;}
 
-/* ── Sub Navigation ── */
-.sub-nav{display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border);padding:0 8px;overflow-x:auto;}
+/* Sub Navigation */
+.sub-nav{
+  display:flex;align-items:center;
+  background:rgba(6,10,16,.96);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  padding:0;overflow-x:auto;gap:0;
+}
 .sub-nav::-webkit-scrollbar{display:none;}
-.sub-tab{display:flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;}
-.sub-tab:hover{color:var(--text);}
-.sub-tab.active{color:var(--text);border-bottom-color:var(--accent);}
-#subNavVN .sub-tab.active{border-bottom-color:var(--gold);color:var(--text);}
+.sub-tab{
+  flex:1;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:6px 4px;
+  border:none;border-bottom:none;
+  background:none;color:rgba(180,190,210,.4);
+  font-size:11px;font-weight:600;letter-spacing:.3px;
+  cursor:pointer;font-family:inherit;
+  transition:all .15s;white-space:nowrap;
+  margin:5px 4px;border-radius:5px;
+}
+.sub-tab:hover:not(.active){
+  color:rgba(180,190,210,.8);
+  background:rgba(255,255,255,.05);
+}
+.sub-tab.active{
+  color:#fff;
+  background:rgba(0,212,255,.13);
+  box-shadow:inset 0 0 0 1px rgba(0,212,255,.25);
+}
+#subNavVN .sub-tab.active{
+  color:#fff;
+  background:rgba(245,158,11,.13);
+  box-shadow:inset 0 0 0 1px rgba(245,158,11,.25);
+}
+.tab-icon{display:none;}
 </style>
 </head>
 <body class="market-crypto">
