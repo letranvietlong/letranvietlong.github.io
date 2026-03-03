@@ -4867,11 +4867,16 @@ const VN_NAMES = {
   SHS:'SHS CK',CEO:'C.E.O',DGC:'Hóa chất Đức Giang',MBS:'MB Securities',
 };
 
-/* CORS proxies — thử lần lượt */
-// ── API hỗ trợ CORS native (không cần proxy) ──
-// VNDirect finfo-api và SSI iboard đều có Access-Control-Allow-Origin: *
+/* VN Stock API - Multi-proxy + Yahoo Finance fallback */
+const VN_PROXIES = [
+  function(u){return 'https://api.allorigins.win/get?url='+encodeURIComponent(u);},
+  function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
+  function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u);}
+];
+const VN_YAHOO_MAP = {VNINDEX:'^VNINDEX',HNXINDEX:'^HNX',UPCOMINDEX:'^UPCOM'};
 
-async function vnFetch(url, timeout=12000) {
+async function vnFetch(url, timeout) {
+  if(!timeout) timeout=10000;
   const ctrl = new AbortController();
   const tid = setTimeout(()=>ctrl.abort(), timeout);
   try {
@@ -4880,50 +4885,37 @@ async function vnFetch(url, timeout=12000) {
     if(!r.ok) throw new Error('HTTP '+r.status);
     const text = await r.text();
     const j = JSON.parse(text);
-    if(j?.contents) return JSON.parse(j.contents);
+    if(j && j.contents) return JSON.parse(j.contents);
     return j;
   } catch(e) { clearTimeout(tid); throw e; }
 }
 
-// Fetch với nhiều URL fallback
-async function vnFetchMulti(urls, timeout=12000) {
-  for(const url of urls) {
-    try { return await vnFetch(url, timeout); } catch(e) {}
+async function vnFetchWithProxy(url, timeout) {
+  if(!timeout) timeout=10000;
+  try { return await vnFetch(url, timeout); } catch(e) {}
+  for(let i=0;i<VN_PROXIES.length;i++) {
+    try { return await vnFetch(VN_PROXIES[i](url), timeout); } catch(e) {}
   }
   return null;
 }
 
-// ── VNDirect URL builders (CORS ok) ──
 function vnVNDirectIndexUrl(sym) {
   const map = {VNINDEX:'VNINDEX',HNXINDEX:'HNX-INDEX',UPCOMINDEX:'UPCOM-INDEX'};
-  const code = map[sym]||sym;
-  return `https://finfo-api.vndirect.com.vn/v4/market-indices?code=${code}&fields=code,indexValue,change,ratioChange,totalVolume,totalValue,ceiling,floor&size=1`;
+  return 'https://finfo-api.vndirect.com.vn/v4/market-indices?code='+(map[sym]||sym)+'&fields=code,indexValue,change,ratioChange,totalVolume,totalValue,ceiling,floor&size=1';
 }
 function vnVNDirectStockUrl(syms) {
-  return `https://finfo-api.vndirect.com.vn/v4/stocks?q=codeList:${syms.join(',')}~status:LISTED&fields=code,companyName,lastPrice,referencePrice,ceilingPrice,floorPrice,priceChange,priceChangeRatio,totalVolume,totalValue,high,low&size=100`;
+  return 'https://finfo-api.vndirect.com.vn/v4/stocks?q=codeList:'+syms.join(',')+'~status:LISTED&fields=code,companyName,lastPrice,referencePrice,ceilingPrice,floorPrice,priceChange,priceChangeRatio,totalVolume,totalValue,high,low&size=100';
 }
 function vnVNDirectChartUrl(sym, tf) {
   const map = {VNINDEX:'VNINDEX',HNXINDEX:'HNX-INDEX',UPCOMINDEX:'UPCOM-INDEX'};
   const code = map[sym]||sym;
   const resMap = {'1D':'15','1W':'60','1M':'D','3M':'D','1Y':'W'};
-  const res = resMap[tf]||'D';
   const now = Math.floor(Date.now()/1000);
   const rangeMap = {'1D':86400,'1W':604800,'1M':2592000,'3M':7776000,'1Y':31536000};
   const from = now-(rangeMap[tf]||86400);
-  return `https://finfo-api.vndirect.com.vn/v4/market-indices/histories?code=${code}&resolution=${res}&from=${from}&to=${now}&fields=time,open,high,low,close,volume`;
+  return 'https://finfo-api.vndirect.com.vn/v4/market-indices/histories?code='+code+'&resolution='+(resMap[tf]||'D')+'&from='+from+'&to='+now+'&fields=time,open,high,low,close,volume';
 }
 
-// ── Legacy URL builders (dùng làm fallback) ──
-function vnTCBSUrl(sym, tf) {
-  const now=Math.floor(Date.now()/1000);
-  const ranges={'1D':86400,'1W':604800,'1M':2592000,'3M':7776000,'1Y':31536000};
-  const from=now-(ranges[tf]||86400);
-  const res=tf==='1D'?'15':tf==='1W'?'60':'D';
-  return `https://apipubaws.tcbs.com.vn/stock-insight/v2/index/${sym}/historical-price?resolution=${res}&toDate=${now}&fromDate=${from}`;
-}
-function vnTCBSPriceUrl(syms){
-  return `https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/ticker?tickers=${syms.join(',')}`;
-}
 function vnSession(){
   const vn=new Date(Date.now()+7*3600000);
   const h=vn.getUTCHours(),m=vn.getUTCMinutes(),d=vn.getUTCDay();
@@ -4951,9 +4943,9 @@ function vnUpdateSessionUI(){
 }
 
 async function vnFetchIndex(sym){
-  // 1. VNDirect (CORS native)
+  // 1. VNDirect qua proxy
   try{
-    const d=await vnFetch(vnVNDirectIndexUrl(sym));
+    const d=await vnFetchWithProxy(vnVNDirectIndexUrl(sym));
     const r=Array.isArray(d?.data)?d.data[0]:(d?.data||d);
     if(r?.indexValue||r?.code){
       const pct=+(r.ratioChange||r.perChange||0);
@@ -4981,14 +4973,28 @@ async function vnFetchIndex(sym){
 async function vnFetchChart(sym,tf){
   const key=sym+'_'+tf;
   if(VN.chartData[key]) return VN.chartData[key];
-  // 1. VNDirect chart (CORS native)
+  // VNDirect qua proxy + Yahoo Finance fallback
   try{
-    const d=await vnFetch(vnVNDirectChartUrl(sym,tf));
+    const d=await vnFetchWithProxy(vnVNDirectChartUrl(sym,tf));
     const arr=d?.data||d;
     let bars=[];
     if(Array.isArray(arr)) bars=arr.map(b=>({t:b.time||b.tradingDate||b.t,o:+(b.open||b.o||0),h:+(b.high||b.h||0),l:+(b.low||b.l||0),c:+(b.close||b.c||0),v:+(b.volume||b.v||0)})).filter(b=>b.c>0);
     if(bars.length>2){VN.chartData[key]=bars;return bars;}
   }catch(e){}
+  // Yahoo Finance chart fallback
+  try{
+    const ticker=VN_YAHOO_MAP[sym]||sym;
+    const rangeM={'1D':'1d','1W':'5d','1M':'1mo','3M':'3mo','1Y':'1y'};
+    const intM={'1D':'15m','1W':'60m','1M':'1d','3M':'1d','1Y':'1wk'};
+    const ycu='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval='+(intM[tf]||'1d')+'&range='+(rangeM[tf]||'1mo');
+    const yd=await vnFetchWithProxy(ycu,8000);
+    const res=yd&&yd.chart&&yd.chart.result?yd.chart.result[0]:null;
+    if(res&&res.timestamp&&res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
+      const t=res.timestamp,q=res.indicators.quote[0];
+      const yb=t.map((ts,i)=>({t:ts,o:+(q.open&&q.open[i]||0),h:+(q.high&&q.high[i]||0),l:+(q.low&&q.low[i]||0),c:+(q.close&&q.close[i]||0),v:+(q.volume&&q.volume[i]||0)})).filter(b=>b.c>0);
+      if(yb.length>2){VN.chartData[key]=yb;return yb;}
+    }
+  }catch(e2){}
   return null;
 }
 
@@ -4996,7 +5002,7 @@ async function vnFetchStocks(mode){
   const syms=mode==='hnx'?['SHB','PVS','NTP','VCS','TNG','SHS','CEO','DGC','MBS','HUT','VGC','KLF','BVS','IDJ','PVI','SCR','PGI','VIF','WSS','HHC']:VN30_SYMS;
   // 1. VNDirect (CORS native, giá đơn vị VND)
   try{
-    const d=await vnFetch(vnVNDirectStockUrl(syms));
+    const d=await vnFetchWithProxy(vnVNDirectStockUrl(syms));
     const arr=d?.data||d;
     if(Array.isArray(arr)&&arr.length>0){
       const stocks=arr.map(s=>({
@@ -5011,23 +5017,6 @@ async function vnFetchStocks(mode){
       if(stocks.length>0) return stocks;
     }
   }catch(e){}
-  // 2. TCBS fallback (giá x1000)
-  try{
-    const d=await vnFetch(vnTCBSPriceUrl(syms));
-    const arr=d?.data||d?.tickers||d;
-    if(Array.isArray(arr)&&arr.length>0){
-      const stocks=arr.map(s=>({
-        sym:s.ticker||s.symbol||'',name:VN_NAMES[s.ticker||s.symbol]||s.name||s.companyName||'',
-        price:+(s.lastPrice||s.price||s.close||0)*1000,ref:+(s.referencePrice||s.ref||0)*1000,
-        ceil:+(s.ceilingPrice||s.ceil||0)*1000,floor:+(s.floorPrice||s.floor||0)*1000,
-        chg:+(s.priceChange||s.change||0)*1000,
-        pct:(()=>{const r=+(s.priceChangeRatio||s.pct||s.changePercent||0);return Math.abs(r)>50?r:r*100;})(),
-        vol:+(s.totalVolumeTraded||s.volume||s.vol||0),val:+(s.totalValueTraded||s.value||0),
-        hi:+(s.highest||s.high||s.hi||0)*1000,lo:+(s.lowest||s.low||s.lo||0)*1000,floor_id:mode
-      })).filter(s=>s.sym&&s.price>0);
-      if(stocks.length>0) return stocks;
-    }
-  }catch(e2){}
   return[];
 }
 
