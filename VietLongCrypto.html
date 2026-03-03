@@ -5077,6 +5077,31 @@ async function vnSetTf(sym,tf,el){
   const last=bars?bars[bars.length-1]:null,first=bars?bars[0]:null;
   vnDrawSparkline(cid,bars,!last||!first||last.c>=first.c);
   }
+function vnSession(){
+  const vn=new Date(Date.now()+7*3600000);
+  const h=vn.getUTCHours(),m=vn.getUTCMinutes(),d=vn.getUTCDay();
+  const hm=h*100+m;
+  if(d===0||d===6) return{label:'Ngày nghỉ',cls:'closed'};
+  if(hm<900) return{label:'Chưa mở cửa',cls:'closed'};
+  if(hm<915) return{label:'ATO',cls:'ato'};
+  if(hm<1130) return{label:'Liên tục sáng',cls:'open'};
+  if(hm<1300) return{label:'Nghỉ trưa',cls:'closed'};
+  if(hm<1445) return{label:'Liên tục chiều',cls:'open'};
+  if(hm<1500) return{label:'ATC',cls:'atc'};
+  return{label:'Đã đóng cửa',cls:'closed'};
+}
+function vnUpdateSessionUI(){
+  const s=vnSession();
+  const dot=document.getElementById('vnSessionDot');
+  const lbl=document.getElementById('vnSessionLabel');
+  if(dot) dot.className='vn-session-dot '+s.cls;
+  if(lbl){lbl.textContent=s.label;lbl.style.color=s.cls==='open'?'var(--green)':s.cls==='closed'?'var(--red)':'var(--gold)';}
+  const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Asia/Ho_Chi_Minh'});
+  const el=document.getElementById('vnLastUpdate'); if(el) el.textContent='UTC+7 '+t;
+  const badge=document.getElementById('vnSessionBadge');
+  if(badge) badge.textContent=s.cls==='open'?'DANG MO CUA':s.cls==='closed'?'DONG CUA':s.label;
+}
+
 async function vnRefreshAll(){
   const iconEl=document.getElementById('vnRefreshIcon');
   if(iconEl){iconEl.textContent='↻';iconEl.className='vn-spin';}
