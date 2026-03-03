@@ -4840,84 +4840,154 @@ const VN_NAMES = {
   SHS:'SHS CK',CEO:'C.E.O',DGC:'Hóa chất Đức Giang',MBS:'MB Securities',
 };
 
-/* VN Stock API - Yahoo Finance PRIMARY (no proxy needed) */
-const VN_YAHOO_MAP={VNINDEX:"^VNINDEX",HNXINDEX:"^HNX",UPCOMINDEX:"^UPCOM"};
-const VN_CORS_PROXIES=[u=>"https://api.allorigins.win/get?url="+encodeURIComponent(u),u=>"https://corsproxy.io/?url="+encodeURIComponent(u),u=>"https://api.codetabs.com/v1/proxy?quest="+encodeURIComponent(u)];
-async function vnFetch(url,timeout){
-  if(!timeout)timeout=10000;
-  async function tryUrl(u){
-    const ctrl=new AbortController();
-    const tid=setTimeout(()=>ctrl.abort(),timeout);
-    const r=await fetch(u,{signal:ctrl.signal});
-    clearTimeout(tid);
-    if(!r.ok)throw new Error("HTTP "+r.status);
-    const text=await r.text();
-    const j=JSON.parse(text);
-    if(j&&j.contents)return JSON.parse(j.contents);
-    return j;
-  }
-  try{return await tryUrl(url);}catch(e){}
-  for(const pFn of VN_CORS_PROXIES){try{return await tryUrl(pFn(url));}catch(e){}}
-  throw new Error("vnFetch failed: "+url);
-}
-function vnYahooChartUrl(t,i,r){return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(t)+"?interval="+i+"&range="+r+"&includePrePost=false";}
-function vnYahooQuoteUrl(syms){return "https://query1.finance.yahoo.com/v7/finance/quote?symbols="+syms.map(encodeURIComponent).join(",")+"&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,regularMarketDayHigh,regularMarketDayLow,regularMarketPreviousClose,shortName";}
-async function vnFetchIndex(sym){
-  const ticker=VN_YAHOO_MAP[sym]; if(!ticker)return null;
+/* VN Stock API — TCBS + SSI public endpoints (CORS enabled) */
+const TCBS_BASE='https://apipubaws.tcbs.com.vn';
+const SSI_BASE='https://iboard-query.ssi.com.vn';
+
+async function tcbsFetch(url,timeout){
+  if(!timeout)timeout=12000;
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),timeout);
   try{
-    const d=await vnFetch(vnYahooChartUrl(ticker,"1d","5d"),8000);
-    const meta=d&&d.chart&&d.chart.result&&d.chart.result[0]?d.chart.result[0].meta:null;
-    if(meta&&meta.regularMarketPrice){
-      const prev=+(meta.chartPreviousClose||meta.regularMarketPreviousClose||meta.regularMarketPrice);
-      const val=+meta.regularMarketPrice,chg=val-prev,pct=prev>0?(chg/prev)*100:0;
-      return{value:val,chg,pct,vol:+(meta.regularMarketVolume||0),val:0,hi:+(meta.regularMarketDayHigh||val),lo:+(meta.regularMarketDayLow||val)};
+    const r=await fetch(url,{signal:ctrl.signal,headers:{Accept:'application/json'}});
+    clearTimeout(tid); if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){clearTimeout(tid);throw e;}
+}
+
+async function vnFetchIndex(sym){
+  try{
+    const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/market/overview',10000);
+    const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
+    if(arr){
+      const codes={VNINDEX:['VNINDEX','VNI'],HNXINDEX:['HNXINDEX','HNX'],UPCOMINDEX:['UPCOMINDEX','UPCOM','UPC']};
+      const entry=arr.find(x=>(codes[sym]||[]).some(c2=>(x.indexId||x.code||x.index||'').toUpperCase().includes(c2)));
+      if(entry){
+        const val=+(entry.indexValue||entry.value||entry.lastValue||0);
+        if(val>0) return{value:val,chg:+(entry.indexChange||entry.change||0),
+          pct:+(entry.percentIndexChange||entry.pctChange||entry.changePercent||0),
+          vol:+(entry.totalVolume||entry.volume||0),val:0,
+          hi:+(entry.highestIndex||entry.high||val),lo:+(entry.lowestIndex||entry.low||val)};
+      }
     }
   }catch(e){}
   try{
-    const d=await vnFetch(vnYahooQuoteUrl([ticker]),8000);
-    const q=d&&d.quoteResponse&&d.quoteResponse.result?d.quoteResponse.result[0]:null;
-    if(q&&q.regularMarketPrice)return{value:+q.regularMarketPrice,chg:+(q.regularMarketChange||0),pct:+(q.regularMarketChangePercent||0),vol:+(q.regularMarketVolume||0),val:0,hi:+(q.regularMarketDayHigh||q.regularMarketPrice),lo:+(q.regularMarketDayLow||q.regularMarketPrice)};
+    const ssiCode={VNINDEX:'VNI',HNXINDEX:'HNX',UPCOMINDEX:'UPC'};
+    const d=await tcbsFetch(SSI_BASE+'/v2/stock/marketwatch?indexId='+ssiCode[sym]+'&type=IDX',8000);
+    if(d&&d.data&&d.data.length){
+      const r=d.data[0];const val=+(r.lastValue||r.indexValue||r.c||0);
+      if(val>0){
+        const ref=+(r.refValue||r.r||val);
+        const chg=+(r.change||r.indexChange||val-ref);
+        const pct=+(r.changePercent||r.pctChange||(ref>0?(chg/ref)*100:0));
+        return{value:val,chg,pct,vol:+(r.totalVolume||r.vol||0),val:0,
+          hi:+(r.highestValue||r.h||val),lo:+(r.lowestValue||r.l||val)};
+      }
+    }
   }catch(e2){}
+  try{
+    const vndCode={VNINDEX:'01',HNXINDEX:'02',UPCOMINDEX:'03'};
+    const d=await tcbsFetch('https://finfo-api.vndirect.com.vn/v4/market-stats?marketCode='+vndCode[sym]+'&fields=indexValue,indexChange,pctIndexChange,totalDealVolume',8000);
+    if(d&&d.data&&d.data.length){
+      const r=d.data[0];const val=+(r.indexValue||0);
+      if(val>0) return{value:val,chg:+(r.indexChange||0),pct:+(r.pctIndexChange||0),
+        vol:+(r.totalDealVolume||0),val:0,hi:val,lo:val};
+    }
+  }catch(e3){}
   return null;
 }
+
 async function vnFetchChart(sym,tf){
-  const key=sym+"_"+tf;
+  const key=sym+'_'+tf;
   if(VN.chartData[key])return VN.chartData[key];
-  const ticker=VN_YAHOO_MAP[sym]||sym;
+  const isIdx=sym==='VNINDEX'||sym==='HNXINDEX'||sym==='UPCOMINDEX';
+  const now=Math.floor(Date.now()/1000);
+  const resM={'1D':'1','1W':'15','1M':'D','3M':'D','1Y':'W'};
+  const daysM={'1D':2,'1W':10,'1M':35,'3M':100,'1Y':400};
+  const res=resM[tf]||'D';
+  const from=now-(daysM[tf]||200)*86400;
+  const ticker=isIdx?{VNINDEX:'VNINDEX',HNXINDEX:'HNXINDEX',UPCOMINDEX:'UPCOMINDEX'}[sym]:sym;
+  const type=isIdx?'index':'stock';
   try{
-    const rangeM={"1D":"1d","1W":"5d","1M":"1mo","3M":"3mo","1Y":"1y"};
-    const intM={"1D":"5m","1W":"60m","1M":"1d","3M":"1d","1Y":"1wk"};
-    const d=await vnFetch(vnYahooChartUrl(ticker,intM[tf]||"1d",rangeM[tf]||"1mo"),8000);
-    const res=d&&d.chart&&d.chart.result?d.chart.result[0]:null;
-    if(res&&res.timestamp&&res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
-      const t=res.timestamp,q=res.indicators.quote[0];
-      const bars=t.map((ts,i)=>({t:ts,o:+(q.open&&q.open[i]||0),h:+(q.high&&q.high[i]||0),l:+(q.low&&q.low[i]||0),c:+(q.close&&q.close[i]||0),v:+(q.volume&&q.volume[i]||0)})).filter(b=>b.c>0);
+    const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/stock/bars-long-term?ticker='+ticker+'&type='+type+'&resolution='+res+'&from='+from+'&to='+now,12000);
+    const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
+    if(arr&&arr.length>2){
+      const bars=arr.map(b=>({
+        t:typeof b.tradingDate==='string'?Math.floor(new Date(b.tradingDate).getTime()/1000):(+(b.tradingDate||b.t||0)),
+        o:+(b.open||b.o||0),h:+(b.high||b.h||0),l:+(b.low||b.l||0),
+        c:+(b.close||b.c||0),v:+(b.volume||b.v||0)
+      })).filter(b=>b.c>0&&b.t>0).sort((a,b2)=>a.t-b2.t);
       if(bars.length>2){VN.chartData[key]=bars;return bars;}
     }
   }catch(e){}
   return null;
 }
+
 async function vnFetchStocks(mode){
-  const baseSyms=mode==="hnx"?["SHB","PVS","NTP","VCS","TNG","SHS","CEO","DGC","MBS","HUT","VGC","KLF","BVS","IDJ","PVI","SCR","PGI","VIF","WSS","HHC"]:VN30_SYMS;
-  const ySyms=baseSyms.map(s=>s+".VN");
+  const HNX_SYMS=["SHB","PVS","NTP","VCS","TNG","SHS","CEO","DGC","MBS","HUT","VGC","KLF","BVS","IDJ","PVI","SCR","PGI","VIF","WSS","HHC"];
+  const baseSyms=mode==="hnx"?HNX_SYMS:VN30_SYMS;
   let all=[];
-  for(let i=0;i<ySyms.length;i+=15){
-    const chunk=ySyms.slice(i,i+15);
+  for(let i=0;i<baseSyms.length;i+=15){
+    const chunk=baseSyms.slice(i,i+15);
+    const tickers=chunk.join(',');
+    let ok=false;
     try{
-      const d=await vnFetch(vnYahooQuoteUrl(chunk),8000);
-      const res=d&&d.quoteResponse&&d.quoteResponse.result;
-      if(Array.isArray(res)){
-        all=all.concat(res.map(q=>{
-          const sym=(q.symbol||"").replace(".VN","");
-          const price=+(q.regularMarketPrice||0);
-          const ref=+(q.regularMarketPreviousClose||price);
-          return{sym,name:VN_NAMES[sym]||q.shortName||sym,price,ref,ceil:Math.round(price*1.07),floor:Math.round(price*0.93),chg:+(q.regularMarketChange||0),pct:+(q.regularMarketChangePercent||0),vol:+(q.regularMarketVolume||0),val:0,hi:+(q.regularMarketDayHigh||price),lo:+(q.regularMarketDayLow||price),floor_id:mode};
-        }).filter(s=>s.sym&&s.price>0));
+      const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/industry/analysis/filter?type=priceAndVolume&tickers='+tickers,10000);
+      const arr=Array.isArray(d)?d:(d&&d.data?d.data:null);
+      if(arr&&arr.length>0){
+        const parsed=arr.map(q=>{
+          const sym=(q.ticker||q.stockCode||q.code||'').toUpperCase();
+          if(!sym) return null;
+          let p=+(q.lastPrice||q.price||q.closePrice||0),r=+(q.referencePrice||q.refPrice||p);
+          if(p>0&&p<1000){p*=1000;r*=1000;}
+          return{sym,name:VN_NAMES[sym]||q.organName||sym,price:p,ref:r,
+            ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
+            chg:+(q.priceChange||q.change||0)*(+(q.lastPrice||1)<1000?1000:1),
+            pct:+(q.percentPriceChange||q.pctChange||0),
+            vol:+(q.totalVolume||q.volume||0),val:+(q.totalValue||0),
+            hi:+(q.highestPrice||q.high||0)*(+(q.lastPrice||1)<1000?1000:1),
+            lo:+(q.lowestPrice||q.low||0)*(+(q.lastPrice||1)<1000?1000:1),floor_id:mode};
+        }).filter(s=>s&&s.sym&&s.price>0);
+        if(parsed.length>0){all=all.concat(parsed);ok=true;}
       }
-    }catch(ce){}
+    }catch(e){}
+    if(ok) continue;
+    try{
+      const market=mode==='hnx'?'HNX':'HOSE';
+      const d=await tcbsFetch(SSI_BASE+'/v2/stock/price-board?market='+market+'&symbols='+tickers,8000);
+      const arr=d&&Array.isArray(d.data)?d.data:null;
+      if(arr&&arr.length>0){
+        const parsed=arr.map(q=>{
+          const sym=(q.Symbol||q.symbol||q.ticker||'').toUpperCase().replace('.VN','');
+          const p=+(q.LastPrice||q.lastPrice||q.last||0);
+          const r=+(q.RefPrice||q.refPrice||q.ref||p);
+          return{sym,name:VN_NAMES[sym]||sym,price:p,ref:r,
+            ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
+            chg:p-r,pct:r>0?((p-r)/r)*100:0,
+            vol:+(q.TotalVolume||q.totalVolume||0),val:+(q.TotalValue||q.totalValue||0),
+            hi:+(q.Highest||q.highest||p),lo:+(q.Lowest||q.lowest||p),floor_id:mode};
+        }).filter(s=>s.sym&&s.price>0);
+        if(parsed.length>0){all=all.concat(parsed);ok=true;}
+      }
+    }catch(e2){}
+    if(ok) continue;
+    for(const sym of chunk){
+      try{
+        const d=await tcbsFetch(TCBS_BASE+'/stock-insight/v1/stock/'+sym+'/price-diff',6000);
+        if(d){
+          let p=+(d.price||d.lastPrice||0),r=+(d.refPrice||d.referencePrice||p);
+          if(p>0&&p<1000){p*=1000;r*=1000;}
+          if(p>0) all.push({sym,name:VN_NAMES[sym]||sym,price:p,ref:r,
+            ceil:Math.round(r*1.07),floor:Math.round(r*0.93),
+            chg:+(d.change||0)*(+(d.price||1)<1000?1000:1),pct:+(d.pctChange||0),
+            vol:+(d.volume||0),val:+(d.value||0),hi:+(d.high||p),lo:+(d.low||p),floor_id:mode});
+        }
+      }catch(e3){}
+    }
   }
-  return all;
+  return all.filter(s=>s.price>0);
 }
+
 
 function vnRenderIdxCard(sym,data){
   const map={
