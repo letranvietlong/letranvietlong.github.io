@@ -4867,157 +4867,79 @@ const VN_NAMES = {
   SHS:'SHS CK',CEO:'C.E.O',DGC:'Hóa chất Đức Giang',MBS:'MB Securities',
 };
 
-/* VN Stock API - Multi-proxy + Yahoo Finance fallback */
-const VN_PROXIES = [
-  function(u){return 'https://api.allorigins.win/get?url='+encodeURIComponent(u);},
-  function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
-  function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u);}
-];
-const VN_YAHOO_MAP = {VNINDEX:'^VNINDEX',HNXINDEX:'^HNX',UPCOMINDEX:'^UPCOM'};
-
-async function vnFetch(url, timeout) {
-  if(!timeout) timeout=10000;
-  const ctrl = new AbortController();
-  const tid = setTimeout(()=>ctrl.abort(), timeout);
-  try {
-    const r = await fetch(url, {signal:ctrl.signal});
-    clearTimeout(tid);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const text = await r.text();
-    const j = JSON.parse(text);
-    if(j && j.contents) return JSON.parse(j.contents);
-    return j;
-  } catch(e) { clearTimeout(tid); throw e; }
-}
-
-async function vnFetchWithProxy(url, timeout) {
-  if(!timeout) timeout=10000;
-  try { return await vnFetch(url, timeout); } catch(e) {}
-  for(let i=0;i<VN_PROXIES.length;i++) {
-    try { return await vnFetch(VN_PROXIES[i](url), timeout); } catch(e) {}
-  }
-  return null;
-}
-
-function vnVNDirectIndexUrl(sym) {
-  const map = {VNINDEX:'VNINDEX',HNXINDEX:'HNX-INDEX',UPCOMINDEX:'UPCOM-INDEX'};
-  return 'https://finfo-api.vndirect.com.vn/v4/market-indices?code='+(map[sym]||sym)+'&fields=code,indexValue,change,ratioChange,totalVolume,totalValue,ceiling,floor&size=1';
-}
-function vnVNDirectStockUrl(syms) {
-  return 'https://finfo-api.vndirect.com.vn/v4/stocks?q=codeList:'+syms.join(',')+'~status:LISTED&fields=code,companyName,lastPrice,referencePrice,ceilingPrice,floorPrice,priceChange,priceChangeRatio,totalVolume,totalValue,high,low&size=100';
-}
-function vnVNDirectChartUrl(sym, tf) {
-  const map = {VNINDEX:'VNINDEX',HNXINDEX:'HNX-INDEX',UPCOMINDEX:'UPCOM-INDEX'};
-  const code = map[sym]||sym;
-  const resMap = {'1D':'15','1W':'60','1M':'D','3M':'D','1Y':'W'};
-  const now = Math.floor(Date.now()/1000);
-  const rangeMap = {'1D':86400,'1W':604800,'1M':2592000,'3M':7776000,'1Y':31536000};
-  const from = now-(rangeMap[tf]||86400);
-  return 'https://finfo-api.vndirect.com.vn/v4/market-indices/histories?code='+code+'&resolution='+(resMap[tf]||'D')+'&from='+from+'&to='+now+'&fields=time,open,high,low,close,volume';
-}
-
-function vnSession(){
-  const vn=new Date(Date.now()+7*3600000);
-  const h=vn.getUTCHours(),m=vn.getUTCMinutes(),d=vn.getUTCDay();
-  const hm=h*100+m;
-  if(d===0||d===6) return{label:'Ngày nghỉ',cls:'closed'};
-  if(hm<900) return{label:'Chưa mở cửa',cls:'closed'};
-  if(hm<915) return{label:'🕘 ATO',cls:'ato'};
-  if(hm<1130) return{label:'🟢 Liên tục sáng',cls:'open'};
-  if(hm<1300) return{label:'Nghỉ trưa',cls:'closed'};
-  if(hm<1445) return{label:'🟢 Liên tục chiều',cls:'open'};
-  if(hm<1500) return{label:'🔔 ATC',cls:'atc'};
-  return{label:'Đã đóng cửa',cls:'closed'};
-}
-function vnUpdateSessionUI(){
-  const s=vnSession();
-  const dot=document.getElementById('vnSessionDot');
-  const lbl=document.getElementById('vnSessionLabel');
-  if(dot) dot.className='vn-session-dot '+s.cls;
-  if(lbl){lbl.textContent=s.label;lbl.style.color=s.cls==='open'?'var(--green)':s.cls==='closed'?'var(--red)':'var(--gold)';}
-  const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Asia/Ho_Chi_Minh'});
-  const el=document.getElementById('vnLastUpdate'); if(el) el.textContent=`UTC+7 ${t}`;
-  // Update session badge in switcher
-  const badge=document.getElementById('vnSessionBadge');
-  if(badge) badge.textContent=s.cls==='open'?'🟢 ĐANG MỞ CỬA':s.cls==='closed'?'⛔ ĐÓNG CỬA':'🟡 '+s.label;
-}
-
-async function vnFetchIndex(sym){
-  // 1. VNDirect qua proxy
+/* VN Stock API - Yahoo Finance PRIMARY (no proxy needed) */
+const VN_YAHOO_MAP={VNINDEX:"^VNINDEX",HNXINDEX:"^HNX",UPCOMINDEX:"^UPCOM"};
+async function vnFetch(url,timeout){
+  if(!timeout)timeout=10000;
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),timeout);
   try{
-    const d=await vnFetchWithProxy(vnVNDirectIndexUrl(sym));
-    const r=Array.isArray(d?.data)?d.data[0]:(d?.data||d);
-    if(r?.indexValue||r?.code){
-      const pct=+(r.ratioChange||r.perChange||0);
-      return{value:+(r.indexValue||0),chg:+(r.change||0),pct:Math.abs(pct)>50?pct:pct*100,vol:+(r.totalVolume||0),val:+(r.totalValue||0),hi:+(r.ceiling||0),lo:+(r.floor||0)};
+    const r=await fetch(url,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const text=await r.text();
+    const j=JSON.parse(text);
+    if(j&&j.contents)return JSON.parse(j.contents);
+    return j;
+  }catch(e){clearTimeout(tid);throw e;}
+}
+function vnYahooChartUrl(t,i,r){return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(t)+"?interval="+i+"&range="+r+"&includePrePost=false";}
+function vnYahooQuoteUrl(syms){return "https://query1.finance.yahoo.com/v7/finance/quote?symbols="+syms.map(encodeURIComponent).join(",")+"&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketVolume,regularMarketDayHigh,regularMarketDayLow,regularMarketPreviousClose,shortName";}
+async function vnFetchIndex(sym){
+  const ticker=VN_YAHOO_MAP[sym]; if(!ticker)return null;
+  try{
+    const d=await vnFetch(vnYahooChartUrl(ticker,"1d","5d"),8000);
+    const meta=d&&d.chart&&d.chart.result&&d.chart.result[0]?d.chart.result[0].meta:null;
+    if(meta&&meta.regularMarketPrice){
+      const prev=+(meta.chartPreviousClose||meta.regularMarketPreviousClose||meta.regularMarketPrice);
+      const val=+meta.regularMarketPrice,chg=val-prev,pct=prev>0?(chg/prev)*100:0;
+      return{value:val,chg,pct,vol:+(meta.regularMarketVolume||0),val:0,hi:+(meta.regularMarketDayHigh||val),lo:+(meta.regularMarketDayLow||val)};
     }
   }catch(e){}
-  // 2. VNDirect histories fallback
   try{
-    const now2=Math.floor(Date.now()/1000);
-    const idxMap={VNINDEX:"VNINDEX",HNXINDEX:"HNX-INDEX",UPCOMINDEX:"UPCOM-INDEX"};
-    const code2=idxMap[sym]||sym;
-    const url2="https://finfo-api.vndirect.com.vn/v4/market-indices/histories?code="+code2+"&resolution=D&from="+(now2-86400*5)+"&to="+now2+"&size=5";
-    const d2=await vnFetch(url2);
-    const arr2=d2?.data;
-    if(Array.isArray(arr2)&&arr2.length>0){
-      const last=arr2[arr2.length-1],prev=arr2.length>1?arr2[arr2.length-2]:null;
-      const chg2=prev?+(last.close||0)-+(prev.close||0):0;
-      const pct2=prev&&+(prev.close||0)>0?chg2/+(prev.close)*100:0;
-      return{value:+(last.close||0),chg:chg2,pct:pct2,vol:+(last.volume||0),val:0,hi:+(last.high||0),lo:+(last.low||0)};
-    }
+    const d=await vnFetch(vnYahooQuoteUrl([ticker]),8000);
+    const q=d&&d.quoteResponse&&d.quoteResponse.result?d.quoteResponse.result[0]:null;
+    if(q&&q.regularMarketPrice)return{value:+q.regularMarketPrice,chg:+(q.regularMarketChange||0),pct:+(q.regularMarketChangePercent||0),vol:+(q.regularMarketVolume||0),val:0,hi:+(q.regularMarketDayHigh||q.regularMarketPrice),lo:+(q.regularMarketDayLow||q.regularMarketPrice)};
   }catch(e2){}
   return null;
 }
-
 async function vnFetchChart(sym,tf){
-  const key=sym+'_'+tf;
-  if(VN.chartData[key]) return VN.chartData[key];
-  // VNDirect qua proxy + Yahoo Finance fallback
+  const key=sym+"_"+tf;
+  if(VN.chartData[key])return VN.chartData[key];
+  const ticker=VN_YAHOO_MAP[sym]||sym;
   try{
-    const d=await vnFetchWithProxy(vnVNDirectChartUrl(sym,tf));
-    const arr=d?.data||d;
-    let bars=[];
-    if(Array.isArray(arr)) bars=arr.map(b=>({t:b.time||b.tradingDate||b.t,o:+(b.open||b.o||0),h:+(b.high||b.h||0),l:+(b.low||b.l||0),c:+(b.close||b.c||0),v:+(b.volume||b.v||0)})).filter(b=>b.c>0);
-    if(bars.length>2){VN.chartData[key]=bars;return bars;}
-  }catch(e){}
-  // Yahoo Finance chart fallback
-  try{
-    const ticker=VN_YAHOO_MAP[sym]||sym;
-    const rangeM={'1D':'1d','1W':'5d','1M':'1mo','3M':'3mo','1Y':'1y'};
-    const intM={'1D':'15m','1W':'60m','1M':'1d','3M':'1d','1Y':'1wk'};
-    const ycu='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval='+(intM[tf]||'1d')+'&range='+(rangeM[tf]||'1mo');
-    const yd=await vnFetchWithProxy(ycu,8000);
-    const res=yd&&yd.chart&&yd.chart.result?yd.chart.result[0]:null;
+    const rangeM={"1D":"1d","1W":"5d","1M":"1mo","3M":"3mo","1Y":"1y"};
+    const intM={"1D":"5m","1W":"60m","1M":"1d","3M":"1d","1Y":"1wk"};
+    const d=await vnFetch(vnYahooChartUrl(ticker,intM[tf]||"1d",rangeM[tf]||"1mo"),8000);
+    const res=d&&d.chart&&d.chart.result?d.chart.result[0]:null;
     if(res&&res.timestamp&&res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
       const t=res.timestamp,q=res.indicators.quote[0];
-      const yb=t.map((ts,i)=>({t:ts,o:+(q.open&&q.open[i]||0),h:+(q.high&&q.high[i]||0),l:+(q.low&&q.low[i]||0),c:+(q.close&&q.close[i]||0),v:+(q.volume&&q.volume[i]||0)})).filter(b=>b.c>0);
-      if(yb.length>2){VN.chartData[key]=yb;return yb;}
-    }
-  }catch(e2){}
-  return null;
-}
-
-async function vnFetchStocks(mode){
-  const syms=mode==='hnx'?['SHB','PVS','NTP','VCS','TNG','SHS','CEO','DGC','MBS','HUT','VGC','KLF','BVS','IDJ','PVI','SCR','PGI','VIF','WSS','HHC']:VN30_SYMS;
-  // 1. VNDirect (CORS native, giá đơn vị VND)
-  try{
-    const d=await vnFetchWithProxy(vnVNDirectStockUrl(syms));
-    const arr=d?.data||d;
-    if(Array.isArray(arr)&&arr.length>0){
-      const stocks=arr.map(s=>({
-        sym:s.code||'',name:VN_NAMES[s.code]||s.companyName||'',
-        price:+(s.lastPrice||0),ref:+(s.referencePrice||0),
-        ceil:+(s.ceilingPrice||0),floor:+(s.floorPrice||0),
-        chg:+(s.priceChange||0),
-        pct:(()=>{const r=+(s.priceChangeRatio||0);return Math.abs(r)>50?r:r*100;})(),
-        vol:+(s.totalVolume||0),val:+(s.totalValue||0),
-        hi:+(s.high||0),lo:+(s.low||0),floor_id:mode
-      })).filter(s=>s.sym&&s.price>0);
-      if(stocks.length>0) return stocks;
+      const bars=t.map((ts,i)=>({t:ts,o:+(q.open&&q.open[i]||0),h:+(q.high&&q.high[i]||0),l:+(q.low&&q.low[i]||0),c:+(q.close&&q.close[i]||0),v:+(q.volume&&q.volume[i]||0)})).filter(b=>b.c>0);
+      if(bars.length>2){VN.chartData[key]=bars;return bars;}
     }
   }catch(e){}
-  return[];
+  return null;
+}
+async function vnFetchStocks(mode){
+  const baseSyms=mode==="hnx"?["SHB","PVS","NTP","VCS","TNG","SHS","CEO","DGC","MBS","HUT","VGC","KLF","BVS","IDJ","PVI","SCR","PGI","VIF","WSS","HHC"]:VN30_SYMS;
+  const ySyms=baseSyms.map(s=>s+".VN");
+  let all=[];
+  for(let i=0;i<ySyms.length;i+=15){
+    const chunk=ySyms.slice(i,i+15);
+    try{
+      const d=await vnFetch(vnYahooQuoteUrl(chunk),8000);
+      const res=d&&d.quoteResponse&&d.quoteResponse.result;
+      if(Array.isArray(res)){
+        all=all.concat(res.map(q=>{
+          const sym=(q.symbol||"").replace(".VN","");
+          const price=+(q.regularMarketPrice||0);
+          const ref=+(q.regularMarketPreviousClose||price);
+          return{sym,name:VN_NAMES[sym]||q.shortName||sym,price,ref,ceil:Math.round(price*1.07),floor:Math.round(price*0.93),chg:+(q.regularMarketChange||0),pct:+(q.regularMarketChangePercent||0),vol:+(q.regularMarketVolume||0),val:0,hi:+(q.regularMarketDayHigh||price),lo:+(q.regularMarketDayLow||price),floor_id:mode};
+        }).filter(s=>s.sym&&s.price>0));
+      }
+    }catch(ce){}
+  }
+  return all;
 }
 
 function vnRenderIdxCard(sym,data){
