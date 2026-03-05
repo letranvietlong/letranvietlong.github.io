@@ -4842,10 +4842,13 @@ const VN_NAMES = {
 
 /* VN Stock Engine — CORS Proxy + TCBS/VNDirect verified endpoints */
 const TCBS_BASE='https://apipubaws.tcbs.com.vn';
+// CORS Proxy — Worker riêng (deploy 1 lần, miễn phí mãi mãi)
+// Xem hướng dẫn deploy Cloudflare Worker ở cuối file
+const VN_WORKER_URL='https://vn-stock-proxy.YOUR-SUBDOMAIN.workers.dev';
 const VN_PROXIES=[
-  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>VN_WORKER_URL+'?url='+encodeURIComponent(u),
   u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-  u=>'https://thingproxy.freeboard.io/fetch/'+u,
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
 ];
 async function vnProxyFetch(url,timeout){
   if(!timeout)timeout=12000;
