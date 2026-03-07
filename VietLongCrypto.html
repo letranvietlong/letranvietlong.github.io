@@ -1013,7 +1013,7 @@ footer .hl{color:var(--accent);}
 /* Sub Navigation */
 .sub-nav{
   display:grid;
-  grid-template-columns:repeat(7,1fr);
+  grid-template-columns:repeat(10,1fr);
   align-items:center;
   background:linear-gradient(180deg,rgba(8,14,24,0) 0%,rgba(6,10,18,.98) 100%);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -1099,6 +1099,10 @@ footer .hl{color:var(--accent);}
 .sub-tab:nth-child(5){animation-delay:.25s}
 .sub-tab:nth-child(6){animation-delay:.3s}
 .sub-tab:nth-child(7){animation-delay:.35s}
+.sub-tab:nth-child(8){animation-delay:.4s}
+.sub-tab:nth-child(9){animation-delay:.45s}
+.sub-tab:nth-child(10){animation-delay:.5s}
+.sub-tab:nth-child(11){animation-delay:.55s}
 
 /* ── Global Market Card ── */
 .gm-card{
@@ -1344,8 +1348,9 @@ footer .hl{color:var(--accent);}
   gap:8px;
 }
 .info-row:last-child{border-bottom:none;}
-.info-lbl{font-size:10px;color:var(--muted);}
-.info-val{font-size:11px;font-weight:600;color:var(--text);text-align:right;}
+.info-lbl{font-size:10px;color:var(--muted);flex-shrink:0;max-width:55%;}
+.info-val{font-size:11px;font-weight:600;color:var(--text);text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:55%;}
 .perf-grid{
   display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
 }
@@ -1405,6 +1410,242 @@ footer .hl{color:var(--accent);}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   max-width:70px;display:inline-block;
 }
+
+
+/* ═══════════════════════════════════════
+   HEATMAP
+═══════════════════════════════════════ */
+.heatmap-layout{display:flex;flex-direction:column;height:calc(100vh - 108px);padding:12px 20px;gap:10px;}
+.heatmap-header{flex-shrink:0;}
+.heatmap-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+.heatmap-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.hm-ctrl-group{display:flex;align-items:center;gap:6px;}
+.hm-ctrl-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+.hm-select{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:7px;padding:5px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;cursor:pointer;}
+.hm-select option{background:#0a0e17;}
+.hm-btn{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:7px;padding:5px 14px;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+.hm-btn:hover{background:rgba(0,212,255,.15);}
+.hm-legend{display:flex;gap:12px;align-items:center;font-size:10px;font-weight:600;flex-wrap:wrap;}
+.hm-leg-item{opacity:.8;}
+.heatmap-grid{flex:1;position:relative;overflow:hidden;}
+.hm-loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:40px;margin:auto;}
+.hm-cell{
+  border-radius:6px;padding:4px 6px;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  transition:filter .15s, transform .1s;
+  min-width:60px;min-height:52px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.04);
+  position:relative;
+}
+.hm-cell:hover{filter:brightness(1.2);transform:scale(1.03);z-index:2;border-color:rgba(255,255,255,.15);}
+.hm-cell-sym{font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;}
+.hm-cell-pct{font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);margin-top:2px;}
+.hm-cell-price{font-size:8px;color:rgba(255,255,255,.6);margin-top:1px;white-space:nowrap;}
+
+/* ═══════════════════════════════════════
+   PORTFOLIO
+═══════════════════════════════════════ */
+.portfolio-layout{display:flex;flex-direction:column;height:calc(100vh - 108px);padding:12px 20px;gap:10px;}
+.pf-summary-bar{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex-shrink:0;
+  background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:12px;padding:12px 16px;
+}
+.pf-sum-item{text-align:center;}
+.pf-sum-lbl{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;}
+.pf-sum-val{font-size:16px;font-weight:700;color:var(--text);}
+.pf-body{display:grid;grid-template-columns:1fr 320px;gap:12px;flex:1;min-height:0;}
+.pf-left{display:flex;flex-direction:column;min-height:0;}
+.pf-right{display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.pf-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.pf-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.pf-card-title{font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.3px;}
+.pf-add-btn{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:7px;padding:5px 12px;color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+.pf-add-btn:hover{background:rgba(0,212,255,.18);}
+.pf-form{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:8px;padding:10px;margin-bottom:10px;}
+.pf-form-row{display:flex;gap:6px;flex-wrap:wrap;}
+.pf-input{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;min-width:0;flex:1;}
+.pf-input:focus{border-color:rgba(0,212,255,.3);}
+.pf-btn-save{background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:6px 14px;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;}
+.pf-btn-cancel{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;}
+.pf-table-wrap{overflow:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.pf-table{width:100%;border-collapse:collapse;font-size:11px;}
+.pf-table th{padding:7px 10px;text-align:right;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid rgba(255,255,255,.05);font-weight:600;white-space:nowrap;}
+.pf-table th:first-child{text-align:left;}
+.pf-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);text-align:right;color:var(--text);font-weight:600;vertical-align:middle;}
+.pf-table td:first-child{text-align:left;}
+.pf-table tr:hover td{background:rgba(255,255,255,.02);}
+.pf-empty{text-align:center!important;color:var(--muted);padding:30px!important;font-size:12px;}
+.pf-coin-cell{display:flex;align-items:center;gap:8px;}
+.pf-coin-logo{width:22px;height:22px;border-radius:50%;}
+.pf-del-btn{background:none;border:none;color:rgba(239,68,68,.4);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;transition:color .15s;}
+.pf-del-btn:hover{color:#ef4444;background:rgba(239,68,68,.1);}
+.pf-pie-legend{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+.pf-pie-leg-item{display:flex;align-items:center;gap:7px;font-size:10px;}
+.pf-pie-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.pf-perf-bars{display:flex;flex-direction:column;gap:6px;}
+.pf-perf-row{display:flex;align-items:center;gap:8px;}
+.pf-perf-lbl{font-size:10px;font-weight:700;color:var(--text);width:44px;flex-shrink:0;}
+.pf-perf-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.pf-perf-bar{height:100%;border-radius:99px;transition:width .5s ease;}
+.pf-perf-pct{font-size:10px;font-weight:700;width:52px;text-align:right;flex-shrink:0;}
+
+/* ═══════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════ */
+.events-layout{padding:16px 24px;display:flex;flex-direction:column;gap:12px;height:calc(100vh - 108px);overflow:hidden;}
+.events-header{flex-shrink:0;}
+.ev-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.ev-filter{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:5px 14px;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.3px;}
+.ev-filter.active{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3);color:#a78bfa;}
+.ev-filter:hover:not(.active){color:var(--text);border-color:rgba(255,255,255,.15);}
+.events-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:4px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.ev-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .2s,background .2s;cursor:default;
+  position:relative;overflow:hidden;
+}
+.ev-card:hover{border-color:rgba(167,139,250,.2);background:rgba(167,139,250,.03);}
+.ev-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.ev-card.halving::before{background:#f59e0b;}
+.ev-card.listing::before{background:#22c55e;}
+.ev-card.unlock::before{background:#ef4444;}
+.ev-card.mainnet::before{background:#38bdf8;}
+.ev-card.partnership::before{background:#a78bfa;}
+.ev-card.conference::before{background:#fb7185;}
+.ev-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.ev-badge{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 7px;border-radius:10px;flex-shrink:0;margin-top:1px;}
+.ev-badge.halving{background:rgba(245,158,11,.15);color:#f59e0b;}
+.ev-badge.listing{background:rgba(34,197,94,.15);color:#22c55e;}
+.ev-badge.unlock{background:rgba(239,68,68,.15);color:#ef4444;}
+.ev-badge.mainnet{background:rgba(56,189,248,.15);color:#38bdf8;}
+.ev-badge.partnership{background:rgba(167,139,250,.15);color:#a78bfa;}
+.ev-badge.conference{background:rgba(251,113,133,.15);color:#fb7185;}
+.ev-title{font-size:12px;font-weight:700;color:var(--text);line-height:1.4;}
+.ev-coin{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-weight:600;}
+.ev-coin img{width:14px;height:14px;border-radius:50%;}
+.ev-date{font-size:10px;color:var(--accent);font-weight:700;}
+.ev-countdown{
+  font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;
+  background:rgba(0,212,255,.07);color:var(--accent);border:1px solid rgba(0,212,255,.12);
+  align-self:flex-start;
+}
+.ev-countdown.past{background:rgba(255,255,255,.04);color:var(--muted);border-color:transparent;}
+.ev-desc{font-size:10px;color:var(--muted);line-height:1.5;}
+
+/* ═══════════════════════════════════════
+   FOCUS MODE (Tập Trung)
+═══════════════════════════════════════ */
+.focus-layout{display:flex;flex-direction:column;height:calc(100vh - 108px);background:#060810;}
+.focus-header{
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  padding:8px 16px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.05);
+  flex-wrap:wrap;
+}
+.focus-search{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;
+  padding:7px 12px;color:var(--text);font-size:12px;width:160px;font-family:inherit;outline:none;
+}
+.focus-search:focus{border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.05);}
+.focus-dropdown{
+  position:absolute;z-index:100;background:#0d1117;border:1px solid var(--border);
+  border-radius:8px;min-width:200px;max-height:240px;overflow-y:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+.focus-coin-select{position:relative;}
+.focus-dd-item{padding:8px 12px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.03);}
+.focus-dd-item:hover{background:rgba(0,212,255,.07);}
+.focus-dd-item img{width:18px;height:18px;border-radius:50%;}
+.focus-coin-info{display:flex;align-items:center;gap:10px;flex:1;}
+.focus-logo-fb{width:36px;height:36px;border-radius:50%;background:rgba(0,212,255,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;}
+.focus-name{font-size:14px;font-weight:700;color:var(--text);}
+.focus-sym{font-size:10px;color:var(--muted);}
+.focus-price-block{display:flex;align-items:baseline;gap:8px;}
+.focus-price{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.5px;}
+.focus-chg{font-size:13px;font-weight:700;}
+.focus-chg.up{color:var(--green);}
+.focus-chg.dn{color:var(--red);}
+.focus-tf-btns{display:flex;gap:4px;margin-left:auto;}
+.focus-exit-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:7px;padding:5px 14px;color:#f87171;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+.focus-exit-btn:hover{background:rgba(239,68,68,.18);}
+.focus-chart-wrap{flex:1;min-height:0;position:relative;}
+#focusChartContainer{width:100%;height:100%;}
+.focus-stats-bar{
+  display:flex;gap:0;background:rgba(0,0,0,.5);border-top:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;overflow-x:auto;scrollbar-width:none;
+}
+.focus-stats-bar::-webkit-scrollbar{display:none;}
+.fsb-item{display:flex;flex-direction:column;gap:2px;padding:7px 14px;border-right:1px solid rgba(255,255,255,.04);flex-shrink:0;}
+.fsb-lbl{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.fsb-val{font-size:12px;font-weight:700;color:var(--text);}
+
+.page-title{font-size:16px;font-weight:700;color:var(--text);margin:0;}
+
+/* ── Fullscreen chart ── */
+.chart-fs-btn{
+  width:30px;height:30px;flex-shrink:0;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:7px;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.chart-fs-btn:hover{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.2);color:var(--accent);}
+
+/* Overlay fullscreen — div riêng, không đụng layout grid */
+#chartFsOverlay{
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:#060810;
+  flex-direction:column;
+  overflow:hidden;
+}
+#chartFsOverlay.open{ display:flex; }
+#chartFsOverlay .fs-header{
+  flex-shrink:0;display:flex;align-items:center;gap:10px;
+  padding:8px 16px;
+  background:rgba(6,8,16,.98);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+#chartFsOverlay .fs-header .chart-coin-name{font-size:15px;font-weight:700;}
+#chartFsOverlay .fs-header .chart-price-display{font-size:20px;font-weight:800;}
+#chartFsOverlay .fs-tf-row{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  padding:6px 16px;background:rgba(6,8,16,.9);
+  border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;
+}
+#chartFsBody{
+  flex:1;min-height:0;position:relative;
+}
+#chartFsContainer{
+  width:100%;height:100%;
+}
+#chartFsStatsBar{
+  flex-shrink:0;
+  display:flex;gap:0;
+  background:rgba(0,0,0,.5);
+  border-top:1px solid rgba(255,255,255,.06);
+  overflow-x:auto;scrollbar-width:none;
+}
+#chartFsStatsBar::-webkit-scrollbar{display:none;}
+#chartFsStatsBar .sb-item{
+  display:flex;flex-direction:column;gap:2px;
+  padding:6px 14px;
+  border-right:1px solid rgba(255,255,255,.04);
+  flex-shrink:0;
+}
+#chartFsStatsBar .sb-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+#chartFsStatsBar .sb-val{font-size:11px;font-weight:700;color:var(--text);}
+/* ESC hint */
+#chartFsHint{
+  position:fixed;bottom:20px;right:20px;
+  background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.1);border-radius:10px;
+  padding:6px 14px;font-size:10px;color:rgba(255,255,255,.5);
+  z-index:10000;pointer-events:none;
+  opacity:0;transition:opacity .3s;
+}
+#chartFsHint.show{opacity:1;}
+@keyframes fadeOut{from{opacity:1}to{opacity:0;visibility:hidden;}}
 
 </style>
 </head>
@@ -1531,6 +1772,47 @@ footer .hl{color:var(--accent);}
       </svg>
     </span>
     <span class="tab-label">AI Phân Tích</span>
+  </button>
+
+  <button class="sub-tab" id="stab-heatmap" role="tab" onclick="showPage('heatmap',this)">
+    <span class="tab-icon ti-heatmap">
+      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="7" height="7" rx="1" fill="#22c55e" opacity=".9"/>
+        <rect x="11" y="2" width="7" height="7" rx="1" fill="#ef4444" opacity=".8"/>
+        <rect x="2" y="11" width="3" height="7" rx="1" fill="#ef4444" opacity=".6"/>
+        <rect x="7" y="11" width="4" height="7" rx="1" fill="#22c55e" opacity=".5"/>
+        <rect x="13" y="11" width="5" height="7" rx="1" fill="#22c55e" opacity=".9"/>
+      </svg>
+    </span>
+    <span class="tab-label">Heatmap</span>
+  </button>
+
+  <button class="sub-tab" id="stab-portfolio" role="tab" onclick="showPage('portfolio',this)">
+    <span class="tab-icon ti-portfolio">
+      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="8" fill="none" stroke="#38bdf8" stroke-width="1"/>
+        <path d="M10 10 L10 2 A8 8 0 0 1 17.6 14z" fill="#f59e0b" opacity=".9"/>
+        <path d="M10 10 L17.6 14 A8 8 0 0 1 2.4 14z" fill="#22c55e" opacity=".8"/>
+        <path d="M10 10 L2.4 14 A8 8 0 0 1 10 2z" fill="#8b5cf6" opacity=".7"/>
+        <circle cx="10" cy="10" r="3" fill="#0a0e17"/>
+      </svg>
+    </span>
+    <span class="tab-label">Danh Mục</span>
+  </button>
+
+  <button class="sub-tab" id="stab-events" role="tab" onclick="showPage('events',this)">
+    <span class="tab-icon ti-events">
+      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="4" width="16" height="14" rx="2" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
+        <rect x="2" y="4" width="16" height="5" rx="2" fill="#7c3aed" opacity=".6"/>
+        <line x1="6" y1="2" x2="6" y2="6" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="14" y1="2" x2="14" y2="6" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="5" y="11" width="3" height="3" rx=".5" fill="#f59e0b"/>
+        <rect x="10" y="11" width="3" height="3" rx=".5" fill="#22c55e"/>
+        <rect x="14" y="11" width="3" height="3" rx=".5" fill="#38bdf8"/>
+      </svg>
+    </span>
+    <span class="tab-label">Sự Kiện</span>
   </button>
 
   <button class="sub-tab sub-tab-donate" id="stab-donate" role="tab" onclick="showPage('donate',this)">
@@ -1718,7 +2000,7 @@ footer .hl{color:var(--accent);}
 
 <!-- ══════════════ PAGE: CHART ══════════════ -->
 <div class="page" id="page-chart">
-<div class="chart-layout">
+<div class="chart-layout" id="chartLayout">
   <!-- Coin list -->
   <div class="coin-list-panel">
     <div class="coin-list-search"><input type="text" id="chartSearch" placeholder="🔍 Tìm coin..." oninput="filterChartList()"></div>
@@ -1753,11 +2035,11 @@ footer .hl{color:var(--accent);}
             <span class="chart-stat-val" id="chartVol24h" style="color:var(--text2)">—</span>
           </div>
           <div class="chart-stat">
-            <span class="chart-stat-label">Market Cap</span>
+            <span class="chart-stat-label">Vốn hoá</span>
             <span class="chart-stat-val" id="chartMarketCap" style="color:var(--text2)">—</span>
           </div>
           <div class="chart-stat">
-            <span class="chart-stat-label">Rank</span>
+            <span class="chart-stat-label">Hạng</span>
             <span class="chart-stat-val" id="chartRank" style="color:var(--gold)">—</span>
           </div>
         </div>
@@ -1766,7 +2048,7 @@ footer .hl{color:var(--accent);}
         <!-- Indicator toggles -->
         <div class="chart-ind-toggles" id="chartIndToggles">
           <button class="ind-toggle active" id="togEMA" onclick="toggleChartIndicator('ema',this)" title="EMA 20/50">EMA</button>
-          <button class="ind-toggle active" id="togBB"  onclick="toggleChartIndicator('bb',this)"  title="Bollinger Bands">BB</button>
+          <button class="ind-toggle active" id="togBB"  onclick="toggleChartIndicator('bb',this)"  title="Dải Bollinger">BB</button>
           <button class="ind-toggle active"  id="togVol" onclick="toggleChartIndicator('vol',this)" title="Volume">VOL</button>
         </div>
         <div class="tf-btns">
@@ -1778,6 +2060,11 @@ footer .hl{color:var(--accent);}
           <button class="tf-btn" onclick="setTf(this,'1d')">1D</button>
           <button class="tf-btn" onclick="setTf(this,'1w')">1W</button>
         </div>
+        <button class="chart-fs-btn" id="chartFsBtn" onclick="toggleChartFullscreen()" title="Toàn màn hình">
+          <svg id="chartFsIcon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3h-3v2h5v-5h-2v3z"/>
+          </svg>
+        </button>
       </div>
     </div>
     <!-- Stats bar dưới header -->
@@ -1803,15 +2090,15 @@ footer .hl{color:var(--accent);}
         <span class="csb-val" id="csbEma50">—</span>
       </div>
       <div class="csb-item">
-        <span class="csb-lbl">BB Upper</span>
+        <span class="csb-lbl">BB Trên</span>
         <span class="csb-val" id="csbBbUpper">—</span>
       </div>
       <div class="csb-item">
-        <span class="csb-lbl">BB Lower</span>
+        <span class="csb-lbl">BB Dưới</span>
         <span class="csb-val" id="csbBbLower">—</span>
       </div>
       <div class="csb-item">
-        <span class="csb-lbl">Spread</span>
+        <span class="csb-lbl">Chênh lệch</span>
         <span class="csb-val" id="csbSpread">—</span>
       </div>
     </div>
@@ -2007,12 +2294,12 @@ footer .hl{color:var(--accent);}
         <div class="info-sec-title">Thông Tin Coin</div>
         <div class="info-row"><span class="info-lbl">Tên đầy đủ</span><span class="info-val" id="infoFullName">—</span></div>
         <div class="info-row"><span class="info-lbl">Hạng thị trường</span><span class="info-val" id="infoRank">—</span></div>
-        <div class="info-row"><span class="info-lbl">Market Cap</span><span class="info-val" id="infoMCap">—</span></div>
+        <div class="info-row"><span class="info-lbl">Vốn hoá</span><span class="info-val" id="infoMCap">—</span></div>
         <div class="info-row"><span class="info-lbl">KL 24h</span><span class="info-val" id="infoVol24">—</span></div>
         <div class="info-row"><span class="info-lbl">Lưu hành</span><span class="info-val" id="infoSupply">—</span></div>
         <div class="info-row"><span class="info-lbl">Tổng cung</span><span class="info-val" id="infoTotalSupply">—</span></div>
-        <div class="info-row"><span class="info-lbl">ATH</span><span class="info-val" id="infoAth" style="color:#00e676">—</span></div>
-        <div class="info-row"><span class="info-lbl">ATL</span><span class="info-val" id="infoAtl" style="color:#ff3d57">—</span></div>
+        <div class="info-row"><span class="info-lbl">Cao mọi thời đại</span><span class="info-val" id="infoAth" style="color:#00e676">—</span></div>
+        <div class="info-row"><span class="info-lbl">Thấp mọi thời đại</span><span class="info-val" id="infoAtl" style="color:#ff3d57">—</span></div>
       </div>
       <div class="info-section">
         <div class="info-sec-title">Hiệu Suất</div>
@@ -2024,7 +2311,7 @@ footer .hl{color:var(--accent);}
         </div>
       </div>
       <div class="info-section">
-        <div class="info-sec-title">Sparkline 7 Ngày</div>
+        <div class="info-sec-title">Biến động 7 Ngày</div>
         <canvas id="infoSparkline" width="240" height="52" style="width:100%;display:block;"></canvas>
       </div>
       <div class="info-links">
@@ -2384,6 +2671,210 @@ footer .hl{color:var(--accent);}
 </div><!-- /ai-layout -->
 </div><!-- /page-ai -->
 
+<!-- ══════════════ PAGE: HEATMAP ══════════════ -->
+<div class="page" id="page-heatmap">
+<div class="heatmap-layout">
+  <div class="heatmap-header">
+    <div class="heatmap-title-row">
+      <h2 class="page-title">🟩 Heatmap Thị Trường</h2>
+      <div class="heatmap-controls">
+        <div class="hm-ctrl-group">
+          <span class="hm-ctrl-lbl">Kích thước</span>
+          <select class="hm-select" id="hmSizeBy" onchange="renderHeatmap()">
+            <option value="vol">Khối lượng 24h</option>
+            <option value="mcap">Vốn hoá</option>
+            <option value="equal">Đều nhau</option>
+          </select>
+        </div>
+        <div class="hm-ctrl-group">
+          <span class="hm-ctrl-lbl">Màu sắc</span>
+          <select class="hm-select" id="hmColorBy" onchange="renderHeatmap()">
+            <option value="24h">% 24h</option>
+            <option value="1h">% 1h</option>
+            <option value="vol">Khối lượng</option>
+          </select>
+        </div>
+        <button class="hm-btn" onclick="renderHeatmap()">↻ Làm mới</button>
+      </div>
+    </div>
+    <div class="hm-legend">
+      <span class="hm-leg-item" style="color:#ef4444">▼ -10%+</span>
+      <span class="hm-leg-item" style="color:#f97316">▼ -5%</span>
+      <span class="hm-leg-item" style="color:#78716c">▼ -1%</span>
+      <span class="hm-leg-item" style="color:#64748b">≈ 0%</span>
+      <span class="hm-leg-item" style="color:#4ade80">▲ +1%</span>
+      <span class="hm-leg-item" style="color:#22c55e">▲ +5%</span>
+      <span class="hm-leg-item" style="color:#16a34a">▲ +10%+</span>
+    </div>
+  </div>
+  <div class="heatmap-grid" id="heatmapGrid">
+    <div class="hm-loading"><div class="spinner"></div><span>Đang tải dữ liệu...</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ PAGE: PORTFOLIO ══════════════ -->
+<div class="page" id="page-portfolio">
+<div class="portfolio-layout">
+  <!-- Summary bar -->
+  <div class="pf-summary-bar">
+    <div class="pf-sum-item">
+      <span class="pf-sum-lbl">Tổng đầu tư</span>
+      <span class="pf-sum-val" id="pfTotalInvest">$0</span>
+    </div>
+    <div class="pf-sum-item">
+      <span class="pf-sum-lbl">Giá trị hiện tại</span>
+      <span class="pf-sum-val" id="pfTotalValue">$0</span>
+    </div>
+    <div class="pf-sum-item">
+      <span class="pf-sum-lbl">Lãi/Lỗ</span>
+      <span class="pf-sum-val" id="pfTotalPnl">$0</span>
+    </div>
+    <div class="pf-sum-item">
+      <span class="pf-sum-lbl">% Lãi/Lỗ</span>
+      <span class="pf-sum-val" id="pfTotalPct">0%</span>
+    </div>
+    <div class="pf-sum-item">
+      <span class="pf-sum-lbl">24h Thay đổi</span>
+      <span class="pf-sum-val" id="pfDayChange">$0</span>
+    </div>
+  </div>
+
+  <div class="pf-body">
+    <!-- Left: Holdings table + Add form -->
+    <div class="pf-left">
+      <div class="pf-card">
+        <div class="pf-card-header">
+          <span class="pf-card-title">📋 Danh Mục Nắm Giữ</span>
+          <button class="pf-add-btn" onclick="pfToggleForm()">+ Thêm coin</button>
+        </div>
+
+        <!-- Add form -->
+        <div class="pf-form" id="pfForm" style="display:none">
+          <div class="pf-form-row">
+            <input class="pf-input" id="pfSymInput" placeholder="Coin (BTC, ETH...)" list="pfSymList">
+            <datalist id="pfSymList"></datalist>
+            <input class="pf-input" id="pfQtyInput" type="number" placeholder="Số lượng" min="0" step="any">
+            <input class="pf-input" id="pfPriceInput" type="number" placeholder="Giá mua ($)" min="0" step="any">
+            <button class="pf-btn-save" onclick="pfAddHolding()">Thêm</button>
+            <button class="pf-btn-cancel" onclick="pfToggleForm()">✕</button>
+          </div>
+        </div>
+
+        <!-- Holdings list -->
+        <div class="pf-table-wrap">
+          <table class="pf-table">
+            <thead>
+              <tr>
+                <th>Coin</th>
+                <th>Số lượng</th>
+                <th>Giá mua</th>
+                <th>Giá hiện tại</th>
+                <th>Giá trị</th>
+                <th>Lãi/Lỗ</th>
+                <th>%</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="pfTableBody">
+              <tr><td colspan="8" class="pf-empty">Chưa có coin nào. Nhấn "+ Thêm coin" để bắt đầu.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Charts -->
+    <div class="pf-right">
+      <!-- Allocation pie -->
+      <div class="pf-card">
+        <div class="pf-card-title">🥧 Phân Bổ Tài Sản</div>
+        <canvas id="pfPieCanvas" width="240" height="200" style="display:block;margin:0 auto"></canvas>
+        <div class="pf-pie-legend" id="pfPieLegend"></div>
+      </div>
+      <!-- Performance -->
+      <div class="pf-card" style="margin-top:12px">
+        <div class="pf-card-title">📊 Hiệu Suất từng coin</div>
+        <div class="pf-perf-bars" id="pfPerfBars"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ PAGE: EVENTS ══════════════ -->
+<div class="page" id="page-events">
+<div class="events-layout">
+  <div class="events-header">
+    <h2 class="page-title">📅 Lịch Sự Kiện Crypto</h2>
+    <div class="ev-filter-row">
+      <button class="ev-filter active" data-cat="all"    onclick="filterEvents('all',this)">Tất cả</button>
+      <button class="ev-filter" data-cat="halving"       onclick="filterEvents('halving',this)">Halving</button>
+      <button class="ev-filter" data-cat="listing"       onclick="filterEvents('listing',this)">Niêm yết</button>
+      <button class="ev-filter" data-cat="unlock"        onclick="filterEvents('unlock',this)">Mở Khoá Token</button>
+      <button class="ev-filter" data-cat="mainnet"       onclick="filterEvents('mainnet',this)">Mainnet</button>
+      <button class="ev-filter" data-cat="partnership"   onclick="filterEvents('partnership',this)">Hợp Tác</button>
+    </div>
+  </div>
+  <div class="events-grid" id="eventsGrid">
+    <div class="hm-loading"><div class="spinner"></div><span>Đang tải sự kiện...</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ PAGE: FOCUS ══════════════ -->
+<div class="page" id="page-focus">
+<div class="focus-layout" id="focusLayout">
+  <!-- Header -->
+  <div class="focus-header">
+    <div class="focus-coin-select">
+      <input class="focus-search" id="focusSearch" placeholder="🔍 Tìm coin..." oninput="filterFocusList()" autocomplete="off">
+      <div class="focus-dropdown" id="focusDropdown" style="display:none"></div>
+    </div>
+    <div class="focus-coin-info" id="focusCoinInfo" style="display:none">
+      <img id="focusLogo" width="36" height="36" style="border-radius:50%;display:none">
+      <div id="focusLogoFb" class="focus-logo-fb">?</div>
+      <div>
+        <div class="focus-name" id="focusName">—</div>
+        <div class="focus-sym" id="focusSym">—</div>
+      </div>
+      <div class="focus-price-block">
+        <span class="focus-price" id="focusPrice">—</span>
+        <span class="focus-chg" id="focusChg">—</span>
+      </div>
+    </div>
+    <div class="focus-tf-btns">
+      <button class="tf-btn" onclick="setFocusTf(this,'1h')">1h</button>
+      <button class="tf-btn active" onclick="setFocusTf(this,'4h')">4h</button>
+      <button class="tf-btn" onclick="setFocusTf(this,'1d')">1D</button>
+      <button class="tf-btn" onclick="setFocusTf(this,'1w')">1W</button>
+    </div>
+    <button class="focus-exit-btn" id="focusExitBtn" onclick="exitFocusMode()" style="display:none">✕ Thoát tập trung</button>
+  </div>
+  <!-- Full chart -->
+  <div class="focus-chart-wrap" id="focusChartWrap">
+    <div id="focusChartContainer"></div>
+    <div class="chart-loading" id="focusLoading" style="display:flex">
+      <div style="font-size:28px">📈</div>
+      <span>Chọn một coin để xem biểu đồ toàn màn hình</span>
+    </div>
+  </div>
+  <!-- Bottom stats bar -->
+  <div class="focus-stats-bar" id="focusStatsBar" style="display:none">
+    <div class="fsb-item"><span class="fsb-lbl">RSI(14)</span><span class="fsb-val" id="fsbRsi">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">MACD</span><span class="fsb-val" id="fsbMacd">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">EMA 20</span><span class="fsb-val" id="fsbEma20">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">EMA 50</span><span class="fsb-val" id="fsbEma50">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">BB Trên</span><span class="fsb-val" id="fsbBbU">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">BB Dưới</span><span class="fsb-val" id="fsbBbL">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">Cao 24h</span><span class="fsb-val" id="fsbHigh" style="color:#22c55e">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">Thấp 24h</span><span class="fsb-val" id="fsbLow" style="color:#ef4444">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">KL 24h</span><span class="fsb-val" id="fsbVol">—</span></div>
+    <div class="fsb-item"><span class="fsb-lbl">Tín hiệu</span><span class="fsb-val" id="fsbSignal">—</span></div>
+  </div>
+</div>
+</div>
+
 
 <!-- ══════════════ PAGE: CK VIỆT NAM ══════════════ -->
 <div class="page" id="page-donate">
@@ -2543,6 +3034,37 @@ const timeAgo=ms=>{
 /* ═══════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════ */
+// CoinGecko ID map (symbol → CG coin id)
+const cgIdMap={
+  BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',XRP:'ripple',
+  USDC:'usd-coin',ADA:'cardano',AVAX:'avalanche-2',DOGE:'dogecoin',DOT:'polkadot',
+  LINK:'chainlink',TRX:'tron',MATIC:'matic-network',POL:'matic-network',
+  LTC:'litecoin',BCH:'bitcoin-cash',UNI:'uniswap',ATOM:'cosmos',
+  XLM:'stellar',ICP:'internet-computer',FIL:'filecoin',APT:'aptos',
+  ARB:'arbitrum',OP:'optimism',SUI:'sui',SEI:'sei-network',
+  INJ:'injective-protocol',NEAR:'near',HBAR:'hedera-hashgraph',
+  VET:'vechain',ALGO:'algorand',MANA:'decentraland',SAND:'the-sandbox',
+  AXS:'axie-infinity',FTM:'fantom',ONE:'harmony',EGLD:'elrond-erd-2',
+  THETA:'theta-token',EOS:'eos',ZEC:'zcash',XMR:'monero',
+  AAVE:'aave',MKR:'maker',SNX:'havven',COMP:'compound-governance-token',
+  CRV:'curve-dao-token',SUSHI:'sushi',YFI:'yearn-finance',
+  GRT:'the-graph',BAT:'basic-attention-token',ZRX:'0x',
+  ENJ:'enjincoin',CHZ:'chiliz',HOT:'holotoken',IOTA:'iota',
+  ETC:'ethereum-classic',DASH:'dash',ZIL:'zilliqa',ICX:'icon',
+  ONT:'ontology',QTUM:'qtum',DGB:'digibyte',SC:'siacoin',
+  CAKE:'pancakeswap-token',TWT:'trust-wallet-token',
+  PEPE:'pepe',SHIB:'shiba-inu',FLOKI:'floki',WIF:'dogwifcoin',
+  BONK:'bonk',RENDER:'render-token',FET:'fetch-ai',
+  AGIX:'singularitynet',OCEAN:'ocean-protocol',
+  TON:'the-open-network',NOT:'notcoin',
+  WLD:'worldcoin-wld',TIA:'celestia',DYM:'dymension',
+  STRK:'starknet',MANTA:'manta-network',ALT:'altlayer',
+  JUP:'jupiter-ag',PYTH:'pyth-network',JTO:'jito-governance-token',
+  ONDO:'ondo-finance',W:'wormhole',ENA:'ethena',
+  EIGEN:'eigenlayer',LISTA:'lista-dao',DOGS:'dogs-token',
+  HMSTR:'hamster-kombat',MAJOR:'major',CATI:'catizen',
+  BOME:'book-of-meme',POPCAT:'popcat',MEW:'cat-in-a-dogs-world',
+};
 let SYMBOLS=[];
 const coins={}, hist={}, logoMap={}, nameMap={}, colorMap={};
 function fmtPShort(p){
@@ -2848,6 +3370,10 @@ function connectWS(){
         checkAlertForSym(d.s);
         // Kiểm tra cá voi
         _scheduleWhaleCheck(d.s);
+        // Cập nhật portfolio
+        _origCoinsProxy();
+        // Cập nhật focus header
+        if(focusSym===d.s) updateFocusHeader();
       }catch(e){}
     };
 
@@ -3602,7 +4128,7 @@ async function openChart(sym){
   await loadCandleData(sym,currentTf);
   await loadChartIndicators(sym);
     // Load info nếu panel info đang mở
-    if(currentRightPanel==='info') loadCoinInfo(sym.replace('USDT',''));
+    loadCoinInfo(sym.replace('USDT','')); // luôn load để có Vốn hoá & Hạng
   // Nếu đang ở tab Order Book → restart với coin mới
   if(currentRightPanel==='ob') startOrderBook(sym);
 }
@@ -3618,13 +4144,28 @@ function updateChartHeader(){
     chgEl.textContent=`${sign(_cc)}${_cc.toFixed(2)}%`;
     chgEl.className=`chart-chg ${_cc>=0?'up':'down'}`;
   }
-  // Mini stats
+  // Mini stats — từ Binance ticker
   const highEl=document.getElementById('chartHigh');
   const lowEl=document.getElementById('chartLow');
   const volEl=document.getElementById('chartVol24h');
   if(highEl&&c.high) highEl.textContent=fmtP(c.high);
   if(lowEl&&c.low) lowEl.textContent=fmtP(c.low);
   if(volEl) volEl.textContent=fmtB(c.vol||0);
+
+  // Vốn hoá ước tính từ giá × circulating supply (nếu chưa có từ CoinGecko)
+  const mcEl=document.getElementById('chartMarketCap');
+  if(mcEl && (mcEl.textContent==='—' || !mcEl.textContent.trim())){
+    // Ước tính bằng vol 24h (proxy khi chưa có mcap thật)
+    if(c.vol>0) mcEl.textContent=fmtB(c.vol)+' (KL)';
+  }
+
+  // Chênh lệch bid-ask từ order book snapshot nhanh
+  const spreadEl=document.getElementById('csbSpread');
+  if(spreadEl && (spreadEl.textContent==='—' || !spreadEl.textContent.trim()) && c.price>0){
+    // Ước tính spread ≈ 0.01% của giá (typical maker spread)
+    const estSpread = c.price * 0.0001;
+    spreadEl.textContent = fmtPShort(estSpread);
+  }
 }
 
 async function loadCandleData(sym,tf){
@@ -3882,14 +4423,72 @@ function toggleChartIndicator(type, btn){
 const _origSwitch = typeof switchRightPanel === 'function' ? switchRightPanel : null;
 
 // ── Load CoinGecko info panel ─────────────────────────────────────────
+const _cgInfoCache = {};
+
+
+// ── Fill thông tin cơ bản từ Binance (không cần CoinGecko) ──────────
+function _fillCoinInfoFromBinance(base){
+  const sym  = base + 'USDT';
+  const d    = coins[sym] || {};
+  const name = nameMap[base] || base;
+
+  _setEl('infoFullName', name);
+  _setEl('infoVol24',    fmtB(d.vol || 0));
+  _setEl('chartMarketCap', d.vol ? fmtB(d.vol) + ' (KL)' : '—');
+
+  // Giá hiện tại, cao/thấp 24h
+  if(d.price){
+    _setEl('infoAth',  fmtP(d.high || d.price), 'var(--green)');
+    _setEl('infoAtl',  fmtP(d.low  || d.price), 'var(--red)');
+  }
+
+  // Logo trong info panel nếu có
+  const logoEl = document.getElementById('infoLogo');
+  if(logoEl && logoMap[base]){
+    logoEl.src = logoMap[base];
+    logoEl.style.display = 'block';
+  }
+
+  // Links mặc định dùng base
+  const lb = document.getElementById('infoLinkBinance');
+  const lg = document.getElementById('infoLinkGecko');
+  if(lb) lb.href = `https://www.binance.com/vi/trade/${base}_USDT`;
+  const cgId = (cgIdMap&&cgIdMap[base]) || base.toLowerCase();
+  if(lg) lg.href = `https://www.coingecko.com/vi/đồng-tiền-kỹ-thuật-số/${cgId}`;
+}
+
 async function loadCoinInfo(base){
   const id = (cgIdMap&&cgIdMap[base]) || base.toLowerCase();
+  const cacheKey = 'cginfo_' + id;
+  const cached = _cgInfoCache[cacheKey];
+
+  // ── Luôn fill ngay từ Binance data (instant, không cần API) ──────
+  _fillCoinInfoFromBinance(base);
+
+  // ── Dùng cache nếu còn mới (< 10 phút) ──────────────────────────
+  if(cached && Date.now()-cached.ts < 600000){
+    _applyCGData(base, id, cached.data);
+    return;
+  }
+
+  // ── Thử gọi CoinGecko ─────────────────────────────────────────────
   try{
-    const r = await fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`,
-      {signal:AbortSignal.timeout(10000)});
-    if(!r.ok) return;
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`,
+      {signal:AbortSignal.timeout(12000)}
+    );
+    if(!r.ok){
+      console.log(`CoinGecko ${r.status} cho ${id}`);
+      return; // giữ nguyên data Binance đã fill
+    }
     const d = await r.json();
-    const md = d.market_data||{};
+    _cgInfoCache[cacheKey] = {ts:Date.now(), data:d};
+    _applyCGData(base, id, d);
+  }catch(e){ console.warn('CoinInfo err:', e.message); }
+}
+
+function _applyCGData(base, id, d){
+  const md = d.market_data||{};
     const fmt = (v)=>v==null?'—':v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(1)+'K':'$'+v.toFixed(4);
     const fmtN = (v)=>v==null?'—':v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(2)+'M':(+v).toLocaleString('vi-VN');
     const pctColor = (v)=>v==null?'var(--muted)':v>=0?'var(--green)':'var(--red)';
@@ -3952,8 +4551,8 @@ async function loadCoinInfo(base){
     const lg = document.getElementById('infoLinkGecko');
     if(lb) lb.href=`https://www.binance.com/vi/trade/${base}_USDT`;
     if(lg) lg.href=`https://www.coingecko.com/vi/đồng-tiền-kỹ-thuật-số/${id}`;
-  }catch(e){ console.log('CoinInfo err',e); }
-}
+  }
+
 
 async function loadChartIndicators(sym){
   const ind=await fetchIndicators(sym);
@@ -4811,9 +5410,13 @@ function showPage(id,el){
   const stabEl=document.getElementById(stabId);
   if(stabEl) stabEl.classList.add('active');
   document.querySelectorAll('.sub-tab').forEach(t=>{if(t.id!==stabId) t.classList.remove('active');});
-  if(id==='chart') renderChartCoinList();
-  if(id==='news'){renderNewsPage(); maybeTriggerDailyReport();}
+  if(id==='chart')     renderChartCoinList();
+  if(id==='news')      { renderNewsPage(); maybeTriggerDailyReport(); }
   if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals();
+  if(id==='heatmap')   setTimeout(renderHeatmap, 100);
+  if(id==='portfolio') renderPortfolio();
+  if(id==='events')    { if(!eventsData.length) loadEvents(); else renderEvents(); }
+
 }
 
 
@@ -5430,6 +6033,858 @@ const vnRsiCache={};
 
 // Danh sách tất cả cổ phiếu (VN30 + HNX top)
 
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   1. HEATMAP
+═══════════════════════════════════════════════════════════════ */
+function renderHeatmap(){
+  const grid = document.getElementById('heatmapGrid');
+  if(!grid) return;
+  const sizeBy  = document.getElementById('hmSizeBy')?.value  || 'vol';
+  const colorBy = document.getElementById('hmColorBy')?.value || '24h';
+
+  const list = SYMBOLS.map(s=>{
+    const b = s.replace('USDT','');
+    const d = coins[s]||{};
+    return {sym:s, base:b, price:d.price||0, vol:d.vol||0, chg24:chg(s)};
+  }).filter(d=>d.price>0);
+
+  if(!list.length){
+    grid.innerHTML='<div class="hm-loading"><span>Đang chờ dữ liệu thị trường...</span></div>';
+    return;
+  }
+
+  // Gán size value
+  list.forEach(d=>{
+    d.sizeVal = sizeBy==='equal' ? 1
+              : sizeBy==='mcap'  ? (d.vol * 1.8 + d.price * 1000)
+              : d.vol;
+    if(!d.sizeVal || d.sizeVal<=0) d.sizeVal = 0.001;
+  });
+
+  // Sắp xếp giảm dần để treemap đẹp hơn
+  list.sort((a,b)=>b.sizeVal - a.sizeVal);
+
+  const W = grid.clientWidth  || grid.offsetWidth  || 900;
+  const H = grid.clientHeight || grid.offsetHeight || 520;
+  if(W < 10 || H < 10) return;
+
+  const totalVal = list.reduce((s,d)=>s+d.sizeVal, 0);
+  list.forEach(d=>{ d.norm = d.sizeVal / totalVal; });
+
+  // Squarified treemap algorithm
+  const rects = squarify(list, {x:0, y:0, w:W, h:H});
+
+  const PAD = 2; // px gap between cells
+  grid.innerHTML = rects.map(r=>{
+    const d   = r.item;
+    const cv  = colorBy==='24h' ? d.chg24
+              : colorBy==='1h'  ? d.chg24 * 0.4
+              : (d.vol / (list[0].vol||1)) * 20 - 5;
+    const bg  = heatColor(cv);
+    const sign = d.chg24>=0?'+':'';
+    const cellW = Math.max(0, r.w - PAD);
+    const cellH = Math.max(0, r.h - PAD);
+    // Chỉ hiện text nếu ô đủ lớn
+    const showSym   = cellW > 38 && cellH > 28;
+    const showPct   = cellW > 38 && cellH > 40;
+    const showPrice = cellW > 55 && cellH > 56;
+    const fontSize  = cellW < 70 ? 9 : cellW < 110 ? 10 : 11;
+    return `<div class="hm-cell" style="
+        position:absolute;
+        left:${(r.x+PAD/2).toFixed(1)}px;top:${(r.y+PAD/2).toFixed(1)}px;
+        width:${cellW.toFixed(1)}px;height:${cellH.toFixed(1)}px;
+        background:${bg};font-size:${fontSize}px;"
+      onclick="openChart('${d.sym}')"
+      title="${d.base} • ${fmtP(d.price)} • ${sign}${d.chg24.toFixed(2)}%">
+      ${showSym   ? `<div class="hm-cell-sym">${d.base.length>6?d.base.slice(0,6):d.base}</div>` : ''}
+      ${showPct   ? `<div class="hm-cell-pct">${sign}${d.chg24.toFixed(2)}%</div>` : ''}
+      ${showPrice ? `<div class="hm-cell-price">${fmtPShort(d.price)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Squarified Treemap (clean implementation) ──────────────────────
+function squarify(items, rect){
+  // Chuẩn hoá norm thành diện tích pixel
+  const total = items.reduce((s,d)=>s+d.norm,0);
+  const area  = rect.w * rect.h;
+  items.forEach(d=>{ d._area = d.norm/total * area; });
+  const out = [];
+  _layoutRect(items, {x:rect.x, y:rect.y, w:rect.w, h:rect.h}, out);
+  return out;
+}
+
+function _layoutRect(items, rect, out){
+  if(!items.length) return;
+  if(rect.w < 1 || rect.h < 1) return;
+  if(items.length === 1){
+    out.push({item:items[0], x:rect.x, y:rect.y, w:rect.w, h:rect.h});
+    return;
+  }
+
+  // Chia thành row tốt nhất theo squarify
+  let row = [items[0]], rowArea = items[0]._area;
+  for(let i=1; i<items.length; i++){
+    const next     = items[i];
+    const newRow   = [...row, next];
+    const newArea  = rowArea + next._area;
+    const before   = _maxAspect(row,   rowArea,  rect.w, rect.h);
+    const after    = _maxAspect(newRow, newArea,  rect.w, rect.h);
+    if(after > before && row.length > 0) break;
+    row     = newRow;
+    rowArea = newArea;
+  }
+
+  // Đặt row vào rect
+  const totalArea = rect.w * rect.h;
+  const isWide    = rect.w >= rect.h;
+  const rowFrac   = rowArea / totalArea;
+  const rowDim    = isWide ? rect.w * rowFrac : rect.h * rowFrac;  // chiều theo hướng xếp
+  const crossDim  = isWide ? rect.h : rect.w;                      // chiều vuông góc
+
+  let off = 0;
+  row.forEach(d=>{
+    const frac    = d._area / rowArea;
+    const cellDim = crossDim * frac;
+    if(isWide){
+      out.push({item:d, x:rect.x, y:rect.y+off, w:rowDim, h:cellDim});
+    } else {
+      out.push({item:d, x:rect.x+off, y:rect.y, w:cellDim, h:rowDim});
+    }
+    off += cellDim;
+  });
+
+  // Đệ quy phần còn lại
+  const rest = items.slice(row.length);
+  if(!rest.length) return;
+  const newRect = isWide
+    ? {x:rect.x+rowDim, y:rect.y,      w:rect.w-rowDim, h:rect.h}
+    : {x:rect.x,        y:rect.y+rowDim, w:rect.w,      h:rect.h-rowDim};
+  _layoutRect(rest, newRect, out);
+}
+
+function _maxAspect(row, rowArea, W, H){
+  const isWide  = W >= H;
+  const strip   = isWide ? H : W;   // chiều vuông góc (không đổi)
+  const rowLen  = (W*H > 0) ? rowArea / (isWide ? H : W) : 1;
+  let worst = 0;
+  row.forEach(d=>{
+    const cellLen = rowArea>0 ? strip*(d._area/rowArea) : 1;
+    const r = rowLen>cellLen ? rowLen/cellLen : cellLen/rowLen;
+    if(r>worst) worst=r;
+  });
+  return worst;
+}
+
+
+function heatColor(pct){
+  if(pct>= 10) return 'rgba(22,163,74,.85)';
+  if(pct>=  5) return 'rgba(34,197,94,.75)';
+  if(pct>=  2) return 'rgba(74,222,128,.65)';
+  if(pct>=  0) return 'rgba(20,83,45,.6)';
+  if(pct>= -2) return 'rgba(127,29,29,.6)';
+  if(pct>= -5) return 'rgba(185,28,28,.7)';
+  if(pct>=-10) return 'rgba(220,38,38,.8)';
+  return 'rgba(239,68,68,.9)';
+}
+
+// Auto-refresh heatmap every 10s when on that page
+setInterval(()=>{ if(document.getElementById('page-heatmap')?.classList.contains('active')) renderHeatmap(); }, 10000);
+
+
+/* ═══════════════════════════════════════════════════════════════
+   5. SUPPORT & RESISTANCE  (tự động trên biểu đồ focus/chart)
+═══════════════════════════════════════════════════════════════ */
+function calcSupportResistance(candles, levels=5){
+  if(!candles||candles.length<20) return {support:[],resistance:[]};
+  const highs = candles.map(c=>c.high);
+  const lows  = candles.map(c=>c.low);
+  const closes= candles.map(c=>c.close);
+  const curPrice = closes.at(-1);
+  const range = Math.max(...highs) - Math.min(...lows);
+  const zone  = range * 0.012; // 1.2% tolerance
+
+  const pivots=[];
+  for(let i=2;i<candles.length-2;i++){
+    const isHigh = highs[i]>highs[i-1]&&highs[i]>highs[i-2]&&highs[i]>highs[i+1]&&highs[i]>highs[i+2];
+    const isLow  = lows[i]<lows[i-1]&&lows[i]<lows[i-2]&&lows[i]<lows[i+1]&&lows[i]<lows[i+2];
+    if(isHigh) pivots.push({price:highs[i], type:'high', idx:i, time:candles[i].time});
+    if(isLow)  pivots.push({price:lows[i],  type:'low',  idx:i, time:candles[i].time});
+  }
+
+  // Cluster pivots that are within zone of each other
+  const clusters=[];
+  pivots.forEach(p=>{
+    const existing = clusters.find(cl=>Math.abs(cl.price-p.price)<zone);
+    if(existing){ existing.count++; existing.price=(existing.price+p.price)/2; }
+    else clusters.push({price:p.price, count:1, type:p.type});
+  });
+
+  clusters.sort((a,b)=>b.count-a.count);
+  const support    = clusters.filter(c=>c.price<curPrice*0.999).slice(0,levels).map(c=>c.price);
+  const resistance = clusters.filter(c=>c.price>curPrice*1.001).slice(0,levels).map(c=>c.price);
+  return {support, resistance};
+}
+
+function drawSRLines(chart, series, candles){
+  if(!chart||!candles) return;
+  const {support,resistance} = calcSupportResistance(candles);
+  // Remove old SR lines
+  if(window._srLines){ window._srLines.forEach(l=>{try{chart.removeSeries(l);}catch(e){}});  }
+  window._srLines=[];
+  const mk=(price,color)=>{
+    const ls=chart.addLineSeries({color,lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    ls.setData(candles.map(c=>({time:c.time,value:price})));
+    window._srLines.push(ls);
+  };
+  support.forEach(p=>mk(p,'rgba(34,197,94,.45)'));
+  resistance.forEach(p=>mk(p,'rgba(239,68,68,.45)'));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   6. PORTFOLIO TRACKER
+═══════════════════════════════════════════════════════════════ */
+let pfHoldings = JSON.parse(localStorage.getItem('vlc_portfolio')||'[]');
+// [{sym,qty,buyPrice,addedAt}]
+
+function pfSave(){ localStorage.setItem('vlc_portfolio', JSON.stringify(pfHoldings)); }
+
+function pfToggleForm(){
+  const f=document.getElementById('pfForm');
+  if(!f) return;
+  f.style.display = f.style.display==='none'?'block':'none';
+  if(f.style.display==='block'){
+    // populate datalist
+    const dl=document.getElementById('pfSymList');
+    if(dl) dl.innerHTML=SYMBOLS.map(s=>`<option value="${s.replace('USDT','')}">`).join('');
+    document.getElementById('pfSymInput')?.focus();
+  }
+}
+
+function pfAddHolding(){
+  const symRaw = document.getElementById('pfSymInput')?.value.trim().toUpperCase();
+  const qty    = parseFloat(document.getElementById('pfQtyInput')?.value);
+  const bp     = parseFloat(document.getElementById('pfPriceInput')?.value);
+  if(!symRaw||!qty||qty<=0||!bp||bp<=0){ alert('Vui lòng điền đầy đủ thông tin hợp lệ'); return; }
+  const sym = symRaw.endsWith('USDT')?symRaw:symRaw+'USDT';
+  if(!SYMBOLS.includes(sym)){ alert(`Không tìm thấy ${symRaw} trong danh sách. Thử nhập đầy đủ ký hiệu.`); return; }
+  pfHoldings.push({sym, qty, buyPrice:bp, addedAt:Date.now()});
+  pfSave();
+  document.getElementById('pfSymInput').value='';
+  document.getElementById('pfQtyInput').value='';
+  document.getElementById('pfPriceInput').value='';
+  pfToggleForm();
+  renderPortfolio();
+}
+
+function pfRemove(idx){
+  pfHoldings.splice(idx,1);
+  pfSave();
+  renderPortfolio();
+}
+
+function renderPortfolio(){
+  const tbody = document.getElementById('pfTableBody');
+  const perfEl= document.getElementById('pfPerfBars');
+  if(!tbody) return;
+
+  if(!pfHoldings.length){
+    tbody.innerHTML='<tr><td colspan="8" class="pf-empty">Chưa có coin nào. Nhấn "+ Thêm coin" để bắt đầu.</td></tr>';
+    ['pfTotalInvest','pfTotalValue','pfTotalPnl','pfTotalPct','pfDayChange'].forEach(id=>_setEl(id,'$0'));
+    if(perfEl) perfEl.innerHTML='';
+    renderPfPie([]);
+    return;
+  }
+
+  let totalInvest=0, totalValue=0, totalDay=0;
+  const rows = pfHoldings.map((h,i)=>{
+    const base  = h.sym.replace('USDT','');
+    const cur   = coins[h.sym]?.price||0;
+    const value = cur*h.qty;
+    const invest= h.buyPrice*h.qty;
+    const pnl   = value-invest;
+    const pct   = invest>0?(pnl/invest)*100:0;
+    const dayChg= chg(h.sym);
+    const dayVal= value*(dayChg/100);
+    totalInvest+=invest; totalValue+=value; totalDay+=dayVal;
+    const pnlCol = pnl>=0?'var(--green)':'var(--red)';
+    const logo=logoMap[base]?`<img class="pf-coin-logo" src="${logoMap[base]}" onerror="this.style.display='none'">`:'';
+    return `<tr>
+      <td><div class="pf-coin-cell">${logo}<span>${base}</span></div></td>
+      <td>${h.qty.toLocaleString('vi-VN',{maximumFractionDigits:6})}</td>
+      <td>${fmtP(h.buyPrice)}</td>
+      <td>${cur>0?fmtP(cur):'—'}</td>
+      <td style="color:var(--text2)">${cur>0?fmtB(value):'—'}</td>
+      <td style="color:${pnlCol}">${cur>0?(pnl>=0?'+':'')+fmtB(Math.abs(pnl)):'—'}</td>
+      <td style="color:${pnlCol};font-size:12px">${cur>0?(pct>=0?'+':'')+pct.toFixed(2)+'%':'—'}</td>
+      <td><button class="pf-del-btn" onclick="pfRemove(${i})">🗑</button></td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
+
+  // Summary
+  const pnlTotal = totalValue-totalInvest;
+  const pctTotal = totalInvest>0?(pnlTotal/totalInvest)*100:0;
+  _setEl('pfTotalInvest', fmtB(totalInvest));
+  _setEl('pfTotalValue',  fmtB(totalValue), totalValue>=totalInvest?'var(--green)':'var(--red)');
+  _setEl('pfTotalPnl',    (pnlTotal>=0?'+':'')+fmtB(Math.abs(pnlTotal)), pnlTotal>=0?'var(--green)':'var(--red)');
+  _setEl('pfTotalPct',    (pctTotal>=0?'+':'')+pctTotal.toFixed(2)+'%', pctTotal>=0?'var(--green)':'var(--red)');
+  _setEl('pfDayChange',   (totalDay>=0?'+':'')+fmtB(Math.abs(totalDay)), totalDay>=0?'var(--green)':'var(--red)');
+
+  // Pie chart
+  const pieData = pfHoldings.map(h=>{
+    const cur=coins[h.sym]?.price||0;
+    return {label:h.sym.replace('USDT',''), value:cur*h.qty};
+  }).filter(d=>d.value>0);
+  renderPfPie(pieData);
+
+  // Perf bars
+  if(perfEl){
+    const perfList = pfHoldings.map(h=>{
+      const cur=coins[h.sym]?.price||0;
+      const pct=h.buyPrice>0?((cur-h.buyPrice)/h.buyPrice)*100:0;
+      return {base:h.sym.replace('USDT',''), pct};
+    }).filter(d=>coins[d.base+'USDT']?.price>0);
+    const maxAbs = Math.max(...perfList.map(d=>Math.abs(d.pct)),1);
+    perfEl.innerHTML = perfList.map(d=>{
+      const w = Math.abs(d.pct)/maxAbs*100;
+      const col = d.pct>=0?'#22c55e':'#ef4444';
+      return `<div class="pf-perf-row">
+        <span class="pf-perf-lbl">${d.base}</span>
+        <div class="pf-perf-bar-wrap"><div class="pf-perf-bar" style="width:${w}%;background:${col}"></div></div>
+        <span class="pf-perf-pct" style="color:${col}">${d.pct>=0?'+':''}${d.pct.toFixed(1)}%</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+function renderPfPie(data){
+  const canvas=document.getElementById('pfPieCanvas');
+  const legend=document.getElementById('pfPieLegend');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  if(!data.length){
+    ctx.fillStyle='rgba(255,255,255,.1)';
+    ctx.beginPath(); ctx.arc(W/2,H/2,70,0,Math.PI*2); ctx.fill();
+    if(legend) legend.innerHTML='';
+    return;
+  }
+
+  const COLORS=['#f59e0b','#22c55e','#38bdf8','#8b5cf6','#f43f5e','#06b6d4','#84cc16','#ec4899','#fb923c','#a3e635'];
+  const total=data.reduce((s,d)=>s+d.value,0)||1;
+  let angle=-Math.PI/2;
+  const cx=W/2, cy=H/2, r=Math.min(W,H)/2-12;
+
+  data.forEach((d,i)=>{
+    const slice=(d.value/total)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];
+    ctx.fill();
+    ctx.strokeStyle='#0a0e17'; ctx.lineWidth=2; ctx.stroke();
+    angle+=slice;
+  });
+  // Donut hole
+  ctx.beginPath(); ctx.arc(cx,cy,r*.5,0,Math.PI*2);
+  ctx.fillStyle='#0d1117'; ctx.fill();
+
+  if(legend) legend.innerHTML=data.map((d,i)=>`
+    <div class="pf-pie-leg-item">
+      <div class="pf-pie-leg-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+      <span style="color:var(--text2);flex:1">${d.label}</span>
+      <span style="color:var(--muted);font-size:9px">${((d.value/total)*100).toFixed(1)}%</span>
+    </div>`).join('');
+}
+
+// Re-render portfolio when price updates
+let _pfRenderTimer=null;
+const _origCoinsProxy = ()=>{ if(_pfRenderTimer) return; _pfRenderTimer=setTimeout(()=>{ _pfRenderTimer=null; if(pfHoldings.length&&document.getElementById('page-portfolio')?.classList.contains('active')) renderPortfolio(); },3000); };
+
+
+/* ═══════════════════════════════════════════════════════════════
+   7. EVENTS / CALENDAR
+═══════════════════════════════════════════════════════════════ */
+let eventsData=[], eventsCategory='all';
+
+const STATIC_EVENTS=[
+  {title:'Bitcoin Halving #5',coin:'BTC',cat:'halving',date:'2028-04-01',desc:'Block reward giảm từ 3.125 → 1.5625 BTC. Sự kiện 4 năm một lần có tác động lịch sử lớn đến giá.'},
+  {title:'Ethereum Dencun Upgrade Follow-up',coin:'ETH',cat:'mainnet',date:'2025-06-01',desc:'Nâng cấp tiếp theo sau Dencun, cải thiện scalability và giảm phí gas.'},
+  {title:'BTC ETF Options Expansion',coin:'BTC',cat:'listing',date:'2025-04-15',desc:'Mở rộng sản phẩm phái sinh ETF Bitcoin trên các sàn lớn.'},
+  {title:'Solana Breakpoint 2025',coin:'SOL',cat:'conference',date:'2025-09-20',desc:'Hội nghị thường niên lớn nhất của hệ sinh thái Solana.'},
+  {title:'Cardano Chang Hard Fork',coin:'ADA',cat:'mainnet',date:'2025-05-01',desc:'Nâng cấp governance phi tập trung hoàn toàn cho Cardano.'},
+  {title:'Sui Token Unlock',coin:'SUI',cat:'unlock',date:'2025-05-03',desc:'Mở khóa 60M SUI token từ nhà đầu tư và đội ngũ sáng lập.'},
+  {title:'Aptos Token Unlock',coin:'APT',cat:'unlock',date:'2025-06-12',desc:'Đợt mở khóa 24M APT theo lịch vesting định kỳ.'},
+  {title:'XRP Futures Launch CME',coin:'XRP',cat:'listing',date:'2025-05-19',desc:'CME Group ra mắt hợp đồng tương lai XRP tiêu chuẩn.'},
+  {title:'Binance Launchpool mới',coin:'BNB',cat:'listing',date:'2025-04-28',desc:'Binance công bố dự án launchpool tiếp theo trên nền tảng BNB.'},
+  {title:'Chainlink SmartCon 2025',coin:'LINK',cat:'conference',date:'2025-10-14',desc:'Sự kiện SmartCon thường niên của Chainlink, công bố partnership mới.'},
+  {title:'Polygon zkEVM v2.0',coin:'POL',cat:'mainnet',date:'2025-07-01',desc:'Ra mắt zkEVM 2.0 với throughput cao hơn 5x và chi phí thấp hơn.'},
+  {title:'Avalanche Durango Upgrade',coin:'AVAX',cat:'mainnet',date:'2025-06-15',desc:'Nâng cấp cải thiện C-Chain compatibility và tăng hiệu suất subnet.'},
+  {title:'Coinbase Derivatives Expansion',coin:'BTC',cat:'partnership',date:'2025-05-10',desc:'Coinbase mở rộng sản phẩm phái sinh sang 15 quốc gia mới.'},
+  {title:'Uniswap v4 Full Launch',coin:'UNI',cat:'mainnet',date:'2025-05-25',desc:'Phiên bản Uniswap v4 với hooks customizable được triển khai toàn mạng.'},
+  {title:'Dogecoin Core v1.21',coin:'DOGE',cat:'mainnet',date:'2025-08-01',desc:'Cập nhật core node cải thiện sync speed và bảo mật mạng.'},
+];
+
+async function loadEvents(){
+  const grid=document.getElementById('eventsGrid');
+  if(!grid) return;
+  // Dùng dữ liệu tĩnh + CoinGecko events API
+  eventsData = STATIC_EVENTS;
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/events?upcoming_events_only=true&per_page=50',{signal:AbortSignal.timeout(8000)});
+    if(r.ok){
+      const d=await r.json();
+      if(d.data?.length){
+        const mapped=d.data.map(ev=>({
+          title:ev.title||'Sự kiện',
+          coin:ev.coins?.map(c=>c.symbol?.toUpperCase()).filter(Boolean).join(', ')||'',
+          cat: ev.type?.toLowerCase().includes('conference')?'conference':
+               ev.type?.toLowerCase().includes('partnership')?'partnership':
+               ev.type?.toLowerCase().includes('release')||ev.type?.toLowerCase().includes('launch')?'mainnet':'listing',
+          date:ev.start_date?.slice(0,10)||'',
+          desc:ev.description||''
+        }));
+        eventsData=[...STATIC_EVENTS,...mapped].filter((e,i,a)=>a.findIndex(x=>x.title===e.title)===i);
+      }
+    }
+  }catch(e){}
+  renderEvents();
+}
+
+function filterEvents(cat, btn){
+  eventsCategory=cat;
+  document.querySelectorAll('.ev-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+function renderEvents(){
+  const grid=document.getElementById('eventsGrid');
+  if(!grid) return;
+  const now=new Date();
+  let list=eventsData.filter(e=>eventsCategory==='all'||e.cat===eventsCategory);
+  list.sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  grid.innerHTML=list.map(ev=>{
+    const evDate=new Date(ev.date);
+    const diff=Math.ceil((evDate-now)/(1000*60*60*24));
+    const isPast=diff<0;
+    const countdown=isPast?`${Math.abs(diff)} ngày trước`
+      :diff===0?'Hôm nay!':diff===1?'Ngày mai':diff<30?`${diff} ngày nữa`:`${Math.ceil(diff/30)} tháng nữa`;
+    const logo=ev.coin&&logoMap[ev.coin]?`<img src="${logoMap[ev.coin]}" onerror="this.style.display='none'">`:'';
+    return `<div class="ev-card ${ev.cat}">
+      <div class="ev-header">
+        <div class="ev-title">${ev.title}</div>
+        <span class="ev-badge ${ev.cat}">${catLabel(ev.cat)}</span>
+      </div>
+      ${ev.coin?`<div class="ev-coin">${logo}<span>${ev.coin}</span></div>`:''}
+      <div class="ev-date">📅 ${evDate.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>
+      <div class="ev-countdown ${isPast?'past':''}">${isPast?'✓ Đã qua':countdown==='Hôm nay!'?'🔥 Hôm nay!':'⏳ '+countdown}</div>
+      ${ev.desc?`<div class="ev-desc">${ev.desc}</div>`:''}
+    </div>`;
+  }).join('') || '<div class="hm-loading"><span>Không có sự kiện nào trong danh mục này.</span></div>';
+}
+function catLabel(cat){
+  return {halving:'Halving',listing:'Niêm yết',unlock:'Mở khoá',mainnet:'Mainnet',partnership:'Hợp tác',conference:'Hội nghị'}[cat]||cat;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   10. FOCUS MODE — Biểu đồ tập trung toàn màn hình
+═══════════════════════════════════════════════════════════════ */
+let focusSym='', focusTf='4h', focusLwChart=null, focusCandleSeries=null;
+
+function filterFocusList(){
+  const q=(document.getElementById('focusSearch')?.value||'').toLowerCase();
+  const dd=document.getElementById('focusDropdown');
+  if(!dd) return;
+  if(!q){dd.style.display='none';return;}
+  const hits=SYMBOLS.filter(s=>{
+    const b=s.replace('USDT','');
+    return b.toLowerCase().includes(q)||(nameMap[b]||'').toLowerCase().includes(q);
+  }).slice(0,12);
+  if(!hits.length){dd.style.display='none';return;}
+  dd.innerHTML=hits.map(s=>{
+    const b=s.replace('USDT','');
+    const logo=logoMap[b]?`<img src="${logoMap[b]}" width="18" height="18" style="border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`:'';
+    return `<div class="focus-dd-item" onclick="selectFocusCoin('${s}')">${logo}<span style="font-weight:700">${b}</span><span style="color:var(--muted);margin-left:auto">${fmtP(coins[s]?.price||0)}</span></div>`;
+  }).join('');
+  dd.style.display='block';
+}
+
+function selectFocusCoin(sym){
+  focusSym=sym;
+  const dd=document.getElementById('focusDropdown');
+  if(dd) dd.style.display='none';
+  const inp=document.getElementById('focusSearch');
+  if(inp) inp.value='';
+
+  const base=sym.replace('USDT','');
+  const d=coins[sym]||{};
+
+  // Show coin info
+  const info=document.getElementById('focusCoinInfo');
+  if(info) info.style.display='flex';
+  const exitBtn=document.getElementById('focusExitBtn');
+  if(exitBtn) exitBtn.style.display='block';
+
+  // Logo
+  const img=document.getElementById('focusLogo');
+  const fb=document.getElementById('focusLogoFb');
+  if(img){
+    img.onerror=()=>{img.style.display='none'; if(fb){fb.style.display='flex';fb.textContent=base[0];}};
+    img.src=logoMap[base]||`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${base.toLowerCase()}.png`;
+    img.style.display='block';
+    if(fb) fb.style.display='none';
+  }
+  _setEl('focusName', nameMap[base]||base);
+  _setEl('focusSym', sym);
+  updateFocusHeader();
+  loadFocusChart();
+}
+
+function updateFocusHeader(){
+  if(!focusSym) return;
+  const d=coins[focusSym]||{};
+  const c2=chg(focusSym);
+  _setEl('focusPrice', fmtP(d.price));
+  const chgEl=document.getElementById('focusChg');
+  if(chgEl){chgEl.textContent=(c2>=0?'+':'')+c2.toFixed(2)+'%'; chgEl.className='focus-chg '+(c2>=0?'up':'dn');}
+  _setEl('fsbHigh', d.high?fmtP(d.high):'—');
+  _setEl('fsbLow',  d.low?fmtP(d.low):'—');
+  _setEl('fsbVol',  fmtB(d.vol||0));
+}
+
+function setFocusTf(btn, tf){
+  focusTf=tf;
+  document.querySelectorAll('.focus-tf-btns .tf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(focusSym) loadFocusChart();
+}
+
+async function loadFocusChart(){
+  if(!focusSym) return;
+  const container=document.getElementById('focusChartContainer');
+  const loading=document.getElementById('focusLoading');
+  if(!container) return;
+  if(loading){loading.style.display='flex';loading.innerHTML='<div class="chart-spinner"></div><span>Đang tải...</span>';}
+
+  try{
+    if(focusLwChart){try{focusLwChart.remove();}catch(e){} focusLwChart=null;}
+    await new Promise(r=>requestAnimationFrame(r));
+    const w=container.clientWidth||window.innerWidth-40;
+    const h=container.clientHeight||window.innerHeight-200;
+
+    const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${focusSym}&interval=${focusTf}&limit=500`,{signal:AbortSignal.timeout(10000)});
+    const raw=await res.json();
+    const candles=raw.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]}));
+    const vols=raw.map(k=>+k[5]);
+    const closes=candles.map(c=>c.close);
+
+    const p=closes.at(-1)||1;
+    let prec=2,mm=0.01;
+    if(p<0.0001){prec=8;mm=0.00000001;}else if(p<0.01){prec=6;mm=0.000001;}else if(p<1){prec=4;mm=0.0001;}
+
+    focusLwChart=LightweightCharts.createChart(container,{
+      layout:{background:{color:'#060810'},textColor:'#64748b',fontSize:11,fontFamily:"'SF Mono','Fira Code',monospace"},
+      grid:{vertLines:{color:'rgba(255,255,255,.025)',style:1},horzLines:{color:'rgba(255,255,255,.03)',style:1}},
+      crosshair:{mode:LightweightCharts.CrosshairMode.Normal,vertLine:{color:'rgba(0,212,255,.4)',labelBackgroundColor:'#060810'},horzLine:{color:'rgba(0,212,255,.4)',labelBackgroundColor:'#060810'}},
+      rightPriceScale:{borderColor:'rgba(255,255,255,.06)',minimumWidth:prec>=6?110:85,autoScale:true,textColor:'#64748b'},
+      timeScale:{borderColor:'rgba(255,255,255,.06)',timeVisible:true,secondsVisible:false,textColor:'#64748b',rightOffset:8,barSpacing:8},
+      width:w,height:h,
+    });
+
+    focusCandleSeries=focusLwChart.addCandlestickSeries({
+      upColor:'#089981',downColor:'#f23645',borderUpColor:'#089981',borderDownColor:'#f23645',wickUpColor:'#089981',wickDownColor:'#f23645',
+      priceFormat:{type:'price',precision:prec,minMove:mm},priceLineVisible:true,priceLineColor:'rgba(0,212,255,.5)',priceLineWidth:1,priceLineStyle:2,
+    });
+    focusCandleSeries.setData(candles);
+
+    // EMA overlays
+    const mkLine=(col,dash=false)=>focusLwChart.addLineSeries({color:col,lineWidth:1,lineStyle:dash?2:0,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:'price',precision:prec,minMove:mm}});
+    const ema20=calcEMA(closes,20), ema50=calcEMA(closes,50), ema200=calcEMA(closes,200);
+    const mkD=arr=>arr.map((v,i)=>v==null?null:{time:candles[i].time,value:v}).filter(Boolean);
+    const l20=mkLine('#f59e0b'); l20.setData(mkD(ema20));
+    const l50=mkLine('#818cf8'); l50.setData(mkD(ema50));
+    const l200=mkLine('#f43f5e',true); l200.setData(mkD(ema200));
+
+    // Volume sub-chart
+    const volS=focusLwChart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'fvol',scaleMargins:{top:0.85,bottom:0}});
+    focusLwChart.priceScale('fvol').applyOptions({scaleMargins:{top:0.85,bottom:0},drawTicks:false,visible:false});
+    volS.setData(candles.map((c,i)=>({time:c.time,value:vols[i],color:closes[i]>=(i>0?closes[i-1]:closes[i])?'rgba(8,153,129,.5)':'rgba(242,54,69,.5)'})));
+
+    // S/R lines
+    drawSRLines(focusLwChart, focusCandleSeries, candles);
+
+    // Resize observer
+    if(window._focusResizeObs) window._focusResizeObs.disconnect();
+    window._focusResizeObs=new ResizeObserver(()=>{
+      if(focusLwChart&&container) focusLwChart.applyOptions({width:container.clientWidth,height:container.clientHeight||500});
+    });
+    window._focusResizeObs.observe(container);
+
+    await new Promise(r=>requestAnimationFrame(r));
+    focusLwChart.timeScale().setVisibleLogicalRange({from:Math.max(0,candles.length-120),to:candles.length+8});
+    if(loading) loading.style.display='none';
+
+    // Stats bar
+    const statsBar=document.getElementById('focusStatsBar');
+    if(statsBar) statsBar.style.display='flex';
+    const ind=await fetchIndicators(focusSym);
+    if(ind){
+      const {rsi,macd,bb}=ind;
+      _setEl('fsbRsi',  rsi.toFixed(1), rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--gold)');
+      _setEl('fsbMacd', macd.hist>0?'▲':' ▼', macd.hist>0?'var(--green)':'var(--red)');
+      _setEl('fsbEma20', fmtPShort(ema20.filter(Boolean).at(-1)));
+      _setEl('fsbEma50', fmtPShort(ema50.filter(Boolean).at(-1)));
+      _setEl('fsbBbU',  fmtPShort(bb.upper));
+      _setEl('fsbBbL',  fmtPShort(bb.lower));
+      const sig=ind.signal;
+      _setEl('fsbSignal', sig==='buy'?'✅ Mua':sig==='sell'?'🔴 Bán':'⏸ Chờ', sig==='buy'?'var(--green)':sig==='sell'?'var(--red)':'var(--gold)');
+    }
+  }catch(e){
+    if(loading) loading.innerHTML=`<span>⚠️ Lỗi: ${e.message}</span>`;
+  }
+}
+
+function exitFocusMode(){
+  focusSym='';
+  const info=document.getElementById('focusCoinInfo'); if(info) info.style.display='none';
+  const exitBtn=document.getElementById('focusExitBtn'); if(exitBtn) exitBtn.style.display='none';
+  const sb=document.getElementById('focusStatsBar'); if(sb) sb.style.display='none';
+  const loading=document.getElementById('focusLoading');
+  if(loading){loading.style.display='flex';loading.innerHTML='<div style="font-size:28px">📈</div><span>Chọn một coin để xem biểu đồ toàn màn hình</span>';}
+  if(focusLwChart){try{focusLwChart.remove();}catch(e){} focusLwChart=null;}
+}
+
+// ── showPage hooks đã được tích hợp trực tiếp vào hàm gốc ──
+
+// Update portfolio on WS tick
+const _origWsUpdate = typeof _scheduleWhaleCheck==='function' ? _scheduleWhaleCheck : null;
+
+
+/* ── Fullscreen Chart (overlay approach) ── */
+let _chartFs = false;
+let _fsLwChart = null;
+
+function toggleChartFullscreen(){
+  if(_chartFs) exitChartFs(); else enterChartFs();
+}
+
+function enterChartFs(){
+  if(_chartFs) return;
+  _chartFs = true;
+
+  // Tạo overlay nếu chưa có
+  let overlay = document.getElementById('chartFsOverlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'chartFsOverlay';
+    overlay.innerHTML = `
+      <div class="fs-header">
+        <img id="fsLogo" width="28" height="28" style="border-radius:50%;display:none" onerror="this.style.display='none'">
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <span id="fsCoinName" style="font-size:13px;font-weight:700;color:var(--text)">—</span>
+          <span id="fsSymbol" style="font-size:10px;color:var(--muted)">—</span>
+        </div>
+        <span id="fsPrice" style="font-size:20px;font-weight:800;color:var(--text);margin-left:12px">—</span>
+        <span id="fsChg" style="font-size:13px;font-weight:700;margin-left:8px">—</span>
+        <div style="flex:1"></div>
+        <div class="fs-tf-row" style="padding:0;background:none;border:none;gap:4px;">
+          ${['1m','5m','15m','1h','4h','1d','1w'].map(tf=>`<button class="tf-btn${tf==='1h'?' active':''}" onclick="fsTfClick(this,'${tf}')">${tf.toUpperCase()}</button>`).join('')}
+        </div>
+        <button onclick="exitChartFs()" style="margin-left:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:6px 14px;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">✕ Thoát</button>
+      </div>
+      <div id="chartFsBody"></div>
+      <div id="chartFsStatsBar" style="display:none">
+        <div class="sb-item"><span class="sb-lbl">RSI(14)</span><span class="sb-val" id="fsSbRsi">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">MACD</span><span class="sb-val" id="fsSbMacd">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">EMA 20</span><span class="sb-val" id="fsSbEma20">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">EMA 50</span><span class="sb-val" id="fsSbEma50">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">BB Trên</span><span class="sb-val" id="fsSbBbU">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">BB Dưới</span><span class="sb-val" id="fsSbBbL">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">Cao 24h</span><span class="sb-val" id="fsSbHigh" style="color:#22c55e">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">Thấp 24h</span><span class="sb-val" id="fsSbLow" style="color:#ef4444">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">KL 24h</span><span class="sb-val" id="fsSbVol">—</span></div>
+        <div class="sb-item"><span class="sb-lbl">Tín hiệu</span><span class="sb-val" id="fsSbSig">—</span></div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Đổi icon
+  const icon = document.getElementById('chartFsIcon');
+  if(icon) icon.innerHTML='<path d="M8 3v2H5v3H3V3h5zm9 0v5h-2V5h-3V3h5zM3 12h2v3h3v2H3v-5zm14 5h-5v-2h3v-3h2v5z"/>';
+  const btn = document.getElementById('chartFsBtn');
+  if(btn) btn.title='Thoát toàn màn hình (ESC)';
+
+  // Fill header info từ coin hiện tại
+  const base = selectedSym ? selectedSym.replace('USDT','') : '';
+  if(base){
+    const logo = document.getElementById('fsLogo');
+    if(logo && logoMap[base]){ logo.src=logoMap[base]; logo.style.display='block'; }
+    _setEl('fsCoinName', nameMap[base]||base);
+    _setEl('fsSymbol', selectedSym);
+    const d = coins[selectedSym]||{};
+    _setEl('fsPrice', fmtP(d.price||0));
+    const c24 = chg(selectedSym);
+    const chgEl = document.getElementById('fsChg');
+    if(chgEl){ chgEl.textContent=(c24>=0?'+':'')+c24.toFixed(2)+'%'; chgEl.style.color=c24>=0?'var(--green)':'var(--red)'; }
+    _setEl('fsSbHigh', d.high?fmtP(d.high):'—');
+    _setEl('fsSbLow',  d.low?fmtP(d.low):'—');
+    _setEl('fsSbVol',  fmtB(d.vol||0));
+  }
+
+  // Vẽ chart trong overlay
+  loadFsChart(selectedSym, currentTf||'1h');
+
+  // Hint
+  showFsHint();
+}
+
+function exitChartFs(){
+  _chartFs = false;
+  const overlay = document.getElementById('chartFsOverlay');
+  if(overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  if(_fsLwChart){ try{_fsLwChart.remove();}catch(e){} _fsLwChart=null; }
+  const icon = document.getElementById('chartFsIcon');
+  if(icon) icon.innerHTML='<path d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3h-3v2h5v-5h-2v3z"/>';
+  const btn = document.getElementById('chartFsBtn');
+  if(btn) btn.title='Toàn màn hình';
+}
+
+async function loadFsChart(sym, tf){
+  const body = document.getElementById('chartFsBody');
+  if(!body||!sym) return;
+  // Xóa chart cũ
+  if(_fsLwChart){ try{_fsLwChart.remove();}catch(e){} _fsLwChart=null; }
+  body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted);font-size:13px"><div class="spinner"></div>Đang tải biểu đồ...</div>';
+
+  try{
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=500`,{signal:AbortSignal.timeout(12000)});
+    const raw = await res.json();
+    const candles = raw.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4]}));
+    const vols    = raw.map(k=>+k[5]);
+    const closes  = candles.map(c=>c.close);
+    const p = closes.at(-1)||1;
+    let prec=2,mm=0.01;
+    if(p<0.0001){prec=8;mm=0.00000001;}else if(p<0.01){prec=6;mm=0.000001;}else if(p<1){prec=4;mm=0.0001;}
+
+    // Xóa loading, tạo div chart
+    body.innerHTML = '';
+    const chartDiv = document.createElement('div');
+    chartDiv.id = 'chartFsContainer';
+    chartDiv.style.cssText = 'width:100%;height:100%;';
+    body.appendChild(chartDiv);
+
+    await new Promise(r=>requestAnimationFrame(r));
+    const W = body.clientWidth  || window.innerWidth;
+    const H = body.clientHeight || (window.innerHeight - 120);
+
+    _fsLwChart = LightweightCharts.createChart(chartDiv, {
+      layout:{background:{color:'#060810'},textColor:'#64748b',fontSize:11,fontFamily:"'SF Mono','Fira Code',monospace"},
+      grid:{vertLines:{color:'rgba(255,255,255,.03)',style:1},horzLines:{color:'rgba(255,255,255,.04)',style:1}},
+      crosshair:{mode:LightweightCharts.CrosshairMode.Normal,
+        vertLine:{color:'rgba(0,212,255,.4)',labelBackgroundColor:'#060810'},
+        horzLine:{color:'rgba(0,212,255,.4)',labelBackgroundColor:'#060810'}},
+      rightPriceScale:{borderColor:'rgba(255,255,255,.06)',minimumWidth:prec>=6?110:85,textColor:'#64748b'},
+      timeScale:{borderColor:'rgba(255,255,255,.06)',timeVisible:true,secondsVisible:false,textColor:'#64748b',rightOffset:8,barSpacing:9},
+      width:W, height:H,
+    });
+
+    const cSeries = _fsLwChart.addCandlestickSeries({
+      upColor:'#089981',downColor:'#f23645',
+      borderUpColor:'#089981',borderDownColor:'#f23645',
+      wickUpColor:'#089981',wickDownColor:'#f23645',
+      priceFormat:{type:'price',precision:prec,minMove:mm},
+      priceLineVisible:true,priceLineColor:'rgba(0,212,255,.5)',priceLineWidth:1,priceLineStyle:2,
+    });
+    cSeries.setData(candles);
+
+    // EMA
+    const mkLine=(col,dash=false)=>_fsLwChart.addLineSeries({color:col,lineWidth:1,lineStyle:dash?2:0,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:'price',precision:prec,minMove:mm}});
+    const ema20=calcEMA(closes,20), ema50=calcEMA(closes,50), ema200=calcEMA(closes,200);
+    const mkD=arr=>arr.map((v,i)=>v==null?null:{time:candles[i].time,value:v}).filter(Boolean);
+    mkLine('#f59e0b').setData(mkD(ema20));
+    mkLine('#818cf8').setData(mkD(ema50));
+    mkLine('#f43f5e',true).setData(mkD(ema200));
+
+    // Volume
+    const volS=_fsLwChart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'fsvol',scaleMargins:{top:0.85,bottom:0}});
+    _fsLwChart.priceScale('fsvol').applyOptions({scaleMargins:{top:0.85,bottom:0},drawTicks:false,visible:false});
+    volS.setData(candles.map((cn,i)=>({time:cn.time,value:vols[i],color:closes[i]>=(i>0?closes[i-1]:closes[i])?'rgba(8,153,129,.5)':'rgba(242,54,69,.5)'})));
+
+    // S/R lines
+    drawSRLines(_fsLwChart, cSeries, candles);
+
+    // Fit
+    await new Promise(r=>requestAnimationFrame(r));
+    _fsLwChart.timeScale().setVisibleLogicalRange({from:Math.max(0,candles.length-150),to:candles.length+8});
+
+    // ResizeObserver
+    if(window._fsResizeObs) window._fsResizeObs.disconnect();
+    window._fsResizeObs = new ResizeObserver(()=>{
+      if(_fsLwChart && body){
+        _fsLwChart.applyOptions({width:body.clientWidth||window.innerWidth, height:body.clientHeight||(window.innerHeight-120)});
+      }
+    });
+    window._fsResizeObs.observe(body);
+
+    // Stats bar
+    const sb = document.getElementById('chartFsStatsBar');
+    if(sb) sb.style.display='flex';
+    const ind = await fetchIndicators(sym);
+    if(ind){
+      _setEl('fsSbRsi',  ind.rsi.toFixed(1), ind.rsi>70?'var(--red)':ind.rsi<30?'var(--green)':'var(--gold)');
+      _setEl('fsSbMacd', ind.macd.hist>0?'▲ Tăng':'▼ Giảm', ind.macd.hist>0?'var(--green)':'var(--red)');
+      _setEl('fsSbEma20', fmtPShort(ema20.filter(Boolean).at(-1)));
+      _setEl('fsSbEma50', fmtPShort(ema50.filter(Boolean).at(-1)));
+      _setEl('fsSbBbU',  fmtPShort(ind.bb.upper));
+      _setEl('fsSbBbL',  fmtPShort(ind.bb.lower));
+      const sig=ind.signal;
+      _setEl('fsSbSig', sig==='buy'?'✅ Mua':sig==='sell'?'🔴 Bán':'⏸ Chờ', sig==='buy'?'var(--green)':sig==='sell'?'var(--red)':'var(--gold)');
+    }
+  } catch(e){
+    if(body) body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444">⚠️ Lỗi tải dữ liệu: ${e.message}</div>`;
+  }
+}
+
+let _fsCurTf = '1h';
+function fsTfClick(btn, tf){
+  _fsCurTf = tf;
+  document.querySelectorAll('#chartFsOverlay .tf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(selectedSym) loadFsChart(selectedSym, tf);
+}
+
+function showFsHint(){
+  let hint = document.getElementById('chartFsHint');
+  if(!hint){
+    hint = document.createElement('div');
+    hint.id = 'chartFsHint';
+    hint.textContent = 'Nhấn ESC để thoát toàn màn hình';
+    document.body.appendChild(hint);
+  }
+  hint.classList.add('show');
+  clearTimeout(window._fsHintTimer);
+  window._fsHintTimer = setTimeout(()=>hint.classList.remove('show'), 3000);
+}
+
+// ESC để thoát
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && _chartFs) exitChartFs();
+});
 
 </script>
 
