@@ -1833,7 +1833,7 @@ footer .hl{color:var(--accent);}
 .vn-dn{color:#ef4444;}
 
 /* ── VN Chart layout ── */
-.vn-chart-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;}
+.vn-chart-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start;}
 @media(max-width:900px){.vn-chart-layout{grid-template-columns:1fr;}}
 .vn-chart-sidebar{display:flex;flex-direction:column;gap:12px;}
 .vn-chart-tf-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -3404,7 +3404,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <button class="tf-btn" onclick="loadVNChart('1Y',this)">1N</button>
         </div>
       </div>
-      <div id="vnChartContainer" style="width:100%;height:420px;background:var(--surface);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">
+      <div id="vnChartContainer" style="width:100%;min-height:520px;height:calc(100vh - 280px);max-height:800px;background:var(--surface);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;overflow:hidden">
         Chọn mã cổ phiếu để xem biểu đồ
       </div>
     </div>
@@ -3764,23 +3764,40 @@ setInterval(loadDailyVN, 10*60*1000);
    COINGECKO LOGOS (2 trang, delay 3s, bắt 429)
 ═══════════════════════════════════════════════════ */
 async function loadCoinGeckoLogos(){
-  // Dùng GitHub CDN cryptocurrency-icons (không cần proxy)
-  // Map từ Binance exchangeInfo để biết tất cả symbols
+  // Nguồn 1: CryptoCompare coinlist — đầy đủ nhất, CORS OK, không cần key
+  try{
+    const r = await fetch(
+      'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
+      {signal:AbortSignal.timeout(12000)}
+    );
+    if(r.ok){
+      const j = await r.json();
+      const data = j?.Data || {};
+      Object.entries(data).forEach(([sym, info])=>{
+        if(info.ImageUrl && !logoMap[sym]){
+          logoMap[sym] = 'https://www.cryptocompare.com' + info.ImageUrl;
+        }
+        if(info.CoinName && !nameMap[sym]){
+          nameMap[sym] = info.CoinName;
+        }
+      });
+      _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+      return;
+    }
+  }catch(e){}
+  // Nguồn 2 (fallback): Binance exchangeInfo
   try{
     const res = await fetch('https://api.binance.com/api/v3/exchangeInfo',
       {signal:AbortSignal.timeout(10000)});
-    if(!res.ok) throw new Error('Binance exchangeInfo '+res.status);
-    const json = await res.json();
-    (json.symbols||[]).forEach(s=>{
-      if(s.quoteAsset!=='USDT') return;
-      const base = (s.baseAsset||'').toUpperCase();
-      if(!logoMap[base]){
-        // GitHub CDN — không cần proxy, CORS OK
-        logoMap[base] = `https://coinicons-api.vercel.app/api/icon/${base.toLowerCase()}`;
+    if(res.ok){
+      const json = await res.json();
+      (json.symbols||[]).forEach(s=>{
+        if(s.quoteAsset!=='USDT') return;
+        const base = (s.baseAsset||'').toUpperCase();
         nameMap[base] = nameMap[base] || base;
-      }
-    });
-    _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+      });
+      _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+    }
   }catch(e){ console.warn('Logo load error',e.message); }
 }
 
@@ -3900,15 +3917,14 @@ function logoHTML(base,size=28){
   const color=colorMap[base]||'#00d4ff';
   const fbStyle=`width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color};font-size:${Math.round(size*.45)}px`;
   const bl=base.toLowerCase();
-  // Chain 4 nguồn: logoMap → CoinIcons → CoinCap icons → spothq → chữ cái
-  const src1 = logoMap[base] || `https://coinicons-api.vercel.app/api/icon/${bl}`;
+  // Chain 3 CDN đáng tin (img src không bị CORS):
+  // 1. LiveCoinWatch CDN (DigitalOcean) — bao phủ ~3000 coin, webp 64px
+  // 2. CoinCap icons CDN — backup
+  // 3. spothq GitHub — các coin cũ/phổ biến
+  const src1 = `https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${bl}.webp`;
   const src2 = `https://assets.coincap.io/assets/icons/${bl}@2x.png`;
   const src3 = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${bl}.png`;
-  const onErr = `
-    if(!this._fb1){this._fb1=true;this.src='${src2}';return;}
-    if(!this._fb2){this._fb2=true;this.src='${src3}';return;}
-    this.style.display='none';this.nextElementSibling.style.display='flex';
-  `.replace(/\n/g,' ').replace(/  +/g,' ');
+  const onErr = `if(!this._f1){this._f1=1;this.src='${src2}';return;} if(!this._f2){this._f2=1;this.src='${src3}';return;} this.style.display='none';this.nextElementSibling.style.display='flex';`;
   return `<img class="coin-logo" src="${src1}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="${onErr}"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
 }
 
@@ -7964,74 +7980,119 @@ async function loadVNChart(tf, el){
   if(el) el.classList.add('active');
   const container = document.getElementById('vnChartContainer');
   if(!container) return;
-  container.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px"><div class="chart-spinner"></div><span style="color:var(--muted);font-size:12px">Đang tải biểu đồ...</span></div>';
 
-  // Map timeframe → TradingView interval
-  const tvInterval = {'1D':'D','1T':'W','1M':'M','3T':'3M','1N':'12M'};
-  const interval   = tvInterval[tf] || 'D';
-  // Map ticker → TradingView symbol
-  const sym = tvSym(_vnCurrentTicker);
-
-  // Thử Stooq CSV qua allorigins (OHLCV data cho LightweightCharts)
+  const ticker = _vnCurrentTicker;
   const tfDays = {'1D':60,'1T':200,'1M':400,'3T':1200,'1N':2000};
-  const days   = tfDays[tf]||60;
-  const stooqSy = stooqSym(_vnCurrentTicker);
-  const csvUrl  = 'https://stooq.com/q/d/l/?s='+stooqSy+'&i=d';
+  const days   = tfDays[tf] || 60;
+
+  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
+    <div class="chart-spinner"></div>
+    <span style="color:var(--muted);font-size:12px">Đang tải dữ liệu ${ticker}...</span>
+  </div>`;
+
+  // --- Stooq CSV qua allorigins proxy ---
+  const stooqSy = stooqSym(ticker);
+  const csvUrl  = 'https://stooq.com/q/d/l/?s=' + stooqSy + '&i=d';
 
   try{
-    const text = await vnProxyFetch(csvUrl, 10000);
-    if(text && text.includes(',') && text.includes('\n')){
-      const lines = text.trim().split('\n').slice(1); // skip header
-      if(lines.length > 5){
-        const candles = lines.map(ln=>{
-          const [date,open,high,low,close,vol] = ln.split(',');
-          const t = new Date(date).getTime()/1000;
-          return {time:t, open:+open, high:+high, low:+low, close:+close};
-        }).filter(b=>b.time>0 && b.close>0 && !isNaN(b.close))
-          .sort((a,b_)=>a.time-b_.time)
-          .slice(-days);
+    const text = await vnProxyFetch(csvUrl, 12000);
+    if(text && text.includes(',') && text.split('\n').length > 5){
+      const lines = text.trim().split('\n');
+      // Header: Date,Open,High,Low,Close,Volume
+      const dataLines = lines.slice(1).filter(l=>l.trim());
+      const candles = dataLines.map(ln=>{
+        const parts = ln.split(',');
+        if(parts.length < 5) return null;
+        const [dateStr, open, high, low, close] = parts;
+        const t = Math.floor(new Date(dateStr.trim()).getTime() / 1000);
+        const o = parseFloat(open), h = parseFloat(high),
+              lo = parseFloat(low), cl = parseFloat(close);
+        if(!t || !cl || isNaN(cl)) return null;
+        return {time:t, open:o||cl, high:h||cl, low:lo||cl, close:cl};
+      }).filter(Boolean)
+        .sort((a,b)=>a.time-b.time)
+        .slice(-days);
 
-        if(candles.length>5){
-          container.innerHTML='';
-          if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
-          _vnChart = LightweightCharts.createChart(container,{
-            layout:{background:{color:'transparent'},textColor:'rgba(255,255,255,.6)'},
-            grid:{vertLines:{color:'rgba(255,255,255,.04)'},horzLines:{color:'rgba(255,255,255,.04)'}},
-            crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-            rightPriceScale:{borderColor:'rgba(255,255,255,.1)'},
-            timeScale:{borderColor:'rgba(255,255,255,.1)',timeVisible:false},
-            height:400,
-          });
-          _vnSeries = _vnChart.addCandlestickSeries({
-            upColor:'#22c55e',downColor:'#ef4444',
-            borderUpColor:'#22c55e',borderDownColor:'#ef4444',
-            wickUpColor:'#22c55e',wickDownColor:'#ef4444',
-          });
-          _vnSeries.setData(candles);
-          _vnChart.timeScale().fitContent();
-          new ResizeObserver(()=>{
-            if(_vnChart) _vnChart.applyOptions({width:container.clientWidth});
-          }).observe(container);
-          return;
-        }
+      if(candles.length >= 5){
+        _buildVNChart(container, candles);
+        return;
       }
     }
   }catch(e){}
 
-  // Fallback: TradingView Advanced Chart widget (không cần API, embed iframe)
-  container.innerHTML = '<div id="tv-chart-'+_vnCurrentTicker+'" style="height:400px"></div><script src="https://s3.tradingview.com/tv.js"><\/script>';
+  // --- Fallback: hiển thị lỗi đẹp + link TradingView ---
+  const tvUrl = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSym(ticker));
   container.innerHTML = `
-    <div style="height:400px;border-radius:8px;overflow:hidden;">
-      <iframe
-        src="https://s.tradingview.com/widgetembed/?frameElementId=tv_${_vnCurrentTicker}&symbol=${encodeURIComponent(sym)}&interval=${interval}&hidesidetoolbar=1&hidetoptoolbar=0&symboledit=0&saveimage=0&toolbarbg=1a1a2e&studies=[]&theme=dark&style=1&timezone=Asia%2FHo_Chi_Minh&withdateranges=1&showpopupbutton=0&locale=vi_VN&utm_source=letranvietlong.github.io&utm_medium=widget"
-        style="width:100%;height:100%;border:none;"
-        allowtransparency="true"
-        frameborder="0"
-        scrolling="no"
-        allowfullscreen>
-      </iframe>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                height:100%;gap:16px;color:var(--muted);text-align:center;padding:40px">
+      <div style="font-size:40px">📊</div>
+      <div style="font-size:16px;color:var(--text);font-weight:600">${ticker}</div>
+      <div style="font-size:13px;max-width:320px;line-height:1.6">
+        Không tải được dữ liệu lịch sử lúc này.<br>
+        Vui lòng thử lại sau hoặc xem trên TradingView.
+      </div>
+      <a href="${tvUrl}" target="_blank" rel="noopener"
+         style="padding:10px 24px;background:var(--accent);color:#000;border-radius:8px;
+                font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px">
+        📈 Mở trên TradingView
+      </a>
+      <button onclick="loadVNChart('${tf||'1D'}',null)"
+              style="padding:8px 20px;background:rgba(255,255,255,.08);color:var(--text);
+                     border:1px solid rgba(255,255,255,.12);border-radius:8px;
+                     font-size:12px;cursor:pointer">
+        🔄 Thử lại
+      </button>
     </div>`;
 }
+
+function _buildVNChart(container, candles){
+  container.innerHTML = '';
+  if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
+
+  const h = Math.max(500, container.parentElement?.clientHeight || 500);
+  _vnChart = LightweightCharts.createChart(container, {
+    layout:{
+      background:{color:'transparent'},
+      textColor:'rgba(255,255,255,.7)',
+      fontSize:12,
+    },
+    grid:{
+      vertLines:{color:'rgba(255,255,255,.04)'},
+      horzLines:{color:'rgba(255,255,255,.04)'},
+    },
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{
+      borderColor:'rgba(255,255,255,.1)',
+      scaleMargins:{top:0.08,bottom:0.08},
+    },
+    timeScale:{
+      borderColor:'rgba(255,255,255,.1)',
+      timeVisible:false,
+      fixLeftEdge:true,
+      fixRightEdge:true,
+    },
+    handleScroll:true,
+    handleScale:true,
+    width: container.clientWidth || 800,
+    height: h,
+  });
+
+  _vnSeries = _vnChart.addCandlestickSeries({
+    upColor:'#22c55e', downColor:'#ef4444',
+    borderUpColor:'#22c55e', borderDownColor:'#ef4444',
+    wickUpColor:'#22c55e', wickDownColor:'#ef4444',
+  });
+  _vnSeries.setData(candles);
+  _vnChart.timeScale().fitContent();
+
+  const ro = new ResizeObserver(entries=>{
+    for(const entry of entries){
+      if(_vnChart) _vnChart.applyOptions({width: entry.contentRect.width});
+    }
+  });
+  ro.observe(container);
+}
+
 
 
 
