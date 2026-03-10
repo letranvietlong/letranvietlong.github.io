@@ -2016,6 +2016,8 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 }
 
 </style>
+  <!-- TradingView chart library -->
+  <script src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body class="market-crypto">
 <div class="orb orb1"></div><div class="orb orb2"></div>
@@ -2068,7 +2070,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.4</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.5</span></span></div>
 
 
     
@@ -8050,66 +8052,73 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Destroy cũ
-  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
+  // Destroy widget cũ
+  try{
+    if(_vnTVWidget && typeof _vnTVWidget.remove === 'function') _vnTVWidget.remove();
+  }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   while(container.firstChild) container.removeChild(container.firstChild);
 
-  console.log('[VLC] TV widget:', sym, interval);
+  console.log('[VLC] TradingView.widget:', sym, interval);
 
   const ivMap = {'D':'D','W':'W','M':'M','3M':'W','12M':'W'};
   const iv    = ivMap[interval]||'D';
 
-  const cfg = JSON.stringify({
-    autosize:          true,
-    symbol:            sym,
-    interval:          iv,
-    timezone:          'Asia/Ho_Chi_Minh',
-    theme:             'dark',
-    style:             '1',
-    locale:            'vi_VN',
-    toolbar_bg:        '#131722',
-    enable_publishing: false,
-    withdateranges:    true,
-    hide_side_toolbar: false,
-    allow_symbol_change: false,
-    save_image:        false,
-    studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
-    show_popup_button: false,
-  });
+  // Tạo div chứa widget
+  const cid = 'tv_' + ticker.replace(/\W/g,'') + '_' + Date.now();
+  const div  = document.createElement('div');
+  div.id     = cid;
+  div.style.cssText = 'width:100%;height:100%;min-height:560px;';
+  container.appendChild(div);
 
-  // Dùng Range.createContextualFragment → scripts được execute
-  const wrap = document.createElement('div');
-  wrap.className = 'tradingview-widget-container';
-  wrap.style.cssText = 'width:100%;height:100%;';
-  container.appendChild(wrap);
+  function doInit(){
+    try{
+      _vnTVWidget = new TradingView.widget({
+        container_id:      cid,
+        autosize:          true,
+        symbol:            sym,
+        interval:          iv,
+        timezone:          'Asia/Ho_Chi_Minh',
+        theme:             'dark',
+        style:             '1',
+        locale:            'vi_VN',
+        toolbar_bg:        '#131722',
+        enable_publishing: false,
+        withdateranges:    true,
+        hide_side_toolbar: false,
+        allow_symbol_change: false,
+        save_image:        false,
+        studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
+        show_popup_button: false,
+        disabled_features: ['header_symbol_search','header_compare'],
+      });
+      console.log('[VLC] Widget created for', sym);
+    }catch(err){
+      console.error('[VLC] Widget error:', err);
+      div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#888;flex-direction:column;gap:8px"><div>⚠️ Không thể tải biểu đồ</div><div style="font-size:11px">'+sym+'</div></div>';
+    }
+  }
 
-  const inner = document.createElement('div');
-  inner.className = 'tradingview-widget-container__widget';
-  inner.style.cssText = 'width:100%;height:calc(100% - 32px);min-height:500px;';
-  wrap.appendChild(inner);
-
-  // createContextualFragment executes scripts (unlike innerHTML)
-  const range = document.createRange();
-  range.selectNode(wrap);
-  // unique id cho inner container
-  const cid = 'tvadv_' + ticker.replace(/\W/g,'') + '_' + Date.now();
-  inner.id = cid;
-
-  // Thêm container_id vào config
-  const cfgObj = JSON.parse(cfg);
-  cfgObj.container_id = cid;
-  const cfgFinal = JSON.stringify(cfgObj);
-
-  // Cache-bust để TV load fresh script với config mới
-  const cbust = Date.now();
-  const frag = range.createContextualFragment(
-    `<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js?v=${cbust}" async>${cfgFinal}<\/script>`
-  );
-  wrap.appendChild(frag);
-  _vnTVWidget = wrap;
+  // tv.js đã được load trong <head> → TradingView sẵn sàng
+  if(typeof TradingView !== 'undefined' && typeof TradingView.widget === 'function'){
+    doInit();
+  } else {
+    // Fallback: chờ tối đa 5 giây
+    let waited = 0;
+    const check = setInterval(()=>{
+      waited += 100;
+      if(typeof TradingView !== 'undefined' && typeof TradingView.widget === 'function'){
+        clearInterval(check);
+        doInit();
+      } else if(waited >= 5000){
+        clearInterval(check);
+        div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#888">Không thể kết nối TradingView</div>';
+      }
+    }, 100);
+  }
 }
+
 
 
 
