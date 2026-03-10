@@ -7622,7 +7622,6 @@ function updateVNSession(){
 // Stooq CSV: qua allorigins proxy cho chart lịch sử
 // ══════════════════════════════════════════════════════════════
 
-const TV_SCAN_URL = 'https://scanner.tradingview.com/vietnam/scan';
 
 // TradingView symbol mapping
 function tvSym(ticker){
@@ -7638,6 +7637,44 @@ function stooqSym(ticker){
   const map = {VNINDEX:'%5evni',HNX:'%5ehnx',UPCOM:'%5eupc',VN30:'%5evn30',HNX30:'%5ehnx30'};
   return map[ticker] || (ticker.toLowerCase()+'.vn');
 }
+
+// ── SSI iBoard API (CORS native, GET) ───────────────────────────
+const SSI_BASE = 'https://iboard.ssi.com.vn/dchart/api';
+
+async function ssiFetch(path, timeout=10000){
+  try{
+    const r = await fetch(SSI_BASE + path, {
+      signal: AbortSignal.timeout(timeout),
+      headers: { 'Accept': 'application/json' },
+    });
+    if(r.ok) return await r.json();
+  }catch(e){}
+  return null;
+}
+
+// Parse SSI quote object
+function parseSSIQuote(q, ticker){
+  if(!q) return null;
+  const price = parseFloat(q.lastPrice || q.mp || q.matchingPrice || 0);
+  const ref   = parseFloat(q.refPrice  || q.rc || q.referencePrice || price);
+  const chg   = parseFloat(q.change    || (price-ref));
+  const pct   = parseFloat(q.changePercent || q.pct || (ref>0?chg/ref*100:0));
+  return {
+    ticker: ticker || (q.symbol||q.stockCode||'').toUpperCase(),
+    name:   VN_NAMES?.[ticker] || q.stockName || ticker || '',
+    price, ref,
+    ceil:   parseFloat(q.ceilingPrice  || ref*1.07),
+    floor:  parseFloat(q.floorPrice    || ref*0.93),
+    high:   parseFloat(q.highPrice     || q.hi  || price),
+    low:    parseFloat(q.lowPrice      || q.lo  || price),
+    vol:    parseFloat(q.totalVolume   || q.vol || 0),
+    val:    parseFloat(q.totalValue    || 0) || parseFloat(q.totalVolume||0)*price,
+    change: chg, changePct: pct,
+    buyForeign:  parseFloat(q.buyForeignVolume  || 0),
+    sellForeign: parseFloat(q.sellForeignVolume || 0),
+  };
+}
+
 
 // Fetch qua allorigins (cho Stooq CSV — không CORS)
 async function vnProxyFetch(url, timeout=12000){
@@ -7655,66 +7692,16 @@ async function vnProxyFetch(url, timeout=12000){
 
 // TradingView Scanner batch fetch
 // columns: name, close, change, change_abs, volume, market_cap_basic
-async function tvScanFetch(symbols, extraCols=[]){
-  const cols = ['name','close','change','change_abs','volume','high','low',
-                'open','prev_close_price','market_cap_basic',...extraCols];
-  const body = symbols && symbols.length
-    ? { symbols:{tickers:symbols}, columns:cols }
-    : {
-        filter:[{left:'exchange',operation:'equal',right:'HOSE'},
-                {left:'close',operation:'greater',right:0}],
-        options:{lang:'vi'},
-        markets:['vietnam'],
-        symbols:{query:{types:['stock']}},
-        columns:cols,
-        sort:{sortBy:'market_cap_basic',sortOrder:'desc'},
-        range:[0,250],
-      };
-  try{
-    // QUAN TRỌNG: Không set Content-Type header để tránh CORS preflight
-    // TradingView Scanner không cho phép custom headers từ cross-origin
-    const r = await fetch(TV_SCAN_URL, {
-      method: 'POST',
-      signal: AbortSignal.timeout(12000),
-      body: JSON.stringify(body),
-    });
-    if(!r.ok) return null;
-    const j = await r.json();
-    return j?.data || null;
-  }catch(e){}
-  return null;
-}
+
+async function tvScanFetch(){ return null; }
+
 
 
 
 // TradingView Scanner top movers (dùng filter)
-async function tvScanMovers(sortBy='change', order='desc', count=25){
-  const cols = ['name','close','change','change_abs','volume','high','low','open','market_cap_basic','name'];
-  try{
-    const body = {
-      filter:[
-        {left:'exchange',operation:'equal',right:'HOSE'},
-        {left:'close',operation:'greater',right:0},
-      ],
-      options:{lang:'vi'},
-      markets:['vietnam'],
-      symbols:{query:{types:['stock']}},
-      columns: cols,
-      sort:{sortBy,sortOrder:order},
-      range:[0, count],
-    };
-    const r = await fetch(TV_SCAN_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      signal:AbortSignal.timeout(12000),
-      body: JSON.stringify(body),
-    });
-    if(!r.ok) return null;
-    const j = await r.json();
-    return j?.data || null;
-  }catch(e){}
-  return null;
-}
+
+async function tvScanMovers(){ return null; }
+
 
 // Parse TV scan row → định dạng nội bộ
 function parseTVRow(row, cols){
@@ -7762,13 +7749,30 @@ function parseTCBSQuote(q,t){
 }
 
 // Batch quotes từ TradingView
+// Batch quotes từ SSI iBoard (GET, CORS native)
 async function yfBatchQuotes(tickers){
   if(!tickers||!tickers.length) return [];
-  const syms = tickers.map(tvSym);
-  const rows = await tvScanFetch(syms);
-  if(!rows||!rows.length) return [];
-  return rows.map(row=>parseTVRow(row, TV_COLS)).filter(Boolean);
+  // SSI hỗ trợ multi-symbol: /quote?symbol=VNM,VCB,HPG
+  try{
+    const syms = tickers.slice(0,30).join(',');
+    const d = await ssiFetch('/quote?symbol='+encodeURIComponent(syms), 12000);
+    const list = Array.isArray(d?.data) ? d.data : (Array.isArray(d)?d:[]);
+    if(list.length){
+      return list.map((q,i)=>parseSSIQuote(q,
+        (q.stockCode||q.symbol||tickers[i]||'').toUpperCase()
+      )).filter(Boolean);
+    }
+  }catch(e){}
+  // Fallback: từng cái một (parallel)
+  const results = await Promise.allSettled(
+    tickers.slice(0,20).map(async tk=>{
+      const d = await ssiFetch('/quote?symbol='+tk, 6000);
+      return parseSSIQuote(d?.data||d, tk);
+    })
+  );
+  return results.map(r=>r.value).filter(Boolean);
 }
+
 
 async function fetchVNStocks(tickers){ return yfBatchQuotes(tickers); }
 
@@ -7813,23 +7817,24 @@ async function loadVNMarket(){
 // ── VN Indices Strip ─────────────────────────────────────
 async function loadVNIndicesStrip(){
   const IDX = [
-    {id:'VNINDEX',sym:'HOSE:VNINDEX'},{id:'HNX',sym:'HNX:HNX'},
-    {id:'UPCOM',sym:'UPCOM:UPCOM'},{id:'VN30',sym:'HOSE:VN30'},{id:'HNX30',sym:'HNX:HNX30'},
+    {id:'VNINDEX',sym:'VNINDEX'},{id:'HNX',sym:'HNX'},
+    {id:'UPCOM',sym:'UPCOM'},{id:'VN30',sym:'VN30'},{id:'HNX30',sym:'HNX30'},
   ];
-  try{
-    const rows = await tvScanFetch(IDX.map(i=>i.sym),['change_from_open']);
-    if(rows&&rows.length){
-      rows.forEach((row,i)=>{
-        const key = IDX.find(m=>m.sym===row.s)?.id || IDX[i]?.id;
-        if(!key) return;
-        const d = parseTVRow(row, TV_COLS);
-        if(d) _updateIdxCard(key,{indexValue:d.price,indexChange:d.change,percentChange:d.changePct});
-      });
-      return;
-    }
-  }catch(e){}
-  // Silent fail — giữ '—'
+  // SSI iBoard quote endpoint (GET, CORS native)
+  await Promise.allSettled(IDX.map(async ({id,sym})=>{
+    try{
+      const d = await ssiFetch('/quote?symbol='+sym, 8000);
+      const q = d?.data || d;
+      if(!q) return;
+      const val = parseFloat(q.lastPrice||q.matchingPrice||q.indexValue||0);
+      const ref = parseFloat(q.refPrice||q.referencePrice||val);
+      const chg = parseFloat(q.change||(val-ref));
+      const pct = parseFloat(q.changePercent||q.pctChange||(ref>0?chg/ref*100:0));
+      if(val>0) _updateIdxCard(id,{indexValue:val, indexChange:chg, percentChange:pct});
+    }catch(e){}
+  }));
 }
+
 
 
 
@@ -7857,39 +7862,49 @@ function switchVNMover(tab, el){
 async function loadVNMovers(tab){
   _vnCurrentMoverTab = tab || _vnCurrentMoverTab;
   const tbody = document.getElementById('vnMoversBody');
-  if(tbody) tbody.innerHTML='<tr><td colspan="8" class="vn-loading"><span class="spinner" style="width:14px;height:14px;display:inline-block;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite"></span> Đang tải...</td></tr>';
+  if(tbody) tbody.innerHTML = '<tr><td colspan="8" class="vn-loading"><span class="spinner" style="width:14px;height:14px;display:inline-block;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite"></span> Đang tải...</td></tr>';
 
   const t = _vnCurrentMoverTab;
-  const sortMap={
-    'top-gain':  ['change','desc'],
-    'top-loss':  ['change','asc'],
-    'top-vol':   ['volume','desc'],
-    'top-val':   ['Value.Traded','desc'],
-    'foreign':   ['change','desc'],
+  // SSI board: type 1=top-gain, 2=top-loss, 3=top-vol, 4=top-val, 5=foreign
+  const typeMap = {
+    'top-gain':'1','top-loss':'2','top-vol':'3','top-val':'4','foreign':'5'
   };
-  const [sortBy, order] = sortMap[t] || ['change','desc'];
+  const boardType = typeMap[t] || '1';
+
   try{
-    const rows = await tvScanMovers(sortBy, order, 25);
-    if(rows&&rows.length){
-      const stocks = rows.map(row=>parseTVRow(row, TV_COLS)).filter(Boolean);
+    // SSI iBoard boarddata endpoint (GET, CORS native)
+    const d = await ssiFetch('/boarddata?floor=hose&type='+boardType+'&page=1&pageSize=25', 10000);
+    const list = d?.data || (Array.isArray(d)?d:[]);
+    if(list.length){
+      const stocks = list.map(q=>parseSSIQuote(q,(q.stockCode||q.symbol||'').toUpperCase())).filter(Boolean);
       if(stocks.length){ renderVNMovers(stocks); return; }
     }
   }catch(e){}
-  // Fallback từ VN30
+
+  // Fallback: lấy VN30 từ SSI quote rồi sort client-side
   try{
-    const stocks = await yfBatchQuotes((VN_GROUPS?.vn30||VN_POPULAR).slice(0,30));
+    const tickers = (VN_GROUPS?.vn30 || VN_POPULAR).slice(0,30);
+    const results = await Promise.allSettled(
+      tickers.map(tk=>ssiFetch('/quote?symbol='+tk, 6000)
+        .then(d=>parseSSIQuote(d?.data||d, tk)).catch(()=>null))
+    );
+    const stocks = results.map(r=>r.value).filter(Boolean);
     if(stocks.length){
-      const sorted=t==='top-gain'?[...stocks].sort((a,b)=>b.changePct-a.changePct):
-                   t==='top-loss'?[...stocks].sort((a,b)=>a.changePct-b.changePct):
-                   t==='top-vol' ?[...stocks].sort((a,b)=>b.vol-a.vol):
-                   t==='top-val' ?[...stocks].sort((a,b)=>b.val-a.val):stocks;
+      const sorted =
+        t==='top-gain' ? [...stocks].sort((a,b)=>b.changePct-a.changePct) :
+        t==='top-loss' ? [...stocks].sort((a,b)=>a.changePct-b.changePct) :
+        t==='top-vol'  ? [...stocks].sort((a,b)=>b.vol-a.vol) :
+        t==='top-val'  ? [...stocks].sort((a,b)=>b.val-a.val) :
+        stocks;
       renderVNMovers(sorted.slice(0,20));
       return;
     }
   }catch(e){}
+
   console.warn('VN movers error: no data');
   renderVNMoversStatic();
 }
+
 
 
 
@@ -7984,62 +7999,83 @@ async function loadVNChart(tf, el){
   const ticker = _vnCurrentTicker;
   const tfDays = {'1D':60,'1T':200,'1M':400,'3T':1200,'1N':2000};
   const days   = tfDays[tf] || 60;
+  const now    = Math.floor(Date.now()/1000);
+  const fromTs = now - days * 86400 * 1.5; // buffer thêm 50%
 
   container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
     <div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải dữ liệu ${ticker}...</span>
+    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>
   </div>`;
 
-  // --- Stooq CSV qua allorigins proxy ---
-  const stooqSy = stooqSym(ticker);
-  const csvUrl  = 'https://stooq.com/q/d/l/?s=' + stooqSy + '&i=d';
-
+  // ── Nguồn 1: SSI iBoard UDF API (CORS native) ──────────────────
   try{
-    const text = await vnProxyFetch(csvUrl, 12000);
-    if(text && text.includes(',') && text.split('\n').length > 5){
-      const lines = text.trim().split('\n');
-      // Header: Date,Open,High,Low,Close,Volume
-      const dataLines = lines.slice(1).filter(l=>l.trim());
-      const candles = dataLines.map(ln=>{
-        const parts = ln.split(',');
-        if(parts.length < 5) return null;
-        const [dateStr, open, high, low, close] = parts;
-        const t = Math.floor(new Date(dateStr.trim()).getTime() / 1000);
-        const o = parseFloat(open), h = parseFloat(high),
-              lo = parseFloat(low), cl = parseFloat(close);
-        if(!t || !cl || isNaN(cl)) return null;
-        return {time:t, open:o||cl, high:h||cl, low:lo||cl, close:cl};
-      }).filter(Boolean)
-        .sort((a,b)=>a.time-b.time)
-        .slice(-days);
-
-      if(candles.length >= 5){
-        _buildVNChart(container, candles);
-        return;
+    const isIdx = ['VNINDEX','HNX','UPCOM','VN30','HNX30'].includes(ticker);
+    const resoMap = {'1D':'D','1T':'W','1M':'M','3T':'M','1N':'M'};
+    const reso    = resoMap[tf] || 'D';
+    const ssiSym  = isIdx ? (ticker==='VNINDEX'?'VNINDEX':ticker==='HNX'?'HNX':ticker) : ticker;
+    const ssiUrl  = `https://iboard.ssi.com.vn/dchart/api/history?symbol=${ssiSym}&resolution=${reso}&from=${fromTs}&to=${now}`;
+    const r = await fetch(ssiUrl, {signal:AbortSignal.timeout(10000)});
+    if(r.ok){
+      const d = await r.json();
+      if(d.s === 'ok' && d.t && d.t.length >= 5){
+        const candles = d.t.map((t,i)=>({
+          time:  t,
+          open:  d.o[i] || d.c[i],
+          high:  d.h[i] || d.c[i],
+          low:   d.l[i] || d.c[i],
+          close: d.c[i],
+        })).filter(b=>b.time>0 && b.close>0)
+          .sort((a,b)=>a.time-b.time)
+          .slice(-days);
+        if(candles.length >= 5){ _buildVNChart(container, candles); return; }
       }
     }
   }catch(e){}
 
-  // --- Fallback: hiển thị lỗi đẹp + link TradingView ---
+  // ── Nguồn 2: TCBS bars-long-term (no auth headers) ─────────────
+  try{
+    const isIdx   = ['VNINDEX','HNX','UPCOM','VN30','HNX30'].includes(ticker);
+    const tcbsType = isIdx ? 'index' : 'stock';
+    const tcbsReso = {'1D':'D','1T':'W','1M':'M','3T':'M','1N':'M'}[tf] || 'D';
+    const tcbsUrl  = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term`
+      + `?ticker=${ticker}&type=${tcbsType}&resolution=${tcbsReso}&from=${fromTs}&to=${now}`;
+    const r2 = await fetch(tcbsUrl, {signal:AbortSignal.timeout(10000)});
+    if(r2.ok){
+      const d2 = await r2.json();
+      const bars = d2?.data || [];
+      if(bars.length >= 5){
+        const candles = bars.map(b=>({
+          time:  b.tradingDate || b.time || 0,
+          open:  b.open  || b.close,
+          high:  b.high  || b.close,
+          low:   b.low   || b.close,
+          close: b.close || 0,
+        })).filter(b=>b.time>0 && b.close>0)
+          .sort((a,b_)=>a.time-b_.time)
+          .slice(-days);
+        if(candles.length >= 5){ _buildVNChart(container, candles); return; }
+      }
+    }
+  }catch(e){}
+
+  // ── Fallback: thông báo + link TradingView ──────────────────────
   const tvUrl = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSym(ticker));
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                 height:100%;gap:16px;color:var(--muted);text-align:center;padding:40px">
-      <div style="font-size:40px">📊</div>
-      <div style="font-size:16px;color:var(--text);font-weight:600">${ticker}</div>
-      <div style="font-size:13px;max-width:320px;line-height:1.6">
-        Không tải được dữ liệu lịch sử lúc này.<br>
-        Vui lòng thử lại sau hoặc xem trên TradingView.
+      <div style="font-size:36px">📊</div>
+      <div style="font-size:15px;color:var(--text);font-weight:600">${ticker}</div>
+      <div style="font-size:13px;max-width:300px;line-height:1.6;opacity:.8">
+        Không tải được dữ liệu lịch sử lúc này.
       </div>
       <a href="${tvUrl}" target="_blank" rel="noopener"
          style="padding:10px 24px;background:var(--accent);color:#000;border-radius:8px;
-                font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px">
+                font-size:13px;font-weight:600;text-decoration:none">
         📈 Mở trên TradingView
       </a>
-      <button onclick="loadVNChart('${tf||'1D'}',null)"
-              style="padding:8px 20px;background:rgba(255,255,255,.08);color:var(--text);
-                     border:1px solid rgba(255,255,255,.12);border-radius:8px;
-                     font-size:12px;cursor:pointer">
+      <button onclick="loadVNChart('${tf||'1D'}',document.querySelector('#page-vn-chart .tf-btn.active'))"
+              style="padding:8px 20px;background:rgba(255,255,255,.07);color:var(--text);
+                     border:1px solid rgba(255,255,255,.1);border-radius:8px;font-size:12px;cursor:pointer">
         🔄 Thử lại
       </button>
     </div>`;
@@ -8049,7 +8085,9 @@ function _buildVNChart(container, candles){
   container.innerHTML = '';
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
 
-  const h = Math.max(500, container.parentElement?.clientHeight || 500);
+  const w = container.clientWidth  || 800;
+  const h = container.clientHeight || 520;
+
   _vnChart = LightweightCharts.createChart(container, {
     layout:{
       background:{color:'transparent'},
@@ -8063,7 +8101,7 @@ function _buildVNChart(container, candles){
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
     rightPriceScale:{
       borderColor:'rgba(255,255,255,.1)',
-      scaleMargins:{top:0.08,bottom:0.08},
+      scaleMargins:{top:0.06, bottom:0.06},
     },
     timeScale:{
       borderColor:'rgba(255,255,255,.1)',
@@ -8073,25 +8111,27 @@ function _buildVNChart(container, candles){
     },
     handleScroll:true,
     handleScale:true,
-    width: container.clientWidth || 800,
+    width: w,
     height: h,
   });
 
   _vnSeries = _vnChart.addCandlestickSeries({
-    upColor:'#22c55e', downColor:'#ef4444',
+    upColor:'#22c55e',  downColor:'#ef4444',
     borderUpColor:'#22c55e', borderDownColor:'#ef4444',
-    wickUpColor:'#22c55e', wickDownColor:'#ef4444',
+    wickUpColor:'#22c55e',   wickDownColor:'#ef4444',
   });
   _vnSeries.setData(candles);
   _vnChart.timeScale().fitContent();
 
-  const ro = new ResizeObserver(entries=>{
-    for(const entry of entries){
-      if(_vnChart) _vnChart.applyOptions({width: entry.contentRect.width});
-    }
-  });
-  ro.observe(container);
+  new ResizeObserver(entries=>{
+    if(_vnChart && entries[0])
+      _vnChart.applyOptions({
+        width:  entries[0].contentRect.width,
+        height: entries[0].contentRect.height,
+      });
+  }).observe(container);
 }
+
 
 
 
