@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.0.2</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.0</span></span></div>
 
 
     
@@ -8556,108 +8556,152 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Fallback TV widget kept for reference but not used for HOSE stocks
-  // Redirected to Yahoo Finance + LightweightCharts pipeline
-  _fetchYFAndRender(container, ticker, interval);
+  // Redirect sang TCBS/SSI data pipeline
+  _fetchVNChartData(container, ticker, interval);
 }
 
-// ── Yahoo Finance + LightweightCharts ──────────────
-const YF_PROXIES = [
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  url => `https://thingproxy.freeboard.io/fetch/${url}`,
-];
+// ══ VN Chart Data: TCBS → SSI → Stooq ══════════════
 
-async function _fetchYFAndRender(container, ticker, interval){
-  // Map interval → YF params
-  const YF_MAP = {
-    'D':  {interval:'1d',  range:'1y'},
-    'W':  {interval:'1wk', range:'5y'},
-    'M':  {interval:'1mo', range:'10y'},
-    '3M': {interval:'1d',  range:'3mo'},
-    '12M':{interval:'1wk', range:'2y'},
+async function _fetchVNChartData(container, ticker, interval){
+  const ivMap = {'D':'D','W':'W','M':'M','3M':'D','12M':'W'};
+  const res   = ivMap[interval] || 'D';
+
+  // Tính from/to timestamps
+  const now   = Math.floor(Date.now()/1000);
+  const ranges = {D:365*24*3600, W:5*365*24*3600, M:10*365*24*3600};
+  const rangeByInterval = {
+    'D':ranges.D, 'W':ranges.W, 'M':ranges.M,
+    '3M':90*24*3600, '12M':2*ranges.D
   };
-  const {interval:yfInterval, range} = YF_MAP[interval] || YF_MAP['D'];
-  const yfSym = _toYFSym(ticker);
-  const yfUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yfSym}?interval=${yfInterval}&range=${range}&includePrePost=false`;
+  const fromTs = now - (rangeByInterval[interval] || ranges.D);
 
-  // Show loading
   container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
     <div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải dữ liệu ${ticker}...</span>
+    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>
   </div>`;
 
   let candles = null;
-  
-  // Thử trực tiếp trước (có thể work nếu YF bỏ CORS restriction)
-  try {
-    const r = await fetch(yfUrl, {headers:{'Accept':'application/json'}});
-    if(r.ok){ const d = await r.json(); candles = _parseYFChart(d); }
-  } catch(e){}
 
-  // Thử lần lượt các proxy
-  if(!candles){
-    for(const makeProxy of YF_PROXIES){
-      try{
-        const proxyUrl = makeProxy(yfUrl);
-        const r = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
-        if(!r.ok) continue;
-        const raw = await r.json();
-        // allorigins trả về {contents: '...'}
-        const data = raw.contents ? JSON.parse(raw.contents) : raw;
-        candles = _parseYFChart(data);
-        if(candles && candles.length > 5) break;
-      } catch(e){ continue; }
+  // ── 1. TCBS API (primary) ──────────────────────
+  try{
+    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${fromTs}&to=${now}`;
+    const r = await fetch(url, {headers:{'Accept':'application/json'},signal:AbortSignal.timeout(8000)});
+    if(r.ok){
+      const d = await r.json();
+      candles = _parseTCBS(d);
+      if(candles?.length > 2) console.log('[VLC] TCBS ok:', ticker, candles.length);
     }
+  } catch(e){ console.log('[VLC] TCBS failed:', e.message); }
+
+  // ── 2. SSI finfo API (backup) ─────────────────
+  if(!candles || candles.length < 3){
+    try{
+      const today = new Date().toISOString().slice(0,10);
+      const from2 = new Date(fromTs*1000).toISOString().slice(0,10);
+      const url = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${from2}&toDate=${today}&offset=0&pageSize=500&language=vi`;
+      const r = await fetch(url, {headers:{'Accept':'application/json'},signal:AbortSignal.timeout(8000)});
+      if(r.ok){
+        const d = await r.json();
+        candles = _parseSSI(d);
+        if(candles?.length > 2) console.log('[VLC] SSI ok:', ticker, candles.length);
+      }
+    } catch(e){ console.log('[VLC] SSI failed:', e.message); }
   }
 
+  // ── 3. Stooq via allorigins (last resort) ─────
+  if(!candles || candles.length < 3){
+    try{
+      const stooqSym = ticker.toLowerCase() + '.vn';
+      const stooqUrl = `https://stooq.com/q/d/l/?s=${stooqSym}&i=${res==='D'?'d':res==='W'?'w':'m'}`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(stooqUrl)}`;
+      const r = await fetch(proxyUrl, {signal:AbortSignal.timeout(10000)});
+      if(r.ok){
+        const d = await r.json();
+        candles = _parseStooqCSV(d.contents || '');
+        if(candles?.length > 2) console.log('[VLC] Stooq ok:', ticker, candles.length);
+      }
+    } catch(e){ console.log('[VLC] Stooq failed:', e.message); }
+  }
+
+  // ── Render hoặc error ─────────────────────────
   if(!candles || candles.length < 2){
     container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--muted)">
       <div style="font-size:28px">📡</div>
-      <div style="font-size:13px">Không tải được dữ liệu ${ticker}</div>
-      <div style="font-size:11px;color:var(--muted)">Thử lại sau hoặc chọn cổ phiếu khác</div>
-      <button onclick="loadVNChart('1D',null)" style="margin-top:8px;padding:6px 16px;
-        background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">
-        Thử lại
+      <div style="font-size:13px;color:var(--text2)">Không tải được dữ liệu <b style="color:var(--red)">${ticker}</b></div>
+      <div style="font-size:11px">TCBS · SSI · Stooq đều không phản hồi</div>
+      <button onclick="loadVNChart(document.querySelector('#page-vn-chart .tf-btn.active')?.textContent||'1D',null)"
+        style="margin-top:8px;padding:6px 18px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">
+        ↻ Thử lại
       </button>
     </div>`;
     return;
   }
 
   _buildLWChart(container, candles);
-  console.log('[VLC] YF chart loaded:', ticker, candles.length, 'candles');
+}
+
+// ── Parsers ──────────────────────────────────────
+
+function _parseTCBS(data){
+  // TCBS response: {data:[{tradingDate:"YYYY-MM-DD",open,high,low,close,volume}]}
+  // hoặc: {listStock:[...]} hoặc array trực tiếp
+  try{
+    const arr = data?.data || data?.listStock || (Array.isArray(data)?data:[]);
+    if(!arr.length) return null;
+    return arr.map(b=>{
+      // tradingDate có thể là "YYYY-MM-DD 00:00:00" hoặc unix timestamp
+      let t = b.tradingDate || b.date || b.t;
+      if(typeof t === 'string') t = Math.floor(new Date(t).getTime()/1000);
+      return {
+        time:  t,
+        open:  b.open  || b.o,
+        high:  b.high  || b.h,
+        low:   b.low   || b.l,
+        close: b.close || b.c,
+      };
+    }).filter(x=>x.time&&x.close).sort((a,b)=>a.time-b.time);
+  } catch(e){ return null; }
+}
+
+function _parseSSI(data){
+  // SSI response: {data:{data:[{TradingDate,Open,High,Low,Close,Volume}]}}
+  try{
+    const arr = data?.data?.data || data?.data || [];
+    if(!arr.length) return null;
+    return arr.map(b=>({
+      time:  Math.floor(new Date(b.TradingDate||b.tradingDate).getTime()/1000),
+      open:  b.Open  || b.open,
+      high:  b.High  || b.high,
+      low:   b.Low   || b.low,
+      close: b.Close || b.close,
+    })).filter(x=>x.time&&x.close).sort((a,b)=>a.time-b.time);
+  } catch(e){ return null; }
+}
+
+function _parseStooqCSV(csv){
+  // CSV format: Date,Open,High,Low,Close,Volume
+  try{
+    const lines = csv.trim().split('\n').slice(1); // skip header
+    if(!lines.length) return null;
+    return lines.map(l=>{
+      const [date,open,high,low,close] = l.split(',');
+      if(!date||!close||close==='null') return null;
+      return {
+        time:  Math.floor(new Date(date.trim()).getTime()/1000),
+        open:  parseFloat(open)*1000,  // Stooq VN prices in thousands VND
+        high:  parseFloat(high)*1000,
+        low:   parseFloat(low)*1000,
+        close: parseFloat(close)*1000,
+      };
+    }).filter(Boolean).sort((a,b)=>a.time-b.time);
+  } catch(e){ return null; }
 }
 
 function _toYFSym(ticker){
-  const MAP = {
-    VNINDEX:'^VNI', HNX:'^HNX', VN30:'^VN30F1!',
-    HNX30:'^HNX30', UPCOM:'^UPCOM',
-  };
-  return MAP[ticker] || (ticker + '.VN');
+  const MAP={VNINDEX:'^VNI',HNX:'^HNX',VN30:'^VN30F1!',HNX30:'^HNX30',UPCOM:'^UPCOM'};
+  return MAP[ticker]||(ticker+'.VN');
 }
 
-function _parseYFChart(data){
-  try{
-    const r = data?.chart?.result?.[0];
-    if(!r) return null;
-    const ts    = r.timestamp;
-    const q     = r.indicators?.quote?.[0];
-    if(!ts || !q) return null;
-    const {open,high,low,close,volume} = q;
-    const candles = [];
-    for(let i=0;i<ts.length;i++){
-      if(close[i]==null) continue;
-      candles.push({
-        time:  ts[i],
-        open:  Math.round((open[i]||close[i])*100)/100,
-        high:  Math.round((high[i]||close[i])*100)/100,
-        low:   Math.round((low[i]||close[i])*100)/100,
-        close: Math.round(close[i]*100)/100,
-      });
-    }
-    return candles.length>0 ? candles : null;
-  } catch(e){ return null; }
-}
 
 
 
