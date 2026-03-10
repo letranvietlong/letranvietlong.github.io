@@ -3543,20 +3543,35 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 const _CG_BASE = 'https://api.coingecko.com/api/v3';
 async function cgFetch(path, opts={}){
   const fullUrl = _CG_BASE + path;
-  // allorigins /get — ổn định nhất, trả JSON wrapper {contents,status}
-  try{
-    const enc = encodeURIComponent(fullUrl);
-    const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
-      {signal: AbortSignal.timeout(14000)});
-    if(r.ok){
+  const enc = encodeURIComponent(fullUrl);
+  // Proxy chain — thử lần lượt
+  const proxies = [
+    // allorigins /get — JSON wrapper
+    async()=>{
+      const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
+        {signal:AbortSignal.timeout(12000)});
+      if(!r.ok) throw new Error('allorigins '+r.status);
       const j = await r.json();
-      if(j.contents && j.contents.length > 2){
-        return { ok:true, status:200,
-          json: async()=>JSON.parse(j.contents),
-          text: async()=>j.contents };
-      }
-    }
-  }catch(e){}
+      if(!j.contents || j.contents.length < 2) throw new Error('empty');
+      return {ok:true,status:200,
+        json:async()=>JSON.parse(j.contents),
+        text:async()=>j.contents};
+    },
+    // corsproxy.io — fallback
+    async()=>{
+      const r = await fetch(`https://corsproxy.io/?${enc}`,
+        {signal:AbortSignal.timeout(12000)});
+      if(!r.ok) throw new Error('corsproxy '+r.status);
+      const t = await r.text();
+      if(t.length < 2) throw new Error('empty');
+      return {ok:true,status:200,
+        json:async()=>JSON.parse(t),
+        text:async()=>t};
+    },
+  ];
+  for(const proxy of proxies){
+    try{ return await proxy(); }catch(e){}
+  }
   return null;
 }
 
@@ -3787,7 +3802,7 @@ async function loadCoinGeckoLogos(){
     const res=await cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
       {signal:AbortSignal.timeout(15000)}
     );
-    if(res?.ok && res.status!==429){
+    if(res?.ok && (res.status||200)!==429){
       const data=await res.json();
       if(Array.isArray(data)){
         data.forEach(c=>{
@@ -4498,7 +4513,7 @@ async function loadFearGreed(){
 async function loadGlobalMarket(){
   try{
     const r=await cgFetch('/global',{signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw new Error('GM '+r.status);
+    if(!r?.ok) throw new Error('GM '+(r?.status||'null'));
     const d=(await r.json()).data;
 
     // Market cap
@@ -5422,8 +5437,8 @@ async function fetchNews(manual=false){
     // Strategy 2: CoinGecko trending (không dùng /news endpoint)
     async()=>{
       const [tr,mr]=await Promise.allSettled([
-        cgFetch('/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null),
-        cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null)
+        cgFetch('/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r?.ok?r.json():null).catch(()=>null),
+        cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r?.ok?r.json():null).catch(()=>null)
       ]);
       const items=[];
       const td=tr.status==='fulfilled'?tr.value:null;
@@ -5448,7 +5463,7 @@ async function fetchNews(manual=false){
         cats.map(cat=>fetch(
           `https://min-api.cryptocompare.com/data/v2/news/?lang=EN&categories=${cat}&limit=15`,
           {signal:AbortSignal.timeout(8000)}
-        ).then(r=>r.ok?r.json():null))
+        ).then(r=>r?.ok?r.json():null))
       );
       const items=[];
       const seen=new Set();
@@ -5475,10 +5490,10 @@ async function fetchNews(manual=false){
     async()=>{
       const RSS_PROXY = 'https://api.allorigins.win/get?url=';
       const WORLD_FEEDS = [
-        // Reuters Business (ổn định nhất)
-        {url:'https://feeds.reuters.com/reuters/businessNews', label:'Reuters'},
-        // BBC Business
+        // BBC Business — ổn định nhất, allorigins OK
         {url:'https://feeds.bbci.co.uk/news/business/rss.xml', label:'BBC Business'},
+        // Investing.com RSS crypto
+        {url:'https://www.investing.com/rss/news_25.rss', label:'Investing.com'},
         // CoinDesk
         {url:'https://www.coindesk.com/arc/outboundfeeds/rss/', label:'CoinDesk'},
         // CoinTelegraph
@@ -5543,7 +5558,7 @@ async function fetchNews(manual=false){
         MACRO_CATS.map(cat=>fetch(
           `https://min-api.cryptocompare.com/data/v2/news/?lang=EN&categories=${cat}&limit=10`,
           {signal:AbortSignal.timeout(8000)}
-        ).then(r=>r.ok?r.json():null))
+        ).then(r=>r?.ok?r.json():null))
       );
       const items=[], seen=new Set();
       results.forEach((r,i)=>{
@@ -7150,7 +7165,7 @@ async function loadEvents(){
   eventsData = STATIC_EVENTS;
   try{
     const r=await cgFetch('/events?upcoming_events_only=true&per_page=50',{signal:AbortSignal.timeout(8000)});
-    if(r.ok){
+    if(r?.ok){
       const d=await r.json();
       if(d.data?.length){
         const mapped=d.data.map(ev=>({
