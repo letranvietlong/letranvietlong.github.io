@@ -32,22 +32,21 @@ async function loadVNHeatmap(){
   const tickers  = VN_GROUPS[groupSel] || VN_GROUPS.vn30;
 
   // Fetch tất cả cổ phiếu song song
-  const results = await Promise.allSettled(
-    tickers.map(async t => {
-      // Dùng cache nếu có và dưới 3 phút
-      if(_vnHeatmapData[t] && Date.now()-(_vnHeatmapData[t]._ts||0) < 180000)
-        return _vnHeatmapData[t];
-      try{
-        const d = await fetchVNSingle(t);
-        if(d){ d._ts = Date.now(); _vnHeatmapData[t] = d; return d; }
-      }catch(e){}
-      return null;
-    })
+  // Cache check — tránh spam Yahoo
+  const needFetch = tickers.filter(t =>
+    !_vnHeatmapData[t] || Date.now()-(_vnHeatmapData[t]._ts||0) > 180000
   );
 
-  const stocks = results
-    .filter(r => r.status==='fulfilled' && r.value)
-    .map(r => r.value);
+  if(needFetch.length){
+    try{
+      const fresh = await yfBatchQuotes(needFetch);
+      fresh.forEach(d=>{ if(d){ d._ts=Date.now(); _vnHeatmapData[d.ticker]=d; } });
+    }catch(e){ console.warn('HM fetch error:', e.message); }
+  }
+
+  const stocks = tickers
+    .map(t => _vnHeatmapData[t])
+    .filter(Boolean);
 
   if(!stocks.length){
     if(grid) grid.innerHTML = '<div class="hm-loading"><span>Không tải được dữ liệu. Thử lại sau.</span></div>';
@@ -7895,59 +7894,102 @@ function updateVNSession(){
 
 
 // ── VN API proxy helper — thử nhiều proxy cho GitHub Pages ──
-async function vnFetch(url, timeout=12000){
-  // 1. Gọi thẳng — VNDirect có CORS header thực sự
+/* ═══════════════════════════════════════════════════════════
+   VN STOCK DATA — Yahoo Finance API (CORS OK từ browser)
+   Ticker format: VNM.VN, VIC.VN, ^VNINDEX, ^HNX...
+   ═══════════════════════════════════════════════════════════ */
+
+const YF_BASE = 'https://query1.finance.yahoo.com';
+const YF_BASE2= 'https://query2.finance.yahoo.com'; // backup
+
+// Map: mã CK VN → Yahoo Finance symbol
+function yfSym(ticker){
+  const IDX = {VNINDEX:'^VNINDEX',HNX:'^HNX',UPCOM:'^UPCOM',VN30:'^VN30',HNX30:'^HNX30'};
+  return IDX[ticker] || (ticker + '.VN');
+}
+
+// Fetch Yahoo Finance với fallback query2
+async function yfFetch(path, timeout=12000){
+  for(const base of [YF_BASE, YF_BASE2]){
+    try{
+      const r = await fetch(base + path, {
+        signal: AbortSignal.timeout(timeout),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0'
+        }
+      });
+      if(r.ok){ const j = await r.json(); return j; }
+    }catch(e){}
+  }
+  // Fallback allorigins
   try{
-    const r = await fetch(url, {signal:AbortSignal.timeout(timeout),
-      headers:{'Accept':'application/json'}});
+    const enc = encodeURIComponent(YF_BASE + path);
+    const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
+      {signal:AbortSignal.timeout(timeout+3000)});
+    if(r.ok){ const j=await r.json(); if(j.contents) return JSON.parse(j.contents); }
+  }catch(e){}
+  throw new Error('YF fetch failed: '+path);
+}
+
+async function vnFetch(url, timeout=12000){
+  // Legacy wrapper — chuyển hướng về yfFetch nếu là VND_API
+  // Yahoo Finance URLs
+  if(url.includes('yahoo.com')){
+    const path = url.replace(YF_BASE,'').replace(YF_BASE2,'');
+    return yfFetch(path, timeout);
+  }
+  // Generic fallback
+  try{
+    const r = await fetch(url, {signal:AbortSignal.timeout(timeout)});
     if(r.ok){ const t=await r.text(); if(t.length>2) return JSON.parse(t); }
   }catch(e){}
-  // 2. allorigins /get fallback
-  try{
-    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-      {signal:AbortSignal.timeout(timeout+3000)});
-    if(r.ok){ const j=await r.json(); if(j.contents?.length>2) return JSON.parse(j.contents); }
-  }catch(e){}
-  throw new Error('All proxies failed for: '+url);
+  throw new Error('vnFetch failed: '+url);
+}
+
+// ── Parse Yahoo Finance quote result ─────────────────────
+function parseYFQuote(q){
+  if(!q) return null;
+  const price  = q.regularMarketPrice || 0;
+  const ref    = q.regularMarketPreviousClose || price;
+  const ticker = (q.symbol||'').replace('.VN','').replace('^','');
+  return {
+    ticker,
+    name:  q.longName || q.shortName || VN_NAMES[ticker] || ticker,
+    price,
+    ref,
+    ceil:  q.fiftyTwoWeekHigh || price*1.07,  // YF không có trần/sàn ngày
+    floor: q.fiftyTwoWeekLow  || price*0.93,
+    high:  q.regularMarketDayHigh  || price,
+    low:   q.regularMarketDayLow   || price,
+    vol:   q.regularMarketVolume   || 0,
+    val:   (q.regularMarketVolume||0) * price,
+    change:    q.regularMarketChange || price-ref,
+    changePct: q.regularMarketChangePercent || (ref>0?(price-ref)/ref*100:0),
+    buyForeign: 0, sellForeign: 0,
+  };
+}
+
+// ── Fetch nhiều cổ phiếu 1 lần (Yahoo v7 batch) ──────────
+async function yfBatchQuotes(tickers){
+  const syms = tickers.map(yfSym).join(',');
+  const j = await yfFetch(`/v7/finance/quote?symbols=${encodeURIComponent(syms)}&fields=regularMarketPrice,regularMarketPreviousClose,regularMarketChange,regularMarketChangePercent,regularMarketVolume,regularMarketDayHigh,regularMarketDayLow,longName,shortName`);
+  const result = j?.quoteResponse?.result || [];
+  return result.map(parseYFQuote).filter(Boolean);
 }
 async function fetchVNStocks(tickers){
-  // Dùng SSI iBoard public API
+  // Yahoo Finance batch — tối đa 50 symbols / call
   try{
-    // VNDirect: lấy tất cả quotes 1 lần
-    const raw = await vnFetch(`${VND_API}/quotes?size=200&fields=code,close,refPrice,ceilingPrice,floorPrice,high,low,nmVolume,nmValue,change,adRatioChange,foreignBuyVolume,foreignSellVolume`, 14000);
-    const stocks = raw?.data || (Array.isArray(raw)?raw:[]);
+    const all = tickers || VN_POPULAR;
+    const quotes = await yfBatchQuotes(all);
     const result = {};
-    stocks.forEach(s=>{
-      const ticker = (s.code||'').toUpperCase();
-      if(ticker){
-        result[ticker] = {
-          ticker,
-          name: VN_NAMES[ticker] || ticker,
-          price: parseFloat(s.close||0),
-          ref:   parseFloat(s.refPrice||0),
-          ceil:  parseFloat(s.ceilingPrice||0),
-          floor: parseFloat(s.floorPrice||0),
-          high:  parseFloat(s.high||0),
-          low:   parseFloat(s.low||0),
-          vol:   parseFloat(s.nmVolume||0),
-          val:   parseFloat(s.nmValue||0),
-          buyForeign:  parseFloat(s.foreignBuyVolume||0),
-          sellForeign: parseFloat(s.foreignSellVolume||0),
-          change:    parseFloat(s.change||0),
-          changePct: parseFloat(s.adRatioChange||s.ratioChange||0),
-        };
-      }
-    });
-    _vnStockData = {..._vnStockData, ...result};
+    quotes.forEach(q => { if(q) result[q.ticker] = q; });
     return result;
-  } catch(e){
-    console.warn('SSI fetch error:', e.message);
+  }catch(e){
+    console.warn('fetchVNStocks error:', e.message);
     return {};
   }
 }
-
-// Fallback: lấy 1 cổ phiếu cụ thể từ TCBS API
-const VND_API = 'https://finfo-api.vndirect.com.vn/v4';
 
 async function fetchVNSingle(ticker){
   }
@@ -7985,43 +8027,37 @@ async function loadVNMarket(){
 // ── VN Indices Strip ─────────────────────────────────────
 async function loadVNIndicesStrip(){
   const INDICES = [
-    {id:'VNINDEX', code:'VNINDEX'},
-    {id:'HNX',     code:'HNX'},
-    {id:'UPCOM',   code:'UPCOM'},
-    {id:'VN30',    code:'VN30'},
-    {id:'HNX30',   code:'HNX30'},
+    {id:'VNINDEX', sym:'^VNINDEX'},
+    {id:'HNX',     sym:'^HNX'},
+    {id:'UPCOM',   sym:'^UPCOM'},
+    {id:'VN30',    sym:'^VN30'},
+    {id:'HNX30',   sym:'^HNX30'},
   ];
-  // VNDirect: 1 call cho tất cả index
   try{
-    const codes = INDICES.map(i=>i.code).join(',');
-    const url = `${VND_API}/indices/market?code=${codes}`;
-    const raw = await vnFetch(url, 12000);
-    const list = raw?.data || (Array.isArray(raw)?raw:[]);
-    list.forEach(idx=>{
-      const code = (idx.code||idx.indexCode||'').toUpperCase();
-      const key  = INDICES.find(i=>i.code===code)?.id;
+    const syms = INDICES.map(i=>i.sym).join(',');
+    const j = await yfFetch(`/v7/finance/quote?symbols=${encodeURIComponent(syms)}`);
+    const list = j?.quoteResponse?.result || [];
+    list.forEach(q=>{
+      const sym = q.symbol||'';
+      const key = INDICES.find(i=>i.sym===sym)?.id;
       if(!key) return;
-      _updateIdxCard(key, idx);
+      const price = q.regularMarketPrice||0;
+      const prev  = q.regularMarketPreviousClose||price;
+      const chg   = q.regularMarketChange||price-prev;
+      const pct   = q.regularMarketChangePercent||(prev>0?chg/prev*100:0);
+      _updateIdxCard(key, {indexValue:price, indexChange:chg, percentChange:pct});
     });
   }catch(e){
-    // Fallback: gọi riêng từng chỉ số
-    await Promise.allSettled(INDICES.map(async idx=>{
-      try{
-        const url = `${VND_API}/indices/${idx.code}/prices?sort=date&size=1&order=desc`;
-        const raw = await vnFetch(url, 10000);
-        const d = raw?.data?.[0] || raw?.[0];
-        if(d) _updateIdxCard(idx.id, d);
-      }catch(e2){}
-    }));
+    console.warn('YF indices error:', e.message);
   }
 }
 
 function _updateIdxCard(key, d){
   const card = document.getElementById(`vnIdx-${key}`);
   if(!card) return;
-  const val = parseFloat(d.indexValue||d.close||d.value||d.c||0);
-  const chg = parseFloat(d.indexChange||d.change||d.ch||0);
-  const pct = parseFloat(d.percentChange||d.ratioChange||d.rr||0);
+  const val = parseFloat(d.indexValue||d.close||d.value||d.c||d.regularMarketPrice||0);
+  const chg = parseFloat(d.indexChange||d.change||d.ch||d.regularMarketChange||0);
+  const pct = parseFloat(d.percentChange||d.ratioChange||d.rr||d.regularMarketChangePercent||0);
   card.querySelector('.vn-idx-val').textContent = val>0 ? val.toFixed(2) : '—';
   const sign = chg>=0?'+':'';
   card.querySelector('.vn-idx-chg').textContent = val>0 ? `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)` : '—';
@@ -8077,16 +8113,16 @@ function renderVNMovers(stocks){
   const tbody = document.getElementById('vnMoversBody');
   if(!tbody) return;
   tbody.innerHTML = stocks.map(s=>{
-    // VNDirect fields: code, close, refPrice, change, adRatioChange, nmVolume, nmValue, foreignBuyVolume, foreignSellVolume
-    const price  = parseFloat(s.close||s.matchPrice||0);
-    const ref    = parseFloat(s.refPrice||0);
-    const chg    = parseFloat(s.change||price-ref);
-    const pct    = parseFloat(s.adRatioChange||s.ratioChange||(ref>0?chg/ref*100:0));
-    const ticker = (s.code||'').toUpperCase();
-    const cls    = vnPriceClass(price,ref);
-    const sign   = chg>=0?'+':'';
-    const buyF   = parseFloat(s.foreignBuyVolume||0);
-    const sellF  = parseFloat(s.foreignSellVolume||0);
+    // parseYFQuote format: price, ref, changePct, vol, val, buyForeign, sellForeign
+    const price  = s.price  || 0;
+    const ref    = s.ref    || price;
+    const chg    = s.change || price - ref;
+    const pct    = s.changePct || 0;
+    const ticker = s.ticker || (s.code||'').toUpperCase();
+    const cls    = vnPriceClass(price, ref);
+    const sign   = chg >= 0 ? '+' : '';
+    const buyF   = s.buyForeign  || 0;
+    const sellF  = s.sellForeign || 0;
     return `<tr style="cursor:pointer" onclick="vnSelectStock('${ticker}')">
       <td><span style="color:var(--accent);font-weight:800">${ticker}</span> <span style="font-size:10px;color:var(--muted)">${VN_NAMES[ticker]||''}</span></td>
       <td class="${cls}">${vnFmtPrice(price)}</td>
@@ -8171,21 +8207,29 @@ async function loadVNChart(tf, el){
   const from = fromMap[resolution] || now-30*86400;
 
   try{
-    // VNDirect: stock price history — trực tiếp không cần proxy
-    const sizeMap = {D:300, W:200, M:120, Q:60, Y:20};
-    const size = sizeMap[resolution]||300;
-    const url = `${VND_API}/stocks/${_vnCurrentTicker}/prices?sort=date&size=${size}&order=desc`;
-    const raw = await vnFetch(url, 14000);
-    const priceArr = raw?.data || (Array.isArray(raw)?raw:[]);
-    const bars = priceArr.map(p=>({
-      time: Math.floor(new Date(p.date).getTime()/1000),
-      open:  parseFloat(p.open||0),
-      high:  parseFloat(p.high||0),
-      low:   parseFloat(p.low||0),
-      close: parseFloat(p.close||0),
-      vol:   parseFloat(p.nmVolume||p.volume||0),
-    })).reverse(); // VNDirect trả desc, cần asc cho chart
-    if(!bars.length) throw new Error('No chart data');
+    // Yahoo Finance v8 chart — CORS OK, có đủ OHLCV lịch sử
+    const rangeMap = {D:'1mo', W:'6mo', M:'1y', Q:'3y', Y:'5y'};
+    const intervalMap = {D:'1d', W:'1wk', M:'1mo', Q:'3mo', Y:'3mo'};
+    const range    = rangeMap[resolution]    || '1mo';
+    const interval = intervalMap[resolution] || '1d';
+    const sym = yfSym(_vnCurrentTicker);
+    const raw = await yfFetch(
+      `/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}`,
+      15000
+    );
+    const result = raw?.chart?.result?.[0];
+    if(!result) throw new Error('No YF chart data for '+_vnCurrentTicker);
+    const ts     = result.timestamp || [];
+    const ohlcv  = result.indicators?.quote?.[0] || {};
+    const bars = ts.map((t,i)=>({
+      time:  t,
+      open:  ohlcv.open?.[i]  || 0,
+      high:  ohlcv.high?.[i]  || 0,
+      low:   ohlcv.low?.[i]   || 0,
+      close: ohlcv.close?.[i] || 0,
+      vol:   ohlcv.volume?.[i]|| 0,
+    })).filter(b=>b.open>0);
+    if(!bars.length) throw new Error('Empty chart data');
 
     // Render với LightweightCharts
     container.innerHTML = '';
@@ -8301,10 +8345,15 @@ async function loadVNIndices(){
 
   const cards = await Promise.all(INDICES.map(async idx=>{
     try{
-      const url = `${VND_API}/indices/${idx.id}/prices?sort=date&size=1&order=desc`;
-      const raw = await vnFetch(url, 10000);
-      const d = raw?.data?.[0] || raw?.[0];
-      if(!d) return null;
+      const j = await yfFetch(`/v7/finance/quote?symbols=${encodeURIComponent(yfSym(idx.id))}`);
+      const q = j?.quoteResponse?.result?.[0];
+      if(!q) return null;
+      const d = {
+        indexValue:   q.regularMarketPrice||0,
+        indexChange:  q.regularMarketChange||0,
+        percentChange:q.regularMarketChangePercent||0,
+        advances: 0, declines: 0, noChanges: 0,
+      };
       const val = parseFloat(d.indexValue||d.close||d.value||0);
       const chg = parseFloat(d.indexChange||d.change||0);
       const pct = parseFloat(d.percentChange||d.ratioChange||0);
@@ -8444,4 +8493,28 @@ setInterval(updateVNMarketStatusBadge, 30000);
 
 
 
-</script>
+</scriptasync function loadVNMovers(tab='top_price_increase'){
+  _vnCurrentMoverTab = tab;
+  const tbody = document.getElementById('vnMoversBody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px"><div class="spinner" style="margin:auto"></div></td></tr>';
+  try{
+    // Yahoo Finance: lấy VN30 + top stocks rồi sort
+    const tickers = VN_GROUPS.vn30;
+    const quotes  = await yfBatchQuotes(tickers);
+    if(!quotes.length) throw new Error('No data');
+
+    const sortFn = {
+      'top_price_increase': (a,b) => b.changePct - a.changePct,
+      'top_price_decrease': (a,b) => a.changePct - b.changePct,
+      'top_volume':         (a,b) => b.vol - a.vol,
+      'top_value':          (a,b) => b.val - a.val,
+      'top_foreign_buy':    (a,b) => b.buyForeign - a.buyForeign,
+    };
+    quotes.sort(sortFn[tab] || sortFn.top_price_increase);
+    renderVNMovers(quotes.slice(0, 20));
+  }catch(e){
+    console.warn('VN movers error:', e.message);
+    renderVNMoversStatic();
+  }
+}
+>
