@@ -7833,34 +7833,55 @@ function stooqSym(ticker){
 }
 
 // Proxy fetch dùng allorigins (get=JSON wrapped, raw=text)
-// Proxy fetch (generic, dùng cho news/misc)
-async function vnProxyFetch(url, timeout=12000){
-  // allorigins /get trả JSON {contents: "..."}  
-  try{
-    const enc = encodeURIComponent(url);
-    const r = await fetch('https://api.allorigins.win/get?url='+enc,
-      {signal:AbortSignal.timeout(timeout)});
-    if(r.ok){
-      const j = await r.json();
-      if(j.contents && j.contents.length>5) return j.contents;
-    }
-  }catch(e){}
-  // Fallback raw
-  try{
-    const enc = encodeURIComponent(url);
-    const r = await fetch('https://api.allorigins.win/raw?url='+enc,
-      {signal:AbortSignal.timeout(timeout)});
-    if(r.ok){ const t=await r.text(); if(t&&t.length>5) return t; }
-  }catch(e){}
-  return null;
+// ── Proxy: allorigins /get (JSON wrapper, có CORS headers) ──────
+// Rate limit: tối đa 1 request/500ms, cache 5 phút
+const _aoCache = new Map();
+const _aoQueue = [];
+let   _aoRunning = false;
+
+async function vnProxyFetch(url, timeout=14000){
+  // Check cache
+  const cached = _aoCache.get(url);
+  if(cached && Date.now()-cached.ts < 300000) return cached.data;
+
+  // Dùng allorigins /get (trả JSON {contents:"..."})
+  return new Promise((resolve)=>{
+    _aoQueue.push({url, timeout, resolve});
+    _processAOQueue();
+  });
 }
 
-// Yahoo Finance v8 qua allorigins (quote + history)
-// symbol: VNM.VN, VIC.VN, VNINDEX (^VNI), v.v.
+async function _processAOQueue(){
+  if(_aoRunning || !_aoQueue.length) return;
+  _aoRunning = true;
+  while(_aoQueue.length){
+    const {url, timeout, resolve} = _aoQueue.shift();
+    try{
+      const enc = encodeURIComponent(url);
+      const r   = await fetch('https://api.allorigins.win/get?url='+enc,
+        {signal:AbortSignal.timeout(timeout)});
+      if(r.ok){
+        const j = await r.json();
+        if(j.contents && j.contents.length>5){
+          _aoCache.set(url, {data:j.contents, ts:Date.now()});
+          resolve(j.contents);
+          await new Promise(r=>setTimeout(r, 600)); // rate limit: 600ms delay
+          continue;
+        }
+      }
+    }catch(e){}
+    resolve(null);
+    await new Promise(r=>setTimeout(r, 600));
+  }
+  _aoRunning = false;
+}
+
+// ── Yahoo Finance v8 ──────────────────────────────────────────
 function yfSym(ticker){
   const MAP = {VNINDEX:'^VNI', HNX:'^HNX', UPCOM:'^UPCOM', VN30:'^VN30F1!', HNX30:'^HNX30'};
   return MAP[ticker] || (ticker+'.VN');
 }
+
 async function yfFetchChart(ticker, range='5d', interval='1d'){
   const sym = yfSym(ticker);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}`
@@ -7872,6 +7893,7 @@ async function yfFetchChart(ticker, range='5d', interval='1d'){
     return d?.chart?.result?.[0] || null;
   }catch(e){ return null; }
 }
+
 async function yfQuote(ticker){
   const r = await yfFetchChart(ticker, '5d', '1d');
   if(!r) return null;
@@ -7894,6 +7916,7 @@ async function yfQuote(ticker){
     floor: Math.round(ref*0.93*100)/100,
   };
 }
+
 async function yfHistory(ticker, range='1y'){
   const r = await yfFetchChart(ticker, range, '1d');
   if(!r) return [];
@@ -7910,24 +7933,31 @@ async function yfHistory(ticker, range='1y'){
 }
 
 
-// stooqFetchCSV → alias yfHistory (backwards compat)
+
+// stooqFetchCSV/stooqQuote → aliases (backward compat)
 async function stooqFetchCSV(ticker, days=300){
   const range = days<=60?'3mo': days<=200?'1y': days<=500?'2y':'5y';
-  const bars = await yfHistory(ticker, range);
-  return bars.slice(-days);
+  return (await yfHistory(ticker, range)).slice(-days);
 }
-async function stooqQuote(ticker){
-  return yfQuote(ticker);
-}
+async function stooqQuote(ticker){ return yfQuote(ticker); }
 
 
-// Batch quotes từ Stooq (parallel, limit 10)
+
+// Batch quotes — sequential qua queue (tránh 429)
 async function yfBatchQuotes(tickers){
   if(!tickers||!tickers.length) return [];
-  const batch = tickers.slice(0,15);
-  const results = await Promise.allSettled(batch.map(tk=>stooqQuote(tk)));
-  return results.map(r=>r.value).filter(Boolean);
+  // Chỉ lấy tối đa 15 tickers
+  const batch = [...new Set(tickers)].slice(0,15);
+  const results = [];
+  for(const tk of batch){
+    try{
+      const q = await yfQuote(tk);
+      if(q) results.push(q);
+    }catch(e){}
+  }
+  return results;
 }
+
 
 async function fetchVNStocks(tickers){ return yfBatchQuotes(tickers); }
 async function fetchVNSingle(ticker){ return stooqQuote(ticker); }
@@ -8026,11 +8056,13 @@ async function loadVNChart(tf, el){
   if(!container) return;
 
   if(!_vnCurrentTicker){
-    container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;
-      justify-content:center;height:100%;gap:12px;color:var(--muted)">
-      <div style="font-size:32px">📊</div>
-      <div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div>
-    </div>`;
+    // Destroy TV widget cũ nếu có
+    if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
+    container.innerHTML = '';
+    const ph = document.createElement('div');
+    ph.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)';
+    ph.innerHTML = '<div style="font-size:32px">📊</div><div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div>';
+    container.appendChild(ph);
     return;
   }
 
