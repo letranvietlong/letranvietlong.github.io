@@ -2091,7 +2091,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.1</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.2</span></span></div>
 
 
     
@@ -8104,29 +8104,15 @@ function updateVNSession(){
 
 // TradingView symbol mapping (dùng cho TV widget & link)
 function tvSym(ticker){
-  // TradingView.widget() API dùng HSX: (không phải HOSE:)
-  // HSX = Ho Chi Minh Stock Exchange
-  // HNX = Hanoi Stock Exchange  
-  // UPCOM = UPCOM
-  const HOSE_STOCKS = new Set([
-    'VNM','VIC','VHM','HPG','TCB','BID','VCB','FPT','MWG','VRE',
-    'MSN','GAS','SAB','CTG','ACB','MBB','STB','SSI','HDB','VND',
-    'VPB','TPB','BCM','VGC','PLX','PNJ','REE','GMD','GEX','HAG',
-    'VHC','DRC','BSR','OIL','PDR','NVL','DXG','KDH','VCG','SBT',
-    'CII','DPM','PVD','HSG','HT1','CTD','PVT','LGC','AGR','EVF',
-    'VCI','FTS','HCM','MBS','VDS','AGG','PC1','TDC','CEO','LDG',
-    'IDC','VTP','EIB','LPB','OCB','MSB','NAB','KLB','BVH','PVI',
-    'VNS','VOS','GMD','DVP','ACV','REE','VJC','HVN','SGN',
-    'VNINDEX','VN30'
-  ]);
-  const HNX_MAP = {HNX:'HNX:HNX',HNX30:'HNX:HNX30',
-    SHS:'HNX:SHS',VCS:'HNX:VCS',IDJ:'HNX:IDJ',NVB:'HNX:NVB',
-    SHB:'HNX:SHB',PVS:'HNX:PVS',CEO:'HNX:CEO'};
-  const UPCOM_MAP = {UPCOM:'UPCOM:UPCOM',OIL:'UPCOM:OIL'};
-  if(HNX_MAP[ticker])   return HNX_MAP[ticker];
-  if(UPCOM_MAP[ticker]) return UPCOM_MAP[ticker];
-  // Default: HOSE stocks dùng HSX:
-  return 'HSX:' + ticker;
+  // TradingView embed-widget dùng HOSE: prefix (chuẩn TV)
+  const MAP = {
+    VNINDEX:'HOSE:VNINDEX', HNX:'HNX:HNX', UPCOM:'UPCOM:UPCOM',
+    VN30:'HOSE:VN30', HNX30:'HNX:HNX30',
+    // HNX stocks
+    SHB:'HNX:SHB', PVS:'HNX:PVS', NVB:'HNX:NVB', VCS:'HNX:VCS',
+    SHS:'HNX:SHS', IDJ:'HNX:IDJ',
+  };
+  return MAP[ticker] || ('HOSE:'+ticker);
 }
 
 // Stooq symbol mapping
@@ -8285,72 +8271,72 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Destroy widget cũ
-  try{
-    if(_vnTVWidget && typeof _vnTVWidget.remove === 'function') _vnTVWidget.remove();
-  }catch(e){}
+  // Destroy cũ
+  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   while(container.firstChild) container.removeChild(container.firstChild);
 
-  console.log('[VLC] TradingView.widget:', sym, interval);
+  console.log('[VLC] Building chart:', sym, interval);
 
+  // Map TF → TV interval
   const ivMap = {'D':'D','W':'W','M':'M','3M':'W','12M':'W'};
-  const iv    = ivMap[interval]||'D';
+  const iv = ivMap[interval]||'D';
 
-  // Tạo div chứa widget
-  const cid = 'tv_' + ticker.replace(/\W/g,'') + '_' + Date.now();
-  const div  = document.createElement('div');
-  div.id     = cid;
-  div.style.cssText = 'width:100%;height:100%;min-height:560px;';
-  container.appendChild(div);
-
-  function doInit(){
-    try{
-      _vnTVWidget = new TradingView.widget({
-        container_id:      cid,
-        autosize:          true,
-        symbol:            sym,
-        interval:          iv,
-        timezone:          'Asia/Ho_Chi_Minh',
-        theme:             'dark',
-        style:             '1',
-        locale:            'vi_VN',
-        toolbar_bg:        '#131722',
-        enable_publishing: false,
-        withdateranges:    true,
-        hide_side_toolbar: false,
-        allow_symbol_change: false,
-        save_image:        false,
-        studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
-        show_popup_button: false,
-        disabled_features: ['header_symbol_search','header_compare'],
-      });
-      console.log('[VLC] Widget created for', sym);
-    }catch(err){
-      console.error('[VLC] Widget error:', err);
-      div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#888;flex-direction:column;gap:8px"><div>⚠️ Không thể tải biểu đồ</div><div style="font-size:11px">'+sym+'</div></div>';
-    }
+  // Dùng Blob iframe: tạo HTML hoàn chỉnh với TV widget script tĩnh
+  // Script tĩnh trong Blob HTML = document.currentScript ĐÚNG
+  // HOSE:FPT = format đúng cho TV embed widgets
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#131722;overflow:hidden;}
+  .tradingview-widget-container{width:100%;height:100vh;}
+  .tradingview-widget-container__widget{width:100%;height:calc(100% - 0px);}
+</style>
+</head>
+<body>
+<div class="tradingview-widget-container">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript"
+    src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+    async>
+  {
+    "autosize": true,
+    "symbol": "${sym}",
+    "interval": "${iv}",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "theme": "dark",
+    "style": "1",
+    "locale": "vi_VN",
+    "toolbar_bg": "#131722",
+    "enable_publishing": false,
+    "withdateranges": true,
+    "hide_side_toolbar": false,
+    "allow_symbol_change": true,
+    "save_image": false,
+    "studies": ["RSI@tv-basicstudies", "MACD@tv-basicstudies"],
+    "show_popup_button": false
   }
+  <\/script>
+</div>
+</body>
+</html>`;
 
-  // tv.js đã được load trong <head> → TradingView sẵn sàng
-  if(typeof TradingView !== 'undefined' && typeof TradingView.widget === 'function'){
-    doInit();
-  } else {
-    // Fallback: chờ tối đa 5 giây
-    let waited = 0;
-    const check = setInterval(()=>{
-      waited += 100;
-      if(typeof TradingView !== 'undefined' && typeof TradingView.widget === 'function'){
-        clearInterval(check);
-        doInit();
-      } else if(waited >= 5000){
-        clearInterval(check);
-        div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#888">Không thể kết nối TradingView</div>';
-      }
-    }, 100);
-  }
+  const blob = new Blob([htmlContent], {type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+
+  const iframe = document.createElement('iframe');
+  iframe.src = url;
+  iframe.style.cssText = 'width:100%;height:100%;border:none;min-height:560px;';
+  iframe.onload = ()=> URL.revokeObjectURL(url);
+  container.appendChild(iframe);
+  _vnTVWidget = iframe;
+  console.log('[VLC] Blob iframe created for', sym);
 }
+
 
 
 
