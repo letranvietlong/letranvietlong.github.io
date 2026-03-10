@@ -7,7 +7,197 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='cg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%2300d4ff'/><stop offset='50%25' stop-color='%237c3aed'/><stop offset='100%25' stop-color='%2300d4ff'/></linearGradient><linearGradient id='cf' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%231e3a5f'/><stop offset='100%25' stop-color='%230d1320'/></linearGradient><radialGradient id='cs' cx='35%25' cy='30%25'><stop offset='0%25' stop-color='rgba(0,212,255,0.25)'/><stop offset='100%25' stop-color='rgba(0,0,0,0)'/></radialGradient></defs><circle cx='32' cy='32' r='31' fill='url(%23cg)'/><circle cx='32' cy='32' r='27' fill='url(%23cf)'/><circle cx='32' cy='32' r='27' fill='url(%23cs)'/><text x='32' y='27' text-anchor='middle' font-family='Arial Black,sans-serif' font-weight='900' font-size='9' fill='url(%23cg)' letter-spacing='1'>VLC</text><path d='M20 33 L32 45 L44 33' fill='none' stroke='url(%23cg)' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js">
+/* ═══════════════════════════════════════════════
+   VN HEATMAP
+   ═══════════════════════════════════════════════ */
+
+// Nhóm cổ phiếu VN
+const VN_GROUPS = {
+  vn30:    ['VNM','VIC','VHM','HPG','TCB','BID','VCB','FPT','MWG','VRE','MSN','GAS','SAB','CTG','ACB','MBB','VPB','PLX','PNJ','SSI','HDB','STB','TPB','BCM','NVL','PDR','GMD','REE','GEX','VND'],
+  bank:    ['VCB','BID','CTG','ACB','MBB','STB','TCB','VPB','HDB','TPB','SHB','EIB','MSB','OCB','LPB','NVB','ABB','BAB','KLB'],
+  estate:  ['VIC','VHM','VRE','NVL','PDR','DXG','KDH','BCM','NLG','HDG','SGR','CEO','DIG','CII','HTN','VPI','HQC','LDG'],
+  industry:['HPG','GAS','PLX','PVD','BSR','OIL','GEX','REE','GMD','DRC','VGC','BMP','PHR','TPC','DCM','DPM','CSV','HSG'],
+  all:     null,
+};
+
+let _vnHeatmapData = {};
+
+async function loadVNHeatmap(){
+  const grid = document.getElementById('vnHeatmapGrid');
+  if(grid) grid.innerHTML = '<div class="hm-loading"><div class="spinner"></div><span>Đang tải dữ liệu TCBS...</span></div>';
+
+  // Lấy danh sách cần hiển thị
+  const groupSel = document.getElementById('vnHmGroup')?.value || 'all';
+  const tickers  = VN_GROUPS[groupSel] || VN_GROUPS.vn30;
+
+  // Fetch tất cả cổ phiếu song song
+  const results = await Promise.allSettled(
+    tickers.map(async t => {
+      // Dùng cache nếu có và dưới 3 phút
+      if(_vnHeatmapData[t] && Date.now()-(_vnHeatmapData[t]._ts||0) < 180000)
+        return _vnHeatmapData[t];
+      try{
+        const d = await fetchVNSingle(t);
+        if(d){ d._ts = Date.now(); _vnHeatmapData[t] = d; return d; }
+      }catch(e){}
+      return null;
+    })
+  );
+
+  const stocks = results
+    .filter(r => r.status==='fulfilled' && r.value)
+    .map(r => r.value);
+
+  if(!stocks.length){
+    if(grid) grid.innerHTML = '<div class="hm-loading"><span>Không tải được dữ liệu. Thử lại sau.</span></div>';
+    return;
+  }
+
+  _vnHeatmapData = {..._vnHeatmapData};
+  renderVNHeatmap(stocks);
+}
+
+function renderVNHeatmap(stocks){
+  const grid    = document.getElementById('vnHeatmapGrid');
+  if(!grid) return;
+
+  const sizeBy  = document.getElementById('vnHmSizeBy')?.value || 'vol';
+  const groupSel= document.getElementById('vnHmGroup')?.value  || 'all';
+
+  // Lấy data từ cache nếu không truyền vào
+  if(!stocks){
+    const tickers = VN_GROUPS[groupSel] || VN_GROUPS.vn30;
+    stocks = tickers.map(t => _vnHeatmapData[t]).filter(Boolean);
+  }
+  if(!stocks.length){
+    grid.innerHTML = '<div class="hm-loading"><span>Chưa có dữ liệu. Nhấn Làm mới.</span></div>';
+    return;
+  }
+
+  // Gán sizeVal
+  stocks.forEach(d => {
+    d.sizeVal = sizeBy === 'val' ? (d.val || 1)
+              : sizeBy === 'equal' ? 1
+              : (d.vol || 1);
+    if(!d.sizeVal || d.sizeVal <= 0) d.sizeVal = 1;
+  });
+
+  stocks.sort((a,b) => b.sizeVal - a.sizeVal);
+
+  const W = grid.clientWidth  || 900;
+  const H = Math.max(grid.clientHeight || 500, 480);
+  if(W < 10) return;
+
+  const total = stocks.reduce((s,d) => s + d.sizeVal, 0);
+  stocks.forEach(d => { d.norm = d.sizeVal / total; });
+
+  // Squarified treemap
+  function squarify(items, rect){
+    if(!items.length) return [];
+    const result = [];
+    let remaining = [...items];
+    let r = {...rect};
+
+    while(remaining.length){
+      const isHoriz = r.w >= r.h;
+      const area = r.w * r.h;
+      let row = [], rowSum = 0, best = Infinity;
+
+      for(let i = 0; i < remaining.length; i++){
+        const item = remaining[i];
+        const newSum = rowSum + item.norm;
+        const stripe = isHoriz ? r.h : r.w;
+        const rowArea = newSum * area / total * total;
+        const stripeW = newSum * (isHoriz ? r.w : r.h);
+        // worst ratio in row
+        let worst = 0;
+        [...row, item].forEach(it => {
+          const w = it.norm * area / (newSum * stripe);
+          const ratio = Math.max(w/stripe, stripe/w);
+          if(ratio > worst) worst = ratio;
+        });
+        if(worst < best || !row.length){
+          best = worst; row.push(item); rowSum = newSum;
+        } else break;
+      }
+
+      // Layout row
+      const isH = r.w >= r.h;
+      const stripe = rowSum * (isH ? r.w : r.h);
+      let pos = isH ? r.y : r.x;
+      row.forEach(item => {
+        const dim = (item.norm / rowSum) * (isH ? r.h : r.w);
+        if(isH){
+          result.push({item, x:r.x, y:pos, w:stripe, h:dim});
+          pos += dim;
+        } else {
+          result.push({item, x:pos, y:r.y, w:dim, h:stripe});
+          pos += dim;
+        }
+      });
+
+      remaining = remaining.slice(row.length);
+      if(isH){ r = {x:r.x+stripe, y:r.y, w:r.w-stripe, h:r.h}; }
+      else    { r = {x:r.x, y:r.y+stripe, w:r.w, h:r.h-stripe}; }
+    }
+    return result;
+  }
+
+  const rects = squarify(stocks, {x:0, y:0, w:W, h:H});
+
+  // Màu theo % thay đổi VN style (trần/sàn)
+  function vnHmColor(d){
+    const pct = d.changePct || 0;
+    const ref = d.ref || 1;
+    const price = d.price || 0;
+    if(price >= ref * 1.069) return {bg:'rgba(0,255,255,.85)',  txt:'#000'};  // trần
+    if(price <= ref * 0.931) return {bg:'rgba(255,0,255,.85)',  txt:'#fff'};  // sàn
+    if(pct >=  5) return {bg:'rgba(22,163,74,.9)',   txt:'#fff'};
+    if(pct >=  2) return {bg:'rgba(34,197,94,.85)',  txt:'#fff'};
+    if(pct >=  0.5) return {bg:'rgba(21,128,61,.75)',txt:'#fff'};
+    if(pct > -0.5 && pct < 0.5) return {bg:'rgba(71,85,105,.8)', txt:'#94a3b8'};
+    if(pct > -2)  return {bg:'rgba(220,38,38,.75)', txt:'#fff'};
+    if(pct > -5)  return {bg:'rgba(185,28,28,.85)',  txt:'#fff'};
+    return {bg:'rgba(127,29,29,.9)', txt:'#fca5a5'};
+  }
+
+  const MIN_SHOW_NAME = 30, MIN_SHOW_PCT = 45;
+
+  const cells = rects.map(({item:d, x, y, w, h}) => {
+    const col = vnHmColor(d);
+    const pct = d.changePct || 0;
+    const sign = pct >= 0 ? '+' : '';
+    const showName = w > MIN_SHOW_NAME && h > MIN_SHOW_NAME;
+    const showPct  = w > MIN_SHOW_PCT  && h > MIN_SHOW_PCT;
+    const fs = Math.max(8, Math.min(14, Math.sqrt(w*h)/6));
+    return `<div class="hm-cell" style="
+        position:absolute;left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;
+        width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;
+        background:${col.bg};color:${col.txt};
+        font-size:${fs.toFixed(1)}px;border:1px solid rgba(0,0,0,.3);
+        box-sizing:border-box;overflow:hidden;cursor:pointer;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+        transition:opacity .15s;"
+      onclick="vnSelectStock('${d.ticker}')"
+      title="${d.ticker} | ${VN_NAMES[d.ticker]||d.ticker} | ${vnFmtPrice(d.price)} | ${sign}${pct.toFixed(2)}%">
+      ${showName ? `<span style="font-weight:800;letter-spacing:.3px;line-height:1.1">${d.ticker}</span>` : ''}
+      ${showPct  ? `<span style="font-size:${(fs*.85).toFixed(1)}px;opacity:.9">${sign}${pct.toFixed(1)}%</span>` : ''}
+    </div>`;
+  }).join('');
+
+  grid.style.position = 'relative';
+  grid.style.height   = H + 'px';
+  grid.innerHTML = cells;
+
+  // Resize observer
+  if(!grid._vnHmResizeObserver){
+    grid._vnHmResizeObserver = new ResizeObserver(()=>renderVNHeatmap());
+    grid._vnHmResizeObserver.observe(grid);
+  }
+}
+
+</script>
 <style>
 :root{
   --bg:#060a10;--surface:#0c1118;--surface2:#101720;--surface3:#151e2a;
@@ -2183,7 +2373,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </nav>
 
 <!-- SUB-NAV CKVN (Level 2) -->
-<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(5,1fr);display:none" id="subNavVN" role="tablist" style="display:none">
+<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(7,1fr);display:none" id="subNavVN" role="tablist" style="display:none">
   <button class="sub-tab active" id="stab-vn-market" role="tab" onclick="showVNPage('vn-market',this)">
     <span class="tab-icon">
       <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="10" width="3" height="7" rx="1" fill="#e8192c"/><rect x="8.5" y="6" width="3" height="11" rx="1" fill="#e8192c" opacity=".8"/><rect x="15" y="3" width="3" height="14" rx="1" fill="#e8192c" opacity=".6"/><polyline points="3.5,9.5 10,5.5 16.5,2.5" fill="none" stroke="#ffcd00" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="9.5" r="1.2" fill="#ffcd00"/><circle cx="10" cy="5.5" r="1.2" fill="#ffcd00"/><circle cx="16.5" cy="2.5" r="1.2" fill="#ffcd00"/></svg>
@@ -2213,6 +2403,30 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
       <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="3" width="12" height="14" rx="1.5" fill="#0ea5e9" opacity=".8"/><rect x="4" y="6" width="8" height="1.5" rx=".7" fill="rgba(255,255,255,.9)"/><rect x="4" y="9" width="5" height="1.2" rx=".6" fill="rgba(255,255,255,.5)"/><rect x="4" y="11.5" width="6" height="1.2" rx=".6" fill="rgba(255,255,255,.5)"/><rect x="15" y="6" width="3" height="11" rx="1.5" fill="#38bdf8"/></svg>
     </span>
     <span class="tab-label">Tin Tức</span>
+  </button>
+
+  <button class="sub-tab" id="stab-vn-heatmap" role="tab" onclick="showVNPage('vn-heatmap',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18">
+        <rect x="2"  y="2"  width="7" height="7" rx="1" fill="#22c55e" opacity=".9"/>
+        <rect x="11" y="2"  width="7" height="7" rx="1" fill="#ef4444" opacity=".9"/>
+        <rect x="2"  y="11" width="7" height="7" rx="1" fill="#ef4444" opacity=".6"/>
+        <rect x="11" y="11" width="7" height="7" rx="1" fill="#22c55e" opacity=".5"/>
+        <rect x="4"  y="4"  width="3" height="3" rx=".5" fill="rgba(255,255,255,.25)"/>
+        <rect x="13" y="4"  width="3" height="3" rx=".5" fill="rgba(255,255,255,.15)"/>
+      </svg>
+    </span>
+    <span class="tab-label">Heatmap</span>
+  </button>
+
+  <button class="sub-tab sub-tab-donate" id="stab-vn-donate" role="tab" onclick="showVNPage('vn-donate',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18">
+        <path d="M10 16.5s-7-4.5-7-8.5a4 4 0 0 1 7-2.65A4 4 0 0 1 17 8c0 4-7 8.5-7 8.5z" fill="#f43f5e" opacity=".85"/>
+        <path d="M10 16.5s-7-4.5-7-8.5a4 4 0 0 1 7-2.65A4 4 0 0 1 17 8c0 4-7 8.5-7 8.5z" fill="none" stroke="#fb7185" stroke-width=".8"/>
+      </svg>
+    </span>
+    <span class="tab-label">Ủng Hộ</span>
   </button>
 </nav>
 
@@ -3460,6 +3674,57 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </div>
 </div>
 
+<!-- ══════════════ PAGE: VN-HEATMAP ══════════════ -->
+<div class="page" id="page-vn-heatmap">
+<div class="heatmap-layout">
+  <div class="heatmap-header">
+    <div class="heatmap-title-row">
+      <h2 class="page-title">🟩 Heatmap Chứng Khoán Việt Nam</h2>
+      <div class="heatmap-controls">
+        <div class="hm-ctrl-group">
+          <span class="hm-ctrl-lbl">Kích thước</span>
+          <select class="hm-select" id="vnHmSizeBy" onchange="renderVNHeatmap()">
+            <option value="vol">Khối lượng</option>
+            <option value="val">Giá trị</option>
+            <option value="equal">Đều nhau</option>
+          </select>
+        </div>
+        <div class="hm-ctrl-group">
+          <span class="hm-ctrl-lbl">Nhóm</span>
+          <select class="hm-select" id="vnHmGroup" onchange="renderVNHeatmap()">
+            <option value="all">Tất cả</option>
+            <option value="vn30">VN30</option>
+            <option value="bank">Ngân hàng</option>
+            <option value="estate">Bất động sản</option>
+            <option value="industry">Công nghiệp</option>
+          </select>
+        </div>
+        <button class="hm-legend-btn" onclick="loadVNHeatmap()">↻ Làm mới</button>
+      </div>
+    </div>
+    <div class="hm-legend">
+      <span class="hm-leg-item" style="color:#00ffff">▲ Trần</span>
+      <span class="hm-leg-item" style="color:#16a34a">▲ +5%+</span>
+      <span class="hm-leg-item" style="color:#22c55e">▲ +1%</span>
+      <span class="hm-leg-item" style="color:#64748b">≈ 0%</span>
+      <span class="hm-leg-item" style="color:#ef4444">▼ -1%</span>
+      <span class="hm-leg-item" style="color:#b91c1c">▼ -5%+</span>
+      <span class="hm-leg-item" style="color:#ff00ff">▼ Sàn</span>
+    </div>
+  </div>
+  <div class="heatmap-grid" id="vnHeatmapGrid" style="min-height:500px">
+    <div class="hm-loading"><div class="spinner"></div><span>Đang tải dữ liệu...</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ PAGE: VN-DONATE ══════════════ -->
+<div class="page" id="page-vn-donate">
+<div id="vn-donate-mirror"></div>
+</div>
+</div>
+</div>
+
 <footer>Dữ liệu từ <span class="hl">Binance</span> · Logo từ <span class="hl">CoinGecko</span> · Biểu đồ từ <span class="hl">TradingView Lightweight Charts</span> · UTC+7 Hà Nội · © 2026 <span class="hl">VietLongCrypto</span></footer>
 
 <script>
@@ -3480,16 +3745,10 @@ async function cgFetch(path, opts={}){
       }
     }
   }catch(e){}
-  // Proxy 2: thingproxy
+  // Proxy 2: allorigins /raw (fallback)
   try{
-    const r2 = await fetch(`https://thingproxy.freeboard.io/fetch/${fullUrl}`, {signal: AbortSignal.timeout(12000)});
+    const r2 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`, {signal: AbortSignal.timeout(12000)});
     if(r2.ok) return r2;
-  }catch(e){}
-  // Proxy 3: allorigins /raw
-  try{
-    const enc = encodeURIComponent(fullUrl);
-    const r3 = await fetch(`https://api.allorigins.win/raw?url=${enc}`, {signal: AbortSignal.timeout(12000)});
-    if(r3.ok) return r3;
   }catch(e){}
   return null;
 }
@@ -4360,16 +4619,20 @@ setInterval(()=>{
 
 async function loadFearGreed(){
   try{
-    // alternative.me hỗ trợ CORS — gọi thẳng, fallback thingproxy
+    // alternative.me hỗ trợ CORS — gọi thẳng, fallback allorigins
     let fngData = null;
     try{
       const r1 = await fetch('https://api.alternative.me/fng/?limit=4',{signal:AbortSignal.timeout(8000)});
       if(r1.ok) fngData = await r1.json();
     }catch(e){}
     if(!fngData){
-      const r2 = await fetch('https://thingproxy.freeboard.io/fetch/https://api.alternative.me/fng/?limit=4',{signal:AbortSignal.timeout(10000)});
-      if(!r2.ok) throw new Error('FNG '+r2.status);
-      fngData = await r2.json();
+      // Fallback: allorigins /get
+      const r2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://api.alternative.me/fng/?limit=4')}`,{signal:AbortSignal.timeout(10000)});
+      if(r2.ok){
+        const j = await r2.json();
+        if(j.contents) fngData = JSON.parse(j.contents);
+      }
+      if(!fngData) throw new Error('FNG all failed');
     }
     const data = fngData;
     const items=data.data||[];
@@ -7592,6 +7855,14 @@ function showVNPage(id, el){
   if(id==='vn-indices')  loadVNIndices();
   if(id==='vn-watchlist'){ loadVNWatchlistData(); renderVNWatchlist(); }
   if(id==='vn-news')     loadVNNews();
+  if(id==='vn-heatmap'){ loadVNHeatmap(); }
+  if(id==='vn-donate'){
+    const mirror = document.getElementById('vn-donate-mirror');
+    if(mirror && !mirror.children.length){
+      const src = document.querySelector('#page-donate .donate-layout');
+      if(src) mirror.appendChild(src.cloneNode(true));
+    }
+  }
   if(id==='vn-chart')    renderVNQuickPicks();
 }
 
@@ -7625,31 +7896,25 @@ const SSI_MARKET = 'https://iboard-query.ssi.com.vn/v2/stock/new-search';
 
 
 // ── VN API proxy helper — thử nhiều proxy cho GitHub Pages ──
-async function vnFetch(url, timeout=10000){
+async function vnFetch(url, timeout=12000){
+  // Chỉ dùng allorigins /get — trả JSON wrapper {contents, status}
+  // Đây là proxy duy nhất ổn định nhất cho GitHub Pages với CORS
   const enc = encodeURIComponent(url);
-  const proxies = [
-    // thingproxy — ổn định nhất với API JSON
-    `https://thingproxy.freeboard.io/fetch/${url}`,
-    // allorigins raw
-    `https://api.allorigins.win/raw?url=${enc}`,
-    // corsproxy.io
-    `https://corsproxy.io/?${enc}`,
-  ];
-  for(const proxy of proxies){
-    try{
-      const r = await fetch(proxy, {signal:AbortSignal.timeout(timeout)});
-      if(r.ok){
-        const text = await r.text();
-        if(text && text.length > 2) return JSON.parse(text);
-      }
-    }catch(e){ continue; }
-  }
+  try{
+    const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
+      {signal:AbortSignal.timeout(timeout)});
+    if(r.ok){
+      const j = await r.json();
+      if(j.contents && j.contents.length > 2)
+        return JSON.parse(j.contents);
+    }
+  }catch(e){}
   throw new Error('All proxies failed for: '+url);
 }
 async function fetchVNStocks(tickers){
   // Dùng SSI iBoard public API
   try{
-    const raw = await vnFetch('https://iboard.ssi.com.vn/dchart/api/1/controller?action=getVNDStockList&exchange=ALL', 14000);
+    const raw = await vnFetch('https://iboard.ssi.com.vn/dchart/api/1/controller?action=getVNDStockList&exchange=HOSE', 14000);
     const stocks = raw.data || [];
     const result = {};
     stocks.forEach(s=>{
@@ -7684,29 +7949,44 @@ async function fetchVNStocks(tickers){
 // Fallback: lấy 1 cổ phiếu cụ thể từ TCBS API
 async function fetchVNSingle(ticker){
   try{
-    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/snapshot?ticker=${ticker}`;
-    const d = await vnFetch(url, 10000);
-    if(!d || !d.ticker) throw new Error('No data');
-    const ref = d.refPrice||0;
-    const price = d.lastPrice||0;
+    // SSI iBoard: getDetailQuote — không cần auth, CORS OK qua allorigins
+    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getDetailQuote&symbol=${ticker}`;
+    const d = await vnFetch(url, 12000);
+    // SSI trả {data: [{...}]} hoặc {data: {...}}
+    const s = Array.isArray(d?.data) ? d.data[0] : d?.data || d;
+    if(!s || (!s.c && !s.lastPrice && !s.mp)) throw new Error('No SSI data for '+ticker);
+
+    // SSI field mapping: c=close/last, r=ref, ce=ceiling, fl=floor, h=high, l=low
+    // o=open, v=vol, va=value, fb=buy foreign, fs=sell foreign
+    const price = parseFloat(s.c || s.lastPrice || s.mp || 0);
+    const ref   = parseFloat(s.r || s.refPrice || 0);
+    const ceil  = parseFloat(s.ce || s.ceiling || ref*1.07);
+    const floor = parseFloat(s.fl || s.floor || ref*0.93);
+    const high  = parseFloat(s.h || s.highPrice || 0);
+    const low   = parseFloat(s.l || s.lowPrice || 0);
+    const vol   = parseFloat(s.v || s.totalVol || 0);
+    const val   = parseFloat(s.va || s.totalVal || 0);
+    const buyF  = parseFloat(s.fb || 0);
+    const sellF = parseFloat(s.fs || 0);
+    // SSI giá đơn vị đồng (không phải nghìn đồng như TCBS)
+    // Nếu giá > 1000 thì chia 1000, nếu không thì giữ nguyên
+    const scale = price > 1000 ? 1000 : 1;
     return {
-      ticker: d.ticker,
-      name: VN_NAMES[d.ticker] || d.ticker,
-      price: price/1000,
-      ref: ref/1000,
-      ceil: (ref*1.07)/1000,
-      floor: (ref*0.93)/1000,
-      high: (d.highPrice||0)/1000,
-      low: (d.lowPrice||0)/1000,
-      vol: d.totalMatchVol||0,
-      val: d.totalMatchValue||0,
-      change: (price-ref)/1000,
+      ticker,
+      name: VN_NAMES[ticker] || ticker,
+      price: price/scale,
+      ref:   ref/scale,
+      ceil:  ceil/scale,
+      floor: floor/scale,
+      high:  high/scale,
+      low:   low/scale,
+      vol, val,
+      change:    (price-ref)/scale,
       changePct: ref>0?(price-ref)/ref*100:0,
-      buyForeign: d.buyForeignQty||0,
-      sellForeign: d.sellForeignQty||0,
+      buyForeign: buyF, sellForeign: sellF,
     };
   }catch(e){
-    console.warn('TCBS single error:', e.message);
+    console.warn('SSI single error:', ticker, e.message);
     return null;
   }
 }
@@ -7743,29 +8023,54 @@ async function loadVNMarket(){
 
 // ── VN Indices Strip ─────────────────────────────────────
 async function loadVNIndicesStrip(){
-  const INDICES = [
-    {id:'VNINDEX', label:'VN-Index', apiCode:'VNINDEX'},
-    {id:'HNX',     label:'HNX-Index', apiCode:'HNX'},
-    {id:'UPCOM',   label:'UPCOM', apiCode:'UPCOM'},
-    {id:'VN30',    label:'VN30', apiCode:'VN30'},
-    {id:'HNX30',   label:'HNX30', apiCode:'HNX30'},
-  ];
-  for(const idx of INDICES){
-    try{
-      const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/index/snapshot?indexId=${idx.apiCode}`;
-      const d = await vnFetch(url, 10000);
-      if(!d) continue;
-      const val = d.indexValue || d.value || 0;
-      const chg = d.indexChange || d.change || 0;
-      const pct = d.percentChange || d.changePercent || 0;
-      const card = document.getElementById(`vnIdx-${idx.id}`);
-      if(!card) continue;
+  try{
+    // SSI iBoard: getMainIndices — 1 call cho tất cả chỉ số
+    const url = 'https://iboard.ssi.com.vn/dchart/api/1/controller?action=getMainIndices';
+    const raw = await vnFetch(url, 12000);
+    const list = raw?.data || raw?.indices || (Array.isArray(raw) ? raw : []);
+
+    const MAP = {
+      'VNINDEX':'VNINDEX','VN-INDEX':'VNINDEX',
+      'HNX':'HNX','HNX-INDEX':'HNX',
+      'UPCOM':'UPCOM',
+      'VN30':'VN30',
+      'HNX30':'HNX30',
+    };
+
+    list.forEach(idx=>{
+      const code = (idx.indexId||idx.code||idx.id||'').toUpperCase();
+      const key  = MAP[code] || MAP[code.replace('-','')];
+      if(!key) return;
+      const val = parseFloat(idx.indexValue||idx.value||idx.c||0);
+      const chg = parseFloat(idx.indexChange||idx.change||idx.ch||0);
+      const pct = parseFloat(idx.percentChange||idx.changePercent||idx.rr||0);
+      const card = document.getElementById(`vnIdx-${key}`);
+      if(!card) return;
       card.querySelector('.vn-idx-val').textContent = val>0?val.toFixed(2):'—';
-      const chgEl = card.querySelector('.vn-idx-chg');
       const sign = chg>=0?'+':'';
-      chgEl.textContent = val>0?`${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`:'—';
+      card.querySelector('.vn-idx-chg').textContent = val>0?`${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`:'—';
       card.className = `vn-idx-card ${chg>0?'up':chg<0?'down':'flat'}`;
-    }catch(e){}
+    });
+  }catch(e){
+    console.warn('SSI indices error:', e.message);
+    // Fallback: dùng Yahoo Finance cho VN-Index nếu SSI fail
+    try{
+      const yUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EVNINDEX?interval=1d&range=1d';
+      const yd = await vnFetch(yUrl, 10000);
+      const meta = yd?.chart?.result?.[0]?.meta;
+      if(meta){
+        const card = document.getElementById('vnIdx-VNINDEX');
+        if(card){
+          const val = meta.regularMarketPrice||0;
+          const prev = meta.previousClose||val;
+          const chg = val-prev, pct=(val-prev)/prev*100;
+          const sign = chg>=0?'+':'';
+          card.querySelector('.vn-idx-val').textContent = val.toFixed(2);
+          card.querySelector('.vn-idx-chg').textContent = `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
+          card.className = `vn-idx-card ${chg>0?'up':chg<0?'down':'flat'}`;
+        }
+      }
+    }catch(e2){}
   }
 }
 
@@ -7792,9 +8097,18 @@ async function loadVNMovers(tab){
   const apiTab = tabMap[tab] || 'top_price_increase';
 
   try{
-    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/top-ranking?type=${apiTab}&limit=20`;
-    const d = await vnFetch(url, 12000);
-    const stocks = d?.data || d?.listStock || [];
+    // SSI iBoard: getTopStocksBy — mapping tab → SSI action
+    const ssiActionMap = {
+      'top_price_increase': 'getTopIncreaseStocks',
+      'top_price_decrease': 'getTopDecreaseStocks',
+      'top_volume':         'getTopVolumeStocks',
+      'top_value':          'getTopValueStocks',
+      'top_foreign_buy':    'getTopForeignBuyStocks',
+    };
+    const ssiAction = ssiActionMap[apiTab] || 'getTopIncreaseStocks';
+    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=${ssiAction}&exchange=HOSE&limit=20`;
+    const raw = await vnFetch(url, 12000);
+    const stocks = raw?.data || raw?.stocks || (Array.isArray(raw)?raw:[]);
     if(!stocks.length) throw new Error('No movers data');
 
     renderVNMovers(stocks);
@@ -7809,15 +8123,19 @@ function renderVNMovers(stocks){
   const tbody = document.getElementById('vnMoversBody');
   if(!tbody) return;
   tbody.innerHTML = stocks.map(s=>{
-    const price = (s.lastPrice||s.price||0)/1000;
-    const ref   = (s.refPrice||0)/1000;
-    const chg   = price-ref;
-    const pct   = ref>0?chg/ref*100:0;
-    const ticker= (s.ticker||'').toUpperCase();
-    const cls   = vnPriceClass(price,ref);
-    const sign  = chg>=0?'+':'';
-    const buyF  = s.buyForeignQty||0;
-    const sellF = s.sellForeignQty||0;
+    // SSI fields: s=symbol, c=close, r=ref, ch=change, rr=changePct, v=vol, va=val, fb=buyF, fs=sellF
+    const rawPrice = parseFloat(s.c||s.lastPrice||s.price||0);
+    const rawRef   = parseFloat(s.r||s.refPrice||0);
+    const scale    = rawPrice>1000?1000:1;
+    const price    = rawPrice/scale;
+    const ref      = rawRef/scale;
+    const chg      = price-ref;
+    const pct      = parseFloat(s.rr||s.changePct||(ref>0?chg/ref*100:0));
+    const ticker   = (s.s||s.ticker||s.symbol||'').toUpperCase();
+    const cls      = vnPriceClass(price,ref);
+    const sign     = chg>=0?'+':'';
+    const buyF     = parseFloat(s.fb||s.buyForeignQty||0);
+    const sellF    = parseFloat(s.fs||s.sellForeignQty||0);
     return `<tr style="cursor:pointer" onclick="vnSelectStock('${ticker}')">
       <td><span style="color:var(--accent);font-weight:800">${ticker}</span> <span style="font-size:10px;color:var(--muted)">${VN_NAMES[ticker]||''}</span></td>
       <td class="${cls}">${vnFmtPrice(price)}</td>
@@ -7902,9 +8220,24 @@ async function loadVNChart(tf, el){
   const from = fromMap[resolution] || now-30*86400;
 
   try{
-    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${_vnCurrentTicker}&type=stock&resolution=${resolution}&from=${from}&to=${now}`;
-    const d = await vnFetch(url, 14000);
-    const bars = d?.data || [];
+    // SSI iBoard chart API — resolution D/W/M
+    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getDataChart&symbol=${_vnCurrentTicker}&resolution=${resolution}&fromTime=${from}&toTime=${now}`;
+    const raw = await vnFetch(url, 14000);
+    // SSI trả {t:[timestamps], o:[open], h:[high], l:[low], c:[close], v:[volume]}
+    const bars = (() => {
+      const r = raw?.data || raw;
+      if(r?.t?.length) return r.t.map((ts,i)=>({
+        tradingDate: null,
+        time: ts,
+        open:  (r.o?.[i]||0),
+        high:  (r.h?.[i]||0),
+        low:   (r.l?.[i]||0),
+        close: (r.c?.[i]||0),
+        vol:   (r.v?.[i]||0),
+      }));
+      if(Array.isArray(r)) return r;
+      return [];
+    })();
     if(!bars.length) throw new Error('No chart data');
 
     // Render với LightweightCharts
@@ -7923,13 +8256,14 @@ async function loadVNChart(tf, el){
       borderUpColor:'#22c55e',borderDownColor:'#ef4444',
       wickUpColor:'#22c55e',wickDownColor:'#ef4444',
     });
-    const candles = bars.map(b=>({
-      time: b.tradingDate ? Math.floor(new Date(b.tradingDate).getTime()/1000) : b.time,
-      open:  (b.open||0)/1000,
-      high:  (b.high||0)/1000,
-      low:   (b.low||0)/1000,
-      close: (b.close||0)/1000,
-    })).filter(b=>b.time&&b.open).sort((a,b_)=>a.time-b_.time);
+    const candles = bars.map(b=>{
+      const ts = b.tradingDate ? Math.floor(new Date(b.tradingDate).getTime()/1000) : (b.time||0);
+      const o = parseFloat(b.open||0), h=parseFloat(b.high||0);
+      const l = parseFloat(b.low||0),  cl=parseFloat(b.close||0);
+      // SSI: giá > 1000 thì đơn vị đồng → chia 1000; nếu không thì giữ nguyên
+      const sc = o>1000?1000:1;
+      return {time:ts, open:o/sc, high:h/sc, low:l/sc, close:cl/sc};
+    }).filter(b=>b.time>0&&b.open>0).sort((a,b_)=>a.time-b_.time);
     _vnSeries.setData(candles);
     _vnChart.timeScale().fitContent();
     new ResizeObserver(()=>{
@@ -8024,11 +8358,16 @@ async function loadVNIndices(){
 
   const cards = await Promise.all(INDICES.map(async idx=>{
     try{
-      const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/index/snapshot?indexId=${idx.id}`;
-      const d = await vnFetch(url, 10000);
+      const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getIndexDetail&indexId=${idx.id}`;
+      const raw = await vnFetch(url, 10000);
+      const d = raw?.data?.[0] || raw?.data || raw;
       if(!d) return null;
-      const val = d.indexValue||0, chg=d.indexChange||0, pct=d.percentChange||0;
-      const adv=d.advances||0, dec=d.declines||0, unc=d.noChanges||0;
+      const val = parseFloat(d.indexValue||d.c||0);
+      const chg = parseFloat(d.indexChange||d.ch||0);
+      const pct = parseFloat(d.percentChange||d.rr||0);
+      const adv = parseInt(d.advances||d.advances_count||0);
+      const dec = parseInt(d.declines||d.declines_count||0);
+      const unc = parseInt(d.noChanges||d.unchanged_count||0);
       const sign=chg>=0?'+':'';
       const cls = chg>0?'vn-up':chg<0?'vn-dn':'vn-ref';
       return `<div class="vn-index-card">
