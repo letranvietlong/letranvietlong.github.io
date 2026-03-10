@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VietLong – Thị Trường Chứng Khoán Việt Nam</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #C8973A;
+      --gold-light: #E8B84B;
+      --gold-pale: #F5E6C8;
+      --red: #E03737;
+      --green: #00B96B;
+      --bg: #0A0D14;
+      --bg2: #0E1220;
+      --bg3: #141826;
+      --border: rgba(200,151,58,0.18);
+      --text: #EAE6DC;
+      --muted: #7A7F8E;
+      --card: rgba(20,24,38,0.85);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* BACKGROUND GRID */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(200,151,58,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,151,58,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* GLOW */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 900px; height: 500px;
+      background: radial-gradient(ellipse, rgba(200,151,58,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ===== NAVBAR ===== */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,13,20,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; font-weight: 900;
+      color: var(--bg);
+    }
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+    }
+    .logo-sub { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: -2px; }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+
+    .nav-time {
+      font-size: 0.78rem; color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    #clock { color: var(--gold-light); font-weight: 600; }
+
+    /* ===== TICKER TAPE ===== */
+    .ticker-wrap {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden; height: 36px;
+      display: flex; align-items: center;
+      position: relative; z-index: 1;
+    }
+    .ticker-label {
+      padding: 0 14px;
+      background: var(--gold);
+      color: var(--bg);
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      height: 100%; display: flex; align-items: center;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .ticker-track {
+      display: flex;
+      animation: ticker 45s linear infinite;
+    }
+    .ticker-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 24px;
+      font-size: 0.78rem; font-weight: 500;
+      white-space: nowrap;
+    }
+    .ticker-item .sym { color: var(--gold-light); font-weight: 700; }
+    .ticker-item .up { color: var(--green); }
+    .ticker-item .dn { color: var(--red); }
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ===== MAIN ===== */
+    main { position: relative; z-index: 1; padding: 2rem; max-width: 1400px; margin: 0 auto; }
+
+    /* ===== INDEX CARDS ===== */
+    .index-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem; margin-bottom: 2rem;
+    }
+
+    .index-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.6rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s;
+      display: flex; flex-direction: column;
+    }
+    .index-card:hover { border-color: rgba(200,151,58,0.45); transform: translateY(-2px); }
+    .index-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .index-card.up::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .index-card.dn::before { background: linear-gradient(90deg, var(--red), transparent); }
+
+    .ic-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; }
+    .ic-name { font-size: 0.75rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    .ic-badge { font-size: 0.65rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.5px; }
+    .ic-badge.up { background: rgba(0,185,107,0.15); color: var(--green); }
+    .ic-badge.dn { background: rgba(224,55,55,0.15); color: var(--red); }
+
+    .ic-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 0.4rem; }
+    .ic-change { font-size: 0.82rem; font-weight: 500; }
+    .ic-change.up { color: var(--green); }
+    .ic-change.dn { color: var(--red); }
+
+    .ic-sparkline-wrap { margin-top: 1rem; height: 40px; width: 100%; position: relative; }
+    .ic-sparkline { position: absolute; inset: 0; width: 100% !important; height: 40px !important; }
+    .ic-meta { display: flex; gap: 1.5rem; margin-top: 0.8rem; }
+    .ic-meta-item { font-size: 0.7rem; color: var(--muted); }
+    .ic-meta-item span { display: block; color: var(--text); font-weight: 500; font-size: 0.78rem; margin-top: 1px; }
+
+    /* ===== MAIN GRID ===== */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+    }
+
+    /* ===== MARKET TABLE ===== */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title {
+      font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: var(--gold);
+    }
+    .panel-tabs { display: flex; gap: 0.4rem; }
+    .tab-btn {
+      font-size: 0.7rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      transition: all 0.2s; font-family: inherit;
+      letter-spacing: 0.5px;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: var(--gold); border-color: var(--gold);
+      color: var(--bg);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted); padding: 0.8rem 1.2rem;
+      text-align: right; border-bottom: 1px solid var(--border);
+    }
+    thead th:first-child { text-align: left; }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(200,151,58,0.07);
+      transition: background 0.15s; cursor: pointer;
+    }
+    tbody tr:hover { background: rgba(200,151,58,0.04); }
+    tbody tr:last-child { border-bottom: none; }
+
+    td {
+      padding: 0.85rem 1.2rem;
+      font-size: 0.82rem; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    td:first-child { text-align: left; }
+
+    .stock-sym { font-weight: 700; color: var(--gold-light); font-size: 0.88rem; }
+    .stock-name { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+    .price { font-weight: 600; }
+    .chg-up { color: var(--green); font-weight: 600; }
+    .chg-dn { color: var(--red); font-weight: 600; }
+    .vol { color: var(--muted); font-size: 0.78rem; }
+
+    .mini-bar {
+      display: inline-block; height: 4px; width: 60px;
+      border-radius: 2px; vertical-align: middle;
+      background: rgba(255,255,255,0.06);
+      position: relative; overflow: hidden;
+    }
+    .mini-bar-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      border-radius: 2px;
+    }
+    .mini-bar-fill.up { background: var(--green); }
+    .mini-bar-fill.dn { background: var(--red); }
+
+    /* ===== RIGHT SIDEBAR ===== */
+    .sidebar { display: flex; flex-direction: column; gap: 1.2rem; }
+
+    /* HEAT MAP */
+    .heatmap { padding: 1.2rem; }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px; margin-top: 1rem;
+    }
+    .hm-cell {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.15s;
+      padding: 4px;
+    }
+    .hm-cell:hover { transform: scale(1.08); filter: brightness(1.2); }
+    .hm-cell .hm-sym { font-size: 0.65rem; font-weight: 700; color: white; }
+    .hm-cell .hm-pct { font-size: 0.58rem; color: rgba(255,255,255,0.85); margin-top: 1px; }
+    .hm-vp { background: #00864d; }
+    .hm-p  { background: #00a85a; }
+    .hm-sp { background: #00c96e; }
+    .hm-flat { background: #3a3f52; }
+    .hm-sn { background: #c44040; }
+    .hm-n  { background: #a02828; }
+    .hm-vn { background: #7a1a1a; }
+
+    /* MARKET SENTIMENT */
+    .sentiment-wrap { padding: 1.4rem; }
+    .sentiment-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.8rem; display: flex; justify-content: space-between; }
+    .sentiment-bar-bg {
+      height: 12px; border-radius: 6px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden; display: flex;
+    }
+    .sent-buy { background: var(--green); height: 100%; transition: width 1s ease; }
+    .sent-hold { background: var(--muted); height: 100%; transition: width 1s ease; }
+    .sent-sell { background: var(--red); height: 100%; transition: width 1s ease; }
+    .sentiment-legend {
+      display: flex; justify-content: space-between;
+      margin-top: 0.6rem;
+    }
+    .sent-leg { font-size: 0.68rem; display: flex; align-items: center; gap: 5px; }
+    .sent-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* NEWS FEED */
+    .news-feed { padding: 0; }
+    .news-item {
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .news-item:hover { background: rgba(200,151,58,0.04); }
+    .news-item:last-child { border-bottom: none; }
+    .news-time { font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .news-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+    .news-title { font-size: 0.78rem; line-height: 1.45; font-weight: 500; }
+    .news-tag { display: inline-block; font-size: 0.6rem; padding: 2px 7px; border-radius: 3px; background: rgba(200,151,58,0.15); color: var(--gold); font-weight: 600; margin-top: 5px; }
+
+    /* ===== CHART PANEL ===== */
+    .chart-panel { margin-bottom: 1.5rem; }
+    .chart-area {
+      padding: 1.4rem;
+      height: 280px;
+      position: relative;
+    }
+
+    /* ===== STATS ROW ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.2rem;
+      text-align: center;
+    }
+    .stat-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .stat-val { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+    .stat-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 3px; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-brand { font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--gold); font-weight: 700; }
+    .footer-note { font-size: 0.7rem; color: var(--muted); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { font-size: 0.72rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--gold); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Animate in */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+    .index-card, .panel, .stat-card { animation: fadeUp 0.5s ease both; }
+    .index-card:nth-child(1) { animation-delay: 0.05s; }
+    .index-card:nth-child(2) { animation-delay: 0.12s; }
+    .index-card:nth-child(3) { animation-delay: 0.19s; }
+
+    /* Status dot */
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 0 0 rgba(0,185,107,0.4);
+      animation: pulse-dot 1.8s ease infinite;
+    }
+    @keyframes pulse-dot {
+      0%   { box-shadow: 0 0 0 0 rgba(0,185,107,0.4); }
+      60%  { box-shadow: 0 0 0 6px rgba(0,185,107,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,185,107,0); }
+    }
+
+    @media (max-width: 1100px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .index-row { grid-template-columns: 1fr 1fr; }
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 640px) {
+      .index-row { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      main { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-icon">VL</div>
+    <div>
+      <div class="logo-text">VietLong</div>
+      <div class="logo-sub">Stock Market</div>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="#" class="active">Tổng Quan</a>
+    <a href="#">Cổ Phiếu</a>
+    <a href="#">Danh Mục</a>
+    <a href="#">Phân Tích</a>
+    <a href="#">Tin Tức</a>
+  </div>
+  <div class="nav-time">
+    <span class="live-dot"></span>&nbsp;
+    Thứ Ba, 10/03/2026 &nbsp;|&nbsp; <span id="clock">--:--:--</span>
+  </div>
+</nav>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap">
+  <div class="ticker-label">▶ LIVE</div>
+  <div style="overflow:hidden;flex:1;">
+    <div class="ticker-track" id="ticker"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- INDEX CARDS -->
+  <div class="index-row" id="indexCards"></div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-val" id="s1">342</div><div class="stat-lbl">Cổ phiếu tăng</div></div>
+    <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-val" id="s2">198</div><div class="stat-lbl">Cổ phiếu giảm</div></div>
+    <div class="stat-card"><div class="stat-icon">➡️</div><div class="stat-val" id="s3">87</div><div class="stat-lbl">Đứng giá</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="s4">8,240</div><div class="stat-lbl">GT giao dịch (tỷ VND)</div></div>
+  </div>
+
+  <!-- CONTENT GRID -->
+  <div class="content-grid">
+    <!-- LEFT -->
+    <div>
+      <!-- CHART -->
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <div class="panel-title">Biểu Đồ VN-Index</div>
+          <div class="panel-tabs">
+            <button class="tab-btn active" onclick="setRange(this,'1D')">1N</button>
+            <button class="tab-btn" onclick="setRange(this,'1W')">1T</button>
+            <button class="tab-btn" onclick="setRange(this,'1M')">1Th</button>
+            <button class="tab-btn" onclick="setRange(this,'3M')">3Th</button>
+            <button class="tab-btn" onclick="setRange(this,'1Y')">1N</button>
+          </div>
+        </div>
+        <div class="chart-area">
+          <canvas id="mainChart"></canvas>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Bảng Giá Cổ Phiếu</div>
+          <div class="panel-tabs">
+            <button class="tab-btn active">HOSE</button>
+            <button class="tab-btn">HNX</button>
+            <button class="tab-btn">UPCOM</button>
+          </div>
+        </div>
+        <table id="stockTable">
+          <thead>
+            <tr>
+              <th>Mã CP</th>
+              <th>Giá TC</th>
+              <th>Giá KL</th>
+              <th>+/-</th>
+              <th>%</th>
+              <th>KLGD (K)</th>
+              <th>Xu hướng</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- HEATMAP -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Bản Đồ Nhiệt</div>
+        </div>
+        <div class="heatmap">
+          <div class="heatmap-grid" id="heatmap"></div>
+        </div>
+      </div>
+
+      <!-- SENTIMENT -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Tâm Lý Thị Trường</div>
+        </div>
+        <div class="sentiment-wrap">
+          <div class="sentiment-label">
+            <span>Mua / Nắm giữ / Bán</span>
+            <span style="color:var(--green)">Khả quan</span>
+          </div>
+          <div class="sentiment-bar-bg">
+            <div class="sent-buy" style="width:54%"></div>
+            <div class="sent-hold" style="width:28%"></div>
+            <div class="sent-sell" style="width:18%"></div>
+          </div>
+          <div class="sentiment-legend">
+            <div class="sent-leg"><div class="sent-dot" style="background:var(--green)"></div><span style="font-size:0.68rem">Mua <strong>54%</strong></span></div>
+            <div class="sent-leg"><div class="sent-dot" style="background:var(--muted)"></div><span style="font-size:0.68rem">Giữ <strong>28%</strong></span></div>
+            <div class="sent-leg"><div class="sent-dot" style="background:var(--red)"></div><span style="font-size:0.68rem">Bán <strong>18%</strong></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEWS -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Tin Tức Thị Trường</div>
+        </div>
+        <div class="news-feed" id="newsFeed"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-brand">VietLong</div>
+    <div class="footer-note">© 2026 VietLong Stock Market. Dữ liệu mang tính chất tham khảo.</div>
+  </div>
+  <div class="footer-links">
+    <a href="#">Điều khoản</a>
+    <a href="#">Chính sách</a>
+    <a href="#">Liên hệ</a>
+    <a href="#">API</a>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── CLOCK ──────────────────────────────────────────────────────
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── DATA ───────────────────────────────────────────────────────
+const INDICES = [
+  { name:'VN-Index', val:1287.34, chg:+12.56, pct:+0.99, vol:'8,240 tỷ', hi:'1291.2', lo:'1274.8' },
+  { name:'HNX-Index', val:228.17, chg:-1.43, pct:-0.62, vol:'1,320 tỷ', hi:'231.0', lo:'227.5' },
+  { name:'UPCOM-Index', val:94.61, chg:+0.38, pct:+0.40, vol:'520 tỷ', hi:'95.1', lo:'94.2' },
+];
+
+const STOCKS = [
+  { sym:'VCB',  name:'Vietcombank',        ref:88.5,  price:91.2,  chg:+2.7,  pct:+3.05, vol:4821 },
+  { sym:'VIC',  name:'Vingroup',           ref:52.3,  price:50.8,  chg:-1.5,  pct:-2.87, vol:6140 },
+  { sym:'HPG',  name:'Hòa Phát Group',     ref:28.1,  price:29.4,  chg:+1.3,  pct:+4.63, vol:18230 },
+  { sym:'MWG',  name:'Mobile World',       ref:44.6,  price:45.1,  chg:+0.5,  pct:+1.12, vol:2930 },
+  { sym:'VNM',  name:'Vinamilk',           ref:71.2,  price:70.0,  chg:-1.2,  pct:-1.69, vol:3560 },
+  { sym:'FPT',  name:'FPT Corporation',    ref:138.0, price:141.5, chg:+3.5,  pct:+2.54, vol:5120 },
+  { sym:'TCB',  name:'Techcombank',        ref:39.8,  price:40.6,  chg:+0.8,  pct:+2.01, vol:7840 },
+  { sym:'BID',  name:'BIDV',              ref:48.2,  price:47.5,  chg:-0.7,  pct:-1.45, vol:4230 },
+  { sym:'VHM',  name:'Vinhomes',           ref:35.5,  price:36.8,  chg:+1.3,  pct:+3.66, vol:9810 },
+  { sym:'GAS',  name:'PV Gas',             ref:94.0,  price:93.2,  chg:-0.8,  pct:-0.85, vol:1780 },
+  { sym:'MSN',  name:'Masan Group',        ref:62.4,  price:63.9,  chg:+1.5,  pct:+2.40, vol:3020 },
+  { sym:'PLX',  name:'Petrolimex',         ref:41.5,  price:40.8,  chg:-0.7,  pct:-1.69, vol:2140 },
+];
+
+const HEATMAP_STOCKS = [
+  {s:'VCB',p:3.05},{s:'HPG',p:4.63},{s:'FPT',p:2.54},{s:'VHM',p:3.66},{s:'TCB',p:2.01},
+  {s:'MSN',p:2.40},{s:'MWG',p:1.12},{s:'SSI',p:1.85},{s:'VPB',p:0.92},{s:'HDB',p:0.34},
+  {s:'CTG',p:0.0}, {s:'SHB',p:-0.40},{s:'VIC',p:-2.87},{s:'VNM',p:-1.69},{s:'GAS',p:-0.85},
+  {s:'BID',p:-1.45},{s:'PLX',p:-1.69},{s:'ACB',p:0.75},{s:'NVL',p:-3.20},{s:'PDR',p:-4.10},
+];
+
+const NEWS = [
+  { time:'14:32', title:'VN-Index hồi phục tích cực, nhóm ngân hàng dẫn dắt đà tăng', tag:'Thị trường' },
+  { time:'13:15', title:'FPT báo lãi quý I/2026 tăng 28%, vượt kỳ vọng của các nhà phân tích', tag:'Doanh nghiệp' },
+  { time:'11:48', title:'Khối ngoại mua ròng hơn 350 tỷ đồng trong phiên sáng', tag:'Ngoại tệ' },
+  { time:'10:20', title:'Cục Dự trữ Liên bang giữ nguyên lãi suất, tác động tích cực đến TTCK Việt Nam', tag:'Vĩ mô' },
+  { time:'09:05', title:'HPG tăng mạnh sau tin tức mở rộng nhà máy tại Dung Quất', tag:'Doanh nghiệp' },
+];
+
+// ── RENDER INDICES ─────────────────────────────────────────────
+function renderIndices() {
+  const cont = document.getElementById('indexCards');
+  INDICES.forEach((idx,i) => {
+    const up = idx.chg >= 0;
+    const sign = up ? '+' : '';
+    cont.innerHTML += `
+    <div class="index-card ${up?'up':'dn'}" style="animation-delay:${0.05+i*0.07}s">
+      <div class="ic-header">
+        <div class="ic-name">${idx.name}</div>
+        <div class="ic-badge ${up?'up':'dn'}">${up?'▲ Tăng':'▼ Giảm'}</div>
+      </div>
+      <div class="ic-value" style="color:${up?'var(--green)':'var(--red)'}">${idx.val.toLocaleString('vi-VN',{minimumFractionDigits:2})}</div>
+      <div class="ic-change ${up?'up':'dn'}">${sign}${idx.chg.toFixed(2)} (${sign}${idx.pct.toFixed(2)}%)</div>
+      <div class="ic-sparkline-wrap"><canvas class="ic-sparkline" id="spark${i}" height="40"></canvas></div>
+      <div class="ic-meta">
+        <div class="ic-meta-item">KLGD<span>${idx.vol}</span></div>
+        <div class="ic-meta-item">Cao<span>${idx.hi}</span></div>
+        <div class="ic-meta-item">Thấp<span>${idx.lo}</span></div>
+      </div>
+    </div>`;
+  });
+  // Sparklines
+  INDICES.forEach((idx,i) => {
+    const pts = Array.from({length:30},(_,j)=>{
+      const noise = (Math.random()-0.48)*2;
+      return idx.val - idx.chg + (idx.chg/30)*j + noise;
+    });
+    pts.push(idx.val);
+    const up = idx.chg >= 0;
+    const ctx = document.getElementById('spark'+i).getContext('2d');
+    new Chart(ctx,{
+      type:'line',
+      data:{
+        labels: pts.map((_,j)=>j),
+        datasets:[{
+          data: pts,
+          borderColor: up?'#00B96B':'#E03737',
+          borderWidth: 1.5,
+          fill: true,
+          backgroundColor: up?'rgba(0,185,107,0.08)':'rgba(224,55,55,0.08)',
+          tension: 0.4,
+          pointRadius: 0,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{x:{display:false},y:{display:false}},
+        animation:{duration:800}
+      }
+    });
+  });
+}
+
+// ── RENDER TABLE ───────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('stockBody');
+  STOCKS.forEach(s => {
+    const up = s.chg >= 0;
+    const sign = up ? '+' : '';
+    const fillW = Math.min(Math.abs(s.pct)/5*100, 100);
+    tbody.innerHTML += `<tr>
+      <td><div class="stock-sym">${s.sym}</div><div class="stock-name">${s.name}</div></td>
+      <td class="price" style="color:var(--muted)">${s.ref.toFixed(1)}</td>
+      <td class="price" style="color:${up?'var(--green)':'var(--red)'}">${s.price.toFixed(1)}</td>
+      <td class="${up?'chg-up':'chg-dn'}">${sign}${s.chg.toFixed(1)}</td>
+      <td class="${up?'chg-up':'chg-dn'}">${sign}${s.pct.toFixed(2)}%</td>
+      <td class="vol">${s.vol.toLocaleString()}</td>
+      <td><span class="mini-bar"><span class="mini-bar-fill ${up?'up':'dn'}" style="width:${fillW}%"></span></span></td>
+    </tr>`;
+  });
+}
+
+// ── RENDER HEATMAP ─────────────────────────────────────────────
+function heatClass(p) {
+  if(p>=3)  return 'hm-vp';
+  if(p>=1)  return 'hm-p';
+  if(p>0)   return 'hm-sp';
+  if(p===0) return 'hm-flat';
+  if(p>-1)  return 'hm-sn';
+  if(p>-3)  return 'hm-n';
+  return 'hm-vn';
+}
+function renderHeatmap() {
+  const cont = document.getElementById('heatmap');
+  HEATMAP_STOCKS.forEach(s=>{
+    cont.innerHTML += `<div class="hm-cell ${heatClass(s.p)}" title="${s.s}: ${s.p>0?'+':''}${s.p}%">
+      <div class="hm-sym">${s.s}</div>
+      <div class="hm-pct">${s.p>0?'+':''}${s.p}%</div>
+    </div>`;
+  });
+}
+
+// ── RENDER NEWS ────────────────────────────────────────────────
+function renderNews() {
+  const cont = document.getElementById('newsFeed');
+  NEWS.forEach(n=>{
+    cont.innerHTML += `<div class="news-item">
+      <div class="news-time"><div class="news-dot"></div>${n.time} — Hôm nay</div>
+      <div class="news-title">${n.title}</div>
+      <span class="news-tag">${n.tag}</span>
+    </div>`;
+  });
+}
+
+// ── TICKER ─────────────────────────────────────────────────────
+function buildTicker() {
+  const tickers = [
+    {sym:'VN-Index',val:'1,287.34',chg:'+12.56',up:true},
+    {sym:'HNX30',val:'384.12',chg:'-2.10',up:false},
+    {sym:'VN30',val:'1,351.88',chg:'+14.90',up:true},
+    {sym:'VCB',val:'91.2',chg:'+2.7',up:true},
+    {sym:'HPG',val:'29.4',chg:'+1.3',up:true},
+    {sym:'FPT',val:'141.5',chg:'+3.5',up:true},
+    {sym:'VIC',val:'50.8',chg:'-1.5',up:false},
+    {sym:'TCB',val:'40.6',chg:'+0.8',up:true},
+    {sym:'MWG',val:'45.1',chg:'+0.5',up:true},
+    {sym:'VHM',val:'36.8',chg:'+1.3',up:true},
+    {sym:'VNM',val:'70.0',chg:'-1.2',up:false},
+    {sym:'BID',val:'47.5',chg:'-0.7',up:false},
+    {sym:'GAS',val:'93.2',chg:'-0.8',up:false},
+    {sym:'MSN',val:'63.9',chg:'+1.5',up:true},
+  ];
+  const track = document.getElementById('ticker');
+  const html = tickers.map(t=>`
+    <div class="ticker-item">
+      <span class="sym">${t.sym}</span>
+      <span>${t.val}</span>
+      <span class="${t.up?'up':'dn'}">${t.chg} ${t.up?'▲':'▼'}</span>
+    </div>`).join('');
+  track.innerHTML = html + html; // duplicate for seamless loop
+}
+
+// ── MAIN CHART ─────────────────────────────────────────────────
+let mainChart;
+function buildChart(range) {
+  const canvas = document.getElementById('mainChart');
+  const ctx = canvas.getContext('2d');
+
+  if(mainChart) mainChart.destroy();
+
+  let pts=[], labels=[];
+  const N = {
+    '1D':78, '1W':5, '1M':22, '3M':65, '1Y':252
+  }[range] || 78;
+
+  let base = 1275;
+  for(let i=0;i<N;i++){
+    base += (Math.random()-0.47)*3.5;
+    pts.push(+base.toFixed(2));
+    if(range==='1D'){
+      const h = 9+Math.floor(i*6.5/N);
+      const m = Math.floor((i*(6.5*60)/N)%60);
+      labels.push(`${h}:${m.toString().padStart(2,'0')}`);
+    } else {
+      labels.push(`T${i+1}`);
+    }
+  }
+  pts[pts.length-1] = 1287.34;
+
+  const gradient = ctx.createLinearGradient(0,0,0,250);
+  gradient.addColorStop(0,'rgba(200,151,58,0.25)');
+  gradient.addColorStop(1,'rgba(200,151,58,0.00)');
+
+  mainChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        data: pts,
+        borderColor: '#C8973A',
+        borderWidth: 2,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: '#E8B84B',
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(14,18,32,0.95)',
+          borderColor:'rgba(200,151,58,0.3)',
+          borderWidth:1,
+          titleColor:'#C8973A',
+          bodyColor:'#EAE6DC',
+          padding:10,
+          callbacks:{
+            label: ctx => ` ${ctx.parsed.y.toLocaleString('vi-VN',{minimumFractionDigits:2})} đ`
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:'#7A7F8E',font:{size:10}, maxTicksLimit:8},
+          grid:{color:'rgba(200,151,58,0.05)'},
+          border:{display:false}
+        },
+        y:{
+          ticks:{color:'#7A7F8E',font:{size:10}},
+          grid:{color:'rgba(200,151,58,0.05)'},
+          border:{display:false}
+        }
+      },
+      animation:{duration:600,easing:'easeInOutQuart'}
+    }
+  });
+}
+
+function setRange(btn, range) {
+  document.querySelectorAll('.panel-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildChart(range);
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+renderIndices();
+renderTable();
+renderHeatmap();
+renderNews();
+buildTicker();
+buildChart('1D');
+
+// Simulate live price updates
+setInterval(()=>{
+  document.querySelectorAll('.stock-sym').forEach((el,i)=>{
+    if(Math.random()>0.85){
+      const td = el.closest('tr').querySelectorAll('td');
+      const up = Math.random()>0.5;
+      td[2].style.color = up?'var(--green)':'var(--red)';
+      td[3].style.color = up?'var(--green)':'var(--red)';
+      td[4].style.color = up?'var(--green)':'var(--red)';
+    }
+  });
+}, 2800);
+</script>
+</body>
+</html>
