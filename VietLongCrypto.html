@@ -2071,6 +2071,21 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   content:'🔍';position:absolute;left:10px;top:50%;
   transform:translateY(-50%);font-size:11px;pointer-events:none;
 }
+
+/* ── VN Stock Logos ───────────────────────────── */
+.vn-logo{object-fit:contain;flex-shrink:0;background:transparent;}
+.vn-logo-wrap{
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;overflow:hidden;border-radius:8px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+}
+.vn-logo-wrap img{width:100%;height:100%;object-fit:contain;padding:2px;}
+.vn-logo-fb{
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;letter-spacing:-.5px;
+  border-radius:8px;flex-shrink:0;
+}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2126,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.0.0</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.0.2</span></span></div>
 
 
     
@@ -7894,13 +7909,7 @@ function renderVNIndexCard(){
       onmouseout="this.style.background='transparent'"
       onclick="vnSelectStock('${t}')">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:26px;height:26px;border-radius:6px;
-          background:linear-gradient(135deg,${_vnColor(t)}22,${_vnColor(t)}55);
-          border:1px solid ${_vnColor(t)}44;
-          display:flex;align-items:center;justify-content:center;
-          font-size:10px;font-weight:800;color:${_vnColor(t)};flex-shrink:0">
-          ${t.slice(0,2)}
-        </div>
+        ${vnLogoHTML(t, 26)}
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--text)">${t}</div>
           <div style="font-size:10px;color:var(--muted)">${(VN_NAMES[t]||'').slice(0,16)}</div>
@@ -7992,11 +8001,7 @@ function _renderVNTable(rows){
       <td class="l"><span class="rank">${i+1}</span></td>
       <td class="l">
         <div class="coin-cell">
-          <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,${_vnColor(r.ticker)}22,${_vnColor(r.ticker)}44);
-               border:1px solid ${_vnColor(r.ticker)}44;display:flex;align-items:center;justify-content:center;
-               font-size:11px;font-weight:800;color:${_vnColor(r.ticker)};flex-shrink:0">
-            ${r.ticker.slice(0,2)}
-          </div>
+          ${vnLogoHTML(r.ticker, 30)}
           <div>
             <div class="cn">${r.ticker}</div>
             <div class="cs">${(r.name||'').slice(0,22)}</div>
@@ -8012,6 +8017,87 @@ function _renderVNTable(rows){
       <td class="r"><span class="sig ${sigCls}">${sig}</span></td>
     </tr>`;
   }).join('');
+}
+
+
+// ── VN Stock Logo System ──────────────────────────
+const _vnLogoCache = new Map();  // ticker → working URL | 'fb'
+
+function _vnLogoSrcs(ticker){
+  return [
+    `https://finfo-api.ssi.com.vn/v4/company/logo/${ticker}`,
+    `https://static1.vndirect.com.vn/images/stocks/${ticker}.jpg`,
+    `https://image.cafef.vn/Images/Uploaded/DuLieuCafeF/Logo/${ticker}.png`,
+  ];
+}
+
+// Tạo HTML logo box: img với fallback chain → gradient box cuối cùng
+function vnLogoHTML(ticker, size=32){
+  const r = size/4|0;
+  const col = _vnColor(ticker);
+  const fb = `<div class="vn-logo-fb" style="width:${size}px;height:${size}px;border-radius:${r}px;
+    background:linear-gradient(135deg,${col}33,${col}66);
+    border:1px solid ${col}55;color:${col};font-size:${size<=24?9:11}px"
+    >${ticker.slice(0,2)}</div>`;
+
+  if(_vnLogoCache.get(ticker)==='fb') return fb;
+
+  const cachedSrc = _vnLogoCache.get(ticker);
+  const firstSrc  = cachedSrc || _vnLogoSrcs(ticker)[0];
+  const fallbacks = _vnLogoSrcs(ticker).slice(cachedSrc?0:1).join('|');
+
+  return `<div class="vn-logo-wrap" style="width:${size}px;height:${size}px;border-radius:${r}px;flex-shrink:0"
+    data-vn-logo="${ticker}">
+    <img src="${firstSrc}"
+      data-srcs="${fallbacks}"
+      data-ticker="${ticker}"
+      data-size="${size}"
+      onerror="vnLogoErr(this)"
+      onload="vnLogoOk(this)"
+      style="width:100%;height:100%;object-fit:contain;border-radius:${r}px;"
+      loading="lazy">
+  </div>`;
+}
+
+// Gọi khi img load thành công
+function vnLogoOk(img){
+  const t = img.dataset.ticker;
+  if(t && !_vnLogoCache.has(t)) _vnLogoCache.set(t, img.src);
+}
+
+// Gọi khi img lỗi → thử src tiếp theo
+function vnLogoErr(img){
+  const srcs = (img.dataset.srcs||'').split('|').filter(Boolean);
+  if(srcs.length){
+    img.dataset.srcs = srcs.slice(1).join('|');
+    img.src = srcs[0];
+    return;
+  }
+  // Hết fallback → render gradient box
+  const t    = img.dataset.ticker || '';
+  const size = parseInt(img.dataset.size)||32;
+  const col  = _vnColor(t);
+  const r    = size/4|0;
+  _vnLogoCache.set(t, 'fb');
+  const wrap = img.closest('[data-vn-logo]') || img.parentElement;
+  if(wrap){
+    wrap.style.cssText = `width:${size}px;height:${size}px;border-radius:${r}px;
+      background:linear-gradient(135deg,${col}33,${col}66);
+      border:1px solid ${col}55;color:${col};font-weight:800;
+      font-size:${size<=24?9:11}px;display:flex;align-items:center;
+      justify-content:center;flex-shrink:0;`;
+    wrap.innerHTML = t.slice(0,2);
+  }
+}
+
+// Update logo trong chart header khi chọn stock
+function _updateVNChartLogo(ticker){
+  const box = document.getElementById('vnChartLogoBox');
+  if(!box) return;
+  const col = _vnColor(ticker);
+  box.innerHTML = '';
+  box.style.cssText = 'width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:transparent;border:none;';
+  box.innerHTML = vnLogoHTML(ticker, 38);
 }
 
 function _vnColor(ticker){
@@ -8068,7 +8154,11 @@ function renderVNQuickPicks(){
   if(!el) return;
   const picks = (VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
   el.innerHTML = picks.map(t=>`
-    <button class="vn-qp-btn" onclick="vnSelectStock('${t}')">${t}</button>
+    <button class="vn-qp-btn" onclick="vnSelectStock('${t}')"
+      style="display:inline-flex;align-items:center;gap:4px;">
+      ${vnLogoHTML(t,16)}
+      <span>${t}</span>
+    </button>
   `).join('');
 }
 
@@ -8146,8 +8236,11 @@ function vnSearchStock(q){
     (VN_NAMES[t]||'').toUpperCase().includes(ql)).slice(0,8);
   if(!matches.length){ res.innerHTML=''; return; }
   res.innerHTML = matches.map(t=>`
-    <div class="vn-sr-item" onclick="vnSelectStock('${t}');document.getElementById('vnStockSearch').value='';document.getElementById('vnSearchResults').innerHTML=''">
-      <strong>${t}</strong> <span style="opacity:.6;font-size:11px">${VN_NAMES[t]||''}</span>
+    <div class="vn-sr-item" onclick="vnSelectStock('${t}');document.getElementById('vnStockSearch').value='';document.getElementById('vnSearchResults').innerHTML=''"
+      style="display:flex;align-items:center;gap:8px;padding:7px 10px;">
+      ${vnLogoHTML(t, 24)}
+      <div><div style="font-size:12px;font-weight:700">${t}</div>
+      <div style="font-size:10px;opacity:.6">${VN_NAMES[t]||''}</div></div>
     </div>`).join('');
 }
 
@@ -8235,10 +8328,9 @@ function _renderVNStockListPanel(){
     (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
   ).slice(0,50);
   wrap.innerHTML = tickers.map(t=>{
-    const col = _vnColor(t);
     const active = _vnCurrentTicker===t ? 'active' : '';
     return `<div class="coin-list-item ${active}" onclick="vnSelectStock('${t}')">
-      <div class="cli-logo" style="background:${col}22;border:1px solid ${col}44;color:${col}">${t.slice(0,2)}</div>
+      ${vnLogoHTML(t, 28)}
       <div style="flex:1;min-width:0">
         <div class="cli-name">${t}</div>
         <div class="cli-sub">${(VN_NAMES[t]||'').slice(0,20)}</div>
@@ -9021,6 +9113,7 @@ window.renderVNHeatmap = renderVNHeatmap;
 window.loadVNHeatmap = loadVNHeatmap;
 window.renderHeatmap = renderHeatmap;
 window.renderVNMovers = renderVNMovers;async function vnSelectStock(ticker){
+  _updateVNChartLogo(ticker);
   // Update header logo box
   const logoBox = document.getElementById('vnChartLogoBox');
   if(logoBox){ logoBox.textContent=ticker.slice(0,2); logoBox.style.background=_vnColor(ticker)+'22'; logoBox.style.color=_vnColor(ticker); logoBox.style.borderColor=_vnColor(ticker)+'44'; }
