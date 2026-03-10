@@ -1833,7 +1833,7 @@ footer .hl{color:var(--accent);}
 .vn-dn{color:#ef4444;}
 
 /* ── VN Chart layout ── */
-.vn-chart-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start;}
+.vn-chart-layout{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start;}
 @media(max-width:900px){.vn-chart-layout{grid-template-columns:1fr;}}
 .vn-chart-sidebar{display:flex;flex-direction:column;gap:12px;}
 .vn-chart-tf-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -3404,7 +3404,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <button class="tf-btn" onclick="loadVNChart('1Y',this)">1N</button>
         </div>
       </div>
-      <div id="vnChartContainer" style="width:100%;min-height:520px;height:calc(100vh - 280px);max-height:800px;background:var(--surface);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;overflow:hidden">
+      <div id="vnChartContainer" style="width:100%;min-height:560px;height:calc(100vh - 240px);max-height:900px;background:var(--surface);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;overflow:hidden">
         Chọn mã cổ phiếu để xem biểu đồ
       </div>
     </div>
@@ -7521,7 +7521,10 @@ let _vnCurrentTicker = null;
 let _vnCurrentMoverTab = 'top-gain';
 let _vnNewsSource = 'all';
 let _vnWatchlist = JSON.parse(localStorage.getItem('vlc_vn_watchlist') || '["VNM","VIC","VHM","HPG","TCB","BID","VCB","FPT","MWG","VRE"]');
-let _vnStockData = {}; // cache dữ liệu cổ phiếu
+let _vnStockData  = {}; // cache dữ liệu cổ phiếu
+let _vnChart      = null; // LightweightCharts instance
+let _vnSeries     = null; // candlestick series
+let _vnTVWidget   = null; // TradingView widget instance
 
 // ── VN top 60 cổ phiếu phổ biến ──────────────────────────
 const VN_POPULAR = [
@@ -8071,17 +8074,30 @@ async function loadVNChart(tf, el){
   const interval = tfMap[tf]||'D';
   const sym      = tvSym(ticker);
 
-  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;
-    height:100%;gap:8px"><div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span></div>`;
+  // Destroy widget/chart cũ trước
+  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
+  _vnTVWidget = null;
+  if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
+  container.innerHTML = '';
 
-  _buildTVWidget(container, sym, interval, ticker);
+  const spin = document.createElement('div');
+  spin.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;gap:8px';
+  spin.innerHTML = `<div class="chart-spinner"></div><span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>`;
+  container.appendChild(spin);
+
+  // Đợi 1 frame để spinner render trước khi build widget
+  requestAnimationFrame(()=> _buildTVWidget(container, sym, interval, ticker));
 }
 
 
 function _buildTVWidget(container, sym, interval, ticker){
+  // Destroy widget cũ
+  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
+  _vnTVWidget = null;
+  if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   container.innerHTML = '';
-  const id = 'tv_adv_' + ticker + '_' + Date.now();
+
+  const id  = 'tv_adv_' + Date.now();
   const div = document.createElement('div');
   div.id = id;
   div.style.cssText = 'width:100%;height:100%;';
@@ -8089,48 +8105,55 @@ function _buildTVWidget(container, sym, interval, ticker){
 
   function initWidget(){
     try{
-      new TradingView.widget({
-        autosize: true,
-        symbol: sym,
-        height: '100%',
-        interval: interval,
-        timezone: 'Asia/Ho_Chi_Minh',
-        theme: 'dark',
-        style: '1',
-        locale: 'vi_VN',
-        toolbar_bg: '#131722',
+      _vnTVWidget = new TradingView.widget({
+        autosize:         true,
+        symbol:           sym,
+        interval:         interval,
+        timezone:         'Asia/Ho_Chi_Minh',
+        theme:            'dark',
+        style:            '1',
+        locale:           'vi_VN',
+        toolbar_bg:       '#131722',
         enable_publishing: false,
-        hide_top_toolbar: false,
-        hide_legend: false,
-        save_image: false,
-        container_id: id,
-        studies: ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
-        overrides: {
-          'paneProperties.background': '#131722',
+        hide_top_toolbar:  false,
+        hide_legend:       false,
+        save_image:        false,
+        container_id:      id,
+        studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
+        overrides:{
+          'paneProperties.background':     '#131722',
           'paneProperties.backgroundType': 'solid',
         },
-        disabled_features: [
+        disabled_features:[
           'header_symbol_search','header_compare',
           'header_screenshot','go_to_date',
         ],
       });
     }catch(e){
-      // TradingView.widget chưa load → fallback Stooq
       _buildStooqChart(container, ticker, interval);
     }
   }
 
-  // Load tv.js nếu chưa có
   if(typeof TradingView !== 'undefined'){
     initWidget();
   } else {
-    const s = document.createElement('script');
-    s.src = 'https://s3.tradingview.com/tv.js';
-    s.onload = initWidget;
-    s.onerror = ()=> _buildStooqChart(container, ticker, interval);
-    document.head.appendChild(s);
+    // Load tv.js chỉ 1 lần
+    if(!document.querySelector('script[src*="tv.js"]')){
+      const s = document.createElement('script');
+      s.src = 'https://s3.tradingview.com/tv.js';
+      s.onload  = initWidget;
+      s.onerror = ()=> _buildStooqChart(container, ticker, interval);
+      document.head.appendChild(s);
+    } else {
+      // Script đang load
+      const check = setInterval(()=>{
+        if(typeof TradingView !== 'undefined'){ clearInterval(check); initWidget(); }
+      }, 200);
+      setTimeout(()=>{ clearInterval(check); _buildStooqChart(container,ticker,interval); }, 8000);
+    }
   }
 }
+
 
 // Fallback: Stooq CSV qua proxy → LightweightCharts
 async function _buildStooqChart(container, ticker, interval){
