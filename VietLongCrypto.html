@@ -2068,7 +2068,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.1</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.2</span></span></div>
 
 
     
@@ -8050,49 +8050,60 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Destroy old
-  try{ if(_vnTVWidget&&_vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
+  // Destroy cũ
+  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   while(container.firstChild) container.removeChild(container.firstChild);
 
-  // Map interval cho TV iframe
-  // TV interval: D=ngày, W=tuần, M=tháng (không phải range)
+  console.log('[VLC] Building TV embed-widget:', sym, interval);
+
+  // Map interval cho TV widget
+  // TV intervals: 1,3,5,15,30,60,120,180,240,D,W,M
   const ivMap = {'D':'D','W':'W','M':'M','3M':'W','12M':'W'};
-  const iv = ivMap[interval]||'D';
+  const iv = ivMap[interval] || 'D';
 
-  // Dùng TradingView iframe embed - CHÍNH XÁC symbol VN
-  // sym = 'HOSE:FPT', 'HNX:VCB', 'HOSE:VNINDEX' etc.
-  const params = new URLSearchParams({
-    symbol:      sym,
-    interval:    iv,
-    timezone:    'Asia/Ho_Chi_Minh',
-    theme:       'dark',
-    style:       '1',
-    locale:      'vi_VN',
-    toolbar_bg:  '#131722',
-    hide_side_toolbar: '0',
-    allow_symbol_change: '0',
-    save_image:  '0',
-    studies:     'RSI@tv-basicstudies',
-    withdateranges:    '1',
-    hide_top_toolbar:  '0',
-    show_popup_button: '0',
-    popup_width: '1000',
-    popup_height: '650',
-  });
+  // TradingView Advanced Chart - external-embedding (cách chính thức)
+  // Script đọc config JSON từ nội dung của nó → ĐÚNG symbol
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.cssText = 'width:100%;height:100%;';
 
-  console.log('[VLC] Building TV iframe:', sym, iv);
-  const iframe = document.createElement('iframe');
-  iframe.src = 'https://s.tradingview.com/widgetembed/?' + params.toString();
-  iframe.style.cssText = 'width:100%;height:100%;border:none;min-height:560px;';
-  iframe.setAttribute('allowtransparency','true');
-  iframe.setAttribute('frameborder','0');
-  iframe.setAttribute('scrolling','no');
-  iframe.setAttribute('allowfullscreen','true');
-  container.appendChild(iframe);
-  _vnTVWidget = iframe; // lưu reference để destroy sau
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'width:100%;height:calc(100% - 32px);';
+  wrapper.appendChild(inner);
+
+  const cfg = {
+    autosize:          true,
+    symbol:            sym,
+    interval:          iv,
+    timezone:          'Asia/Ho_Chi_Minh',
+    theme:             'dark',
+    style:             '1',
+    locale:            'vi_VN',
+    toolbar_bg:        '#131722',
+    enable_publishing: false,
+    withdateranges:    true,
+    hide_side_toolbar: false,
+    allow_symbol_change: false,
+    save_image:        false,
+    studies: ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
+    show_popup_button: false,
+    container_id:      inner.id || undefined,
+  };
+
+  const scr = document.createElement('script');
+  scr.type = 'text/javascript';
+  scr.src  = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  scr.async = true;
+  scr.innerHTML = JSON.stringify(cfg);
+  wrapper.appendChild(scr);
+
+  container.appendChild(wrapper);
+  _vnTVWidget = wrapper;
 }
+
 
 
 
