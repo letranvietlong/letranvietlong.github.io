@@ -1088,7 +1088,7 @@ footer .hl{color:var(--accent);}
 /* Sub Navigation */
 .sub-nav{
   display:grid;
-  grid-template-columns:repeat(10,1fr);
+  grid-template-columns:repeat(7,1fr);
   align-items:center;
   background:linear-gradient(180deg,rgba(8,14,24,0) 0%,rgba(6,10,18,.98) 100%);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -2112,18 +2112,6 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     <span class="tab-label">Biểu Đồ</span>
   </button>
 
-  <button class="sub-tab" id="stab-screener" role="tab" onclick="showPage('screener',this)">
-    <span class="tab-icon ti-screener">
-      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="3" width="16" height="2.5" rx="1.2" fill="#a78bfa"/>
-        <rect x="4.5" y="7.5" width="11" height="2.5" rx="1.2" fill="#818cf8"/>
-        <rect x="7" y="12" width="6" height="2.5" rx="1.2" fill="#6366f1"/>
-        <circle cx="14" cy="14.5" r="3.5" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
-        <line x1="16.5" y1="17" x2="18.5" y2="19" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </span>
-    <span class="tab-label">Bộ Lọc</span>
-  </button>
 
   <button class="sub-tab" id="stab-alert" role="tab" onclick="showPage('alert',this)">
     <span class="tab-icon ti-alert">
@@ -2180,33 +2168,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     <span class="tab-label">Heatmap</span>
   </button>
 
-  <button class="sub-tab" id="stab-portfolio" role="tab" onclick="showPage('portfolio',this)">
-    <span class="tab-icon ti-portfolio">
-      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="10" cy="10" r="8" fill="none" stroke="#38bdf8" stroke-width="1"/>
-        <path d="M10 10 L10 2 A8 8 0 0 1 17.6 14z" fill="#f59e0b" opacity=".9"/>
-        <path d="M10 10 L17.6 14 A8 8 0 0 1 2.4 14z" fill="#22c55e" opacity=".8"/>
-        <path d="M10 10 L2.4 14 A8 8 0 0 1 10 2z" fill="#8b5cf6" opacity=".7"/>
-        <circle cx="10" cy="10" r="3" fill="#0a0e17"/>
-      </svg>
-    </span>
-    <span class="tab-label">Danh Mục</span>
-  </button>
 
-  <button class="sub-tab" id="stab-events" role="tab" onclick="showPage('events',this)">
-    <span class="tab-icon ti-events">
-      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="4" width="16" height="14" rx="2" fill="none" stroke="#a78bfa" stroke-width="1.2"/>
-        <rect x="2" y="4" width="16" height="5" rx="2" fill="#7c3aed" opacity=".6"/>
-        <line x1="6" y1="2" x2="6" y2="6" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="14" y1="2" x2="14" y2="6" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
-        <rect x="5" y="11" width="3" height="3" rx=".5" fill="#f59e0b"/>
-        <rect x="10" y="11" width="3" height="3" rx=".5" fill="#22c55e"/>
-        <rect x="14" y="11" width="3" height="3" rx=".5" fill="#38bdf8"/>
-      </svg>
-    </span>
-    <span class="tab-label">Sự Kiện</span>
-  </button>
 
   <button class="sub-tab sub-tab-donate" id="stab-donate" role="tab" onclick="showPage('donate',this)">
     <span class="tab-icon ti-donate">
@@ -2751,78 +2713,6 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </div>
 </div>
 
-<!-- ══════════════ PAGE: SCREENER ══════════════ -->
-<div class="page" id="page-screener">
-<div class="screener-layout">
-  <div class="screener-filters">
-    <div class="filter-group">
-      <div class="filter-label">% Thay Đổi 24h</div>
-      <select class="filter-select" id="fChg">
-        <option value="all">Tất cả</option>
-        <option value="gt5">Tăng &gt; 5%</option>
-        <option value="gt10">Tăng &gt; 10%</option>
-        <option value="lt-5">Giảm &gt; 5%</option>
-        <option value="lt-10">Giảm &gt; 10%</option>
-        <option value="1to5">Tăng nhẹ 1–5%</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Khối Lượng (USDT)</div>
-      <select class="filter-select" id="fVol">
-        <option value="all">Tất cả</option>
-        <option value="gt1b">&gt; $1 Tỷ</option>
-        <option value="gt100m">&gt; $100 Triệu</option>
-        <option value="gt10m">&gt; $10 Triệu</option>
-        <option value="lt1m">&lt; $1 Triệu</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">RSI (14) Tín Hiệu</div>
-      <select class="filter-select" id="fRsi">
-        <option value="all">Tất cả</option>
-        <option value="ob">Quá Mua (RSI &gt; 70)</option>
-        <option value="os">Quá Bán (RSI &lt; 30)</option>
-        <option value="neutral">Trung Lập (RSI 30–70)</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Tín Hiệu MACD</div>
-      <select class="filter-select" id="fMacd">
-        <option value="all">Tất cả</option>
-        <option value="bull">MACD: Giao Cắt Lên (Mua)</option>
-        <option value="bear">MACD: Giao Cắt Xuống (Bán)</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Khối Lượng Đột Biến</div>
-      <select class="filter-select" id="fWhale">
-        <option value="all">Tất cả</option>
-        <option value="whale">Phát Hiện Cá Voi</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Tên Coin</div>
-      <input class="filter-input" id="fName" placeholder="BTC, ETH...">
-    </div>
-    <div class="filter-group" style="justify-content:flex-end;">
-      <button class="btn-primary" onclick="runScreener()">🔬 Lọc</button>
-      <button class="btn-ghost" onclick="resetScreener()" style="margin-top:5px;">Đặt lại</button>
-    </div>
-  </div>
-
-  <div class="screener-results">
-    <div class="screener-toolbar">
-      <div class="screener-count">Tìm thấy <span id="scrCount">—</span> coin</div>
-      <div style="font-size:10px;color:var(--muted);">Chỉ số RSI/MACD tính từ dữ liệu nến 1h của Binance</div>
-    </div>
-    <div class="scr-tbl-wrap">
-      <div id="screenerTable"><div class="state-box"><div>Nhấn 🔬 Lọc để bắt đầu tìm kiếm</div></div></div>
-    </div>
-  </div>
-</div>
-</div>
-
-
 <!-- ══════════════ PAGE: ALERT ══════════════ -->
 <div class="page" id="page-alert">
 <div class="alert-layout">
@@ -3192,115 +3082,6 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   </div>
   <div class="heatmap-grid" id="heatmapGrid">
     <div class="hm-loading"><div class="spinner"></div><span>Đang tải dữ liệu...</span></div>
-  </div>
-</div>
-</div>
-
-<!-- ══════════════ PAGE: PORTFOLIO ══════════════ -->
-<div class="page" id="page-portfolio">
-<div class="portfolio-layout">
-  <!-- Summary bar -->
-  <div class="pf-summary-bar">
-    <div class="pf-sum-item">
-      <span class="pf-sum-lbl">Tổng đầu tư</span>
-      <span class="pf-sum-val" id="pfTotalInvest">$0</span>
-    </div>
-    <div class="pf-sum-item">
-      <span class="pf-sum-lbl">Giá trị hiện tại</span>
-      <span class="pf-sum-val" id="pfTotalValue">$0</span>
-    </div>
-    <div class="pf-sum-item">
-      <span class="pf-sum-lbl">Lãi/Lỗ</span>
-      <span class="pf-sum-val" id="pfTotalPnl">$0</span>
-    </div>
-    <div class="pf-sum-item">
-      <span class="pf-sum-lbl">% Lãi/Lỗ</span>
-      <span class="pf-sum-val" id="pfTotalPct">0%</span>
-    </div>
-    <div class="pf-sum-item">
-      <span class="pf-sum-lbl">24h Thay đổi</span>
-      <span class="pf-sum-val" id="pfDayChange">$0</span>
-    </div>
-  </div>
-
-  <div class="pf-body">
-    <!-- Left: Holdings table + Add form -->
-    <div class="pf-left">
-      <div class="pf-card">
-        <div class="pf-card-header">
-          <span class="pf-card-title">📋 Danh Mục Nắm Giữ</span>
-          <button class="pf-add-btn" onclick="pfToggleForm()">+ Thêm coin</button>
-        </div>
-
-        <!-- Add form -->
-        <div class="pf-form" id="pfForm" style="display:none">
-          <div class="pf-form-row">
-            <input class="pf-input" id="pfSymInput" placeholder="Coin (BTC, ETH...)" list="pfSymList">
-            <datalist id="pfSymList"></datalist>
-            <input class="pf-input" id="pfQtyInput" type="number" placeholder="Số lượng" min="0" step="any">
-            <input class="pf-input" id="pfPriceInput" type="number" placeholder="Giá mua ($)" min="0" step="any">
-            <button class="pf-btn-save" onclick="pfAddHolding()">Thêm</button>
-            <button class="pf-btn-cancel" onclick="pfToggleForm()">✕</button>
-          </div>
-        </div>
-
-        <!-- Holdings list -->
-        <div class="pf-table-wrap">
-          <table class="pf-table">
-            <thead>
-              <tr>
-                <th>Coin</th>
-                <th>Số lượng</th>
-                <th>Giá mua</th>
-                <th>Giá hiện tại</th>
-                <th>Giá trị</th>
-                <th>Lãi/Lỗ</th>
-                <th>%</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="pfTableBody">
-              <tr><td colspan="8" class="pf-empty">Chưa có coin nào. Nhấn "+ Thêm coin" để bắt đầu.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: Charts -->
-    <div class="pf-right">
-      <!-- Allocation pie -->
-      <div class="pf-card">
-        <div class="pf-card-title">🥧 Phân Bổ Tài Sản</div>
-        <canvas id="pfPieCanvas" width="240" height="200" style="display:block;margin:0 auto"></canvas>
-        <div class="pf-pie-legend" id="pfPieLegend"></div>
-      </div>
-      <!-- Performance -->
-      <div class="pf-card" style="margin-top:12px">
-        <div class="pf-card-title">📊 Hiệu Suất từng coin</div>
-        <div class="pf-perf-bars" id="pfPerfBars"></div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- ══════════════ PAGE: EVENTS ══════════════ -->
-<div class="page" id="page-events">
-<div class="events-layout">
-  <div class="events-header">
-    <h2 class="page-title">📅 Lịch Sự Kiện Crypto</h2>
-    <div class="ev-filter-row">
-      <button class="ev-filter active" data-cat="all"    onclick="filterEvents('all',this)">Tất cả</button>
-      <button class="ev-filter" data-cat="halving"       onclick="filterEvents('halving',this)">Halving</button>
-      <button class="ev-filter" data-cat="listing"       onclick="filterEvents('listing',this)">Niêm yết</button>
-      <button class="ev-filter" data-cat="unlock"        onclick="filterEvents('unlock',this)">Mở Khoá Token</button>
-      <button class="ev-filter" data-cat="mainnet"       onclick="filterEvents('mainnet',this)">Mainnet</button>
-      <button class="ev-filter" data-cat="partnership"   onclick="filterEvents('partnership',this)">Hợp Tác</button>
-    </div>
-  </div>
-  <div class="events-grid" id="eventsGrid">
-    <div class="hm-loading"><div class="spinner"></div><span>Đang tải sự kiện...</span></div>
   </div>
 </div>
 </div>
@@ -7842,16 +7623,33 @@ function updateVNSession(){
 const SSI_API = 'https://iboard.ssi.com.vn/dchart/api';
 const SSI_MARKET = 'https://iboard-query.ssi.com.vn/v2/stock/new-search';
 
+
+// ── VN API proxy helper — thử nhiều proxy cho GitHub Pages ──
+async function vnFetch(url, timeout=10000){
+  const enc = encodeURIComponent(url);
+  const proxies = [
+    // thingproxy — ổn định nhất với API JSON
+    `https://thingproxy.freeboard.io/fetch/${url}`,
+    // allorigins raw
+    `https://api.allorigins.win/raw?url=${enc}`,
+    // corsproxy.io
+    `https://corsproxy.io/?${enc}`,
+  ];
+  for(const proxy of proxies){
+    try{
+      const r = await fetch(proxy, {signal:AbortSignal.timeout(timeout)});
+      if(r.ok){
+        const text = await r.text();
+        if(text && text.length > 2) return JSON.parse(text);
+      }
+    }catch(e){ continue; }
+  }
+  throw new Error('All proxies failed for: '+url);
+}
 async function fetchVNStocks(tickers){
   // Dùng SSI iBoard public API
   try{
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(
-      `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getVNDStockList&exchange=ALL`
-    )}`;
-    const resp = await fetch(proxy, {signal:AbortSignal.timeout(12000)});
-    if(!resp.ok) throw new Error('SSI '+resp.status);
-    const json = await resp.json();
-    const raw = JSON.parse(json.contents||'{}');
+    const raw = await vnFetch('https://iboard.ssi.com.vn/dchart/api/1/controller?action=getVNDStockList&exchange=ALL', 14000);
     const stocks = raw.data || [];
     const result = {};
     stocks.forEach(s=>{
@@ -7887,12 +7685,8 @@ async function fetchVNStocks(tickers){
 async function fetchVNSingle(ticker){
   try{
     const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/snapshot?ticker=${ticker}`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const resp = await fetch(proxy, {signal:AbortSignal.timeout(8000)});
-    if(!resp.ok) throw new Error('TCBS '+resp.status);
-    const json = await resp.json();
-    const d = JSON.parse(json.contents||'{}');
-    if(!d.ticker) throw new Error('No data');
+    const d = await vnFetch(url, 10000);
+    if(!d || !d.ticker) throw new Error('No data');
     const ref = d.refPrice||0;
     const price = d.lastPrice||0;
     return {
@@ -7959,11 +7753,8 @@ async function loadVNIndicesStrip(){
   for(const idx of INDICES){
     try{
       const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/index/snapshot?indexId=${idx.apiCode}`;
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const resp = await fetch(proxy, {signal:AbortSignal.timeout(8000)});
-      if(!resp.ok) continue;
-      const json = await resp.json();
-      const d = JSON.parse(json.contents||'{}');
+      const d = await vnFetch(url, 10000);
+      if(!d) continue;
       const val = d.indexValue || d.value || 0;
       const chg = d.indexChange || d.change || 0;
       const pct = d.percentChange || d.changePercent || 0;
@@ -8002,12 +7793,8 @@ async function loadVNMovers(tab){
 
   try{
     const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/top-ranking?type=${apiTab}&limit=20`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const resp = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
-    if(!resp.ok) throw new Error('TCBS movers '+resp.status);
-    const json = await resp.json();
-    const d = JSON.parse(json.contents||'{}');
-    const stocks = d.data || d.listStock || [];
+    const d = await vnFetch(url, 12000);
+    const stocks = d?.data || d?.listStock || [];
     if(!stocks.length) throw new Error('No movers data');
 
     renderVNMovers(stocks);
@@ -8116,12 +7903,8 @@ async function loadVNChart(tf, el){
 
   try{
     const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${_vnCurrentTicker}&type=stock&resolution=${resolution}&from=${from}&to=${now}`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const resp = await fetch(proxy, {signal:AbortSignal.timeout(12000)});
-    if(!resp.ok) throw new Error('TCBS chart '+resp.status);
-    const json = await resp.json();
-    const d = JSON.parse(json.contents||'{}');
-    const bars = d.data || [];
+    const d = await vnFetch(url, 14000);
+    const bars = d?.data || [];
     if(!bars.length) throw new Error('No chart data');
 
     // Render với LightweightCharts
@@ -8242,11 +8025,8 @@ async function loadVNIndices(){
   const cards = await Promise.all(INDICES.map(async idx=>{
     try{
       const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/index/snapshot?indexId=${idx.id}`;
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const resp = await fetch(proxy, {signal:AbortSignal.timeout(8000)});
-      if(!resp.ok) return null;
-      const json = await resp.json();
-      const d = JSON.parse(json.contents||'{}');
+      const d = await vnFetch(url, 10000);
+      if(!d) return null;
       const val = d.indexValue||0, chg=d.indexChange||0, pct=d.percentChange||0;
       const adv=d.advances||0, dec=d.declines||0, unc=d.noChanges||0;
       const sign=chg>=0?'+':'';
