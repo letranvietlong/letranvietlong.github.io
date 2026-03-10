@@ -3540,40 +3540,10 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 <script>
 
 // ── CORS Proxy wrapper cho CoinGecko (cần khi host trên GitHub Pages) ──
-const _CG_BASE = 'https://api.coingecko.com/api/v3';
-async function cgFetch(path, opts={}){
-  const fullUrl = _CG_BASE + path;
-  const enc = encodeURIComponent(fullUrl);
-  // Proxy chain — thử lần lượt
-  const proxies = [
-    // allorigins /get — JSON wrapper
-    async()=>{
-      const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
-        {signal:AbortSignal.timeout(12000)});
-      if(!r.ok) throw new Error('allorigins '+r.status);
-      const j = await r.json();
-      if(!j.contents || j.contents.length < 2) throw new Error('empty');
-      return {ok:true,status:200,
-        json:async()=>JSON.parse(j.contents),
-        text:async()=>j.contents};
-    },
-    // corsproxy.io — fallback
-    async()=>{
-      const r = await fetch(`https://corsproxy.io/?${enc}`,
-        {signal:AbortSignal.timeout(12000)});
-      if(!r.ok) throw new Error('corsproxy '+r.status);
-      const t = await r.text();
-      if(t.length < 2) throw new Error('empty');
-      return {ok:true,status:200,
-        json:async()=>JSON.parse(t),
-        text:async()=>t};
-    },
-  ];
-  for(const proxy of proxies){
-    try{ return await proxy(); }catch(e){}
-  }
-  return null;
-}
+// CoinGecko removed — CORS not supported from GitHub Pages
+// cgFetch đã bị vô hiệu — CoinGecko không hỗ trợ CORS từ GitHub Pages
+// Tất cả data đã được thay bằng Binance API (CORS native)
+async function cgFetch(){ return null; }
 
 /* ═══════════════════════════════════════════════════
    ĐỒNG HỒ UTC+7
@@ -3794,92 +3764,24 @@ setInterval(loadDailyVN, 10*60*1000);
    COINGECKO LOGOS (2 trang, delay 3s, bắt 429)
 ═══════════════════════════════════════════════════ */
 async function loadCoinGeckoLogos(){
-  let loaded=0;
-
-  /* ── Nguồn 1: CoinGecko (chỉ page 1, tránh 429) ── */
+  // Dùng GitHub CDN cryptocurrency-icons (không cần proxy)
+  // Map từ Binance exchangeInfo để biết tất cả symbols
   try{
-    await new Promise(r=>setTimeout(r,1500));
-    const res=await cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
-      {signal:AbortSignal.timeout(15000)}
-    );
-    if(res?.ok && (res.status||200)!==429){
-      const data=await res.json();
-      if(Array.isArray(data)){
-        data.forEach(c=>{
-          const sym=c.symbol.toUpperCase();
-          if(!logoMap[sym]&&c.image&&!c.image.includes('missing_large')){
-            logoMap[sym]=c.image; nameMap[sym]=c.name; loaded++;
-          }
-        });
-        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-      }
-    }
-  }catch(e){
-    console.warn('CoinGecko logo error',e.message);
-    // Fallback: generate placeholder icons cho các coins thiếu
-    SYMBOLS.forEach(sym=>{
-      const base=sym.replace('USDT','');
-      if(!coinLogos[base]){
-        coinLogos[base]=`https://cdn.jsdelivr.net/gh/ErikThiart/cryptocurrency-icons@master/32/${base.toLowerCase()}.png`;
+    const res = await fetch('https://api.binance.com/api/v3/exchangeInfo',
+      {signal:AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error('Binance exchangeInfo '+res.status);
+    const json = await res.json();
+    (json.symbols||[]).forEach(s=>{
+      if(s.quoteAsset!=='USDT') return;
+      const base = (s.baseAsset||'').toUpperCase();
+      if(!logoMap[base]){
+        // GitHub CDN — không cần proxy, CORS OK
+        logoMap[base] = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${base.toLowerCase()}.png`;
+        nameMap[base] = nameMap[base] || base;
       }
     });
-  }
-
-  /* ── Nguồn 2: CoinCap API (free, no key) ── */
-  if(loaded<50){
-    try{
-      const res=await fetch('https://api.binance.com/api/v3/exchangeInfo',
-        {signal:AbortSignal.timeout(10000)});
-      if(res.ok){
-        const json=await res.json();
-        (json.symbols||[]).forEach(s=>{
-          if(s.quoteAsset!=='USDT') return;
-          const base=(s.baseAsset||'').toUpperCase();
-          // Fill logo từ crypto-icons CDN nếu chưa có
-          if(!logoMap[base])
-            logoMap[base]=`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${base.toLowerCase()}.png`;
-          loaded++;
-        });
-        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-      }
-    }catch(e){console.warn('CoinCap logo error',e.message);}
-  }
-
-  /* ── Nguồn 3: CryptoCompare (CDN ảnh trực tiếp) ── */
-  if(loaded<100){
-    try{
-      const res=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://min-api.cryptocompare.com/data/all/coinlist?limit=200&summary=true')}`,
-        {signal:AbortSignal.timeout(12000)});
-      if(res.ok){
-        const wrapper=await res.json();
-        const json = wrapper.contents ? JSON.parse(wrapper.contents) : wrapper;
-        const base='https://www.cryptocompare.com';
-        if(!json?.Data) throw new Error('No CC data');
-        Object.values(json.Data).forEach(c=>{
-          const sym=(c.Symbol||'').toUpperCase();
-          if(!logoMap[sym]&&c.ImageUrl){
-            logoMap[sym]=base+c.ImageUrl;
-            if(!nameMap[sym]) nameMap[sym]=c.CoinName||sym;
-            loaded++;
-          }
-        });
-        _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-      }
-    }catch(e){console.warn('CryptoCompare logo error',e.message);}
-  }
-
-  /* ── Nguồn 4: URL trực tiếp từ Binance icon CDN ── */
-  // Binance lưu icon tại: https://bin.bnbstatic.com/image/admin_mgs_image_upload/...
-  // Dùng CDN đã biết cho các coin phổ biến chưa có logo
-  const binanceCDN='https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/';
-  SYMBOLS.slice(0,50).forEach(sym=>{
-    const base=sym.replace('USDT','').toLowerCase();
-    if(!logoMap[base.toUpperCase()]){
-      logoMap[base.toUpperCase()]=`${binanceCDN}${base}.png`;
-    }
-  });
-  _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
-  // logo loaded
+    _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
+  }catch(e){ console.warn('Logo load error',e.message); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -4512,9 +4414,24 @@ async function loadFearGreed(){
 /* ── Global Market Stats (CoinGecko /global) ── */
 async function loadGlobalMarket(){
   try{
-    const r=await cgFetch('/global',{signal:AbortSignal.timeout(8000)});
-    if(!r?.ok) throw new Error('GM '+(r?.status||'null'));
-    const d=(await r.json()).data;
+    // CoinCap /global — CORS native, không cần proxy
+    const r=await fetch('https://api.coincap.io/v2/assets?limit=5',
+      {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('CoinCap '+r.status);
+    const capData=await r.json();
+    // Build global-like object từ CoinCap data
+    const topAssets=capData.data||[];
+    const totalMcap=topAssets.reduce((s,a)=>s+(parseFloat(a.marketCapUsd)||0),0);
+    const btcMcap=parseFloat((topAssets.find(a=>a.id==='bitcoin')||{}).marketCapUsd||0);
+    const ethMcap=parseFloat((topAssets.find(a=>a.id==='ethereum')||{}).marketCapUsd||0);
+    const d={
+      total_market_cap:{usd:totalMcap},
+      total_volume:{usd:topAssets.reduce((s,a)=>s+(parseFloat(a.volumeUsd24Hr)||0),0)},
+      market_cap_percentage:{btc:totalMcap?btcMcap/totalMcap*100:0, eth:totalMcap?ethMcap/totalMcap*100:0},
+      active_cryptocurrencies: 10000,
+      markets: 600,
+      market_cap_change_percentage_24h_usd: parseFloat(topAssets[0]?.changePercent24Hr||0),
+    };
 
     // Market cap
     const mc=d.total_market_cap?.usd||0;
@@ -5434,11 +5351,11 @@ async function fetchNews(manual=false){
         };
       }).sort((a,b)=>b.pub-a.pub);
     },
-    // Strategy 2: CoinGecko trending (không dùng /news endpoint)
     async()=>{
+      throw new Error('disabled');
       const [tr,mr]=await Promise.allSettled([
-        cgFetch('/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r?.ok?r.json():null).catch(()=>null),
-        cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r?.ok?r.json():null).catch(()=>null)
+        Promise.resolve(null),
+        Promise.resolve(null)
       ]);
       const items=[];
       const td=tr.status==='fulfilled'?tr.value:null;
@@ -5484,71 +5401,6 @@ async function fetchNews(manual=false){
       });
       if(items.length<3) throw new Error('CryptoCompare cat: '+items.length);
       return items.sort((a,b)=>b.pub-a.pub).slice(0,50);
-    },
-    // ── Strategy World: Tin tức thế giới ảnh hưởng crypto ──────────
-    // Dùng RSS2JSON proxy (không CORS) để lấy từ Reuters/BBC/FT
-    async()=>{
-      const RSS_PROXY = 'https://api.allorigins.win/get?url=';
-      const WORLD_FEEDS = [
-        // BBC Business — ổn định nhất, allorigins OK
-        {url:'https://feeds.bbci.co.uk/news/business/rss.xml', label:'BBC Business'},
-        // Investing.com RSS crypto
-        {url:'https://www.investing.com/rss/news_25.rss', label:'Investing.com'},
-        // CoinDesk
-        {url:'https://www.coindesk.com/arc/outboundfeeds/rss/', label:'CoinDesk'},
-        // CoinTelegraph
-        {url:'https://cointelegraph.com/rss', label:'CoinTelegraph'},
-      ];
-      // Từ khoá ảnh hưởng crypto
-      const CRYPTO_IMPACT_KW = [
-        'fed','federal reserve','interest rate','inflation','gdp','recession',
-        'dollar','usd','eur','gold','oil','nasdaq','s&p','stock','bond','treasury',
-        'sec','regulation','crypto','bitcoin','ethereum','blockchain','cbdc',
-        'sanction','war','china','trade','tariff','bank','monetary','fiscal',
-        'powell','yellen','ecb','boj','imf','world bank','geopolit','conflict',
-        'hack','breach','fraud','scam','arrest','lawsuit','court'
-      ];
-      const items=[];
-      // allorigins proxy để bypass CORS
-      for(const feed of WORLD_FEEDS){
-        try{
-          // allorigins/raw — trả thẳng XML, không CORS
-          const proxyUrl = `${RSS_PROXY}${encodeURIComponent(feed.url)}`;
-          const resp = await fetch(proxyUrl, {signal:AbortSignal.timeout(12000)});
-          if(!resp.ok) continue;
-          // allorigins /get trả JSON wrapper {contents: "<xml>..."}
-          const respJson = await resp.json();
-          const xmlText = respJson.contents || '';
-          if(!xmlText) continue;
-          const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-          const rssItems = [...doc.querySelectorAll('item')];
-          if(!rssItems.length) continue;
-          rssItems.forEach(item=>{
-            const title    = item.querySelector('title')?.textContent || '';
-            const link     = item.querySelector('link')?.textContent || item.querySelector('guid')?.textContent || '#';
-            const pubDate  = item.querySelector('pubDate')?.textContent || '';
-            const desc     = item.querySelector('description')?.textContent || '';
-            const titleLow = title.toLowerCase();
-            const relevant = CRYPTO_IMPACT_KW.some(kw => titleLow.includes(kw));
-            if(!relevant) return;
-            const sentiment =
-              /rate cut|stimulus|rally|surge|growth|record|approve|bullish|gain|rise/.test(titleLow) ? 'bullish' :
-              /hike|crash|ban|sanction|war|hack|fraud|arrest|fall|drop|fear|recession|bearish/.test(titleLow) ? 'bearish' : 'neutral';
-            if(!title) return;
-            items.push({
-              headline: title,
-              summary:  desc.replace(/<[^>]+>/g,'').substring(0,200),
-              source:   feed.label,
-              link,
-              pub:      pubDate ? new Date(pubDate).getTime() : Date.now(),
-              sentiment,
-              sourceType: 'world',
-            });
-          });
-        }catch(e){ console.warn('World news feed error:', feed.label, e.message); }
-      }
-      if(items.length < 2) throw new Error('World news: ' + items.length + ' items');
-      return items.sort((a,b)=>b.pub-a.pub).slice(0,40);
     },
 
     // ── Strategy Macro: CryptoCompare Macro categories ──────────────
