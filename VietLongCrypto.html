@@ -2036,6 +2036,41 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 .badge.up{background:rgba(0,230,118,.15);color:#00e676;}
 .badge.dn{background:rgba(255,61,87,.15);color:#ff3d57;}
 .badge.unch{background:rgba(255,255,255,.08);color:var(--muted);}
+
+/* ── VN Chart left panel ─────────────────────── */
+.coin-list-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  transition:background .12s;
+}
+.coin-list-item:hover{ background:rgba(255,255,255,.05); }
+.coin-list-item.active{
+  background:rgba(232,25,44,.08);
+  border-left:2px solid var(--vn-red,#e8192c);
+}
+.coin-list-item .cli-logo{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;
+}
+.coin-list-item .cli-name{ font-weight:700;font-size:12px;color:var(--text); }
+.coin-list-item .cli-sub{
+  font-size:10px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  max-width:110px;
+}
+.coin-list-search{ position:relative; }
+.coin-list-search input{
+  width:100%;box-sizing:border-box;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px 7px 28px;
+  color:var(--text);font-size:11px;outline:none;
+}
+.coin-list-search::before{
+  content:'🔍';position:absolute;left:10px;top:50%;
+  transform:translateY(-50%);font-size:11px;pointer-events:none;
+}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2091,7 +2126,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.5</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.6</span></span></div>
 
 
     
@@ -8199,17 +8234,17 @@ function _renderVNStockListPanel(){
   const tickers = (VN_GROUPS?.vn30||[]).concat(
     (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
   ).slice(0,50);
-  wrap.innerHTML = tickers.map(t=>`
-    <div class="coin-list-item ${_vnCurrentTicker===t?'active':''}" onclick="vnSelectStock('${t}')">
-      <div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;
-        background:${_vnColor(t)}22;border:1px solid ${_vnColor(t)}44;
-        display:flex;align-items:center;justify-content:center;
-        font-size:10px;font-weight:800;color:${_vnColor(t)}">${t.slice(0,2)}</div>
+  wrap.innerHTML = tickers.map(t=>{
+    const col = _vnColor(t);
+    const active = _vnCurrentTicker===t ? 'active' : '';
+    return `<div class="coin-list-item ${active}" onclick="vnSelectStock('${t}')">
+      <div class="cli-logo" style="background:${col}22;border:1px solid ${col}44;color:${col}">${t.slice(0,2)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:12px">${t}</div>
-        <div style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(VN_NAMES[t]||'').slice(0,18)}</div>
+        <div class="cli-name">${t}</div>
+        <div class="cli-sub">${(VN_NAMES[t]||'').slice(0,20)}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 
