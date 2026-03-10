@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.3</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.4</span></span></div>
 
 
     
@@ -7766,6 +7766,15 @@ const VN_POPULAR = [
   'PLX','PNJ','REE','HAG','DRC','GMD','PVD','BSR','OIL','GEX'
 ];
 
+const VN_GROUPS = {
+  vn30:    ['VNM','VIC','VHM','HPG','TCB','BID','VCB','FPT','MWG','VRE','MSN','GAS','SAB','CTG','ACB','MBB','VPB','PLX','PNJ','SSI','HDB','STB','TPB','BCM','NVL','PDR','GMD','REE','GEX','VND'],
+  bank:    ['VCB','BID','CTG','ACB','MBB','STB','TCB','VPB','HDB','TPB','SHB','EIB','MSB','OCB','LPB','NVB','ABB','BAB','KLB'],
+  estate:  ['VIC','VHM','VRE','NVL','PDR','DXG','KDH','BCM','NLG','HDG','SGR','CEO','DIG','CII','HTN','VPI','HQC','LDG'],
+  industry:['HPG','GAS','PLX','PVD','BSR','OIL','GEX','REE','GMD','DRC','VGC','BMP','PHR','TPC','DCM','DPM','CSV','HSG'],
+  all:     null,
+};
+
+
 // ── Tên công ty (50 cổ phiếu phổ biến) ──────────────────
 const VN_NAMES = {
   VNM:'Vinamilk',VIC:'Vingroup',VHM:'Vinhomes',HPG:'Hòa Phát',
@@ -8349,6 +8358,21 @@ function renderVNNews(){
 // Tự động refresh session badge mỗi phút
 setInterval(updateVNSession, 60000);
 
+
+function getVNSession(){
+  const now = new Date();
+  const h = now.getUTCHours() + 7;
+  const m = now.getUTCMinutes();
+  const t = (h % 24) * 60 + m;
+  const day = now.getUTCDay(); // 0=Sun,6=Sat
+  if(day === 0 || day === 6) return 'closed';
+  if(t >= 9*60 && t < 11*60+30) return 'ato_morning';
+  if(t >= 11*60+30 && t < 13*60) return 'lunch';
+  if(t >= 13*60 && t < 14*60+45) return 'ato_afternoon';
+  if(t >= 14*60+45 && t <= 15*60) return 'atc';
+  return 'closed';
+}
+
 function updateVNMarketStatusBadge(){
   const badge = document.getElementById('vnMarketStatus');
   if(!badge) return;
@@ -8388,13 +8412,7 @@ setInterval(updateVNMarketStatusBadge, 30000);
    ═══════════════════════════════════════════════ */
 
 // Nhóm cổ phiếu VN
-const VN_GROUPS = {
-  vn30:    ['VNM','VIC','VHM','HPG','TCB','BID','VCB','FPT','MWG','VRE','MSN','GAS','SAB','CTG','ACB','MBB','VPB','PLX','PNJ','SSI','HDB','STB','TPB','BCM','NVL','PDR','GMD','REE','GEX','VND'],
-  bank:    ['VCB','BID','CTG','ACB','MBB','STB','TCB','VPB','HDB','TPB','SHB','EIB','MSB','OCB','LPB','NVB','ABB','BAB','KLB'],
-  estate:  ['VIC','VHM','VRE','NVL','PDR','DXG','KDH','BCM','NLG','HDG','SGR','CEO','DIG','CII','HTN','VPI','HQC','LDG'],
-  industry:['HPG','GAS','PLX','PVD','BSR','OIL','GEX','REE','GMD','DRC','VGC','BMP','PHR','TPC','DCM','DPM','CSV','HSG'],
-  all:     null,
-};
+
 
 let _vnHeatmapData = {};
 
