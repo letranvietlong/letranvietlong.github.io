@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.0</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.1</span></span></div>
 
 
     
@@ -8020,38 +8020,83 @@ function _renderVNTable(rows){
 }
 
 
-// ── VN Stock Logo System ──────────────────────────
-const _vnLogoCache = new Map();  // ticker → working URL | 'fb'
+// ── VN Stock Logo System (SVG + CDN fallback) ───────
+// Brand colors chính xác cho VN stocks
+const VN_BRAND = {
+  // Banks
+  VCB:'#007B40',BID:'#003DA5',CTG:'#CC0000',TCB:'#CC0000',
+  ACB:'#0066B3',MBB:'#CC0000',STB:'#0066B3',VPB:'#00A650',
+  HDB:'#CC0000',TPB:'#CC0000',SHB:'#CC0000',EIB:'#0066B3',
+  LPB:'#CC0000',MSB:'#E87722',OCB:'#E31837',NAB:'#0066B3',
+  // Tech/Services
+  FPT:'#FF6600',CMG:'#003087',
+  // Consumer
+  VNM:'#00529B',MWG:'#CC0000',MSN:'#CC0000',SAB:'#C8960C',
+  PNJ:'#C8960C',
+  // Real estate
+  VIC:'#003DA5',VHM:'#003DA5',VRE:'#003DA5',NVL:'#CC0000',
+  PDR:'#FF6600',KDH:'#0066B3',DXG:'#CC0000',BCM:'#0066B3',
+  VGC:'#003087',
+  // Industry/Energy
+  HPG:'#CC0000',GAS:'#003DA5',PLX:'#CC0000',BSR:'#003DA5',
+  PVD:'#003DA5',OIL:'#003DA5',DRC:'#003087',REE:'#003DA5',
+  GMD:'#0066B3',GEX:'#003DA5',
+  // Finance
+  SSI:'#003DA5',VND:'#CC0000',HDB:'#CC0000',VCI:'#003DA5',
+  // Indices
+  VNINDEX:'#CC0000',VN30:'#CC0000',HNX:'#003DA5',
+};
 
-function _vnLogoSrcs(ticker){
-  return [
-    `https://finfo-api.ssi.com.vn/v4/company/logo/${ticker}`,
-    `https://static1.vndirect.com.vn/images/stocks/${ticker}.jpg`,
-    `https://image.cafef.vn/Images/Uploaded/DuLieuCafeF/Logo/${ticker}.png`,
-  ];
+// Tạo SVG logo inline - KHÔNG cần external CDN, không bao giờ lỗi
+function vnLogoSVG(ticker, size=32){
+  const col  = VN_BRAND[ticker] || _vnColor(ticker);
+  const r    = Math.round(size * 0.25);
+  const txt  = ticker.length <= 3 ? ticker : ticker.slice(0,2);
+  const fs   = size <= 20 ? Math.round(size*0.38) : size <= 28 ? Math.round(size*0.35) : Math.round(size*0.32);
+
+  // Phân loại icon shape theo ngành
+  const isBanking = ['VCB','BID','CTG','TCB','ACB','MBB','STB','VPB','HDB','TPB','SHB','EIB','LPB','MSB','OCB','NAB'].includes(ticker);
+  const isEnergy  = ['GAS','PLX','PVD','BSR','OIL'].includes(ticker);
+  const isTech    = ['FPT','CMG'].includes(ticker);
+
+  // Màu sáng hơn cho text (trắng hoặc màu sáng)
+  const textCol = '#ffffff';
+  // Màu nền nhạt hơn brand color
+  const bg1 = col + '22';
+  const bg2 = col + '44';
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;border-radius:${r}px;display:block">
+    <defs>
+      <linearGradient id="lg_${ticker}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${col}" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="${col}" stop-opacity="0.35"/>
+      </linearGradient>
+    </defs>
+    <rect width="${size}" height="${size}" rx="${r}" fill="url(#lg_${ticker})" stroke="${col}" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+      font-family="system-ui,-apple-system,sans-serif" font-size="${fs}" font-weight="800"
+      fill="${col}" letter-spacing="-0.5">${txt}</text>
+  </svg>`;
 }
 
-// Tạo HTML logo box: img với fallback chain → gradient box cuối cùng
+// vnLogoHTML: thử CDN thật trước, fallback SVG
 function vnLogoHTML(ticker, size=32){
-  const r = size/4|0;
-  const col = _vnColor(ticker);
-  const fb = `<div class="vn-logo-fb" style="width:${size}px;height:${size}px;border-radius:${r}px;
-    background:linear-gradient(135deg,${col}33,${col}66);
-    border:1px solid ${col}55;color:${col};font-size:${size<=24?9:11}px"
-    >${ticker.slice(0,2)}</div>`;
+  const r   = Math.round(size*0.25);
+  const col = VN_BRAND[ticker] || _vnColor(ticker);
 
-  if(_vnLogoCache.get(ticker)==='fb') return fb;
+  // Nếu đã biết CDN không work → dùng SVG ngay
+  if(_vnLogoCache.get(ticker) === 'svg') return vnLogoSVG(ticker, size);
 
-  const cachedSrc = _vnLogoCache.get(ticker);
-  const firstSrc  = cachedSrc || _vnLogoSrcs(ticker)[0];
-  const fallbacks = _vnLogoSrcs(ticker).slice(cachedSrc?0:1).join('|');
+  // Thử SSI CDN (tốt nhất, ít bị chặn nhất)
+  const ssiUrl = `https://finfo-api.ssi.com.vn/v4/company/logo/${ticker}`;
+  const cached = _vnLogoCache.get(ticker);
+  const src    = cached || ssiUrl;
 
-  return `<div class="vn-logo-wrap" style="width:${size}px;height:${size}px;border-radius:${r}px;flex-shrink:0"
-    data-vn-logo="${ticker}">
-    <img src="${firstSrc}"
-      data-srcs="${fallbacks}"
+  return `<div class="vn-logo-wrap" style="width:${size}px;height:${size}px;border-radius:${r}px;flex-shrink:0;overflow:hidden;" data-vn-logo="${ticker}">
+    <img src="${src}"
       data-ticker="${ticker}"
       data-size="${size}"
+      data-fallback="https://static1.vndirect.com.vn/images/stocks/${ticker}.jpg"
       onerror="vnLogoErr(this)"
       onload="vnLogoOk(this)"
       style="width:100%;height:100%;object-fit:contain;border-radius:${r}px;"
@@ -8059,694 +8104,42 @@ function vnLogoHTML(ticker, size=32){
   </div>`;
 }
 
-// Gọi khi img load thành công
+const _vnLogoCache = new Map();
+
 function vnLogoOk(img){
   const t = img.dataset.ticker;
-  if(t && !_vnLogoCache.has(t)) _vnLogoCache.set(t, img.src);
+  if(t) _vnLogoCache.set(t, img.src);
 }
 
-// Gọi khi img lỗi → thử src tiếp theo
 function vnLogoErr(img){
-  const srcs = (img.dataset.srcs||'').split('|').filter(Boolean);
-  if(srcs.length){
-    img.dataset.srcs = srcs.slice(1).join('|');
-    img.src = srcs[0];
+  const t    = img.dataset.ticker || '';
+  const size = parseInt(img.dataset.size) || 32;
+  const fb   = img.dataset.fallback || '';
+
+  // Thử fallback URL (VNDirect) một lần
+  if(fb && img.src !== fb && !fb.startsWith('done')){
+    img.dataset.fallback = 'done';
+    img.src = fb;
     return;
   }
-  // Hết fallback → render gradient box
-  const t    = img.dataset.ticker || '';
-  const size = parseInt(img.dataset.size)||32;
-  const col  = _vnColor(t);
-  const r    = size/4|0;
-  _vnLogoCache.set(t, 'fb');
+
+  // Hết fallback → render SVG inline (không bao giờ fail)
+  _vnLogoCache.set(t, 'svg');
   const wrap = img.closest('[data-vn-logo]') || img.parentElement;
   if(wrap){
-    wrap.style.cssText = `width:${size}px;height:${size}px;border-radius:${r}px;
-      background:linear-gradient(135deg,${col}33,${col}66);
-      border:1px solid ${col}55;color:${col};font-weight:800;
-      font-size:${size<=24?9:11}px;display:flex;align-items:center;
-      justify-content:center;flex-shrink:0;`;
-    wrap.innerHTML = t.slice(0,2);
+    wrap.style.cssText = `width:${size}px;height:${size}px;flex-shrink:0;overflow:hidden;`;
+    wrap.innerHTML = vnLogoSVG(t, size);
   }
 }
 
-// Update logo trong chart header khi chọn stock
 function _updateVNChartLogo(ticker){
   const box = document.getElementById('vnChartLogoBox');
   if(!box) return;
-  const col = _vnColor(ticker);
-  box.innerHTML = '';
-  box.style.cssText = 'width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:transparent;border:none;';
-  box.innerHTML = vnLogoHTML(ticker, 38);
+  box.style.cssText = 'width:38px;height:38px;flex-shrink:0;overflow:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;padding:0;';
+  // Luôn dùng SVG cho header (đẹp, không chờ load)
+  box.innerHTML = vnLogoSVG(ticker, 38);
 }
 
-function _vnColor(ticker){
-  // Tạo màu nhất quán từ ticker string
-  let h=0;
-  for(let i=0;i<ticker.length;i++) h=(h*31+ticker.charCodeAt(i))&0xffff;
-  const hue = h%360;
-  return `hsl(${hue},70%,60%)`;
-}
-
-function _updateVNBreadthFromData(){
-  const rows = _vnMarketData;
-  const up  = rows.filter(r=>r.changePct>0).length;
-  const dn  = rows.filter(r=>r.changePct<0).length;
-  const eq  = rows.filter(r=>r.changePct===0&&r.price>0).length;
-  const ceil= rows.filter(r=>r.price>0&&r.ceil>0&&r.price>=r.ceil).length;
-  const fl  = rows.filter(r=>r.price>0&&r.floor>0&&r.price<=r.floor).length;
-  
-  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||'—'; };
-  set('vnAdvance',   up||'—');
-  set('vnDecline',   dn||'—');
-  set('vnUnchanged', eq||'—');
-  set('vnCeiling',   ceil||'—');
-  set('vnFloor',     fl||'—');
-  
-  // Stats row
-  if(up||dn){
-    const ratio = document.getElementById('svnRatio');
-    if(ratio) ratio.textContent = `${up} / ${dn} / ${eq}`;
-  }
-}
-
-function vnSetTab(el, tab){
-  _vnMarketTab = tab;
-  document.querySelectorAll('#page-vn-market .tab-btn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  _renderVNTable(_vnMarketData);
-}
-
-function vnMarketFilter(q){
-  _renderVNTable(_vnMarketData);
-}
-
-function vnMarketClear(){
-  const el = document.getElementById('vnMarketSearch');
-  if(el){ el.value=''; }
-  _renderVNTable(_vnMarketData);
-}
-
-
-
-function renderVNQuickPicks(){
-  const el = document.getElementById('vnQuickPicks');
-  if(!el) return;
-  const picks = (VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
-  el.innerHTML = picks.map(t=>`
-    <button class="vn-qp-btn" onclick="vnSelectStock('${t}')"
-      style="display:inline-flex;align-items:center;gap:4px;">
-      ${vnLogoHTML(t,16)}
-      <span>${t}</span>
-    </button>
-  `).join('');
-}
-
-// ── Watchlist ────────────────────────────────────────────────
-function loadVNWatchlistData(){ renderVNWatchlist(); }
-
-async function renderVNWatchlist(){
-  const tbody = document.getElementById('vnWatchlistBody');
-  if(!tbody) return;
-  if(!_vnWatchlist||!_vnWatchlist.length){
-    tbody.innerHTML='<tr><td colspan="10" class="vn-loading">Chưa có mã theo dõi. Nhập mã và nhấn "+ Thêm".</td></tr>';
-    return;
-  }
-  tbody.innerHTML='<tr><td colspan="10" class="vn-loading">⏳ Đang tải...</td></tr>';
-  try{
-    const stocks = await yfBatchQuotes(_vnWatchlist);
-    const dataMap = {};
-    stocks.forEach(s=>{ if(s&&s.ticker) dataMap[s.ticker]=s; });
-    tbody.innerHTML = _vnWatchlist.map(tk=>{
-      const d = dataMap[tk];
-      if(!d) return `<tr onclick="vnSelectStock('${tk}')">
-        <td><strong>${tk}</strong></td><td>${VN_NAMES[tk]||tk}</td>
-        <td colspan="7" style="color:var(--muted);font-size:11px">—</td>
-        <td><button onclick="event.stopPropagation();vnRemoveFromWatchlist('${tk}')" style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">✕</button></td>
-      </tr>`;
-      const cls  = vnPriceClass(d.price, d.ref);
-      const sign = d.change>=0?'+':'';
-      return `<tr style="cursor:pointer" onclick="vnSelectStock('${tk}')">
-        <td><strong style="color:var(--accent)">${tk}</strong></td>
-        <td style="color:var(--muted);font-size:11px">${VN_NAMES[tk]||tk}</td>
-        <td class="${cls}">${vnFmtPrice(d.price)}</td>
-        <td class="${cls}">${sign}${vnFmtPrice(d.change)}</td>
-        <td class="${cls}">${sign}${(d.changePct||0).toFixed(2)}%</td>
-        <td style="color:#ff00ff">${vnFmtPrice(d.ceil)}</td>
-        <td style="color:#f59e0b">${vnFmtPrice(d.ref)}</td>
-        <td style="color:#00ffff">${vnFmtPrice(d.floor)}</td>
-        <td>${vnFmtVol(d.vol)}</td>
-        <td><button onclick="event.stopPropagation();vnRemoveFromWatchlist('${tk}')" style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">✕</button></td>
-      </tr>`;
-    }).join('');
-  }catch(e){
-    tbody.innerHTML='<tr><td colspan="10" class="vn-loading">Lỗi tải dữ liệu</td></tr>';
-  }
-}
-
-function loadVNWatchlist(){ renderVNWatchlist(); }
-
-function vnAddToWatchlist(){
-  const inp = document.getElementById('vnWlInput');
-  if(!inp) return;
-  const tk = (inp.value||'').toUpperCase().trim();
-  if(!tk) return;
-  if(!_vnWatchlist.includes(tk)){
-    _vnWatchlist.push(tk);
-    localStorage.setItem('vlc_vn_watchlist', JSON.stringify(_vnWatchlist));
-  }
-  inp.value='';
-  renderVNWatchlist();
-}
-
-function vnRemoveFromWatchlist(ticker){
-  _vnWatchlist = _vnWatchlist.filter(t=>t!==ticker);
-  localStorage.setItem('vlc_vn_watchlist', JSON.stringify(_vnWatchlist));
-  renderVNWatchlist();
-}
-
-function vnSearchStock(q){
-  const res = document.getElementById('vnSearchResults');
-  if(!res) return;
-  if(!q||q.length<1){ res.innerHTML=''; return; }
-  const ql = q.toUpperCase();
-  const allTickers = Object.keys(VN_NAMES||{}).concat(VN_POPULAR||[])
-    .filter((v,i,a)=>a.indexOf(v)===i);
-  const matches = allTickers.filter(t=>t.startsWith(ql)||
-    (VN_NAMES[t]||'').toUpperCase().includes(ql)).slice(0,8);
-  if(!matches.length){ res.innerHTML=''; return; }
-  res.innerHTML = matches.map(t=>`
-    <div class="vn-sr-item" onclick="vnSelectStock('${t}');document.getElementById('vnStockSearch').value='';document.getElementById('vnSearchResults').innerHTML=''"
-      style="display:flex;align-items:center;gap:8px;padding:7px 10px;">
-      ${vnLogoHTML(t, 24)}
-      <div><div style="font-size:12px;font-weight:700">${t}</div>
-      <div style="font-size:10px;opacity:.6">${VN_NAMES[t]||''}</div></div>
-    </div>`).join('');
-}
-
-function switchVNMover(tab, el){
-  _vnCurrentMoverTab = tab;
-  document.querySelectorAll('.vn-movers-tabs .vn-tab').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  loadVNMovers(tab);
-}
-
-function showVNPage(id, el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('#subNavVN .sub-tab').forEach(t=>t.classList.remove('active'));
-  const page = document.getElementById('page-'+id);
-  if(page) page.classList.add('active');
-  if(el) el.classList.add('active');
-
-  if(id==='vn-market')   loadVNMarket();
-  if(id==='vn-indices')  loadVNIndices();
-  if(id==='vn-watchlist'){ loadVNWatchlistData(); renderVNWatchlist(); }
-  if(id==='vn-news')     loadVNNews();
-  if(id==='vn-heatmap'){ loadVNHeatmap(); }
-  if(id==='vn-donate'){
-    const mirror = document.getElementById('vn-donate-mirror');
-    if(mirror && !mirror.children.length){
-      const src = document.querySelector('#page-donate .donate-layout');
-      if(src) mirror.appendChild(src.cloneNode(true));
-    }
-  }
-  if(id==='vn-chart'){
-    _renderVNStockListPanel();
-    renderVNQuickPicks();
-    // Chỉ hiện placeholder nếu chưa chọn ticker
-    if(!_vnCurrentTicker){
-      const cont = document.getElementById('vnChartContainer');
-      if(cont){
-        try{if(_vnTVWidget&&_vnTVWidget.remove)_vnTVWidget.remove();}catch(e){}
-        _vnTVWidget=null;
-        if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
-        cont.innerHTML='';
-        const ph=document.createElement('div');
-        ph.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)';
-        ph.innerHTML='<div style="font-size:36px">📊</div><div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div>';
-        cont.appendChild(ph);
-      }
-    }
-    // Nếu đã có ticker → KHÔNG auto-reload (vnSelectStock tự gọi loadVNChart)
-  }
-}
-function vnSwitchRightPanel(tab, el){
-  document.querySelectorAll('#vnIndicatorsPanel .ob-tab').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  document.getElementById('vn-rp-info').style.display   = tab==='info'  ?'flex':'none';
-  document.getElementById('vn-rp-picks').style.display  = tab==='picks' ?'flex':'none';
-  if(tab==='picks') _renderVNQuickPicksPanel();
-}
-
-function _renderVNQuickPicksPanel(){
-  const wrap = document.getElementById('vnQuickPicksPanel');
-  if(!wrap) return;
-  const tickers = VN_GROUPS?.vn30 || VN_POPULAR || [];
-  wrap.innerHTML = tickers.slice(0,30).map(t=>`
-    <div onclick="vnSelectStock('${t}')" style="
-      display:flex;align-items:center;gap:8px;padding:7px 10px;
-      border-radius:8px;cursor:pointer;background:var(--surface2);
-      border:1px solid var(--border);margin-bottom:4px;
-      transition:background .15s"
-      onmouseover="this.style.background='rgba(232,25,44,.1)'"
-      onmouseout="this.style.background='var(--surface2)'">
-      <div style="width:28px;height:28px;border-radius:7px;background:${_vnColor(t)}22;
-        border:1px solid ${_vnColor(t)}44;display:flex;align-items:center;justify-content:center;
-        font-size:10px;font-weight:800;color:${_vnColor(t)};flex-shrink:0">${t.slice(0,2)}</div>
-      <div>
-        <div style="font-size:12px;font-weight:700;color:var(--text)">${t}</div>
-        <div style="font-size:10px;color:var(--muted)">${(VN_NAMES[t]||'').slice(0,20)}</div>
-      </div>
-    </div>`).join('');
-}
-
-// Render coin list panel bên trái của VN chart
-function _renderVNStockListPanel(){
-  const wrap = document.getElementById('vnStockList');
-  if(!wrap) return;
-  const tickers = (VN_GROUPS?.vn30||[]).concat(
-    (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
-  ).slice(0,50);
-  wrap.innerHTML = tickers.map(t=>{
-    const active = _vnCurrentTicker===t ? 'active' : '';
-    return `<div class="coin-list-item ${active}" onclick="vnSelectStock('${t}')">
-      ${vnLogoHTML(t, 28)}
-      <div style="flex:1;min-width:0">
-        <div class="cli-name">${t}</div>
-        <div class="cli-sub">${(VN_NAMES[t]||'').slice(0,20)}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-
-// ── Session checker ───────────────────────────────────────
-function getVNSession(){
-  const now = new Date();
-  const h = now.getHours(), m = now.getMinutes();
-  const day = now.getDay(); // 0=Sun, 6=Sat
-  if(day===0||day===6) return 'closed';
-  const mins = h*60+m;
-  if(mins>=555&&mins<570)  return 'ato';   // 9:15-9:30
-  if(mins>=570&&mins<735)  return 'open';  // 9:30-12:15
-  if(mins>=735&&mins<750)  return 'break'; // 12:15-12:30 nghỉ trưa
-  if(mins>=750&&mins<885)  return 'open';  // 12:30-14:45
-  if(mins>=885&&mins<900)  return 'atc';   // 14:45-15:00
-  return 'closed';
-}
-function updateVNSession(){
-  const badge = document.getElementById('vnSessionBadge');
-  if(!badge) return;
-  const s = getVNSession();
-  badge.className = 'vn-session-badge ' + s;
-  const labels = {ato:'🟡 ATO - Khớp lệnh mở cửa',open:'🟢 Đang Giao Dịch',atc:'🟡 ATC - Khớp lệnh đóng cửa',break:'⏸ Nghỉ Trưa',closed:'⏹ Ngoài Giờ Giao Dịch'};
-  badge.textContent = labels[s] || '⏹ Ngoài Giờ';
-}
-
-// ── Fetch VN stock data từ SSI iBoard ────────────────────
-// SSI iBoard API là nguồn dữ liệu công khai, không cần auth
-// SSI_API removed — dùng VNDirect finfo-api
-
-
-// ── VN API proxy helper — thử nhiều proxy cho GitHub Pages ──
-/* ═══════════════════════════════════════════════════════════
-   VN STOCK DATA — Yahoo Finance API (CORS OK từ browser)
-   Ticker format: VNM.VN, VIC.VN, ^VNINDEX, ^HNX...
-   ═══════════════════════════════════════════════════════════ */
-
-// ══════════════════════════════════════════════════════════════
-// VN STOCK DATA LAYER — TradingView Scanner API + Stooq
-// TradingView scanner: CORS OK từ bất kỳ origin
-// Stooq CSV: qua allorigins proxy cho chart lịch sử
-// ══════════════════════════════════════════════════════════════
-
-
-// TradingView symbol mapping
-
-// ═══════════════════════════════════════════════════════════════
-// VN DATA LAYER — Yahoo Finance v8 qua allorigins proxy
-// ═══════════════════════════════════════════════════════════════
-
-// TradingView symbol mapping (dùng cho TV widget & link)
-function tvSym(ticker){
-  // TradingView embed-widget dùng HOSE: prefix (chuẩn TV)
-  const MAP = {
-    VNINDEX:'HOSE:VNINDEX', HNX:'HNX:HNX', UPCOM:'UPCOM:UPCOM',
-    VN30:'HOSE:VN30', HNX30:'HNX:HNX30',
-    // HNX stocks
-    SHB:'HNX:SHB', PVS:'HNX:PVS', NVB:'HNX:NVB', VCS:'HNX:VCS',
-    SHS:'HNX:SHS', IDJ:'HNX:IDJ',
-  };
-  return MAP[ticker] || ('HOSE:'+ticker);
-}
-
-// Stooq symbol mapping
-function stooqSym(ticker){
-  const MAP = {VNINDEX:'%5evni',HNX:'%5ehnx',UPCOM:'%5eupc',VN30:'%5evn30',HNX30:'%5ehnx30'};
-  return MAP[ticker] || (ticker.toLowerCase()+'.vn');
-}
-
-// Proxy fetch dùng allorigins (get=JSON wrapped, raw=text)
-// ── VN Data: stub (không dùng external API - CORS blocked) ─
-// Dùng TradingView widgets cho display, data chỉ từ TV
-async function vnProxyFetch(){ return null; }
-function yfSym(t){
-  const M={VNINDEX:'^VNI',HNX:'^HNX',UPCOM:'^UPCOM',VN30:'^VN30F1!',HNX30:'^HNX30'};
-  return M[t]||(t+'.VN');
-}
-async function yfFetchChart(){ return null; }
-async function yfQuote(ticker){
-  // Trả object tĩnh với giá = 0 (TV widget sẽ hiển thị realtime)
-  return {ticker, name:VN_NAMES[ticker]||ticker,
-    price:0, ref:0, change:0, changePct:0,
-    high:0, low:0, vol:0, val:0, ceil:0, floor:0};
-}
-async function yfHistory(){ return []; }
-
-
-
-
-async function stooqFetchCSV(){ return []; }
-async function stooqQuote(ticker){ return yfQuote(ticker); }
-
-
-
-
-// yfBatchQuotes: trả empty (data từ TV widget)
-async function yfBatchQuotes(tickers){
-  return (tickers||[]).slice(0,20).map(t=>({
-    ticker:t, name:VN_NAMES[t]||t,
-    price:0, ref:0, change:0, changePct:0,
-    high:0, low:0, vol:0, val:0, ceil:0, floor:0,
-  }));
-}
-
-
-
-
-async function fetchVNStocks(t){ return []; }
-
-async function fetchVNSingle(ticker){ return null; }
-
-
-// ── Indices strip (5 chỉ số) ─────────────────────────────────
-async function loadVNIndicesStrip(){
-  // Indices strip: update cards với data tĩnh (TV widget ở loadVNMarket)
-  const STATIC = {
-    VNINDEX:{val:'—',chg:'—',pct:0}, HNX:{val:'—',chg:'—',pct:0},
-    UPCOM:{val:'—',chg:'—',pct:0}, VN30:{val:'—',chg:'—',pct:0}, HNX30:{val:'—',chg:'—',pct:0},
-  };
-  Object.entries(STATIC).forEach(([id,d])=>{
-    _updateIdxCard(id,{indexValue:0, indexChange:0, percentChange:0});
-  });
-}
-
-
-// ── Movers (Top gain/loss/vol từ VN30) ──────────────────────
-async function loadVNMovers(tab){
-  _vnCurrentMoverTab = tab || _vnCurrentMoverTab;
-  renderVNMoversStatic();
-}
-
-function renderVNMovers(stocks){
-  const tbody = document.getElementById('vnMoversBody');
-  if(!tbody) return;
-  if(!stocks||!stocks.length){
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">Không có dữ liệu</td></tr>';
-    return;
-  }
-  tbody.innerHTML = stocks.map(s=>{
-    const price    = s.price   || 0;
-    const ref      = s.ref     || price;
-    const chg      = s.change  || (price-ref);
-    const pct      = s.changePct || (ref>0?chg/ref*100:0);
-    const vol      = s.vol     || 0;
-    const val      = s.val     || vol*price;
-    const buyNN    = s.buyForeign  || 0;
-    const sellNN   = s.sellForeign || 0;
-    const cls      = vnPriceClass(price, ref);
-    const sign     = chg>=0?'+':'';
-    const ticker   = s.ticker || '';
-    return `<tr style="cursor:pointer" onclick="vnSelectStock('${ticker}')">
-      <td><strong style="color:var(--accent)">${ticker}</strong>
-        <div style="font-size:10px;color:var(--muted)">${VN_NAMES[ticker]||''}</div></td>
-      <td class="${cls}">${vnFmtPrice(price)}</td>
-      <td class="${cls}">${sign}${vnFmtPrice(chg)}</td>
-      <td class="${cls}">${sign}${pct.toFixed(2)}%</td>
-      <td>${vnFmtVol(vol)}</td>
-      <td>${vnFmtVal(val)}</td>
-      <td style="color:#22c55e">${buyNN>0?vnFmtVol(buyNN):'—'}</td>
-      <td style="color:#ef4444">${sellNN>0?vnFmtVol(sellNN):'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-function renderVNMoversStatic(){
-  const tbody = document.getElementById('vnMoversBody');
-  if(!tbody) return;
-  const picks = (VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,15);
-  tbody.innerHTML = picks.map(t=>`
-    <tr style="cursor:pointer" onclick="vnSelectStock('${t}')">
-      <td><strong>${t}</strong></td>
-      <td colspan="7" style="color:var(--muted);font-size:11px">—</td>
-    </tr>`).join('');
-}
-
-
-
-// ── VN Chart (TradingView Advanced Chart Widget) ─────────────
-let _tvWidgetLoaded = false;
-
-async function loadVNChart(tf, el){
-  document.querySelectorAll('#page-vn-chart .tf-btn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const container = document.getElementById('vnChartContainer');
-  if(!container) return;
-
-  if(!_vnCurrentTicker){
-    // Destroy TV widget cũ nếu có
-    if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
-    container.innerHTML = '';
-    const ph = document.createElement('div');
-    ph.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)';
-    ph.innerHTML = '<div style="font-size:32px">📊</div><div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div>';
-    container.appendChild(ph);
-    return;
-  }
-
-  const ticker   = _vnCurrentTicker;
-  const tfMap    = {'1D':'D','1W':'W','1M':'M','3M':'3M','1Y':'12M'};
-  const interval = tfMap[tf]||'D';
-  const sym      = tvSym(ticker);
-
-  // Destroy widget/chart cũ trước
-  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
-  _vnTVWidget = null;
-  if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
-  container.innerHTML = '';
-
-  const spin = document.createElement('div');
-  spin.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;gap:8px';
-  spin.innerHTML = `<div class="chart-spinner"></div><span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>`;
-  container.appendChild(spin);
-
-  // Đợi 1 frame để spinner render trước khi build widget
-  requestAnimationFrame(()=> _buildTVWidget(container, sym, interval, ticker));
-}
-
-
-function _buildTVWidget(container, sym, interval, ticker){
-  // Redirect sang TCBS/SSI data pipeline
-  _fetchVNChartData(container, ticker, interval);
-}
-
-// ══ VN Chart Data: TCBS → SSI → Stooq ══════════════
-
-async function _fetchVNChartData(container, ticker, interval){
-  const ivMap = {'D':'D','W':'W','M':'M','3M':'D','12M':'W'};
-  const res   = ivMap[interval] || 'D';
-
-  // Tính from/to timestamps
-  const now   = Math.floor(Date.now()/1000);
-  const ranges = {D:365*24*3600, W:5*365*24*3600, M:10*365*24*3600};
-  const rangeByInterval = {
-    'D':ranges.D, 'W':ranges.W, 'M':ranges.M,
-    '3M':90*24*3600, '12M':2*ranges.D
-  };
-  const fromTs = now - (rangeByInterval[interval] || ranges.D);
-
-  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
-    <div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>
-  </div>`;
-
-  let candles = null;
-
-  // ── 1. TCBS API (primary) ──────────────────────
-  try{
-    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${fromTs}&to=${now}`;
-    const r = await fetch(url, {headers:{'Accept':'application/json'},signal:AbortSignal.timeout(8000)});
-    if(r.ok){
-      const d = await r.json();
-      candles = _parseTCBS(d);
-      if(candles?.length > 2) console.log('[VLC] TCBS ok:', ticker, candles.length);
-    }
-  } catch(e){ console.log('[VLC] TCBS failed:', e.message); }
-
-  // ── 2. SSI finfo API (backup) ─────────────────
-  if(!candles || candles.length < 3){
-    try{
-      const today = new Date().toISOString().slice(0,10);
-      const from2 = new Date(fromTs*1000).toISOString().slice(0,10);
-      const url = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${from2}&toDate=${today}&offset=0&pageSize=500&language=vi`;
-      const r = await fetch(url, {headers:{'Accept':'application/json'},signal:AbortSignal.timeout(8000)});
-      if(r.ok){
-        const d = await r.json();
-        candles = _parseSSI(d);
-        if(candles?.length > 2) console.log('[VLC] SSI ok:', ticker, candles.length);
-      }
-    } catch(e){ console.log('[VLC] SSI failed:', e.message); }
-  }
-
-  // ── 3. Stooq via allorigins (last resort) ─────
-  if(!candles || candles.length < 3){
-    try{
-      const stooqSym = ticker.toLowerCase() + '.vn';
-      const stooqUrl = `https://stooq.com/q/d/l/?s=${stooqSym}&i=${res==='D'?'d':res==='W'?'w':'m'}`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(stooqUrl)}`;
-      const r = await fetch(proxyUrl, {signal:AbortSignal.timeout(10000)});
-      if(r.ok){
-        const d = await r.json();
-        candles = _parseStooqCSV(d.contents || '');
-        if(candles?.length > 2) console.log('[VLC] Stooq ok:', ticker, candles.length);
-      }
-    } catch(e){ console.log('[VLC] Stooq failed:', e.message); }
-  }
-
-  // ── Render hoặc error ─────────────────────────
-  if(!candles || candles.length < 2){
-    container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--muted)">
-      <div style="font-size:28px">📡</div>
-      <div style="font-size:13px;color:var(--text2)">Không tải được dữ liệu <b style="color:var(--red)">${ticker}</b></div>
-      <div style="font-size:11px">TCBS · SSI · Stooq đều không phản hồi</div>
-      <button onclick="loadVNChart(document.querySelector('#page-vn-chart .tf-btn.active')?.textContent||'1D',null)"
-        style="margin-top:8px;padding:6px 18px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">
-        ↻ Thử lại
-      </button>
-    </div>`;
-    return;
-  }
-
-  _buildLWChart(container, candles);
-}
-
-// ── Parsers ──────────────────────────────────────
-
-function _parseTCBS(data){
-  // TCBS response: {data:[{tradingDate:"YYYY-MM-DD",open,high,low,close,volume}]}
-  // hoặc: {listStock:[...]} hoặc array trực tiếp
-  try{
-    const arr = data?.data || data?.listStock || (Array.isArray(data)?data:[]);
-    if(!arr.length) return null;
-    return arr.map(b=>{
-      // tradingDate có thể là "YYYY-MM-DD 00:00:00" hoặc unix timestamp
-      let t = b.tradingDate || b.date || b.t;
-      if(typeof t === 'string') t = Math.floor(new Date(t).getTime()/1000);
-      return {
-        time:  t,
-        open:  b.open  || b.o,
-        high:  b.high  || b.h,
-        low:   b.low   || b.l,
-        close: b.close || b.c,
-      };
-    }).filter(x=>x.time&&x.close).sort((a,b)=>a.time-b.time);
-  } catch(e){ return null; }
-}
-
-function _parseSSI(data){
-  // SSI response: {data:{data:[{TradingDate,Open,High,Low,Close,Volume}]}}
-  try{
-    const arr = data?.data?.data || data?.data || [];
-    if(!arr.length) return null;
-    return arr.map(b=>({
-      time:  Math.floor(new Date(b.TradingDate||b.tradingDate).getTime()/1000),
-      open:  b.Open  || b.open,
-      high:  b.High  || b.high,
-      low:   b.Low   || b.low,
-      close: b.Close || b.close,
-    })).filter(x=>x.time&&x.close).sort((a,b)=>a.time-b.time);
-  } catch(e){ return null; }
-}
-
-function _parseStooqCSV(csv){
-  // CSV format: Date,Open,High,Low,Close,Volume
-  try{
-    const lines = csv.trim().split('\n').slice(1); // skip header
-    if(!lines.length) return null;
-    return lines.map(l=>{
-      const [date,open,high,low,close] = l.split(',');
-      if(!date||!close||close==='null') return null;
-      return {
-        time:  Math.floor(new Date(date.trim()).getTime()/1000),
-        open:  parseFloat(open)*1000,  // Stooq VN prices in thousands VND
-        high:  parseFloat(high)*1000,
-        low:   parseFloat(low)*1000,
-        close: parseFloat(close)*1000,
-      };
-    }).filter(Boolean).sort((a,b)=>a.time-b.time);
-  } catch(e){ return null; }
-}
-
-function _toYFSym(ticker){
-  const MAP={VNINDEX:'^VNI',HNX:'^HNX',VN30:'^VN30F1!',HNX30:'^HNX30',UPCOM:'^UPCOM'};
-  return MAP[ticker]||(ticker+'.VN');
-}
-
-
-
-
-
-
-
-
-
-
-
-// Fallback: Stooq CSV qua proxy → LightweightCharts
-async function _buildStooqChart(container, ticker, interval){
-  const dayMap = {'D':250,'W':500,'M':1000,'3M':1000,'12M':2000};
-  const days = dayMap[interval]||250;
-  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
-    <div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải dữ liệu...</span>
-  </div>`;
-  try{
-    const candles = await stooqFetchCSV(ticker, days);
-    if(candles.length >= 5){ _buildLWChart(container, candles); return; }
-  }catch(e){}
-  // Final fallback: thông báo lỗi
-  const tvUrl = 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tvSym(ticker));
-  container.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                height:100%;gap:16px;text-align:center;padding:40px">
-      <div style="font-size:36px">📊</div>
-      <div style="font-size:15px;color:var(--text);font-weight:600">${ticker}</div>
-      <div style="font-size:13px;color:var(--muted);max-width:300px;line-height:1.6">
-        Không tải được dữ liệu lúc này.<br>Vui lòng thử lại sau.
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-        <a href="${tvUrl}" target="_blank" rel="noopener"
-           style="padding:10px 20px;background:var(--accent);color:#000;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">
-          📈 TradingView
-        </a>
-        <button onclick="loadVNChart('1D',null)"
-                style="padding:10px 20px;background:rgba(255,255,255,.08);color:var(--text);
-                       border:1px solid rgba(255,255,255,.12);border-radius:8px;font-size:13px;cursor:pointer">
-          🔄 Thử lại
-        </button>
-      </div>
-    </div>`;
-}
 
 function _buildLWChart(container, candles){
   container.innerHTML='';
