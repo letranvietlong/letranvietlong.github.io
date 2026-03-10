@@ -675,9 +675,65 @@ td.r{text-align:right;}
 .news-page-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);}
 .news-page-controls{display:flex;align-items:center;gap:10px;}
 .news-filter-group{display:flex;gap:4px;background:var(--surface2);border-radius:7px;padding:3px;}
-.news-filter-btn{padding:5px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .2s;font-family:Cambria,'Times New Roman',serif;}
-.news-filter-btn.active{background:var(--accent);color:#000;}
-.news-filter-btn:hover:not(.active){color:var(--text);}
+
+.news-refresh-btn{
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;
+  cursor:pointer;border:1px solid rgba(0,212,255,.3);
+  background:rgba(0,212,255,.08);color:var(--accent);
+  transition:all .18s;flex-shrink:0;
+}
+.news-refresh-btn:hover{background:rgba(0,212,255,.18);}
+.news-refresh-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── News Toolbar ─────────────────────────────────── */
+.news-toolbar{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  padding:10px 0 6px;
+}
+.news-filter-group{
+  display:flex;align-items:center;gap:3px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:3px 5px;
+}
+.nf-label{
+  font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--muted);opacity:.6;padding:0 4px;flex-shrink:0;
+}
+.nf-btn{
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+  padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;
+  cursor:pointer;border:1px solid transparent;
+  background:none;color:var(--muted);
+  transition:background .15s,color .15s,border-color .15s;
+  font-family:inherit;flex-shrink:0;
+}
+.nf-btn.active{
+  background:rgba(0,212,255,.12);
+  color:var(--accent);
+  border-color:rgba(0,212,255,.25);
+}
+.nf-btn:hover:not(.active){
+  color:var(--text);
+  background:rgba(255,255,255,.06);
+}
+.nf-divider{
+  width:1px;height:24px;
+  background:rgba(255,255,255,.1);
+  flex-shrink:0;
+}
+.nf-refresh{
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  margin-left:auto;padding:5px 13px;border-radius:6px;
+  font-size:11px;font-weight:600;cursor:pointer;
+  border:1px solid rgba(0,212,255,.3);
+  background:rgba(0,212,255,.07);color:var(--accent);
+  transition:all .15s;font-family:inherit;
+}
+.nf-refresh:hover{background:rgba(0,212,255,.16);}
+.nf-refresh:disabled{opacity:.45;cursor:not-allowed;}
+
 
 .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
 .news-card-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s;text-decoration:none;color:inherit;}
@@ -2515,25 +2571,81 @@ footer .hl{color:var(--accent);}
   </div>
 
   <div class="news-page-header">
-    <div class="news-page-title">📰 Tin Tức Thị Trường Crypto</div>
-    <div class="news-page-controls">
-      <!-- Sentiment filter -->
-      <div class="news-filter-group" id="newsSentGroup">
-        <button class="news-filter-btn active" onclick="setSentFilter(this,'all')">Tất Cả</button>
-        <button class="news-filter-btn" onclick="setSentFilter(this,'bullish')">📈 Tích Cực</button>
-        <button class="news-filter-btn" onclick="setSentFilter(this,'bearish')">📉 Tiêu Cực</button>
-        <button class="news-filter-btn" onclick="setSentFilter(this,'neutral')">⚖️ Trung Lập</button>
-      </div>
-      <!-- Source filter -->
-      <div class="news-filter-group" id="newsSourceGroup">
-        <button class="news-filter-btn active" onclick="setNewsSource(this,'all')">Tất Cả</button>
-        <button class="news-filter-btn" onclick="setNewsSource(this,'CoinDesk')">CoinDesk</button>
-        <button class="news-filter-btn" onclick="setNewsSource(this,'CoinTelegraph')">CT</button>
-        <button class="news-filter-btn" onclick="setNewsSource(this,'CoinGecko')">CoinGecko</button>
-      </div>
-      <button class="btn-primary" id="newsPageRefreshBtn" onclick="fetchNews(true)" style="padding:6px 16px;font-size:11px;">↻ Làm mới</button>
+  <div class="news-toolbar">
+
+    <!-- Nhóm: Nguồn -->
+    <div class="news-filter-group">
+      <span class="nf-label">Nguồn</span>
+
+      <button class="nf-btn active" onclick="setNewsSource(this,'all')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="none" stroke="#00d4ff" stroke-width="1.3"/><circle cx="8" cy="8" r="2.2" fill="#00d4ff" opacity=".7"/><line x1="8" y1="2" x2="8" y2="14" stroke="#00d4ff" stroke-width=".8" opacity=".4"/><line x1="2" y1="8" x2="14" y2="8" stroke="#00d4ff" stroke-width=".8" opacity=".4"/></svg>
+        Tất Cả
+      </button>
+
+      <button class="nf-btn" onclick="setNewsSource(this,'crypto')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><path d="M8 1.5l1.8 3.6 4 .6-2.9 2.8.7 4L8 10.4l-3.6 1.9.7-4L2.2 5.7l4-.6z" fill="#f59e0b"/><circle cx="8" cy="7.5" r="1.5" fill="#fde68a" opacity=".8"/></svg>
+        Crypto
+      </button>
+
+      <button class="nf-btn" onclick="setNewsSource(this,'world')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="#0ea5e9" opacity=".15"/><circle cx="8" cy="8" r="6" fill="none" stroke="#38bdf8" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="2.8" ry="6" fill="none" stroke="#38bdf8" stroke-width=".9" opacity=".6"/><line x1="2" y1="8" x2="14" y2="8" stroke="#38bdf8" stroke-width=".9" opacity=".5"/><line x1="3" y1="5.2" x2="13" y2="5.2" stroke="#38bdf8" stroke-width=".7" opacity=".4"/><line x1="3" y1="10.8" x2="13" y2="10.8" stroke="#38bdf8" stroke-width=".7" opacity=".4"/></svg>
+        Thế Giới
+      </button>
+
+      <button class="nf-btn" onclick="setNewsSource(this,'macro')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><rect x="1" y="9.5" width="2.5" height="5" rx=".5" fill="#22c55e" opacity=".7"/><rect x="4.5" y="7" width="2.5" height="7.5" rx=".5" fill="#22c55e" opacity=".85"/><rect x="8" y="4.5" width="2.5" height="10" rx=".5" fill="#22c55e"/><rect x="11.5" y="2" width="2.5" height="12.5" rx=".5" fill="#22c55e"/><polyline points="2.25,9 5.75,6.5 9.25,4 12.75,1.5" fill="none" stroke="#86efac" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Vĩ Mô
+      </button>
+
+      <button class="nf-btn" onclick="setNewsSource(this,'CoinDesk')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><rect x="2" y="2" width="9" height="12" rx="1.5" fill="#1e40af" opacity=".5"/><rect x="2" y="2" width="9" height="12" rx="1.5" fill="none" stroke="#60a5fa" stroke-width="1.1"/><line x1="4.5" y1="5.5" x2="8.5" y2="5.5" stroke="#bfdbfe" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="8" x2="9" y2="8" stroke="#93c5fd" stroke-width="1" stroke-linecap="round"/><line x1="4.5" y1="10.5" x2="7.5" y2="10.5" stroke="#93c5fd" stroke-width=".9" stroke-linecap="round"/><circle cx="13" cy="13" r="2.5" fill="#3b82f6"/><line x1="13" y1="11.8" x2="13" y2="13.2" stroke="white" stroke-width="1" stroke-linecap="round"/><circle cx="13" cy="14.2" r=".4" fill="white"/></svg>
+        CoinDesk
+      </button>
+
+      <button class="nf-btn" onclick="setNewsSource(this,'Binance')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><path d="M8 2.5L9.2 3.7 8 4.9 6.8 3.7z" fill="#f0b90b"/><path d="M3.8 5.8L5 7 3.8 8.2 2.6 7z" fill="#f0b90b"/><path d="M12.2 5.8L13.4 7l-1.2 1.2L11 7z" fill="#f0b90b"/><path d="M8 10.5l1.2 1.2L8 12.9l-1.2-1.2z" fill="#f0b90b"/><path d="M8 6.8L9.2 8 8 9.2 6.8 8z" fill="#fde68a"/></svg>
+        Binance
+      </button>
     </div>
+
+    <div class="nf-divider"></div>
+
+    <!-- Nhóm: Tâm lý -->
+    <div class="news-filter-group">
+      <span class="nf-label">Tâm Lý</span>
+
+      <button class="nf-btn nf-sent active" onclick="setSentFilter(this,'all')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="none" stroke="#94a3b8" stroke-width="1.2"/><line x1="5" y1="8" x2="11" y2="8" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/><line x1="8" y1="5" x2="8" y2="11" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Tất Cả
+      </button>
+
+      <button class="nf-btn nf-sent" onclick="setSentFilter(this,'bullish')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><polyline points="1,12 5,7 8.5,10 14,4" fill="none" stroke="#22c55e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="10.5,4 14,4 14,7.5" fill="none" stroke="#22c55e" stroke-width="1.7" stroke-linecap="round"/><circle cx="1" cy="12" r="1.2" fill="#22c55e"/><circle cx="5" cy="7" r="1.2" fill="#22c55e"/><circle cx="8.5" cy="10" r="1.2" fill="#22c55e"/><circle cx="14" cy="4" r="1.2" fill="#22c55e"/></svg>
+        Tích Cực
+      </button>
+
+      <button class="nf-btn nf-sent" onclick="setSentFilter(this,'bearish')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><polyline points="1,4 5,9 8.5,6 14,12" fill="none" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="10.5,12 14,12 14,8.5" fill="none" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round"/><circle cx="1" cy="4" r="1.2" fill="#ef4444"/><circle cx="5" cy="9" r="1.2" fill="#ef4444"/><circle cx="8.5" cy="6" r="1.2" fill="#ef4444"/><circle cx="14" cy="12" r="1.2" fill="#ef4444"/></svg>
+        Tiêu Cực
+      </button>
+
+      <button class="nf-btn nf-sent" onclick="setSentFilter(this,'neutral')">
+        <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="#78716c" opacity=".2"/><circle cx="8" cy="8" r="6" fill="none" stroke="#a8a29e" stroke-width="1.2"/><circle cx="5.5" cy="6.8" r=".9" fill="#a8a29e"/><circle cx="10.5" cy="6.8" r=".9" fill="#a8a29e"/><line x1="5.5" y1="10.2" x2="10.5" y2="10.2" stroke="#a8a29e" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Trung Lập
+      </button>
+    </div>
+
+    <!-- Nút làm mới -->
+    <button class="nf-refresh" id="newsPageRefreshBtn" onclick="fetchNews(true)">
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 11-1.1-3.3"/><polyline points="10,2.5 13.5,2.5 13.5,6"/></svg>
+      Làm mới
+    </button>
+
+    <!-- Hidden legacy IDs -->
+    <div id="newsSentGroup" style="display:none"></div>
+    <div id="newsSourceGroup" style="display:none"></div>
   </div>
+</div>
 
   <div class="news-grid" id="newsGrid">
     <div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức...</div></div>
@@ -2984,6 +3096,30 @@ footer .hl{color:var(--accent);}
 <footer>Dữ liệu từ <span class="hl">Binance</span> · Logo từ <span class="hl">CoinGecko</span> · Biểu đồ từ <span class="hl">TradingView Lightweight Charts</span> · UTC+7 Hà Nội · © 2026 <span class="hl">VietLongCrypto</span></footer>
 
 <script>
+
+// ── CORS Proxy wrapper cho CoinGecko (cần khi host trên GitHub Pages) ──
+const _CG_BASE = 'https://api.coingecko.com/api/v3';
+async function cgFetch(path, opts={}){
+  // Thử trực tiếp trước (localhost / không bị CORS)
+  try{
+    const r = await fetch(_CG_BASE + path, {...opts, signal: opts.signal || AbortSignal.timeout(8000)});
+    if(r.ok) return r;
+  }catch(e){}
+  // Fallback: corsproxy.io
+  try{
+    const url = encodeURIComponent(_CG_BASE + path);
+    const r2 = await fetch(`https://corsproxy.io/?${url}`, {signal: AbortSignal.timeout(10000)});
+    if(r2.ok) return r2;
+  }catch(e){}
+  // Fallback 2: allorigins
+  try{
+    const url = encodeURIComponent(_CG_BASE + path);
+    const r3 = await fetch(`https://api.allorigins.win/raw?url=${url}`, {signal: AbortSignal.timeout(10000)});
+    if(r3.ok) return r3;
+  }catch(e){}
+  return null;
+}
+
 /* ═══════════════════════════════════════════════════
    ĐỒNG HỒ UTC+7
 ═══════════════════════════════════════════════════ */
@@ -3208,8 +3344,7 @@ async function loadCoinGeckoLogos(){
   /* ── Nguồn 1: CoinGecko (chỉ page 1, tránh 429) ── */
   try{
     await new Promise(r=>setTimeout(r,1500));
-    const res=await fetch(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
+    const res=await cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false',
       {signal:AbortSignal.timeout(15000)}
     );
     if(res.ok&&res.status!==429){
@@ -3229,18 +3364,17 @@ async function loadCoinGeckoLogos(){
   /* ── Nguồn 2: CoinCap API (free, no key) ── */
   if(loaded<50){
     try{
-      const res=await fetch('https://api.coincap.io/v2/assets?limit=200',
+      const res=await fetch('https://api.binance.com/api/v3/exchangeInfo',
         {signal:AbortSignal.timeout(10000)});
       if(res.ok){
         const json=await res.json();
-        (json.data||[]).forEach(c=>{
-          const sym=(c.symbol||'').toUpperCase();
-          // CoinCap dùng id để build URL logo từ CoinGecko CDN
-          if(!logoMap[sym]&&c.id){
-            logoMap[sym]=`https://assets.coincap.io/assets/icons/${c.symbol.toLowerCase()}@2x.png`;
-            if(!nameMap[sym]) nameMap[sym]=c.name;
-            loaded++;
-          }
+        (json.symbols||[]).forEach(s=>{
+          if(s.quoteAsset!=='USDT') return;
+          const base=(s.baseAsset||'').toUpperCase();
+          // Fill logo từ crypto-icons CDN nếu chưa có
+          if(!logoMap[base])
+            logoMap[base]=`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${base.toLowerCase()}.png`;
+          loaded++;
         });
         _tickerBuilt=false; _forceFullRender(); renderChartCoinList();
       }
@@ -3899,7 +4033,7 @@ async function loadFearGreed(){
 /* ── Global Market Stats (CoinGecko /global) ── */
 async function loadGlobalMarket(){
   try{
-    const r=await fetch('https://api.coingecko.com/api/v3/global',{signal:AbortSignal.timeout(8000)});
+    const r=await cgFetch('/global',{signal:AbortSignal.timeout(8000)});
     if(!r.ok) throw new Error('GM '+r.status);
     const d=(await r.json()).data;
 
@@ -4473,8 +4607,7 @@ async function loadCoinInfo(base){
 
   // ── Thử gọi CoinGecko ─────────────────────────────────────────────
   try{
-    const r = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`,
+    const r = await cgFetch(`/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`,
       {signal:AbortSignal.timeout(12000)}
     );
     if(!r.ok){
@@ -4786,7 +4919,7 @@ async function fetchNews(manual=false){
   if(fetchingNews) return;
   fetchingNews=true;
   const btn=document.getElementById('newsPageRefreshBtn');
-  if(btn){btn.disabled=true; btn.textContent='⏳ Đang tải...';}
+  if(btn){btn.disabled=true; btn.textContent='Đang tải...';}
   const grid=document.getElementById('newsGrid');
   if(grid&&manual) grid.innerHTML='<div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><div>Đang tải tin tức...</div></div>';
 
@@ -4813,7 +4946,7 @@ async function fetchNews(manual=false){
         return{
           headline:a.title||'',
           summary:a.body?a.body.substring(0,200)+'...':'',
-          source:a.source_info?.name||a.source||'CryptoCompare',
+          source:a.source_info?.name||a.source||'CryptoCompare', sourceType:'crypto',
           link:a.url||'#',
           pub:(a.published_on||0)*1000||Date.now()-i*5*60000,
           sentiment,
@@ -4825,8 +4958,8 @@ async function fetchNews(manual=false){
     // Strategy 2: CoinGecko trending (không dùng /news endpoint)
     async()=>{
       const [tr,mr]=await Promise.allSettled([
-        fetch('https://api.coingecko.com/api/v3/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null),
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null)
+        cgFetch('/search/trending',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null),
+        cgFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&price_change_percentage=24h',{signal:AbortSignal.timeout(7000)}).then(r=>r.ok?r.json():null)
       ]);
       const items=[];
       const td=tr.status==='fulfilled'?tr.value:null;
@@ -4834,11 +4967,11 @@ async function fetchNews(manual=false){
       if(td?.coins) td.coins.slice(0,8).forEach((e,i)=>{
         const c=e.item||{}; const sym=(c.symbol||'').toUpperCase();
         const chgVal=c.data?.price_change_percentage_24h?.usd||0;
-        items.push({headline:`${c.name||sym} đang trending trên CoinGecko — ${chgVal>=0?'tăng':'giảm'} ${Math.abs(chgVal).toFixed(2)}% trong 24h`,source:'CoinGecko',link:`https://www.coingecko.com/en/coins/${c.id||''}`,pub:Date.now()-i*8*60000,sentiment:chgVal>2?'bullish':chgVal<-2?'bearish':'neutral',coins:sym?[sym]:[]});
+        items.push({headline:`${c.name||sym} đang trending trên CoinGecko — ${chgVal>=0?'tăng':'giảm'} ${Math.abs(chgVal).toFixed(2)}% trong 24h`,source:'CoinGecko', sourceType:'crypto', link:`https://www.coingecko.com/en/coins/${c.id||''}`,pub:Date.now()-i*8*60000,sentiment:chgVal>2?'bullish':chgVal<-2?'bearish':'neutral',coins:sym?[sym]:[]});
       });
       if(md) md.slice(0,8).forEach((c,i)=>{
         const chgVal=c.price_change_percentage_24h||0;
-        items.push({headline:`${c.name} (${(c.symbol||'').toUpperCase()}) — $${c.current_price?.toLocaleString('en-US')||'—'}, ${chgVal>=0?'📈 +':'📉 '}${Math.abs(chgVal).toFixed(2)}% (24h)`,source:'CoinGecko',link:`https://www.coingecko.com/en/coins/${c.id}`,pub:Date.now()-(i+8)*6*60000,sentiment:chgVal>3?'bullish':chgVal<-3?'bearish':'neutral',coins:[(c.symbol||'').toUpperCase()]});
+        items.push({headline:`${c.name} (${(c.symbol||'').toUpperCase()}) — $${c.current_price?.toLocaleString('en-US')||'—'}, ${chgVal>=0?'📈 +':'📉 '}${Math.abs(chgVal).toFixed(2)}% (24h)`,source:'CoinGecko', sourceType:'crypto', link:`https://www.coingecko.com/en/coins/${c.id}`,pub:Date.now()-(i+8)*6*60000,sentiment:chgVal>3?'bullish':chgVal<-3?'bearish':'neutral',coins:[(c.symbol||'').toUpperCase()]});
       });
       if(!items.length) throw new Error('CoinGecko: 0 items');
       return items;
@@ -4873,7 +5006,103 @@ async function fetchNews(manual=false){
       if(items.length<3) throw new Error('CryptoCompare cat: '+items.length);
       return items.sort((a,b)=>b.pub-a.pub).slice(0,50);
     },
-    // ── Strategy 4: Binance Live — LUÔN hoạt động (fallback cuối) ──
+    // ── Strategy World: Tin tức thế giới ảnh hưởng crypto ──────────
+    // Dùng RSS2JSON proxy (không CORS) để lấy từ Reuters/BBC/FT
+    async()=>{
+      const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?api_key=&rss_url=';
+      const WORLD_FEEDS = [
+        // Reuters Markets
+        {url:'https://feeds.reuters.com/reuters/businessNews', label:'Reuters'},
+        // CNBC Economy
+        {url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147', label:'CNBC'},
+        // Bloomberg Markets (RSS)
+        {url:'https://feeds.bloomberg.com/markets/news.rss', label:'Bloomberg'},
+        // Financial Times
+        {url:'https://www.ft.com/rss/home/uk', label:'Financial Times'},
+      ];
+      // Từ khoá ảnh hưởng crypto
+      const CRYPTO_IMPACT_KW = [
+        'fed','federal reserve','interest rate','inflation','gdp','recession',
+        'dollar','usd','eur','gold','oil','nasdaq','s&p','stock','bond','treasury',
+        'sec','regulation','crypto','bitcoin','ethereum','blockchain','cbdc',
+        'sanction','war','china','trade','tariff','bank','monetary','fiscal',
+        'powell','yellen','ecb','boj','imf','world bank','geopolit','conflict',
+        'hack','breach','fraud','scam','arrest','lawsuit','court'
+      ];
+      const items=[];
+      // allorigins proxy để bypass CORS
+      for(const feed of WORLD_FEEDS){
+        try{
+          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
+          const resp = await fetch(proxyUrl, {signal:AbortSignal.timeout(8000)});
+          if(!resp.ok) continue;
+          const data = await resp.json();
+          const xml = data.contents || '';
+          // Parse RSS XML đơn giản
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(xml, 'text/xml');
+          const rssItems = doc.querySelectorAll('item');
+          rssItems.forEach(item=>{
+            const title   = item.querySelector('title')?.textContent || '';
+            const link    = item.querySelector('link')?.textContent || '#';
+            const pubDate = item.querySelector('pubDate')?.textContent || '';
+            const desc    = item.querySelector('description')?.textContent || '';
+            const titleLow = title.toLowerCase();
+            // Chỉ lấy nếu liên quan đến crypto/tài chính/kinh tế
+            const relevant = CRYPTO_IMPACT_KW.some(kw => titleLow.includes(kw));
+            if(!relevant) return;
+            const sentiment =
+              /rate cut|stimulus|rally|surge|growth|record|approve|bullish|gain|rise/.test(titleLow) ? 'bullish' :
+              /hike|crash|ban|sanction|war|hack|fraud|arrest|fall|drop|fear|recession|bearish/.test(titleLow) ? 'bearish' : 'neutral';
+            items.push({
+              headline: title,
+              summary: desc.replace(/<[^>]+>/g,'').substring(0,200) + '...',
+              source: feed.label,
+              sourceType: 'world',
+              link, pub: pubDate ? new Date(pubDate).getTime() : Date.now(),
+              sentiment, coins: [], img: ''
+            });
+          });
+        }catch(e){ console.warn('World news feed error:', feed.label, e.message); }
+      }
+      if(items.length < 2) throw new Error('World news: ' + items.length + ' items');
+      return items.sort((a,b)=>b.pub-a.pub).slice(0,40);
+    },
+
+    // ── Strategy Macro: CryptoCompare Macro categories ──────────────
+    async()=>{
+      const MACRO_CATS = ['Regulation','Business','Macro','Trading','ICO'];
+      const results = await Promise.allSettled(
+        MACRO_CATS.map(cat=>fetch(
+          `https://min-api.cryptocompare.com/data/v2/news/?lang=EN&categories=${cat}&limit=10`,
+          {signal:AbortSignal.timeout(8000)}
+        ).then(r=>r.ok?r.json():null))
+      );
+      const items=[], seen=new Set();
+      results.forEach((r,i)=>{
+        if(r.status!=='fulfilled'||!r.value?.Data) return;
+        r.value.Data.forEach(a=>{
+          if(seen.has(a.id)) return; seen.add(a.id);
+          const title=(a.title||'').toLowerCase();
+          const sentiment=
+            /bull|surge|rally|pump|gain|rise|ath|approve|launch/.test(title)?'bullish':
+            /bear|crash|dump|drop|fall|fear|sell|ban|hack|fine|lawsuit/.test(title)?'bearish':'neutral';
+          items.push({
+            headline:a.title||'',
+            summary:a.body?a.body.substring(0,200)+'...':'',
+            source: a.source_info?.name||'CryptoCompare',
+            sourceType:'macro',
+            link:a.url||'#',
+            pub:(a.published_on||0)*1000||Date.now(),
+            sentiment, coins:[], img:a.imageurl||''
+          });
+        });
+      });
+      if(items.length<3) throw new Error('Macro news: '+items.length);
+      return items.sort((a,b)=>b.pub-a.pub);
+    },
+
+        // ── Strategy 4: Binance Live — LUÔN hoạt động (fallback cuối) ──
     async()=>{
       if(SYMBOLS.length<10) throw new Error('SYMBOLS not ready');
       const list=SYMBOLS.map(s=>({sym:s,base:s.replace('USDT',''),...coins[s]})).filter(c=>c.price>0);
@@ -4882,23 +5111,34 @@ async function fetchNews(manual=false){
       const topL=[...list].sort((a,b)=>chg(a.sym)-chg(b.sym)).slice(0,8);
       const topV=[...list].sort((a,b)=>kvol(b.sym)-kvol(a.sym)).slice(0,6);
       return[
-        ...topG.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) tăng mạnh +${chg(c.sym).toFixed(2)}% hôm nay — Giá: ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-i*5*60000,sentiment:'bullish',coins:[c.base]})),
-        ...topL.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) giảm ${chg(c.sym).toFixed(2)}% hôm nay — Giá: ${fmtP(c.price)}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+8)*5*60000,sentiment:'bearish',coins:[c.base]})),
-        ...topV.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) dẫn đầu khối lượng hôm nay — ${fmtB(kvol(c.sym))}`,source:'Binance Live',link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+16)*4*60000,sentiment:chg(c.sym)>0?'bullish':chg(c.sym)<0?'bearish':'neutral',coins:[c.base]})),
+        ...topG.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) tăng mạnh +${chg(c.sym).toFixed(2)}% hôm nay — Giá: ${fmtP(c.price)}`,source:'Binance Live', sourceType:'crypto', link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-i*5*60000,sentiment:'bullish',coins:[c.base]})),
+        ...topL.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) giảm ${chg(c.sym).toFixed(2)}% hôm nay — Giá: ${fmtP(c.price)}`,source:'Binance Live', sourceType:'crypto', link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+8)*5*60000,sentiment:'bearish',coins:[c.base]})),
+        ...topV.map((c,i)=>({headline:`${nameMap[c.base]||c.base} (${c.base}) dẫn đầu khối lượng hôm nay — ${fmtB(kvol(c.sym))}`,source:'Binance Live', sourceType:'crypto', link:`https://www.binance.com/en/trade/${c.base}_USDT`,pub:Date.now()-(i+16)*4*60000,sentiment:chg(c.sym)>0?'bullish':chg(c.sym)<0?'bearish':'neutral',coins:[c.base]})),
       ];
     }
   ];
 
-  let ok=false;
-  for(const s of strategies){
-    try{allNews=await s(); renderNewsPage(); ok=true; break;}
-    catch(e){console.warn('News strategy failed:',e.message);}
-  }
-  if(!ok){
+  // Chạy tất cả strategies song song, merge kết quả theo thời gian
+  const settled = await Promise.allSettled(strategies.map(s=>s()));
+  const merged = [], seenH = new Set();
+  settled.forEach(r=>{
+    if(r.status!=='fulfilled') return;
+    (r.value||[]).forEach(item=>{
+      const key = item.headline.substring(0,60);
+      if(seenH.has(key)) return;
+      seenH.add(key);
+      merged.push(item);
+    });
+  });
+  merged.sort((a,b)=>b.pub-a.pub);
+  if(merged.length){
+    allNews = merged;
+    renderNewsPage();
+  } else {
     const g=document.getElementById('newsGrid');
     if(g) g.innerHTML='<div class="state-box" style="grid-column:1/-1"><div style="font-size:24px">⚠️</div><div>Không thể tải tin tức. Vui lòng thử lại sau.</div></div>';
   }
-  if(btn){btn.disabled=false; btn.textContent='↻ Làm mới';}
+  if(btn){btn.disabled=false; btn.textContent='Làm mới';}
   fetchingNews=false;
   }
 
@@ -4910,18 +5150,21 @@ function filterNews(el,src){
 
 let newsPageSource='all', newsPageSentiment='all';
 function setNewsSource(el,src){
-  document.querySelectorAll('#newsSourceGroup .news-filter-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#page-news .news-toolbar .news-filter-group:first-child .nf-btn').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); newsPageSource=src; renderNewsPage();
 }
 function setSentFilter(el,sent){
-  document.querySelectorAll('#newsSentGroup .news-filter-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nf-btn.nf-sent').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); newsPageSentiment=sent; renderNewsPage();
 }
 
 function renderNewsPage(){
   const sentLabel={bullish:'📈 Tích Cực',bearish:'📉 Tiêu Cực',neutral:'⚖️ Trung Lập'};
   let items=[...allNews];
-  if(newsPageSource!=='all') items=items.filter(n=>n.source.toLowerCase().includes(newsPageSource.toLowerCase()));
+  if(newsPageSource==='world')  items=items.filter(n=>n.sourceType==='world');
+  else if(newsPageSource==='macro') items=items.filter(n=>n.sourceType==='macro');
+  else if(newsPageSource==='crypto') items=items.filter(n=>!n.sourceType||n.sourceType==='crypto');
+  else if(newsPageSource!=='all')   items=items.filter(n=>n.source.toLowerCase().includes(newsPageSource.toLowerCase()));
   if(newsPageSentiment!=='all') items=items.filter(n=>n.sentiment===newsPageSentiment);
 
   const setEl=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
@@ -4939,7 +5182,7 @@ function renderNewsPage(){
       ${thumb}
       <div class="news-card-body">
         <div class="news-card-meta">
-          <span class="news-card-src">${n.source}</span>
+          <span class="news-card-src">${n.sourceType==='world'?'🌍 ':n.sourceType==='macro'?'📊 ':''}${n.source}</span>
           <span class="news-card-sent ${n.sentiment}">${sentLabel[n.sentiment]||'⚖️ Trung Lập'}</span>
           <span class="news-card-time">${timeAgo(n.pub)}</span>
         </div>
@@ -6439,7 +6682,7 @@ async function loadEvents(){
   // Dùng dữ liệu tĩnh + CoinGecko events API
   eventsData = STATIC_EVENTS;
   try{
-    const r=await fetch('https://api.coingecko.com/api/v3/events?upcoming_events_only=true&per_page=50',{signal:AbortSignal.timeout(8000)});
+    const r=await cgFetch('/events?upcoming_events_only=true&per_page=50',{signal:AbortSignal.timeout(8000)});
     if(r.ok){
       const d=await r.json();
       if(d.data?.length){
