@@ -686,6 +686,25 @@ td.r{text-align:right;}
 .news-refresh-btn:hover{background:rgba(0,212,255,.18);}
 .news-refresh-btn:disabled{opacity:.5;cursor:not-allowed;}
 
+
+/* ── VNStock button ─────────────────────────────── */
+.vnstock-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:7px;
+  background:linear-gradient(135deg,rgba(208,2,27,.18),rgba(208,2,27,.08));
+  border:1px solid rgba(208,2,27,.4);
+  color:#ff6b6b;font-size:11px;font-weight:700;
+  letter-spacing:.5px;text-decoration:none;
+  transition:all .2s;white-space:nowrap;flex-shrink:0;
+}
+.vnstock-btn:hover{
+  background:linear-gradient(135deg,rgba(208,2,27,.35),rgba(208,2,27,.2));
+  border-color:rgba(208,2,27,.7);
+  color:#ff4444;
+  box-shadow:0 0 12px rgba(208,2,27,.25);
+  transform:translateY(-1px);
+}
+
 /* ── News Toolbar ─────────────────────────────────── */
 .news-toolbar{
   display:flex;align-items:center;flex-wrap:wrap;gap:8px;
@@ -1735,7 +1754,17 @@ footer .hl{color:var(--accent);}
 
     </div>
     <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội</span></div>
-    
+
+    <a class="vnstock-btn" href="https://letranvietlong.github.io/VietLongStock.html" target="_blank" rel="noopener" title="Chứng khoán Việt Nam">
+      <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
+        <!-- Cờ VN nền đỏ -->
+        <rect x="1" y="3" width="16" height="12" rx="1.5" fill="#d0021b"/>
+        <!-- Ngôi sao vàng -->
+        <polygon points="9,5.2 9.9,7.8 12.6,7.8 10.4,9.4 11.2,12 9,10.4 6.8,12 7.6,9.4 5.4,7.8 8.1,7.8" fill="#ffcd00"/>
+      </svg>
+      <span>VietLongStock</span>
+    </a>
+
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
 </header>
