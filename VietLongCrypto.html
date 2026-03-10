@@ -3686,21 +3686,28 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 // ── CORS Proxy wrapper cho CoinGecko (cần khi host trên GitHub Pages) ──
 const _CG_BASE = 'https://api.coingecko.com/api/v3';
 async function cgFetch(path, opts={}){
-  // Thử trực tiếp trước (localhost / không bị CORS)
+  const fullUrl = _CG_BASE + path;
+  // Proxy 1: allorigins /get — trả JSON wrapper {contents,status}
   try{
-    const r = await fetch(_CG_BASE + path, {...opts, signal: opts.signal || AbortSignal.timeout(8000)});
-    if(r.ok) return r;
+    const enc = encodeURIComponent(fullUrl);
+    const r = await fetch(`https://api.allorigins.win/get?url=${enc}`, {signal: AbortSignal.timeout(12000)});
+    if(r.ok){
+      const j = await r.json();
+      if(j.contents){
+        // Trả về Response-like object với .json() và .ok
+        return { ok:true, json: async()=>JSON.parse(j.contents), text: async()=>j.contents };
+      }
+    }
   }catch(e){}
-  // Fallback: corsproxy.io
+  // Proxy 2: thingproxy
   try{
-    const url = encodeURIComponent(_CG_BASE + path);
-    const r2 = await fetch(`https://corsproxy.io/?${url}`, {signal: AbortSignal.timeout(10000)});
+    const r2 = await fetch(`https://thingproxy.freeboard.io/fetch/${fullUrl}`, {signal: AbortSignal.timeout(12000)});
     if(r2.ok) return r2;
   }catch(e){}
-  // Fallback 2: allorigins
+  // Proxy 3: allorigins /raw
   try{
-    const url = encodeURIComponent(_CG_BASE + path);
-    const r3 = await fetch(`https://api.allorigins.win/raw?url=${url}`, {signal: AbortSignal.timeout(10000)});
+    const enc = encodeURIComponent(fullUrl);
+    const r3 = await fetch(`https://api.allorigins.win/raw?url=${enc}`, {signal: AbortSignal.timeout(12000)});
     if(r3.ok) return r3;
   }catch(e){}
   return null;
@@ -3970,7 +3977,7 @@ async function loadCoinGeckoLogos(){
   /* ── Nguồn 3: CryptoCompare (CDN ảnh trực tiếp) ── */
   if(loaded<100){
     try{
-      const res=await fetch('https://min-api.cryptocompare.com/data/all/coinlist?limit=200&summary=true',
+      const res=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://min-api.cryptocompare.com/data/all/coinlist?limit=200&summary=true')}`,
         {signal:AbortSignal.timeout(10000)});
       if(res.ok){
         const json=await res.json();
@@ -4572,9 +4579,10 @@ setInterval(()=>{
 
 async function loadFearGreed(){
   try{
-    const res=await fetch('https://api.alternative.me/fng/?limit=4',{signal:AbortSignal.timeout(8000)});
+    const res=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://api.alternative.me/fng/?limit=4')}`,{signal:AbortSignal.timeout(8000)});
     if(!res.ok) throw new Error('FNG '+res.status);
-    const data=await res.json();
+    const raw=await res.json();
+    const data = raw.contents ? JSON.parse(raw.contents) : raw;
     const items=data.data||[];
     if(!items.length) throw new Error('empty');
     const cur=items[0];
@@ -5595,16 +5603,16 @@ async function fetchNews(manual=false){
     // ── Strategy World: Tin tức thế giới ảnh hưởng crypto ──────────
     // Dùng RSS2JSON proxy (không CORS) để lấy từ Reuters/BBC/FT
     async()=>{
-      const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?api_key=&rss_url=';
+      const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
       const WORLD_FEEDS = [
-        // Reuters Markets
+        // Reuters Business (hoạt động với rss2json)
         {url:'https://feeds.reuters.com/reuters/businessNews', label:'Reuters'},
-        // CNBC Economy
-        {url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147', label:'CNBC'},
-        // Bloomberg Markets (RSS)
-        {url:'https://feeds.bloomberg.com/markets/news.rss', label:'Bloomberg'},
+        // CNBC Top News
+        {url:'https://www.cnbc.com/id/100003114/device/rss/rss.html', label:'CNBC'},
+        // BBC Business
+        {url:'https://feeds.bbci.co.uk/news/business/rss.xml', label:'BBC Business'},
         // Financial Times
-        {url:'https://www.ft.com/rss/home/uk', label:'Financial Times'},
+        {url:'https://www.ft.com/rss/home', label:'Financial Times'},
       ];
       // Từ khoá ảnh hưởng crypto
       const CRYPTO_IMPACT_KW = [
@@ -5619,22 +5627,18 @@ async function fetchNews(manual=false){
       // allorigins proxy để bypass CORS
       for(const feed of WORLD_FEEDS){
         try{
-          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
-          const resp = await fetch(proxyUrl, {signal:AbortSignal.timeout(8000)});
+          // rss2json.com — không bị CORS, hoạt động với GitHub Pages
+          const proxyUrl = `${RSS_PROXY}${encodeURIComponent(feed.url)}&count=20`;
+          const resp = await fetch(proxyUrl, {signal:AbortSignal.timeout(10000)});
           if(!resp.ok) continue;
           const data = await resp.json();
-          const xml = data.contents || '';
-          // Parse RSS XML đơn giản
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(xml, 'text/xml');
-          const rssItems = doc.querySelectorAll('item');
-          rssItems.forEach(item=>{
-            const title   = item.querySelector('title')?.textContent || '';
-            const link    = item.querySelector('link')?.textContent || '#';
-            const pubDate = item.querySelector('pubDate')?.textContent || '';
-            const desc    = item.querySelector('description')?.textContent || '';
+          if(data.status !== 'ok' || !data.items?.length) continue;
+          data.items.forEach(item=>{
+            const title    = item.title || '';
+            const link     = item.link  || '#';
+            const pubDate  = item.pubDate || '';
+            const desc     = item.description || item.content || '';
             const titleLow = title.toLowerCase();
-            // Chỉ lấy nếu liên quan đến crypto/tài chính/kinh tế
             const relevant = CRYPTO_IMPACT_KW.some(kw => titleLow.includes(kw));
             if(!relevant) return;
             const sentiment =
@@ -5642,11 +5646,12 @@ async function fetchNews(manual=false){
               /hike|crash|ban|sanction|war|hack|fraud|arrest|fall|drop|fear|recession|bearish/.test(titleLow) ? 'bearish' : 'neutral';
             items.push({
               headline: title,
-              summary: desc.replace(/<[^>]+>/g,'').substring(0,200) + '...',
-              source: feed.label,
+              summary:  desc.replace(/<[^>]+>/g,'').substring(0,200),
+              source:   feed.label,
+              link,
+              pub:      pubDate ? new Date(pubDate).getTime() : Date.now(),
+              sentiment,
               sourceType: 'world',
-              link, pub: pubDate ? new Date(pubDate).getTime() : Date.now(),
-              sentiment, coins: [], img: ''
             });
           });
         }catch(e){ console.warn('World news feed error:', feed.label, e.message); }
@@ -8255,10 +8260,11 @@ async function loadVNIndices(){
 // ── VN News ───────────────────────────────────────────────
 const VN_NEWS_FEEDS = [
   {label:'CafeF', url:'https://cafef.vn/thi-truong-chung-khoan.rss', src:'cafef'},
-  {label:'Vietstock', url:'https://vietstock.vn/830/chung-khoan.htm', src:'vietstock'},
-  {label:'NDH', url:'https://ndh.vn/thi-truong/chung-khoan.rss', src:'ndh'},
+  {label:'NDH', url:'https://ndh.vn/chung-khoan.rss', src:'ndh'},
   {label:'Tin Nhanh CK', url:'https://tinnhanhchungkhoan.vn/chung-khoan/rss.xml', src:'tinnhanhck'},
+  {label:'VnEconomy', url:'https://vneconomy.vn/chung-khoan.rss', src:'vneconomy'},
 ];
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 let _vnAllNews = [], _vnNewsFilter = 'all';
 
 async function loadVNNews(){
@@ -8268,27 +8274,18 @@ async function loadVNNews(){
   if(grid) grid.innerHTML='<div class="vn-loading" style="padding:40px;text-align:center;grid-column:1/-1"><span class="chart-spinner" style="display:inline-block"></span> Đang tải tin tức...</div>';
 
   const results = await Promise.allSettled(VN_NEWS_FEEDS.map(async feed=>{
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
-    const resp = await fetch(proxy, {signal:AbortSignal.timeout(9000)});
+    const proxy = `${RSS2JSON}${encodeURIComponent(feed.url)}&count=20`;
+    const resp = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
     if(!resp.ok) return [];
-    const json = await resp.json();
-    const xml = json.contents||'';
-    const doc = new DOMParser().parseFromString(xml,'text/xml');
-    const items = doc.querySelectorAll('item');
-    const news = [];
-    items.forEach(item=>{
-      const title   = item.querySelector('title')?.textContent||'';
-      const link    = item.querySelector('link')?.textContent||'#';
-      const pubDate = item.querySelector('pubDate')?.textContent||'';
-      const desc    = item.querySelector('description')?.textContent||'';
-      if(!title) return;
-      news.push({
-        headline:title, summary:desc.replace(/<[^>]+>/g,'').substring(0,180)+'...',
-        source:feed.label, src:feed.src,
-        link, pub:pubDate?new Date(pubDate).getTime():Date.now(),
-      });
-    });
-    return news;
+    const data = await resp.json();
+    if(data.status !== 'ok' || !data.items?.length) return [];
+    return data.items.map(item=>({
+      headline: item.title || '',
+      summary:  (item.description||item.content||'').replace(/<[^>]+>/g,'').substring(0,180),
+      source:   feed.label, src: feed.src,
+      link:     item.link || '#',
+      pub:      item.pubDate ? new Date(item.pubDate).getTime() : Date.now(),
+    })).filter(n=>n.headline);
   }));
 
   _vnAllNews = [];
