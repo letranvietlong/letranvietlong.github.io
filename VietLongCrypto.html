@@ -8054,16 +8054,19 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Destroy widget cũ
-  try{ if(_vnTVWidget && _vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
+  // Destroy widget cũ hoàn toàn
+  try{ if(_vnTVWidget && typeof _vnTVWidget.remove==='function') _vnTVWidget.remove(); }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
+  // Xóa toàn bộ DOM - kể cả iframe TV inject
+  while(container.firstChild) container.removeChild(container.firstChild);
   container.innerHTML = '';
 
-  const id  = 'tv_adv_' + Date.now();
+  // Tạo wrapper MỚI với id unique
+  const id  = 'tvw_' + ticker.replace(/[^A-Z0-9]/g,'') + '_' + Date.now();
   const div = document.createElement('div');
   div.id = id;
-  div.style.cssText = 'width:100%;height:100%;';
+  div.style.cssText = 'width:100%;height:100%;min-height:560px;';
   container.appendChild(div);
 
   function initWidget(){
@@ -8564,9 +8567,12 @@ window.loadVNHeatmap = loadVNHeatmap;
 window.renderHeatmap = renderHeatmap;
 window.renderVNMovers = renderVNMovers;async function vnSelectStock(ticker){
   _vnCurrentTicker = ticker;
-  // showVNPage sẽ tự gọi loadVNChart vì ticker đã được set
+  // 1. Chuyển sang tab chart
   showVNPage('vn-chart', document.getElementById('stab-vn-chart'));
-  // Fetch quote song song (update info card) - không block chart
+  // 2. Load chart với ticker đã set
+  const activeTf = document.querySelector('#page-vn-chart .tf-btn.active');
+  loadVNChart(activeTf?.textContent||'1D', activeTf);
+  // 3. Update info card (non-blocking)
   try{
     const d = await fetchVNSingle(ticker);
     if(d) updateVNStockCard(d);
