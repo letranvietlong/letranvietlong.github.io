@@ -2091,7 +2091,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.2</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.3</span></span></div>
 
 
     
@@ -3494,48 +3494,55 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <!-- ══<!-- ══════════════ PAGE: VN-CHART ══════════════ -->
 <div class="page" id="page-vn-chart">
-<div class="vn-layout">
-  <div class="vn-page-header">
-    <div class="vn-page-title">📈 Biểu Đồ Cổ Phiếu</div>
-  </div>
-  <div class="vn-chart-layout">
-    <!-- Left: search + info -->
-    <div class="vn-chart-sidebar">
-      <div class="vn-search-box">
-        <input type="text" id="vnStockSearch" placeholder="🔍 Nhập mã CK (VD: VNM, VIC...)"
-          oninput="vnSearchStock(this.value)"
-          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-                 border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box">
-        <div class="vn-search-results" id="vnSearchResults"></div>
-      </div>
-      <!-- Stock info card -->
-      <div class="vn-stock-info-card" id="vnStockInfoCard">
-        <div class="vn-sic-header">
-          <div class="vn-sic-ticker" id="vnSicTicker">—</div>
-          <div class="vn-sic-name" id="vnSicName">Chọn mã cổ phiếu</div>
-        </div>
-        <div class="vn-sic-price" id="vnSicPrice">—</div>
-        <div class="vn-sic-chg" id="vnSicChg">—</div>
-        <div class="vn-sic-grid">
-          <div><span class="vn-sic-lbl">Trần</span><span class="vn-sic-val" id="vnSicCeil" style="color:#ff00ff">—</span></div>
-          <div><span class="vn-sic-lbl">Sàn</span><span class="vn-sic-val" id="vnSicFloor" style="color:#00ffff">—</span></div>
-          <div><span class="vn-sic-lbl">TC</span><span class="vn-sic-val" id="vnSicRef" style="color:#f59e0b">—</span></div>
-          <div><span class="vn-sic-lbl">Cao</span><span class="vn-sic-val" id="vnSicHigh" style="color:#22c55e">—</span></div>
-          <div><span class="vn-sic-lbl">Thấp</span><span class="vn-sic-val" id="vnSicLow" style="color:#ef4444">—</span></div>
-          <div><span class="vn-sic-lbl">KL</span><span class="vn-sic-val" id="vnSicVol">—</span></div>
-        </div>
-      </div>
-      <!-- Quick picks -->
-      <div class="vn-quick-picks">
-        <div class="vn-qp-label">Cổ Phiếu Phổ Biến</div>
-        <div class="vn-qp-grid" id="vnQuickPicks"></div>
-      </div>
+<div class="chart-layout" id="vnChartLayout">
+
+  <!-- LEFT: Danh sách cổ phiếu -->
+  <div class="coin-list-panel">
+    <div class="coin-list-search">
+      <input type="text" id="vnStockSearch" placeholder="🔍 Tìm mã cổ phiếu..." oninput="vnSearchStock(this.value)">
     </div>
-    <!-- Right: chart -->
-    <div class="vn-chart-main">
-      <div class="vn-chart-tf-bar">
-        <span style="font-size:11px;color:var(--muted);font-weight:600" id="vnChartTitle">—</span>
-        <div style="display:flex;gap:4px;margin-left:auto">
+    <div class="coin-list-items" id="vnStockList"></div>
+  </div>
+
+  <!-- CENTER: Chart + header -->
+  <div class="chart-main">
+    <div class="chart-header">
+      <div class="chart-coin-info">
+        <!-- Logo box -->
+        <div id="vnChartLogoBox" style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;background:rgba(232,25,44,.12);color:#e8192c;border:1px solid rgba(232,25,44,.25)">—</div>
+        <div>
+          <div class="chart-coin-name" id="vnChartName">Chọn cổ phiếu</div>
+          <div class="chart-coin-sym" id="vnChartSym" style="color:var(--muted)">—</div>
+        </div>
+        <div class="chart-price-block">
+          <span class="chart-price" id="vnChartPrice">—</span>
+          <span class="chart-chg" id="vnChartChg">—</span>
+        </div>
+        <div class="chart-mini-stats">
+          <div class="chart-stat">
+            <span class="chart-stat-label">Tham chiếu</span>
+            <span class="chart-stat-val" id="vnChartRef" style="color:var(--text2)">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Trần</span>
+            <span class="chart-stat-val" id="vnChartCeil" style="color:#ff00ff">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Sàn</span>
+            <span class="chart-stat-val" id="vnChartFloor" style="color:#00ffff">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">KL Khớp</span>
+            <span class="chart-stat-val" id="vnChartVol" style="color:var(--text2)">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">GT Khớp</span>
+            <span class="chart-stat-val" id="vnChartVal" style="color:var(--text2)">—</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="tf-btns">
           <button class="tf-btn active" onclick="loadVNChart('1D',this)">1D</button>
           <button class="tf-btn" onclick="loadVNChart('1W',this)">1T</button>
           <button class="tf-btn" onclick="loadVNChart('1M',this)">1M</button>
@@ -3543,11 +3550,69 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <button class="tf-btn" onclick="loadVNChart('1Y',this)">1N</button>
         </div>
       </div>
-      <div id="vnChartContainer" style="width:100%;min-height:560px;height:calc(100vh - 240px);max-height:900px;background:var(--surface);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;overflow:hidden">
-        Chọn mã cổ phiếu để xem biểu đồ
+    </div>
+
+    <!-- Stats bar -->
+    <div class="chart-stats-bar" id="vnChartStatsBar">
+      <div class="csb-item"><span class="csb-lbl">Sàn</span><span class="csb-val" id="vnSbExchange">—</span></div>
+      <div class="csb-item"><span class="csb-lbl">Ngành</span><span class="csb-val" id="vnSbSector">—</span></div>
+      <div class="csb-item"><span class="csb-lbl">Cao ngày</span><span class="csb-val" id="vnSbHigh" style="color:#00e676">—</span></div>
+      <div class="csb-item"><span class="csb-lbl">Thấp ngày</span><span class="csb-val" id="vnSbLow" style="color:#ff3d57">—</span></div>
+      <div class="csb-item"><span class="csb-lbl">Giá TC</span><span class="csb-val" id="vnSbRef">—</span></div>
+    </div>
+
+    <!-- Chart area -->
+    <div class="chart-wrap">
+      <div id="vnChartContainer" style="width:100%;height:100%;min-height:520px;height:calc(100vh - 280px)"></div>
+      <div class="chart-loading" id="vnChartLoading">
+        <div class="chart-loading-icon">📊</div>
+        <span>Chọn mã cổ phiếu để xem biểu đồ</span>
       </div>
     </div>
   </div>
+
+  <!-- RIGHT: Thông tin cổ phiếu -->
+  <div class="indicators-panel" id="vnIndicatorsPanel">
+    <div class="ob-tabs" style="flex-shrink:0">
+      <button class="ob-tab active" onclick="vnSwitchRightPanel('info',this)">📋 Thông Tin</button>
+      <button class="ob-tab" onclick="vnSwitchRightPanel('picks',this)">⭐ VN30</button>
+    </div>
+
+    <!-- Info panel -->
+    <div id="vn-rp-info" style="display:flex;flex-direction:column;gap:0;padding:12px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+      <div class="info-section">
+        <div class="info-sec-title">Thông Tin Cổ Phiếu</div>
+        <div class="info-row"><span class="info-lbl">Mã CK</span><span class="info-val" id="vnInfoTicker">—</span></div>
+        <div class="info-row"><span class="info-lbl">Tên công ty</span><span class="info-val" id="vnInfoName">—</span></div>
+        <div class="info-row"><span class="info-lbl">Sàn giao dịch</span><span class="info-val" id="vnInfoExchange">—</span></div>
+        <div class="info-row"><span class="info-lbl">Giá hiện tại</span><span class="info-val" id="vnInfoPrice">—</span></div>
+        <div class="info-row"><span class="info-lbl">Thay đổi</span><span class="info-val" id="vnInfoChange">—</span></div>
+        <div class="info-row"><span class="info-lbl">Giá tham chiếu</span><span class="info-val" id="vnInfoRef">—</span></div>
+        <div class="info-row"><span class="info-lbl">Giá trần</span><span class="info-val" id="vnInfoCeil" style="color:#ff00ff">—</span></div>
+        <div class="info-row"><span class="info-lbl">Giá sàn</span><span class="info-val" id="vnInfoFloor" style="color:#00ffff">—</span></div>
+      </div>
+      <div class="info-section" style="margin-top:8px">
+        <div class="info-sec-title">Giao Dịch</div>
+        <div class="info-row"><span class="info-lbl">KL Khớp</span><span class="info-val" id="vnInfoVol">—</span></div>
+        <div class="info-row"><span class="info-lbl">GT Khớp</span><span class="info-val" id="vnInfoVal">—</span></div>
+        <div class="info-row"><span class="info-lbl">Cao ngày</span><span class="info-val" id="vnInfoHigh" style="color:#00e676">—</span></div>
+        <div class="info-row"><span class="info-lbl">Thấp ngày</span><span class="info-val" id="vnInfoLow" style="color:#ff3d57">—</span></div>
+      </div>
+      <div class="info-section" style="margin-top:8px">
+        <div class="info-sec-title">Thêm Vào Danh Mục</div>
+        <button onclick="vnAddToWatchlist(_vnCurrentTicker)" style="width:100%;padding:8px;background:rgba(232,25,44,.15);border:1px solid rgba(232,25,44,.3);border-radius:8px;color:#e8192c;font-weight:700;cursor:pointer;font-size:12px">
+          ⭐ Thêm vào Danh Mục
+        </button>
+      </div>
+    </div>
+
+    <!-- VN30 Quick picks -->
+    <div id="vn-rp-picks" style="display:none;flex-direction:column;gap:6px;padding:10px;overflow-y:auto;flex:1">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">VN30 Bluechips</div>
+      <div id="vnQuickPicksPanel"></div>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -8036,6 +8101,7 @@ function showVNPage(id, el){
     }
   }
   if(id==='vn-chart'){
+    _renderVNStockListPanel();
     renderVNQuickPicks();
     // Chỉ hiện placeholder nếu chưa chọn ticker
     if(!_vnCurrentTicker){
@@ -8054,6 +8120,56 @@ function showVNPage(id, el){
     // Nếu đã có ticker → KHÔNG auto-reload (vnSelectStock tự gọi loadVNChart)
   }
 }
+function vnSwitchRightPanel(tab, el){
+  document.querySelectorAll('#vnIndicatorsPanel .ob-tab').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('vn-rp-info').style.display   = tab==='info'  ?'flex':'none';
+  document.getElementById('vn-rp-picks').style.display  = tab==='picks' ?'flex':'none';
+  if(tab==='picks') _renderVNQuickPicksPanel();
+}
+
+function _renderVNQuickPicksPanel(){
+  const wrap = document.getElementById('vnQuickPicksPanel');
+  if(!wrap) return;
+  const tickers = VN_GROUPS?.vn30 || VN_POPULAR || [];
+  wrap.innerHTML = tickers.slice(0,30).map(t=>`
+    <div onclick="vnSelectStock('${t}')" style="
+      display:flex;align-items:center;gap:8px;padding:7px 10px;
+      border-radius:8px;cursor:pointer;background:var(--surface2);
+      border:1px solid var(--border);margin-bottom:4px;
+      transition:background .15s"
+      onmouseover="this.style.background='rgba(232,25,44,.1)'"
+      onmouseout="this.style.background='var(--surface2)'">
+      <div style="width:28px;height:28px;border-radius:7px;background:${_vnColor(t)}22;
+        border:1px solid ${_vnColor(t)}44;display:flex;align-items:center;justify-content:center;
+        font-size:10px;font-weight:800;color:${_vnColor(t)};flex-shrink:0">${t.slice(0,2)}</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">${t}</div>
+        <div style="font-size:10px;color:var(--muted)">${(VN_NAMES[t]||'').slice(0,20)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// Render coin list panel bên trái của VN chart
+function _renderVNStockListPanel(){
+  const wrap = document.getElementById('vnStockList');
+  if(!wrap) return;
+  const tickers = (VN_GROUPS?.vn30||[]).concat(
+    (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
+  ).slice(0,50);
+  wrap.innerHTML = tickers.map(t=>`
+    <div class="coin-list-item ${_vnCurrentTicker===t?'active':''}" onclick="vnSelectStock('${t}')">
+      <div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;
+        background:${_vnColor(t)}22;border:1px solid ${_vnColor(t)}44;
+        display:flex;align-items:center;justify-content:center;
+        font-size:10px;font-weight:800;color:${_vnColor(t)}">${t.slice(0,2)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:12px">${t}</div>
+        <div style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(VN_NAMES[t]||'').slice(0,18)}</div>
+      </div>
+    </div>`).join('');
+}
+
 
 // ── Session checker ───────────────────────────────────────
 function getVNSession(){
@@ -8788,6 +8904,20 @@ window.renderVNHeatmap = renderVNHeatmap;
 window.loadVNHeatmap = loadVNHeatmap;
 window.renderHeatmap = renderHeatmap;
 window.renderVNMovers = renderVNMovers;async function vnSelectStock(ticker){
+  // Update header logo box
+  const logoBox = document.getElementById('vnChartLogoBox');
+  if(logoBox){ logoBox.textContent=ticker.slice(0,2); logoBox.style.background=_vnColor(ticker)+'22'; logoBox.style.color=_vnColor(ticker); logoBox.style.borderColor=_vnColor(ticker)+'44'; }
+  const nameEl = document.getElementById('vnChartName');
+  if(nameEl) nameEl.textContent = VN_NAMES[ticker]||ticker;
+  const symEl = document.getElementById('vnChartSym');
+  if(symEl) symEl.textContent = ticker;
+  // Hide loading, update info panel
+  document.getElementById('vnChartLoading') && (document.getElementById('vnChartLoading').style.display='none');
+  ['vnInfoTicker','vnInfoName'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=id==='vnInfoTicker'?ticker:(VN_NAMES[ticker]||'—'); });
+  // Refresh list highlight
+  document.querySelectorAll('#vnStockList .coin-list-item').forEach(el=>{
+    el.classList.toggle('active', el.querySelector('div>div')?.textContent===ticker);
+  });
   _vnCurrentTicker = ticker;
   // 1. Chuyển sang tab chart
   showVNPage('vn-chart', document.getElementById('stab-vn-chart'));
@@ -8797,7 +8927,35 @@ window.renderVNMovers = renderVNMovers;async function vnSelectStock(ticker){
   // 3. Update info card (non-blocking)
   try{
     const d = await fetchVNSingle(ticker);
-    if(d) updateVNStockCard(d);
+    if(d){
+      updateVNStockCard(d);
+      // Update right panel info
+      const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v||'—';};
+      set('vnChartPrice',  vnFmtPrice(d.price));
+      set('vnChartRef',    vnFmtPrice(d.ref));
+      set('vnChartCeil',   vnFmtPrice(d.ceil));
+      set('vnChartFloor',  vnFmtPrice(d.floor));
+      set('vnChartVol',    vnFmtVol(d.vol));
+      set('vnChartVal',    vnFmtVal(d.val));
+      set('vnSbHigh',      vnFmtPrice(d.high));
+      set('vnSbLow',       vnFmtPrice(d.low));
+      set('vnSbRef',       vnFmtPrice(d.ref));
+      set('vnInfoPrice',   vnFmtPrice(d.price));
+      set('vnInfoChange',  (d.change>=0?'+':'')+vnFmtPrice(d.change)+' ('+(d.changePct>=0?'+':'')+d.changePct.toFixed(2)+'%)');
+      set('vnInfoRef',     vnFmtPrice(d.ref));
+      set('vnInfoCeil',    vnFmtPrice(d.ceil));
+      set('vnInfoFloor',   vnFmtPrice(d.floor));
+      set('vnInfoVol',     vnFmtVol(d.vol));
+      set('vnInfoVal',     vnFmtVal(d.val));
+      set('vnInfoHigh',    vnFmtPrice(d.high));
+      set('vnInfoLow',     vnFmtPrice(d.low));
+      const chgEl=document.getElementById('vnChartChg');
+      if(chgEl){
+        const pct=d.changePct||0;
+        chgEl.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';
+        chgEl.className='chart-chg '+(pct>0?'up':pct<0?'dn':'');
+      }
+    }
   }catch(e){}
 }
 </script>
