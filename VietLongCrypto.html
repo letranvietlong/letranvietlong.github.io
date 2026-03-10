@@ -7837,11 +7837,7 @@ function showVNPage(id, el){
         cont.appendChild(ph);
       }
     }
-    // Nếu đã có ticker → reload chart với ticker hiện tại
-    else {
-      const activeTf=document.querySelector('#page-vn-chart .tf-btn.active');
-      loadVNChart(activeTf?.textContent||'1D', activeTf);
-    }
+    // Nếu đã có ticker → KHÔNG auto-reload (vnSelectStock tự gọi loadVNChart)
   }
 }
 
@@ -8033,7 +8029,7 @@ async function loadVNChart(tf, el){
   }
 
   const ticker   = _vnCurrentTicker;
-  const tfMap    = {'1D':'D','1T':'W','1M':'M','3T':'3M','1N':'12M'};
+  const tfMap    = {'1D':'D','1W':'W','1M':'M','3M':'3M','1Y':'12M'};
   const interval = tfMap[tf]||'D';
   const sym      = tvSym(ticker);
 
@@ -8054,71 +8050,50 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Destroy widget cũ hoàn toàn
-  try{ if(_vnTVWidget && typeof _vnTVWidget.remove==='function') _vnTVWidget.remove(); }catch(e){}
+  // Destroy old
+  try{ if(_vnTVWidget&&_vnTVWidget.remove) _vnTVWidget.remove(); }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
-  // Xóa toàn bộ DOM - kể cả iframe TV inject
   while(container.firstChild) container.removeChild(container.firstChild);
-  container.innerHTML = '';
 
-  // Tạo wrapper MỚI với id unique
-  const id  = 'tvw_' + ticker.replace(/[^A-Z0-9]/g,'') + '_' + Date.now();
-  const div = document.createElement('div');
-  div.id = id;
-  div.style.cssText = 'width:100%;height:100%;min-height:560px;';
-  container.appendChild(div);
+  // Map interval cho TV iframe
+  // TV interval: D=ngày, W=tuần, M=tháng (không phải range)
+  const ivMap = {'D':'D','W':'W','M':'M','3M':'W','12M':'W'};
+  const iv = ivMap[interval]||'D';
 
-  function initWidget(){
-    try{
-      _vnTVWidget = new TradingView.widget({
-        autosize:         true,
-        symbol:           sym,
-        interval:         interval,
-        timezone:         'Asia/Ho_Chi_Minh',
-        theme:            'dark',
-        style:            '1',
-        locale:           'vi_VN',
-        toolbar_bg:       '#131722',
-        enable_publishing: false,
-        hide_top_toolbar:  false,
-        hide_legend:       false,
-        save_image:        false,
-        container_id:      id,
-        studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
-        overrides:{
-          'paneProperties.background':     '#131722',
-          'paneProperties.backgroundType': 'solid',
-        },
-        disabled_features:[
-          'header_symbol_search','header_compare',
-          'header_screenshot','go_to_date',
-        ],
-      });
-    }catch(e){
-      _buildStooqChart(container, ticker, interval);
-    }
-  }
+  // Dùng TradingView iframe embed - CHÍNH XÁC symbol VN
+  // sym = 'HOSE:FPT', 'HNX:VCB', 'HOSE:VNINDEX' etc.
+  const params = new URLSearchParams({
+    symbol:      sym,
+    interval:    iv,
+    timezone:    'Asia/Ho_Chi_Minh',
+    theme:       'dark',
+    style:       '1',
+    locale:      'vi_VN',
+    toolbar_bg:  '#131722',
+    hide_side_toolbar: '0',
+    allow_symbol_change: '0',
+    save_image:  '0',
+    studies:     'RSI@tv-basicstudies',
+    withdateranges:    '1',
+    hide_top_toolbar:  '0',
+    show_popup_button: '0',
+    popup_width: '1000',
+    popup_height: '650',
+  });
 
-  if(typeof TradingView !== 'undefined'){
-    initWidget();
-  } else {
-    // Load tv.js chỉ 1 lần
-    if(!document.querySelector('script[src*="tv.js"]')){
-      const s = document.createElement('script');
-      s.src = 'https://s3.tradingview.com/tv.js';
-      s.onload  = initWidget;
-      s.onerror = ()=> _buildStooqChart(container, ticker, interval);
-      document.head.appendChild(s);
-    } else {
-      // Script đang load
-      const check = setInterval(()=>{
-        if(typeof TradingView !== 'undefined'){ clearInterval(check); initWidget(); }
-      }, 200);
-      setTimeout(()=>{ clearInterval(check); _buildStooqChart(container,ticker,interval); }, 8000);
-    }
-  }
+  console.log('[VLC] Building TV iframe:', sym, iv);
+  const iframe = document.createElement('iframe');
+  iframe.src = 'https://s.tradingview.com/widgetembed/?' + params.toString();
+  iframe.style.cssText = 'width:100%;height:100%;border:none;min-height:560px;';
+  iframe.setAttribute('allowtransparency','true');
+  iframe.setAttribute('frameborder','0');
+  iframe.setAttribute('scrolling','no');
+  iframe.setAttribute('allowfullscreen','true');
+  container.appendChild(iframe);
+  _vnTVWidget = iframe; // lưu reference để destroy sau
 }
+
 
 
 // Fallback: Stooq CSV qua proxy → LightweightCharts
