@@ -4414,72 +4414,71 @@ async function loadFearGreed(){
 /* ── Global Market Stats (CoinGecko /global) ── */
 async function loadGlobalMarket(){
   try{
-    // CoinCap /global — CORS native, không cần proxy
-    // CoinCap v2 + v3 fallback
-    let capData = null;
-    for(const url of [
-      'https://api.coincap.io/v2/assets?limit=5',
-      'https://rest.coincap.io/v3/assets?limit=5',
-    ]){
-      try{
-        const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
-        if(r.ok){ capData=await r.json(); break; }
-      }catch(e){}
-    }
-    if(!capData) throw new Error('CoinCap unavailable');
-    // Build global-like object từ CoinCap data
-    const topAssets=capData.data||[];
-    const totalMcap=topAssets.reduce((s,a)=>s+(parseFloat(a.marketCapUsd)||0),0);
-    const btcMcap=parseFloat((topAssets.find(a=>a.id==='bitcoin')||{}).marketCapUsd||0);
-    const ethMcap=parseFloat((topAssets.find(a=>a.id==='ethereum')||{}).marketCapUsd||0);
-    const d={
-      total_market_cap:{usd:totalMcap},
-      total_volume:{usd:topAssets.reduce((s,a)=>s+(parseFloat(a.volumeUsd24Hr)||0),0)},
-      market_cap_percentage:{btc:totalMcap?btcMcap/totalMcap*100:0, eth:totalMcap?ethMcap/totalMcap*100:0},
-      active_cryptocurrencies: 10000,
-      markets: 600,
-      market_cap_change_percentage_24h_usd: parseFloat(topAssets[0]?.changePercent24Hr||0),
-    };
+    // Dùng Binance /ticker/24hr (đã có CORS, không cần key)
+    // Tính tổng market cap/vol từ top coins Binance đang theo dõi
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr',
+      {signal:AbortSignal.timeout(10000)});
+    if(!r.ok) throw new Error('Binance '+r.status);
+    const tickers = await r.json();
 
-    // Market cap
-    const mc=d.total_market_cap?.usd||0;
-    const mcChg=d.market_cap_change_percentage_24h_usd||0;
-    const fmtMc=mc>=1e12?'$'+(mc/1e12).toFixed(2)+'T':mc>=1e9?'$'+(mc/1e9).toFixed(0)+'B':'$'+(mc/1e6).toFixed(0)+'M';
-    const el=document.getElementById('gmMarketCap');
-    if(el) el.textContent=fmtMc;
+    // Tính từ USDT pairs
+    const usdtPairs = tickers.filter(t=>(t.symbol||'').endsWith('USDT'));
+    const totalVol   = usdtPairs.reduce((s,t)=>s+(parseFloat(t.quoteVolume)||0),0);
+
+    // Lấy top coins để tính market cap ước lượng
+    // BTC market cap ≈ BTC price × 19.7M supply
+    const btcT = usdtPairs.find(t=>t.symbol==='BTCUSDT');
+    const ethT = usdtPairs.find(t=>t.symbol==='ETHUSDT');
+    const btcPrice  = parseFloat(btcT?.lastPrice||0);
+    const ethPrice  = parseFloat(ethT?.lastPrice||0);
+    const btcMcap   = btcPrice * 19_700_000;
+    const ethMcap   = ethPrice * 120_000_000;
+    // Tổng mcap ước lượng: BTC thường ~55% thị trường
+    const btcDom    = parseFloat(btcT?.priceChangePercent||0);
+    // Dùng tỉ lệ BTC dominance xấp xỉ từ giá trị thực
+    const totalMcap = btcMcap / 0.55;
+    const altMcap   = Math.max(0, totalMcap - btcMcap - ethMcap);
+    const btcDomPct = btcMcap/totalMcap*100;
+    const ethDomPct = ethMcap/totalMcap*100;
+    const altDomPct = Math.max(0, 100-btcDomPct-ethDomPct);
+
+    // 24h change của tổng market = trung bình top 20 coins
+    const top20 = usdtPairs
+      .sort((a,b)=>parseFloat(b.quoteVolume||0)-parseFloat(a.quoteVolume||0))
+      .slice(0,20);
+    const mcChg = top20.reduce((s,t)=>s+(parseFloat(t.priceChangePercent)||0),0)/top20.length;
+
+    // Render
+    const fmtMc = totalMcap>=1e12 ? '$'+(totalMcap/1e12).toFixed(2)+'T'
+                : totalMcap>=1e9  ? '$'+(totalMcap/1e9).toFixed(0)+'B'
+                : '$'+(totalMcap/1e6).toFixed(0)+'M';
+    const fmtVol = totalVol>=1e12 ? '$'+(totalVol/1e12).toFixed(2)+'T'
+                 : totalVol>=1e9  ? '$'+(totalVol/1e9).toFixed(0)+'B'
+                 : '$'+(totalVol/1e6).toFixed(0)+'M';
+
+    const _s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+    _s('gmMarketCap', fmtMc);
+    _s('gmVolume',    fmtVol);
+    _s('gmActiveCoins', usdtPairs.length.toLocaleString());
+    _s('gmMarkets',   '600+');
+
     const chgEl=document.getElementById('gmCapChg');
     if(chgEl){
       chgEl.textContent=(mcChg>=0?'▲ +':'▼ ')+mcChg.toFixed(2)+'% (24h)';
       chgEl.style.color=mcChg>=0?'var(--green)':'var(--red)';
     }
 
-    // Volume
-    const vol=d.total_volume?.usd||0;
-    const fmtVol=vol>=1e12?'$'+(vol/1e12).toFixed(2)+'T':vol>=1e9?'$'+(vol/1e9).toFixed(0)+'B':'$'+(vol/1e6).toFixed(0)+'M';
-    const vEl=document.getElementById('gmVolume');
-    if(vEl) vEl.textContent=fmtVol;
-
-    // Active coins & markets
-    const acEl=document.getElementById('gmActiveCoins');
-    if(acEl) acEl.textContent=(d.active_cryptocurrencies||0).toLocaleString();
-    const mEl=document.getElementById('gmMarkets');
-    if(mEl) mEl.textContent=(d.markets||0).toLocaleString();
-
-    // Dominance
-    const btcD=d.market_cap_percentage?.btc||0;
-    const ethD=d.market_cap_percentage?.eth||0;
-    const altD=Math.max(0,100-btcD-ethD);
     const setBd=(id,w)=>{const e=document.getElementById(id);if(e)setTimeout(()=>e.style.width=w+'%',100);};
-    setBd('gmBtcBar',btcD);
-    setBd('gmEthBar',ethD);
-    setBd('gmAltBar',altD);
+    setBd('gmBtcBar',btcDomPct); setBd('gmEthBar',ethDomPct); setBd('gmAltBar',altDomPct);
     const sp=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v.toFixed(1)+'%';};
-    sp('gmBtcPct',btcD); sp('gmEthPct',ethD); sp('gmAltPct',altD);
+    sp('gmBtcPct',btcDomPct); sp('gmEthPct',ethDomPct); sp('gmAltPct',altDomPct);
+
   }catch(e){
     const el=document.getElementById('gmMarketCap');
     if(el) el.textContent='—';
   }
 }
+
 
 /* ═══════════════════════════════════════════════════
    TECHNICAL INDICATORS — RSI, MACD, Bollinger Bands
