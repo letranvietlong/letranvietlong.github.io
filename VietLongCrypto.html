@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.4</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.0</span></span></div>
 
 
     
@@ -8606,6 +8606,226 @@ window.toggleChartFullscreen = toggleChartFullscreen;
 window.loadVNIndices = loadVNIndices;
 window.toggleChartIndicator = toggleChartIndicator;
 window.setTab = setTab;
+
+// ══════════════════════════════════════════════════
+//  RESTORED VN FUNCTIONS
+// ══════════════════════════════════════════════════
+
+// ── VN Chart ─────────────────────────────────────
+function loadVNChart(tf, el){
+  document.querySelectorAll('#page-vn-chart .tf-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const container = document.getElementById('vnChartContainer');
+  if(!container) return;
+  if(!_vnCurrentTicker){
+    container.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)"><div style="font-size:32px">📊</div><div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div></div>';
+    return;
+  }
+  const tfMap={'1D':'D','1T':'W','1M':'M','3T':'3M','1N':'12M'};
+  const interval = tfMap[tf]||tfMap[el?.textContent?.trim()]||'D';
+  try{ if(_vnTVWidget) _vnTVWidget.remove(); }catch(e){}
+  _vnTVWidget=null;
+  if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
+  container.innerHTML='';
+  const spin=document.createElement('div');
+  spin.style.cssText='display:flex;align-items:center;justify-content:center;height:100%;gap:8px';
+  spin.innerHTML=`<div class="chart-spinner"></div><span style="color:var(--muted);font-size:12px">Đang tải ${_vnCurrentTicker}...</span>`;
+  container.appendChild(spin);
+  requestAnimationFrame(()=>_buildTVWidget(container, tvSym(_vnCurrentTicker), interval, _vnCurrentTicker));
+}
+
+// ── Stock left panel ──────────────────────────────
+function _renderVNStockListPanel(){
+  const wrap=document.getElementById('vnStockList');
+  if(!wrap) return;
+  const tickers=(VN_GROUPS?.vn30||[]).concat(
+    (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
+  ).slice(0,50);
+  wrap.innerHTML=tickers.map(t=>{
+    const active=_vnCurrentTicker===t?'active':'';
+    return `<div class="coin-list-item ${active}" onclick="vnSelectStock('${t}')">
+      ${vnLogoHTML(t,28)}
+      <div style="flex:1;min-width:0">
+        <div class="cli-name">${t}</div>
+        <div class="cli-sub">${(VN_NAMES[t]||'').slice(0,20)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderVNQuickPicks(){
+  const el=document.getElementById('vnQuickPicksPanel');
+  if(!el) return;
+  const picks=(VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
+  el.innerHTML=picks.map(t=>`
+    <button class="vn-qp-btn" onclick="vnSelectStock('${t}')"
+      style="display:inline-flex;align-items:center;gap:4px;">
+      ${vnLogoHTML(t,16)}<span>${t}</span>
+    </button>`).join('');
+}
+
+function vnSearchStock(q){
+  const res=document.getElementById('vnSearchResults');
+  if(!res) return;
+  if(!q||q.length<1){res.innerHTML='';return;}
+  const ql=q.toUpperCase();
+  const allT=Object.keys(VN_NAMES||{}).concat(VN_POPULAR||[])
+    .filter((v,i,a)=>a.indexOf(v)===i);
+  const matches=allT.filter(t=>t.startsWith(ql)||(VN_NAMES[t]||'').toUpperCase().includes(ql)).slice(0,8);
+  if(!matches.length){res.innerHTML='';return;}
+  res.innerHTML=matches.map(t=>`
+    <div class="vn-sr-item" onclick="vnSelectStock('${t}');document.getElementById('vnStockSearch').value='';document.getElementById('vnSearchResults').innerHTML=''"
+      style="display:flex;align-items:center;gap:8px;padding:7px 10px;">
+      ${vnLogoHTML(t,24)}
+      <div><div style="font-size:12px;font-weight:700">${t}</div>
+      <div style="font-size:10px;opacity:.6">${VN_NAMES[t]||''}</div></div>
+    </div>`).join('');
+}
+
+function updateVNStockCard(d){
+  if(!d) return;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v||'—';};
+  const setC=(id,v,ref)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.textContent=v||'—';
+    el.className=el.className.replace(/\b(green|red|muted)\b/g,'');
+    if(ref){el.classList.add(d.price>ref?'green':d.price<ref?'red':'muted');}
+  };
+  set('vnChartName',  d.name||VN_NAMES[d.ticker]||d.ticker);
+  set('vnChartSym',   d.ticker);
+  setC('vnChartPrice', vnFmtPrice(d.price), d.ref);
+  set('vnChartRef',   vnFmtPrice(d.ref));
+  set('vnChartCeil',  vnFmtPrice(d.ceil));
+  set('vnChartFloor', vnFmtPrice(d.floor));
+  set('vnChartVol',   vnFmtVol(d.vol));
+  set('vnChartVal',   vnFmtVal(d.val));
+  // Sidebar
+  set('vnSbRef',      vnFmtPrice(d.ref));
+  set('vnSbHigh',     vnFmtPrice(d.high||d.ceil));
+  set('vnSbLow',      vnFmtPrice(d.low||d.floor));
+  set('vnSbExchange', d.exchange||'HOSE');
+  // Info panel
+  set('vnInfoTicker', d.ticker);
+  set('vnInfoName',   d.name||VN_NAMES[d.ticker]||d.ticker);
+  set('vnInfoPrice',  vnFmtPrice(d.price));
+  set('vnInfoRef',    vnFmtPrice(d.ref));
+  set('vnInfoCeil',   vnFmtPrice(d.ceil));
+  set('vnInfoFloor',  vnFmtPrice(d.floor));
+  set('vnInfoVol',    vnFmtVol(d.vol));
+  set('vnInfoVal',    vnFmtVal(d.val));
+  set('vnInfoHigh',   vnFmtPrice(d.high));
+  set('vnInfoLow',    vnFmtPrice(d.low));
+  if(d.change!==undefined){
+    const sign=d.change>=0?'+':'';
+    set('vnChartChg', `${sign}${vnFmtPrice(d.change)} (${sign}${(d.changePct||0).toFixed(2)}%)`);
+    const chgEl=document.getElementById('vnChartChg');
+    if(chgEl) chgEl.style.color=d.change>0?'var(--green)':d.change<0?'var(--red)':'var(--muted)';
+  }
+}
+
+// ── Watchlist ─────────────────────────────────────
+const VN_WL_KEY='vlc_vn_watchlist';
+function _getWatchlist(){try{return JSON.parse(localStorage.getItem(VN_WL_KEY)||'[]');}catch{return[];}}
+function _saveWatchlist(arr){localStorage.setItem(VN_WL_KEY,JSON.stringify(arr));}
+
+function renderVNWatchlist(){
+  const tbody=document.getElementById('vnWatchlistBody');
+  if(!tbody) return;
+  const list=_getWatchlist();
+  if(!list.length){
+    tbody.innerHTML='<tr><td colspan="10" class="vn-loading">Thêm mã CK để theo dõi</td></tr>';
+    return;
+  }
+  tbody.innerHTML=list.map((t,i)=>{
+    const col=VN_BRAND[t]||_vnColor(t);
+    return `<tr style="cursor:pointer" onclick="vnSelectStock('${t}')">
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">${vnLogoHTML(t,24)}
+        <div><div style="font-size:12px;font-weight:700">${t}</div>
+        <div style="font-size:10px;color:var(--muted)">${(VN_NAMES[t]||'').slice(0,20)}</div></div>
+      </div></td>
+      <td class="r" id="wl_p_${t}">—</td>
+      <td class="r" id="wl_c_${t}">—</td>
+      <td class="r" id="wl_tr_${t}" style="color:#a855f7">—</td>
+      <td class="r" id="wl_tc_${t}">—</td>
+      <td class="r" id="wl_fl_${t}" style="color:#06b6d4">—</td>
+      <td class="r" id="wl_v_${t}" style="color:var(--muted)">—</td>
+      <td><span class="sig hold" id="wl_sig_${t}">—</span></td>
+      <td><button onclick="event.stopPropagation();vnRemoveFromWatchlist('${t}')"
+        style="background:rgba(239,68,68,.15);border:none;color:#ef4444;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function vnAddToWatchlist(ticker){
+  if(!ticker) {
+    const inp=document.getElementById('vnWlInput');
+    if(inp) ticker=inp.value.trim().toUpperCase();
+  }
+  if(!ticker) return;
+  const list=_getWatchlist();
+  if(list.includes(ticker)){alert(`${ticker} đã có trong danh mục`);return;}
+  list.push(ticker);
+  _saveWatchlist(list);
+  renderVNWatchlist();
+  const inp=document.getElementById('vnWlInput');
+  if(inp) inp.value='';
+}
+
+function vnRemoveFromWatchlist(ticker){
+  const list=_getWatchlist().filter(t=>t!==ticker);
+  _saveWatchlist(list);
+  renderVNWatchlist();
+}
+
+// ── Movers ───────────────────────────────────────
+let _vnMoverTab='gainers';
+function loadVNMovers(){
+  const tickers=(VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
+  const mockData=tickers.map(t=>({
+    ticker:t,name:VN_NAMES[t]||t,
+    price:0,changePct:0,vol:0
+  }));
+  renderVNMovers(mockData);
+}
+
+function renderVNMovers(stocks){
+  const body=document.getElementById('vnMoversBody');
+  if(!body){
+    // Fallback: tìm container movers
+    const wrap=document.querySelector('.vn-movers-wrap');
+    if(wrap) wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Đang tải...</div>';
+    return;
+  }
+  const sorted=[...stocks].sort((a,b)=>
+    _vnMoverTab==='gainers'?b.changePct-a.changePct:
+    _vnMoverTab==='losers' ?a.changePct-b.changePct:
+    b.vol-a.vol
+  ).slice(0,10);
+  body.innerHTML=sorted.map((r,i)=>{
+    const pct=r.changePct||0;
+    const cls=pct>0?'green':pct<0?'red':'muted';
+    return `<tr onclick="vnSelectStock('${r.ticker}')" style="cursor:pointer">
+      <td><span class="rank">${i+1}</span></td>
+      <td><div style="display:flex;align-items:center;gap:6px">${vnLogoHTML(r.ticker,22)}
+        <div><div style="font-size:11px;font-weight:700">${r.ticker}</div>
+        <div style="font-size:9px;color:var(--muted)">${(r.name||'').slice(0,14)}</div></div>
+      </div></td>
+      <td class="r ${cls}" style="font-weight:700">${r.price>0?vnFmtPrice(r.price):'—'}</td>
+      <td class="r"><span class="badge ${pct>0?'up':pct<0?'dn':'unch'}">${pct>0?'+':''}${pct.toFixed(2)}%</span></td>
+      <td class="r" style="color:var(--muted);font-size:11px">${vnFmtVol(r.vol)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function switchVNMover(tab, el){
+  _vnMoverTab=tab;
+  document.querySelectorAll('.vn-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  loadVNMovers();
+}
+
 window.renderVNWatchlist = renderVNWatchlist;
 window.fetchNews = fetchNews;
 window.setTf = setTf;
