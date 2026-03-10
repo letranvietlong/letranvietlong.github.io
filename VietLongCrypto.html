@@ -2068,7 +2068,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.2</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.4</span></span></div>
 
 
     
@@ -8056,25 +8056,12 @@ function _buildTVWidget(container, sym, interval, ticker){
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   while(container.firstChild) container.removeChild(container.firstChild);
 
-  console.log('[VLC] Building TV embed-widget:', sym, interval);
+  console.log('[VLC] TV widget:', sym, interval);
 
-  // Map interval cho TV widget
-  // TV intervals: 1,3,5,15,30,60,120,180,240,D,W,M
   const ivMap = {'D':'D','W':'W','M':'M','3M':'W','12M':'W'};
-  const iv = ivMap[interval] || 'D';
+  const iv    = ivMap[interval]||'D';
 
-  // TradingView Advanced Chart - external-embedding (cách chính thức)
-  // Script đọc config JSON từ nội dung của nó → ĐÚNG symbol
-  const wrapper = document.createElement('div');
-  wrapper.className = 'tradingview-widget-container';
-  wrapper.style.cssText = 'width:100%;height:100%;';
-
-  const inner = document.createElement('div');
-  inner.className = 'tradingview-widget-container__widget';
-  inner.style.cssText = 'width:100%;height:calc(100% - 32px);';
-  wrapper.appendChild(inner);
-
-  const cfg = {
+  const cfg = JSON.stringify({
     autosize:          true,
     symbol:            sym,
     interval:          iv,
@@ -8088,21 +8075,42 @@ function _buildTVWidget(container, sym, interval, ticker){
     hide_side_toolbar: false,
     allow_symbol_change: false,
     save_image:        false,
-    studies: ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
+    studies:           ['RSI@tv-basicstudies','MACD@tv-basicstudies'],
     show_popup_button: false,
-    container_id:      inner.id || undefined,
-  };
+  });
 
-  const scr = document.createElement('script');
-  scr.type = 'text/javascript';
-  scr.src  = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-  scr.async = true;
-  scr.innerHTML = JSON.stringify(cfg);
-  wrapper.appendChild(scr);
+  // Dùng Range.createContextualFragment → scripts được execute
+  const wrap = document.createElement('div');
+  wrap.className = 'tradingview-widget-container';
+  wrap.style.cssText = 'width:100%;height:100%;';
+  container.appendChild(wrap);
 
-  container.appendChild(wrapper);
-  _vnTVWidget = wrapper;
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'width:100%;height:calc(100% - 32px);min-height:500px;';
+  wrap.appendChild(inner);
+
+  // createContextualFragment executes scripts (unlike innerHTML)
+  const range = document.createRange();
+  range.selectNode(wrap);
+  // unique id cho inner container
+  const cid = 'tvadv_' + ticker.replace(/\W/g,'') + '_' + Date.now();
+  inner.id = cid;
+
+  // Thêm container_id vào config
+  const cfgObj = JSON.parse(cfg);
+  cfgObj.container_id = cid;
+  const cfgFinal = JSON.stringify(cfgObj);
+
+  // Cache-bust để TV load fresh script với config mới
+  const cbust = Date.now();
+  const frag = range.createContextualFragment(
+    `<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js?v=${cbust}" async>${cfgFinal}<\/script>`
+  );
+  wrap.appendChild(frag);
+  _vnTVWidget = wrap;
 }
+
 
 
 
