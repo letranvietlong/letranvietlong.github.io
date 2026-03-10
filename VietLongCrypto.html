@@ -7891,50 +7891,50 @@ function updateVNSession(){
 
 // ── Fetch VN stock data từ SSI iBoard ────────────────────
 // SSI iBoard API là nguồn dữ liệu công khai, không cần auth
-const SSI_API = 'https://iboard.ssi.com.vn/dchart/api';
-const SSI_MARKET = 'https://iboard-query.ssi.com.vn/v2/stock/new-search';
+// SSI_API removed — dùng VNDirect finfo-api
 
 
 // ── VN API proxy helper — thử nhiều proxy cho GitHub Pages ──
 async function vnFetch(url, timeout=12000){
-  // Chỉ dùng allorigins /get — trả JSON wrapper {contents, status}
-  // Đây là proxy duy nhất ổn định nhất cho GitHub Pages với CORS
-  const enc = encodeURIComponent(url);
+  // 1. Gọi thẳng — VNDirect có CORS header thực sự
   try{
-    const r = await fetch(`https://api.allorigins.win/get?url=${enc}`,
-      {signal:AbortSignal.timeout(timeout)});
-    if(r.ok){
-      const j = await r.json();
-      if(j.contents && j.contents.length > 2)
-        return JSON.parse(j.contents);
-    }
+    const r = await fetch(url, {signal:AbortSignal.timeout(timeout),
+      headers:{'Accept':'application/json'}});
+    if(r.ok){ const t=await r.text(); if(t.length>2) return JSON.parse(t); }
+  }catch(e){}
+  // 2. allorigins /get fallback
+  try{
+    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+      {signal:AbortSignal.timeout(timeout+3000)});
+    if(r.ok){ const j=await r.json(); if(j.contents?.length>2) return JSON.parse(j.contents); }
   }catch(e){}
   throw new Error('All proxies failed for: '+url);
 }
 async function fetchVNStocks(tickers){
   // Dùng SSI iBoard public API
   try{
-    const raw = await vnFetch('https://iboard.ssi.com.vn/dchart/api/1/controller?action=getVNDStockList&exchange=HOSE', 14000);
-    const stocks = raw.data || [];
+    // VNDirect: lấy tất cả quotes 1 lần
+    const raw = await vnFetch(`${VND_API}/quotes?size=200&fields=code,close,refPrice,ceilingPrice,floorPrice,high,low,nmVolume,nmValue,change,adRatioChange,foreignBuyVolume,foreignSellVolume`, 14000);
+    const stocks = raw?.data || (Array.isArray(raw)?raw:[]);
     const result = {};
     stocks.forEach(s=>{
-      const ticker = (s.s||s.ticker||'').toUpperCase();
+      const ticker = (s.code||'').toUpperCase();
       if(ticker){
         result[ticker] = {
           ticker,
           name: VN_NAMES[ticker] || ticker,
-          price:   parseFloat(s.c||s.lastPrice||0)/1000,   // đơn vị nghìn đồng
-          ref:     parseFloat(s.r||s.refPrice||0)/1000,
-          ceil:    parseFloat(s.ce||s.ceilingPrice||0)/1000,
-          floor:   parseFloat(s.fl||s.floorPrice||0)/1000,
-          high:    parseFloat(s.h||0)/1000,
-          low:     parseFloat(s.l||0)/1000,
-          vol:     parseInt(s.v||s.totalMatchVol||0),
-          val:     parseFloat(s.va||s.totalMatchValue||0),
-          buyForeign:  parseFloat(s.fb||0),
-          sellForeign: parseFloat(s.fs||0),
-          change:  parseFloat(s.ch||0)/1000,
-          changePct: parseFloat(s.rr||0),
+          price: parseFloat(s.close||0),
+          ref:   parseFloat(s.refPrice||0),
+          ceil:  parseFloat(s.ceilingPrice||0),
+          floor: parseFloat(s.floorPrice||0),
+          high:  parseFloat(s.high||0),
+          low:   parseFloat(s.low||0),
+          vol:   parseFloat(s.nmVolume||0),
+          val:   parseFloat(s.nmValue||0),
+          buyForeign:  parseFloat(s.foreignBuyVolume||0),
+          sellForeign: parseFloat(s.foreignSellVolume||0),
+          change:    parseFloat(s.change||0),
+          changePct: parseFloat(s.adRatioChange||s.ratioChange||0),
         };
       }
     });
@@ -7947,49 +7947,10 @@ async function fetchVNStocks(tickers){
 }
 
 // Fallback: lấy 1 cổ phiếu cụ thể từ TCBS API
-async function fetchVNSingle(ticker){
-  try{
-    // SSI iBoard: getDetailQuote — không cần auth, CORS OK qua allorigins
-    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getDetailQuote&symbol=${ticker}`;
-    const d = await vnFetch(url, 12000);
-    // SSI trả {data: [{...}]} hoặc {data: {...}}
-    const s = Array.isArray(d?.data) ? d.data[0] : d?.data || d;
-    if(!s || (!s.c && !s.lastPrice && !s.mp)) throw new Error('No SSI data for '+ticker);
+const VND_API = 'https://finfo-api.vndirect.com.vn/v4';
 
-    // SSI field mapping: c=close/last, r=ref, ce=ceiling, fl=floor, h=high, l=low
-    // o=open, v=vol, va=value, fb=buy foreign, fs=sell foreign
-    const price = parseFloat(s.c || s.lastPrice || s.mp || 0);
-    const ref   = parseFloat(s.r || s.refPrice || 0);
-    const ceil  = parseFloat(s.ce || s.ceiling || ref*1.07);
-    const floor = parseFloat(s.fl || s.floor || ref*0.93);
-    const high  = parseFloat(s.h || s.highPrice || 0);
-    const low   = parseFloat(s.l || s.lowPrice || 0);
-    const vol   = parseFloat(s.v || s.totalVol || 0);
-    const val   = parseFloat(s.va || s.totalVal || 0);
-    const buyF  = parseFloat(s.fb || 0);
-    const sellF = parseFloat(s.fs || 0);
-    // SSI giá đơn vị đồng (không phải nghìn đồng như TCBS)
-    // Nếu giá > 1000 thì chia 1000, nếu không thì giữ nguyên
-    const scale = price > 1000 ? 1000 : 1;
-    return {
-      ticker,
-      name: VN_NAMES[ticker] || ticker,
-      price: price/scale,
-      ref:   ref/scale,
-      ceil:  ceil/scale,
-      floor: floor/scale,
-      high:  high/scale,
-      low:   low/scale,
-      vol, val,
-      change:    (price-ref)/scale,
-      changePct: ref>0?(price-ref)/ref*100:0,
-      buyForeign: buyF, sellForeign: sellF,
-    };
-  }catch(e){
-    console.warn('SSI single error:', ticker, e.message);
-    return null;
+async function fetchVNSingle(ticker){
   }
-}
 
 // ── Helpers ───────────────────────────────────────────────
 function vnFmtPrice(v){ if(!v||isNaN(v)) return '—'; return v.toFixed(2); }
@@ -8023,55 +7984,48 @@ async function loadVNMarket(){
 
 // ── VN Indices Strip ─────────────────────────────────────
 async function loadVNIndicesStrip(){
+  const INDICES = [
+    {id:'VNINDEX', code:'VNINDEX'},
+    {id:'HNX',     code:'HNX'},
+    {id:'UPCOM',   code:'UPCOM'},
+    {id:'VN30',    code:'VN30'},
+    {id:'HNX30',   code:'HNX30'},
+  ];
+  // VNDirect: 1 call cho tất cả index
   try{
-    // SSI iBoard: getMainIndices — 1 call cho tất cả chỉ số
-    const url = 'https://iboard.ssi.com.vn/dchart/api/1/controller?action=getMainIndices';
+    const codes = INDICES.map(i=>i.code).join(',');
+    const url = `${VND_API}/indices/market?code=${codes}`;
     const raw = await vnFetch(url, 12000);
-    const list = raw?.data || raw?.indices || (Array.isArray(raw) ? raw : []);
-
-    const MAP = {
-      'VNINDEX':'VNINDEX','VN-INDEX':'VNINDEX',
-      'HNX':'HNX','HNX-INDEX':'HNX',
-      'UPCOM':'UPCOM',
-      'VN30':'VN30',
-      'HNX30':'HNX30',
-    };
-
+    const list = raw?.data || (Array.isArray(raw)?raw:[]);
     list.forEach(idx=>{
-      const code = (idx.indexId||idx.code||idx.id||'').toUpperCase();
-      const key  = MAP[code] || MAP[code.replace('-','')];
+      const code = (idx.code||idx.indexCode||'').toUpperCase();
+      const key  = INDICES.find(i=>i.code===code)?.id;
       if(!key) return;
-      const val = parseFloat(idx.indexValue||idx.value||idx.c||0);
-      const chg = parseFloat(idx.indexChange||idx.change||idx.ch||0);
-      const pct = parseFloat(idx.percentChange||idx.changePercent||idx.rr||0);
-      const card = document.getElementById(`vnIdx-${key}`);
-      if(!card) return;
-      card.querySelector('.vn-idx-val').textContent = val>0?val.toFixed(2):'—';
-      const sign = chg>=0?'+':'';
-      card.querySelector('.vn-idx-chg').textContent = val>0?`${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`:'—';
-      card.className = `vn-idx-card ${chg>0?'up':chg<0?'down':'flat'}`;
+      _updateIdxCard(key, idx);
     });
   }catch(e){
-    console.warn('SSI indices error:', e.message);
-    // Fallback: dùng Yahoo Finance cho VN-Index nếu SSI fail
-    try{
-      const yUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EVNINDEX?interval=1d&range=1d';
-      const yd = await vnFetch(yUrl, 10000);
-      const meta = yd?.chart?.result?.[0]?.meta;
-      if(meta){
-        const card = document.getElementById('vnIdx-VNINDEX');
-        if(card){
-          const val = meta.regularMarketPrice||0;
-          const prev = meta.previousClose||val;
-          const chg = val-prev, pct=(val-prev)/prev*100;
-          const sign = chg>=0?'+':'';
-          card.querySelector('.vn-idx-val').textContent = val.toFixed(2);
-          card.querySelector('.vn-idx-chg').textContent = `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
-          card.className = `vn-idx-card ${chg>0?'up':chg<0?'down':'flat'}`;
-        }
-      }
-    }catch(e2){}
+    // Fallback: gọi riêng từng chỉ số
+    await Promise.allSettled(INDICES.map(async idx=>{
+      try{
+        const url = `${VND_API}/indices/${idx.code}/prices?sort=date&size=1&order=desc`;
+        const raw = await vnFetch(url, 10000);
+        const d = raw?.data?.[0] || raw?.[0];
+        if(d) _updateIdxCard(idx.id, d);
+      }catch(e2){}
+    }));
   }
+}
+
+function _updateIdxCard(key, d){
+  const card = document.getElementById(`vnIdx-${key}`);
+  if(!card) return;
+  const val = parseFloat(d.indexValue||d.close||d.value||d.c||0);
+  const chg = parseFloat(d.indexChange||d.change||d.ch||0);
+  const pct = parseFloat(d.percentChange||d.ratioChange||d.rr||0);
+  card.querySelector('.vn-idx-val').textContent = val>0 ? val.toFixed(2) : '—';
+  const sign = chg>=0?'+':'';
+  card.querySelector('.vn-idx-chg').textContent = val>0 ? `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)` : '—';
+  card.className = `vn-idx-card ${chg>0?'up':chg<0?'down':'flat'}`;
 }
 
 // ── VN Movers ─────────────────────────────────────────────
@@ -8097,18 +8051,18 @@ async function loadVNMovers(tab){
   const apiTab = tabMap[tab] || 'top_price_increase';
 
   try{
-    // SSI iBoard: getTopStocksBy — mapping tab → SSI action
-    const ssiActionMap = {
-      'top_price_increase': 'getTopIncreaseStocks',
-      'top_price_decrease': 'getTopDecreaseStocks',
-      'top_volume':         'getTopVolumeStocks',
-      'top_value':          'getTopValueStocks',
-      'top_foreign_buy':    'getTopForeignBuyStocks',
+    // VNDirect finfo-api — sort theo tab
+    const sortMap = {
+      'top_price_increase': 'adRatioChange:desc',
+      'top_price_decrease': 'adRatioChange:asc',
+      'top_volume':         'nmVolume:desc',
+      'top_value':          'nmValue:desc',
+      'top_foreign_buy':    'foreignBuyVolume:desc',
     };
-    const ssiAction = ssiActionMap[apiTab] || 'getTopIncreaseStocks';
-    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=${ssiAction}&exchange=HOSE&limit=20`;
+    const sortParam = sortMap[apiTab] || 'adRatioChange:desc';
+    const url = `${VND_API}/quotes?sort=${sortParam}&size=20&fields=code,close,refPrice,ceilingPrice,floorPrice,change,adRatioChange,nmVolume,nmValue,foreignBuyVolume,foreignSellVolume`;
     const raw = await vnFetch(url, 12000);
-    const stocks = raw?.data || raw?.stocks || (Array.isArray(raw)?raw:[]);
+    const stocks = raw?.data || (Array.isArray(raw)?raw:[]);
     if(!stocks.length) throw new Error('No movers data');
 
     renderVNMovers(stocks);
@@ -8123,19 +8077,16 @@ function renderVNMovers(stocks){
   const tbody = document.getElementById('vnMoversBody');
   if(!tbody) return;
   tbody.innerHTML = stocks.map(s=>{
-    // SSI fields: s=symbol, c=close, r=ref, ch=change, rr=changePct, v=vol, va=val, fb=buyF, fs=sellF
-    const rawPrice = parseFloat(s.c||s.lastPrice||s.price||0);
-    const rawRef   = parseFloat(s.r||s.refPrice||0);
-    const scale    = rawPrice>1000?1000:1;
-    const price    = rawPrice/scale;
-    const ref      = rawRef/scale;
-    const chg      = price-ref;
-    const pct      = parseFloat(s.rr||s.changePct||(ref>0?chg/ref*100:0));
-    const ticker   = (s.s||s.ticker||s.symbol||'').toUpperCase();
-    const cls      = vnPriceClass(price,ref);
-    const sign     = chg>=0?'+':'';
-    const buyF     = parseFloat(s.fb||s.buyForeignQty||0);
-    const sellF    = parseFloat(s.fs||s.sellForeignQty||0);
+    // VNDirect fields: code, close, refPrice, change, adRatioChange, nmVolume, nmValue, foreignBuyVolume, foreignSellVolume
+    const price  = parseFloat(s.close||s.matchPrice||0);
+    const ref    = parseFloat(s.refPrice||0);
+    const chg    = parseFloat(s.change||price-ref);
+    const pct    = parseFloat(s.adRatioChange||s.ratioChange||(ref>0?chg/ref*100:0));
+    const ticker = (s.code||'').toUpperCase();
+    const cls    = vnPriceClass(price,ref);
+    const sign   = chg>=0?'+':'';
+    const buyF   = parseFloat(s.foreignBuyVolume||0);
+    const sellF  = parseFloat(s.foreignSellVolume||0);
     return `<tr style="cursor:pointer" onclick="vnSelectStock('${ticker}')">
       <td><span style="color:var(--accent);font-weight:800">${ticker}</span> <span style="font-size:10px;color:var(--muted)">${VN_NAMES[ticker]||''}</span></td>
       <td class="${cls}">${vnFmtPrice(price)}</td>
@@ -8220,24 +8171,20 @@ async function loadVNChart(tf, el){
   const from = fromMap[resolution] || now-30*86400;
 
   try{
-    // SSI iBoard chart API — resolution D/W/M
-    const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getDataChart&symbol=${_vnCurrentTicker}&resolution=${resolution}&fromTime=${from}&toTime=${now}`;
+    // VNDirect: stock price history — trực tiếp không cần proxy
+    const sizeMap = {D:300, W:200, M:120, Q:60, Y:20};
+    const size = sizeMap[resolution]||300;
+    const url = `${VND_API}/stocks/${_vnCurrentTicker}/prices?sort=date&size=${size}&order=desc`;
     const raw = await vnFetch(url, 14000);
-    // SSI trả {t:[timestamps], o:[open], h:[high], l:[low], c:[close], v:[volume]}
-    const bars = (() => {
-      const r = raw?.data || raw;
-      if(r?.t?.length) return r.t.map((ts,i)=>({
-        tradingDate: null,
-        time: ts,
-        open:  (r.o?.[i]||0),
-        high:  (r.h?.[i]||0),
-        low:   (r.l?.[i]||0),
-        close: (r.c?.[i]||0),
-        vol:   (r.v?.[i]||0),
-      }));
-      if(Array.isArray(r)) return r;
-      return [];
-    })();
+    const priceArr = raw?.data || (Array.isArray(raw)?raw:[]);
+    const bars = priceArr.map(p=>({
+      time: Math.floor(new Date(p.date).getTime()/1000),
+      open:  parseFloat(p.open||0),
+      high:  parseFloat(p.high||0),
+      low:   parseFloat(p.low||0),
+      close: parseFloat(p.close||0),
+      vol:   parseFloat(p.nmVolume||p.volume||0),
+    })).reverse(); // VNDirect trả desc, cần asc cho chart
     if(!bars.length) throw new Error('No chart data');
 
     // Render với LightweightCharts
@@ -8256,14 +8203,10 @@ async function loadVNChart(tf, el){
       borderUpColor:'#22c55e',borderDownColor:'#ef4444',
       wickUpColor:'#22c55e',wickDownColor:'#ef4444',
     });
-    const candles = bars.map(b=>{
-      const ts = b.tradingDate ? Math.floor(new Date(b.tradingDate).getTime()/1000) : (b.time||0);
-      const o = parseFloat(b.open||0), h=parseFloat(b.high||0);
-      const l = parseFloat(b.low||0),  cl=parseFloat(b.close||0);
-      // SSI: giá > 1000 thì đơn vị đồng → chia 1000; nếu không thì giữ nguyên
-      const sc = o>1000?1000:1;
-      return {time:ts, open:o/sc, high:h/sc, low:l/sc, close:cl/sc};
-    }).filter(b=>b.time>0&&b.open>0).sort((a,b_)=>a.time-b_.time);
+    const candles = bars
+      .map(b=>({time:b.time||0, open:b.open||0, high:b.high||0, low:b.low||0, close:b.close||0}))
+      .filter(b=>b.time>0 && b.open>0)
+      .sort((a,b_)=>a.time-b_.time);
     _vnSeries.setData(candles);
     _vnChart.timeScale().fitContent();
     new ResizeObserver(()=>{
@@ -8358,16 +8301,16 @@ async function loadVNIndices(){
 
   const cards = await Promise.all(INDICES.map(async idx=>{
     try{
-      const url = `https://iboard.ssi.com.vn/dchart/api/1/controller?action=getIndexDetail&indexId=${idx.id}`;
+      const url = `${VND_API}/indices/${idx.id}/prices?sort=date&size=1&order=desc`;
       const raw = await vnFetch(url, 10000);
-      const d = raw?.data?.[0] || raw?.data || raw;
+      const d = raw?.data?.[0] || raw?.[0];
       if(!d) return null;
-      const val = parseFloat(d.indexValue||d.c||0);
-      const chg = parseFloat(d.indexChange||d.ch||0);
-      const pct = parseFloat(d.percentChange||d.rr||0);
-      const adv = parseInt(d.advances||d.advances_count||0);
-      const dec = parseInt(d.declines||d.declines_count||0);
-      const unc = parseInt(d.noChanges||d.unchanged_count||0);
+      const val = parseFloat(d.indexValue||d.close||d.value||0);
+      const chg = parseFloat(d.indexChange||d.change||0);
+      const pct = parseFloat(d.percentChange||d.ratioChange||0);
+      const adv = parseInt(d.advances||d.advance||0);
+      const dec = parseInt(d.declines||d.decline||0);
+      const unc = parseInt(d.noChanges||d.noChange||0);
       const sign=chg>=0?'+':'';
       const cls = chg>0?'vn-up':chg<0?'vn-dn':'vn-ref';
       return `<div class="vn-index-card">
