@@ -2091,7 +2091,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.3</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.4</span></span></div>
 
 
     
@@ -3444,47 +3444,25 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     </div>
 
     <!-- Ticker Tape TV -->
-    <div class="gm-card" style="margin-top:0;padding:0;overflow:hidden;border-radius:12px">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-        {
-          "colorTheme": "dark",
-          "dateRange": "1D",
-          "showChart": true,
-          "locale": "vi_VN",
-          "largeChartUrl": "",
-          "isTransparent": true,
-          "showSymbolLogo": false,
-          "showFloatingTooltip": false,
-          "width": "100%",
-          "height": "400",
-          "tabs": [
-            {
-              "title": "Chỉ Số VN",
-              "symbols": [
-                {"s":"HOSE:VNINDEX","d":"VN-Index"},
-                {"s":"HNX:HNX","d":"HNX-Index"},
-                {"s":"HOSE:VN30","d":"VN30"},
-                {"s":"HNX:HNX30","d":"HNX30"},
-                {"s":"UPCOM:UPCOM","d":"UPCOM"}
-              ],
-              "originalTitle":"Indices"
-            },
-            {
-              "title": "Bluechips",
-              "symbols": [
-                {"s":"HOSE:VNM","d":"Vinamilk"},
-                {"s":"HOSE:VCB","d":"Vietcombank"},
-                {"s":"HOSE:HPG","d":"Hòa Phát"},
-                {"s":"HOSE:VIC","d":"Vingroup"},
-                {"s":"HOSE:FPT","d":"FPT Corp"}
-              ],
-              "originalTitle":"Bluechips"
-            }
-          ]
-        }
-        </script>
+    <div class="gm-card" style="margin-top:0">
+      <div class="card-title" style="margin-bottom:12px">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+          <path d="M3.5 18.5l6-6 4 4L22 6.92M3.5 18.5H22M3.5 18.5V5.5"/>
+        </svg>
+        Chỉ Số Thị Trường VN
+      </div>
+      <div id="vnIndexList" style="display:flex;flex-direction:column;gap:6px">
+        <!-- Rendered by JS -->
+        <div style="color:var(--muted);font-size:11px;text-align:center;padding:12px">Đang tải...</div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div class="card-title" style="margin-bottom:8px;font-size:10px">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          Bluechips Nổi Bật
+        </div>
+        <div id="vnBlueList" style="display:flex;flex-direction:column;gap:5px">
+          <div style="color:var(--muted);font-size:11px;text-align:center;padding:8px">Đang tải...</div>
+        </div>
       </div>
     </div>
 
@@ -7834,6 +7812,70 @@ async function loadVNMarket(){
   _syncVNSession();
   _renderVNMarketStatic();
   _updateVNBreadthFromData();
+  renderVNIndexCard();
+}
+
+
+// ── VN Index card (right panel) ──────────────────
+const VN_INDICES = [
+  {sym:'HOSE:VNINDEX', label:'VN-Index',  color:'#e8192c'},
+  {sym:'HNX:HNX',      label:'HNX-Index', color:'#3b82f6'},
+  {sym:'HOSE:VN30',    label:'VN30',      color:'#f59e0b'},
+  {sym:'HNX:HNX30',    label:'HNX30',     color:'#8b5cf6'},
+  {sym:'UPCOM:UPCOM',  label:'UPCOM',     color:'#10b981'},
+];
+const VN_BLUECHIPS = ['VNM','VCB','HPG','VIC','FPT','MWG','TCB','BID'];
+
+function renderVNIndexCard(){
+  const el = document.getElementById('vnIndexList');
+  if(!el) return;
+  el.innerHTML = VN_INDICES.map(idx=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:8px 10px;border-radius:8px;background:var(--surface2);
+      border:1px solid var(--border);cursor:pointer;transition:border-color .15s"
+      onmouseover="this.style.borderColor='${idx.color}44'"
+      onmouseout="this.style.borderColor='var(--border)'"
+      onclick="vnSelectStock('${idx.sym.split(':')[1]}')">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:3px;height:28px;border-radius:2px;background:${idx.color};flex-shrink:0"></div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${idx.label}</div>
+          <div style="font-size:10px;color:var(--muted)">${idx.sym}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="sc-val" id="vi_${idx.label.replace('-','')}" style="font-size:13px;color:var(--text)">—</div>
+        <div id="vi_${idx.label.replace('-','')}chg" style="font-size:10px;color:var(--muted)">—</div>
+      </div>
+    </div>`).join('');
+
+  const bl = document.getElementById('vnBlueList');
+  if(!bl) return;
+  bl.innerHTML = VN_BLUECHIPS.map(t=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:6px 10px;border-radius:7px;cursor:pointer;
+      transition:background .15s"
+      onmouseover="this.style.background='rgba(255,255,255,.05)'"
+      onmouseout="this.style.background='transparent'"
+      onclick="vnSelectStock('${t}')">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:6px;
+          background:linear-gradient(135deg,${_vnColor(t)}22,${_vnColor(t)}55);
+          border:1px solid ${_vnColor(t)}44;
+          display:flex;align-items:center;justify-content:center;
+          font-size:10px;font-weight:800;color:${_vnColor(t)};flex-shrink:0">
+          ${t.slice(0,2)}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text)">${t}</div>
+          <div style="font-size:10px;color:var(--muted)">${(VN_NAMES[t]||'').slice(0,16)}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div id="vb_${t}" style="font-size:11px;font-weight:700;color:var(--text)">—</div>
+        <div id="vb_${t}chg" style="font-size:10px;color:var(--muted)">—</div>
+      </div>
+    </div>`).join('');
 }
 
 function _syncVNSession(){
