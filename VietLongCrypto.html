@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.1</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.1.3</span></span></div>
 
 
     
@@ -7815,6 +7815,40 @@ function switchMarket(market, el){
 
 // ── VN Page navigation ────────────────────────────────────
 
+function showVNPage(id, el){
+  // Ẩn tất cả VN sub-pages
+  document.querySelectorAll('[id^="page-vn-"]').forEach(p=>p.classList.remove('active'));
+  // Highlight tab button
+  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // Show page
+  const page = document.getElementById('page-vn-'+id);
+  if(page) page.classList.add('active');
+  // Side effects per page
+  if(id==='market')    { loadVNMarket(); renderVNIndexCard(); }
+  if(id==='chart')     { _renderVNStockListPanel(); renderVNQuickPicks(); }
+  if(id==='watchlist') renderVNWatchlist();
+  if(id==='indices')   loadVNIndices();
+  if(id==='news')      loadVNNews();
+  if(id==='heatmap')   setTimeout(renderVNHeatmap, 100);
+}
+
+function updateVNSession(){
+  _syncVNSession();
+  updateVNMarketStatusBadge();
+}
+
+function loadMarket(){
+  // Alias cho crypto market load
+  if(typeof initMarket === 'function') initMarket();
+}
+
+function renderTable(data, tab, query){
+  // Alias wrapper — crypto table render
+  if(typeof _renderCoins === 'function') _renderCoins(data, tab, query);
+  else if(typeof renderCoins === 'function') renderCoins(data, tab, query);
+}
+
 // ── VN format helpers ────────────────────────────────────────
 function vnFmtPrice(v){
   if(!v||isNaN(v)) return '—';
@@ -7864,6 +7898,34 @@ async function loadVNMarket(){
   _updateVNBreadthFromData();
   renderVNIndexCard();
 }
+function vnSetTab(el, tab){
+  _vnMarketTab = tab;
+  document.querySelectorAll('#page-vn-market .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  _renderVNTable(_vnMarketData);
+}
+
+function vnMarketFilter(q){
+  _renderVNTable(_vnMarketData);
+}
+
+function vnMarketClear(){
+  const el = document.getElementById('vnMarketSearch');
+  if(el) el.value = '';
+  _renderVNTable(_vnMarketData);
+}
+
+function vnSwitchRightPanel(panel, btn){
+  // VN chart right panel tabs (Thông Tin / VN30)
+  document.querySelectorAll('#page-vn-chart .ob-tab, #page-vn-chart [data-rp-tab]').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  ['vn-rp-info','vn-rp-vn30'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = (id==='vn-rp-'+panel)?'block':'none';
+  });
+}
+
+
 
 
 // ── VN Index card (right panel) ──────────────────
