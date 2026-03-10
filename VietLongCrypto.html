@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.3</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.4</span></span></div>
 
 
     
@@ -8303,6 +8303,140 @@ async function fetchVNSingle(ticker){
   }catch(e){return null;}
 }
 
+// ── tvSym: chuyển ticker → TradingView symbol ──────────────────
+function tvSym(ticker){
+  const MAP={
+    VNINDEX:'HOSE:VNINDEX',HNX:'HNX:HNX',UPCOM:'UPCOM:UPCOM',
+    VN30:'HOSE:VN30',HNX30:'HNX:HNX30',
+    SHB:'HNX:SHB',PVS:'HNX:PVS',NVB:'HNX:NVB',PVX:'HNX:PVX',
+  };
+  return MAP[ticker]||('HOSE:'+ticker);
+}
+
+// ── TV_COLS: cột TradingView scanner ────────────────────────────
+const TV_COLS = ['name','close','change','change_abs','volume','market_cap_basic'];
+
+// ── parseTVRow: parse một row từ TV scanner → {ticker,price,...} ─
+function parseTVRow(row, cols){
+  if(!row||!row.d) return null;
+  const d = row.d;
+  const ticker = (d[0]||'').replace(/^(?:HOSE:|HNX:|UPCOM:)/,'');
+  if(!ticker) return null;
+  return {
+    ticker, name: VN_NAMES[ticker]||ticker,
+    price:     d[1]||0,
+    changePct: d[2]||0,
+    change:    d[3]||0,
+    vol:       d[4]||0,
+    cap:       d[5]||0,
+  };
+}
+
+// ── tvScanFetch: lấy dữ liệu TV scanner cho danh sách tickers ───
+async function tvScanFetch(tvSymbols){
+  const body = JSON.stringify({
+    filter:[{left:'name',operation:'in_range',right:tvSymbols}],
+    columns: TV_COLS,
+    sort:{sortBy:'name',sortOrder:'asc'},
+    range:[0, tvSymbols.length||50],
+  });
+  const r = await fetch('https://scanner.tradingview.com/vietnam/scan',{
+    method:'POST', headers:{'Content-Type':'application/json'}, body,
+    signal: AbortSignal.timeout(8000),
+  });
+  if(!r.ok) throw new Error('tvScan '+r.status);
+  const d = await r.json();
+  return d.data||[];
+}
+
+// ── tvScanMovers: top gainers/losers từ TV scanner ───────────────
+async function tvScanMovers(sortBy='change', sortOrder='desc', limit=50){
+  const body = JSON.stringify({
+    filter:[{left:'exchange',operation:'in_range',right:['HOSE','HNX','UPCOM']}],
+    columns: TV_COLS,
+    sort:{sortBy, sortOrder},
+    range:[0, limit],
+  });
+  const r = await fetch('https://scanner.tradingview.com/vietnam/scan',{
+    method:'POST', headers:{'Content-Type':'application/json'}, body,
+    signal: AbortSignal.timeout(8000),
+  });
+  if(!r.ok) throw new Error('tvScanMovers '+r.status);
+  const d = await r.json();
+  return d.data||[];
+}
+
+// ── yfBatchQuotes: Yahoo Finance batch (fallback) ────────────────
+async function yfBatchQuotes(tickers){
+  const symbols = tickers.map(t=>t+'.VN').join(',');
+  try{
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(
+      'https://query1.finance.yahoo.com/v7/finance/quote?symbols='+symbols+'&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow'
+    )}`;
+    const r    = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
+    const json = await r.json();
+    const data = JSON.parse(json.contents||'{}');
+    const list = data?.quoteResponse?.result||[];
+    return list.map(q=>({
+      ticker:   q.symbol.replace('.VN',''),
+      name:     VN_NAMES[q.symbol.replace('.VN','')]||q.shortName||q.symbol,
+      price:    q.regularMarketPrice||0,
+      ref:      q.regularMarketPreviousClose||0,
+      changePct:q.regularMarketChangePercent||0,
+      change:   (q.regularMarketPrice||0)-(q.regularMarketPreviousClose||0),
+      vol:      q.regularMarketVolume||0,
+      high:     q.regularMarketDayHigh||0,
+      low:      q.regularMarketDayLow||0,
+    }));
+  }catch(e){ return []; }
+}
+
+// ── stooqQuote: lấy quote từ Stooq cho chỉ số VN ────────────────
+async function stooqQuote(ticker){
+  try{
+    const sym   = ticker.toLowerCase();
+    const url   = `https://stooq.com/q/d/l/?s=${sym}.vn&i=d`;
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const r     = await fetch(proxy, {signal:AbortSignal.timeout(8000)});
+    const json  = await r.json();
+    const lines = (json.contents||'').trim().split('\n');
+    if(lines.length < 2) return null;
+    const last = lines[lines.length-1].split(',');
+    const prev = lines.length >= 3 ? lines[lines.length-2].split(',') : null;
+    const price    = parseFloat(last[4]||0);
+    const prevClose= prev ? parseFloat(prev[4]||0) : price;
+    if(!price) return null;
+    const change   = price - prevClose;
+    const changePct= prevClose ? (change/prevClose*100) : 0;
+    return { price, prevClose, change, changePct,
+             high: parseFloat(last[2]||0), low: parseFloat(last[3]||0),
+             vol: parseFloat(last[5]||0) };
+  }catch(e){ return null; }
+}
+
+// ── _updateVNBreadthFromData: update breadth cards ───────────────
+function _updateVNBreadthFromData(){
+  const data = _vnMarketData||[];
+  if(!data.length) return;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  const adv  = data.filter(d=>d.changePct>0).length;
+  const dec  = data.filter(d=>d.changePct<0).length;
+  const unch = data.filter(d=>d.changePct===0).length;
+  const ceil = data.filter(d=>d.price>0&&d.ceil>0&&d.price>=d.ceil).length;
+  const flr  = data.filter(d=>d.price>0&&d.floor>0&&d.price<=d.floor).length;
+  const totalVol = data.reduce((s,d)=>s+(d.vol||0),0);
+  const totalVal = data.reduce((s,d)=>s+(d.val||0),0);
+  set('vnAdvance',   adv);
+  set('vnDecline',   dec);
+  set('vnUnchanged', unch);
+  set('vnCeiling',   ceil);
+  set('vnFloor',     flr);
+  set('vnTotalVol',  vnFmtVol(totalVol));
+  set('vnTotalVal',  vnFmtVal(totalVal));
+}
+
+
+
 
 function _buildVNChart(c,d){return _buildLWChart(c,d);}
 
@@ -8552,56 +8686,7 @@ function renderVNHeatmap(stocks){
   stocks.forEach(d => { d.norm = d.sizeVal / total; });
 
   // Squarified treemap
-  function squarify(items, rect){
-    if(!items.length) return [];
-    const result = [];
-    let remaining = [...items];
-    let r = {...rect};
-
-    while(remaining.length){
-      const isHoriz = r.w >= r.h;
-      const area = r.w * r.h;
-      let row = [], rowSum = 0, best = Infinity;
-
-      for(let i = 0; i < remaining.length; i++){
-        const item = remaining[i];
-        const newSum = rowSum + item.norm;
-        const stripe = isHoriz ? r.h : r.w;
-        const rowArea = newSum * area / total * total;
-        const stripeW = newSum * (isHoriz ? r.w : r.h);
-        // worst ratio in row
-        let worst = 0;
-        [...row, item].forEach(it => {
-          const w = it.norm * area / (newSum * stripe);
-          const ratio = Math.max(w/stripe, stripe/w);
-          if(ratio > worst) worst = ratio;
-        });
-        if(worst < best || !row.length){
-          best = worst; row.push(item); rowSum = newSum;
-        } else break;
-      }
-
-      // Layout row
-      const isH = r.w >= r.h;
-      const stripe = rowSum * (isH ? r.w : r.h);
-      let pos = isH ? r.y : r.x;
-      row.forEach(item => {
-        const dim = (item.norm / rowSum) * (isH ? r.h : r.w);
-        if(isH){
-          result.push({item, x:r.x, y:pos, w:stripe, h:dim});
-          pos += dim;
-        } else {
-          result.push({item, x:pos, y:r.y, w:dim, h:stripe});
-          pos += dim;
-        }
-      });
-
-      remaining = remaining.slice(row.length);
-      if(isH){ r = {x:r.x+stripe, y:r.y, w:r.w-stripe, h:r.h}; }
-      else    { r = {x:r.x, y:r.y+stripe, w:r.w, h:r.h-stripe}; }
-    }
-    return result;
-  }
+  
 
   const rects = squarify(stocks, {x:0, y:0, w:W, h:H});
 
