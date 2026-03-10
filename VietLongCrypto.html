@@ -2015,6 +2015,27 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   border:1px solid rgba(255,255,255,.08);
 }
 
+
+/* ── VN Market Table ─────────────────────────── */
+.coin-table{width:100%;border-collapse:collapse;}
+.coin-table th{padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);
+  white-space:nowrap;background:rgba(0,0,0,.2);}
+.coin-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:12px;vertical-align:middle;white-space:nowrap;}
+.coin-table th.l,.coin-table td.l{text-align:left;}
+.coin-table th.r,.coin-table td.r{text-align:right;}
+.coin-table .coin-row:hover{background:rgba(255,255,255,.04);cursor:pointer;}
+.coin-table .coin-row:hover td:first-child{border-left:2px solid var(--accent);}
+.coin-table .green{color:var(--green);}
+.coin-table .red{color:var(--red);}
+.coin-table .muted{color:var(--muted);}
+.coin-table .unch{color:var(--muted);}
+.coin-table .vn-ceil{color:#ff00ff;font-weight:700;}
+.coin-table .vn-floor{color:#00ffff;font-weight:700;}
+.badge.up{background:rgba(0,230,118,.15);color:#00e676;}
+.badge.dn{background:rgba(255,61,87,.15);color:#ff3d57;}
+.badge.unch{background:rgba(255,255,255,.08);color:var(--muted);}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2070,7 +2091,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.9</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.1</span></span></div>
 
 
     
@@ -3274,106 +3295,200 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <!-- ══════════════ PAGE: VN-MARKET ══════════════ -->
 <div class="page" id="page-vn-market">
-<div class="vn-layout">
+<div class="market-layout">
 
-  <!-- Header bar -->
-  <div class="vn-page-header">
-    <div class="vn-page-title">
-      <svg viewBox="0 0 18 18" width="16" height="16"><rect x="1" y="3.5" width="16" height="11" rx="1.5" fill="#d0021b"/><polygon points="9,5.5 9.9,8.1 12.7,8.1 10.5,9.7 11.3,12.3 9,10.7 6.7,12.3 7.5,9.7 5.3,8.1 8.1,8.1" fill="#ffcd00"/></svg>
-      Thị Trường Chứng Khoán Việt Nam
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span class="vn-session-badge" id="vnSessionBadge">⏸ Ngoài Giờ</span>
-      <button class="nf-refresh" onclick="loadVNMarket()">
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 11-1.1-3.3"/><polyline points="10,2.5 13.5,2.5 13.5,6"/></svg>
-        Làm mới
-      </button>
-    </div>
-  </div>
+  <!-- LEFT: stats + table -->
+  <div class="market-main">
 
-  <!-- Indices strip: TradingView Ticker Tape -->
-  <div class="vn-tv-ticker-wrap" style="margin-bottom:12px;border-radius:8px;overflow:hidden">
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-      {
-        "symbols": [
-          {"proName":"HOSE:VNINDEX","title":"VN-Index"},
-          {"proName":"HNX:HNX","title":"HNX-Index"},
-          {"proName":"HOSE:VN30","title":"VN30"},
-          {"proName":"HNX:HNX30","title":"HNX30"},
-          {"proName":"UPCOM:UPCOM","title":"UPCOM"},
-          {"proName":"HOSE:VNM","title":"VNM"},
-          {"proName":"HOSE:VCB","title":"VCB"},
-          {"proName":"HOSE:HPG","title":"HPG"},
-          {"proName":"HOSE:VIC","title":"VIC"},
-          {"proName":"HOSE:FPT","title":"FPT"}
-        ],
-        "showSymbolLogo": false,
-        "isTransparent": true,
-        "displayMode": "adaptive",
-        "colorTheme": "dark",
-        "locale": "vi_VN"
-      }
-      </script>
-    </div>
-  </div>
-
-  <!-- Market breadth --><!-- Market breadth -->
-  <div class="vn-breadth-row">
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">Tăng</div>
-      <div class="vn-breadth-val" id="vnAdvance" style="color:#22c55e">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">Đứng</div>
-      <div class="vn-breadth-val" id="vnUnchanged" style="color:#f59e0b">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">Giảm</div>
-      <div class="vn-breadth-val" id="vnDecline" style="color:#ef4444">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">Trần</div>
-      <div class="vn-breadth-val" id="vnCeiling" style="color:#ff00ff">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">Sàn</div>
-      <div class="vn-breadth-val" id="vnFloor" style="color:#00ffff">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">KL Khớp</div>
-      <div class="vn-breadth-val" id="vnTotalVol" style="color:var(--text2)">—</div>
-    </div>
-    <div class="vn-breadth-card">
-      <div class="vn-breadth-label">GT Khớp</div>
-      <div class="vn-breadth-val" id="vnTotalVal" style="color:var(--text2)">—</div>
-    </div>
-  </div>
-
-  <!-- Top movers: TradingView Stock Screener (HOSE) -->
-  <div class="vn-tv-screener-wrap" style="border-radius:10px;border:1px solid var(--border);overflow-x:auto;overflow-y:visible">
-    <div class="tradingview-widget-container" style="min-height:650px;min-width:900px;">
-      <div class="tradingview-widget-container__widget" style="min-height:618px"></div>
-      <div class="tradingview-widget-copyright" style="padding:4px 8px;font-size:10px;color:var(--muted)">
-        <a href="https://www.tradingview.com/" target="_blank" rel="noopener" style="color:var(--accent)">TradingView</a>
+    <!-- Stats row (4 cards) -->
+    <div class="stats-row" id="vnStatsRow">
+      <div class="stat-card">
+        <div class="sc-lbl">VN-Index</div>
+        <div class="sc-val" id="svnIndex" style="color:var(--text)">—</div>
+        <div class="sc-sub" id="svnIndexChg">Đang tải...</div>
+        <div class="sc-ico">📈</div>
       </div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" async>
-      {
-        "width": "100%",
-        "height": 650,
-        "defaultColumn": "overview",
-        "defaultScreen": "most_capitalized",
-        "market": "vietnam",
-        "showToolbar": true,
-        "colorTheme": "dark",
-        "locale": "vi_VN",
-        "isTransparent": true
-      }
-      </script>
+      <div class="stat-card">
+        <div class="sc-lbl">Tăng Mạnh Nhất</div>
+        <div class="sc-val" id="svnTopGain" style="color:var(--green)">—</div>
+        <div class="sc-sub" id="svnTopGainName">—</div>
+        <div class="sc-ico">🚀</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-lbl">Giảm Mạnh Nhất</div>
+        <div class="sc-val" id="svnTopLoss" style="color:var(--red)">—</div>
+        <div class="sc-sub" id="svnTopLossName">—</div>
+        <div class="sc-ico">📉</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-lbl">Tăng / Giảm / Đứng</div>
+        <div class="sc-val" id="svnRatio">—</div>
+        <div class="sc-sub" id="svnSession">—</div>
+        <div class="sc-ico">⚖️</div>
+      </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="table-card">
+      <div class="toolbar">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="vnSetTab(this,'all')">Tất Cả</button>
+            <button class="tab-btn" onclick="vnSetTab(this,'gainers')">🟢 Tăng</button>
+            <button class="tab-btn" onclick="vnSetTab(this,'losers')">🔴 Giảm</button>
+            <button class="tab-btn" onclick="vnSetTab(this,'ceiling')">🔵 Trần</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="vn-session-badge" id="vnSessionBadge2" style="font-size:10px">—</span>
+          <div class="search-box">
+            <span style="color:var(--muted);font-size:11px">🔍</span>
+            <input type="text" id="vnMarketSearch" placeholder="Tìm cổ phiếu..." oninput="vnMarketFilter(this.value)">
+            <button class="clear-btn" onclick="vnMarketClear()">✕</button>
+          </div>
+          <button class="nf-refresh" onclick="loadVNMarket()" title="Làm mới">
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 11-1.1-3.3"/><polyline points="10,2.5 13.5,2.5 13.5,6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tbl-scroll">
+        <table class="coin-table" id="vnMarketTable">
+          <thead>
+            <tr>
+              <th class="l" style="width:40px">#</th>
+              <th class="l">Cổ Phiếu</th>
+              <th class="r">Giá</th>
+              <th class="r">Thay Đổi</th>
+              <th class="r">%</th>
+              <th class="r">Trần</th>
+              <th class="r">Sàn</th>
+              <th class="r">KL Khớp</th>
+              <th class="r">Tín Hiệu</th>
+            </tr>
+          </thead>
+          <tbody id="vnMarketBody">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">
+              <div class="spinner" style="margin:0 auto 8px"></div>
+              Đang tải dữ liệu thị trường...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
+  <!-- RIGHT: VN30 Ticker Tape + Breadth + Session -->
+  <div class="market-side">
+
+    <!-- Phiên giao dịch -->
+    <div class="fg-card" style="padding:14px 16px">
+      <div class="card-title" style="margin-bottom:12px">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 5v5.25l4.5 2.67-.75 1.23L11 13V7h1.5z"/></svg>
+        Phiên Giao Dịch
+      </div>
+      <div id="vnSessionCard" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--muted)">Trạng thái</span>
+          <span class="vn-session-badge" id="vnSessionBadge3">⏳ Đang kiểm tra</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:11px;color:var(--muted)">Giờ giao dịch</span>
+          <span style="font-size:11px;color:var(--text2)">9:00 – 15:00 ICT</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:11px;color:var(--muted)">Nghỉ trưa</span>
+          <span style="font-size:11px;color:var(--text2)">11:30 – 13:00 ICT</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:11px;color:var(--muted)">Sàn giao dịch</span>
+          <span style="font-size:11px;color:var(--text2)">HOSE · HNX · UPCOM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breadth: Tăng/Giảm/Trần/Sàn -->
+    <div class="gm-card" style="margin-top:0">
+      <div class="card-title" style="margin-bottom:12px">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+        Độ Rộng Thị Trường
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="vnBreadthGrid">
+        <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#22c55e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Tăng</div>
+          <div style="font-size:20px;font-weight:800;color:#22c55e" id="vnAdvance">—</div>
+        </div>
+        <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#ef4444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Giảm</div>
+          <div style="font-size:20px;font-weight:800;color:#ef4444" id="vnDecline">—</div>
+        </div>
+        <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#f59e0b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Đứng</div>
+          <div style="font-size:20px;font-weight:800;color:#f59e0b" id="vnUnchanged">—</div>
+        </div>
+        <div style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#a855f7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Trần/Sàn</div>
+          <div style="font-size:20px;font-weight:800;color:#a855f7"><span id="vnCeiling">—</span>/<span id="vnFloor">—</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">KL Khớp</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)" id="vnTotalVol">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">GT Khớp</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)" id="vnTotalVal">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticker Tape TV -->
+    <div class="gm-card" style="margin-top:0;padding:0;overflow:hidden;border-radius:12px">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+        {
+          "colorTheme": "dark",
+          "dateRange": "1D",
+          "showChart": true,
+          "locale": "vi_VN",
+          "largeChartUrl": "",
+          "isTransparent": true,
+          "showSymbolLogo": false,
+          "showFloatingTooltip": false,
+          "width": "100%",
+          "height": "400",
+          "tabs": [
+            {
+              "title": "Chỉ Số VN",
+              "symbols": [
+                {"s":"HOSE:VNINDEX","d":"VN-Index"},
+                {"s":"HNX:HNX","d":"HNX-Index"},
+                {"s":"HOSE:VN30","d":"VN30"},
+                {"s":"HNX:HNX30","d":"HNX30"},
+                {"s":"UPCOM:UPCOM","d":"UPCOM"}
+              ],
+              "originalTitle":"Indices"
+            },
+            {
+              "title": "Bluechips",
+              "symbols": [
+                {"s":"HOSE:VNM","d":"Vinamilk"},
+                {"s":"HOSE:VCB","d":"Vietcombank"},
+                {"s":"HOSE:HPG","d":"Hòa Phát"},
+                {"s":"HOSE:VIC","d":"Vingroup"},
+                {"s":"HOSE:FPT","d":"FPT Corp"}
+              ],
+              "originalTitle":"Bluechips"
+            }
+          ]
+        }
+        </script>
+      </div>
+    </div>
+
+  </div>
 </div>
 </div>
 
@@ -7644,70 +7759,167 @@ function vnPriceClass(price, ref){
 // VN MARKET PAGE — loadVNMarket, renderVNQuickPicks
 // ══════════════════════════════════════════════════════════════
 
+
+// ── VN Market state ──────────────────────────────
+let _vnMarketTab  = 'all';
+let _vnMarketData = [];  // cache rows
+
+// ── loadVNMarket: render table từ VN_POPULAR ─────
 async function loadVNMarket(){
-  // Indices: TV Market Overview widget
-  _renderTVMarketOverview();
-  // Movers: static VN30 list
-  renderVNMoversStatic();
-  // Breadth: placeholder
-  ['vnAdvance','vnDecline','vnUnchanged','vnCeiling','vnFloor','vnTotalVol','vnTotalVal']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='—'; });
+  _syncVNSession();
+  _renderVNMarketStatic();
+  _updateVNBreadthFromData();
 }
 
-function _renderTVMarketOverview(){
-  const strip = document.getElementById('vnIndicesStrip');
-  if(!strip || strip.dataset.tvLoaded) return;
-  strip.dataset.tvLoaded = '1';
-  // TV Market Overview widget cho VN indices
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'grid-column:1/-1;width:100%;';
-  const containerId = 'tv_mkt_' + Date.now();
-  wrap.innerHTML = `<div class="tradingview-widget-container" id="${containerId}"></div>`;
-  strip.parentNode.insertBefore(wrap, strip.nextSibling);
-  const s = document.createElement('script');
-  s.type = 'text/javascript';
-  s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
-  s.async = true;
-  s.innerHTML = JSON.stringify({
-    colorTheme:'dark', dateRange:'12M', showChart:false,
-    locale:'vi_VN', largeChartUrl:'', isTransparent:true,
-    showSymbolLogo:true, showFloatingTooltip:false,
-    width:'100%', height:'200',
-    tabs:[{title:'Chỉ số VN', symbols:[
-      {s:'HOSE:VNINDEX',d:'VN-Index'},{s:'HNX:HNX',d:'HNX-Index'},
-      {s:'UPCOM:UPCOM',d:'UPCoM'},{s:'HOSE:VN30',d:'VN30'},
-    ], originalTitle:'Indices'}]
+function _syncVNSession(){
+  const now = new Date();
+  const h = now.getUTCHours()+7, m = now.getUTCMinutes();
+  const t = h*60+m;
+  let label, cls;
+  if(t>=9*60 && t<11*60+30){ label='🟢 Phiên Sáng';  cls='session-open'; }
+  else if(t>=13*60 && t<15*60){ label='🟢 Phiên Chiều'; cls='session-open'; }
+  else if(t>=11*60+30 && t<13*60){ label='🟡 Nghỉ Trưa';  cls='session-lunch'; }
+  else{ label='⏸ Ngoài Giờ'; cls='session-closed'; }
+  ['vnSessionBadge','vnSessionBadge2','vnSessionBadge3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.textContent=label; el.className='vn-session-badge '+cls; }
   });
-  document.getElementById(containerId).appendChild(s);
+  const sub = document.getElementById('svnSession');
+  if(sub) sub.textContent = label;
+}
+
+function _renderVNMarketStatic(){
+  // Build rows từ VN_POPULAR với data = 0 (chờ real data)
+  // Tạo dữ liệu giả lập màu sắc dựa trên index để UI trông sinh động
+  const tickers = (VN_GROUPS?.vn30||[]).concat(
+    (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
+  ).slice(0,40);
+  
+  _vnMarketData = tickers.map((t,i)=>({
+    ticker:t, name:VN_NAMES[t]||t,
+    price:0, ref:0, change:0, changePct:0,
+    ceil:0, floor:0, vol:0,
+  }));
+  _renderVNTable(_vnMarketData);
+}
+
+function _renderVNTable(rows){
+  const tab = _vnMarketTab;
+  let filtered = rows;
+  if(tab==='gainers')  filtered = rows.filter(r=>r.changePct>0);
+  if(tab==='losers')   filtered = rows.filter(r=>r.changePct<0);
+  if(tab==='ceiling')  filtered = rows.filter(r=>r.price>0 && r.ceil>0 && r.price>=r.ceil);
+  
+  const q = (document.getElementById('vnMarketSearch')?.value||'').toUpperCase().trim();
+  if(q) filtered = filtered.filter(r=>r.ticker.includes(q)||(r.name||'').toUpperCase().includes(q));
+
+  const tbody = document.getElementById('vnMarketBody');
+  if(!tbody) return;
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Không có dữ liệu</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filtered.map((r,i)=>{
+    const price = r.price;
+    const chg   = r.change;
+    const pct   = r.changePct;
+    const isCeil  = price>0 && r.ceil>0  && price>=r.ceil;
+    const isFloor = price>0 && r.floor>0 && price<=r.floor;
+    const cls = isCeil?'vn-ceil': isFloor?'vn-floor': pct>0?'green': pct<0?'red': 'muted';
+    const sign= chg>=0?'+':'';
+    
+    // Signal badge đơn giản dựa trên % thay đổi
+    let sig='', sigCls='hold';
+    if(isCeil){ sig='TRẦN'; sigCls='buy'; }
+    else if(isFloor){ sig='SÀN'; sigCls='sell'; }
+    else if(pct>=3){ sig='TĂNG MẠNH'; sigCls='buy'; }
+    else if(pct<=-3){ sig='GIẢM MẠNH'; sigCls='sell'; }
+    else if(pct>0){ sig='TĂNG'; sigCls='buy'; }
+    else if(pct<0){ sig='GIẢM'; sigCls='sell'; }
+    else{ sig='—'; sigCls='hold'; }
+    
+    const priceDisp = price>0 ? vnFmtPrice(price) : '<span style="color:var(--muted)">—</span>';
+    const chgDisp   = price>0 ? `${sign}${vnFmtPrice(chg)}` : '—';
+    const pctDisp   = price>0 ? `${sign}${pct.toFixed(2)}%` : '—';
+    const ceilDisp  = r.ceil>0  ? vnFmtPrice(r.ceil)  : '—';
+    const floorDisp = r.floor>0 ? vnFmtPrice(r.floor) : '—';
+    const volDisp   = r.vol>0   ? vnFmtVol(r.vol)     : '—';
+    
+    return `<tr style="cursor:pointer" onclick="vnSelectStock('${r.ticker}')" class="coin-row">
+      <td class="l"><span class="rank">${i+1}</span></td>
+      <td class="l">
+        <div class="coin-cell">
+          <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,${_vnColor(r.ticker)}22,${_vnColor(r.ticker)}44);
+               border:1px solid ${_vnColor(r.ticker)}44;display:flex;align-items:center;justify-content:center;
+               font-size:11px;font-weight:800;color:${_vnColor(r.ticker)};flex-shrink:0">
+            ${r.ticker.slice(0,2)}
+          </div>
+          <div>
+            <div class="cn">${r.ticker}</div>
+            <div class="cs">${(r.name||'').slice(0,22)}</div>
+          </div>
+        </div>
+      </td>
+      <td class="r"><span class="${cls}" style="font-weight:700">${priceDisp}</span></td>
+      <td class="r"><span class="${cls}">${chgDisp}</span></td>
+      <td class="r"><span class="badge ${pct>0?'up':pct<0?'dn':'unch'}">${pctDisp}</span></td>
+      <td class="r" style="color:#a855f7;font-size:11px">${ceilDisp}</td>
+      <td class="r" style="color:#06b6d4;font-size:11px">${floorDisp}</td>
+      <td class="r" style="color:var(--muted);font-size:11px">${volDisp}</td>
+      <td class="r"><span class="sig ${sigCls}">${sig}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function _vnColor(ticker){
+  // Tạo màu nhất quán từ ticker string
+  let h=0;
+  for(let i=0;i<ticker.length;i++) h=(h*31+ticker.charCodeAt(i))&0xffff;
+  const hue = h%360;
+  return `hsl(${hue},70%,60%)`;
+}
+
+function _updateVNBreadthFromData(){
+  const rows = _vnMarketData;
+  const up  = rows.filter(r=>r.changePct>0).length;
+  const dn  = rows.filter(r=>r.changePct<0).length;
+  const eq  = rows.filter(r=>r.changePct===0&&r.price>0).length;
+  const ceil= rows.filter(r=>r.price>0&&r.ceil>0&&r.price>=r.ceil).length;
+  const fl  = rows.filter(r=>r.price>0&&r.floor>0&&r.price<=r.floor).length;
+  
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||'—'; };
+  set('vnAdvance',   up||'—');
+  set('vnDecline',   dn||'—');
+  set('vnUnchanged', eq||'—');
+  set('vnCeiling',   ceil||'—');
+  set('vnFloor',     fl||'—');
+  
+  // Stats row
+  if(up||dn){
+    const ratio = document.getElementById('svnRatio');
+    if(ratio) ratio.textContent = `${up} / ${dn} / ${eq}`;
+  }
+}
+
+function vnSetTab(el, tab){
+  _vnMarketTab = tab;
+  document.querySelectorAll('#page-vn-market .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  _renderVNTable(_vnMarketData);
+}
+
+function vnMarketFilter(q){
+  _renderVNTable(_vnMarketData);
+}
+
+function vnMarketClear(){
+  const el = document.getElementById('vnMarketSearch');
+  if(el){ el.value=''; }
+  _renderVNTable(_vnMarketData);
 }
 
 
-async function _loadVNBreadth(){
-  try{
-    const tickers = (VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
-    const stocks = await yfBatchQuotes(tickers);
-    if(!stocks.length) return;
-    let adv=0, dec=0, unch=0, ceil=0, floor=0, vol=0, val=0;
-    stocks.forEach(s=>{
-      const pct = s.changePct||0;
-      if(pct > 0.5) adv++;
-      else if(pct < -0.5) dec++;
-      else unch++;
-      if(s.price >= s.ceil && s.ceil>0) ceil++;
-      if(s.price <= s.floor && s.floor>0) floor++;
-      vol += s.vol||0;
-      val += s.val||0;
-    });
-    const _s = id => document.getElementById(id);
-    if(_s('vnAdvance'))   _s('vnAdvance').textContent   = adv;
-    if(_s('vnDecline'))   _s('vnDecline').textContent   = dec;
-    if(_s('vnUnchanged')) _s('vnUnchanged').textContent = unch;
-    if(_s('vnCeiling'))   _s('vnCeiling').textContent   = ceil;
-    if(_s('vnFloor'))     _s('vnFloor').textContent     = floor;
-    if(_s('vnTotalVol'))  _s('vnTotalVol').textContent  = vnFmtVol(vol);
-    if(_s('vnTotalVal'))  _s('vnTotalVal').textContent  = vnFmtVal(val);
-  }catch(e){}
-}
 
 function renderVNQuickPicks(){
   const el = document.getElementById('vnQuickPicks');
