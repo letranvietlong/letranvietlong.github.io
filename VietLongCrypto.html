@@ -4415,10 +4415,18 @@ async function loadFearGreed(){
 async function loadGlobalMarket(){
   try{
     // CoinCap /global — CORS native, không cần proxy
-    const r=await fetch('https://api.coincap.io/v2/assets?limit=5',
-      {signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw new Error('CoinCap '+r.status);
-    const capData=await r.json();
+    // CoinCap v2 + v3 fallback
+    let capData = null;
+    for(const url of [
+      'https://api.coincap.io/v2/assets?limit=5',
+      'https://rest.coincap.io/v3/assets?limit=5',
+    ]){
+      try{
+        const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(r.ok){ capData=await r.json(); break; }
+      }catch(e){}
+    }
+    if(!capData) throw new Error('CoinCap unavailable');
     // Build global-like object từ CoinCap data
     const topAssets=capData.data||[];
     const totalMcap=topAssets.reduce((s,a)=>s+(parseFloat(a.marketCapUsd)||0),0);
@@ -7630,7 +7638,7 @@ async function vnProxyFetch(url, timeout=12000){
 async function tvScanFetch(symbols, extraCols=[]){
   const cols = ['name','close','change','change_abs','volume','high','low',
                 'open','prev_close_price','market_cap_basic',...extraCols];
-  const body = symbols.length
+  const body = symbols && symbols.length
     ? { symbols:{tickers:symbols}, columns:cols }
     : {
         filter:[{left:'exchange',operation:'equal',right:'HOSE'},
@@ -7643,15 +7651,12 @@ async function tvScanFetch(symbols, extraCols=[]){
         range:[0,250],
       };
   try{
-    const r = await fetch(TV_SCAN_URL,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Origin':'https://www.tradingview.com',
-        'Referer':'https://www.tradingview.com/',
-      },
-      signal:AbortSignal.timeout(12000),
-      body:JSON.stringify(body),
+    // QUAN TRỌNG: Không set Content-Type header để tránh CORS preflight
+    // TradingView Scanner không cho phép custom headers từ cross-origin
+    const r = await fetch(TV_SCAN_URL, {
+      method: 'POST',
+      signal: AbortSignal.timeout(12000),
+      body: JSON.stringify(body),
     });
     if(!r.ok) return null;
     const j = await r.json();
@@ -7659,6 +7664,7 @@ async function tvScanFetch(symbols, extraCols=[]){
   }catch(e){}
   return null;
 }
+
 
 
 // TradingView Scanner top movers (dùng filter)
