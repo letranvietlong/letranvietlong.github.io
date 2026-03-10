@@ -7814,7 +7814,7 @@ function updateVNSession(){
 // TradingView symbol mapping
 
 // ═══════════════════════════════════════════════════════════════
-// VN DATA LAYER — corsproxy.io + Stooq CSV (CORS native, no auth)
+// VN DATA LAYER — Yahoo Finance v8 qua allorigins proxy
 // ═══════════════════════════════════════════════════════════════
 
 // TradingView symbol mapping (dùng cho TV widget & link)
@@ -7829,61 +7829,94 @@ function stooqSym(ticker){
   return MAP[ticker] || (ticker.toLowerCase()+'.vn');
 }
 
-// Proxy fetch dùng corsproxy.io (trả raw, không wrap JSON)
+// Proxy fetch dùng allorigins (get=JSON wrapped, raw=text)
+// Proxy fetch (generic, dùng cho news/misc)
 async function vnProxyFetch(url, timeout=12000){
-  const proxies = [
-    u => 'https://corsproxy.io/?'+encodeURIComponent(u),
-    u => 'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-    u => 'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u),
-  ];
-  for(const mkUrl of proxies){
-    try{
-      const r = await fetch(mkUrl(url),{signal:AbortSignal.timeout(timeout)});
-      if(r.ok){const t=await r.text(); if(t&&t.length>5) return t;}
-    }catch(e){}
-  }
+  // allorigins /get trả JSON {contents: "..."}  
+  try{
+    const enc = encodeURIComponent(url);
+    const r = await fetch('https://api.allorigins.win/get?url='+enc,
+      {signal:AbortSignal.timeout(timeout)});
+    if(r.ok){
+      const j = await r.json();
+      if(j.contents && j.contents.length>5) return j.contents;
+    }
+  }catch(e){}
+  // Fallback raw
+  try{
+    const enc = encodeURIComponent(url);
+    const r = await fetch('https://api.allorigins.win/raw?url='+enc,
+      {signal:AbortSignal.timeout(timeout)});
+    if(r.ok){ const t=await r.text(); if(t&&t.length>5) return t; }
+  }catch(e){}
   return null;
 }
 
-// Fetch Stooq CSV cho 1 ticker → [{date,open,high,low,close,vol}]
-async function stooqFetchCSV(ticker, days=300){
-  const sym = stooqSym(ticker);
-  const url = `https://stooq.com/q/d/l/?s=${sym}&i=d`;
-  const text = await vnProxyFetch(url, 12000);
-  if(!text || !text.includes(',')) return [];
-  const lines = text.trim().split('\n');
-  if(lines.length < 3) return [];
-  // Header: Date,Open,High,Low,Close,Volume
-  return lines.slice(1).map(ln=>{
-    const p = ln.split(',');
-    if(p.length < 5) return null;
-    const t = Math.floor(new Date(p[0].trim()).getTime()/1000);
-    const cl = parseFloat(p[4]);
-    if(!t || !cl || isNaN(cl)) return null;
-    return {time:t, open:parseFloat(p[1])||cl, high:parseFloat(p[2])||cl,
-            low:parseFloat(p[3])||cl, close:cl, vol:parseFloat(p[5])||0};
-  }).filter(Boolean).sort((a,b)=>a.time-b.time).slice(-days);
+// Yahoo Finance v8 qua allorigins (quote + history)
+// symbol: VNM.VN, VIC.VN, VNINDEX (^VNI), v.v.
+function yfSym(ticker){
+  const MAP = {VNINDEX:'^VNI', HNX:'^HNX', UPCOM:'^UPCOM', VN30:'^VN30F1!', HNX30:'^HNX30'};
+  return MAP[ticker] || (ticker+'.VN');
 }
-
-// Lấy quote 1 cổ phiếu từ Stooq CSV (lấy nến cuối)
-async function stooqQuote(ticker){
-  const bars = await stooqFetchCSV(ticker, 5);
-  if(!bars.length) return null;
-  const last = bars[bars.length-1];
-  const prev = bars.length>1 ? bars[bars.length-2] : last;
-  const ref   = prev.close;
-  const price = last.close;
+async function yfFetchChart(ticker, range='5d', interval='1d'){
+  const sym = yfSym(ticker);
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}`
+    + `?range=${range}&interval=${interval}&includePrePost=false`;
+  const text = await vnProxyFetch(url, 14000);
+  if(!text) return null;
+  try{
+    const d = JSON.parse(text);
+    return d?.chart?.result?.[0] || null;
+  }catch(e){ return null; }
+}
+async function yfQuote(ticker){
+  const r = await yfFetchChart(ticker, '5d', '1d');
+  if(!r) return null;
+  const meta = r.meta || {};
+  const price = meta.regularMarketPrice || 0;
+  const ref   = meta.chartPreviousClose || meta.previousClose || price;
   const chg   = price - ref;
   const pct   = ref>0 ? chg/ref*100 : 0;
+  const ts    = r.timestamp||[];
+  const ohlcv = r.indicators?.quote?.[0]||{};
+  const lastIdx = ts.length-1;
   return {
-    ticker, name: VN_NAMES[ticker]||ticker,
+    ticker, name: VN_NAMES[ticker]||meta.longName||ticker,
     price, ref, change:chg, changePct:pct,
-    high:last.high, low:last.low,
-    ceil: Math.round(ref*1.07*100)/100,
+    high:  ohlcv.high?.[lastIdx]  || price,
+    low:   ohlcv.low?.[lastIdx]   || price,
+    vol:   ohlcv.volume?.[lastIdx]|| 0,
+    val:   (ohlcv.volume?.[lastIdx]||0)*price,
+    ceil:  Math.round(ref*1.07*100)/100,
     floor: Math.round(ref*0.93*100)/100,
-    vol: last.vol, val: last.vol*price,
   };
 }
+async function yfHistory(ticker, range='1y'){
+  const r = await yfFetchChart(ticker, range, '1d');
+  if(!r) return [];
+  const ts    = r.timestamp||[];
+  const ohlcv = r.indicators?.quote?.[0]||{};
+  return ts.map((t,i)=>({
+    time:  t,
+    open:  ohlcv.open?.[i]   || ohlcv.close?.[i] || 0,
+    high:  ohlcv.high?.[i]   || ohlcv.close?.[i] || 0,
+    low:   ohlcv.low?.[i]    || ohlcv.close?.[i] || 0,
+    close: ohlcv.close?.[i]  || 0,
+    vol:   ohlcv.volume?.[i] || 0,
+  })).filter(b=>b.time>0&&b.close>0).sort((a,b)=>a.time-b.time);
+}
+
+
+// stooqFetchCSV → alias yfHistory (backwards compat)
+async function stooqFetchCSV(ticker, days=300){
+  const range = days<=60?'3mo': days<=200?'1y': days<=500?'2y':'5y';
+  const bars = await yfHistory(ticker, range);
+  return bars.slice(-days);
+}
+async function stooqQuote(ticker){
+  return yfQuote(ticker);
+}
+
 
 // Batch quotes từ Stooq (parallel, limit 10)
 async function yfBatchQuotes(tickers){
@@ -7939,25 +7972,32 @@ async function loadVNMovers(tab){
 let _tvWidgetLoaded = false;
 
 async function loadVNChart(tf, el){
-  if(!_vnCurrentTicker) return;
   document.querySelectorAll('#page-vn-chart .tf-btn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
   const container = document.getElementById('vnChartContainer');
   if(!container) return;
 
-  const ticker = _vnCurrentTicker;
-  const tfMap = {'1D':'D','1T':'W','1M':'M','3T':'3M','1N':'12M'};
+  if(!_vnCurrentTicker){
+    container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;
+      justify-content:center;height:100%;gap:12px;color:var(--muted)">
+      <div style="font-size:32px">📊</div>
+      <div style="font-size:14px">Chọn mã cổ phiếu từ danh sách bên trái</div>
+    </div>`;
+    return;
+  }
+
+  const ticker   = _vnCurrentTicker;
+  const tfMap    = {'1D':'D','1T':'W','1M':'M','3T':'3M','1N':'12M'};
   const interval = tfMap[tf]||'D';
-  const sym = tvSym(ticker);
+  const sym      = tvSym(ticker);
 
-  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:8px">
-    <div class="chart-spinner"></div>
-    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span>
-  </div>`;
+  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;
+    height:100%;gap:8px"><div class="chart-spinner"></div>
+    <span style="color:var(--muted);font-size:12px">Đang tải ${ticker}...</span></div>`;
 
-  // Thử TradingView Advanced Chart Widget (JS API, không popup)
   _buildTVWidget(container, sym, interval, ticker);
 }
+
 
 function _buildTVWidget(container, sym, interval, ticker){
   container.innerHTML = '';
@@ -7972,6 +8012,7 @@ function _buildTVWidget(container, sym, interval, ticker){
       new TradingView.widget({
         autosize: true,
         symbol: sym,
+        height: '100%',
         interval: interval,
         timezone: 'Asia/Ho_Chi_Minh',
         theme: 'dark',
