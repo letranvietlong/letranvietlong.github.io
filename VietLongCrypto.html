@@ -1978,6 +1978,43 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   background:linear-gradient(180deg,rgba(232,25,44,.08) 0%,rgba(232,25,44,.02) 100%) !important;
 }
 
+
+/* ── Header button status badges ── */
+.hm-status-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:800;letter-spacing:.8px;
+  padding:2px 6px;border-radius:10px;
+  margin-left:2px;
+}
+.hm-live{
+  background:rgba(0,230,118,.12);
+  color:#00e676;
+  border:1px solid rgba(0,230,118,.25);
+}
+.hm-live-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:#00e676;
+  box-shadow:0 0 5px #00e676;
+  animation:livePulse 1.8s ease-in-out infinite;
+  flex-shrink:0;
+}
+/* VN status variants */
+.hm-status-open{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border:1px solid rgba(34,197,94,.25);
+}
+.hm-status-ato,.hm-status-atc{
+  background:rgba(245,158,11,.12);
+  color:#f59e0b;
+  border:1px solid rgba(245,158,11,.25);
+}
+.hm-status-closed{
+  background:rgba(255,255,255,.05);
+  color:var(--muted);
+  border:1px solid rgba(255,255,255,.08);
+}
+
 </style>
 </head>
 <body class="market-crypto">
@@ -2012,7 +2049,6 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     <div class="header-market-btns">
       <button class="hm-btn active" id="ttab-crypto" onclick="switchMarket('crypto',this)">
         <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
-          <!-- Trái đất / Globe -->
           <circle cx="9" cy="9" r="7.5" fill="#0ea5e9" opacity=".2"/>
           <circle cx="9" cy="9" r="7.5" fill="none" stroke="#38bdf8" stroke-width="1.3"/>
           <ellipse cx="9" cy="9" rx="3" ry="7.5" fill="none" stroke="#38bdf8" stroke-width=".9" opacity=".7"/>
@@ -2021,6 +2057,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <line x1="2.5" y1="12.2" x2="15.5" y2="12.2" stroke="#38bdf8" stroke-width=".7" opacity=".45"/>
         </svg>
         <span>Crypto Thế Giới</span>
+        <span class="hm-status-badge hm-live"><span class="hm-live-dot"></span>LIVE</span>
       </button>
       <button class="hm-btn" id="ttab-vn" onclick="switchMarket('vn',this)">
         <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
@@ -2028,12 +2065,13 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <polygon points="9,5.5 9.9,8.1 12.7,8.1 10.5,9.7 11.3,12.3 9,10.7 6.7,12.3 7.5,9.7 5.3,8.1 8.1,8.1" fill="#ffcd00"/>
         </svg>
         <span>Chứng Khoán Việt Nam</span>
+        <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
     <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội</span></div>
 
 
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    
   </div>
 </header>
 
@@ -8298,6 +8336,26 @@ function renderVNNews(){
 
 // Tự động refresh session badge mỗi phút
 setInterval(updateVNSession, 60000);
+
+function updateVNMarketStatusBadge(){
+  const badge = document.getElementById('vnMarketStatus');
+  if(!badge) return;
+  const s = getVNSession();
+  const cfg = {
+    ato:    {cls:'hm-status-ato',    text:'ATO'},
+    open:   {cls:'hm-status-open',   text:'● MỞ CỬA'},
+    break:  {cls:'hm-status-ato',    text:'NGHỈ TRƯA'},
+    atc:    {cls:'hm-status-atc',    text:'ATC'},
+    closed: {cls:'hm-status-closed', text:'ĐÓNG CỬA'},
+  };
+  const c2 = cfg[s] || cfg.closed;
+  badge.className = 'hm-status-badge ' + c2.cls;
+  badge.textContent = c2.text;
+}
+// Chạy ngay và mỗi 30s
+updateVNMarketStatusBadge();
+setInterval(updateVNMarketStatusBadge, 30000);
+
 
 
 
