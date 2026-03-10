@@ -2091,7 +2091,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.4</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.9.5</span></span></div>
 
 
     
@@ -8429,61 +8429,49 @@ async function loadVNChart(tf, el){
 
 
 function _buildTVWidget(container, sym, interval, ticker){
-  // Cleanup cũ
   try{ if(_vnTVWidget) _vnTVWidget.remove(); }catch(e){}
   _vnTVWidget = null;
   if(_vnChart){try{_vnChart.remove();}catch(e){}_vnChart=null;}
   while(container.firstChild) container.removeChild(container.firstChild);
 
-  // Map timeframe → TV interval
   const ivMap = {'1D':'D','1W':'W','1M':'M','3M':'W','12M':'M'};
   const iv = ivMap[interval] || interval || 'D';
+  console.log('[VLC] widgetembed iframe:', sym, iv);
 
-  console.log('[VLC] TV widgetembed iframe:', sym, iv);
-
-  // Dùng TradingView OFFICIAL widgetembed iframe
-  // Đây là cách TV cung cấp chính thức, không cần domain whitelist
-  const uid = 'tv_' + Date.now();
-  const params = new URLSearchParams({
-    frameElementId: uid,
-    symbol:         sym,
-    interval:       iv,
-    theme:          'dark',
-    locale:         'vi_VN',
-    style:          '1',
-    toolbar_bg:     '%23131722',
-    withdateranges: '1',
-    hide_side_toolbar: '0',
-    allow_symbol_change: '1',
-    save_image:     '0',
-    studies:        JSON.stringify(['RSI@tv-basicstudies','MACD@tv-basicstudies']),
-    utm_source:     location.hostname,
-    utm_medium:     'widget_new',
-    utm_campaign:   'chart',
-  });
-
-  const src = 'https://www.tradingview.com/widgetembed/?' + params.toString();
+  // Build URL thủ công — KHÔNG dùng URLSearchParams (gây double-encode)
+  // studies dùng pipe-separated, toolbar_bg không có #
+  const encSym = encodeURIComponent(sym);  // HOSE%3AFPT
+  const studies = 'RSI%40tv-basicstudies%7CMACD%40tv-basicstudies';
+  const src = [
+    'https://www.tradingview.com/widgetembed/?',
+    'symbol='          + encSym,
+    '&interval='       + iv,
+    '&theme=dark',
+    '&style=1',
+    '&locale=vi_VN',
+    '&timezone=Asia%2FHo_Chi_Minh',
+    '&toolbar_bg=131722',
+    '&withdateranges=1',
+    '&hidesidetoolbar=0',
+    '&symboledit=1',
+    '&saveimage=0',
+    '&hide_top_toolbar=0',
+    '&allow_symbol_change=1',
+    '&studies='        + studies,
+  ].join('');
 
   const iframe = document.createElement('iframe');
-  iframe.id     = uid;
-  iframe.src    = src;
-  iframe.style.cssText = [
-    'width:100%',
-    'height:100%',
-    'min-height:560px',
-    'border:none',
-    'border-radius:8px',
-    'background:#131722',
-    'display:block',
-  ].join(';');
+  iframe.src = src;
+  iframe.style.cssText = 'width:100%;height:100%;min-height:560px;border:none;border-radius:8px;background:#131722;display:block;';
   iframe.setAttribute('allowfullscreen','');
   iframe.setAttribute('scrolling','no');
   iframe.setAttribute('frameborder','0');
   container.style.minHeight = '560px';
   container.appendChild(iframe);
   _vnTVWidget = iframe;
-  console.log('[VLC] widgetembed iframe created for', sym);
+  console.log('[VLC] iframe src:', src.slice(0,120));
 }
+
 
 
 
