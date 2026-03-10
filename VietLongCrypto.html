@@ -3776,7 +3776,7 @@ async function loadCoinGeckoLogos(){
       const base = (s.baseAsset||'').toUpperCase();
       if(!logoMap[base]){
         // GitHub CDN — không cần proxy, CORS OK
-        logoMap[base] = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${base.toLowerCase()}.png`;
+        logoMap[base] = `https://coinicons-api.vercel.app/api/icon/${base.toLowerCase()}`;
         nameMap[base] = nameMap[base] || base;
       }
     });
@@ -3900,11 +3900,16 @@ function logoHTML(base,size=28){
   const color=colorMap[base]||'#00d4ff';
   const fbStyle=`width:${size}px;height:${size}px;background:${color}22;border:1px solid ${color}35;color:${color};font-size:${Math.round(size*.45)}px`;
   const bl=base.toLowerCase();
-  // Fallback chain: logo từ map → cryptocurrency-icons CDN → chữ cái đầu
-  const fallbackUrl=`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${bl}.png`;
-  const onErr=`this.onerror=null;this.src='${fallbackUrl}';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex';}`;
-  const src=logoMap[base]||fallbackUrl;
-  return `<img class="coin-logo" src="${src}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="${onErr}"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
+  // Chain 4 nguồn: logoMap → CoinIcons → CoinCap icons → spothq → chữ cái
+  const src1 = logoMap[base] || `https://coinicons-api.vercel.app/api/icon/${bl}`;
+  const src2 = `https://assets.coincap.io/assets/icons/${bl}@2x.png`;
+  const src3 = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${bl}.png`;
+  const onErr = `
+    if(!this._fb1){this._fb1=true;this.src='${src2}';return;}
+    if(!this._fb2){this._fb2=true;this.src='${src3}';return;}
+    this.style.display='none';this.nextElementSibling.style.display='flex';
+  `.replace(/\n/g,' ').replace(/  +/g,' ');
+  return `<img class="coin-logo" src="${src1}" alt="${base}" loading="lazy" width="${size}" height="${size}" onerror="${onErr}"><div class="coin-logo-fb" style="display:none;${fbStyle}">${base[0]}</div>`;
 }
 
 /* ═══════════════════════════════════════════════════
