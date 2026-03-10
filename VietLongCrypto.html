@@ -2070,7 +2070,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.8</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v2.8.9</span></span></div>
 
 
     
@@ -7892,8 +7892,29 @@ function updateVNSession(){
 
 // TradingView symbol mapping (dùng cho TV widget & link)
 function tvSym(ticker){
-  const MAP = {VNINDEX:'HOSE:VNINDEX',HNX:'HNX:HNX',UPCOM:'UPCOM:UPCOM',VN30:'HOSE:VN30',HNX30:'HNX:HNX30'};
-  return MAP[ticker] || ('HOSE:'+ticker);
+  // TradingView.widget() API dùng HSX: (không phải HOSE:)
+  // HSX = Ho Chi Minh Stock Exchange
+  // HNX = Hanoi Stock Exchange  
+  // UPCOM = UPCOM
+  const HOSE_STOCKS = new Set([
+    'VNM','VIC','VHM','HPG','TCB','BID','VCB','FPT','MWG','VRE',
+    'MSN','GAS','SAB','CTG','ACB','MBB','STB','SSI','HDB','VND',
+    'VPB','TPB','BCM','VGC','PLX','PNJ','REE','GMD','GEX','HAG',
+    'VHC','DRC','BSR','OIL','PDR','NVL','DXG','KDH','VCG','SBT',
+    'CII','DPM','PVD','HSG','HT1','CTD','PVT','LGC','AGR','EVF',
+    'VCI','FTS','HCM','MBS','VDS','AGG','PC1','TDC','CEO','LDG',
+    'IDC','VTP','EIB','LPB','OCB','MSB','NAB','KLB','BVH','PVI',
+    'VNS','VOS','GMD','DVP','ACV','REE','VJC','HVN','SGN',
+    'VNINDEX','VN30'
+  ]);
+  const HNX_MAP = {HNX:'HNX:HNX',HNX30:'HNX:HNX30',
+    SHS:'HNX:SHS',VCS:'HNX:VCS',IDJ:'HNX:IDJ',NVB:'HNX:NVB',
+    SHB:'HNX:SHB',PVS:'HNX:PVS',CEO:'HNX:CEO'};
+  const UPCOM_MAP = {UPCOM:'UPCOM:UPCOM',OIL:'UPCOM:OIL'};
+  if(HNX_MAP[ticker])   return HNX_MAP[ticker];
+  if(UPCOM_MAP[ticker]) return UPCOM_MAP[ticker];
+  // Default: HOSE stocks dùng HSX:
+  return 'HSX:' + ticker;
 }
 
 // Stooq symbol mapping
