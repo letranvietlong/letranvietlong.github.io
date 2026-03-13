@@ -2141,7 +2141,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.4</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.5</span></span></div>
 
 
     
@@ -4091,7 +4091,7 @@ function connectWS(){
         // Realtime chart update cho coin đang xem
         if(d.s===selectedSym){
           updateChartHeader();
-          if(candleSeries&&c.price){
+          if(lwChart&&candleSeries&&c.price){
             try{
               const now=Math.floor(Date.now()/1000);
               const tfSecs={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400};
@@ -4107,13 +4107,15 @@ function connectWS(){
               const open=_candleOpen||c.price;
               _candleHigh=Math.max(_candleHigh||c.price, c.price);
               _candleLow=Math.min(_candleLow||c.price, c.price);
-              candleSeries.update({
-                time:candleTime,
-                open,
-                high:_candleHigh,
-                low:_candleLow,
-                close:c.price
-              });
+              if(lwChart&&candleSeries){
+                candleSeries.update({
+                  time:candleTime,
+                  open,
+                  high:_candleHigh,
+                  low:_candleLow,
+                  close:c.price
+                });
+              }
             }catch(e){}
           }
         }
@@ -6842,7 +6844,11 @@ function clearChat(){
    BOOT — khởi động tất cả chức năng
 ═══════════════════════════════════════════════════ */
 initApiKeyUI();               // khởi tạo UI API key từ localStorage
-  window.addEventListener('beforeunload',()=>{try{if(typeof sock!=='undefined'&&sock?.readyState<2)sock.close();}catch(e){}});
+  // Suppress LWC internal async errors
+window.addEventListener('unhandledrejection', e=>{
+  if(e.reason&&e.reason.message&&e.reason.message.includes('payload')) e.preventDefault();
+});
+window.addEventListener('beforeunload',()=>{try{if(typeof sock!=='undefined'&&sock?.readyState<2)sock.close();}catch(e){}});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&typeof obWs!=='undefined'&&obWs?.readyState<2){try{obWs.close();}catch(e){}}});
 renderAlertList();            // render alerts từ localStorage ngay lập tức
 loadAllCoins();               // Binance 24hr REST → SYMBOLS, coins, rồi WS
@@ -8213,7 +8219,16 @@ function _buildLWChart(container, candles){
     borderUpColor:'#22c55e',borderDownColor:'#ef4444',
     wickUpColor:'#22c55e',wickDownColor:'#ef4444',
   });
-  _vnSeries.setData(candles);
+  // Validate: lọc NaN, dedup timestamps, đảm bảo sorted
+  const _seen=new Set();
+  const _valid=candles.filter(b=>{
+    if(!b||isNaN(b.time)||isNaN(b.open)||isNaN(b.close)) return false;
+    if(_seen.has(b.time)) return false;
+    _seen.add(b.time);
+    return b.open>0 && b.close>0;
+  }).sort((a,b)=>a.time-b.time);
+  if(!_valid.length) return;
+  _vnSeries.setData(_valid);
   _vnChart.timeScale().fitContent();
   new ResizeObserver(entries=>{
     if(_vnChart&&entries[0]) _vnChart.applyOptions({width:entries[0].contentRect.width,height:entries[0].contentRect.height});
