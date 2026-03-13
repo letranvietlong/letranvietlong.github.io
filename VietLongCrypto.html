@@ -2086,6 +2086,33 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   font-weight:800;letter-spacing:-.5px;
   border-radius:8px;flex-shrink:0;
 }
+
+/* ── Funding Rate & L/S card items ── */
+#fundingList > div:hover, #lsList > div:hover {
+  background: var(--surface) !important;
+  transform: translateX(2px);
+  transition: all .15s;
+}
+
+/* ── Correlation matrix cell hover ── */
+#corrMatrix td:hover {
+  transform: scale(1.15);
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 0 12px rgba(0,212,255,.3);
+}
+
+/* ── Coin selector chips active state ── */
+#corrCoinSelector button:hover {
+  border-color: rgba(0,212,255,.4) !important;
+  color: #7dd3fc !important;
+}
+
+/* ── Correlation page layout ── */
+#page-correlation .spinner {
+  width: 28px; height: 28px;
+  border-top-color: #00d4ff;
+}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2141,7 +2168,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.2.5</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.3.2</span></span></div>
 
 
     
@@ -2243,7 +2270,18 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 
 
-  <button class="sub-tab sub-tab-donate" id="stab-donate" role="tab" onclick="showPage('donate',this)">
+    <button class="sub-tab" id="stab-correlation" role="tab" onclick="showPage('correlation',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="7" height="7" rx="1" fill="rgba(0,212,255,.7)"/>
+        <rect x="11" y="2" width="7" height="7" rx="1" fill="rgba(0,212,255,.4)"/>
+        <rect x="2" y="11" width="7" height="7" rx="1" fill="rgba(0,212,255,.4)"/>
+        <rect x="11" y="11" width="7" height="7" rx="1" fill="rgba(34,197,94,.7)"/>
+      </svg>
+    </span>
+    <span class="tab-label">Tương Quan</span>
+  </button>
+<button class="sub-tab sub-tab-donate" id="stab-donate" role="tab" onclick="showPage('donate',this)">
     <span class="tab-icon ti-donate">
       <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
         <path d="M10 16.5C10 16.5 2.5 11 2.5 6.5a4 4 0 017.5-2 4 4 0 017.5 2C17.5 11 10 16.5 10 16.5z" fill="#f43f5e"/>
@@ -2478,6 +2516,36 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
       </div>
     </div>
 
+
+    <!-- ── Funding Rate Card ── -->
+    <div class="fg-card" id="fundingCard" style="margin-top:14px;">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" style="fill:#f59e0b"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        Funding Rate (Futures)
+        <span id="fundingUpdateTime" style="font-size:9px;color:var(--muted);margin-left:auto">—</span>
+      </div>
+      <div id="fundingList" style="display:flex;flex-direction:column;gap:6px;">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:11px">
+          <div class="spinner" style="margin:0 auto 8px;width:20px;height:20px;border-width:2px"></div>
+          Đang tải...
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Long/Short Ratio Card ── -->
+    <div class="fg-card" id="lsCard" style="margin-top:14px;">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" style="fill:#22c55e"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+        Long/Short Ratio
+        <span id="lsUpdateTime" style="font-size:9px;color:var(--muted);margin-left:auto">—</span>
+      </div>
+      <div id="lsList" style="display:flex;flex-direction:column;gap:6px;">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:11px">
+          <div class="spinner" style="margin:0 auto 8px;width:20px;height:20px;border-width:2px"></div>
+          Đang tải...
+        </div>
+      </div>
+    </div>
     </div>
 
   </div>
@@ -3238,6 +3306,54 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 
 <!-- ══════════════ PAGE: CK VIỆT NAM ══════════════ -->
+<!-- ════ PAGE: CORRELATION MATRIX ════ -->
+<div class="page" id="page-correlation">
+  <div style="max-width:1100px;margin:0 auto;padding:24px 20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <h2 style="font-size:16px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 20 20" width="18" height="18" style="fill:#00d4ff"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+        Bảng Tương Quan Giá
+      </h2>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="corrTf" onchange="loadCorrelation()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">
+          <option value="1d">1 Ngày</option>
+          <option value="7d" selected>7 Ngày</option>
+          <option value="30d">30 Ngày</option>
+          <option value="90d">90 Ngày</option>
+        </select>
+        <button onclick="loadCorrelation()" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:#00d4ff;border-radius:6px;padding:5px 14px;font-size:11px;cursor:pointer">🔄 Tải Lại</button>
+      </div>
+    </div>
+
+    <!-- Coin selector -->
+    <div id="corrCoinSelector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Matrix -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto">
+      <div id="corrMatrix">
+        <div style="text-align:center;padding:40px;color:var(--muted)">
+          <div class="spinner" style="margin:0 auto 12px;border-top-color:#00d4ff"></div>
+          Đang tính toán tương quan...
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap">
+      <span style="font-size:10px;color:var(--muted)">Hệ số tương quan (Pearson):</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div style="width:60px;height:8px;border-radius:3px;background:linear-gradient(to right,#ef4444,#f59e0b,#22c55e)"></div>
+        <span style="font-size:9px;color:var(--muted)">-1 → 0 → +1</span>
+      </div>
+      <span style="font-size:10px;color:#22c55e">■ Tương quan thuận</span>
+      <span style="font-size:10px;color:#ef4444">■ Tương quan nghịch</span>
+      <span style="font-size:10px;color:#94a3b8">■ Không tương quan</span>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-donate">
 <div class="donate-layout">
 
@@ -3900,10 +4016,30 @@ const STABLES=new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD',
    LOAD ALL COINS FROM BINANCE 24HR TICKER
 ═══════════════════════════════════════════════════ */
 async function loadAllCoins(){
+  // Hiển thị trạng thái loading rõ ràng
+  const _el=document.getElementById('tableArea');
+  if(_el) _el.innerHTML='<div class="state-box"><div class="spinner" style="border-top-color:#00d4ff"></div><div style="color:#94a3b8;font-size:13px">⏳ Đang kết nối Binance...</div></div>';
+  const _ws=document.getElementById('wsStatus');
+  if(_ws) _ws.textContent='⏳ Đang tải...';
+  
+  // Thử nhiều endpoint
+  const ENDPOINTS=[
+    'https://api.binance.com/api/v3/ticker/24hr',
+    'https://api1.binance.com/api/v3/ticker/24hr',
+    'https://api2.binance.com/api/v3/ticker/24hr',
+    'https://api3.binance.com/api/v3/ticker/24hr',
+  ];
+  let data=null;
+  for(const url of ENDPOINTS){
+    try{
+      const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      if(!res.ok) continue;
+      data=await res.json();
+      if(data?.length>0) break;
+    }catch(e){ continue; }
+  }
   try{
-    const res=await fetch('https://api.binance.com/api/v3/ticker/24hr',{signal:AbortSignal.timeout(12000)});
-    if(!res.ok) throw new Error('Binance '+res.status);
-    const data=await res.json();
+    if(!data||!data.length) throw new Error('Binance unreachable');
     const filtered=data
       .filter(t=>t.symbol.endsWith('USDT'))
       .filter(t=>{
@@ -6275,6 +6411,8 @@ function showPage(id,el){
   if(id==='portfolio') renderPortfolio();
   if(id==='events')    { if(!eventsData.length) loadEvents(); else renderEvents(); }
 
+
+  if(id==='correlation') setTimeout(loadCorrelation,50);
 }
 
 
@@ -6840,6 +6978,288 @@ function clearChat(){
    Dùng Claude API để phân tích impact lên giá
 ═══════════════════════════════════════════ */
 
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   CORRELATION MATRIX — Pearson trên daily close prices
+══════════════════════════════════════════════════════ */
+
+const CORR_COINS_DEFAULT = ['BTC','ETH','BNB','SOL','XRP','ADA','AVAX','DOT','DOGE','MATIC'];
+let _corrCoins = [...CORR_COINS_DEFAULT];
+let _corrCache = {};          // sym → [closes]
+let _corrLoadVer = 0;
+
+// ── Tính hệ số Pearson ──────────────────────────────────────────
+function pearson(a, b){
+  const n = Math.min(a.length, b.length);
+  if(n < 2) return 0;
+  const ax = a.slice(-n), bx = b.slice(-n);
+  const ma = ax.reduce((s,v)=>s+v,0)/n;
+  const mb = bx.reduce((s,v)=>s+v,0)/n;
+  let num=0, da=0, db=0;
+  for(let i=0;i<n;i++){
+    const ai=ax[i]-ma, bi=bx[i]-mb;
+    num+=ai*bi; da+=ai*ai; db+=bi*bi;
+  }
+  const denom=Math.sqrt(da*db);
+  return denom===0 ? 1 : Math.max(-1,Math.min(1, num/denom));
+}
+
+// ── Màu ô matrix theo hệ số ────────────────────────────────────
+function corrColor(r){
+  if(r >= 0.9)  return {bg:'rgba(34,197,94,.85)', fg:'#fff'};
+  if(r >= 0.7)  return {bg:'rgba(34,197,94,.5)',  fg:'#d1fae5'};
+  if(r >= 0.4)  return {bg:'rgba(34,197,94,.2)',  fg:'#86efac'};
+  if(r >= 0.1)  return {bg:'rgba(34,197,94,.08)', fg:'#94a3b8'};
+  if(r >= -0.1) return {bg:'rgba(148,163,184,.1)',fg:'#64748b'};
+  if(r >= -0.4) return {bg:'rgba(239,68,68,.1)',  fg:'#fca5a5'};
+  if(r >= -0.7) return {bg:'rgba(239,68,68,.25)', fg:'#f87171'};
+  return               {bg:'rgba(239,68,68,.6)',  fg:'#fff'};
+}
+
+// ── Fetch lịch sử giá (daily close) từ Binance klines ──────────
+async function _fetchCorrData(sym, days){
+  const key = sym+'_'+days;
+  if(_corrCache[key] && Date.now()-_corrCache[key].ts < 10*60*1000)
+    return _corrCache[key].closes;
+
+  const limit = Math.min(days+2, 500);
+  const r = await fetch(
+    `https://api.binance.com/api/v3/klines?symbol=${sym}USDT&interval=1d&limit=${limit}`,
+    {signal: AbortSignal.timeout(8000)}
+  );
+  if(!r.ok) throw new Error('klines '+r.status);
+  const raw = await r.json();
+  const closes = raw.slice(0,-1).map(k=>parseFloat(k[4])); // bỏ nến chưa đóng
+  _corrCache[key] = {ts: Date.now(), closes};
+  return closes;
+}
+
+// ── Render coin selector chips ──────────────────────────────────
+function _renderCorrSelector(){
+  const el = document.getElementById('corrCoinSelector');
+  if(!el) return;
+  const ALL = ['BTC','ETH','BNB','SOL','XRP','ADA','AVAX','DOT','DOGE','MATIC',
+               'LINK','UNI','ATOM','LTC','BCH','APT','ARB','OP','INJ','SUI'];
+  el.innerHTML = ALL.map(sym=>{
+    const active = _corrCoins.includes(sym);
+    return `<button onclick="_toggleCorrCoin('${sym}')" style="
+      padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
+      cursor:pointer;border:1px solid ${active?'rgba(0,212,255,.5)':'rgba(255,255,255,.08)'};
+      background:${active?'rgba(0,212,255,.15)':'transparent'};
+      color:${active?'#00d4ff':'#64748b'};transition:all .15s">${sym}</button>`;
+  }).join('');
+}
+
+function _toggleCorrCoin(sym){
+  if(_corrCoins.includes(sym)){
+    if(_corrCoins.length <= 3) return; // min 3
+    _corrCoins = _corrCoins.filter(s=>s!==sym);
+  } else {
+    if(_corrCoins.length >= 12) return; // max 12
+    _corrCoins.push(sym);
+  }
+  _renderCorrSelector();
+  loadCorrelation();
+}
+
+// ── Main: load + render correlation matrix ──────────────────────
+async function loadCorrelation(){
+  const matrixEl = document.getElementById('corrMatrix');
+  if(!matrixEl) return;
+
+  const myVer = ++_corrLoadVer;
+  _renderCorrSelector();
+
+  const tfSel = document.getElementById('corrTf');
+  const tfVal = tfSel?.value || '7d';
+  const days  = tfVal==='1d'?2 : tfVal==='7d'?8 : tfVal==='30d'?31 : 91;
+
+  matrixEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
+    <div class="spinner" style="margin:0 auto 12px;border-top-color:#00d4ff"></div>
+    Đang tải ${_corrCoins.length} chuỗi giá (${tfVal})...
+  </div>`;
+
+  // Fetch tất cả parallel
+  const results = await Promise.allSettled(
+    _corrCoins.map(sym => _fetchCorrData(sym, days))
+  );
+  if(myVer !== _corrLoadVer) return;
+
+  // Lọc những coin fetch thành công
+  const valid = [];
+  results.forEach((res, i)=>{
+    if(res.status==='fulfilled' && res.value?.length >= 2){
+      valid.push({sym: _corrCoins[i], closes: res.value});
+    }
+  });
+
+  if(valid.length < 2){
+    matrixEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Không đủ dữ liệu để tính tương quan</div>';
+    return;
+  }
+
+  // Build matrix HTML
+  const cellSz = Math.max(44, Math.min(64, Math.floor(560/valid.length)));
+  let html = `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:10px;min-width:max-content">`;
+
+  // Header row
+  html += `<tr><th style="width:${cellSz}px;height:${cellSz}px"></th>`;
+  valid.forEach(d=>{
+    html += `<th style="width:${cellSz}px;text-align:center;color:var(--muted);font-weight:700;font-size:9px;padding:4px">${d.sym}</th>`;
+  });
+  html += `</tr>`;
+
+  // Data rows
+  valid.forEach((row, i)=>{
+    html += `<tr>`;
+    html += `<th style="text-align:right;padding-right:8px;color:var(--muted);font-weight:700;font-size:9px;white-space:nowrap">${row.sym}</th>`;
+    valid.forEach((col, j)=>{
+      const r = i===j ? 1 : pearson(row.closes, col.closes);
+      const {bg,fg} = corrColor(r);
+      const diag = i===j ? 'border:2px solid rgba(0,212,255,.4)' : '';
+      const title = `${row.sym}/${col.sym}: ${r.toFixed(3)}`;
+      html += `<td title="${title}" style="
+        width:${cellSz}px;height:${cellSz}px;text-align:center;
+        background:${bg};color:${fg};font-weight:${i===j?800:700};
+        font-size:${cellSz>50?11:9}px;border-radius:4px;
+        border:1px solid rgba(255,255,255,.04);${diag};
+        cursor:default;transition:transform .1s;
+        ">${r===1?row.sym:r.toFixed(2)}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</table></div>`;
+
+  // Stats summary
+  const allPairs = [];
+  for(let i=0;i<valid.length;i++)
+    for(let j=i+1;j<valid.length;j++)
+      allPairs.push(pearson(valid[i].closes, valid[j].closes));
+  const avgCorr = allPairs.reduce((s,v)=>s+v,0)/allPairs.length;
+  const maxCorr = Math.max(...allPairs);
+  const minCorr = Math.min(...allPairs);
+
+  html += `<div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">TB Tương Quan</div>
+      <div style="font-size:14px;font-weight:800;color:${avgCorr>0.5?'#22c55e':avgCorr<0?'#ef4444':'#94a3b8'}">${avgCorr.toFixed(3)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Cao Nhất</div>
+      <div style="font-size:14px;font-weight:800;color:#22c55e">${maxCorr.toFixed(3)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Thấp Nhất</div>
+      <div style="font-size:14px;font-weight:800;color:#ef4444">${minCorr.toFixed(3)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Cập Nhật</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text)">${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  </div>`;
+
+  matrixEl.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════
+   FUNDING RATE + LONG/SHORT RATIO (Binance Futures)
+══════════════════════════════════════════════════ */
+
+const FUNDING_SYMBOLS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
+  'DOGEUSDT','ADAUSDT','AVAXUSDT','DOTUSDT','MATICUSDT'];
+
+async function loadFundingRate(){
+  const el = document.getElementById('fundingList');
+  if(!el) return;
+  try{
+    // Binance Futures API: funding rate
+    const r = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex',
+      {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw 0;
+    const data = await r.json();
+    
+    // Lọc top coins theo funding rate (absolute value)
+    const filtered = data
+      .filter(d=>FUNDING_SYMBOLS.includes(d.symbol))
+      .sort((a,b)=>Math.abs(parseFloat(b.lastFundingRate))-Math.abs(parseFloat(a.lastFundingRate)));
+    
+    if(!filtered.length) throw new Error('no data');
+    
+    el.innerHTML = filtered.map(d=>{
+      const rate = parseFloat(d.lastFundingRate)*100;
+      const cls  = rate>0.01?'up':rate<-0.01?'down':'neu';
+      const sym  = d.symbol.replace('USDT','');
+      const sign = rate>0?'+':'';
+      const nextTime = d.nextFundingTime ? 
+        new Date(d.nextFundingTime).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : '--';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--surface2);border-radius:6px;">
+        <span style="font-size:11px;font-weight:700;color:var(--text);width:40px">${sym}</span>
+        <span style="font-size:12px;font-weight:800;color:${rate>0.01?'#22c55e':rate<-0.01?'#ef4444':'#94a3b8'}">${sign}${rate.toFixed(4)}%</span>
+        <span style="font-size:9px;color:var(--muted)">⏱ ${nextTime}</span>
+      </div>`;
+    }).join('');
+    
+    const ut = document.getElementById('fundingUpdateTime');
+    if(ut) ut.textContent = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    
+  }catch(e){
+    if(el) el.innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:11px">Không tải được dữ liệu futures</div>';
+  }
+}
+
+async function loadLongShort(){
+  const el = document.getElementById('lsList');
+  if(!el) return;
+  try{
+    // Binance: global Long/Short Account Ratio
+    const syms = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
+    const results = await Promise.allSettled(syms.map(async sym=>{
+      const r = await fetch(
+        `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`,
+        {signal:AbortSignal.timeout(6000)});
+      if(!r.ok) throw 0;
+      const d = await r.json();
+      return {sym: sym.replace('USDT',''), ...d[0]};
+    }));
+    
+    const rows = results
+      .filter(r=>r.status==='fulfilled'&&r.value)
+      .map(r=>r.value);
+    
+    if(!rows.length) throw new Error('no data');
+    
+    el.innerHTML = rows.map(d=>{
+      const ratio  = parseFloat(d.longShortRatio)||1;
+      const longPct  = parseFloat(d.longAccount)*100||50;
+      const shortPct = parseFloat(d.shortAccount)*100||50;
+      const longCls  = longPct>55?'#22c55e':longPct<45?'#ef4444':'#94a3b8';
+      return `<div style="padding:5px 8px;background:var(--surface2);border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">${d.sym}</span>
+          <span style="font-size:10px;color:var(--muted)">L/S: ${ratio.toFixed(2)}</span>
+        </div>
+        <div style="height:5px;border-radius:3px;background:#ef444433;overflow:hidden">
+          <div style="height:100%;width:${longPct.toFixed(1)}%;background:#22c55e;border-radius:3px;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:2px">
+          <span style="font-size:9px;color:#22c55e">Long ${longPct.toFixed(1)}%</span>
+          <span style="font-size:9px;color:#ef4444">Short ${shortPct.toFixed(1)}%</span>
+        </div>
+      </div>`;
+    }).join('');
+    
+    const ut = document.getElementById('lsUpdateTime');
+    if(ut) ut.textContent = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    
+  }catch(e){
+    if(el) el.innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:11px">Không tải được L/S ratio</div>';
+  }
+}
+
 /* ═══════════════════════════════════════════════════
    BOOT — khởi động tất cả chức năng
 ═══════════════════════════════════════════════════ */
@@ -6861,8 +7281,12 @@ setInterval(()=>{
 }, 6000);
 loadFearGreed();
 loadGlobalMarket();
+loadFundingRate();                                // Funding Rate Binance Futures
+loadLongShort();                                  // Long/Short Ratio
 setInterval(loadFearGreed, 5*60*1000);
-setInterval(loadGlobalMarket, 5*60*1000); // refresh mỗi 5 phút
+setInterval(loadGlobalMarket, 5*60*1000);
+setInterval(loadFundingRate, 5*60*1000);          // Refresh funding rate mỗi 5p
+setInterval(loadLongShort, 5*60*1000);            // Refresh L/S mỗi 5p // refresh mỗi 5 phút
 setTimeout(()=>{              // Sau 3s: fetch news (đợi page load xong)
   fetchNews();
   setInterval(fetchNews, 5*60*1000);
@@ -7909,9 +8333,36 @@ let _vnMarketData = [];  // cache rows
 // ── loadVNMarket: render table từ VN_POPULAR ─────
 async function loadVNMarket(){
   _syncVNSession();
-  _renderVNMarketStatic();
+  _renderVNMarketStatic();      // hiện ngay skeleton
   _updateVNBreadthFromData();
   renderVNIndexCard();
+  // Fetch real data bất đồng bộ
+  _fetchVNMarketData();
+}
+
+async function _fetchVNMarketData(){
+  const tickers = (VN_GROUPS?.vn30||[]).concat(
+    (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
+  ).slice(0,40);
+
+  // Batch fetch từ TCBS (mỗi ticker 1 request, chạy parallel nhóm 8)
+  const CHUNK = 8;
+  const results = [];
+  for(let i=0; i<tickers.length; i+=CHUNK){
+    const batch = tickers.slice(i, i+CHUNK);
+    const settled = await Promise.allSettled(batch.map(t=>fetchVNSingle(t)));
+    settled.forEach((r,j)=>{
+      if(r.status==='fulfilled'&&r.value){
+        results.push({ticker:batch[j], name:VN_NAMES[batch[j]]||batch[j], ...r.value});
+      }
+    });
+    // Cập nhật UI sau mỗi chunk
+    if(results.length > 0){
+      _vnMarketData = results;
+      _renderVNTable(_vnMarketData);
+      _updateVNBreadthFromData();
+    }
+  }
 }
 function vnSetTab(el, tab){
   _vnMarketTab = tab;
@@ -8950,13 +9401,31 @@ function vnRemoveFromWatchlist(ticker){
 
 // ── Movers ───────────────────────────────────────
 let _vnMoverTab='gainers';
-function loadVNMovers(){
-  const tickers=(VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
-  const mockData=tickers.map(t=>({
-    ticker:t,name:VN_NAMES[t]||t,
-    price:0,changePct:0,vol:0
-  }));
-  renderVNMovers(mockData);
+async function loadVNMovers(){
+  const body=document.getElementById('vnMoversBody');
+  if(body) body.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 8px;border-top-color:#e8192c"></div>Đang tải...</td></tr>';
+  try{
+    let stocks=[];
+    // Thử TV scanner trước
+    try{
+      const rows = await tvScanMovers('change','desc', 60);
+      stocks = rows.map(r=>parseTVRow(r,TV_COLS)).filter(Boolean);
+    }catch(e){}
+    
+    // Fallback: fetch từ VN30 qua TCBS
+    if(!stocks.length){
+      const tickers=(VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
+      const settled=await Promise.allSettled(tickers.map(t=>fetchVNSingle(t)));
+      stocks=settled.map((r,i)=>r.status==='fulfilled'&&r.value?
+        {ticker:tickers[i],name:VN_NAMES[tickers[i]]||tickers[i],...r.value}:null
+      ).filter(Boolean);
+    }
+    
+    if(stocks.length) renderVNMovers(stocks);
+    else throw new Error('no data');
+  }catch(e){
+    if(body) body.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Không tải được dữ liệu</td></tr>';
+  }
 }
 
 function renderVNMovers(stocks){
