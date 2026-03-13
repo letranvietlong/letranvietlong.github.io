@@ -2113,6 +2113,28 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   width: 28px; height: 28px;
   border-top-color: #00d4ff;
 }
+
+/* ── VN Market Skeleton Loading ── */
+@keyframes vn-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.vn-skel {
+  display: inline-block;
+  width: 60px; height: 12px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 400px 100%;
+  animation: vn-shimmer 1.4s infinite linear;
+}
+.vn-skel.wide  { width: 90px; }
+.vn-skel.short { width: 36px; }
+
+/* ── corsproxy notice (debug) ── */
+#vnDataSource {
+  font-size: 9px; color: var(--muted);
+  margin-left: auto; padding: 2px 6px;
+  border-radius: 4px;
+}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2168,7 +2190,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.4.0</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.4.4</span></span></div>
 
 
     
@@ -8356,6 +8378,7 @@ async function _fetchVNMarketData(){
           val:   s.vol*s.price,
           exchange:'HOSE',
         }));
+        window._vnLastDataSource = 'TV Scanner';
         _renderVNTable(_vnMarketData);
         _updateVNBreadthFromData();
         return;
@@ -8601,6 +8624,13 @@ function _renderVNMarketStatic(){
 
 function _renderVNTable(rows){
   const tab = _vnMarketTab;
+  const body = document.getElementById('vnTableBody');
+  if(!rows || rows.length === 0){
+    if(body) body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">
+      <div class="spinner" style="margin:0 auto 12px;border-top-color:#e8192c"></div>
+      Đang tải dữ liệu thị trường...</td></tr>`;
+    return;
+  }
   let filtered = rows;
   if(tab==='gainers')  filtered = rows.filter(r=>r.changePct>0);
   if(tab==='losers')   filtered = rows.filter(r=>r.changePct<0);
@@ -8635,10 +8665,11 @@ function _renderVNTable(rows){
     else if(pct<0){ sig='GIẢM'; sigCls='sell'; }
     else{ sig='—'; sigCls='hold'; }
     
-    const priceDisp = price>0 ? vnFmtPrice(price) : '<span style="color:var(--muted)">—</span>';
-    const chgDisp   = price>0 ? `${sign}${vnFmtPrice(chg)}` : '—';
-    const pctDisp   = price>0 ? `${sign}${pct.toFixed(2)}%` : '—';
-    const ceilDisp  = r.ceil>0  ? vnFmtPrice(r.ceil)  : '—';
+    const _skel     = '<span class="vn-skel"></span>';
+    const priceDisp = price>0 ? vnFmtPrice(price) : _skel;
+    const chgDisp   = price>0 ? `${sign}${vnFmtPrice(chg)}` : _skel;
+    const pctDisp   = price>0 ? `${sign}${pct.toFixed(2)}%` : _skel;
+    const ceilDisp  = r.ceil>0  ? vnFmtPrice(r.ceil)  : _skel;
     const floorDisp = r.floor>0 ? vnFmtPrice(r.floor) : '—';
     const volDisp   = r.vol>0   ? vnFmtVol(r.vol)     : '—';
     
@@ -8946,14 +8977,10 @@ async function tvScanMovers(sortBy='change', sortOrder='desc', limit=50){
 // ── yfBatchQuotes: Yahoo Finance batch (fallback) ────────────────
 async function yfBatchQuotes(tickers){
   const symbols = tickers.map(t=>t+'.VN').join(',');
-  try{
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(
-      'https://query1.finance.yahoo.com/v7/finance/quote?symbols='+symbols+'&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow'
-    )}`;
-    const r    = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
-    const json = await r.json();
-    const data = JSON.parse(json.contents||'{}');
-    const list = data?.quoteResponse?.result||[];
+  const yfUrl   = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow`;
+
+  const parseList = d => {
+    const list = d?.quoteResponse?.result||[];
     return list.map(q=>({
       ticker:   q.symbol.replace('.VN',''),
       name:     VN_NAMES[q.symbol.replace('.VN','')]||q.shortName||q.symbol,
@@ -8965,30 +8992,69 @@ async function yfBatchQuotes(tickers){
       high:     q.regularMarketDayHigh||0,
       low:      q.regularMarketDayLow||0,
     }));
-  }catch(e){ return []; }
+  };
+
+  // Thử allorigins
+  try{
+    const p1   = `https://api.allorigins.win/get?url=${encodeURIComponent(yfUrl)}`;
+    const r    = await fetch(p1, {signal:AbortSignal.timeout(10000)});
+    const j    = await r.json();
+    const data = JSON.parse(j.contents||'{}');
+    const res  = parseList(data);
+    if(res.length > 0) return res;
+  }catch(e){}
+
+  // Fallback: corsproxy.io
+  try{
+    const p2   = `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`;
+    const r    = await fetch(p2, {signal:AbortSignal.timeout(10000)});
+    const data = await r.json();
+    const res  = parseList(data);
+    if(res.length > 0) return res;
+  }catch(e){}
+
+  return [];
 }
 
 // ── stooqQuote: lấy quote từ Stooq cho chỉ số VN ────────────────
 async function stooqQuote(ticker){
+  const sym   = ticker.toLowerCase();
+  const rawUrl= `https://stooq.com/q/d/l/?s=${sym}.vn&i=d`;
+
+  let contents = null;
+  // Thử allorigins
   try{
-    const sym   = ticker.toLowerCase();
-    const url   = `https://stooq.com/q/d/l/?s=${sym}.vn&i=d`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const r     = await fetch(proxy, {signal:AbortSignal.timeout(8000)});
-    const json  = await r.json();
-    const lines = (json.contents||'').trim().split('\n');
-    if(lines.length < 2) return null;
-    const last = lines[lines.length-1].split(',');
-    const prev = lines.length >= 3 ? lines[lines.length-2].split(',') : null;
-    const price    = parseFloat(last[4]||0);
-    const prevClose= prev ? parseFloat(prev[4]||0) : price;
-    if(!price) return null;
-    const change   = price - prevClose;
-    const changePct= prevClose ? (change/prevClose*100) : 0;
-    return { price, prevClose, change, changePct,
-             high: parseFloat(last[2]||0), low: parseFloat(last[3]||0),
-             vol: parseFloat(last[5]||0) };
-  }catch(e){ return null; }
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
+    const r = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
+    const j = await r.json();
+    if(j?.contents && j.contents.includes(',')) contents = j.contents;
+  }catch(e){}
+  // Fallback corsproxy.io
+  if(!contents){
+    try{
+      const proxy = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
+      const r = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
+      contents = await r.text();
+    }catch(e){}
+  }
+  if(!contents) return null;
+
+  const lines = contents.trim().split('\n').filter(l=>l&&!l.startsWith('Date')&&!l.startsWith('No data'));
+  if(!lines.length) return null;
+  const last = lines[lines.length-1].split(',');
+  const prev = lines.length>=2 ? lines[lines.length-2].split(',') : last;
+  const close = parseFloat(last[4])*1000;
+  const prevClose = parseFloat(prev[4])*1000;
+  if(!close || close<=0) return null;
+  return {
+    price: close, prevClose,
+    change: close-prevClose,
+    changePct: prevClose ? (close-prevClose)/prevClose*100 : 0,
+    high:  parseFloat(last[2])*1000||0,
+    low:   parseFloat(last[3])*1000||0,
+    vol:   parseFloat(last[5])||0,
+    date:  last[0]
+  };
 }
 
 // ── _updateVNBreadthFromData: update breadth cards ───────────────
