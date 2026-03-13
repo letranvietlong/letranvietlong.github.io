@@ -8755,14 +8755,12 @@ async function _fetchVNChartData(container, ticker, interval){
   const days = interval==='W'?730 : interval==='M'?1825 : interval==='3M'?90 : 365;
   const stooqInterval = interval==='W'?'w' : interval==='M'?'m' : 'd';
 
-  // TCBS và SSI block proxy servers → chỉ dùng Stooq
+  // TCBS và SSI block proxy servers → dùng Stooq qua multi-proxy fallback
   try{
     const rawUrl = `https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=${stooqInterval}`;
-    const proxy  = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
-    const r = await fetch(proxy, {signal:AbortSignal.timeout(15000)});
-    if(!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    const bars = (j.contents||'').trim().split('\n')
+    const text = await _fetchViaProxy(rawUrl, 15000);
+    if(!text) throw new Error('all proxies failed');
+    const bars = text.trim().split('\n')
       .slice(1)
       .filter(l=>l && !l.startsWith('No data'))
       .map(line=>{
@@ -8795,21 +8793,64 @@ async function _fetchVNChartData(container, ticker, interval){
     <div style="font-size:11px">Stooq chưa có dữ liệu cho mã này</div></div>`;
 }
 
+// ── Multi-proxy helper: thử từng proxy cho đến khi có kết quả ────────
+const _PROXY_CACHE = new Map(); // cache kết quả 5 phút
+const _PROXY_CACHE_TTL = 5 * 60 * 1000;
+
+// Danh sách proxy dự phòng — nếu proxy đầu lỗi sẽ tự động thử proxy tiếp theo
+const STOOQ_PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
+async function _fetchViaProxy(rawUrl, timeout=10000){
+  // Kiểm tra cache
+  const cacheKey = rawUrl;
+  const cached = _PROXY_CACHE.get(cacheKey);
+  if(cached && Date.now() - cached.ts < _PROXY_CACHE_TTL) return cached.text;
+
+  for(let i=0; i<STOOQ_PROXIES.length; i++){
+    const proxyUrl = STOOQ_PROXIES[i](rawUrl);
+    try{
+      const r = await fetch(proxyUrl, {signal: AbortSignal.timeout(timeout)});
+      if(!r.ok) continue;
+
+      let text = '';
+      // allorigins & codetabs trả JSON wrapper {contents:'...'}
+      const ct = r.headers.get('content-type')||'';
+      if(ct.includes('application/json') || i===0 || i===2){
+        try{
+          const j = await r.json();
+          text = j.contents || j.data || '';
+        }catch{ text = await r.text(); }
+      } else {
+        text = await r.text();
+      }
+
+      if(!text || text.trim().length < 20) continue;
+      if(text.includes('No data') && !text.includes(',')) continue;
+
+      // Lưu cache
+      _PROXY_CACHE.set(cacheKey, {text, ts: Date.now()});
+      return text;
+    }catch(e){ /* thử proxy tiếp theo */ }
+  }
+  return null; // tất cả proxy thất bại
+}
+
 // ── Fetch single stock snapshot ───────────────────────────────────
 async function fetchVNSingle(ticker){
-  // TCBS và SSI đều block proxy servers (403/500)
-  // → Chỉ dùng Stooq qua allorigins (reliable, không block proxy)
-  // MWG và GAS không có trên Stooq → return null (sẽ dùng TV Scanner data)
   const NO_STOOQ = new Set(['MWG','GAS','BCM','BSR','OIL','DRC','PVD','HAG']);
   if(NO_STOOQ.has(ticker)) return null;
 
   try{
     const rawUrl = `https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=d`;
-    const proxy  = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
-    const r = await fetch(proxy, {signal:AbortSignal.timeout(12000)});
-    if(!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    const lines = (j.contents||'').trim().split('\n')
+    const text = await _fetchViaProxy(rawUrl, 12000);
+    if(!text) return null;
+
+    const lines = text.trim().split('\n')
       .filter(l=>l && !l.startsWith('Date') && !l.startsWith('No data'));
     if(lines.length < 1) return null;
     const last = lines[lines.length-1].split(',');
