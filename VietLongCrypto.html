@@ -8747,37 +8747,33 @@ function _buildTVWidget(container, tvSymbol, interval, ticker){
   _fetchVNChartData(container, ticker, interval||'D');
 }
 
-// ── Fetch VN chart data: TCBS → SSI → Stooq ──────────────────────
+// ── Fetch VN chart data: TCBS (trực tiếp, không cần proxy) ───────
 async function _fetchVNChartData(container, ticker, interval){
   const loading = document.getElementById('vnChartLoading');
   if(loading) loading.style.display='flex';
-  const now  = Math.floor(Date.now()/1000);
-  const days = interval==='W'?730 : interval==='M'?1825 : interval==='3M'?90 : 365;
-  const stooqInterval = interval==='W'?'w' : interval==='M'?'m' : 'd';
 
-  // TCBS và SSI block proxy servers → dùng Stooq qua multi-proxy fallback
+  const now  = Math.floor(Date.now()/1000);
+  // Map interval → resolution TCBS và số ngày lấy về
+  const tcbsRes  = interval==='W'?'W' : interval==='M'?'M' : interval==='3M'?'D' : 'D';
+  const fromDays = interval==='W'?730 : interval==='M'?1825 : interval==='3M'?90 : 365;
+  const from     = now - fromDays * 86400;
+
+  // ── Nguồn 1: TCBS — API chứng khoán VN, không cần proxy ─────────
   try{
-    const rawUrl = `https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=${stooqInterval}`;
-    const text = await _fetchViaProxy(rawUrl, 15000);
-    if(!text) throw new Error('all proxies failed');
-    const bars = text.trim().split('\n')
-      .slice(1)
-      .filter(l=>l && !l.startsWith('No data'))
-      .map(line=>{
-        const p = line.split(',');
-        if(p.length < 5 || !p[0] || p[4]==='N/A') return null;
-        const t = Math.floor(new Date(p[0]).getTime()/1000);
-        return {
-          time:  t,
-          open:  parseFloat(p[1])*1000 || 0,
-          high:  parseFloat(p[2])*1000 || 0,
-          low:   parseFloat(p[3])*1000 || 0,
-          close: parseFloat(p[4])*1000 || 0,
-          volume:parseFloat(p[5]) || 0,
-        };
-      })
-      .filter(b=>b && b.close > 0 && !isNaN(b.time) && isFinite(b.time))
-      .sort((a,b)=>a.time-b.time);
+    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${tcbsRes}&from=${from}&to=${now}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(12000)});
+    if(!r.ok) throw new Error('tcbs '+r.status);
+    const j = await r.json();
+    const raw = j?.data || j?.bars || [];
+    const bars = raw.map(b=>({
+      time:   b.tradingDate ? Math.floor(new Date(b.tradingDate).getTime()/1000) : (b.open ? b.open : null),
+      open:   (b.open||0)*1000,
+      high:   (b.high||0)*1000,
+      low:    (b.low||0)*1000,
+      close:  (b.close||0)*1000,
+      volume: b.volume||0,
+    })).filter(b=>b.time&&b.close>0&&isFinite(b.time))
+      .sort((a,b2)=>a.time-b2.time);
 
     if(bars.length > 5){
       if(loading) loading.style.display='none';
@@ -8786,94 +8782,159 @@ async function _fetchVNChartData(container, ticker, interval){
     }
   }catch(e){}
 
+  // ── Nguồn 2: TCBS endpoint thứ 2 ────────────────────────────────
+  try{
+    const url2 = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/quote?symbol=${ticker}&resolution=${tcbsRes}&from=${from}&to=${now}`;
+    const r2 = await fetch(url2, {signal: AbortSignal.timeout(12000)});
+    if(!r2.ok) throw new Error('tcbs2 '+r2.status);
+    const j2 = await r2.json();
+    const raw2 = j2?.data||[];
+    const bars2 = raw2.map(b=>({
+      time:   b.t ? b.t : Math.floor(new Date(b.tradingDate||b.date).getTime()/1000),
+      open:   (b.o||b.open||0)*1000,
+      high:   (b.h||b.high||0)*1000,
+      low:    (b.l||b.low||0)*1000,
+      close:  (b.c||b.close||0)*1000,
+      volume: b.v||b.volume||0,
+    })).filter(b=>b.time&&b.close>0&&isFinite(b.time))
+      .sort((a,b2)=>a.time-b2.time);
+
+    if(bars2.length > 5){
+      if(loading) loading.style.display='none';
+      _buildLWChart(container, bars2);
+      return;
+    }
+  }catch(e){}
+
+  // ── Nguồn 3: SSI iBoard chart ────────────────────────────────────
+  try{
+    const ssiRes = interval==='W'?'1W':interval==='M'?'1M':'1D';
+    const url3 = `https://iboard-query.ssi.com.vn/v2/stock/chart?symbol=${ticker}&from=${from}&to=${now}&resolution=${ssiRes}`;
+    const r3 = await fetch(url3, {
+      headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
+      signal: AbortSignal.timeout(12000)
+    });
+    if(!r3.ok) throw new Error('ssi '+r3.status);
+    const j3 = await r3.json();
+    const d3 = j3?.data;
+    if(d3?.t && d3.t.length > 5){
+      const bars3 = d3.t.map((t,i)=>({
+        time:   t,
+        open:   (d3.o[i]||0)*1000,
+        high:   (d3.h[i]||0)*1000,
+        low:    (d3.l[i]||0)*1000,
+        close:  (d3.c[i]||0)*1000,
+        volume: d3.v[i]||0,
+      })).filter(b=>b.close>0&&isFinite(b.time))
+        .sort((a,b2)=>a.time-b2.time);
+      if(bars3.length > 5){
+        if(loading) loading.style.display='none';
+        _buildLWChart(container, bars3);
+        return;
+      }
+    }
+  }catch(e){}
+
+  // ── Không lấy được từ nguồn nào ─────────────────────────────────
   if(loading) loading.style.display='none';
   container.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted)">
     <div style="font-size:28px">📡</div>
-    <div>Không lấy được dữ liệu ${ticker}</div>
-    <div style="font-size:11px">Stooq chưa có dữ liệu cho mã này</div></div>`;
+    <div style="font-size:13px;font-weight:600">Không tải được biểu đồ ${ticker}</div>
+    <div style="font-size:11px">Vui lòng thử lại sau</div>
+  </div>`;
 }
 
-// ── Multi-proxy helper: thử từng proxy cho đến khi có kết quả ────────
-const _PROXY_CACHE = new Map(); // cache kết quả 5 phút
-const _PROXY_CACHE_TTL = 5 * 60 * 1000;
+// ── Cache dữ liệu 3 phút ─────────────────────────────────────────
+const _PROXY_CACHE = new Map();
+const _PROXY_CACHE_TTL = 3 * 60 * 1000;
+function _cacheGet(k){ const c=_PROXY_CACHE.get(k); return (c&&Date.now()-c.ts<_PROXY_CACHE_TTL)?c.v:null; }
+function _cacheSet(k,v){ _PROXY_CACHE.set(k,{v,ts:Date.now()}); return v; }
 
-// Danh sách proxy dự phòng — nếu proxy đầu lỗi sẽ tự động thử proxy tiếp theo
-const STOOQ_PROXIES = [
-  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  url => `https://thingproxy.freeboard.io/fetch/${url}`,
-];
-
-async function _fetchViaProxy(rawUrl, timeout=10000){
-  // Kiểm tra cache
-  const cacheKey = rawUrl;
-  const cached = _PROXY_CACHE.get(cacheKey);
-  if(cached && Date.now() - cached.ts < _PROXY_CACHE_TTL) return cached.text;
-
-  for(let i=0; i<STOOQ_PROXIES.length; i++){
-    const proxyUrl = STOOQ_PROXIES[i](rawUrl);
-    try{
-      const r = await fetch(proxyUrl, {signal: AbortSignal.timeout(timeout)});
-      if(!r.ok) continue;
-
-      let text = '';
-      // allorigins & codetabs trả JSON wrapper {contents:'...'}
-      const ct = r.headers.get('content-type')||'';
-      if(ct.includes('application/json') || i===0 || i===2){
-        try{
-          const j = await r.json();
-          text = j.contents || j.data || '';
-        }catch{ text = await r.text(); }
-      } else {
-        text = await r.text();
-      }
-
-      if(!text || text.trim().length < 20) continue;
-      if(text.includes('No data') && !text.includes(',')) continue;
-
-      // Lưu cache
-      _PROXY_CACHE.set(cacheKey, {text, ts: Date.now()});
-      return text;
-    }catch(e){ /* thử proxy tiếp theo */ }
-  }
-  return null; // tất cả proxy thất bại
-}
-
-// ── Fetch single stock snapshot ───────────────────────────────────
-async function fetchVNSingle(ticker){
-  const NO_STOOQ = new Set(['MWG','GAS','BCM','BSR','OIL','DRC','PVD','HAG']);
-  if(NO_STOOQ.has(ticker)) return null;
-
+// ── SSI iBoard API — không cần proxy, không bị CORS ──────────────
+// Trả về snapshot realtime cho 1 mã chứng khoán VN
+async function _fetchSSIQuote(ticker){
+  const cKey = 'ssi_'+ticker;
+  const cached = _cacheGet(cKey);
+  if(cached) return cached;
   try{
-    const rawUrl = `https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=d`;
-    const text = await _fetchViaProxy(rawUrl, 12000);
-    if(!text) return null;
-
-    const lines = text.trim().split('\n')
-      .filter(l=>l && !l.startsWith('Date') && !l.startsWith('No data'));
-    if(lines.length < 1) return null;
-    const last = lines[lines.length-1].split(',');
-    const prev = lines.length >= 2 ? lines[lines.length-2].split(',') : last;
-    if(!last[4] || last[4]==='N/A') return null;
-    const price   = parseFloat(last[4]) * 1000;
-    const ref     = parseFloat(prev[4]) * 1000;
-    if(price <= 100) return null;
-    const change  = price - ref;
-    return {
+    // SSI iBoard public API — free, no auth, CORS OK
+    const url = `https://iboard-query.ssi.com.vn/v2/stock/quote?symbol=${ticker}`;
+    const r = await fetch(url, {
+      headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
+      signal: AbortSignal.timeout(8000)
+    });
+    if(!r.ok) return null;
+    const j = await r.json();
+    const d = j?.data;
+    if(!d || !d.lastPrice) return null;
+    const price = parseFloat(d.lastPrice)||0;
+    const ref   = parseFloat(d.refPrice)||0;
+    if(price <= 0) return null;
+    const change    = price - ref;
+    const changePct = ref ? (change/ref*100) : 0;
+    return _cacheSet(cKey, {
       ticker, price, ref,
-      ceil:  Math.round(ref * 1.07 / 100) * 100,
-      floor: Math.round(ref * 0.93 / 100) * 100,
-      high:  parseFloat(last[2]) * 1000 || price,
-      low:   parseFloat(last[3]) * 1000 || price,
-      vol:   parseFloat(last[5]) || 0,
-      val:   parseFloat(last[5]) * price || 0,
-      change,
-      changePct: ref ? (change/ref*100) : 0,
-      exchange: 'HOSE',
-      name: VN_NAMES[ticker] || ticker,
-    };
+      ceil:     parseFloat(d.ceilingPrice)||Math.round(ref*1.07/100)*100,
+      floor:    parseFloat(d.floorPrice)||Math.round(ref*0.93/100)*100,
+      high:     parseFloat(d.highestPrice)||price,
+      low:      parseFloat(d.lowestPrice)||price,
+      vol:      parseFloat(d.totalQtty||d.matchedQtty)||0,
+      val:      parseFloat(d.totalValue)||0,
+      change, changePct,
+      exchange: d.exchange||'HOSE',
+      name:     VN_NAMES[ticker]||ticker,
+    });
   }catch(e){ return null; }
+}
+
+// ── TCBS API — fallback cho snapshot ─────────────────────────────
+async function _fetchTCBSQuote(ticker){
+  const cKey = 'tcbs_'+ticker;
+  const cached = _cacheGet(cKey);
+  if(cached) return cached;
+  try{
+    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/quote?symbol=${ticker}&resolution=D&from=${Math.floor(Date.now()/1000)-86400*3}&to=${Math.floor(Date.now()/1000)}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if(!r.ok) return null;
+    const j = await r.json();
+    const bars = j?.data;
+    if(!bars||!bars.length) return null;
+    const last = bars[bars.length-1];
+    const prev = bars.length>=2 ? bars[bars.length-2] : last;
+    const price = (last.close||0)*1000;
+    const ref   = (prev.close||0)*1000;
+    if(price<=0) return null;
+    const change = price-ref;
+    return _cacheSet(cKey, {
+      ticker, price, ref,
+      ceil:  Math.round(ref*1.07/100)*100,
+      floor: Math.round(ref*0.93/100)*100,
+      high:  (last.high||0)*1000||price,
+      low:   (last.low||0)*1000||price,
+      vol:   last.volume||0,
+      val:   (last.volume||0)*price,
+      change, changePct: ref?(change/ref*100):0,
+      exchange:'HOSE', name:VN_NAMES[ticker]||ticker,
+    });
+  }catch(e){ return null; }
+}
+
+// ── Fetch single stock snapshot: SSI → TCBS → TV (từ market data) ─
+async function fetchVNSingle(ticker){
+  // 1. Thử SSI iBoard (realtime, không cần proxy)
+  const ssi = await _fetchSSIQuote(ticker);
+  if(ssi) return ssi;
+
+  // 2. Thử TCBS (không cần proxy)
+  const tcbs = await _fetchTCBSQuote(ticker);
+  if(tcbs) return tcbs;
+
+  // 3. Lấy từ TV market data nếu đã có
+  if(window._vnMarketData){
+    const found = window._vnMarketData.find(s=>s.ticker===ticker);
+    if(found && found.price>0) return found;
+  }
+  return null;
 }
 
 // ── tvSym: chuyển ticker → TradingView symbol ──────────────────
@@ -8942,10 +9003,10 @@ async function tvScanMovers(sortBy='change', sortOrder='desc', limit=50){
   return d.data||[];
 }
 
-// ── yfBatchQuotes: Yahoo Finance batch (fallback) ────────────────
+// ── yfBatchQuotes: Yahoo Finance (gọi trực tiếp, không cần proxy) ─
 async function yfBatchQuotes(tickers){
   const symbols = tickers.map(t=>t+'.VN').join(',');
-  const yfUrl   = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow`;
+  const yfUrl   = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow&corsDomain=finance.yahoo.com&crumb=`;
 
   const parseList = d => {
     const list = d?.quoteResponse?.result||[];
@@ -8962,67 +9023,36 @@ async function yfBatchQuotes(tickers){
     }));
   };
 
-  // Thử allorigins
+  // Gọi trực tiếp Yahoo Finance (hỗ trợ CORS)
   try{
-    const p1   = `https://api.allorigins.win/get?url=${encodeURIComponent(yfUrl)}`;
-    const r    = await fetch(p1, {signal:AbortSignal.timeout(10000)});
-    const j    = await r.json();
-    const data = JSON.parse(j.contents||'{}');
-    const res  = parseList(data);
-    if(res.length > 0) return res;
-  }catch(e){}
-
-  // Fallback: corsproxy.io
-  try{
-    const p2   = `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`;
-    const r    = await fetch(p2, {signal:AbortSignal.timeout(10000)});
-    const data = await r.json();
-    const res  = parseList(data);
-    if(res.length > 0) return res;
+    const r = await fetch(yfUrl, {signal:AbortSignal.timeout(10000)});
+    if(r.ok){
+      const data = await r.json();
+      const res  = parseList(data);
+      if(res.length > 0) return res;
+    }
   }catch(e){}
 
   return [];
 }
 
-// ── stooqQuote: lấy quote từ Stooq cho chỉ số VN ────────────────
+// ── stooqQuote → thay bằng SSI + TCBS (không cần proxy) ─────────
 async function stooqQuote(ticker){
-  const sym   = ticker.toLowerCase();
-  const rawUrl= `https://stooq.com/q/d/l/?s=${sym}.vn&i=d`;
-
-  let contents = null;
-  // Thử allorigins
-  try{
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
-    const r = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
-    const j = await r.json();
-    if(j?.contents && j.contents.includes(',')) contents = j.contents;
-  }catch(e){}
-  // Fallback corsproxy.io
-  if(!contents){
-    try{
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
-      const r = await fetch(proxy, {signal:AbortSignal.timeout(10000)});
-      contents = await r.text();
-    }catch(e){}
-  }
-  if(!contents) return null;
-
-  const lines = contents.trim().split('\n').filter(l=>l&&!l.startsWith('Date')&&!l.startsWith('No data'));
-  if(!lines.length) return null;
-  const last = lines[lines.length-1].split(',');
-  const prev = lines.length>=2 ? lines[lines.length-2].split(',') : last;
-  const close = parseFloat(last[4])*1000;
-  const prevClose = parseFloat(prev[4])*1000;
-  if(!close || close<=0) return null;
-  return {
-    price: close, prevClose,
-    change: close-prevClose,
-    changePct: prevClose ? (close-prevClose)/prevClose*100 : 0,
-    high:  parseFloat(last[2])*1000||0,
-    low:   parseFloat(last[3])*1000||0,
-    vol:   parseFloat(last[5])||0,
-    date:  last[0]
+  // Thử SSI trước
+  const ssi = await _fetchSSIQuote(ticker);
+  if(ssi) return {
+    price: ssi.price, prevClose: ssi.ref,
+    change: ssi.change, changePct: ssi.changePct,
+    high: ssi.high, low: ssi.low, vol: ssi.vol, date: new Date().toISOString().slice(0,10)
   };
+  // Fallback TCBS
+  const tcbs = await _fetchTCBSQuote(ticker);
+  if(tcbs) return {
+    price: tcbs.price, prevClose: tcbs.ref,
+    change: tcbs.change, changePct: tcbs.changePct,
+    high: tcbs.high, low: tcbs.low, vol: tcbs.vol, date: new Date().toISOString().slice(0,10)
+  };
+  return null;
 }
 
 // ── _updateVNBreadthFromData: update breadth cards ───────────────
