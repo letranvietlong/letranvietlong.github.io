@@ -2168,7 +2168,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.3.2</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.3.4</span></span></div>
 
 
     
@@ -8345,8 +8345,30 @@ async function _fetchVNMarketData(){
     (VN_POPULAR||[]).filter(t=>!(VN_GROUPS?.vn30||[]).includes(t))
   ).slice(0,40);
 
-  // Batch fetch từ TCBS (mỗi ticker 1 request, chạy parallel nhóm 8)
-  const CHUNK = 8;
+  // Ưu tiên 1: TV Scanner (không bị CORS, realtime)
+  try{
+    const tvSyms = tickers.map(t=>tvSym(t));
+    const rows   = await tvScanFetch(tvSyms);
+    if(rows && rows.length >= 5){
+      const stocks = rows.map(r=>parseTVRow(r, TV_COLS)).filter(Boolean);
+      if(stocks.length >= 5){
+        _vnMarketData = stocks.map(s=>({
+          ...s,
+          ref:   s.price/(1+(s.changePct||0)/100)||s.price,
+          ceil:  +(s.price*1.07).toFixed(2),
+          floor: +(s.price*0.93).toFixed(2),
+          val:   s.vol*s.price,
+          exchange:'HOSE',
+        }));
+        _renderVNTable(_vnMarketData);
+        _updateVNBreadthFromData();
+        return;
+      }
+    }
+  }catch(e){}
+
+  // Fallback: fetch từng ticker qua proxy (chậm hơn nhưng đáng tin)
+  const CHUNK = 6;
   const results = [];
   for(let i=0; i<tickers.length; i+=CHUNK){
     const batch = tickers.slice(i, i+CHUNK);
@@ -8356,7 +8378,6 @@ async function _fetchVNMarketData(){
         results.push({ticker:batch[j], name:VN_NAMES[batch[j]]||batch[j], ...r.value});
       }
     });
-    // Cập nhật UI sau mỗi chunk
     if(results.length > 0){
       _vnMarketData = results;
       _renderVNTable(_vnMarketData);
@@ -8702,31 +8723,34 @@ async function _fetchVNChartData(container, ticker, interval){
   const from = now - days*86400;
   const res  = interval==='W'?'W' : interval==='M'?'M' : 'D';
 
-  // 1. TCBS
+  // 1. TCBS qua allorigins proxy (tránh CORS từ GitHub Pages)
   try{
-    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${from}&to=${now}`;
-    const r   = await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw 0;
-    const d   = await r.json();
-    const bars= (d?.data||[]).map(b=>({
+    const tcbsUrl = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${from}&to=${now}`;
+    const proxy   = `https://api.allorigins.win/get?url=${encodeURIComponent(tcbsUrl)}`;
+    const r       = await fetch(proxy,{signal:AbortSignal.timeout(12000)});
+    const j       = await r.json();
+    const d       = JSON.parse(j.contents||'{}');
+    const bars    = (d?.data||[]).map(b=>({
       time:Math.floor(new Date(b.tradingDate||b.date).getTime()/1000),
-      open:b.open,high:b.high,low:b.low,close:b.close,volume:b.volume||0
-    })).filter(b=>b.open>0).sort((a,b)=>a.time-b.time);
+      open:+(b.open||0),high:+(b.high||0),low:+(b.low||0),close:+(b.close||0),volume:+(b.volume||0)
+    })).filter(b=>b.open>0&&!isNaN(b.time)).sort((a,b)=>a.time-b.time);
     if(bars.length>5){if(loading)loading.style.display='none';_buildLWChart(container,bars);return;}
   }catch(e){}
 
-  // 2. SSI
+  // 2. SSI qua allorigins proxy
   try{
-    const fmt = d=>new Date(d*1000).toISOString().slice(0,10).replace(/-/g,'/');
-    const url = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=500`;
-    const r   = await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw 0;
-    const d   = await r.json();
-    const bars= (d?.data?.data||[]).map(b=>({
+    const fmt     = ts=>new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,'/');
+    const ssiUrl  = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=500`;
+    const proxy   = `https://api.allorigins.win/get?url=${encodeURIComponent(ssiUrl)}`;
+    const r       = await fetch(proxy,{signal:AbortSignal.timeout(12000)});
+    const j       = await r.json();
+    const d       = JSON.parse(j.contents||'{}');
+    const bars    = (d?.data?.data||[]).map(b=>({
       time:Math.floor(new Date(b.TradingDate||b.tradingDate).getTime()/1000),
-      open:b.Open||b.open,high:b.High||b.high,low:b.Low||b.low,
-      close:b.Close||b.close,volume:b.TotalMatchedVol||b.volume||0
-    })).filter(b=>b.open>0).sort((a,b)=>a.time-b.time);
+      open:+(b.Open||b.open||0),high:+(b.High||b.high||0),
+      low:+(b.Low||b.low||0),close:+(b.Close||b.close||0),
+      volume:+(b.TotalMatchedVol||b.volume||0)
+    })).filter(b=>b.open>0&&!isNaN(b.time)).sort((a,b)=>a.time-b.time);
     if(bars.length>5){if(loading)loading.style.display='none';_buildLWChart(container,bars);return;}
   }catch(e){}
 
@@ -8752,21 +8776,78 @@ async function _fetchVNChartData(container, ticker, interval){
 
 // ── Fetch single stock snapshot ───────────────────────────────────
 async function fetchVNSingle(ticker){
+  // 1. TCBS qua allorigins proxy (tránh CORS)
   try{
-    const now=Math.floor(Date.now()/1000), from=now-86400*2;
-    const url=`https://apipubaws.tcbs.com.vn/stock-insight/v2/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=D&from=${from}&to=${now}`;
-    const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok) throw 0;
-    const d=await r.json();
+    const now=Math.floor(Date.now()/1000), from=now-86400*3;
+    const tcbsUrl=`https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=D&from=${from}&to=${now}`;
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(tcbsUrl)}`;
+    const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+    const j=await r.json();
+    const d=JSON.parse(j.contents||'{}');
     const bars=d?.data||[];
-    if(!bars.length) throw 0;
-    const last=bars[bars.length-1];
-    const ref =bars.length>=2?bars[bars.length-2].close:last.open;
-    const price=last.close, change=price-ref;
-    return{ticker,price,ref,ceil:+(ref*1.07).toFixed(2),floor:+(ref*0.93).toFixed(2),
-      high:last.high,low:last.low,vol:last.volume||0,val:(last.volume||0)*price,
-      change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
-  }catch(e){return null;}
+    if(bars.length>=1){
+      const last=bars[bars.length-1];
+      const ref=bars.length>=2?bars[bars.length-2].close:(last.open||last.close);
+      const price=last.close||0;
+      if(price>0){
+        const change=price-ref;
+        return{ticker,price,ref,
+          ceil:+(ref*1.07).toFixed(2),floor:+(ref*0.93).toFixed(2),
+          high:last.high,low:last.low,vol:last.volume||0,val:(last.volume||0)*price,
+          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+      }
+    }
+  }catch(e){}
+
+  // 2. SSI finfo qua allorigins
+  try{
+    const now=Math.floor(Date.now()/1000), from=now-86400*3;
+    const fmt=ts=>new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,'/');
+    const ssiUrl=`https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=3`;
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(ssiUrl)}`;
+    const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+    const j=await r.json();
+    const d=JSON.parse(j.contents||'{}');
+    const rows=d?.data?.data||[];
+    if(rows.length>=1){
+      const last=rows[0], prev=rows[1]||rows[0];
+      const price=+(last.Close||last.close||0);
+      const ref=+(prev.Close||prev.close||price);
+      if(price>0){
+        const change=price-ref;
+        return{ticker,price,ref,
+          ceil:+(ref*1.07).toFixed(2),floor:+(ref*0.93).toFixed(2),
+          high:+(last.High||last.high||0),low:+(last.Low||last.low||0),
+          vol:+(last.TotalMatchedVol||last.volume||0),
+          val:+(last.TotalMatchedVol||0)*price,
+          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+      }
+    }
+  }catch(e){}
+
+  // 3. Stooq qua allorigins (fallback cuối)
+  try{
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent('https://stooq.com/q/d/l/?s='+ticker.toLowerCase()+'.vn&i=d')}`;
+    const r=await fetch(proxy,{signal:AbortSignal.timeout(10000)});
+    const j=await r.json();
+    const lines=(j.contents||'').trim().split('\n').filter(l=>l&&!l.startsWith('Date'));
+    if(lines.length>=1){
+      const last=lines[lines.length-1].split(',');
+      const prev=lines.length>=2?lines[lines.length-2].split(','):last;
+      const price=+(last[4]||0)*1000; // Stooq VN giá chia 1000
+      const ref=+(prev[4]||0)*1000;
+      if(price>100){
+        const change=price-ref;
+        return{ticker,price,ref,
+          ceil:+(ref*1.07).toFixed(0)*1,floor:+(ref*0.93).toFixed(0)*1,
+          high:+(last[2]||0)*1000,low:+(last[3]||0)*1000,
+          vol:+(last[5]||0),val:+(last[5]||0)*price,
+          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+      }
+    }
+  }catch(e){}
+
+  return null;
 }
 
 // ── tvSym: chuyển ticker → TradingView symbol ──────────────────
@@ -9406,13 +9487,18 @@ async function loadVNMovers(){
   if(body) body.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 8px;border-top-color:#e8192c"></div>Đang tải...</td></tr>';
   try{
     let stocks=[];
-    // Thử TV scanner trước
+    // Xác định sort theo tab đang active
+    const tab = _vnMoverTab||'gainers';
+    const sortBy    = tab==='volume'?'volume':'change';
+    const sortOrder = tab==='losers'?'asc':'desc';
+
+    // TV Scanner (không bị CORS)
     try{
-      const rows = await tvScanMovers('change','desc', 60);
+      const rows = await tvScanMovers(sortBy, sortOrder, 60);
       stocks = rows.map(r=>parseTVRow(r,TV_COLS)).filter(Boolean);
     }catch(e){}
-    
-    // Fallback: fetch từ VN30 qua TCBS
+
+    // Fallback: VN30 qua fetchVNSingle (đã có allorigins proxy)
     if(!stocks.length){
       const tickers=(VN_GROUPS?.vn30||VN_POPULAR||[]).slice(0,30);
       const settled=await Promise.allSettled(tickers.map(t=>fetchVNSingle(t)));
@@ -9420,7 +9506,7 @@ async function loadVNMovers(){
         {ticker:tickers[i],name:VN_NAMES[tickers[i]]||tickers[i],...r.value}:null
       ).filter(Boolean);
     }
-    
+
     if(stocks.length) renderVNMovers(stocks);
     else throw new Error('no data');
   }catch(e){
