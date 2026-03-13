@@ -2168,7 +2168,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.3.4</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.4.0</span></span></div>
 
 
     
@@ -8248,28 +8248,24 @@ function switchMarket(market, el){
     document.body.classList.add('market-vn');
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     showVNPage('vn-market', document.getElementById('stab-vn-market'));
-    loadVNMarket();
   }
 }
 
 // ── VN Page navigation ────────────────────────────────────
 
 function showVNPage(id, el){
-  // Ẩn tất cả VN sub-pages
+  // id = 'vn-market' | 'vn-chart' | 'vn-watchlist' | etc.
   document.querySelectorAll('[id^="page-vn-"]').forEach(p=>p.classList.remove('active'));
-  // Highlight tab button
   document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
-  // Show page
-  const page = document.getElementById('page-vn-'+id);
+  const page = document.getElementById('page-'+id);
   if(page) page.classList.add('active');
-  // Side effects per page
-  if(id==='market')    { loadVNMarket(); renderVNIndexCard(); }
-  if(id==='chart')     { _renderVNStockListPanel(); renderVNQuickPicks(); }
-  if(id==='watchlist') renderVNWatchlist();
-  if(id==='indices')   loadVNIndices();
-  if(id==='news')      loadVNNews();
-  if(id==='heatmap')   setTimeout(renderVNHeatmap, 100);
+  if(id==='vn-market')    { loadVNMarket(); renderVNIndexCard(); }
+  if(id==='vn-chart')     { _renderVNStockListPanel(); renderVNQuickPicks(); }
+  if(id==='vn-watchlist') renderVNWatchlist();
+  if(id==='vn-indices')   loadVNIndices();
+  if(id==='vn-news')      loadVNNews();
+  if(id==='vn-heatmap')   setTimeout(renderVNHeatmap, 100);
 }
 
 function updateVNSession(){
@@ -8367,22 +8363,18 @@ async function _fetchVNMarketData(){
     }
   }catch(e){}
 
-  // Fallback: fetch từng ticker qua proxy (chậm hơn nhưng đáng tin)
-  const CHUNK = 6;
-  const results = [];
-  for(let i=0; i<tickers.length; i+=CHUNK){
-    const batch = tickers.slice(i, i+CHUNK);
-    const settled = await Promise.allSettled(batch.map(t=>fetchVNSingle(t)));
-    settled.forEach((r,j)=>{
-      if(r.status==='fulfilled'&&r.value){
-        results.push({ticker:batch[j], name:VN_NAMES[batch[j]]||batch[j], ...r.value});
-      }
-    });
-    if(results.length > 0){
-      _vnMarketData = results;
-      _renderVNTable(_vnMarketData);
-      _updateVNBreadthFromData();
-    }
+  // Fallback: fetch song song tất cả tickers (fetchVNSingle đã có dual-proxy)
+  // Giới hạn 20 tickers để không quá tải allorigins
+  const TOP_TICKERS = tickers.slice(0,20);
+  const allSettled = await Promise.allSettled(TOP_TICKERS.map(t=>fetchVNSingle(t)));
+  const results = allSettled
+    .map((r,i)=>r.status==='fulfilled'&&r.value?
+      {ticker:TOP_TICKERS[i], name:VN_NAMES[TOP_TICKERS[i]]||TOP_TICKERS[i], ...r.value}:null)
+    .filter(Boolean);
+  if(results.length > 0){
+    _vnMarketData = results;
+    _renderVNTable(_vnMarketData);
+    _updateVNBreadthFromData();
   }
 }
 function vnSetTab(el, tab){
@@ -8723,91 +8715,126 @@ async function _fetchVNChartData(container, ticker, interval){
   const from = now - days*86400;
   const res  = interval==='W'?'W' : interval==='M'?'M' : 'D';
 
-  // 1. TCBS qua allorigins proxy (tránh CORS từ GitHub Pages)
+  // Helper: thử 2 proxies
+  const fetchProxy = async (rawUrl, timeout=12000) => {
+    try{
+      const p1 = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
+      const r  = await fetch(p1, {signal:AbortSignal.timeout(timeout)});
+      const j  = await r.json();
+      if(j?.contents && j.contents.length > 20) return JSON.parse(j.contents);
+    }catch(e){}
+    try{
+      const p2 = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
+      const r  = await fetch(p2, {signal:AbortSignal.timeout(timeout)});
+      return await r.json();
+    }catch(e){}
+    return null;
+  };
+
+  const parseBars = (arr, mapFn) =>
+    arr.map(mapFn)
+       .filter(b=>b&&b.open>0&&!isNaN(b.time)&&isFinite(b.time))
+       .sort((a,b)=>a.time-b.time);
+
+  // 1. TCBS v1 qua proxy
   try{
-    const tcbsUrl = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${from}&to=${now}`;
-    const proxy   = `https://api.allorigins.win/get?url=${encodeURIComponent(tcbsUrl)}`;
-    const r       = await fetch(proxy,{signal:AbortSignal.timeout(12000)});
-    const j       = await r.json();
-    const d       = JSON.parse(j.contents||'{}');
-    const bars    = (d?.data||[]).map(b=>({
+    const url = `https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=${res}&from=${from}&to=${now}`;
+    const d   = await fetchProxy(url);
+    const bars= parseBars(d?.data||[], b=>({
       time:Math.floor(new Date(b.tradingDate||b.date).getTime()/1000),
-      open:+(b.open||0),high:+(b.high||0),low:+(b.low||0),close:+(b.close||0),volume:+(b.volume||0)
-    })).filter(b=>b.open>0&&!isNaN(b.time)).sort((a,b)=>a.time-b.time);
+      open:+(b.open||0),high:+(b.high||0),low:+(b.low||0),
+      close:+(b.close||0),volume:+(b.volume||0)
+    }));
     if(bars.length>5){if(loading)loading.style.display='none';_buildLWChart(container,bars);return;}
   }catch(e){}
 
-  // 2. SSI qua allorigins proxy
+  // 2. SSI finfo v4 qua proxy
   try{
-    const fmt     = ts=>new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,'/');
-    const ssiUrl  = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=500`;
-    const proxy   = `https://api.allorigins.win/get?url=${encodeURIComponent(ssiUrl)}`;
-    const r       = await fetch(proxy,{signal:AbortSignal.timeout(12000)});
-    const j       = await r.json();
-    const d       = JSON.parse(j.contents||'{}');
-    const bars    = (d?.data?.data||[]).map(b=>({
+    const fmt = ts=>new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,'/');
+    const url = `https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=500`;
+    const d   = await fetchProxy(url);
+    const bars= parseBars(d?.data?.data||[], b=>({
       time:Math.floor(new Date(b.TradingDate||b.tradingDate).getTime()/1000),
       open:+(b.Open||b.open||0),high:+(b.High||b.high||0),
       low:+(b.Low||b.low||0),close:+(b.Close||b.close||0),
       volume:+(b.TotalMatchedVol||b.volume||0)
-    })).filter(b=>b.open>0&&!isNaN(b.time)).sort((a,b)=>a.time-b.time);
+    }));
     if(bars.length>5){if(loading)loading.style.display='none';_buildLWChart(container,bars);return;}
   }catch(e){}
 
-  // 3. Stooq via allorigins
+  // 3. Stooq qua allorigins (CSV format)
   try{
-    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent('https://stooq.com/q/d/l/?s='+ticker.toLowerCase()+'.vn&i=d')}`;
-    const r=await fetch(proxy,{signal:AbortSignal.timeout(12000)});
-    const d=await r.json();
-    const bars=(d.contents||'').trim().split('\n').slice(1).map(line=>{
-      const p=line.split(',');
-      if(p.length<5||!p[0]) return null;
-      return{time:Math.floor(new Date(p[0]).getTime()/1000),
-        open:+p[1]*1000,high:+p[2]*1000,low:+p[3]*1000,
-        close:+p[4]*1000,volume:+p[5]||0};
-    }).filter(Boolean).sort((a,b)=>a.time-b.time);
+    const url  = `https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=${res==='D'?'d':res==='W'?'w':'m'}`;
+    const proxy= `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const r    = await fetch(proxy, {signal:AbortSignal.timeout(12000)});
+    const j    = await r.json();
+    const bars = parseBars(
+      (j.contents||'').trim().split('\n').slice(1).map(line=>{
+        const p=line.split(',');
+        if(p.length<5||!p[0]||p[0]==='N/A') return null;
+        return{time:Math.floor(new Date(p[0]).getTime()/1000),
+          open:+p[1]*1000,high:+p[2]*1000,low:+p[3]*1000,
+          close:+p[4]*1000,volume:+p[5]||0};
+      }).filter(Boolean), x=>x
+    );
     if(bars.length>5){if(loading)loading.style.display='none';_buildLWChart(container,bars);return;}
   }catch(e){}
 
   if(loading)loading.style.display='none';
   container.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted)">
-    <div style="font-size:28px">📡</div><div>Không lấy được dữ liệu ${ticker}</div></div>`;
+    <div style="font-size:28px">📡</div>
+    <div>Không lấy được dữ liệu ${ticker}</div>
+    <div style="font-size:11px">Thử chọn cổ phiếu khác hoặc tải lại trang</div></div>`;
 }
 
 // ── Fetch single stock snapshot ───────────────────────────────────
 async function fetchVNSingle(ticker){
-  // 1. TCBS qua allorigins proxy (tránh CORS)
+  // Helper: thử proxy và parse JSON
+  const tryProxy = async (rawUrl, timeout=9000) => {
+    // Thử allorigins trước
+    try{
+      const p1 = `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`;
+      const r  = await fetch(p1, {signal:AbortSignal.timeout(timeout)});
+      const j  = await r.json();
+      if(j?.contents && j.contents.length > 10) return JSON.parse(j.contents);
+    }catch(e){}
+    // Fallback: corsproxy.io
+    try{
+      const p2 = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
+      const r  = await fetch(p2, {signal:AbortSignal.timeout(timeout)});
+      return await r.json();
+    }catch(e){}
+    return null;
+  };
+
+  // 1. TCBS v1
   try{
     const now=Math.floor(Date.now()/1000), from=now-86400*3;
-    const tcbsUrl=`https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=D&from=${from}&to=${now}`;
-    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(tcbsUrl)}`;
-    const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
-    const j=await r.json();
-    const d=JSON.parse(j.contents||'{}');
-    const bars=d?.data||[];
+    const url=`https://apipubaws.tcbs.com.vn/stock-insight/v1/stock/bars-long-term?ticker=${ticker}&type=stock&resolution=D&from=${from}&to=${now}`;
+    const d = await tryProxy(url, 9000);
+    const bars = d?.data||[];
     if(bars.length>=1){
       const last=bars[bars.length-1];
       const ref=bars.length>=2?bars[bars.length-2].close:(last.open||last.close);
-      const price=last.close||0;
+      const price=+(last.close||0);
       if(price>0){
         const change=price-ref;
         return{ticker,price,ref,
           ceil:+(ref*1.07).toFixed(2),floor:+(ref*0.93).toFixed(2),
-          high:last.high,low:last.low,vol:last.volume||0,val:(last.volume||0)*price,
-          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+          high:+(last.high||0),low:+(last.low||0),
+          vol:+(last.volume||0),val:+(last.volume||0)*price,
+          change,changePct:ref?(change/ref*100):0,
+          exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
       }
     }
   }catch(e){}
 
-  // 2. SSI finfo qua allorigins
+  // 2. SSI finfo v4
   try{
     const now=Math.floor(Date.now()/1000), from=now-86400*3;
     const fmt=ts=>new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,'/');
-    const ssiUrl=`https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=3`;
-    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(ssiUrl)}`;
-    const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
-    const j=await r.json();
-    const d=JSON.parse(j.contents||'{}');
+    const url=`https://finfo-api.ssi.com.vn/v4/stock/historical-price?symbol=${ticker}&fromDate=${fmt(from)}&toDate=${fmt(now)}&pageSize=3`;
+    const d = await tryProxy(url, 9000);
     const rows=d?.data?.data||[];
     if(rows.length>=1){
       const last=rows[0], prev=rows[1]||rows[0];
@@ -8820,21 +8847,23 @@ async function fetchVNSingle(ticker){
           high:+(last.High||last.high||0),low:+(last.Low||last.low||0),
           vol:+(last.TotalMatchedVol||last.volume||0),
           val:+(last.TotalMatchedVol||0)*price,
-          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+          change,changePct:ref?(change/ref*100):0,
+          exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
       }
     }
   }catch(e){}
 
-  // 3. Stooq qua allorigins (fallback cuối)
+  // 3. Stooq (giá × 1000 vì đơn vị khác)
   try{
-    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent('https://stooq.com/q/d/l/?s='+ticker.toLowerCase()+'.vn&i=d')}`;
-    const r=await fetch(proxy,{signal:AbortSignal.timeout(10000)});
+    const url=`https://stooq.com/q/d/l/?s=${ticker.toLowerCase()}.vn&i=d`;
+    const p1=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const r=await fetch(p1,{signal:AbortSignal.timeout(10000)});
     const j=await r.json();
     const lines=(j.contents||'').trim().split('\n').filter(l=>l&&!l.startsWith('Date'));
     if(lines.length>=1){
       const last=lines[lines.length-1].split(',');
       const prev=lines.length>=2?lines[lines.length-2].split(','):last;
-      const price=+(last[4]||0)*1000; // Stooq VN giá chia 1000
+      const price=+(last[4]||0)*1000;
       const ref=+(prev[4]||0)*1000;
       if(price>100){
         const change=price-ref;
@@ -8842,7 +8871,8 @@ async function fetchVNSingle(ticker){
           ceil:+(ref*1.07).toFixed(0)*1,floor:+(ref*0.93).toFixed(0)*1,
           high:+(last[2]||0)*1000,low:+(last[3]||0)*1000,
           vol:+(last[5]||0),val:+(last[5]||0)*price,
-          change,changePct:ref?(change/ref*100):0,exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
+          change,changePct:ref?(change/ref*100):0,
+          exchange:'HOSE',name:VN_NAMES[ticker]||ticker};
       }
     }
   }catch(e){}
