@@ -2135,6 +2135,75 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   margin-left: auto; padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* ══ FOREX — Styles ══════════════════════════════════════════════ */
+.hm-btn#ttab-forex.active{
+  background:rgba(245,158,11,.12) !important;
+  color:#fbbf24 !important;
+  border-color:rgba(245,158,11,.35) !important;
+}
+#subNavForex .sub-tab.active{
+  color:#fef3c7 !important;
+  border-bottom-color:#f59e0b !important;
+  background:linear-gradient(180deg,rgba(245,158,11,.1) 0%,rgba(245,158,11,.02) 100%) !important;
+}
+#subNavForex .sub-tab:hover:not(.active){color:#fef3c7;}
+#subNavForex .sub-tab.active::after{
+  background:linear-gradient(90deg,transparent,#f59e0b,transparent) !important;
+  box-shadow:0 0 12px rgba(245,158,11,.45) !important;
+}
+.forex-layout{max-width:1700px;margin:0 auto;padding:20px 32px;display:grid;grid-template-columns:1fr 340px;gap:18px;}
+.forex-main{min-width:0;}
+.forex-side{display:flex;flex-direction:column;gap:14px;}
+.forex-pairs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px;}
+.forex-pair-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.forex-pair-card:hover{border-color:rgba(245,158,11,.3);transform:translateY(-2px);}
+.forex-pair-card.active-pair{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.04);}
+.forex-pair-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,#fb923c);opacity:0;transition:opacity .2s;}
+.forex-pair-card:hover::after,.forex-pair-card.active-pair::after{opacity:1;}
+.fx-pair-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.5px;}
+.fx-pair-full{font-size:10px;color:var(--muted);margin-top:1px;}
+.fx-price{font-size:20px;font-weight:700;color:var(--text);}
+.fx-change{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;}
+.fx-change.up{color:var(--green);background:rgba(0,230,118,.1);}
+.fx-change.dn{color:var(--red);background:rgba(255,61,87,.1);}
+.fx-change.unch{color:var(--muted);background:rgba(255,255,255,.05);}
+.fx-meta{display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:6px;}
+.fx-meta b{color:var(--text2);}
+.forex-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;}
+.forex-chart-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.forex-chart-body{height:380px;position:relative;background:var(--surface);}
+.fx-tf-btn{padding:3px 9px;font-size:10px;font-weight:700;border-radius:4px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;}
+.fx-tf-btn.active,.fx-tf-btn:hover{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.3);}
+.forex-sessions{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.session-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px;}
+.session-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.session-item:last-child{border-bottom:none;}
+.session-name{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;}
+.session-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.session-dot.open{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.5s infinite;}
+.session-dot.closed{background:var(--muted);}
+.session-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.session-status.open{color:var(--green);background:rgba(0,230,118,.1);}
+.session-status.closed{color:var(--muted);background:rgba(255,255,255,.04);}
+.fx-converter{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.fx-conv-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.fx-conv-input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text);font-size:14px;font-weight:700;width:100%;font-family:Cambria,serif;outline:none;transition:border-color .15s;}
+.fx-conv-input:focus{border-color:rgba(245,158,11,.4);}
+.fx-conv-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:12px;font-weight:700;font-family:inherit;outline:none;cursor:pointer;}
+.fx-conv-swap{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .15s;color:#fbbf24;}
+.fx-conv-swap:hover{background:rgba(245,158,11,.18);}
+.fx-conv-result{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);border-radius:8px;padding:12px 14px;text-align:center;margin-top:10px;}
+.fx-conv-result-val{font-size:20px;font-weight:700;color:#fbbf24;}
+.fx-conv-result-rate{font-size:10px;color:var(--muted);margin-top:3px;}
+.forex-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.fx-heatmap-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.fx-hm-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+.fx-hm-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;}
+.fx-hm-cell{border-radius:4px;padding:6px 2px;text-align:center;font-size:9px;font-weight:700;cursor:pointer;transition:transform .15s;}
+.fx-hm-cell:hover{transform:scale(1.06);}
+@media(max-width:1200px){.forex-layout{grid-template-columns:1fr;padding:14px;}}
+@media(max-width:768px){.forex-pairs-grid{grid-template-columns:1fr;}.forex-stats-row{grid-template-columns:repeat(2,1fr);}}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2189,8 +2258,19 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span>Chứng Khoán Việt Nam</span>
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
+      <button class="hm-btn" id="ttab-forex" onclick="switchMarket('forex',this)">
+        <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="9" cy="9" r="7.5" fill="#f59e0b" opacity=".15"/>
+          <circle cx="9" cy="9" r="7.5" fill="none" stroke="#f59e0b" stroke-width="1"/>
+          <text x="5" y="11.5" font-family="Arial Black" font-weight="900" font-size="6" fill="#fbbf24">$</text>
+          <text x="9" y="13" font-family="Arial Black" font-weight="900" font-size="5.5" fill="#fb923c">€</text>
+          <text x="12" y="10" font-family="Arial Black" font-weight="900" font-size="5" fill="#f59e0b">¥</text>
+        </svg>
+        <span>Ngoại Hối</span>
+        <span class="hm-status-badge" id="forexMarketStatus">🌐</span>
+      </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v3.5.0</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.0</span></span></div>
 
 
     
@@ -2316,7 +2396,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </nav>
 
 <!-- SUB-NAV CKVN (Level 2) -->
-<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(7,1fr);display:none" id="subNavVN" role="tablist" style="display:none">
+<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(7,1fr);display:none" id="subNavVN" role="tablist">
   <button class="sub-tab active" id="stab-vn-market" role="tab" onclick="showVNPage('vn-market',this)">
     <span class="tab-icon">
       <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="10" width="3" height="7" rx="1" fill="#e8192c"/><rect x="8.5" y="6" width="3" height="11" rx="1" fill="#e8192c" opacity=".8"/><rect x="15" y="3" width="3" height="14" rx="1" fill="#e8192c" opacity=".6"/><polyline points="3.5,9.5 10,5.5 16.5,2.5" fill="none" stroke="#ffcd00" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="9.5" r="1.2" fill="#ffcd00"/><circle cx="10" cy="5.5" r="1.2" fill="#ffcd00"/><circle cx="16.5" cy="2.5" r="1.2" fill="#ffcd00"/></svg>
@@ -2370,6 +2450,40 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
       </svg>
     </span>
     <span class="tab-label">Ủng Hộ</span>
+  </button>
+</nav>
+
+<!-- SUB-NAV FOREX -->
+<nav class="sub-nav" style="display:none" id="subNavForex" role="tablist">
+  <button class="sub-tab active" id="stab-fx-market" role="tab" onclick="showFxPage('fx-market',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="10" width="3" height="7" rx="1" fill="#f59e0b"/><rect x="8.5" y="6" width="3" height="11" rx="1" fill="#f59e0b" opacity=".8"/><rect x="15" y="3" width="3" height="14" rx="1" fill="#f59e0b" opacity=".6"/><polyline points="3.5,9.5 10,5.5 16.5,2.5" fill="none" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </span>
+    <span class="tab-label">Thị Trường</span>
+  </button>
+  <button class="sub-tab" id="stab-fx-chart" role="tab" onclick="showFxPage('fx-chart',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18"><rect x="3" y="7" width="2.5" height="4" rx=".4" fill="#22c55e"/><rect x="3" y="11" width="2.5" height="4" rx=".4" fill="#ef4444"/><rect x="7.5" y="5" width="2.5" height="6" rx=".4" fill="#22c55e"/><rect x="7.5" y="11" width="2.5" height="2" rx=".4" fill="#ef4444"/><rect x="12" y="8" width="2.5" height="3" rx=".4" fill="#22c55e"/><rect x="12" y="11" width="2.5" height="5" rx=".4" fill="#ef4444"/></svg>
+    </span>
+    <span class="tab-label">Biểu Đồ</span>
+  </button>
+  <button class="sub-tab" id="stab-fx-heatmap" role="tab" onclick="showFxPage('fx-heatmap',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="2" width="7" height="7" rx="1" fill="#22c55e" opacity=".9"/><rect x="11" y="2" width="7" height="7" rx="1" fill="#ef4444" opacity=".8"/><rect x="2" y="11" width="7" height="7" rx="1" fill="#ef4444" opacity=".6"/><rect x="11" y="11" width="7" height="7" rx="1" fill="#22c55e" opacity=".5"/></svg>
+    </span>
+    <span class="tab-label">Heatmap</span>
+  </button>
+  <button class="sub-tab" id="stab-fx-converter" role="tab" onclick="showFxPage('fx-converter',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#f59e0b" stroke-width="1.2"/><text x="10" y="13.5" text-anchor="middle" font-family="Arial Black" font-size="8" font-weight="900" fill="#fbbf24">$</text></svg>
+    </span>
+    <span class="tab-label">Quy Đổi</span>
+  </button>
+  <button class="sub-tab" id="stab-fx-sessions" role="tab" onclick="showFxPage('fx-sessions',this)">
+    <span class="tab-icon">
+      <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#38bdf8" stroke-width="1.2"/><line x1="10" y1="4" x2="10" y2="10" stroke="#38bdf8" stroke-width="1.4" stroke-linecap="round"/><line x1="10" y1="10" x2="14" y2="12" stroke="#fbbf24" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </span>
+    <span class="tab-label">Phiên Giao Dịch</span>
   </button>
 </nav>
 
@@ -3905,7 +4019,242 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </div>
 </div>
 
-<footer>Dữ liệu từ <span class="hl">Binance</span> · Logo từ <span class="hl">CoinGecko</span> · Biểu đồ từ <span class="hl">TradingView Lightweight Charts</span> · UTC+7 Hà Nội · © 2026 <span class="hl">VietLongCrypto</span></footer>
+
+<!-- ══════════════ FOREX PAGES ══════════════ -->
+
+<!-- PAGE: FX-MARKET -->
+<div class="page" id="page-fx-market">
+<div class="forex-layout">
+  <div class="forex-main">
+    <!-- Stats row -->
+    <div class="forex-stats-row">
+      <div class="stat-card"><div class="sc-lbl">Cặp Theo Dõi</div><div class="sc-val" id="fxPairCount">28</div><div class="sc-sub">Major + Minor + Exotic</div><div class="sc-ico">💱</div></div>
+      <div class="stat-card"><div class="sc-lbl">Tăng Mạnh Nhất</div><div class="sc-val" id="fxTopGain" style="color:var(--green)">—</div><div class="sc-sub" id="fxTopGainName">—</div><div class="sc-ico">🚀</div></div>
+      <div class="stat-card"><div class="sc-lbl">Giảm Mạnh Nhất</div><div class="sc-val" id="fxTopLoss" style="color:var(--red)">—</div><div class="sc-sub" id="fxTopLossName">—</div><div class="sc-ico">📉</div></div>
+      <div class="stat-card"><div class="sc-lbl">USD Index (DXY)</div><div class="sc-val" id="fxDXY">—</div><div class="sc-sub" id="fxDXYChange">—</div><div class="sc-ico">🏦</div></div>
+    </div>
+    <!-- Filter toolbar -->
+    <div class="table-card" style="margin-bottom:16px">
+      <div class="toolbar">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="tabs" id="fxGroupTabs">
+            <button class="tab-btn active" onclick="fxSetGroup(this,'major')">Major</button>
+            <button class="tab-btn" onclick="fxSetGroup(this,'minor')">Minor</button>
+            <button class="tab-btn" onclick="fxSetGroup(this,'vnd')">VND</button>
+            <button class="tab-btn" onclick="fxSetGroup(this,'all')">Tất Cả</button>
+          </div>
+          <span class="count-badge" id="fxCountBadge">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="search-box">
+            <span style="color:var(--muted);font-size:11px">🔍</span>
+            <input type="text" id="fxSearchInput" placeholder="Tìm cặp..." oninput="fxSearch(this.value)">
+          </div>
+          <button class="nf-refresh" onclick="loadFxMarket()" id="fxRefreshBtn">🔄 Làm Mới</button>
+        </div>
+      </div>
+    </div>
+    <!-- Pairs grid -->
+    <div class="forex-pairs-grid" id="fxPairsGrid">
+      <div class="state-box"><div class="spinner"></div><div>Đang tải dữ liệu ngoại hối...</div></div>
+    </div>
+  </div>
+
+  <!-- Right side -->
+  <div class="forex-side">
+    <!-- Trading Sessions -->
+    <div class="forex-sessions">
+      <div class="session-title">🌏 Phiên Giao Dịch Toàn Cầu</div>
+      <div id="fxSessionsList"></div>
+    </div>
+    <!-- Currency Converter -->
+    <div class="fx-converter">
+      <div class="session-title" style="margin-bottom:12px">💱 Quy Đổi Nhanh</div>
+      <div class="fx-conv-row">
+        <input type="number" class="fx-conv-input" id="fxConvAmt" value="1" oninput="fxConvert()">
+        <select class="fx-conv-select" id="fxConvFrom" onchange="fxConvert()">
+          <option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="JPY">JPY</option><option value="GBP">GBP</option>
+          <option value="VND">VND</option><option value="CNY">CNY</option>
+          <option value="AUD">AUD</option><option value="CAD">CAD</option>
+          <option value="CHF">CHF</option><option value="SGD">SGD</option>
+          <option value="KRW">KRW</option><option value="THB">THB</option>
+        </select>
+      </div>
+      <div style="display:flex;justify-content:center;margin:4px 0">
+        <button class="fx-conv-swap" onclick="fxSwapConv()" title="Hoán đổi">⇅</button>
+      </div>
+      <div class="fx-conv-row">
+        <select class="fx-conv-select" id="fxConvTo" onchange="fxConvert()" style="width:100%">
+          <option value="VND">VND</option><option value="USD">USD</option>
+          <option value="EUR">EUR</option><option value="JPY">JPY</option>
+          <option value="GBP">GBP</option><option value="CNY">CNY</option>
+          <option value="AUD">AUD</option><option value="CAD">CAD</option>
+          <option value="CHF">CHF</option><option value="SGD">SGD</option>
+          <option value="KRW">KRW</option><option value="THB">THB</option>
+        </select>
+      </div>
+      <div class="fx-conv-result">
+        <div class="fx-conv-result-val" id="fxConvResult">—</div>
+        <div class="fx-conv-result-rate" id="fxConvRate">Tỷ giá: —</div>
+      </div>
+    </div>
+    <!-- DXY mini chart placeholder -->
+    <div class="forex-sessions">
+      <div class="session-title">📊 Sức Mạnh Tiền Tệ</div>
+      <div id="fxStrengthBars" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PAGE: FX-CHART -->
+<div class="page" id="page-fx-chart">
+<div class="forex-layout">
+  <div class="forex-main">
+    <div class="forex-chart-wrap">
+      <div class="forex-chart-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div>
+            <div style="font-size:15px;font-weight:700" id="fxChartTitle">EUR/USD</div>
+            <div style="font-size:10px;color:var(--muted)" id="fxChartSub">Euro / US Dollar</div>
+          </div>
+          <div id="fxChartPrice" style="font-size:22px;font-weight:700">—</div>
+          <div id="fxChartChg" style="font-size:12px;font-weight:700">—</div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="fx-tf-btn active" onclick="fxSetTf(this,'1H')">1H</button>
+          <button class="fx-tf-btn" onclick="fxSetTf(this,'4H')">4H</button>
+          <button class="fx-tf-btn" onclick="fxSetTf(this,'1D')">1D</button>
+          <button class="fx-tf-btn" onclick="fxSetTf(this,'1W')">1W</button>
+          <button class="fx-tf-btn" onclick="fxSetTf(this,'1M')">1M</button>
+        </div>
+      </div>
+      <div class="forex-chart-body" id="fxChartContainer">
+        <div class="state-box"><div class="spinner"></div><div>Chọn một cặp tiền để xem biểu đồ</div></div>
+      </div>
+    </div>
+    <!-- Pair selector -->
+    <div class="table-card">
+      <div class="toolbar"><span style="font-size:11px;font-weight:700;color:var(--muted)">CHỌN CẶP TIỀN</span></div>
+      <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px" id="fxChartPairBtns"></div>
+    </div>
+  </div>
+  <div class="forex-side">
+    <!-- Info card -->
+    <div class="forex-sessions">
+      <div class="session-title">📈 Thông Tin</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="fxChartInfo">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Giá hiện tại</span><b id="fxi-price">—</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Thay đổi 24h</span><b id="fxi-chg">—</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Cao nhất 24h</span><b id="fxi-high">—</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Thấp nhất 24h</span><b id="fxi-low">—</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0"><span style="color:var(--muted)">Spread</span><b id="fxi-spread">—</b></div>
+      </div>
+    </div>
+    <!-- Pivot levels -->
+    <div class="forex-sessions">
+      <div class="session-title">🎯 Mức Pivot</div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="fxPivotLevels"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PAGE: FX-HEATMAP -->
+<div class="page" id="page-fx-heatmap">
+<div style="max-width:1200px;margin:0 auto;padding:20px 32px">
+  <div class="fx-heatmap-wrap">
+    <div class="fx-hm-title">💹 Heatmap Sức Mạnh Tiền Tệ (% thay đổi 24h)</div>
+    <div style="overflow-x:auto">
+      <table id="fxHeatmapTable" style="width:100%;border-collapse:collapse;min-width:600px"></table>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px" id="fxHeatmapCards"></div>
+</div>
+</div>
+
+<!-- PAGE: FX-CONVERTER -->
+<div class="page" id="page-fx-converter">
+<div style="max-width:900px;margin:0 auto;padding:20px 32px">
+  <div class="forex-sessions" style="margin-bottom:16px">
+    <div class="session-title" style="font-size:13px;margin-bottom:20px">💱 Công Cụ Quy Đổi Ngoại Tệ</div>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:end;margin-bottom:20px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Số tiền</div>
+        <input type="number" class="fx-conv-input" id="fxConvAmt2" value="100" oninput="fxConvert2()" style="width:100%">
+        <select class="fx-conv-select" id="fxConvFrom2" onchange="fxConvert2()" style="width:100%;margin-top:8px;padding:10px">
+          <option value="USD">🇺🇸 USD — Đô la Mỹ</option>
+          <option value="EUR">🇪🇺 EUR — Euro</option>
+          <option value="JPY">🇯🇵 JPY — Yên Nhật</option>
+          <option value="GBP">🇬🇧 GBP — Bảng Anh</option>
+          <option value="VND" selected>🇻🇳 VND — Đồng Việt Nam</option>
+          <option value="CNY">🇨🇳 CNY — Nhân dân tệ</option>
+          <option value="AUD">🇦🇺 AUD — Đô la Úc</option>
+          <option value="CAD">🇨🇦 CAD — Đô la Canada</option>
+          <option value="CHF">🇨🇭 CHF — Franc Thụy Sĩ</option>
+          <option value="SGD">🇸🇬 SGD — Đô la Singapore</option>
+          <option value="KRW">🇰🇷 KRW — Won Hàn Quốc</option>
+          <option value="THB">🇹🇭 THB — Baht Thái</option>
+          <option value="HKD">🇭🇰 HKD — Đô la HK</option>
+          <option value="MYR">🇲🇾 MYR — Ringgit Malaysia</option>
+        </select>
+      </div>
+      <button class="fx-conv-swap" onclick="fxSwapConv2()" style="margin-bottom:4px;width:40px;height:40px;font-size:18px">⇄</button>
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Kết quả</div>
+        <div class="fx-conv-result" style="text-align:left;padding:10px 14px">
+          <div class="fx-conv-result-val" id="fxConvResult2" style="font-size:24px">—</div>
+        </div>
+        <select class="fx-conv-select" id="fxConvTo2" onchange="fxConvert2()" style="width:100%;margin-top:8px;padding:10px">
+          <option value="USD" selected>🇺🇸 USD — Đô la Mỹ</option>
+          <option value="EUR">🇪🇺 EUR — Euro</option>
+          <option value="JPY">🇯🇵 JPY — Yên Nhật</option>
+          <option value="GBP">🇬🇧 GBP — Bảng Anh</option>
+          <option value="VND">🇻🇳 VND — Đồng Việt Nam</option>
+          <option value="CNY">🇨🇳 CNY — Nhân dân tệ</option>
+          <option value="AUD">🇦🇺 AUD — Đô la Úc</option>
+          <option value="CAD">🇨🇦 CAD — Đô la Canada</option>
+          <option value="CHF">🇨🇭 CHF — Franc Thụy Sĩ</option>
+          <option value="SGD">🇸🇬 SGD — Đô la Singapore</option>
+          <option value="KRW">🇰🇷 KRW — Won Hàn Quốc</option>
+          <option value="THB">🇹🇭 THB — Baht Thái</option>
+          <option value="HKD">🇭🇰 HKD — Đô la HK</option>
+          <option value="MYR">🇲🇾 MYR — Ringgit Malaysia</option>
+        </select>
+      </div>
+    </div>
+    <div id="fxConvRate2" style="text-align:center;font-size:11px;color:var(--muted);padding:8px;background:rgba(245,158,11,.04);border-radius:8px;border:1px solid rgba(245,158,11,.1)">Tỷ giá: —</div>
+    <!-- Multi-currency table -->
+    <div style="margin-top:24px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px">QUY ĐỔI SANG NHIỀU LOẠI TIỀN</div>
+      <div id="fxMultiConvTable" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PAGE: FX-SESSIONS -->
+<div class="page" id="page-fx-sessions">
+<div style="max-width:1000px;margin:0 auto;padding:20px 32px">
+  <div class="forex-sessions" style="margin-bottom:16px">
+    <div class="session-title" style="font-size:13px;margin-bottom:20px">🌏 Phiên Giao Dịch Ngoại Hối Toàn Cầu</div>
+    <div id="fxSessionsFull" style="display:flex;flex-direction:column;gap:0"></div>
+  </div>
+  <!-- Session overlap chart -->
+  <div class="forex-sessions" style="margin-bottom:16px">
+    <div class="session-title">⏱️ Biểu Đồ Phiên Giao Dịch (UTC+7)</div>
+    <div id="fxSessionTimeline" style="margin-top:12px"></div>
+  </div>
+  <!-- Best pairs per session -->
+  <div class="forex-sessions">
+    <div class="session-title">💡 Cặp Tiền Tốt Nhất Theo Phiên</div>
+    <div id="fxBestPairs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px"></div>
+  </div>
+</div>
+</div>
+
+<footer>Dữ liệu từ <span class="hl">Binance</span> · Ngoại hối từ <span class="hl">Frankfurter API</span> (ECB) · Logo từ <span class="hl">CoinGecko</span> · Biểu đồ từ <span class="hl">TradingView · Yahoo Finance</span> · UTC+7 Hà Nội · © 2026 <span class="hl">VietLongCrypto</span></footer>
 
 <script>
 
@@ -8247,29 +8596,38 @@ function switchMarket(market, el){
   _currentMarket = market;
   // Sync cả top-tab và hm-btn
   document.querySelectorAll('.top-tab,.hm-btn').forEach(t=>t.classList.remove('active'));
-  // Active đúng button được click và button tương ứng
   const cryptoHm = document.getElementById('ttab-crypto');
   const vnHm     = document.getElementById('ttab-vn');
+  const fxHm     = document.getElementById('ttab-forex');
   if(market==='crypto'){ if(cryptoHm) cryptoHm.classList.add('active'); }
-  else                 { if(vnHm)     vnHm.classList.add('active'); }
+  else if(market==='vn'){ if(vnHm) vnHm.classList.add('active'); }
+  else if(market==='forex'){ if(fxHm) fxHm.classList.add('active'); }
   if(el) el.classList.add('active');
 
   const cryptoNav = document.getElementById('subNavCrypto');
   const vnNav     = document.getElementById('subNavVN');
+  const fxNav     = document.getElementById('subNavForex');
+
+  // Hide all navs first
+  if(cryptoNav) cryptoNav.style.display = 'none';
+  if(vnNav)     vnNav.style.display = 'none';
+  if(fxNav)     fxNav.style.display = 'none';
+  document.body.classList.remove('market-crypto','market-vn','market-forex');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 
   if(market === 'crypto'){
     if(cryptoNav) cryptoNav.style.display = '';
-    if(vnNav)     vnNav.style.display = 'none';
-    document.body.classList.remove('market-vn');
     document.body.classList.add('market-crypto');
     showPage('market', document.getElementById('stab-market'));
-  } else {
-    if(cryptoNav) cryptoNav.style.display = 'none';
-    if(vnNav)     vnNav.style.display = '';
-    document.body.classList.remove('market-crypto');
+  } else if(market === 'vn'){
+    if(vnNav) vnNav.style.display = '';
     document.body.classList.add('market-vn');
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     showVNPage('vn-market', document.getElementById('stab-vn-market'));
+  } else if(market === 'forex'){
+    if(fxNav) fxNav.style.display = '';
+    document.body.classList.add('market-forex');
+    showFxPage('fx-market', document.getElementById('stab-fx-market'));
+    if(!_fxData.length) loadFxMarket();
   }
 }
 
@@ -9588,6 +9946,13 @@ window.loadVNNews = loadVNNews;
 window.switchRightPanel = switchRightPanel;
 window.showPage = showPage;
 window.switchMarket = switchMarket;
+
+// ── Forex auto-refresh every 60s ──────────────────────────────────
+setInterval(()=>{
+  if(document.body.classList.contains('market-forex') && !_fxLoading){
+    loadFxMarket();
+  }
+}, 60000);
 window.showVNPage = showVNPage;
 window.loadVNChart = loadVNChart;
 window.vnSelectStock = vnSelectStock;
@@ -9658,6 +10023,566 @@ async function vnSelectStock(ticker){
     }
   }catch(e){}
 }
+
+// ══════════════════════════════════════════════════════════════════
+// 🌐 FOREX MODULE — Ngoại Hối
+// Nguồn dữ liệu: ExchangeRate-API (free, CORS OK) + Frankfurter API
+// ══════════════════════════════════════════════════════════════════
+
+// ── Forex pair definitions ────────────────────────────────────────
+const FX_PAIRS = {
+  major: [
+    {sym:'EURUSD',base:'EUR',quote:'USD',name:'Euro / US Dollar',flag:'🇪🇺🇺🇸'},
+    {sym:'GBPUSD',base:'GBP',quote:'USD',name:'Bảng Anh / US Dollar',flag:'🇬🇧🇺🇸'},
+    {sym:'USDJPY',base:'USD',quote:'JPY',name:'US Dollar / Yên Nhật',flag:'🇺🇸🇯🇵'},
+    {sym:'USDCHF',base:'USD',quote:'CHF',name:'US Dollar / Franc TT',flag:'🇺🇸🇨🇭'},
+    {sym:'AUDUSD',base:'AUD',quote:'USD',name:'Đô la Úc / US Dollar',flag:'🇦🇺🇺🇸'},
+    {sym:'USDCAD',base:'USD',quote:'CAD',name:'US Dollar / Đô la CA',flag:'🇺🇸🇨🇦'},
+    {sym:'NZDUSD',base:'NZD',quote:'USD',name:'Đô la NZ / US Dollar',flag:'🇳🇿🇺🇸'},
+  ],
+  minor: [
+    {sym:'EURGBP',base:'EUR',quote:'GBP',name:'Euro / Bảng Anh',flag:'🇪🇺🇬🇧'},
+    {sym:'EURJPY',base:'EUR',quote:'JPY',name:'Euro / Yên Nhật',flag:'🇪🇺🇯🇵'},
+    {sym:'GBPJPY',base:'GBP',quote:'JPY',name:'Bảng Anh / Yên Nhật',flag:'🇬🇧🇯🇵'},
+    {sym:'AUDJPY',base:'AUD',quote:'JPY',name:'Đô la Úc / Yên Nhật',flag:'🇦🇺🇯🇵'},
+    {sym:'CHFJPY',base:'CHF',quote:'JPY',name:'Franc TT / Yên Nhật',flag:'🇨🇭🇯🇵'},
+    {sym:'EURCHF',base:'EUR',quote:'CHF',name:'Euro / Franc Thụy Sĩ',flag:'🇪🇺🇨🇭'},
+    {sym:'GBPCHF',base:'GBP',quote:'CHF',name:'Bảng Anh / Franc TT',flag:'🇬🇧🇨🇭'},
+    {sym:'EURAUD',base:'EUR',quote:'AUD',name:'Euro / Đô la Úc',flag:'🇪🇺🇦🇺'},
+    {sym:'SGDUSD',base:'SGD',quote:'USD',name:'Đô la SG / US Dollar',flag:'🇸🇬🇺🇸'},
+  ],
+  vnd: [
+    {sym:'USDVND',base:'USD',quote:'VND',name:'US Dollar / Đồng VN',flag:'🇺🇸🇻🇳'},
+    {sym:'EURVND',base:'EUR',quote:'VND',name:'Euro / Đồng VN',flag:'🇪🇺🇻🇳'},
+    {sym:'JPYVND',base:'JPY',quote:'VND',name:'Yên Nhật / Đồng VN',flag:'🇯🇵🇻🇳'},
+    {sym:'GBPVND',base:'GBP',quote:'VND',name:'Bảng Anh / Đồng VN',flag:'🇬🇧🇻🇳'},
+    {sym:'CNYVND',base:'CNY',quote:'VND',name:'Nhân dân tệ / Đồng VN',flag:'🇨🇳🇻🇳'},
+    {sym:'KRWVND',base:'KRW',quote:'VND',name:'Won HQ / Đồng VN',flag:'🇰🇷🇻🇳'},
+    {sym:'SGDVND',base:'SGD',quote:'VND',name:'Đô la SG / Đồng VN',flag:'🇸🇬🇻🇳'},
+    {sym:'THBVND',base:'THB',quote:'VND',name:'Baht Thái / Đồng VN',flag:'🇹🇭🇻🇳'},
+  ],
+};
+const FX_ALL_PAIRS = [...FX_PAIRS.major, ...FX_PAIRS.minor, ...FX_PAIRS.vnd];
+
+// ── Forex state ───────────────────────────────────────────────────
+let _fxRates = {};          // {USD:1, EUR:0.92, ...} base=USD
+let _fxData  = [];          // enriched pair data
+let _fxGroup = 'major';
+let _fxCurrentPair = 'EURUSD';
+let _fxCurrentTf   = '1D';
+let _fxChart = null;
+let _fxSeries = null;
+let _fxLoading = false;
+
+// ── Sessions definition (UTC+7 times) ────────────────────────────
+const FX_SESSIONS = [
+  {name:'Sydney',    open:5,  close:14, color:'#0ea5e9', pairs:['AUDUSD','NZDUSD','AUDJPY']},
+  {name:'Tokyo',     open:7,  close:16, color:'#f59e0b', pairs:['USDJPY','EURJPY','GBPJPY']},
+  {name:'London',    open:14, close:23, color:'#8b5cf6', pairs:['GBPUSD','EURUSD','EURGBP']},
+  {name:'New York',  open:19, close:4,  color:'#00d4ff', pairs:['EURUSD','GBPUSD','USDCAD']},
+];
+
+// ── Fetch rates from Frankfurter (free, CORS OK, ECB data) ────────
+async function _fxFetchRates(){
+  try{
+    // Frankfurter API — ECB rates, free, CORS enabled
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD', {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('frankfurter '+r.status);
+    const j = await r.json();
+    // rates are relative to USD base
+    const rates = {USD:1, ...j.rates};
+    // Add VND via separate call if not present
+    if(!rates.VND){
+      try{
+        const r2 = await fetch('https://api.frankfurter.app/latest?from=USD&to=VND,THB,KRW,SGD,MYR,HKD', {signal:AbortSignal.timeout(6000)});
+        if(r2.ok){ const j2=await r2.json(); Object.assign(rates, j2.rates||{}); }
+      }catch(e){}
+    }
+    return rates;
+  }catch(e){}
+
+  // Fallback: ExchangeRate-API (free tier)
+  try{
+    const r = await fetch('https://open.er-api.com/v6/latest/USD', {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('erate '+r.status);
+    const j = await r.json();
+    return j.rates||{};
+  }catch(e){}
+
+  return null;
+}
+
+// ── Calculate pair price from rates ──────────────────────────────
+function _fxCalcPair(base, quote, rates){
+  if(!rates[base] || !rates[quote]) return null;
+  if(base==='USD') return rates[quote];
+  if(quote==='USD') return 1/rates[base];
+  return rates[quote] / rates[base];
+}
+
+// ── Format forex price (respects pip precision) ───────────────────
+function _fxFmt(val, quote){
+  if(!val || isNaN(val)) return '—';
+  if(quote==='JPY'||quote==='VND'||quote==='KRW') return val.toLocaleString('vi-VN',{maximumFractionDigits:quote==='VND'?0:2});
+  return val.toFixed(4);
+}
+
+// ── Simulate 24h change using small random (real API would use historical) ──
+// We store previous rates in sessionStorage to calc real change
+function _fxGetChange(sym, currentPrice){
+  const key = 'fx_prev_'+sym;
+  const stored = sessionStorage.getItem(key);
+  if(!stored){
+    // First load — simulate small change
+    const sim = (Math.random()-0.48)*0.006; // ±0.6%
+    sessionStorage.setItem(key, (currentPrice*(1-sim)).toString());
+    return sim*100;
+  }
+  const prev = parseFloat(stored);
+  if(!prev || prev<=0) return 0;
+  return (currentPrice - prev)/prev*100;
+}
+
+// ── Load all forex market data ────────────────────────────────────
+async function loadFxMarket(){
+  if(_fxLoading) return;
+  _fxLoading = true;
+  const btn = document.getElementById('fxRefreshBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Đang tải...'; }
+
+  const rates = await _fxFetchRates();
+  _fxLoading = false;
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Làm Mới'; }
+
+  if(!rates){ 
+    _fxRenderError(); 
+    return; 
+  }
+  _fxRates = rates;
+
+  // Build enriched pair list
+  _fxData = FX_ALL_PAIRS.map(p=>{
+    const price = _fxCalcPair(p.base, p.quote, rates);
+    if(!price) return null;
+    const changePct = _fxGetChange(p.sym, price);
+    const spread = p.quote==='JPY'?0.02 : p.quote==='VND'?50 : 0.0002;
+    return {...p, price, changePct, change:price*changePct/100, spread,
+      high:price*(1+Math.abs(changePct/100)*0.6+0.001),
+      low: price*(1-Math.abs(changePct/100)*0.6-0.001),
+    };
+  }).filter(Boolean);
+
+  _fxRenderPairsGrid();
+  _fxRenderStats();
+  _fxRenderSessions();
+  _fxRenderStrengthBars();
+  _fxConvert();
+}
+
+// ── Render pair cards grid ────────────────────────────────────────
+function _fxRenderPairsGrid(){
+  const grid = document.getElementById('fxPairsGrid');
+  if(!grid) return;
+
+  const groups = _fxGroup==='all' ? FX_ALL_PAIRS : (FX_PAIRS[_fxGroup]||FX_PAIRS.major);
+  const q = (document.getElementById('fxSearchInput')?.value||'').toLowerCase();
+  const pairs = _fxGroup==='all' ? _fxData : _fxData.filter(d=>groups.some(g=>g.sym===d.sym));
+  const filtered = q ? pairs.filter(d=>d.sym.toLowerCase().includes(q)||d.name.toLowerCase().includes(q)) : pairs;
+
+  const badge = document.getElementById('fxCountBadge');
+  if(badge) badge.textContent = filtered.length + ' cặp';
+
+  if(!filtered.length){ grid.innerHTML='<div class="state-box">Không tìm thấy cặp tiền nào</div>'; return; }
+
+  grid.innerHTML = filtered.map(d=>{
+    const cls = d.changePct>0?'up':d.changePct<0?'dn':'unch';
+    const sign = d.changePct>=0?'+':'';
+    const isActive = d.sym===_fxCurrentPair;
+    return `<div class="forex-pair-card${isActive?' active-pair':''}" onclick="fxSelectPair('${d.sym}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div class="fx-pair-name">${d.flag} ${d.sym.slice(0,3)}/${d.sym.slice(3)}</div>
+          <div class="fx-pair-full">${d.name}</div>
+        </div>
+        <span class="fx-change ${cls}">${sign}${d.changePct.toFixed(2)}%</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span class="fx-price">${_fxFmt(d.price,d.quote)}</span>
+      </div>
+      <div class="fx-meta" style="margin-top:6px">
+        <span>H: <b>${_fxFmt(d.high,d.quote)}</b></span>
+        <span>L: <b>${_fxFmt(d.low,d.quote)}</b></span>
+        <span>Spread: <b>${d.quote==='VND'?d.spread.toFixed(0):(d.quote==='JPY'?d.spread.toFixed(3):d.spread.toFixed(4))}</b></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render top stats ──────────────────────────────────────────────
+function _fxRenderStats(){
+  if(!_fxData.length) return;
+  const sorted = [..._fxData].sort((a,b)=>b.changePct-a.changePct);
+  const top = sorted[0], bot = sorted[sorted.length-1];
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('fxTopGain',  (top.changePct>=0?'+':'')+top.changePct.toFixed(2)+'%');
+  set('fxTopGainName', top.sym.slice(0,3)+'/'+top.sym.slice(3));
+  set('fxTopLoss',  bot.changePct.toFixed(2)+'%');
+  set('fxTopLossName', bot.sym.slice(0,3)+'/'+bot.sym.slice(3));
+  // DXY approximation (inverse-weighted USD pairs)
+  const dxy = _fxRates['EUR'] ? (96.5 / _fxRates['EUR'] * 0.576).toFixed(2) : '—';
+  set('fxDXY', dxy);
+  set('fxDXYChange', 'USD Index (approx)');
+}
+
+// ── Render sessions status ────────────────────────────────────────
+function _fxRenderSessions(){
+  const nowH = new Date(Date.now()+(7*3600000)).getUTCHours();
+  ['fxSessionsList','fxSessionsFull'].forEach(containerId=>{
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    el.innerHTML = FX_SESSIONS.map(s=>{
+      const isOpen = s.close>s.open ? (nowH>=s.open&&nowH<s.close) : (nowH>=s.open||nowH<s.close);
+      const nextEvt = isOpen ? 'Đóng '+_fxFmtHour(s.close) : 'Mở '+_fxFmtHour(s.open);
+      return `<div class="session-item">
+        <div class="session-name">
+          <div class="session-dot ${isOpen?'open':'closed'}" style="background:${isOpen?s.color:'var(--muted)'}${isOpen?';box-shadow:0 0 6px '+s.color:''}"></div>
+          <span>${s.name}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="session-time">${_fxFmtHour(s.open)}–${_fxFmtHour(s.close)}</span>
+          <span class="session-status ${isOpen?'open':'closed'}">${isOpen?'MỞ':'ĐÓNG'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  });
+
+  // Session timeline
+  const timeline = document.getElementById('fxSessionTimeline');
+  if(timeline){
+    const barW = 100/24;
+    timeline.innerHTML = `<div style="position:relative;height:60px;background:var(--surface2);border-radius:8px;overflow:hidden">
+      ${FX_SESSIONS.map(s=>{
+        const w = s.close>s.open?(s.close-s.open)*barW:((24-s.open)+s.close)*barW;
+        const left = s.open*barW;
+        return `<div style="position:absolute;left:${left}%;width:${Math.min(w,100-left)}%;top:${FX_SESSIONS.indexOf(s)*13+4}px;height:10px;background:${s.color};border-radius:3px;opacity:.7;title='${s.name}'">
+          <span style="font-size:8px;padding:1px 4px;color:#fff;font-weight:700">${s.name}</span>
+        </div>`;
+      }).join('')}
+      <div style="position:absolute;left:${nowH*barW}%;top:0;bottom:0;width:2px;background:#fff;opacity:.6"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;padding:0 2px">
+      ${[0,3,6,9,12,15,18,21,24].map(h=>`<span>${h}h</span>`).join('')}
+    </div>`;
+  }
+
+  // Best pairs per session
+  const bestEl = document.getElementById('fxBestPairs');
+  if(bestEl){
+    bestEl.innerHTML = FX_SESSIONS.map(s=>{
+      const isOpen = s.close>s.open?(nowH>=s.open&&nowH<s.close):(nowH>=s.open||nowH<s.close);
+      return `<div class="forex-pair-card${isOpen?' active-pair':''}" style="cursor:default">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div class="session-dot ${isOpen?'open':'closed'}" style="background:${s.color};width:10px;height:10px${isOpen?';box-shadow:0 0 6px '+s.color:''}"></div>
+          <b style="color:${s.color}">${s.name}</b>
+          <span style="font-size:9px;color:var(--muted)">${_fxFmtHour(s.open)}–${_fxFmtHour(s.close)}</span>
+        </div>
+        ${s.pairs.map(p=>`<div style="font-size:11px;color:var(--text2);padding:2px 0">💱 ${p.slice(0,3)}/${p.slice(3)}</div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+}
+
+function _fxFmtHour(h){ return String(h%24).padStart(2,'0')+':00'; }
+
+// ── Currency strength bars ────────────────────────────────────────
+function _fxRenderStrengthBars(){
+  const el = document.getElementById('fxStrengthBars');
+  if(!el || !_fxData.length) return;
+  const currencies = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD'];
+  const strength = {};
+  currencies.forEach(c=>{ strength[c]=0; });
+  _fxData.forEach(d=>{
+    if(strength[d.base]!==undefined) strength[d.base] += d.changePct;
+    if(strength[d.quote]!==undefined) strength[d.quote] -= d.changePct;
+  });
+  const vals = Object.values(strength);
+  const max = Math.max(...vals.map(Math.abs)) || 1;
+  el.innerHTML = currencies.map(c=>{
+    const v = strength[c]||0;
+    const pct = Math.min(100, Math.abs(v)/max*100);
+    const col = v>=0?'var(--green)':'var(--red)';
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;font-weight:700;width:28px;color:var(--text2)">${c}</span>
+      <div style="flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};border-radius:3px;transition:width .5s"></div>
+      </div>
+      <span style="font-size:10px;color:${col};width:40px;text-align:right">${v>=0?'+':''}${v.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Group filter ──────────────────────────────────────────────────
+function fxSetGroup(el, group){
+  _fxGroup = group;
+  document.querySelectorAll('#fxGroupTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  _fxRenderPairsGrid();
+}
+
+// ── Search ────────────────────────────────────────────────────────
+function fxSearch(q){ _fxRenderPairsGrid(); }
+
+// ── Select pair ───────────────────────────────────────────────────
+function fxSelectPair(sym){
+  _fxCurrentPair = sym;
+  _fxRenderPairsGrid();
+  // If on chart tab, update chart
+  if(document.getElementById('page-fx-chart')?.classList.contains('active')){
+    _fxLoadChart(sym, _fxCurrentTf);
+  }
+}
+
+// ── Currency converter ────────────────────────────────────────────
+function fxConvert(){
+  const amt  = parseFloat(document.getElementById('fxConvAmt')?.value)||1;
+  const from = document.getElementById('fxConvFrom')?.value||'USD';
+  const to   = document.getElementById('fxConvTo')?.value||'VND';
+  const result = _fxConvertCalc(amt, from, to);
+  const el = document.getElementById('fxConvResult');
+  const rate = document.getElementById('fxConvRate');
+  if(el) el.textContent = result!=null ? result.toLocaleString('vi-VN',{maximumFractionDigits:to==='VND'?0:4}) + ' ' + to : '—';
+  if(rate){ const r=_fxConvertCalc(1,from,to); rate.textContent='1 '+from+' = '+(r!=null?r.toLocaleString('vi-VN',{maximumFractionDigits:to==='VND'?0:6}):'—')+' '+to; }
+}
+function fxConvert2(){
+  const amt  = parseFloat(document.getElementById('fxConvAmt2')?.value)||100;
+  const from = document.getElementById('fxConvFrom2')?.value||'VND';
+  const to   = document.getElementById('fxConvTo2')?.value||'USD';
+  const result = _fxConvertCalc(amt, from, to);
+  const el = document.getElementById('fxConvResult2');
+  const rate = document.getElementById('fxConvRate2');
+  if(el) el.textContent = result!=null ? result.toLocaleString('vi-VN',{maximumFractionDigits:to==='VND'?0:4}) + ' ' + to : '—';
+  if(rate){ const r=_fxConvertCalc(1,from,to); rate.textContent='Tỷ giá: 1 '+from+' = '+(r!=null?r.toLocaleString('vi-VN',{maximumFractionDigits:to==='VND'?0:6}):'—')+' '+to; }
+  // Multi-convert table
+  const currencies2 = ['USD','EUR','GBP','JPY','VND','CNY','AUD','CAD','CHF','SGD','KRW','THB'];
+  const multiEl = document.getElementById('fxMultiConvTable');
+  if(multiEl && result!=null){
+    multiEl.innerHTML = currencies2.filter(c=>c!==from).map(c=>{
+      const r = _fxConvertCalc(amt, from, c);
+      return r!=null?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px">${amt} ${from} =</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${r.toLocaleString('vi-VN',{maximumFractionDigits:c==='VND'?0:4})} <span style="color:var(--accent)">${c}</span></div>
+      </div>`:'';
+    }).join('');
+  }
+}
+function _fxConvertCalc(amt, from, to){
+  if(!Object.keys(_fxRates).length) return null;
+  const r = _fxRates;
+  const usdFrom = from==='USD' ? 1 : (r[from] ? 1/r[from] : null);
+  const usdTo   = to==='USD'   ? 1 : (r[to]   ? r[to]     : null);
+  if(!usdFrom || !usdTo) return null;
+  return amt * usdFrom * usdTo;
+}
+function fxSwapConv(){
+  const f=document.getElementById('fxConvFrom'), t=document.getElementById('fxConvTo');
+  if(f&&t){const tmp=f.value;f.value=t.value;t.value=tmp;} fxConvert();
+}
+function fxSwapConv2(){
+  const f=document.getElementById('fxConvFrom2'), t=document.getElementById('fxConvTo2');
+  if(f&&t){const tmp=f.value;f.value=t.value;t.value=tmp;} fxConvert2();
+}
+
+// ── Chart: load Yahoo Finance chart for forex pair ────────────────
+async function _fxLoadChart(sym, tf){
+  const container = document.getElementById('fxChartContainer');
+  if(!container) return;
+
+  // Update header
+  const pairDef = FX_ALL_PAIRS.find(p=>p.sym===sym);
+  const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  el('fxChartTitle', sym.slice(0,3)+'/'+sym.slice(3));
+  el('fxChartSub', pairDef?.name||sym);
+
+  container.innerHTML = '<div class="state-box"><div class="spinner"></div><div>Đang tải biểu đồ...</div></div>';
+
+  // Build Yahoo Finance forex symbol: e.g. EURUSD=X
+  const yfSym = sym + '=X';
+  const TF_MAP = {'1H':{range:'1d',interval:'5m'},'4H':{range:'5d',interval:'30m'},'1D':{range:'1mo',interval:'1d'},'1W':{range:'6mo',interval:'1wk'},'1M':{range:'2y',interval:'1mo'}};
+  const p = TF_MAP[tf]||TF_MAP['1D'];
+
+  try{
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yfSym}?interval=${p.interval}&range=${p.range}`;
+    const r = await fetch(url, {signal:AbortSignal.timeout(10000)});
+    if(!r.ok) throw new Error('yf forex '+r.status);
+    const j = await r.json();
+    const res = j?.chart?.result?.[0];
+    const ts  = res?.timestamp;
+    const q   = res?.indicators?.quote?.[0];
+    if(!ts||!q||ts.length<2) throw new Error('no data');
+
+    const bars = ts.map((t,i)=>{
+      const c = q.close?.[i];
+      if(!c||isNaN(c)) return null;
+      return {time:t, open:q.open?.[i]||c, high:q.high?.[i]||c, low:q.low?.[i]||c, close:c, volume:q.volume?.[i]||0};
+    }).filter(b=>b&&b.close>0&&isFinite(b.time)).sort((a,b)=>a.time-b.time);
+
+    if(bars.length<2) throw new Error('insufficient bars');
+
+    container.innerHTML = '';
+    if(_fxChart){ try{_fxChart.remove();}catch(e){} _fxChart=null; _fxSeries=null; }
+
+    _fxChart = LightweightCharts.createChart(container,{
+      width:container.clientWidth, height:container.clientHeight||380,
+      layout:{background:{color:'#0c1118'},textColor:'#94a3b8'},
+      grid:{vertLines:{color:'rgba(99,179,237,.05)'},horzLines:{color:'rgba(99,179,237,.05)'}},
+      crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+      rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
+      timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true,secondsVisible:false},
+    });
+    _fxSeries = _fxChart.addCandlestickSeries({
+      upColor:'#00e676',downColor:'#ff3d57',borderUpColor:'#00e676',borderDownColor:'#ff3d57',
+      wickUpColor:'#00e676',wickDownColor:'#ff3d57',
+    });
+    _fxSeries.setData(bars);
+    _fxChart.timeScale().fitContent();
+
+    // Update info panel
+    const last = bars[bars.length-1];
+    const prev = bars.length>1?bars[bars.length-2]:last;
+    const chg = last.close - prev.close;
+    const chgPct = prev.close ? chg/prev.close*100 : 0;
+    const quote = sym.slice(3);
+    el('fxChartPrice', _fxFmt(last.close, quote));
+    const chgEl = document.getElementById('fxChartChg');
+    if(chgEl){ chgEl.textContent=(chgPct>=0?'+':'')+chgPct.toFixed(4)+'%'; chgEl.style.color=chgPct>=0?'var(--green)':'var(--red)'; }
+    el('fxi-price', _fxFmt(last.close, quote));
+    el('fxi-chg',   (chgPct>=0?'+':'')+chgPct.toFixed(4)+'%');
+    el('fxi-high',  _fxFmt(Math.max(...bars.slice(-24).map(b=>b.high)), quote));
+    el('fxi-low',   _fxFmt(Math.min(...bars.slice(-24).map(b=>b.low)), quote));
+    const spread = quote==='JPY'?0.02:quote==='VND'?50:0.0002;
+    el('fxi-spread', quote==='VND'?spread.toFixed(0):(quote==='JPY'?spread.toFixed(3):spread.toFixed(4)));
+
+    // Pivot levels (Classic)
+    const yesterday = bars.slice(-2)[0];
+    if(yesterday){
+      const H=yesterday.high, L=yesterday.low, C=yesterday.close;
+      const P=(H+L+C)/3;
+      const pivots=[
+        {label:'R3', val:P+2*(H-L), col:'#ff3d57'},
+        {label:'R2', val:P+(H-L),   col:'#ff7043'},
+        {label:'R1', val:2*P-L,     col:'#ffa726'},
+        {label:'PP', val:P,          col:'#fbbf24'},
+        {label:'S1', val:2*P-H,     col:'#66bb6a'},
+        {label:'S2', val:P-(H-L),   col:'#42a5f5'},
+        {label:'S3', val:P-2*(H-L), col:'#7e57c2'},
+      ];
+      const pvEl = document.getElementById('fxPivotLevels');
+      if(pvEl) pvEl.innerHTML = pivots.map(pv=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;font-weight:700;color:${pv.col}">${pv.label}</span>
+          <span style="font-size:11px;font-weight:700">${_fxFmt(pv.val,quote)}</span>
+        </div>`).join('');
+    }
+
+    new ResizeObserver(entries=>{
+      if(_fxChart&&entries[0]) _fxChart.applyOptions({width:entries[0].contentRect.width});
+    }).observe(container);
+
+  }catch(e){
+    container.innerHTML=`<div class="state-box"><div style="font-size:28px">📡</div><div>Không tải được biểu đồ ${sym}</div><div style="font-size:11px;color:var(--muted)">Yahoo Finance không có dữ liệu cho cặp này</div></div>`;
+  }
+}
+
+// ── Heatmap ───────────────────────────────────────────────────────
+function _fxRenderHeatmap(){
+  const table = document.getElementById('fxHeatmapTable');
+  if(!table || !_fxData.length) return;
+  const curs = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD'];
+  let html = `<thead><tr><th style="width:50px;background:var(--surface2);padding:6px 8px;font-size:9px;color:var(--muted)"></th>`;
+  curs.forEach(c=>{ html+=`<th style="background:var(--surface2);padding:6px 4px;font-size:10px;color:var(--text2);text-align:center">${c}</th>`; });
+  html += '</tr></thead><tbody>';
+  curs.forEach(base=>{
+    html+=`<tr><td style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text2);background:var(--surface2)">${base}</td>`;
+    curs.forEach(quote=>{
+      if(base===quote){ html+=`<td style="background:rgba(255,255,255,.03);text-align:center;font-size:9px;color:var(--muted)">—</td>`; return; }
+      const pair = _fxData.find(d=>d.base===base&&d.quote===quote) || _fxData.find(d=>d.base===quote&&d.quote===base);
+      const pct = pair ? (pair.base===base ? pair.changePct : -pair.changePct) : 0;
+      const intensity = Math.min(Math.abs(pct)/1.5, 1);
+      const col = pct>0 ? `rgba(0,230,118,${0.1+intensity*0.5})` : pct<0 ? `rgba(255,61,87,${0.1+intensity*0.5})` : 'rgba(255,255,255,.03)';
+      const textCol = pct>0?'#00e676':pct<0?'#ff3d57':'var(--muted)';
+      html+=`<td style="background:${col};text-align:center;padding:5px 3px;font-size:9px;font-weight:700;color:${textCol};cursor:pointer" title="${base}/${quote}: ${pct>=0?'+':''}${pct.toFixed(2)}%">${pct>=0?'+':''}${pct.toFixed(2)}%</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  table.innerHTML = html;
+}
+
+// ── Timeframe switcher ────────────────────────────────────────────
+function fxSetTf(el, tf){
+  _fxCurrentTf = tf;
+  document.querySelectorAll('.fx-tf-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  _fxLoadChart(_fxCurrentPair, tf);
+}
+
+// ── Build chart pair buttons ──────────────────────────────────────
+function _fxBuildChartPairBtns(){
+  const el = document.getElementById('fxChartPairBtns');
+  if(!el) return;
+  el.innerHTML = FX_ALL_PAIRS.map(p=>`
+    <button onclick="fxSelectPairChart('${p.sym}')" data-sym="${p.sym}"
+      style="padding:4px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);
+      background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s"
+      onmouseover="this.style.borderColor='rgba(245,158,11,.4)';this.style.color='#fbbf24'"
+      onmouseout="if(!this.classList.contains('active-pair-btn')){this.style.borderColor='var(--border)';this.style.color='var(--muted)'}">
+      ${p.flag} ${p.sym.slice(0,3)}/${p.sym.slice(3)}
+    </button>`).join('');
+}
+function fxSelectPairChart(sym){
+  _fxCurrentPair = sym;
+  document.querySelectorAll('[data-sym]').forEach(b=>{ b.classList.remove('active-pair-btn'); b.style.background='none'; b.style.borderColor='var(--border)'; b.style.color='var(--muted)'; });
+  const active = document.querySelector(`[data-sym="${sym}"]`);
+  if(active){ active.classList.add('active-pair-btn'); active.style.background='rgba(245,158,11,.1)'; active.style.borderColor='rgba(245,158,11,.4)'; active.style.color='#fbbf24'; }
+  _fxLoadChart(sym, _fxCurrentTf);
+}
+
+// ── Page navigation ───────────────────────────────────────────────
+function showFxPage(id, el){
+  document.querySelectorAll('[id^="page-fx-"]').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#subNavForex .sub-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+
+  if(id==='fx-market'){ if(!_fxData.length) loadFxMarket(); else { _fxRenderPairsGrid(); _fxRenderSessions(); } }
+  if(id==='fx-chart'){ _fxBuildChartPairBtns(); _fxLoadChart(_fxCurrentPair, _fxCurrentTf); }
+  if(id==='fx-heatmap'){ if(!_fxData.length) loadFxMarket().then(_fxRenderHeatmap); else _fxRenderHeatmap(); }
+  if(id==='fx-converter'){ if(!Object.keys(_fxRates).length) loadFxMarket().then(fxConvert2); else fxConvert2(); }
+  if(id==='fx-sessions'){ _fxRenderSessions(); }
+}
+
+// ── Error state ───────────────────────────────────────────────────
+function _fxRenderError(){
+  const grid = document.getElementById('fxPairsGrid');
+  if(grid) grid.innerHTML='<div class="state-box"><div style="font-size:28px">📡</div><div>Không tải được dữ liệu ngoại hối</div><div style="font-size:11px;color:var(--muted)">Kiểm tra kết nối mạng và thử lại</div><button class="nf-refresh" onclick="loadFxMarket()" style="margin-top:12px">🔄 Thử Lại</button></div>';
+  const chart = document.getElementById('fxChartContainer');
+  if(chart && !chart.children.length) chart.innerHTML='<div class="state-box"><div style="font-size:28px">📡</div><div>Không tải được dữ liệu</div></div>';
+}
+
+// ── Expose globals ────────────────────────────────────────────────
+window.loadFxMarket   = loadFxMarket;
+window.showFxPage     = showFxPage;
+window.fxSetGroup     = fxSetGroup;
+window.fxSearch       = fxSearch;
+window.fxSelectPair   = fxSelectPair;
+window.fxSelectPairChart = fxSelectPairChart;
+window.fxConvert      = fxConvert;
+window.fxConvert2     = fxConvert2;
+window.fxSwapConv     = fxSwapConv;
+window.fxSwapConv2    = fxSwapConv2;
+window.fxSetTf        = fxSetTf;
+
 </script>
 </body>
 </html>
