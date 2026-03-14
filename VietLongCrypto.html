@@ -1998,6 +1998,28 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   animation:livePulse 1.8s ease-in-out infinite;
   flex-shrink:0;
 }
+
+/* ── Forex badge states — đồng bộ với .hm-live ── */
+.hm-fx-live{
+  background:rgba(0,230,118,.12);
+  color:#00e676;
+  border:1px solid rgba(0,230,118,.25);
+}
+.hm-fx-overlap{
+  background:rgba(0,230,118,.15);
+  color:#00e676;
+  border:1px solid rgba(0,230,118,.3);
+}
+.hm-fx-active{
+  background:rgba(245,158,11,.12);
+  color:#fbbf24;
+  border:1px solid rgba(245,158,11,.25);
+}
+.hm-fx-closed{
+  background:rgba(255,255,255,.04);
+  color:var(--muted);
+  border:1px solid rgba(255,255,255,.08);
+}
 /* VN status variants */
 .hm-status-open{
   background:rgba(34,197,94,.12);
@@ -2250,14 +2272,6 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span>Tiền Ảo Thế Giới</span>
         <span class="hm-status-badge hm-live"><span class="hm-live-dot"></span>TRỰC TIẾP</span>
       </button>
-      <button class="hm-btn" id="ttab-vn" onclick="switchMarket('vn',this)">
-        <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="3.5" width="16" height="11" rx="1.5" fill="#d0021b"/>
-          <polygon points="9,5.5 9.9,8.1 12.7,8.1 10.5,9.7 11.3,12.3 9,10.7 6.7,12.3 7.5,9.7 5.3,8.1 8.1,8.1" fill="#ffcd00"/>
-        </svg>
-        <span>Chứng Khoán Việt Nam</span>
-        <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
-      </button>
       <button class="hm-btn" id="ttab-forex" onclick="switchMarket('forex',this)">
         <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
           <circle cx="9" cy="9" r="7.5" fill="#f59e0b" opacity=".15"/>
@@ -2266,8 +2280,16 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <text x="9" y="13" font-family="Arial Black" font-weight="900" font-size="5.5" fill="#fb923c">€</text>
           <text x="12" y="10" font-family="Arial Black" font-weight="900" font-size="5" fill="#f59e0b">¥</text>
         </svg>
-        <span>Ngoại Hối</span>
-        <span class="hm-status-badge" id="forexMarketStatus">🌐</span>
+        <span>Ngoại Hối Toàn Cầu</span>
+        <span class="hm-status-badge" id="forexMarketStatus"><span class="hm-live-dot" id="fxLiveDot" style="display:none"></span><span id="fxStatusText">🌐</span></span>
+      </button>
+      <button class="hm-btn" id="ttab-vn" onclick="switchMarket('vn',this)">
+        <svg viewBox="0 0 18 18" width="15" height="15" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="3.5" width="16" height="11" rx="1.5" fill="#d0021b"/>
+          <polygon points="9,5.5 9.9,8.1 12.7,8.1 10.5,9.7 11.3,12.3 9,10.7 6.7,12.3 7.5,9.7 5.3,8.1 8.1,8.1" fill="#ffcd00"/>
+        </svg>
+        <span>Chứng Khoán Việt Nam</span>
+        <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
     <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.0</span></span></div>
@@ -10076,10 +10098,10 @@ let _fxLoading = false;
 
 // ── Sessions definition (UTC+7 times) ────────────────────────────
 const FX_SESSIONS = [
-  {name:'Sydney',    open:5,  close:14, color:'#0ea5e9', pairs:['AUDUSD','NZDUSD','AUDJPY']},
-  {name:'Tokyo',     open:7,  close:16, color:'#f59e0b', pairs:['USDJPY','EURJPY','GBPJPY']},
-  {name:'London',    open:14, close:23, color:'#8b5cf6', pairs:['GBPUSD','EURUSD','EURGBP']},
-  {name:'New York',  open:19, close:4,  color:'#00d4ff', pairs:['EURUSD','GBPUSD','USDCAD']},
+  {name:'Sydney',    vn:'SYDNEY',    open:5,  close:14, color:'#0ea5e9', pairs:['AUDUSD','NZDUSD','AUDJPY']},
+  {name:'Tokyo',     vn:'TOKYO',     open:7,  close:16, color:'#f59e0b', pairs:['USDJPY','EURJPY','GBPJPY']},
+  {name:'London',    vn:'LUÂN ĐÔN',  open:14, close:23, color:'#8b5cf6', pairs:['GBPUSD','EURUSD','EURGBP']},
+  {name:'New York',  vn:'NEW YORK',   open:19, close:4,  color:'#00d4ff', pairs:['EURUSD','GBPUSD','USDCAD']},
 ];
 
 // ── Fetch rates from Frankfurter (free, CORS OK, ECB data) ────────
@@ -10246,11 +10268,11 @@ function _fxRenderSessions(){
       return `<div class="session-item">
         <div class="session-name">
           <div class="session-dot ${isOpen?'open':'closed'}" style="background:${isOpen?s.color:'var(--muted)'}${isOpen?';box-shadow:0 0 6px '+s.color:''}"></div>
-          <span>${s.name}</span>
+          <span>${s.vn||s.name}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="session-time">${_fxFmtHour(s.open)}–${_fxFmtHour(s.close)}</span>
-          <span class="session-status ${isOpen?'open':'closed'}">${isOpen?'MỞ':'ĐÓNG'}</span>
+          <span class="session-status ${isOpen?'open':'closed'}">${isOpen?'MỞ CỬA':'ĐÓNG CỬA'}</span>
         </div>
       </div>`;
     }).join('');
@@ -10264,8 +10286,8 @@ function _fxRenderSessions(){
       ${FX_SESSIONS.map(s=>{
         const w = s.close>s.open?(s.close-s.open)*barW:((24-s.open)+s.close)*barW;
         const left = s.open*barW;
-        return `<div style="position:absolute;left:${left}%;width:${Math.min(w,100-left)}%;top:${FX_SESSIONS.indexOf(s)*13+4}px;height:10px;background:${s.color};border-radius:3px;opacity:.7;title='${s.name}'">
-          <span style="font-size:8px;padding:1px 4px;color:#fff;font-weight:700">${s.name}</span>
+        return `<div style="position:absolute;left:${left}%;width:${Math.min(w,100-left)}%;top:${FX_SESSIONS.indexOf(s)*13+4}px;height:10px;background:${s.color};border-radius:3px;opacity:.7;title='${s.vn||s.name}'">
+          <span style="font-size:8px;padding:1px 4px;color:#fff;font-weight:700">${s.vn||s.name}</span>
         </div>`;
       }).join('')}
       <div style="position:absolute;left:${nowH*barW}%;top:0;bottom:0;width:2px;background:#fff;opacity:.6"></div>
@@ -10283,7 +10305,7 @@ function _fxRenderSessions(){
       return `<div class="forex-pair-card${isOpen?' active-pair':''}" style="cursor:default">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <div class="session-dot ${isOpen?'open':'closed'}" style="background:${s.color};width:10px;height:10px${isOpen?';box-shadow:0 0 6px '+s.color:''}"></div>
-          <b style="color:${s.color}">${s.name}</b>
+          <b style="color:${s.color}">${s.vn||s.name}</b>
           <span style="font-size:9px;color:var(--muted)">${_fxFmtHour(s.open)}–${_fxFmtHour(s.close)}</span>
         </div>
         ${s.pairs.map(p=>`<div style="font-size:11px;color:var(--text2);padding:2px 0">💱 ${p.slice(0,3)}/${p.slice(3)}</div>`).join('')}
@@ -10569,6 +10591,53 @@ function _fxRenderError(){
   const chart = document.getElementById('fxChartContainer');
   if(chart && !chart.children.length) chart.innerHTML='<div class="state-box"><div style="font-size:28px">📡</div><div>Không tải được dữ liệu</div></div>';
 }
+
+// ── Update Forex status badge in header ──────────────────────────
+function _fxUpdateStatusBadge(){
+  const nowH = new Date(Date.now()+(7*3600000)).getUTCHours();
+  const openSessions = FX_SESSIONS.filter(s=>{
+    return s.close>s.open ? (nowH>=s.open&&nowH<s.close) : (nowH>=s.open||nowH<s.close);
+  });
+
+  const badge = document.getElementById('forexMarketStatus');
+  const dot   = document.getElementById('fxLiveDot');
+  const text  = document.getElementById('fxStatusText');
+  if(!badge || !dot || !text) return;
+
+  // Reset classes
+  badge.className = 'hm-status-badge';
+
+  if(openSessions.length===0){
+    badge.classList.add('hm-fx-closed');
+    dot.style.display = 'none';
+    text.textContent  = 'ĐÓNG CỬA';
+  } else {
+    const hasLondon = openSessions.some(s=>s.name==='London');
+    const hasNY     = openSessions.some(s=>s.name==='New York');
+    const isOverlap = hasLondon && hasNY;
+
+    // Dot — copy chính xác hm-live-dot behavior, chỉ đổi màu
+    dot.style.display    = 'inline-block';
+    dot.style.background = isOverlap ? '#00e676' : '#f59e0b';
+    dot.style.boxShadow  = isOverlap ? '0 0 5px #00e676' : '0 0 5px #f59e0b';
+
+    if(isOverlap){
+      badge.classList.add('hm-fx-overlap');
+      text.textContent = 'GIAO NHAU';
+    } else if(openSessions.length===1){
+      badge.classList.add('hm-fx-active');
+      // Tên phiên ngắn gọn đồng bộ với "TRỰC TIẾP"
+      text.textContent = openSessions[0].vn || openSessions[0].name.toUpperCase();
+    } else {
+      badge.classList.add('hm-fx-active');
+      text.textContent = openSessions.length + ' PHIÊN';
+    }
+  }
+}
+
+// Run on load and every minute
+_fxUpdateStatusBadge();
+setInterval(_fxUpdateStatusBadge, 60000);
 
 // ── Expose globals ────────────────────────────────────────────────
 window.loadFxMarket   = loadFxMarket;
