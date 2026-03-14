@@ -9151,82 +9151,68 @@ function _buildTVWidget(container, tvSymbol, interval, ticker){
 }
 
 // ── Fetch VN chart data: Yahoo Finance v8 (CORS OK, không cần proxy) ──
-async function _fetchVNChartData(container, ticker, interval){
+function _fetchVNChartData(container, ticker, interval){
+  // ── TradingView Advanced Chart Widget — không CORS, không fetch ──
+  // Yahoo Finance bị block CORS từ github.io → dùng TV widget như Forex
   const loading = document.getElementById('vnChartLoading');
-  if(loading) loading.style.display='flex';
-
-  // Map interval UI → Yahoo Finance params
-  const YF_MAP = {
-    '1D': {range:'1d',   interval:'5m'},
-    '1W': {range:'5d',   interval:'15m'},
-    '1M': {range:'1mo',  interval:'1d'},
-    '3M': {range:'3mo',  interval:'1d'},
-    '6M': {range:'6mo',  interval:'1d'},
-    '1Y': {range:'1y',   interval:'1d'},
-    '2Y': {range:'2y',   interval:'1wk'},
-    'W':  {range:'2y',   interval:'1wk'},
-    'M':  {range:'5y',   interval:'1mo'},
-  };
-  const p = YF_MAP[interval] || {range:'1y', interval:'1d'};
-
-  try{
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.VN?interval=${p.interval}&range=${p.range}`;
-    const r = await fetch(url, {signal: AbortSignal.timeout(12000)});
-    if(!r.ok) throw new Error('yf chart '+r.status);
-    const j = await r.json();
-    const result = j?.chart?.result?.[0];
-    const ts     = result?.timestamp;
-    const q      = result?.indicators?.quote?.[0];
-    if(!ts || !q || ts.length < 2) throw new Error('no data');
-
-    const bars = ts.map((t,i)=>{
-      const o = (q.open?.[i]||0)*1000;
-      const h = (q.high?.[i]||0)*1000;
-      const l = (q.low?.[i]||0)*1000;
-      const c = (q.close?.[i]||0)*1000;
-      if(!c || c<=0) return null;
-      return {time:t, open:o||c, high:h||c, low:l||c, close:c, volume:q.volume?.[i]||0};
-    }).filter(b=>b&&b.close>0&&isFinite(b.time))
-      .sort((a,b)=>a.time-b.time);
-
-    if(bars.length > 2){
-      if(loading) loading.style.display='none';
-      _buildLWChart(container, bars);
-      return;
-    }
-    throw new Error('bars too short');
-  }catch(e){}
-
-  // Fallback: Yahoo Finance query2 endpoint
-  try{
-    const url2 = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}.VN?interval=${p.interval}&range=${p.range}`;
-    const r2 = await fetch(url2, {signal: AbortSignal.timeout(12000)});
-    if(!r2.ok) throw new Error('yf2 '+r2.status);
-    const j2 = await r2.json();
-    const result2 = j2?.chart?.result?.[0];
-    const ts2  = result2?.timestamp;
-    const q2   = result2?.indicators?.quote?.[0];
-    if(ts2 && q2 && ts2.length > 2){
-      const bars2 = ts2.map((t,i)=>{
-        const c = (q2.close?.[i]||0)*1000;
-        if(!c) return null;
-        return {time:t, open:(q2.open?.[i]||0)*1000||c, high:(q2.high?.[i]||0)*1000||c, low:(q2.low?.[i]||0)*1000||c, close:c, volume:q2.volume?.[i]||0};
-      }).filter(b=>b&&b.close>0&&isFinite(b.time))
-        .sort((a,b)=>a.time-b.time);
-      if(bars2.length > 2){
-        if(loading) loading.style.display='none';
-        _buildLWChart(container, bars2);
-        return;
-      }
-    }
-  }catch(e){}
-
   if(loading) loading.style.display='none';
-  container.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted)">
-    <div style="font-size:28px">📡</div>
-    <div style="font-size:13px;font-weight:600">Không tải được biểu đồ ${ticker}</div>
-    <div style="font-size:11px">Mã này chưa có dữ liệu trên Yahoo Finance</div>
-  </div>`;
+
+  // Map interval UI → TradingView interval
+  const TV_TF_MAP = {
+    '1D':'D', '1W':'W', '1M':'M',
+    '3M':'3M','6M':'6M','1Y':'12M',
+    '2Y':'24M','W':'W','M':'M',
+    'D':'D',
+  };
+  const tvInterval = TV_TF_MAP[interval] || 'D';
+  const tvSymbol = tvSym(ticker); // e.g. 'HOSE:VNM'
+
+  container.innerHTML = '';
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#060a10;min-height:400px';
+  iframe.setAttribute('allowtransparency','true');
+  container.appendChild(iframe);
+
+  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+  iDoc.open();
+  iDoc.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <script src="https://s3.tradingview.com/tv.js"><\/script>
+    <style>
+      html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#060a10;}
+    </style>
+    </head><body>
+    <div id="vn_tv_${ticker}" style="width:100%;height:100vh"></div>
+    <script>
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": "${tvSymbol}",
+      "interval": "${tvInterval}",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "theme": "dark",
+      "style": "1",
+      "locale": "vi_VN",
+      "toolbar_bg": "#0c1118",
+      "enable_publishing": false,
+      "hide_top_toolbar": false,
+      "save_image": false,
+      "container_id": "vn_tv_${ticker}",
+      "studies": ["RSI@tv-basicstudies","Volume@tv-basicstudies"],
+      "backgroundColor": "#060a10",
+      "gridColor": "rgba(99,179,237,0.04)",
+      "overrides": {
+        "mainSeriesProperties.candleStyle.upColor": "#00e676",
+        "mainSeriesProperties.candleStyle.downColor": "#ff3d57",
+        "mainSeriesProperties.candleStyle.borderUpColor": "#00e676",
+        "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d57",
+        "mainSeriesProperties.candleStyle.wickUpColor": "#00e676",
+        "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d57"
+      }
+    });
+    <\/script>
+    </body></html>`);
+  iDoc.close();
 }
 
 // ── Cache dữ liệu 3 phút ─────────────────────────────────────────
@@ -9237,31 +9223,27 @@ function _cacheSet(k,v){ _PROXY_CACHE.set(k,{v,ts:Date.now()}); return v; }
 
 // ── Yahoo Finance quote — CORS OK, không cần proxy ───────────────
 async function _fetchYFQuote(ticker){
-  const cKey = 'yf_'+ticker;
+  // ── Yahoo Finance bị CORS block từ github.io ──
+  // Dùng TradingView Scanner thay thế (CORS OK)
+  const cKey = 'tvq_'+ticker;
   const cached = _cacheGet(cKey);
   if(cached) return cached;
   try{
-    // Yahoo Finance v8 quote — supports CORS từ browser
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.VN?interval=1d&range=5d`;
-    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
-    if(!r.ok) throw new Error('yf '+r.status);
-    const j = await r.json();
-    const meta = j?.chart?.result?.[0]?.meta;
-    if(!meta || !meta.regularMarketPrice) return null;
-    const price = meta.regularMarketPrice || 0;
-    const ref   = meta.chartPreviousClose || meta.previousClose || price;
-    if(price <= 0) return null;
-    const change    = price - ref;
-    const changePct = ref ? (change/ref*100) : 0;
+    const rows = await tvScanFetch([tvSym(ticker)]);
+    if(!rows || !rows.length) return null;
+    const d = parseTVRow(rows[0], TV_COLS);
+    if(!d || !d.price) return null;
+    const ref = d.price / (1 + (d.changePct||0)/100);
+    const change = d.price - ref;
     return _cacheSet(cKey, {
-      ticker, price, ref,
-      ceil:     Math.round(ref*1.07/100)*100 || price,
-      floor:    Math.round(ref*0.93/100)*100 || price,
-      high:     meta.regularMarketDayHigh || price,
-      low:      meta.regularMarketDayLow  || price,
-      vol:      meta.regularMarketVolume  || 0,
-      val:      (meta.regularMarketVolume||0)*price,
-      change, changePct,
+      ticker, price: d.price, ref,
+      ceil:     Math.round(ref*1.07/100)*100 || d.price,
+      floor:    Math.round(ref*0.93/100)*100 || d.price,
+      high:     d.price,
+      low:      d.price,
+      vol:      d.vol||0,
+      val:      (d.vol||0)*d.price,
+      change, changePct: d.changePct||0,
       exchange: 'HOSE',
       name: VN_NAMES[ticker] || ticker,
     });
@@ -9346,37 +9328,30 @@ async function tvScanMovers(sortBy='change', sortOrder='desc', limit=50){
   return d.data||[];
 }
 
-// ── yfBatchQuotes: Yahoo Finance v8 batch (CORS OK) ──────────────
+// ── yfBatchQuotes → TradingView Scanner (Yahoo Finance bị CORS) ──
 async function yfBatchQuotes(tickers){
-  const symbols = tickers.map(t=>t+'.VN').join(',');
-  // Yahoo Finance v7/v8 hỗ trợ CORS từ browser không cần proxy
-  const yfUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChangePercent,regularMarketVolume,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow`;
-
-  const parseList = d => {
-    const list = d?.quoteResponse?.result||[];
-    return list.map(q=>({
-      ticker:   q.symbol.replace('.VN',''),
-      name:     VN_NAMES[q.symbol.replace('.VN','')]||q.shortName||q.symbol,
-      price:    q.regularMarketPrice||0,
-      ref:      q.regularMarketPreviousClose||0,
-      changePct:q.regularMarketChangePercent||0,
-      change:   (q.regularMarketPrice||0)-(q.regularMarketPreviousClose||0),
-      vol:      q.regularMarketVolume||0,
-      high:     q.regularMarketDayHigh||0,
-      low:      q.regularMarketDayLow||0,
-    }));
-  };
-
+  // Yahoo Finance v7/v8 bị block CORS từ github.io
+  // Dùng TradingView Scanner: CORS OK, dữ liệu real-time
   try{
-    const r = await fetch(yfUrl, {signal:AbortSignal.timeout(10000)});
-    if(r.ok){ const d=await r.json(); const res=parseList(d); if(res.length>0) return res; }
-  }catch(e){}
-  // Fallback query2
-  try{
-    const r2 = await fetch(yfUrl.replace('query1','query2'), {signal:AbortSignal.timeout(10000)});
-    if(r2.ok){ const d=await r2.json(); const res=parseList(d); if(res.length>0) return res; }
-  }catch(e){}
-  return [];
+    const tvSymbols = tickers.map(t=>tvSym(t));
+    const rows = await tvScanFetch(tvSymbols);
+    return rows.map(r=>{
+      const d = parseTVRow(r, TV_COLS);
+      if(!d) return null;
+      const ref = d.price>0 ? d.price/(1+(d.changePct||0)/100) : 0;
+      return {
+        ticker:    d.ticker,
+        name:      VN_NAMES[d.ticker]||d.ticker,
+        price:     d.price,
+        ref,
+        changePct: d.changePct||0,
+        change:    d.change||0,
+        vol:       d.vol||0,
+        high:      d.price,
+        low:       d.price,
+      };
+    }).filter(Boolean);
+  }catch(e){ return []; }
 }
 
 // ── stooqQuote → Yahoo Finance (CORS OK) ─────────────────────────
