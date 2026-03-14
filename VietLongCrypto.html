@@ -2274,6 +2274,85 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 .fx-hm-cell{border-radius:4px;padding:6px 2px;text-align:center;font-size:9px;font-weight:700;cursor:pointer;transition:transform .15s;}
 .fx-hm-cell:hover{transform:scale(1.06);}
 @media(max-width:1200px){.forex-layout{grid-template-columns:1fr;padding:14px;}}
+
+/* ── Forex Heatmap — Fullscreen ── */
+.fx-heatmap-fullpage{
+  padding:16px 24px;
+  height:calc(100vh - 108px);
+  display:flex;flex-direction:column;
+  gap:14px;box-sizing:border-box;
+}
+.fx-hm-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:10px 18px;
+}
+.fx-hm-body{
+  flex:1;min-height:0;
+  display:grid;
+  grid-template-columns:1fr 260px;
+  gap:14px;
+}
+.fx-hm-matrix-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;overflow:auto;
+  display:flex;align-items:stretch;
+}
+.fx-hm-table{
+  width:100%;height:100%;
+  border-collapse:separate;border-spacing:3px;
+  padding:12px;
+  table-layout:fixed;
+}
+.fx-hm-table th{
+  font-size:12px;font-weight:700;
+  color:var(--text2);text-align:center;
+  padding:10px 6px;
+  background:var(--surface2);
+  border-radius:6px;
+  letter-spacing:.5px;
+}
+.fx-hm-table th:first-child{
+  width:64px;background:none;
+}
+.fx-hm-table td{
+  text-align:center;padding:0;
+  border-radius:8px;
+  font-size:12px;font-weight:700;
+  cursor:pointer;
+  transition:transform .15s, filter .15s;
+  position:relative;
+}
+.fx-hm-table td:hover{transform:scale(1.06);filter:brightness(1.2);z-index:2;}
+.fx-hm-table td.fx-hm-label{
+  font-size:12px;font-weight:700;color:var(--text2);
+  background:var(--surface2)!important;
+  border-radius:6px;padding:0 10px;
+  text-align:left;cursor:default;
+}
+.fx-hm-table td.fx-hm-label:hover{transform:none;filter:none;}
+.fx-hm-table td.fx-hm-self{
+  background:rgba(255,255,255,.03)!important;
+  color:var(--muted)!important;cursor:default;
+}
+.fx-hm-table td.fx-hm-self:hover{transform:none;filter:none;}
+.fx-hm-cell-inner{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;padding:14px 6px;gap:3px;
+}
+.fx-hm-cell-pair{font-size:9px;color:rgba(255,255,255,.5);font-weight:600;}
+.fx-hm-cell-pct{font-size:13px;font-weight:800;}
+.fx-hm-strength{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px;overflow-y:auto;
+}
+@media(max-width:1100px){
+  .fx-hm-body{grid-template-columns:1fr;}
+  .fx-hm-strength{display:none;}
+  .fx-heatmap-fullpage{height:auto;}
+}
+
 @media(max-width:768px){.forex-pairs-grid{grid-template-columns:1fr;}.forex-stats-row{grid-template-columns:repeat(2,1fr);}}
 </style>
   <!-- TradingView chart library -->
@@ -2341,7 +2420,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.0</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.7</span></span></div>
 
 
     
@@ -4282,14 +4361,47 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <!-- PAGE: FX-HEATMAP -->
 <div class="page" id="page-fx-heatmap">
-<div style="max-width:1200px;margin:0 auto;padding:20px 32px">
-  <div class="fx-heatmap-wrap">
-    <div class="fx-hm-title">💹 Heatmap Sức Mạnh Tiền Tệ (% thay đổi 24h)</div>
-    <div style="overflow-x:auto">
-      <table id="fxHeatmapTable" style="width:100%;border-collapse:collapse;min-width:600px"></table>
+<div class="fx-heatmap-fullpage">
+
+  <!-- Title bar -->
+  <div class="fx-hm-topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:10px;height:10px;border-radius:2px;background:linear-gradient(135deg,#00e676,#f59e0b)"></div>
+      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2)">Heatmap Sức Mạnh Tiền Tệ</span>
+      <span style="font-size:10px;color:var(--muted)">% thay đổi 24h</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <!-- Legend -->
+      <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
+        <div style="display:flex;gap:3px;align-items:center">
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(255,61,87,.7)"></div><span>Giảm mạnh</span>
+        </div>
+        <div style="display:flex;gap:3px;align-items:center">
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(255,61,87,.2)"></div><span>Giảm nhẹ</span>
+        </div>
+        <div style="display:flex;gap:3px;align-items:center">
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(0,230,118,.2)"></div><span>Tăng nhẹ</span>
+        </div>
+        <div style="display:flex;gap:3px;align-items:center">
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(0,230,118,.7)"></div><span>Tăng mạnh</span>
+        </div>
+      </div>
     </div>
   </div>
-  <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px" id="fxHeatmapCards"></div>
+
+  <!-- Main grid: table + strength bars -->
+  <div class="fx-hm-body">
+    <!-- Heatmap matrix -->
+    <div class="fx-hm-matrix-wrap">
+      <table id="fxHeatmapTable" class="fx-hm-table"></table>
+    </div>
+    <!-- Currency strength bars -->
+    <div class="fx-hm-strength">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:16px">💪 Sức Mạnh Tiền Tệ</div>
+      <div id="fxHeatmapStrength" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -10678,25 +10790,87 @@ function _fxLoadChart(sym, tf){
 function _fxRenderHeatmap(){
   const table = document.getElementById('fxHeatmapTable');
   if(!table || !_fxData.length) return;
+
   const curs = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD'];
-  let html = `<thead><tr><th style="width:50px;background:var(--surface2);padding:6px 8px;font-size:9px;color:var(--muted)"></th>`;
-  curs.forEach(c=>{ html+=`<th style="background:var(--surface2);padding:6px 4px;font-size:10px;color:var(--text2);text-align:center">${c}</th>`; });
-  html += '</tr></thead><tbody>';
-  curs.forEach(base=>{
-    html+=`<tr><td style="padding:4px 8px;font-size:10px;font-weight:700;color:var(--text2);background:var(--surface2)">${base}</td>`;
-    curs.forEach(quote=>{
-      if(base===quote){ html+=`<td style="background:rgba(255,255,255,.03);text-align:center;font-size:9px;color:var(--muted)">—</td>`; return; }
-      const pair = _fxData.find(d=>d.base===base&&d.quote===quote) || _fxData.find(d=>d.base===quote&&d.quote===base);
-      const pct = pair ? (pair.base===base ? pair.changePct : -pair.changePct) : 0;
-      const intensity = Math.min(Math.abs(pct)/1.5, 1);
-      const col = pct>0 ? `rgba(0,230,118,${0.1+intensity*0.5})` : pct<0 ? `rgba(255,61,87,${0.1+intensity*0.5})` : 'rgba(255,255,255,.03)';
-      const textCol = pct>0?'#00e676':pct<0?'#ff3d57':'var(--muted)';
-      html+=`<td style="background:${col};text-align:center;padding:5px 3px;font-size:9px;font-weight:700;color:${textCol};cursor:pointer" title="${base}/${quote}: ${pct>=0?'+':''}${pct.toFixed(2)}%">${pct>=0?'+':''}${pct.toFixed(2)}%</td>`;
-    });
-    html+='</tr>';
+
+  // ── Header row ──────────────────────────────────────────────────
+  let html = '<thead><tr><th></th>';
+  curs.forEach(c => {
+    html += `<th>${c}</th>`;
   });
-  html+='</tbody>';
+  html += '</tr></thead><tbody>';
+
+  // ── Data rows ───────────────────────────────────────────────────
+  curs.forEach(base => {
+    html += `<tr><td class="fx-hm-label">${base}</td>`;
+    curs.forEach(quote => {
+      if(base === quote){
+        html += `<td class="fx-hm-self"><div class="fx-hm-cell-inner"><span style="font-size:16px;opacity:.3">—</span></div></td>`;
+        return;
+      }
+      const pair = _fxData.find(d=>d.base===base&&d.quote===quote)
+                || _fxData.find(d=>d.base===quote&&d.quote===base);
+      const pct = pair ? (pair.base===base ? pair.changePct : -pair.changePct) : 0;
+
+      const intensity = Math.min(Math.abs(pct) / 1.5, 1);
+      const alpha = 0.08 + intensity * 0.65;
+      const bg = pct > 0
+        ? `rgba(0,230,118,${alpha})`
+        : pct < 0
+          ? `rgba(255,61,87,${alpha})`
+          : 'rgba(255,255,255,.04)';
+      const textCol = pct > 0 ? '#00e676' : pct < 0 ? '#ff3d57' : 'var(--muted)';
+      const sign = pct >= 0 ? '+' : '';
+      const pairLabel = base + '/' + quote;
+
+      html += `<td style="background:${bg}"
+        title="${pairLabel}: ${sign}${pct.toFixed(2)}%"
+        onclick="fxSelectPair('${(pair?.sym)||base+quote}')">
+        <div class="fx-hm-cell-inner">
+          <span class="fx-hm-cell-pair">${pairLabel}</span>
+          <span class="fx-hm-cell-pct" style="color:${textCol}">${sign}${pct.toFixed(2)}%</span>
+        </div>
+      </td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
   table.innerHTML = html;
+
+  // ── Strength bars (right panel) ─────────────────────────────────
+  const strengthEl = document.getElementById('fxHeatmapStrength');
+  if(!strengthEl) return;
+
+  // Tính sức mạnh = tổng % thay đổi các cặp liên quan
+  const strength = {};
+  curs.forEach(c => { strength[c] = 0; });
+  _fxData.forEach(d => {
+    if(strength[d.base]  !== undefined) strength[d.base]  += d.changePct;
+    if(strength[d.quote] !== undefined) strength[d.quote] -= d.changePct;
+  });
+
+  const sorted = [...curs].sort((a, b) => strength[b] - strength[a]);
+  const maxAbs = Math.max(...Object.values(strength).map(Math.abs), 0.01);
+
+  strengthEl.innerHTML = sorted.map((c, i) => {
+    const v = strength[c] || 0;
+    const pct = Math.abs(v) / maxAbs * 100;
+    const col = v >= 0 ? 'var(--green)' : 'var(--red)';
+    const rank = i + 1;
+    return `<div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--muted);width:16px">#${rank}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${c}</span>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:${col}">${v>=0?'+':''}${v.toFixed(3)}%</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct.toFixed(1)}%;background:${col};border-radius:4px;transition:width .6s ease"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── Timeframe switcher ────────────────────────────────────────────
