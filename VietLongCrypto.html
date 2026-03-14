@@ -4152,7 +4152,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
           <button class="fx-tf-btn" onclick="fxSetTf(this,'1M')">1M</button>
         </div>
       </div>
-      <div class="forex-chart-body" id="fxChartContainer">
+      <div class="forex-chart-body" id="fxChartContainer" style="height:500px">
         <div class="state-box"><div class="spinner"></div><div>Chọn một cặp tiền để xem biểu đồ</div></div>
       </div>
     </div>
@@ -10415,104 +10415,117 @@ function fxSwapConv2(){
 }
 
 // ── Chart: load Yahoo Finance chart for forex pair ────────────────
-async function _fxLoadChart(sym, tf){
+function _fxLoadChart(sym, tf){
   const container = document.getElementById('fxChartContainer');
   if(!container) return;
 
-  // Update header
+  // Update header info từ _fxData cache
   const pairDef = FX_ALL_PAIRS.find(p=>p.sym===sym);
+  const cached  = _fxData.find(d=>d.sym===sym);
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const quote = sym.slice(3);
   el('fxChartTitle', sym.slice(0,3)+'/'+sym.slice(3));
-  el('fxChartSub', pairDef?.name||sym);
+  el('fxChartSub',   pairDef?.name||sym);
 
-  container.innerHTML = '<div class="state-box"><div class="spinner"></div><div>Đang tải biểu đồ...</div></div>';
-
-  // Build Yahoo Finance forex symbol: e.g. EURUSD=X
-  const yfSym = sym + '=X';
-  const TF_MAP = {'1H':{range:'1d',interval:'5m'},'4H':{range:'5d',interval:'30m'},'1D':{range:'1mo',interval:'1d'},'1W':{range:'6mo',interval:'1wk'},'1M':{range:'2y',interval:'1mo'}};
-  const p = TF_MAP[tf]||TF_MAP['1D'];
-
-  try{
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yfSym}?interval=${p.interval}&range=${p.range}`;
-    const r = await fetch(url, {signal:AbortSignal.timeout(10000)});
-    if(!r.ok) throw new Error('yf forex '+r.status);
-    const j = await r.json();
-    const res = j?.chart?.result?.[0];
-    const ts  = res?.timestamp;
-    const q   = res?.indicators?.quote?.[0];
-    if(!ts||!q||ts.length<2) throw new Error('no data');
-
-    const bars = ts.map((t,i)=>{
-      const c = q.close?.[i];
-      if(!c||isNaN(c)) return null;
-      return {time:t, open:q.open?.[i]||c, high:q.high?.[i]||c, low:q.low?.[i]||c, close:c, volume:q.volume?.[i]||0};
-    }).filter(b=>b&&b.close>0&&isFinite(b.time)).sort((a,b)=>a.time-b.time);
-
-    if(bars.length<2) throw new Error('insufficient bars');
-
-    container.innerHTML = '';
-    if(_fxChart){ try{_fxChart.remove();}catch(e){} _fxChart=null; _fxSeries=null; }
-
-    _fxChart = LightweightCharts.createChart(container,{
-      width:container.clientWidth, height:container.clientHeight||380,
-      layout:{background:{color:'#0c1118'},textColor:'#94a3b8'},
-      grid:{vertLines:{color:'rgba(99,179,237,.05)'},horzLines:{color:'rgba(99,179,237,.05)'}},
-      crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-      rightPriceScale:{borderColor:'rgba(99,179,237,.1)'},
-      timeScale:{borderColor:'rgba(99,179,237,.1)',timeVisible:true,secondsVisible:false},
-    });
-    _fxSeries = _fxChart.addCandlestickSeries({
-      upColor:'#00e676',downColor:'#ff3d57',borderUpColor:'#00e676',borderDownColor:'#ff3d57',
-      wickUpColor:'#00e676',wickDownColor:'#ff3d57',
-    });
-    _fxSeries.setData(bars);
-    _fxChart.timeScale().fitContent();
-
-    // Update info panel
-    const last = bars[bars.length-1];
-    const prev = bars.length>1?bars[bars.length-2]:last;
-    const chg = last.close - prev.close;
-    const chgPct = prev.close ? chg/prev.close*100 : 0;
-    const quote = sym.slice(3);
-    el('fxChartPrice', _fxFmt(last.close, quote));
+  if(cached){
+    el('fxChartPrice', _fxFmt(cached.price, quote));
     const chgEl = document.getElementById('fxChartChg');
-    if(chgEl){ chgEl.textContent=(chgPct>=0?'+':'')+chgPct.toFixed(4)+'%'; chgEl.style.color=chgPct>=0?'var(--green)':'var(--red)'; }
-    el('fxi-price', _fxFmt(last.close, quote));
-    el('fxi-chg',   (chgPct>=0?'+':'')+chgPct.toFixed(4)+'%');
-    el('fxi-high',  _fxFmt(Math.max(...bars.slice(-24).map(b=>b.high)), quote));
-    el('fxi-low',   _fxFmt(Math.min(...bars.slice(-24).map(b=>b.low)), quote));
+    if(chgEl){
+      chgEl.textContent = (cached.changePct>=0?'+':'')+cached.changePct.toFixed(2)+'%';
+      chgEl.style.color = cached.changePct>=0?'var(--green)':'var(--red)';
+    }
+    el('fxi-price', _fxFmt(cached.price, quote));
+    el('fxi-chg',   (cached.changePct>=0?'+':'')+cached.changePct.toFixed(2)+'%');
+    el('fxi-high',  _fxFmt(cached.high, quote));
+    el('fxi-low',   _fxFmt(cached.low,  quote));
     const spread = quote==='JPY'?0.02:quote==='VND'?50:0.0002;
     el('fxi-spread', quote==='VND'?spread.toFixed(0):(quote==='JPY'?spread.toFixed(3):spread.toFixed(4)));
 
-    // Pivot levels (Classic)
-    const yesterday = bars.slice(-2)[0];
-    if(yesterday){
-      const H=yesterday.high, L=yesterday.low, C=yesterday.close;
-      const P=(H+L+C)/3;
-      const pivots=[
-        {label:'R3', val:P+2*(H-L), col:'#ff3d57'},
-        {label:'R2', val:P+(H-L),   col:'#ff7043'},
-        {label:'R1', val:2*P-L,     col:'#ffa726'},
-        {label:'PP', val:P,          col:'#fbbf24'},
-        {label:'S1', val:2*P-H,     col:'#66bb6a'},
-        {label:'S2', val:P-(H-L),   col:'#42a5f5'},
-        {label:'S3', val:P-2*(H-L), col:'#7e57c2'},
-      ];
-      const pvEl = document.getElementById('fxPivotLevels');
-      if(pvEl) pvEl.innerHTML = pivots.map(pv=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:10px;font-weight:700;color:${pv.col}">${pv.label}</span>
-          <span style="font-size:11px;font-weight:700">${_fxFmt(pv.val,quote)}</span>
-        </div>`).join('');
-    }
-
-    new ResizeObserver(entries=>{
-      if(_fxChart&&entries[0]) _fxChart.applyOptions({width:entries[0].contentRect.width});
-    }).observe(container);
-
-  }catch(e){
-    container.innerHTML=`<div class="state-box"><div style="font-size:28px">📡</div><div>Không tải được biểu đồ ${sym}</div><div style="font-size:11px;color:var(--muted)">Yahoo Finance không có dữ liệu cho cặp này</div></div>`;
+    // Pivot levels từ high/low/price
+    const H=cached.high, L=cached.low, C=cached.price;
+    const P=(H+L+C)/3;
+    const pivots=[
+      {label:'R3',val:P+2*(H-L),col:'#ff3d57'},
+      {label:'R2',val:P+(H-L),  col:'#ff7043'},
+      {label:'R1',val:2*P-L,    col:'#ffa726'},
+      {label:'PP',val:P,         col:'#fbbf24'},
+      {label:'S1',val:2*P-H,    col:'#66bb6a'},
+      {label:'S2',val:P-(H-L),  col:'#42a5f5'},
+      {label:'S3',val:P-2*(H-L),col:'#7e57c2'},
+    ];
+    const pvEl = document.getElementById('fxPivotLevels');
+    if(pvEl) pvEl.innerHTML = pivots.map(pv=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:10px;font-weight:700;color:${pv.col}">${pv.label}</span>
+        <span style="font-size:11px;font-weight:700">${_fxFmt(pv.val,quote)}</span>
+      </div>`).join('');
   }
+
+  // ── TradingView Widget — không cần fetch, không CORS ─────────────
+  // Map sym → TradingView FX symbol (FX:EURUSD)
+  // VND pairs không có trên TradingView → dùng OANDA:USDVND
+  const TV_SYM_MAP = {
+    'USDVND':'OANDA:USDVND','EURVND':'FX:EURUSD', // approx
+    'JPYVND':'FX:USDJPY','GBPVND':'FX:GBPUSD',
+    'CNYVND':'FX:USDCNH','KRWVND':'FX:USDKRW',
+    'SGDVND':'FX:USDSGD','THBVND':'FX:USDTHB',
+  };
+  const tvSym = TV_SYM_MAP[sym] || ('FX:'+sym);
+
+  const TF_TV = {'1H':'60','4H':'240','1D':'D','1W':'W','1M':'M'};
+  const interval = TF_TV[tf]||'D';
+
+  container.innerHTML = '';
+  if(_fxChart){ try{_fxChart.remove();}catch(e){} _fxChart=null; _fxSeries=null; }
+
+  // Build TradingView Advanced Chart widget iframe
+  const widgetHtml = `
+    <div class="tradingview-widget-container" style="height:100%;width:100%">
+      <div id="fx_tv_chart_${sym}" style="height:100%;width:100%"></div>
+      <script type="text/javascript">
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": "${tvSym}",
+        "interval": "${interval}",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "theme": "dark",
+        "style": "1",
+        "locale": "vi_VN",
+        "toolbar_bg": "#0c1118",
+        "enable_publishing": false,
+        "hide_top_toolbar": false,
+        "hide_legend": false,
+        "save_image": false,
+        "container_id": "fx_tv_chart_${sym}",
+        "studies": ["RSI@tv-basicstudies","MACD@tv-basicstudies"],
+        "backgroundColor": "#060a10",
+        "gridColor": "rgba(99,179,237,0.05)",
+        "overrides": {
+          "mainSeriesProperties.candleStyle.upColor": "#00e676",
+          "mainSeriesProperties.candleStyle.downColor": "#ff3d57",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#00e676",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d57",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#00e676",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d57"
+        }
+      });
+      <\/script>
+    </div>`;
+
+  // Dùng srcdoc iframe để isolate TradingView widget script
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#060a10';
+  iframe.setAttribute('allowtransparency','true');
+  container.appendChild(iframe);
+
+  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+  iDoc.open();
+  iDoc.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <script src="https://s3.tradingview.com/tv.js"><\/script>
+    <style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#060a10;}</style>
+    </head><body>${widgetHtml}</body></html>`);
+  iDoc.close();
 }
 
 // ── Heatmap ───────────────────────────────────────────────────────
