@@ -2420,7 +2420,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.8</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.9</span></span></div>
 
 
     
@@ -9087,71 +9087,65 @@ const VN_BRAND = {
 // Cache logo URLs đã biết
 const _vnLogoCache = new Map();
 
-// SVG logo inline - không cần CDN, không bao giờ fail
+// SVG logo đẹp — brand color, gradient nền, viền glow, chữ nổi
+// Không cần CDN, không bao giờ fail, giống thiết kế logo thực
 function vnLogoSVG(ticker, size=32){
   const col = VN_BRAND[ticker] || _vnColor(ticker);
-  const r   = Math.round(size * 0.25);
-  const txt = ticker.length <= 3 ? ticker : ticker.slice(0,2);
-  const fs  = size <= 20 ? Math.round(size*0.4) : size <= 28 ? Math.round(size*0.36) : Math.round(size*0.33);
+  const r   = Math.round(size * 0.28);
+  // Rút gọn text: <=3 ký tự → cả ticker, >3 → 2 ký tự đầu
+  const txt = ticker.length <= 3 ? ticker : ticker.slice(0,3);
+  const fs  = size <= 18 ? Math.round(size*0.42) :
+              size <= 24 ? Math.round(size*0.38) :
+              size <= 32 ? (txt.length>2 ? Math.round(size*0.30) : Math.round(size*0.34)) :
+              (txt.length>2 ? Math.round(size*0.28) : Math.round(size*0.32));
+  const uid = `vlg_${ticker}_${size}`.replace(/[^a-z0-9_]/gi,'_');
+  // Tính màu sáng hơn cho gradient top
+  const bright = col+'bb';
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"
-    xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block;">
+    xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block;border-radius:${r}px;">
     <defs>
-      <linearGradient id="vlg${ticker}${size}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${col}" stop-opacity="0.18"/>
-        <stop offset="100%" stop-color="${col}" stop-opacity="0.4"/>
+      <linearGradient id="${uid}g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${col}" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="${col}" stop-opacity="0.10"/>
       </linearGradient>
+      <filter id="${uid}f">
+        <feDropShadow dx="0" dy="0" stdDeviation="${Math.max(1,size*0.05)}"
+          flood-color="${col}" flood-opacity="0.5"/>
+      </filter>
     </defs>
-    <rect width="${size}" height="${size}" rx="${r}"
-      fill="url(#vlg${ticker}${size})" stroke="${col}" stroke-width="1" stroke-opacity="0.45"/>
-    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-      font-family="system-ui,-apple-system,sans-serif"
-      font-size="${fs}" font-weight="800" fill="${col}">${txt}</text>
+    <rect width="${size}" height="${size}" rx="${r}" fill="url(#${uid}g)"/>
+    <rect width="${size}" height="${size}" rx="${r}" fill="none"
+      stroke="${col}" stroke-width="${size<=20?0.8:1.2}" stroke-opacity="0.6"/>
+    <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle"
+      font-family="'Inter','system-ui','-apple-system',sans-serif"
+      font-size="${fs}" font-weight="900" fill="${col}"
+      filter="url(#${uid}f)" letter-spacing="-0.5">${txt}</text>
   </svg>`;
 }
 
-// vnLogoHTML: thử nhiều CDN logo thật → SVG fallback chữ
+// vnLogoHTML: SVG inline (tất cả CDN bị ERR_NAME_NOT_RESOLVED từ github.io)
+// Render logo đẹp với brand color chính xác + gradient + border
 function vnLogoHTML(ticker, size=32){
-  const r = Math.round(size * 0.28);
-  if(_vnLogoCache.get(ticker) === 'svg') return vnLogoSVG(ticker, size);
-  const cached = _vnLogoCache.get(ticker);
-  // Nguồn logo ưu tiên: fireant → vietstock → cafef
-  const url1 = cached || `https://static.fireant.vn/logos/${ticker}.png`;
-  const url2 = `https://images.vietstock.vn/logo/${ticker}.png`;
-  const url3 = `https://cafef1.mediacdn.vn/Images/Uploaded/share/2012/${ticker}.png`;
-  return `<div class="vn-logo-wrap" style="width:${size}px;height:${size}px;border-radius:${r}px;flex-shrink:0;overflow:hidden;" data-vn-logo="${ticker}">
-    <img src="${url1}"
-      data-ticker="${ticker}" data-size="${size}"
-      data-fb1="${url2}" data-fb2="${url3}" data-fb-step="0"
-      onerror="vnLogoErr(this)" onload="vnLogoOk(this)"
-      style="width:100%;height:100%;object-fit:contain;border-radius:${r}px;" loading="lazy">
-  </div>`;
+  return vnLogoSVG(ticker, size);
 }
 
-function vnLogoOk(img){
-  const t = img.dataset.ticker;
-  if(t) _vnLogoCache.set(t, img.src);
-}
 
+
+function vnLogoOk(img){ /* không dùng img nữa, giữ để tương thích */ }
 function vnLogoErr(img){
-  const t    = img.dataset.ticker || '';
-  const sz   = parseInt(img.dataset.size) || 32;
-  const step = parseInt(img.dataset.fbStep || '0');
-  const fb1  = img.dataset.fb1 || '';
-  const fb2  = img.dataset.fb2 || '';
-  if(step === 0 && fb1){ img.dataset.fbStep='1'; img.src=fb1; return; }
-  if(step === 1 && fb2){ img.dataset.fbStep='2'; img.src=fb2; return; }
-  // Tất cả CDN fail → SVG fallback
+  // Tất cả CDN đều bị CORS block → render SVG
+  const t  = img.dataset.ticker || '';
+  const sz = parseInt(img.dataset.size) || 32;
   _vnLogoCache.set(t, 'svg');
   const wrap = img.closest('[data-vn-logo]') || img.parentElement;
-  const r = Math.round(sz * 0.28);
-  if(wrap){ wrap.style.cssText=`width:${sz}px;height:${sz}px;border-radius:${r}px;flex-shrink:0;overflow:hidden;`; wrap.innerHTML=vnLogoSVG(t,sz); }
+  if(wrap){ wrap.innerHTML = vnLogoSVG(t, sz); }
 }
 
 function _updateVNChartLogo(ticker){
   const box = document.getElementById('vnChartLogoBox');
   if(!box) return;
   box.style.cssText = 'width:38px;height:38px;flex-shrink:0;overflow:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;padding:0;';
-  box.innerHTML = vnLogoHTML(ticker, 38);
+  box.innerHTML = vnLogoSVG(ticker, 38);
 }
 
 const VN_INDICES = [
@@ -9469,19 +9463,19 @@ async function fetchVNSingle(ticker){
 }
 
 // ── tvSym: chuyển ticker → TradingView symbol ──────────────────
-// TradingView dùng HSX (không phải HOSE) cho sàn HoSE
+// TradingView Advanced Widget dùng HOSE: cho sàn HoSE, HNX: cho HNX
 function tvSym(ticker){
   const MAP={
-    // Chỉ số
-    VNINDEX:'HSX:VNINDEX', VN30:'HSX:VN30',
-    HNX:'HNX:HNX',        HNX30:'HNX:HNX30',
+    // Chỉ số tổng hợp
+    VNINDEX:'HOSE:VNINDEX', VN30:'HOSE:VN30',
+    HNX:'HNX:HNX',         HNX30:'HNX:HNX30',
     UPCOM:'UPCOM:UPCOM',
-    // HNX stocks
+    // HNX stocks (không phải HOSE)
     SHB:'HNX:SHB', PVS:'HNX:PVS', NVB:'HNX:NVB', PVX:'HNX:PVX',
     VCS:'HNX:VCS', KLF:'HNX:KLF', CEO:'HNX:CEO',
-    // HOSE → HSX (default dưới)
+    SHN:'HNX:SHN', VGS:'HNX:VGS', SCI:'HNX:SCI',
   };
-  return MAP[ticker] || ('HSX:'+ticker);
+  return MAP[ticker] || ('HOSE:'+ticker);
 }
 
 // ── TV_COLS: cột TradingView scanner ────────────────────────────
