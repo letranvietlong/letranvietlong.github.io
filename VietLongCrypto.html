@@ -10401,10 +10401,9 @@ function fxSearch(q){ _fxRenderPairsGrid(); }
 function fxSelectPair(sym){
   _fxCurrentPair = sym;
   _fxRenderPairsGrid();
-  // If on chart tab, update chart
-  if(document.getElementById('page-fx-chart')?.classList.contains('active')){
-    _fxLoadChart(sym, _fxCurrentTf);
-  }
+  // Chuyển sang tab Biểu Đồ và load chart cho cặp được chọn
+  const chartTab = document.getElementById('stab-fx-chart');
+  showFxPage('fx-chart', chartTab);
 }
 
 // ── Currency converter ────────────────────────────────────────────
