@@ -2158,6 +2158,55 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
   border-radius: 4px;
 }
 
+/* ── Forex Chart Layout — giống Module 1 ── */
+.fx-chart-layout{
+  display:grid;
+  grid-template-columns:220px 1fr 260px;
+  gap:12px;
+  height:calc(100vh - 108px);
+  padding:12px 24px;
+  max-width:1800px;
+  margin:0 auto;
+  box-sizing:border-box;
+}
+.fx-pair-list-panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;display:flex;flex-direction:column;
+  overflow:hidden;min-height:0;
+}
+.fx-list-grp{
+  flex:1;padding:4px 6px;font-size:9px;font-weight:700;
+  letter-spacing:.4px;text-transform:uppercase;
+  border-radius:5px;border:1px solid transparent;
+  background:none;color:var(--muted);cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.fx-list-grp.active,.fx-list-grp:hover{
+  background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25);
+}
+.fx-pair-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03);
+  transition:background .15s;gap:8px;
+}
+.fx-pair-item:hover{background:rgba(255,255,255,.04);}
+.fx-pair-item.active{
+  background:rgba(245,158,11,.08);
+  border-left:3px solid #f59e0b;
+  padding-left:9px;
+}
+.fx-pair-item .fpi-sym{font-size:12px;font-weight:700;color:var(--text);}
+.fx-pair-item .fpi-name{font-size:9px;color:var(--muted);margin-top:1px;}
+.fx-pair-item .fpi-price{font-size:11px;font-weight:700;text-align:right;}
+.fx-pair-item .fpi-chg{font-size:9px;font-weight:700;text-align:right;margin-top:1px;}
+.fpi-chg.up{color:var(--green);}
+.fpi-chg.dn{color:var(--red);}
+.fpi-chg.unch{color:var(--muted);}
+@media(max-width:1200px){
+  .fx-chart-layout{grid-template-columns:1fr;height:auto;padding:12px 14px;}
+  .fx-pair-list-panel{max-height:220px;}
+}
+
 /* ══ FOREX — Styles ══════════════════════════════════════════════ */
 .hm-btn#ttab-forex.active{
   background:rgba(245,158,11,.12) !important;
@@ -4132,54 +4181,102 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <!-- PAGE: FX-CHART -->
 <div class="page" id="page-fx-chart">
-<div class="forex-layout">
-  <div class="forex-main">
-    <div class="forex-chart-wrap">
-      <div class="forex-chart-header">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div>
-            <div style="font-size:15px;font-weight:700" id="fxChartTitle">EUR/USD</div>
-            <div style="font-size:10px;color:var(--muted)" id="fxChartSub">Euro / US Dollar</div>
-          </div>
-          <div id="fxChartPrice" style="font-size:22px;font-weight:700">—</div>
-          <div id="fxChartChg" style="font-size:12px;font-weight:700">—</div>
+<div class="fx-chart-layout">
+
+  <!-- ── CỘT TRÁI: Danh sách cặp tiền ── -->
+  <div class="fx-pair-list-panel">
+    <!-- Search -->
+    <div class="coin-list-search">
+      <input type="text" id="fxChartSearch" placeholder="🔍 Tìm cặp tiền..." oninput="fxChartFilter(this.value)">
+    </div>
+    <!-- Group filter -->
+    <div style="display:flex;gap:3px;padding:8px 10px;border-bottom:1px solid var(--border)">
+      <button class="fx-list-grp active" onclick="fxChartGroup(this,'all')">Tất cả</button>
+      <button class="fx-list-grp" onclick="fxChartGroup(this,'major')">Major</button>
+      <button class="fx-list-grp" onclick="fxChartGroup(this,'minor')">Minor</button>
+      <button class="fx-list-grp" onclick="fxChartGroup(this,'vnd')">VND</button>
+    </div>
+    <!-- Pair items -->
+    <div class="coin-list-items" id="fxPairListItems"></div>
+  </div>
+
+  <!-- ── CỘT GIỮA: Biểu đồ chính ── -->
+  <div class="chart-main" style="min-width:0;display:flex;flex-direction:column;gap:0">
+    <!-- Header -->
+    <div class="chart-header">
+      <div class="chart-coin-info">
+        <!-- Flag + tên cặp -->
+        <div id="fxChartFlag" style="font-size:22px;line-height:1;flex-shrink:0">💱</div>
+        <div>
+          <div class="chart-coin-name" id="fxChartTitle">Chọn một cặp tiền</div>
+          <div class="chart-coin-sym" id="fxChartSub">—</div>
         </div>
-        <div style="display:flex;gap:4px">
-          <button class="fx-tf-btn active" onclick="fxSetTf(this,'1H')">1H</button>
-          <button class="fx-tf-btn" onclick="fxSetTf(this,'4H')">4H</button>
-          <button class="fx-tf-btn" onclick="fxSetTf(this,'1D')">1D</button>
-          <button class="fx-tf-btn" onclick="fxSetTf(this,'1W')">1W</button>
-          <button class="fx-tf-btn" onclick="fxSetTf(this,'1M')">1M</button>
+        <div class="chart-price-block">
+          <span class="chart-price" id="fxChartPrice">—</span>
+          <span class="chart-chg" id="fxChartChg">—</span>
+        </div>
+        <div class="chart-mini-stats">
+          <div class="chart-stat"><span class="chart-stat-label">Cao 24h</span><span class="chart-stat-val" id="fxi-high" style="color:#00e676">—</span></div>
+          <div class="chart-stat"><span class="chart-stat-label">Thấp 24h</span><span class="chart-stat-val" id="fxi-low" style="color:#ff3d57">—</span></div>
+          <div class="chart-stat"><span class="chart-stat-label">Spread</span><span class="chart-stat-val" id="fxi-spread" style="color:var(--gold)">—</span></div>
+          <div class="chart-stat"><span class="chart-stat-label">Thay đổi</span><span class="chart-stat-val" id="fxi-chg">—</span></div>
         </div>
       </div>
-      <div class="forex-chart-body" id="fxChartContainer" style="height:500px">
-        <div class="state-box"><div class="spinner"></div><div>Chọn một cặp tiền để xem biểu đồ</div></div>
+      <!-- Timeframe buttons -->
+      <div class="tf-btns">
+        <button class="tf-btn active" onclick="fxSetTf(this,'1H')">1H</button>
+        <button class="tf-btn" onclick="fxSetTf(this,'4H')">4H</button>
+        <button class="tf-btn" onclick="fxSetTf(this,'1D')">1D</button>
+        <button class="tf-btn" onclick="fxSetTf(this,'1W')">1W</button>
+        <button class="tf-btn" onclick="fxSetTf(this,'1M')">1M</button>
       </div>
     </div>
-    <!-- Pair selector -->
-    <div class="table-card">
-      <div class="toolbar"><span style="font-size:11px;font-weight:700;color:var(--muted)">CHỌN CẶP TIỀN</span></div>
-      <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px" id="fxChartPairBtns"></div>
+    <!-- Chart container -->
+    <div id="fxChartContainer" style="flex:1;min-height:0;position:relative;background:var(--surface)">
+      <div class="state-box"><div class="spinner"></div><div>Chọn một cặp tiền để xem biểu đồ</div></div>
     </div>
   </div>
-  <div class="forex-side">
-    <!-- Info card -->
+
+  <!-- ── CỘT PHẢI: Thông tin + Pivot ── -->
+  <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+    <!-- Thông tin -->
     <div class="forex-sessions">
-      <div class="session-title">📈 Thông Tin</div>
-      <div style="display:flex;flex-direction:column;gap:8px" id="fxChartInfo">
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Giá hiện tại</span><b id="fxi-price">—</b></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Thay đổi 24h</span><b id="fxi-chg">—</b></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Cao nhất 24h</span><b id="fxi-high">—</b></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Thấp nhất 24h</span><b id="fxi-low">—</b></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0"><span style="color:var(--muted)">Spread</span><b id="fxi-spread">—</b></div>
+      <div class="session-title" style="margin-bottom:10px">📈 THÔNG TIN</div>
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Giá hiện tại</span>
+          <b style="font-size:13px" id="fxi-price">—</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Thay đổi 24h</span>
+          <b style="font-size:13px" id="fxi-chg2">—</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Cao nhất 24h</span>
+          <b style="font-size:13px;color:var(--green)" id="fxi-high2">—</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Thấp nhất 24h</span>
+          <b style="font-size:13px;color:var(--red)" id="fxi-low2">—</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0">
+          <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Spread</span>
+          <b style="font-size:13px;color:var(--gold)" id="fxi-spread2">—</b>
+        </div>
       </div>
     </div>
-    <!-- Pivot levels -->
+    <!-- Mức Pivot -->
+    <div class="forex-sessions" style="flex:1">
+      <div class="session-title" style="margin-bottom:10px">🎯 MỨC PIVOT</div>
+      <div id="fxPivotLevels"></div>
+    </div>
+    <!-- Phiên đang mở -->
     <div class="forex-sessions">
-      <div class="session-title">🎯 Mức Pivot</div>
-      <div style="display:flex;flex-direction:column;gap:6px" id="fxPivotLevels"></div>
+      <div class="session-title" style="margin-bottom:10px">🌏 PHIÊN ĐANG MỞ</div>
+      <div id="fxChartSessions"></div>
     </div>
   </div>
+
 </div>
 </div>
 
@@ -10242,6 +10339,11 @@ async function loadFxMarket(){
   _fxRenderSessions();
   _fxRenderStrengthBars();
   fxConvert();
+  // Cập nhật list cặp tiền trong tab Biểu Đồ nếu đang mở
+  if(document.getElementById('page-fx-chart')?.classList.contains('active')){
+    _fxRenderPairList(_fxListGroup);
+    _fxUpdateChartSidePanel(_fxCurrentPair);
+  }
 }
 
 // ── Render pair cards grid ────────────────────────────────────────
@@ -10404,6 +10506,8 @@ function fxSelectPair(sym){
   // Chuyển sang tab Biểu Đồ và load chart cho cặp được chọn
   const chartTab = document.getElementById('stab-fx-chart');
   showFxPage('fx-chart', chartTab);
+  // Update side panel sau khi chart load
+  setTimeout(() => _fxUpdateChartSidePanel(sym), 100);
 }
 
 // ── Currency converter ────────────────────────────────────────────
@@ -10605,23 +10709,131 @@ function fxSetTf(el, tf){
 
 // ── Build chart pair buttons ──────────────────────────────────────
 function _fxBuildChartPairBtns(){
-  const el = document.getElementById('fxChartPairBtns');
-  if(!el) return;
-  el.innerHTML = FX_ALL_PAIRS.map(p=>`
-    <button onclick="fxSelectPairChart('${p.sym}')" data-sym="${p.sym}"
-      style="padding:4px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);
-      background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s"
-      onmouseover="this.style.borderColor='rgba(245,158,11,.4)';this.style.color='#fbbf24'"
-      onmouseout="if(!this.classList.contains('active-pair-btn')){this.style.borderColor='var(--border)';this.style.color='var(--muted)'}">
-      ${p.flag} ${p.sym.slice(0,3)}/${p.sym.slice(3)}
-    </button>`).join('');
+  // Render danh sách cặp tiền dạng list panel (giống Module 1)
+  _fxRenderPairList('all', '');
 }
+
+let _fxListGroup = 'all';
+
+function _fxRenderPairList(group, query){
+  const el = document.getElementById('fxPairListItems');
+  if(!el) return;
+  _fxListGroup = group || _fxListGroup;
+  const q = (query !== undefined ? query : '').toLowerCase();
+
+  const groups = _fxListGroup === 'all' ? FX_ALL_PAIRS : (FX_PAIRS[_fxListGroup] || FX_ALL_PAIRS);
+  const filtered = groups.filter(p =>
+    !q || p.sym.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+  );
+
+  el.innerHTML = filtered.map(p => {
+    const cached = _fxData.find(d => d.sym === p.sym);
+    const price  = cached ? _fxFmt(cached.price, p.quote) : '—';
+    const pct    = cached ? cached.changePct : null;
+    const cls    = pct === null ? 'unch' : pct > 0 ? 'up' : pct < 0 ? 'dn' : 'unch';
+    const sign   = pct !== null && pct >= 0 ? '+' : '';
+    const pctTxt = pct !== null ? sign + pct.toFixed(2) + '%' : '—';
+    const isActive = p.sym === _fxCurrentPair;
+    return `<div class="fx-pair-item${isActive ? ' active' : ''}" onclick="fxSelectPairChart('${p.sym}')">
+      <div>
+        <div class="fpi-sym">${p.flag} ${p.sym.slice(0,3)}/${p.sym.slice(3)}</div>
+        <div class="fpi-name">${p.name}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="fpi-price" style="color:${cls==='up'?'var(--green)':cls==='dn'?'var(--red)':'var(--text)'}">${price}</div>
+        <div class="fpi-chg ${cls}">${pctTxt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fxChartFilter(q){ _fxRenderPairList(_fxListGroup, q); }
+
+function fxChartGroup(el, group){
+  document.querySelectorAll('.fx-list-grp').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  _fxListGroup = group;
+  _fxRenderPairList(group, document.getElementById('fxChartSearch')?.value || '');
+}
+
 function fxSelectPairChart(sym){
   _fxCurrentPair = sym;
-  document.querySelectorAll('[data-sym]').forEach(b=>{ b.classList.remove('active-pair-btn'); b.style.background='none'; b.style.borderColor='var(--border)'; b.style.color='var(--muted)'; });
-  const active = document.querySelector(`[data-sym="${sym}"]`);
-  if(active){ active.classList.add('active-pair-btn'); active.style.background='rgba(245,158,11,.1)'; active.style.borderColor='rgba(245,158,11,.4)'; active.style.color='#fbbf24'; }
+  _fxRenderPairList(_fxListGroup);
   _fxLoadChart(sym, _fxCurrentTf);
+  // Sync thông tin side panel
+  _fxUpdateChartSidePanel(sym);
+}
+
+function _fxUpdateChartSidePanel(sym){
+  const cached = _fxData.find(d => d.sym === sym);
+  if(!cached) return;
+  const quote = sym.slice(3);
+  const pairDef = FX_ALL_PAIRS.find(p => p.sym === sym);
+  const set = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+
+  // Update flag
+  const flagEl = document.getElementById('fxChartFlag');
+  if(flagEl && pairDef) flagEl.textContent = pairDef.flag;
+
+  // Header
+  set('fxChartTitle', sym.slice(0,3) + '/' + sym.slice(3));
+  set('fxChartSub',   pairDef?.name || sym);
+  set('fxChartPrice', _fxFmt(cached.price, quote));
+  const chgEl = document.getElementById('fxChartChg');
+  if(chgEl){
+    chgEl.textContent = (cached.changePct >= 0 ? '+' : '') + cached.changePct.toFixed(2) + '%';
+    chgEl.style.color = cached.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  // Mini stats
+  set('fxi-high',  _fxFmt(cached.high, quote));
+  set('fxi-low',   _fxFmt(cached.low,  quote));
+  const spread = quote==='JPY'?'0.020':quote==='VND'?'50':'0.0002';
+  set('fxi-spread', spread);
+  set('fxi-chg', (cached.changePct>=0?'+':'')+cached.changePct.toFixed(2)+'%');
+
+  // Right panel
+  set('fxi-price',   _fxFmt(cached.price, quote));
+  const chg2El = document.getElementById('fxi-chg2');
+  if(chg2El){
+    chg2El.textContent = (cached.changePct>=0?'+':'')+cached.changePct.toFixed(2)+'%';
+    chg2El.style.color = cached.changePct>=0?'var(--green)':'var(--red)';
+  }
+  set('fxi-high2', _fxFmt(cached.high, quote));
+  set('fxi-low2',  _fxFmt(cached.low, quote));
+  set('fxi-spread2', spread);
+
+  // Pivot levels
+  const H=cached.high, L=cached.low, C=cached.price;
+  const P=(H+L+C)/3;
+  const pivots=[
+    {label:'R3',val:P+2*(H-L),col:'#ff3d57'},
+    {label:'R2',val:P+(H-L),  col:'#ff7043'},
+    {label:'R1',val:2*P-L,    col:'#ffa726'},
+    {label:'PP',val:P,         col:'#fbbf24'},
+    {label:'S1',val:2*P-H,    col:'#66bb6a'},
+    {label:'S2',val:P-(H-L),  col:'#42a5f5'},
+    {label:'S3',val:P-2*(H-L),col:'#7e57c2'},
+  ];
+  const pvEl = document.getElementById('fxPivotLevels');
+  if(pvEl) pvEl.innerHTML = pivots.map(pv=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;font-weight:700;color:${pv.col}">${pv.label}</span>
+      <span style="font-size:11px;font-weight:700">${_fxFmt(pv.val,quote)}</span>
+    </div>`).join('');
+
+  // Sessions
+  const nowH = new Date(Date.now()+(7*3600000)).getUTCHours();
+  const sessEl = document.getElementById('fxChartSessions');
+  if(sessEl) sessEl.innerHTML = FX_SESSIONS.map(s=>{
+    const isOpen = s.close>s.open?(nowH>=s.open&&nowH<s.close):(nowH>=s.open||nowH<s.close);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${isOpen?s.color:'var(--muted)'}${isOpen?';box-shadow:0 0 5px '+s.color:''}"></div>
+        <span>${s.vn||s.name}</span>
+      </div>
+      <span style="font-size:9px;font-weight:700;color:${isOpen?s.color:'var(--muted)'}">${isOpen?'MỞ CỬA':'ĐÓNG CỬA'}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── Page navigation ───────────────────────────────────────────────
@@ -10633,7 +10845,7 @@ function showFxPage(id, el){
   if(page) page.classList.add('active');
 
   if(id==='fx-market'){ if(!_fxData.length) loadFxMarket(); else { _fxRenderPairsGrid(); _fxRenderSessions(); } }
-  if(id==='fx-chart'){ _fxBuildChartPairBtns(); _fxLoadChart(_fxCurrentPair, _fxCurrentTf); }
+  if(id==='fx-chart'){ _fxBuildChartPairBtns(); _fxLoadChart(_fxCurrentPair, _fxCurrentTf); _fxUpdateChartSidePanel(_fxCurrentPair); }
   if(id==='fx-heatmap'){ if(!_fxData.length) loadFxMarket().then(_fxRenderHeatmap); else _fxRenderHeatmap(); }
   if(id==='fx-converter'){ if(!Object.keys(_fxRates).length) loadFxMarket().then(fxConvert2); else fxConvert2(); }
   if(id==='fx-sessions'){ _fxRenderSessions(); }
@@ -10701,6 +10913,8 @@ window.fxSetGroup     = fxSetGroup;
 window.fxSearch       = fxSearch;
 window.fxSelectPair   = fxSelectPair;
 window.fxSelectPairChart = fxSelectPairChart;
+window.fxChartFilter    = fxChartFilter;
+window.fxChartGroup     = fxChartGroup;
 window.fxConvert      = fxConvert;
 window.fxConvert2     = fxConvert2;
 window.fxSwapConv     = fxSwapConv;
