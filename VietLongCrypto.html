@@ -4280,6 +4280,13 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <script>
 
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  SHARED — Dùng chung cho tất cả module                              ║
+// ║  Bao gồm: tickClock, formatters, cgFetch, state vars                ║
+// ║  ⚠️  Thay đổi ở đây ảnh hưởng đến CẢ 3 module                       ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+
 // ── CORS Proxy wrapper cho CoinGecko (cần khi host trên GitHub Pages) ──
 // CoinGecko removed — CORS not supported from GitHub Pages
 // cgFetch đã bị vô hiệu — CoinGecko không hỗ trợ CORS từ GitHub Pages
@@ -4407,6 +4414,14 @@ const STABLES=new Set(['USDT','BUSD','USDC','DAI','TUSD','USDP','FDUSD','PYUSD',
 
 /* ═══════════════════════════════════════════════════
    LOAD ALL COINS FROM BINANCE 24HR TICKER
+
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  MODULE 1 — TIỀN ẢO THẾ GIỚI 🪙                                     ║
+// ║  Nguồn dữ liệu: Binance WebSocket + REST API                        ║
+// ║  ✅ Sửa file này KHÔNG ảnh hưởng VN hoặc Forex                      ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
 ═══════════════════════════════════════════════════ */
 async function loadAllCoins(){
   // Hiển thị trạng thái loading rõ ràng
@@ -8571,6 +8586,14 @@ document.addEventListener('keydown', e=>{
    Nguồn dữ liệu: SSI iBoard API (public, không cần key)
    ════════════════════════════════════════════════════════ */
 
+
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  MODULE 2 — CHỨNG KHOÁN VIỆT NAM 🇻🇳                                ║
+// ║  Nguồn dữ liệu: TradingView Scanner + Yahoo Finance                 ║
+// ║  ✅ Sửa file này KHÔNG ảnh hưởng Crypto hoặc Forex                  ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
 let _currentMarket = 'crypto';
 let _vnCurrentTicker = null;
 let _vnCurrentMoverTab = 'top-gain';
@@ -10089,6 +10112,14 @@ async function vnSelectStock(ticker){
 // ══════════════════════════════════════════════════════════════════
 
 // ── Forex pair definitions ────────────────────────────────────────
+
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  MODULE 3 — NGOẠI HỐI TOÀN CẦU 🌐                                  ║
+// ║  Nguồn dữ liệu: Frankfurter API (ECB) + TradingView Widget          ║
+// ║  ✅ Sửa file này KHÔNG ảnh hưởng Crypto hoặc VN                     ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
 const FX_PAIRS = {
   major: [
     {sym:'EURUSD',base:'EUR',quote:'USD',name:'Euro / US Dollar',flag:'🇪🇺🇺🇸'},
