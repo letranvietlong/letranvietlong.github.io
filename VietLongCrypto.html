@@ -9518,15 +9518,28 @@ setInterval(updateVNSession, 60000);
 
 function getVNSession(){
   const now = new Date();
-  const h = now.getUTCHours() + 7;
-  const m = now.getUTCMinutes();
-  const t = (h % 24) * 60 + m;
-  const day = now.getUTCDay(); // 0=Sun,6=Sat
+  // Giờ Hà Nội = UTC+7
+  const utcMs = now.getTime();
+  const hanoiDate = new Date(utcMs + 7*3600*1000);
+  const h   = hanoiDate.getUTCHours();
+  const m   = hanoiDate.getUTCMinutes();
+  const t   = h * 60 + m;
+  const day = hanoiDate.getUTCDay(); // 0=CN, 6=T7
   if(day === 0 || day === 6) return 'closed';
-  if(t >= 9*60 && t < 11*60+30) return 'ato_morning';
-  if(t >= 11*60+30 && t < 13*60) return 'lunch';
-  if(t >= 13*60 && t < 14*60+45) return 'ato_afternoon';
-  if(t >= 14*60+45 && t <= 15*60) return 'atc';
+  // HoSE trading schedule (UTC+7):
+  // 09:00–09:15  ATO sáng
+  // 09:15–11:30  Liên tục sáng
+  // 11:30–13:00  Nghỉ trưa
+  // 13:00–13:15  ATO chiều
+  // 13:15–14:30  Liên tục chiều
+  // 14:30–14:45  ATC
+  // 14:45+       Đóng cửa
+  if(t >= 9*60       && t < 9*60+15)   return 'ato';
+  if(t >= 9*60+15    && t < 11*60+30)  return 'open';
+  if(t >= 11*60+30   && t < 13*60)     return 'break';
+  if(t >= 13*60      && t < 13*60+15)  return 'ato';
+  if(t >= 13*60+15   && t < 14*60+30)  return 'open';
+  if(t >= 14*60+30   && t <= 14*60+45) return 'atc';
   return 'closed';
 }
 
@@ -9534,20 +9547,44 @@ function updateVNMarketStatusBadge(){
   const badge = document.getElementById('vnMarketStatus');
   if(!badge) return;
   const s = getVNSession();
-  const cfg = {
-    ato:    {cls:'hm-status-ato',    text:'ATO'},
-    open:   {cls:'hm-status-open',   text:'● MỞ CỬA'},
-    break:  {cls:'hm-status-ato',    text:'NGHỈ TRƯA'},
-    atc:    {cls:'hm-status-atc',    text:'ATC'},
-    closed: {cls:'hm-status-closed', text:'ĐÓNG CỬA'},
-  };
-  const c2 = cfg[s] || cfg.closed;
-  badge.className = 'hm-status-badge ' + c2.cls;
-  badge.textContent = c2.text;
+
+  // Reset
+  badge.className = 'hm-status-badge';
+  badge.innerHTML = '';
+
+  if(s === 'open'){
+    badge.classList.add('hm-status-open');
+    // Dot nhấp nháy giống TRỰC TIẾP
+    const dot = document.createElement('span');
+    dot.className = 'hm-live-dot';
+    dot.style.cssText = 'background:#22c55e;box-shadow:0 0 5px #22c55e';
+    badge.appendChild(dot);
+    badge.appendChild(document.createTextNode('MỞ CỬA'));
+  } else if(s === 'ato'){
+    badge.classList.add('hm-status-ato');
+    const dot = document.createElement('span');
+    dot.className = 'hm-live-dot';
+    dot.style.cssText = 'background:#f59e0b;box-shadow:0 0 5px #f59e0b';
+    badge.appendChild(dot);
+    badge.appendChild(document.createTextNode('ATO'));
+  } else if(s === 'atc'){
+    badge.classList.add('hm-status-atc');
+    const dot = document.createElement('span');
+    dot.className = 'hm-live-dot';
+    dot.style.cssText = 'background:#f59e0b;box-shadow:0 0 5px #f59e0b';
+    badge.appendChild(dot);
+    badge.appendChild(document.createTextNode('ATC'));
+  } else if(s === 'break'){
+    badge.classList.add('hm-status-ato');
+    badge.textContent = 'NGHỈ TRƯA';
+  } else {
+    badge.classList.add('hm-status-closed');
+    badge.textContent = 'ĐÓNG CỬA';
+  }
 }
-// Chạy ngay và mỗi 30s
+// Chạy ngay khi load, sau đó mỗi 10 giây (đảm bảo bắt đúng thời điểm mở/đóng)
 updateVNMarketStatusBadge();
-setInterval(updateVNMarketStatusBadge, 30000);
+setInterval(updateVNMarketStatusBadge, 10000);
 
 
 
