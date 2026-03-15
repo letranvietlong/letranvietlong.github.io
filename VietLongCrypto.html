@@ -2420,7 +2420,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.11</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.12</span></span></div>
 
 
     
@@ -9347,51 +9347,74 @@ function _buildTVWidget(container, tvSymbol, interval, ticker){
   _fetchVNChartData(container, ticker, interval||'D');
 }
 
-// ── Fetch VN chart data — TradingView widgetembed iframe ──────────
-// Dùng iframe src=widgetembed thay vì iDoc.write để tránh CSP & symbol fallback
+// ── Fetch VN chart data — TradingView Advanced Chart (tv.js) ────
+// Clone exact pattern từ Forex module (đã hoạt động)
+// Root cause của bug cũ: backgroundColor thiếu "#" → crash → fallback Apple
 function _fetchVNChartData(container, ticker, interval){
   const loading = document.getElementById('vnChartLoading');
   if(loading) loading.style.display='none';
 
-  // Map interval → TV interval code
-  const TV_TF = {'1D':'D','1T':'W','1W':'W','1M':'M','3M':'3M',
-                 '3T':'3M','6M':'6M','1N':'12M','1Y':'12M','2Y':'24M',
-                 'D':'D','W':'W','M':'M'};
+  // Map interval → TV interval
+  const TV_TF = {
+    '1D':'D','1T':'W','1W':'W','1M':'M',
+    '3M':'3M','3T':'3M','6M':'6M',
+    '1N':'12M','1Y':'12M','2Y':'24M',
+    'D':'D','W':'W','M':'M',
+  };
   const tvInterval = TV_TF[interval] || 'D';
 
-  // TradingView symbol cho chứng khoán VN
-  const tvSymbol = tvSym(ticker); // HSX:FPT, HNX:SHB, ... (widget format)
+  // HOSE:FPT — format đúng cho TradingView Advanced Chart (tv.js)
+  const tvSymbol = tvScanSym(ticker); // HOSE:FPT, HNX:SHB (scanner format = widget format cho tv.js)
 
   container.innerHTML = '';
 
-  // ── Dùng TradingView widgetembed URL ─────────────────────────────
-  // Approach này không bị CSP block, symbol được xử lý đúng
-  const params = new URLSearchParams({
-    symbol:        tvSymbol,
-    interval:      tvInterval,
-    timezone:      'Asia/Ho_Chi_Minh',
-    theme:         'dark',
-    style:         '1',
-    locale:        'vi_VN',
-    toolbar_bg:    '0c1118',
-    enable_publishing: '0',
-    hide_top_toolbar:  '0',
-    hide_legend:       '0',
-    save_image:        '0',
-    backgroundColor:   '060a10',
-    studies:       JSON.stringify(['RSI@tv-basicstudies','Volume@tv-basicstudies']),
-    container_id:  'vn_tv_' + ticker,
-    autosize:      '1',
-    hide_side_toolbar: '0',
-  });
+  // Build widget HTML — GIỐNG HỆT Forex (chỉ khác symbol & studies)
+  const widgetHtml = `
+    <div class="tradingview-widget-container" style="height:100%;width:100%">
+      <div id="vn_tv_${ticker}" style="height:100%;width:100%"></div>
+      <script type="text/javascript">
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": "${tvSymbol}",
+        "interval": "${tvInterval}",
+        "timezone": "Asia/Ho_Chi_Minh",
+        "theme": "dark",
+        "style": "1",
+        "locale": "vi_VN",
+        "toolbar_bg": "#0c1118",
+        "enable_publishing": false,
+        "hide_top_toolbar": false,
+        "hide_legend": false,
+        "save_image": false,
+        "container_id": "vn_tv_${ticker}",
+        "studies": ["RSI@tv-basicstudies","Volume@tv-basicstudies"],
+        "backgroundColor": "#060a10",
+        "gridColor": "rgba(99,179,237,0.04)",
+        "overrides": {
+          "mainSeriesProperties.candleStyle.upColor": "#00e676",
+          "mainSeriesProperties.candleStyle.downColor": "#ff3d57",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#00e676",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d57",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#00e676",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d57"
+        }
+      });
+      <\/script>
+    </div>`;
 
   const iframe = document.createElement('iframe');
-  iframe.src = 'https://www.tradingview.com/widgetembed/?' + params.toString();
-  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#060a10;';
+  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#060a10';
   iframe.setAttribute('allowtransparency','true');
-  iframe.setAttribute('allowfullscreen','true');
-  iframe.setAttribute('scrolling','no');
   container.appendChild(iframe);
+
+  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+  iDoc.open();
+  iDoc.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <script src="https://s3.tradingview.com/tv.js"><\/script>
+    <style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#060a10;}</style>
+    </head><body>${widgetHtml}</body></html>`);
+  iDoc.close();
 }
 
 // ── Cache dữ liệu 3 phút ─────────────────────────────────────────
@@ -9442,7 +9465,7 @@ async function fetchVNSingle(ticker){
 }
 
 // ── tvSym: chuyển ticker → TradingView symbol ──────────────────
-// tvSym()     → dùng cho WIDGET  (HSX: cho HoSE stocks)
+// tvSym()     → alias tvScanSym() (HOSE: format, dùng cho cả widget lẫn scanner)
 // tvScanSym() → dùng cho SCANNER (HOSE: cho HoSE stocks)
 const _HNX_STOCKS = new Set([
   'SHB','PVS','NVB','PVX','VCS','KLF','CEO','SHN','VGS','SCI',
@@ -9453,18 +9476,9 @@ const _UPCOM_STOCKS = new Set([
   'AAS','ABI','ABB','ABC','ABI',
 ]);
 
-// Hàm dùng cho WIDGET: HOSE → HSX, HNX → HNX, UPCOM → UPCOM
-function tvSym(ticker){
-  const SPECIAL = {
-    VNINDEX:'HSX:VNINDEX', VN30:'HSX:VN30',
-    HNX:'HNX:HNX', HNX30:'HNX:HNX30',
-    UPCOM:'UPCOM:UPCOM',
-  };
-  if(SPECIAL[ticker]) return SPECIAL[ticker];
-  if(_HNX_STOCKS.has(ticker))   return 'HNX:'+ticker;
-  if(_UPCOM_STOCKS.has(ticker)) return 'UPCOM:'+ticker;
-  return 'HSX:'+ticker;
-}
+// tvSym() → alias của tvScanSym() cho backward compat
+// TradingView tv.js Advanced Chart dùng cùng format với Scanner: HOSE:FPT
+function tvSym(ticker){ return tvScanSym(ticker); }
 
 // Hàm dùng cho SCANNER: HOSE → HOSE, HNX → HNX
 function tvScanSym(ticker){
