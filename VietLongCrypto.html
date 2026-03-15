@@ -2420,7 +2420,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.12</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.13</span></span></div>
 
 
     
@@ -9347,14 +9347,21 @@ function _buildTVWidget(container, tvSymbol, interval, ticker){
   _fetchVNChartData(container, ticker, interval||'D');
 }
 
-// ── Fetch VN chart data — TradingView Advanced Chart (tv.js) ────
-// Clone exact pattern từ Forex module (đã hoạt động)
-// Root cause của bug cũ: backgroundColor thiếu "#" → crash → fallback Apple
+// ── Fetch VN chart data — TradingView widget TRỰC TIẾP (không iframe) ─
+// tv.js đã load ở <head> → dùng TradingView.widget() ngay trong trang
+// Không cần iframe/iDoc.write → không bị CSP block, không fallback Apple
+let _vnTVWidgetInstance = null;
+
 function _fetchVNChartData(container, ticker, interval){
   const loading = document.getElementById('vnChartLoading');
   if(loading) loading.style.display='none';
 
-  // Map interval → TV interval
+  // Xóa widget cũ nếu có
+  if(_vnTVWidgetInstance){
+    try{ _vnTVWidgetInstance.remove(); }catch(e){}
+    _vnTVWidgetInstance = null;
+  }
+
   const TV_TF = {
     '1D':'D','1T':'W','1W':'W','1M':'M',
     '3M':'3M','3T':'3M','6M':'6M',
@@ -9362,59 +9369,39 @@ function _fetchVNChartData(container, ticker, interval){
     'D':'D','W':'W','M':'M',
   };
   const tvInterval = TV_TF[interval] || 'D';
+  const tvSymbol   = tvScanSym(ticker); // HOSE:FPT, HNX:SHB
 
-  // HOSE:FPT — format đúng cho TradingView Advanced Chart (tv.js)
-  const tvSymbol = tvScanSym(ticker); // HOSE:FPT, HNX:SHB (scanner format = widget format cho tv.js)
+  // Tạo div container với unique id
+  const uid = 'vn_tv_' + ticker + '_' + Date.now();
+  container.innerHTML = `<div id="${uid}" style="width:100%;height:100%"></div>`;
 
-  container.innerHTML = '';
-
-  // Build widget HTML — GIỐNG HỆT Forex (chỉ khác symbol & studies)
-  const widgetHtml = `
-    <div class="tradingview-widget-container" style="height:100%;width:100%">
-      <div id="vn_tv_${ticker}" style="height:100%;width:100%"></div>
-      <script type="text/javascript">
-      new TradingView.widget({
-        "autosize": true,
-        "symbol": "${tvSymbol}",
-        "interval": "${tvInterval}",
-        "timezone": "Asia/Ho_Chi_Minh",
-        "theme": "dark",
-        "style": "1",
-        "locale": "vi_VN",
-        "toolbar_bg": "#0c1118",
-        "enable_publishing": false,
-        "hide_top_toolbar": false,
-        "hide_legend": false,
-        "save_image": false,
-        "container_id": "vn_tv_${ticker}",
-        "studies": ["RSI@tv-basicstudies","Volume@tv-basicstudies"],
-        "backgroundColor": "#060a10",
-        "gridColor": "rgba(99,179,237,0.04)",
-        "overrides": {
-          "mainSeriesProperties.candleStyle.upColor": "#00e676",
-          "mainSeriesProperties.candleStyle.downColor": "#ff3d57",
-          "mainSeriesProperties.candleStyle.borderUpColor": "#00e676",
-          "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d57",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#00e676",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d57"
-        }
-      });
-      <\/script>
-    </div>`;
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#060a10';
-  iframe.setAttribute('allowtransparency','true');
-  container.appendChild(iframe);
-
-  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-  iDoc.open();
-  iDoc.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8">
-    <script src="https://s3.tradingview.com/tv.js"><\/script>
-    <style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#060a10;}</style>
-    </head><body>${widgetHtml}</body></html>`);
-  iDoc.close();
+  // Gọi TradingView.widget() trực tiếp — tv.js đã có sẵn trong trang
+  _vnTVWidgetInstance = new TradingView.widget({
+    autosize:           true,
+    symbol:             tvSymbol,
+    interval:           tvInterval,
+    timezone:           'Asia/Ho_Chi_Minh',
+    theme:              'dark',
+    style:              '1',
+    locale:             'vi_VN',
+    toolbar_bg:         '#0c1118',
+    enable_publishing:  false,
+    hide_top_toolbar:   false,
+    hide_legend:        false,
+    save_image:         false,
+    container_id:       uid,
+    studies:            ['RSI@tv-basicstudies','Volume@tv-basicstudies'],
+    backgroundColor:    '#060a10',
+    gridColor:          'rgba(99,179,237,0.04)',
+    overrides: {
+      'mainSeriesProperties.candleStyle.upColor':         '#00e676',
+      'mainSeriesProperties.candleStyle.downColor':       '#ff3d57',
+      'mainSeriesProperties.candleStyle.borderUpColor':   '#00e676',
+      'mainSeriesProperties.candleStyle.borderDownColor': '#ff3d57',
+      'mainSeriesProperties.candleStyle.wickUpColor':     '#00e676',
+      'mainSeriesProperties.candleStyle.wickDownColor':   '#ff3d57',
+    },
+  });
 }
 
 // ── Cache dữ liệu 3 phút ─────────────────────────────────────────
