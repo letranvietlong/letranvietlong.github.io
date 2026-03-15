@@ -2420,7 +2420,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.13</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.14</span></span></div>
 
 
     
@@ -9347,20 +9347,12 @@ function _buildTVWidget(container, tvSymbol, interval, ticker){
   _fetchVNChartData(container, ticker, interval||'D');
 }
 
-// ── Fetch VN chart data — TradingView widget TRỰC TIẾP (không iframe) ─
-// tv.js đã load ở <head> → dùng TradingView.widget() ngay trong trang
-// Không cần iframe/iDoc.write → không bị CSP block, không fallback Apple
-let _vnTVWidgetInstance = null;
-
+// ── Fetch VN chart data — TradingView Embed Widget (official public API) ──
+// tv.js (Advanced Chart) không hỗ trợ HOSE khi embed ngoài tradingview.com
+// embed-widget-advanced-chart.js là public API → hỗ trợ mọi exchange kể cả HOSE
 function _fetchVNChartData(container, ticker, interval){
   const loading = document.getElementById('vnChartLoading');
   if(loading) loading.style.display='none';
-
-  // Xóa widget cũ nếu có
-  if(_vnTVWidgetInstance){
-    try{ _vnTVWidgetInstance.remove(); }catch(e){}
-    _vnTVWidgetInstance = null;
-  }
 
   const TV_TF = {
     '1D':'D','1T':'W','1W':'W','1M':'M',
@@ -9371,28 +9363,25 @@ function _fetchVNChartData(container, ticker, interval){
   const tvInterval = TV_TF[interval] || 'D';
   const tvSymbol   = tvScanSym(ticker); // HOSE:FPT, HNX:SHB
 
-  // Tạo div container với unique id
-  const uid = 'vn_tv_' + ticker + '_' + Date.now();
-  container.innerHTML = `<div id="${uid}" style="width:100%;height:100%"></div>`;
+  container.innerHTML = '';
 
-  // Gọi TradingView.widget() trực tiếp — tv.js đã có sẵn trong trang
-  _vnTVWidgetInstance = new TradingView.widget({
-    autosize:           true,
-    symbol:             tvSymbol,
-    interval:           tvInterval,
-    timezone:           'Asia/Ho_Chi_Minh',
-    theme:              'dark',
-    style:              '1',
-    locale:             'vi_VN',
-    toolbar_bg:         '#0c1118',
-    enable_publishing:  false,
-    hide_top_toolbar:   false,
-    hide_legend:        false,
-    save_image:         false,
-    container_id:       uid,
-    studies:            ['RSI@tv-basicstudies','Volume@tv-basicstudies'],
-    backgroundColor:    '#060a10',
-    gridColor:          'rgba(99,179,237,0.04)',
+  // TradingView Embed Widget Advanced Chart
+  // Script inject approach (chính thức từ TradingView widget generator)
+  const cfg = {
+    autosize:          true,
+    symbol:            tvSymbol,
+    interval:          tvInterval,
+    timezone:          'Asia/Ho_Chi_Minh',
+    theme:             'dark',
+    style:             '1',
+    locale:            'vi_VN',
+    enable_publishing: false,
+    hide_top_toolbar:  false,
+    hide_legend:       false,
+    save_image:        false,
+    studies:           ['RSI@tv-basicstudies','Volume@tv-basicstudies'],
+    backgroundColor:   '#060a10',
+    gridColor:         'rgba(99,179,237,0.04)',
     overrides: {
       'mainSeriesProperties.candleStyle.upColor':         '#00e676',
       'mainSeriesProperties.candleStyle.downColor':       '#ff3d57',
@@ -9401,7 +9390,25 @@ function _fetchVNChartData(container, ticker, interval){
       'mainSeriesProperties.candleStyle.wickUpColor':     '#00e676',
       'mainSeriesProperties.candleStyle.wickDownColor':   '#ff3d57',
     },
-  });
+  };
+
+  const wrap  = document.createElement('div');
+  wrap.className = 'tradingview-widget-container';
+  wrap.style.cssText = 'height:100%;width:100%';
+
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'height:calc(100% - 32px);width:100%';
+  wrap.appendChild(inner);
+
+  const script = document.createElement('script');
+  script.type  = 'text/javascript';
+  script.src   = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify(cfg);
+  wrap.appendChild(script);
+
+  container.appendChild(wrap);
 }
 
 // ── Cache dữ liệu 3 phút ─────────────────────────────────────────
