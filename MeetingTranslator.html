@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phiên Dịch Họp · Nhật → Việt v6.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2efe9;--surface:#fff;--surface2:#f7f4ef;--border:#e8e4de;--border2:#d8d3cc;
+  --ink:#1a1714;--ink2:#5a5550;--ink3:#9a9590;--ink4:#c5c0ba;
+  --jp:#c0392b;--vn:#1a6b3c;--jp-l:#fdf0ee;--vn-l:#eef7f1;
+  --gold:#b8943f;--shadow:rgba(26,23,20,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);font-family:'Noto Serif','Noto Serif JP',serif;color:var(--ink);min-height:100vh;}
+
+/* ── HEADER (dark) ── */
+header{
+  background:#1a1714;
+  padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 16px rgba(0,0,0,.25);
+}
+.logo{display:flex;align-items:center;gap:11px;}
+.lmark{width:30px;height:30px;background:#c0392b;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.lmark::before{content:'DT';color:#fff;font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:-1px;}
+.logo-text{display:flex;flex-direction:column;gap:1px;}
+.ltitle{font-size:13px;font-weight:600;color:#f0ece6;letter-spacing:.2px;display:flex;align-items:center;gap:7px;}
+.vbadge{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 6px;border-radius:8px;background:#2a2420;border:1px solid #3a3530;color:#8a8480;}
+.lsub{font-size:10px;color:#5a5550;font-family:'IBM Plex Mono',monospace;}
+.hdr-r{display:flex;align-items:center;gap:8px;}
+.api-pill{display:flex;align-items:center;gap:8px;background:#242018;border:1px solid #3a3530;border-radius:9px;padding:6px 12px;}
+.api-lbl{font-size:10px;color:#6a6560;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1px;}
+.api-inp{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0;border:none;background:transparent;color:#a09890;width:200px;outline:none;}
+.api-inp::placeholder{color:#4a4540;}
+.api-inp:focus{color:#f0ece6;}
+.api-sep{width:1px;height:16px;background:#3a3530;}
+.api-dot{width:7px;height:7px;border-radius:50%;background:#4a4540;transition:background .3s;flex-shrink:0;}
+.api-dot.ok{background:#27ae60;box-shadow:0 0 5px rgba(39,174,96,.5);}
+.api-dot.err{background:#c0392b;}
+.clr-btn{background:none;border:none;cursor:pointer;color:#5a5550;font-size:12px;padding:0;display:none;line-height:1;}
+.clr-btn:hover{color:#c0392b;}
+
+/* ── TOOLBAR ── */
+.toolbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:7px 28px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.tbb{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink2);transition:all .15s;white-space:nowrap;}
+.tbb:hover{background:var(--border);color:var(--ink);}
+.tbb.on{background:var(--jp-l);border-color:rgba(192,57,43,.3);color:var(--jp);}
+.tbb.on-vn{background:var(--vn-l);border-color:rgba(26,107,60,.3);color:var(--vn);}
+.tsep{width:1px;height:18px;background:var(--border);margin:0 2px;}
+.kb-hint{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink4);}
+
+/* ── MAIN ── */
+main{max-width:100%;padding:20px 28px 60px;display:grid;gap:16px;}
+
+/* ── PANELS ── */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);}
+
+/* panel header */
+.ph{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.plang{display:flex;align-items:center;gap:8px;}
+.lbg{padding:3px 9px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.5px;white-space:nowrap;}
+.bjp{background:var(--jp-l);color:var(--jp);border:1px solid rgba(192,57,43,.2);}
+.bvn{background:var(--vn-l);color:var(--vn);border:1px solid rgba(26,107,60,.2);}
+.pt{font-size:13px;color:var(--ink2);}
+.pacts{display:flex;gap:4px;}
+.ibtn{width:27px;height:27px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;color:var(--ink2);}
+.ibtn:hover{background:var(--border);}
+
+/* mic zone */
+.mic-zone{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;}
+.mcb{width:54px;height:54px;border-radius:50%;border:2px solid var(--border2);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .2s cubic-bezier(.16,1,.3,1);flex-shrink:0;box-shadow:0 2px 8px var(--shadow);}
+.mcb:hover{transform:scale(1.05);}
+.mcb.ljp{border-color:var(--jp);background:var(--jp-l);animation:pjp 1.8s ease-in-out infinite;}
+@keyframes pjp{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.25);}50%{box-shadow:0 0 0 12px rgba(192,57,43,0);}}
+.mic-info{flex:1;}
+.mic-st{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);}
+.mic-st.ojp{color:var(--jp);font-weight:500;}
+.mic-hint{font-size:11px;color:var(--ink4);margin-top:2px;}
+.wave{display:flex;align-items:center;gap:2px;height:18px;margin-top:7px;}
+.wave span{width:3px;border-radius:2px;background:var(--jp);opacity:.75;}
+.wave span:nth-child(1){animation:wb .7s ease-in-out infinite;animation-delay:0s;}
+.wave span:nth-child(2){animation:wb .7s ease-in-out infinite;animation-delay:.1s;}
+.wave span:nth-child(3){animation:wb .7s ease-in-out infinite;animation-delay:.2s;}
+.wave span:nth-child(4){animation:wb .7s ease-in-out infinite;animation-delay:.12s;}
+.wave span:nth-child(5){animation:wb .7s ease-in-out infinite;animation-delay:.05s;}
+.wave span:nth-child(6){animation:wb .7s ease-in-out infinite;animation-delay:.18s;}
+@keyframes wb{0%,100%{height:4px;}50%{height:18px;}}
+.wave.hide{display:none;}
+
+/* text area */
+.tpanel{padding:14px 16px;min-height:120px;}
+.tc{font-family:'Noto Serif JP','Noto Serif',serif;font-size:15px;line-height:1.85;color:var(--ink);min-height:68px;white-space:pre-wrap;word-break:break-word;}
+.tc.ph2{color:var(--ink4);font-style:italic;}
+.interim{font-family:'Noto Serif JP',serif;font-size:13px;color:var(--ink3);font-style:italic;margin-top:6px;min-height:16px;}
+
+/* translation */
+.trw{padding:14px 16px;background:linear-gradient(to bottom,var(--surface2),var(--surface));border-top:1px solid var(--border);}
+.trl{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink4);margin-bottom:9px;display:flex;align-items:center;gap:6px;}
+.trl::before{content:'';width:16px;height:1px;background:var(--border2);}
+.trt{font-family:'Noto Serif','Noto Serif JP',serif;font-size:16px;line-height:2;color:var(--ink);min-height:56px;white-space:pre-wrap;word-break:break-word;}
+.trt.loading{font-size:14px;color:var(--ink3);display:flex;align-items:center;gap:8px;}
+.spinner{width:13px;height:13px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* term highlight */
+.thl{background:#fff8dc;border-bottom:2px dotted var(--gold);cursor:help;border-radius:2px;}
+
+/* romaji */
+.romaji{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);margin-top:3px;font-style:italic;display:none;}
+.romaji.show{display:block;}
+.tooltip{position:fixed;background:#1a1714;color:#fff;padding:8px 12px;border-radius:9px;font-family:'IBM Plex Mono',monospace;font-size:11px;z-index:600;pointer-events:none;display:none;max-width:240px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+.tooltip.show{display:block;}
+.tip-jp{color:#ffd080;font-size:12px;font-weight:500;}
+.tip-vn{color:#a0e8b0;margin-top:3px;}
+.tip-desc{color:#9a9590;margin-top:3px;font-size:10px;}
+
+/* ── SECTIONS ── */
+.sbox{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);}
+.shd{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;}
+.stl{font-size:11px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);display:flex;align-items:center;gap:7px;}
+.cbg{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:10px;color:var(--ink3);}
+
+/* glossary */
+.glad{display:flex;gap:7px;padding:11px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.glinp{flex:1;min-width:100px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface2);color:var(--ink);outline:none;}
+.glinp:focus{border-color:var(--gold);}
+.gldesc{width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface2);color:var(--ink);outline:none;margin-top:4px;}
+.gldesc:focus{border-color:var(--gold);}
+.glbtn{padding:6px 14px;border-radius:7px;border:1px solid rgba(26,107,60,.3);background:var(--vn-l);color:var(--vn);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.glbtn:hover{background:var(--vn);color:#fff;}
+.gllist{padding:10px 16px;display:flex;flex-wrap:wrap;gap:6px;min-height:42px;}
+.gltag{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border2);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink2);}
+.glarr{color:var(--gold);}
+.gltag button{border:none;background:none;cursor:pointer;color:var(--ink3);font-size:12px;line-height:1;padding:0;margin-left:2px;}
+.gltag button:hover{color:var(--jp);}
+
+/* history - table layout */
+.hlist{max-height:380px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.hi{display:grid;grid-template-columns:52px 1fr 1fr 120px;padding:0 16px;border-bottom:1px solid var(--border);}
+.hi:last-child{border-bottom:none;}
+.hi:hover{background:var(--surface2);}
+.hcell{padding:11px 8px 11px 0;font-size:13px;line-height:1.65;}
+.hcell.time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink4);padding-top:13px;}
+.hcell.orig{font-family:'Noto Serif JP',serif;color:var(--ink2);}
+.hcell.trans{color:var(--ink);border-left:1.5px solid var(--border2);padding-left:10px;}
+.hcell.notecol{display:flex;flex-direction:column;gap:4px;padding-top:12px;}
+.ltg{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:4px;margin-bottom:3px;}
+.tjp{background:var(--jp-l);color:var(--jp);}
+.tvn{background:var(--vn-l);color:var(--vn);}
+.nbg{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 7px;background:#fff8e6;border:1px solid #f0c040;color:#8a6500;border-radius:6px;cursor:pointer;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nbg:hover{background:#fef0c0;}
+.anote{padding:3px 8px;border:1px dashed var(--border2);border-radius:6px;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);transition:all .15s;}
+.anote:hover{border-color:var(--gold);color:var(--gold);}
+.est{padding:36px 16px;text-align:center;color:var(--ink4);font-size:13px;font-style:italic;}
+
+/* sessions */
+.sslist{max-height:180px;overflow-y:auto;}
+.ssitem{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;transition:background .15s;}
+.ssitem:last-child{border-bottom:none;}
+.ssitem:hover{background:var(--surface2);}
+.ssinf{flex:1;cursor:pointer;}
+.ssnm{font-size:13px;font-weight:600;color:var(--ink);}
+.ssmeta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:2px;}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(26,23,20,.5);z-index:500;display:none;align-items:center;justify-content:center;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border-radius:14px;padding:22px;width:420px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.mtitle{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px;}
+.mta{width:100%;min-height:100px;font-family:'Noto Serif',serif;font-size:14px;border:1px solid var(--border2);border-radius:9px;padding:10px 12px;background:var(--surface2);color:var(--ink);outline:none;resize:vertical;line-height:1.6;}
+.mta:focus{border-color:var(--gold);}
+.mhint{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:5px;}
+.macts{display:flex;justify-content:flex-end;gap:7px;margin-top:11px;}
+.mbtn{padding:7px 17px;border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;transition:all .15s;border:1px solid var(--border2);}
+.mbtn.p{background:var(--ink);color:#fff;border-color:var(--ink);}
+.mbtn.p:hover{background:#333;}
+.mbtn.c{background:var(--surface2);color:var(--ink2);}
+.mbtn.c:hover{background:var(--border);}
+
+/* fullscreen */
+body.fs .toolbar,body.fs .panels>.panel:first-child,body.fs .glsec,body.fs .sssec{display:none;}
+body.fs .panels{grid-template-columns:1fr;}
+body.fs .trt{font-size:26px !important;line-height:2.1;}
+body.fs main{padding-top:74px;}
+.fsexit{display:none;position:fixed;top:62px;right:16px;z-index:300;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;color:var(--ink2);box-shadow:0 4px 12px var(--shadow);}
+body.fs .fsexit{display:block;}
+
+/* toast */
+.toast{position:fixed;bottom:22px;right:22px;background:#1a1714;color:#fff;padding:9px 15px;border-radius:9px;font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;pointer-events:none;max-width:300px;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+@media(max-width:820px){
+  .panels{grid-template-columns:1fr;}
+  .hi{grid-template-columns:44px 1fr 1fr;}
+  .hcell.notecol{display:none;}
+  header{padding:0 16px;}
+  .api-inp{width:130px;}
+  main{padding:14px 16px 48px;}
+  .toolbar{padding:7px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip">
+  <div class="tip-jp" id="tipJp"></div>
+  <div class="tip-vn" id="tipVn"></div>
+  <div class="tip-desc" id="tipDesc"></div>
+</div>
+
+<div class="overlay" id="noteModal">
+  <div class="modal">
+    <div class="mtitle">📝 Ghi chú</div>
+    <textarea class="mta" id="noteInp" placeholder="Action item, điểm cần theo dõi..."></textarea>
+    <div class="mhint">Ctrl+Enter để lưu · Esc để đóng</div>
+    <div class="macts">
+      <button class="mbtn c" onclick="closeNote()">Hủy</button>
+      <button class="mbtn p" onclick="saveNote()">Lưu ghi chú</button>
+    </div>
+  </div>
+</div>
+
+<button class="fsexit" onclick="toggleFS()">✕ Thoát toàn màn hình</button>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="lmark"></div>
+    <div class="logo-text">
+      <div class="ltitle">
+        Phiên Dịch Họp · Nhật → Việt
+        <span class="vbadge">v6.0</span>
+      </div>
+      <div class="lsub">Dịch realtime · Nhật → Việt</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="api-pill">
+      <span class="api-lbl">Khoá API</span>
+      <div class="api-sep"></div>
+      <input type="password" class="api-inp" id="apiKey" placeholder="sk-ant-api03-..." oninput="checkKey()">
+      <div class="api-dot" id="aDot"></div>
+      <button class="clr-btn" id="clrKey" onclick="clearKey()" title="Xóa key">✕</button>
+    </div>
+  </div>
+</header>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="tbb on" id="annoBtn" onclick="toggleAnno()">💡 Chú thích: BẬT</button>
+  <button class="tbb" id="romajiBtn" onclick="toggleRomaji()">あ Romaji</button>
+  <div class="tsep"></div>
+  <button class="tbb" onclick="exportTxt()">📄 Xuất .txt</button>
+  <button class="tbb" onclick="exportCsv()">📊 Xuất .csv</button>
+  <span class="kb-hint">Space = Mic · Esc = Xóa · Ctrl+S = Xuất</span>
+</div>
+
+<main>
+  <!-- PANELS -->
+  <div class="panels">
+    <!-- JP Input -->
+    <div class="panel">
+      <div class="ph">
+        <div class="plang">
+          <span class="lbg bjp">JP</span>
+          <span class="pt">Tiếng Nhật</span>
+        </div>
+        <div class="pacts">
+          <button class="ibtn" onclick="copyOrig()" title="Sao chép">📋</button>
+          <button class="ibtn" onclick="clearInput()" title="Xóa">🗑️</button>
+        </div>
+      </div>
+      <div class="mic-zone">
+        <button class="mcb" id="micBtn" onclick="toggleMic()">🎤</button>
+        <div class="mic-info">
+          <div class="mic-st" id="micSt">Nhấn 🎤 hoặc Space để bắt đầu</div>
+          <div class="mic-hint" id="micHint">Nhận diện tiếng Nhật · Tự động dịch sang tiếng Việt</div>
+          <div class="wave hide" id="waveAnim">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="tpanel">
+        <div class="tc ph2" id="inpTxt">Nội dung nhận diện giọng nói sẽ hiện ở đây...</div>
+        <div class="interim" id="intTxt"></div>
+      </div>
+    </div>
+
+    <!-- VN Translation -->
+    <div class="panel">
+      <div class="ph">
+        <div class="plang">
+          <span class="lbg bvn">VN</span>
+          <span class="pt">Tiếng Việt (Bản dịch)</span>
+        </div>
+        <div class="pacts">
+          <button class="ibtn" onclick="retranslate()" title="Dịch lại">🔄</button>
+          <button class="ibtn" onclick="copyTrans()" title="Sao chép">📋</button>
+        </div>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:center;min-height:86px;border-bottom:1px solid var(--border);">
+        <div style="text-align:center;color:var(--ink4);font-size:13px;font-style:italic;" id="trHint">
+          Bản dịch tự động xuất hiện sau khi nhận diện xong
+        </div>
+      </div>
+      <div class="trw">
+        <div class="trl">Bản dịch</div>
+        <div class="trt" id="trTxt"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY -->
+  <div class="sbox glsec">
+    <div class="shd">
+      <span class="stl">📖 Từ điển riêng <span class="cbg" id="glCnt">0</span></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink4);">Thuật ngữ highlight vàng trong bản dịch · hover để xem giải thích</span>
+    </div>
+    <div class="glad">
+      <input class="glinp" id="glJp" placeholder="Tiếng Nhật (vd: 納期)" onkeydown="if(event.key==='Enter')addGl()">
+      <input class="glinp" id="glVn" placeholder="Tiếng Việt (vd: Hạn giao hàng)" onkeydown="if(event.key==='Enter')addGl()">
+      <button class="glbtn" onclick="addGl()">+ Thêm</button>
+      <input class="gldesc" id="glDesc" placeholder="Giải thích thêm (tùy chọn — hiện khi hover vào từ được highlight)" onkeydown="if(event.key==='Enter')addGl()">
+    </div>
+    <div class="gllist" id="glList">
+      <span style="font-size:12px;color:var(--ink4);font-style:italic;">Chưa có thuật ngữ. Thêm để AI dịch chính xác và highlight trong bản dịch.</span>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="sbox">
+    <div class="shd">
+      <span class="stl">📜 Biên bản họp <span class="cbg" id="hstCnt">0</span></span>
+      <div style="display:flex;gap:5px;">
+        <button class="tbb" onclick="exportTxt()">📄 .txt</button>
+        <button class="tbb" onclick="exportCsv()">📊 .csv</button>
+        <button class="tbb" onclick="clearHist()" style="color:var(--jp);">🗑️ Xóa</button>
+      </div>
+    </div>
+    <div class="hlist" id="hstList">
+      <div class="est">Lịch sử dịch xuất hiện tại đây trong suốt buổi họp</div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let isListen=false,rec=null,trTimer=null;
+let hist=[],gloss=[],sessions=[];
+let curOrig='',curTr='';
+let annoOn=true,romajiOn=false,noteIdx=null;
+let sentences=[]; // stores {jp, vn, romaji} per sentence
+
+// ── API KEY ──
+function checkKey(){
+  const k=document.getElementById('apiKey').value.trim();
+  const d=document.getElementById('aDot'),cb=document.getElementById('clrKey');
+  if(k.startsWith('sk-ant')&&k.length>20){
+    d.className='api-dot ok';localStorage.setItem('mt_key',k);
+    cb.style.display='inline';showToast('✓ API Key đã lưu');
+  }else if(k.length>0){d.className='api-dot err';cb.style.display='inline';}
+  else{d.className='api-dot';cb.style.display='none';localStorage.removeItem('mt_key');}
+}
+function clearKey(){
+  document.getElementById('apiKey').value='';
+  document.getElementById('aDot').className='api-dot';
+  document.getElementById('clrKey').style.display='none';
+  localStorage.removeItem('mt_key');showToast('Đã xóa API Key');
+}
+function getKey(){return document.getElementById('apiKey').value.trim();}
+
+// ── ANNOTATION ──
+function toggleAnno(){
+  annoOn=!annoOn;
+  const b=document.getElementById('annoBtn');
+  b.className=annoOn?'tbb on':'tbb';
+  b.textContent=annoOn?'💡 Chú thích: BẬT':'💡 Chú thích';
+  showToast(annoOn?'💡 Chú thích đã bật':'Đã tắt chú thích');
+  if(curTr)renderAnno(curTr);
+}
+function renderAnno(text){
+  const el=document.getElementById('trTxt');
+  el.className='trt';el.style.color='var(--ink)';el.style.fontStyle='normal';
+  if(!annoOn||!gloss.length){el.textContent=text;return;}
+  let html=esc(text);
+  gloss.forEach((g,i)=>{
+    if(!g.vn)return;
+    const re=new RegExp('('+escRe(esc(g.vn))+')','g');
+    html=html.replace(re,`<span class="thl" data-gi="${i}">$1</span>`);
+  });
+  el.innerHTML=html;
+  el.querySelectorAll('.thl').forEach(s=>{
+    s.addEventListener('mouseenter',showTip);
+    s.addEventListener('mousemove',moveTip);
+    s.addEventListener('mouseleave',hideTip);
+  });
+}
+function showTip(e){
+  const g=gloss[+e.target.dataset.gi];if(!g)return;
+  document.getElementById('tipJp').textContent=g.jp||'';
+  document.getElementById('tipVn').textContent='→ '+g.vn;
+  document.getElementById('tipDesc').textContent=g.desc||'';
+  moveTip(e);document.getElementById('tooltip').className='tooltip show';
+}
+function moveTip(e){
+  const t=document.getElementById('tooltip');
+  t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-10)+'px';
+}
+function hideTip(){document.getElementById('tooltip').className='tooltip';}
+
+// ── ROMAJI ──
+function toggleRomaji(){
+  romajiOn=!romajiOn;
+  const b=document.getElementById('romajiBtn');
+  b.className=romajiOn?'tbb on':'tbb';
+  b.textContent=romajiOn?'あ Romaji: BẬT':'あ Romaji';
+  document.querySelectorAll('.romaji').forEach(el=>{
+    el.className=romajiOn?'romaji show':'romaji';
+  });
+  showToast(romajiOn?'あ Romaji đã bật':'Đã tắt Romaji');
+}
+
+// ── RETRANSLATE ──
+function retranslate(){
+  if(!curOrig){showToast('Chưa có nội dung để dịch lại');return;}
+  showToast('🔄 Đang dịch lại...');
+  doTr(curOrig,true);
+}
+
+// ── GLOSSARY ──
+function addGl(){
+  const jp=document.getElementById('glJp').value.trim();
+  const vn=document.getElementById('glVn').value.trim();
+  const desc=document.getElementById('glDesc').value.trim();
+  if(!jp||!vn){showToast('Nhập cả tiếng Nhật và tiếng Việt');return;}
+  gloss.push({jp,vn,desc});
+  document.getElementById('glJp').value='';
+  document.getElementById('glVn').value='';
+  document.getElementById('glDesc').value='';
+  saveGl();renderGl();showToast('✓ '+jp+' → '+vn);
+}
+function rmGl(i){gloss.splice(i,1);saveGl();renderGl();}
+function renderGl(){
+  const el=document.getElementById('glList');
+  document.getElementById('glCnt').textContent=gloss.length;
+  if(!gloss.length){el.innerHTML='<span style="font-size:12px;color:var(--ink4);font-style:italic;">Chưa có thuật ngữ.</span>';return;}
+  el.innerHTML=gloss.map((g,i)=>`
+    <div class="gltag" title="${esc(g.desc)}">
+      <span>${esc(g.jp)}</span><span class="glarr">→</span><span>${esc(g.vn)}</span>
+      ${g.desc?`<span style="color:var(--ink3);font-size:10px;">(${esc(g.desc.slice(0,22))}${g.desc.length>22?'…':''})</span>`:''}
+      <button onclick="rmGl(${i})">✕</button>
+    </div>`).join('');
+}
+function glPrompt(){
+  if(!gloss.length)return '';
+  return '\n\nCustom glossary — use these exact translations:\n'+gloss.map(g=>`- ${g.jp} = ${g.vn}`).join('\n');
+}
+function saveGl(){localStorage.setItem('mt_gloss',JSON.stringify(gloss));}
+
+// ── MIC ──
+function toggleMic(){if(isListen)stopMic();else startMic();}
+function startMic(){
+  if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){showToast('⚠️ Dùng Chrome để nhận diện giọng nói');return;}
+  if(!getKey()){showToast('⚠️ Nhập API Key trước');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  rec=new SR();rec.lang='ja-JP';rec.continuous=true;rec.interimResults=true;
+  rec.onstart=()=>{
+    isListen=true;
+    document.getElementById('micBtn').className='mcb ljp';
+    document.getElementById('micBtn').textContent='⏹';
+    document.getElementById('micSt').className='mic-st ojp';
+    document.getElementById('micSt').textContent='Đang nghe tiếng Nhật...';
+    document.getElementById('micHint').textContent='Nhấn Space hoặc nút ⏹ để dừng';
+    document.getElementById('waveAnim').classList.remove('hide');
+  };
+  rec.onresult=(e)=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final){
+      // Each final result = one sentence
+      const sentence=final.trim();
+      curOrig+=(curOrig?' ':'')+sentence;
+      setInp(curOrig);
+      document.getElementById('intTxt').textContent='';
+      schedTr(sentence,false,true); // translate new sentence only
+    }
+    if(interim)document.getElementById('intTxt').textContent=interim;
+  };
+  rec.onerror=(e)=>{if(e.error!=='no-speech'&&e.error!=='aborted')showToast('Lỗi mic: '+e.error);stopMic();};
+  rec.onend=()=>{if(isListen)rec.start();};
+  rec.start();
+}
+function stopMic(){
+  isListen=false;if(rec)rec.stop();
+  document.getElementById('micBtn').className='mcb';
+  document.getElementById('micBtn').textContent='🎤';
+  document.getElementById('micSt').className='mic-st';
+  document.getElementById('micSt').textContent='Nhấn để nghe · Space';
+  document.getElementById('micHint').textContent='Microphone sẵn sàng';
+  document.getElementById('waveAnim').classList.add('hide');
+  document.getElementById('intTxt').textContent='';
+}
+
+// ── TRANSLATION ──
+function schedTr(t,isRetranslate=false,isSentence=false){
+  clearTimeout(trTimer);
+  if(!isRetranslate)setLoad();
+  trTimer=setTimeout(()=>doTr(t,isRetranslate,isSentence),600);
+}
+function setLoad(){
+  const el=document.getElementById('trTxt');
+  el.className='trt loading';
+  el.innerHTML='<span class="spinner"></span> Đang dịch...';
+}
+async function doTr(text,isRetranslate=false,isSentence=false){
+  const key=getKey();if(!key)return;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`You are a professional interpreter for Japanese-Vietnamese business meetings.
+Translate the given Japanese text to natural, fluent Vietnamese.
+Keep meaning, nuance and business register faithful.
+Also provide romanized reading (Romaji) of the Japanese text.
+Respond in JSON format exactly like this:
+{"vn":"Vietnamese translation here","romaji":"Romaji reading here"}
+No other text, just the JSON.${glPrompt()}`,
+        messages:[{role:'user',content:text}]
+      })
+    });
+    const d=await r.json();
+    if(d.content&&d.content[0]){
+      let vn=text,romaji='';
+      try{
+        const parsed=JSON.parse(d.content[0].text.trim());
+        vn=parsed.vn||text;romaji=parsed.romaji||'';
+      }catch{vn=d.content[0].text.trim();}
+      curTr=vn;
+      if(isSentence&&!isRetranslate){
+        addHist(text,vn,romaji);
+      }else{
+        // retranslate: update last entry
+        if(hist.length){hist[0].tr=vn;hist[0].romaji=romaji;renderHist();}
+        else addHist(text,vn,romaji);
+      }
+      // show latest translation in panel
+      renderAnno(vn);
+      document.getElementById('trHint').textContent='';
+    }else showErr('Lỗi API: '+(d.error?.message||'Không xác định'));
+  }catch(e){showErr('Không kết nối được API');}
+}
+function showErr(msg){
+  const el=document.getElementById('trTxt');
+  el.className='trt';el.style.color='var(--jp)';el.style.fontStyle='italic';el.textContent='⚠ '+msg;
+}
+
+// ── HISTORY ──
+function addHist(orig,tr,romaji=''){
+  const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  hist.unshift({time:t,orig,tr,romaji,note:''});
+  renderHist();
+  // auto-scroll to top (newest)
+  const el=document.getElementById('hstList');
+  el.scrollTop=0;
+}
+function renderHist(){
+  const el=document.getElementById('hstList');
+  document.getElementById('hstCnt').textContent=hist.length;
+  if(!hist.length){el.innerHTML='<div class="est">Lịch sử dịch xuất hiện tại đây trong suốt buổi họp</div>';return;}
+  el.innerHTML=hist.map((item,i)=>`
+    <div class="hi">
+      <div class="hcell time">${item.time}</div>
+      <div class="hcell orig">
+        <span class="ltg tjp">JP</span><br>
+        ${esc(item.orig)}
+        ${item.romaji?`<div class="romaji${romajiOn?' show':''}">${esc(item.romaji)}</div>`:''}
+      </div>
+      <div class="hcell trans"><span class="ltg tvn">VN</span><br>${esc(item.tr)}</div>
+      <div class="hcell notecol">
+        ${item.note
+          ?`<span class="nbg" onclick="openNote(${i})" title="${esc(item.note)}">📝 ${esc(item.note.slice(0,16))}${item.note.length>16?'…':''}</span>`
+          :`<button class="anote" onclick="openNote(${i})">+ Ghi chú</button>`}
+      </div>
+    </div>`).join('');
+}
+function clearHist(){hist=[];curOrig='';curTr='';renderHist();}
+
+// ── NOTES ──
+function openNote(idx){
+  noteIdx=idx;document.getElementById('noteInp').value=hist[idx].note||'';
+  document.getElementById('noteModal').classList.add('show');
+  setTimeout(()=>document.getElementById('noteInp').focus(),100);
+}
+function closeNote(){document.getElementById('noteModal').classList.remove('show');noteIdx=null;}
+function saveNote(){
+  if(noteIdx===null)return;
+  hist[noteIdx].note=document.getElementById('noteInp').value.trim();
+  closeNote();renderHist();showToast('✓ Đã lưu ghi chú');
+}
+
+// ── EXPORT ──
+function fileTs(){
+  const n=new Date();
+  const d=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  const t=String(n.getHours()).padStart(2,'0')+'h'+String(n.getMinutes()).padStart(2,'0');
+  return d+'_'+t;
+}
+function exportTxt(){
+  if(!hist.length){showToast('Chưa có nội dung để xuất');return;}
+  const date=new Date().toLocaleDateString('vi-VN');
+  let txt=`BIÊN BẢN CUỘC HỌP\nNgày: ${date}\n${'═'.repeat(56)}\n\n`;
+  [...hist].reverse().forEach(item=>{
+    txt+=`[${item.time}]\n🇯🇵 ${item.orig}\n🇻🇳 ${item.tr}\n`;
+    if(item.note)txt+=`📝 Ghi chú: ${item.note}\n`;
+    txt+='\n';
+  });
+  if(gloss.length){
+    txt+=`\n${'─'.repeat(56)}\nTỪ ĐIỂN RIÊNG (${gloss.length} thuật ngữ)\n`;
+    gloss.forEach(g=>{txt+=`${g.jp} → ${g.vn}${g.desc?' | '+g.desc:''}\n`;});
+  }
+  dl('bien-ban-'+fileTs()+'.txt',txt,'text/plain');showToast('✓ Đã xuất .txt');
+}
+function exportCsv(){
+  if(!hist.length){showToast('Chưa có nội dung để xuất');return;}
+  let csv='Thời gian,Tiếng Nhật,Tiếng Việt,Ghi chú\n';
+  [...hist].reverse().forEach(item=>{
+    csv+=`"${item.time}","${item.orig.replace(/"/g,'""')}","${item.tr.replace(/"/g,'""')}","${(item.note||'').replace(/"/g,'""')}"\n`;
+  });
+  dl('bien-ban-'+fileTs()+'.csv','\uFEFF'+csv,'text/csv');showToast('✓ Đã xuất .csv');
+}
+function dl(name,content,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;a.click();
+}
+
+// ── HELPERS ──
+function setInp(t){const el=document.getElementById('inpTxt');el.className='tc';el.textContent=t;}
+function clearInput(){
+  if(isListen)stopMic();curOrig='';curTr='';
+  document.getElementById('inpTxt').className='tc ph2';
+  document.getElementById('inpTxt').textContent='Nội dung nhận diện giọng nói sẽ hiện ở đây...';
+  document.getElementById('intTxt').textContent='';
+  const tt=document.getElementById('trTxt');
+  tt.className='trt';tt.style.color='';tt.style.fontStyle='';tt.textContent='';
+  document.getElementById('trHint').textContent='Bản dịch tự động xuất hiện sau khi nhận diện xong';
+}
+function copyOrig(){if(curOrig){navigator.clipboard.writeText(curOrig);showToast('✓ Đã sao chép văn bản gốc');}else showToast('Chưa có nội dung');}
+function copyTrans(){if(curTr){navigator.clipboard.writeText(curTr);showToast('✓ Đã sao chép bản dịch');}else showToast('Chưa có bản dịch');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+let tTmr;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show';clearTimeout(tTmr);tTmr=setTimeout(()=>t.className='toast',2800);}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA')return;
+  if(e.code==='Space'){e.preventDefault();toggleMic();}
+  if(e.key==='Escape')clearInput();
+  if(e.ctrlKey&&e.key==='s'){e.preventDefault();exportTxt();}
+});
+document.getElementById('noteModal').addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeNote();
+  if(e.ctrlKey&&e.key==='Enter')saveNote();
+});
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  const k=localStorage.getItem('mt_key');
+  if(k){
+    document.getElementById('apiKey').value=k;
+    document.getElementById('aDot').className='api-dot ok';
+    document.getElementById('clrKey').style.display='inline';
+  }
+  const g=localStorage.getItem('mt_gloss');
+  if(g){gloss=JSON.parse(g);renderGl();}
+});
+</script>
+</body>
+</html>
