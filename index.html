@@ -444,6 +444,204 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 .lifeline-btn:disabled{opacity:.3;cursor:not-allowed;}
 .million-prize{font-family:var(--mono);font-size:.78rem;color:var(--orange);font-weight:700;}
 
+
+/* ══ GAMES PAGE REDESIGN ══ */
+.games-page-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 24px; min-height: calc(100vh - 160px); }
+.games-sidebar { display: flex; flex-direction: column; gap: 6px; }
+.games-sidebar-title { font-family: var(--mono); font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding: 0 12px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.game-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 10px; cursor: none;
+  transition: all .18s; border: 1px solid transparent;
+  text-align: left; background: transparent; width: 100%;
+}
+.game-nav-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
+.game-nav-item.active { background: rgba(0,245,212,.08); border-color: rgba(0,245,212,.25); }
+.game-nav-icon { font-size: 1.1rem; width: 28px; text-align: center; flex-shrink: 0; }
+.game-nav-info { text-align: left; min-width: 0; }
+.game-nav-name { font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+.game-nav-tag { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 1px; }
+.game-nav-item.active .game-nav-name { color: var(--cyan); }
+.game-nav-category { font-family: var(--mono); font-size: .58rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding: 10px 14px 4px; }
+
+/* Arena redesign */
+.game-arena-wrap {
+  background: rgba(0,0,0,.25); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+  min-height: 600px;
+}
+.arena-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: rgba(255,255,255,.02);
+  border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;
+}
+.arena-game-title { display: flex; align-items: center; gap: 10px; }
+.arena-game-icon { font-size: 1.3rem; }
+.arena-game-name { font-family: var(--mono); font-size: .82rem; font-weight: 600; color: var(--cyan); letter-spacing: .04em; text-transform: uppercase; }
+.arena-right-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.arena-body { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+.arena-status-bar {
+  text-align: center; padding: 8px 16px; margin-bottom: 14px;
+  font-family: var(--mono); font-size: .76rem; border-radius: 8px;
+  background: rgba(0,245,212,.04); border: 1px solid rgba(0,245,212,.12);
+  color: var(--cyan); min-height: 34px; display: flex; align-items: center; justify-content: center;
+}
+.arena-scores { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+.arena-score-pill {
+  display: flex; align-items: center; gap: 6px; padding: 6px 16px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 100px;
+}
+.arena-score-label { font-family: var(--mono); font-size: .58rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.arena-score-val { font-family: var(--mono); font-size: .9rem; font-weight: 700; color: var(--text); }
+
+/* Empty state */
+.arena-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: var(--muted);
+}
+.arena-empty-icon { font-size: 3rem; opacity: .4; }
+.arena-empty-text { font-family: var(--mono); font-size: .78rem; letter-spacing: .04em; }
+
+/* Game controls */
+.ctrl-select { background: rgba(255,255,255,.05); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 10px; color: var(--text); font-family: var(--mono); font-size: .7rem; outline: none; cursor: none; }
+.ctrl-select option { background: #0d1120; }
+.ctrl-label { font-family: var(--mono); font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.btn-sm { padding: 6px 14px; border-radius: 7px; font-family: var(--mono); font-size: .7rem; font-weight: 600; cursor: none; border: none; transition: all .18s; letter-spacing: .03em; }
+.btn-sm-cyan { background: linear-gradient(135deg,var(--cyan),var(--blue)); color: #03040a; }
+.btn-sm-cyan:hover { box-shadow: 0 4px 14px rgba(0,245,212,.3); }
+.btn-sm-outline { background: var(--glass); color: var(--muted); border: 1px solid var(--border2); }
+.btn-sm-outline:hover { border-color: var(--violet); color: var(--violet); }
+.btn-sm-red { background: rgba(247,37,133,.12); color: var(--pink); border: 1px solid rgba(247,37,133,.2); }
+
+/* ── BLACKJACK ── */
+.bj-table { max-width: 520px; margin: 0 auto; }
+.bj-hand { margin-bottom: 16px; }
+.bj-hand-label { font-family: var(--mono); font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.bj-hand-val { background: rgba(0,245,212,.1); border: 1px solid rgba(0,245,212,.2); color: var(--cyan); padding: 2px 8px; border-radius: 100px; font-size: .62rem; }
+.bj-cards { display: flex; gap: 8px; flex-wrap: wrap; min-height: 80px; align-items: center; }
+.bj-card {
+  width: 52px; height: 76px; border-radius: 8px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem;
+  background: var(--surface); border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 4px 12px rgba(0,0,0,.4); transition: transform .2s; flex-shrink: 0;
+}
+.bj-card.red { color: #ef4444; }
+.bj-card.black { color: #f0f2f8; }
+.bj-card.hidden { background: linear-gradient(135deg,rgba(168,85,247,.3),rgba(0,245,212,.2)); color: transparent; font-size: 1.4rem; }
+.bj-card:hover { transform: translateY(-4px); }
+.bj-card-suit { font-size: .65rem; line-height: 1; }
+.bj-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+.bj-chip { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+.bj-chip-btn { width: 44px; height: 44px; border-radius: 50%; font-family: var(--mono); font-size: .65rem; font-weight: 700; cursor: none; border: 2px solid; transition: all .18s; }
+.bj-chip-btn:hover { transform: scale(1.1); }
+
+/* ── ANAGRAM ── */
+.anagram-wrap { max-width: 480px; margin: 0 auto; text-align: center; }
+.anagram-scrambled { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+.anagram-letter {
+  width: 44px; height: 52px; background: linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,245,212,.15));
+  border: 1px solid rgba(168,85,247,.35); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 1.3rem; font-weight: 800; color: var(--text);
+  cursor: none; transition: all .15s;
+}
+.anagram-letter:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(168,85,247,.3); }
+.anagram-letter.selected { background: rgba(0,245,212,.2); border-color: var(--cyan); color: var(--cyan); }
+.anagram-answer { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; min-height: 52px; }
+.anagram-slot {
+  width: 44px; height: 52px; border: 2px dashed rgba(255,255,255,.15); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 1.3rem; font-weight: 800;
+  cursor: none; color: var(--cyan); transition: all .15s;
+}
+.anagram-slot.filled { border-style: solid; border-color: rgba(0,245,212,.3); background: rgba(0,245,212,.08); }
+.anagram-slot:hover { border-color: rgba(0,245,212,.5); }
+.anagram-hint { font-family: var(--mono); font-size: .75rem; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+.anagram-category { display: inline-block; font-family: var(--mono); font-size: .65rem; padding: 3px 10px; border-radius: 100px; background: rgba(255,107,53,.1); border: 1px solid rgba(255,107,53,.2); color: var(--orange); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── SUDOKU ── */
+.sudoku-board { display: grid; grid-template-columns: repeat(9,1fr); gap: 2px; max-width: 360px; margin: 0 auto; background: rgba(0,245,212,.15); border: 2px solid rgba(0,245,212,.3); border-radius: 10px; padding: 2px; }
+.sudoku-cell {
+  aspect-ratio: 1; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: .82rem; font-weight: 600; color: var(--text);
+  cursor: none; transition: all .15s; border-radius: 3px;
+}
+.sudoku-cell.given { color: var(--cyan); font-weight: 800; background: rgba(0,245,212,.05); }
+.sudoku-cell.selected { background: rgba(168,85,247,.2); border-color: var(--violet); color: var(--violet); }
+.sudoku-cell.highlight { background: rgba(168,85,247,.07); }
+.sudoku-cell.error { background: rgba(247,37,133,.15); color: var(--pink); border-color: var(--pink); }
+.sudoku-cell.correct { background: rgba(6,214,160,.1); color: var(--green); }
+.sudoku-cell:not(.given):hover { background: rgba(255,255,255,.08); }
+.sudoku-cell.box-right { border-right: 2px solid rgba(0,245,212,.25); }
+.sudoku-cell.box-bottom { border-bottom: 2px solid rgba(0,245,212,.25); }
+.sudoku-numpad { display: grid; grid-template-columns: repeat(9,1fr); gap: 4px; max-width: 360px; margin: 10px auto 0; }
+.sudoku-num { aspect-ratio: 1; border-radius: 6px; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: .78rem; font-weight: 700; cursor: none; transition: all .15s; }
+.sudoku-num:hover { background: rgba(0,245,212,.1); border-color: var(--cyan); color: var(--cyan); }
+
+/* ── PONG ── */
+#pong-canvas { border: 1px solid var(--border2); border-radius: 10px; display: block; margin: 0 auto; background: #03040a; }
+.pong-controls { display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--mono); font-size: .65rem; color: var(--muted); }
+
+/* ── FLAPPY BIRD ── */
+#flappy-canvas { border: 1px solid var(--border2); border-radius: 10px; display: block; margin: 0 auto; background: #03040a; cursor: none; }
+
+/* ── SIMON SAYS ── */
+.simon-wrap { max-width: 360px; margin: 0 auto; text-align: center; }
+.simon-board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px auto; max-width: 300px; }
+.simon-btn {
+  aspect-ratio: 1; border-radius: 16px; cursor: none; transition: all .15s;
+  border: 2px solid; display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+}
+.simon-btn.s0 { background: rgba(6,214,160,.15); border-color: rgba(6,214,160,.3); }
+.simon-btn.s1 { background: rgba(76,201,240,.15); border-color: rgba(76,201,240,.3); }
+.simon-btn.s2 { background: rgba(255,107,53,.15); border-color: rgba(255,107,53,.3); }
+.simon-btn.s3 { background: rgba(247,37,133,.15); border-color: rgba(247,37,133,.3); }
+.simon-btn.lit.s0 { background: rgba(6,214,160,.6); box-shadow: 0 0 30px rgba(6,214,160,.5); }
+.simon-btn.lit.s1 { background: rgba(76,201,240,.6); box-shadow: 0 0 30px rgba(76,201,240,.5); }
+.simon-btn.lit.s2 { background: rgba(255,107,53,.6); box-shadow: 0 0 30px rgba(255,107,53,.5); }
+.simon-btn.lit.s3 { background: rgba(247,37,133,.6); box-shadow: 0 0 30px rgba(247,37,133,.5); }
+.simon-level { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; color: var(--cyan); margin-bottom: 8px; }
+
+/* ── CHESS ── */
+.chess-board { display: grid; grid-template-columns: repeat(8,1fr); gap: 0; width: 100%; margin: 0 auto; border: 2px solid rgba(0,245,212,.3); border-radius: 8px; overflow: hidden; }
+.chess-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: clamp(1rem, 3.5vw, 2rem); cursor: none; transition: all .15s; position: relative;
+}
+.chess-cell.light { background: rgba(255,255,255,.07); }
+.chess-cell.dark { background: rgba(0,245,212,.06); }
+.chess-cell.selected { background: rgba(0,245,212,.25) !important; box-shadow: inset 0 0 0 2px var(--cyan); }
+.chess-cell.legal { background: rgba(168,85,247,.2) !important; }
+.chess-cell.legal::after { content: ''; width: 30%; height: 30%; border-radius: 50%; background: rgba(168,85,247,.6); position: absolute; }
+.chess-cell.check { background: rgba(247,37,133,.3) !important; }
+.chess-cell:hover:not(.selected) { filter: brightness(1.3); }
+.chess-label-row { display: flex; width: 100%; margin: 0 auto; }
+.chess-label { flex: 1; text-align: center; font-family: var(--mono); font-size: .58rem; color: var(--muted); padding: 3px; }
+@media(max-width:960px){ .games-page-wrap{grid-template-columns:1fr;} .games-sidebar{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;} .game-nav-category{display:none;} .games-sidebar-title{display:none;} }
+
+
+/* ── CỜ TƯỚNG ── */
+.ct-piece-red{
+  width:86%;height:86%;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ff6b35,#cc2200);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#ffe680;
+  box-shadow:0 2px 8px rgba(255,80,0,.5),inset 0 1px 0 rgba(255,255,255,.2);
+  border:1.5px solid rgba(255,200,0,.5);
+  text-shadow:0 1px 2px rgba(0,0,0,.8);
+}
+.ct-piece-black{
+  width:86%;height:86%;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#2a2a2a,#111);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#e8e8e8;
+  box-shadow:0 2px 8px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.15);
+  text-shadow:0 1px 2px rgba(0,0,0,.8);
+}
+
 </style>
 </head>
 <body>
@@ -628,33 +826,62 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
   <div class="page-content">
     <div class="sec-label">05 — Games</div>
     <h2 class="sec-title">Mini <span class="dim">Games</span></h2>
-    <p class="sec-desc">10 game kinh điển — chơi với bạn bè hoặc thách đấu AI theo cấp độ.</p>
-    <div class="games-grid" id="gamePicker">
-      <div class="game-card" onclick="loadGame('ttt')"><span class="game-icon">❌</span><div class="game-name">Tic Tac Toe</div><div class="game-desc">Caro 3x3</div></div>
-      <div class="game-card" onclick="loadGame('c4')"><span class="game-icon">🔴</span><div class="game-name">Connect Four</div><div class="game-desc">Nối 4 quân</div></div>
-      <div class="game-card" onclick="loadGame('memory')"><span class="game-icon">🧠</span><div class="game-name">Memory Match</div><div class="game-desc">Lật bài tìm cặp</div></div>
-      <div class="game-card" onclick="loadGame('snake')"><span class="game-icon">🐍</span><div class="game-name">Snake</div><div class="game-desc">Rắn săn mồi</div></div>
-      <div class="game-card" onclick="loadGame('minesweeper')"><span class="game-icon">💣</span><div class="game-name">Minesweeper</div><div class="game-desc">Gỡ mìn</div></div>
-      <div class="game-card" onclick="loadGame('wordle')"><span class="game-icon">📝</span><div class="game-name">Wordle</div><div class="game-desc">Đoán từ IT</div></div>
-      <div class="game-card" onclick="loadGame('puzzle')"><span class="game-icon">🔢</span><div class="game-name">Sliding Puzzle</div><div class="game-desc">Sắp xếp số 15</div></div>
-      <div class="game-card" onclick="loadGame('rps')"><span class="game-icon">✊</span><div class="game-name">Rock Paper Scissors</div><div class="game-desc">Oẳn tù tì</div></div>
-      <div class="game-card" onclick="loadGame('quiz')"><span class="game-icon">🧩</span><div class="game-name">Tech Quiz</div><div class="game-desc">Kiến thức IT</div></div>
-      <div class="game-card" onclick="loadGame('reaction')"><span class="game-icon">⚡</span><div class="game-name">Reaction Test</div><div class="game-desc">Tốc độ phản xạ</div></div>
-      <div class="game-card" onclick="loadGame('g2048')"><span class="game-icon">🟦</span><div class="game-name">2048</div><div class="game-desc">Ghép ô số</div></div>
-      <div class="game-card" onclick="loadGame('millionaire')"><span class="game-icon">💰</span><div class="game-name">Ai Là Triệu Phú</div><div class="game-desc">Trả lời 15 câu</div></div>
-    </div>
-    <div id="game-arena">
-      <div class="arena-header">
-        <span class="arena-title" id="arenaTitle">Game</span>
-        <div class="arena-controls" id="arenaControls"></div>
+    <p class="sec-desc">20 game kinh điển — chơi với bạn bè hoặc thách đấu AI theo cấp độ.</p>
+
+    <div class="games-page-wrap">
+      <!-- SIDEBAR NAV -->
+      <div class="games-sidebar" id="gameSidebar">
+        <div class="games-sidebar-title">🎮 Chọn Trò Chơi</div>
+        <button class="game-nav-item" onclick="loadGame('g2048',this)"><span class="game-nav-icon">🟦</span><div class="game-nav-info"><div class="game-nav-name">2048</div><div class="game-nav-tag">Solo · chiến thuật</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('millionaire',this)"><span class="game-nav-icon">💰</span><div class="game-nav-info"><div class="game-nav-name">Ai Là Triệu Phú</div><div class="game-nav-tag">Solo · 15 câu hỏi</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('pong',this)"><span class="game-nav-icon">🏓</span><div class="game-nav-info"><div class="game-nav-name">Bóng Bàn</div><div class="game-nav-tag">vs Máy · cổ điển</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('flappy',this)"><span class="game-nav-icon">🐦</span><div class="game-nav-info"><div class="game-nav-name">Chim Bay</div><div class="game-nav-tag">Solo · tránh ống</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('ttt',this)"><span class="game-nav-icon">⭕</span><div class="game-nav-info"><div class="game-nav-name">Cờ Ca-rô</div><div class="game-nav-tag">vs Bạn · vs Máy</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('cotuong',this)"><span class="game-nav-icon">🀄</span><div class="game-nav-info"><div class="game-nav-name">Cờ Tướng</div><div class="game-nav-tag">vs Máy · 3 cấp độ</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('chess',this)"><span class="game-nav-icon">♟️</span><div class="game-nav-info"><div class="game-nav-name">Cờ Vua</div><div class="game-nav-tag">vs Máy · 3 cấp độ</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('minesweeper',this)"><span class="game-nav-icon">💣</span><div class="game-nav-info"><div class="game-nav-name">Gỡ Mìn</div><div class="game-nav-tag">Solo · tránh mìn</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('memory',this)"><span class="game-nav-icon">🧠</span><div class="game-nav-info"><div class="game-nav-name">Lật Bài</div><div class="game-nav-tag">Solo · tìm cặp</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('simon',this)"><span class="game-nav-icon">🎵</span><div class="game-nav-info"><div class="game-nav-name">Nhớ Màu</div><div class="game-nav-tag">Solo · trí nhớ</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('c4',this)"><span class="game-nav-icon">🟡</span><div class="game-nav-info"><div class="game-nav-name">Nối Bốn</div><div class="game-nav-tag">vs Bạn · vs Máy</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('sudoku',this)"><span class="game-nav-icon">🔢</span><div class="game-nav-info"><div class="game-nav-name">Ô Số Sudoku</div><div class="game-nav-tag">Solo · giải đố</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('rps',this)"><span class="game-nav-icon">✊</span><div class="game-nav-info"><div class="game-nav-name">Oẳn Tù Tì</div><div class="game-nav-tag">vs Bạn · vs Máy</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('reaction',this)"><span class="game-nav-icon">⚡</span><div class="game-nav-info"><div class="game-nav-name">Phản Xạ</div><div class="game-nav-tag">Solo · tốc độ</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('snake',this)"><span class="game-nav-icon">🐍</span><div class="game-nav-info"><div class="game-nav-name">Rắn Săn Mồi</div><div class="game-nav-tag">Solo · điều khiển</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('anagram',this)"><span class="game-nav-icon">🔀</span><div class="game-nav-info"><div class="game-nav-name">Xáo Chữ</div><div class="game-nav-tag">Solo · sắp xếp chữ</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('puzzle',this)"><span class="game-nav-icon">🧩</span><div class="game-nav-info"><div class="game-nav-name">Xếp Hình Số</div><div class="game-nav-tag">Solo · logic</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('blackjack',this)"><span class="game-nav-icon">🃏</span><div class="game-nav-info"><div class="game-nav-name">Xì Dách</div><div class="game-nav-tag">vs Dealer</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('wordle',this)"><span class="game-nav-icon">💬</span><div class="game-nav-info"><div class="game-nav-name">Đoán Từ</div><div class="game-nav-tag">Solo · đoán chữ IT</div></div></button>
+        <button class="game-nav-item" onclick="loadGame('quiz',this)"><span class="game-nav-icon">💡</span><div class="game-nav-info"><div class="game-nav-name">Đố Vui IT</div><div class="game-nav-tag">Solo · kiến thức IT</div></div></button>
       </div>
-      <div class="game-status" id="gameStatus">Chọn một game bên trên để bắt đầu!</div>
-      <div class="score-board" id="scoreboard" style="display:none">
-        <div class="score-item"><span class="score-label" id="p1Label">Bạn</span><span class="score-val" id="p1Score">0</span></div>
-        <div class="score-item"><span class="score-label">Hòa</span><span class="score-val" id="drawScore">0</span></div>
-        <div class="score-item"><span class="score-label" id="p2Label">Máy</span><span class="score-val" id="p2Score">0</span></div>
+
+      <!-- ARENA -->
+      <div class="game-arena-wrap" id="gameArenaWrap">
+        <!-- Empty state -->
+        <div class="arena-empty" id="arenaEmpty">
+          <div class="arena-empty-icon">🎮</div>
+          <div class="arena-empty-text">← Chọn trò chơi để bắt đầu</div>
+        </div>
+
+        <!-- Active game area (hidden until game selected) -->
+        <div id="arenaActive" style="display:none;flex-direction:column;height:100%;">
+          <div class="arena-topbar">
+            <div class="arena-game-title">
+              <span class="arena-game-icon" id="arenaIcon">🎮</span>
+              <span class="arena-game-name" id="arenaTitle">Game</span>
+            </div>
+            <div class="arena-right-controls" id="arenaControls"></div>
+          </div>
+          <div class="arena-body">
+            <div class="arena-status-bar" id="gameStatus">Sẵn sàng!</div>
+            <div class="arena-scores" id="scoreboard" style="display:none">
+              <div class="arena-score-pill"><span class="arena-score-label" id="p1Label">Bạn</span><span class="arena-score-val" id="p1Score">0</span></div>
+              <div class="arena-score-pill"><span class="arena-score-label">Hòa</span><span class="arena-score-val" id="drawScore">0</span></div>
+              <div class="arena-score-pill"><span class="arena-score-label" id="p2Label">Máy</span><span class="arena-score-val" id="p2Score">0</span></div>
+            </div>
+            <div id="gameBoard" style="flex:1"></div>
+          </div>
+        </div>
       </div>
-      <div id="gameBoard"></div>
     </div>
   </div>
 </div>
@@ -722,6 +949,8 @@ function showPage(id) {
   if(id !== 'games' && typeof gameState !== 'undefined') {
     if(gameState.snakeInterval) clearInterval(gameState.snakeInterval);
     if(gameState.reactionTimeout) clearTimeout(gameState.reactionTimeout);
+    if(gameState.pongRAF) cancelAnimationFrame(gameState.pongRAF);
+    if(gameState.flappyRAF) cancelAnimationFrame(gameState.flappyRAF);
   }
   // Home page needs grid layout
   const homeEl = document.getElementById('page-home');
@@ -794,33 +1023,47 @@ let gameState = {};
 let scores = {p1:0, draw:0, p2:0};
 
 const GAMES_META = {
-  ttt:        {name:'Tic Tac Toe',      modes:['vs-friend','vs-ai'],  levels:['Easy','Medium','Hard']},
-  c4:         {name:'Connect Four',     modes:['vs-friend','vs-ai'],  levels:['Easy','Medium','Hard']},
-  memory:     {name:'Memory Match',     modes:['solo'],               levels:['Easy (4x4)','Medium (4x5)','Hard (4x6)']},
-  snake:      {name:'Snake',            modes:['solo'],               levels:['Slow','Normal','Fast']},
-  minesweeper:{name:'Minesweeper',      modes:['solo'],               levels:['Beginner','Intermediate','Expert']},
-  wordle:     {name:'Wordle',           modes:['solo'],               levels:['Easy','Normal','Hard']},
-  puzzle:     {name:'Sliding Puzzle',   modes:['solo'],               levels:['3x3','4x4']},
-  rps:        {name:'Rock Paper Scissors', modes:['vs-friend','vs-ai'], levels:['Easy','Medium','Hard']},
-  quiz:       {name:'Tech Quiz',        modes:['solo'],               levels:['Beginner','Intermediate','Expert']},
-  reaction:   {name:'Reaction Test',    modes:['solo'],               levels:['Normal']},
-  g2048:      {name:'2048',             modes:['solo'],               levels:['Classic']},
-  millionaire:{name:'Ai Là Triệu Phú', modes:['solo'],               levels:['Dễ','Trung bình','Khó']},
+  ttt:        {name:'Cờ Ca-rô',           icon:'⭕', modes:['vs-friend','vs-ai'],  levels:['Dễ','Trung bình','Khó']},
+  c4:         {name:'Nối Bốn',            icon:'🟡', modes:['vs-friend','vs-ai'],  levels:['Dễ','Trung bình','Khó']},
+  cotuong:    {name:'Cờ Tướng',           icon:'🀄', modes:['vs-friend','vs-ai'],  levels:['Dễ','Trung bình','Khó']},
+  chess:      {name:'Cờ Vua',             icon:'♟️', modes:['vs-friend','vs-ai'],  levels:['Dễ','Trung bình','Khó']},
+  sudoku:     {name:'Ô Số Sudoku',        icon:'🔢', modes:['solo'],               levels:['Dễ','Trung bình','Khó']},
+  g2048:      {name:'2048',               icon:'🟦', modes:['solo'],               levels:['Cổ điển']},
+  puzzle:     {name:'Xếp Hình Số',        icon:'🧩', modes:['solo'],               levels:['3x3','4x4']},
+  blackjack:  {name:'Xì Dách',            icon:'🃏', modes:['solo'],               levels:['Vui','Thường','Cược Cao']},
+  rps:        {name:'Oẳn Tù Tì',          icon:'✊', modes:['vs-friend','vs-ai'],  levels:['Dễ','Trung bình','Khó']},
+  wordle:     {name:'Đoán Từ',            icon:'💬', modes:['solo'],               levels:['Dễ','Thường','Khó']},
+  anagram:    {name:'Xáo Chữ',            icon:'🔀', modes:['solo'],               levels:['Dễ','Trung bình','Khó']},
+  quiz:       {name:'Đố Vui IT',          icon:'💡', modes:['solo'],               levels:['Sơ cấp','Trung cấp','Cao cấp']},
+  millionaire:{name:'Ai Là Triệu Phú',   icon:'💰', modes:['solo'],               levels:['Dễ','Trung bình','Khó']},
+  snake:      {name:'Rắn Săn Mồi',        icon:'🐍', modes:['solo'],               levels:['Chậm','Thường','Nhanh']},
+  pong:       {name:'Bóng Bàn',           icon:'🏓', modes:['solo'],               levels:['Dễ','Thường','Khó']},
+  flappy:     {name:'Chim Bay',           icon:'🐦', modes:['solo'],               levels:['Dễ','Thường','Khó']},
+  simon:      {name:'Nhớ Màu',            icon:'🎵', modes:['solo'],               levels:['Bình thường']},
+  memory:     {name:'Lật Bài',            icon:'🧠', modes:['solo'],               levels:['Dễ (4x4)','Vừa (4x5)','Khó (4x6)']},
+  minesweeper:{name:'Gỡ Mìn',             icon:'💣', modes:['solo'],               levels:['Mới bắt đầu','Trung bình','Chuyên gia']},
+  reaction:   {name:'Phản Xạ',            icon:'⚡', modes:['solo'],               levels:['Bình thường']},
 };
 
-function loadGame(id) {
+function loadGame(id, navEl) {
   currentGame = id;
   scores = {p1:0, draw:0, p2:0};
-  // Highlight selected
-  document.querySelectorAll('.game-card').forEach(c=>c.classList.remove('active-game'));
-  event.currentTarget.classList.add('active-game');
-  // Show arena
-  const arena = document.getElementById('game-arena');
-  arena.classList.add('visible');
-  arena.scrollIntoView({behavior:'smooth', block:'nearest'});
-  document.getElementById('arenaTitle').textContent = GAMES_META[id].name;
+  document.querySelectorAll('.game-nav-item').forEach(c=>c.classList.remove('active'));
+  if(navEl) navEl.classList.add('active');
+  // Show arena active panel
+  document.getElementById('arenaEmpty').style.display='none';
+  const active = document.getElementById('arenaActive');
+  active.style.display='flex';
+  const meta = GAMES_META[id];
+  document.getElementById('arenaIcon').textContent = meta.icon || '🎮';
+  document.getElementById('arenaTitle').textContent = meta.name;
   buildArenaControls(id);
   initGame(id);
+  // Scroll arena vào tầm nhìn
+  setTimeout(() => {
+    const arena = document.getElementById('gameArenaWrap');
+    if(arena) arena.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 80);
 }
 
 function buildArenaControls(id) {
@@ -828,18 +1071,18 @@ function buildArenaControls(id) {
   const ctrl = document.getElementById('arenaControls');
   let html = '';
   if (meta.modes.includes('vs-ai')) {
-    html += `<span class="ctrl-label">Mode:</span>
+    html += `<span class="ctrl-label">Chế độ:</span>
     <select class="ctrl-select" id="modeSelect" onchange="initGame('${id}')">
-      <option value="vs-ai">🤖 vs AI</option>
+      <option value="vs-ai">🤖 vs Máy</option>
       <option value="vs-friend">👥 vs Bạn</option>
     </select>`;
   }
-  html += `<span class="ctrl-label">Level:</span>
+  html += `<span class="ctrl-label">Cấp độ:</span>
   <select class="ctrl-select" id="levelSelect" onchange="initGame('${id}')">
     ${meta.levels.map((l,i)=>`<option value="${i}">${l}</option>`).join('')}
   </select>
-  <button class="btn-sm btn-sm-cyan" onclick="initGame('${id}')">🔄 New</button>
-  <button class="btn-sm btn-sm-outline" onclick="closeGame()">✕ Close</button>`;
+  <button class="btn-sm btn-sm-cyan" onclick="initGame('${id}')">🔄 Mới</button>
+  <button class="btn-sm btn-sm-red" onclick="closeGame()">✕</button>`;
   ctrl.innerHTML = html;
 }
 
@@ -858,10 +1101,15 @@ function updateScores(result) {
 }
 
 function closeGame() {
-  document.getElementById('game-arena').classList.remove('visible');
-  document.querySelectorAll('.game-card').forEach(c=>c.classList.remove('active-game'));
-  if(gameState.snakeInterval) clearInterval(gameState.snakeInterval);
-  if(gameState.reactionTimeout) clearTimeout(gameState.reactionTimeout);
+  if(typeof gameState !== 'undefined') {
+    if(gameState.snakeInterval) clearInterval(gameState.snakeInterval);
+    if(gameState.reactionTimeout) clearTimeout(gameState.reactionTimeout);
+    if(gameState.pongRAF) cancelAnimationFrame(gameState.pongRAF);
+    if(gameState.flappyRAF) cancelAnimationFrame(gameState.flappyRAF);
+  }
+  document.querySelectorAll('.game-nav-item').forEach(c=>c.classList.remove('active'));
+  document.getElementById('arenaEmpty').style.display='flex';
+  document.getElementById('arenaActive').style.display='none';
   currentGame=null; gameState={};
 }
 
@@ -870,11 +1118,13 @@ function initGame(id) {
   if(gameState.reactionTimeout) clearTimeout(gameState.reactionTimeout);
   gameState={};
   document.getElementById('p1Label').textContent='Bạn';
-  document.getElementById('p2Label').textContent=getMode()==='vs-ai'?'AI':'P2';
+  document.getElementById('p2Label').textContent=getMode()==='vs-ai'?'Máy':'Người 2';
   const fns={ttt:initTTT,c4:initC4,memory:initMemory,snake:initSnake,
     minesweeper:initMine,wordle:initWordle,puzzle:initPuzzle,
     rps:initRPS,quiz:initQuiz,reaction:initReaction,
-    g2048:init2048,millionaire:initMillionaire};
+    g2048:init2048,millionaire:initMillionaire,
+    blackjack:initBlackjack,anagram:initAnagram,sudoku:initSudoku,
+    pong:initPong,flappy:initFlappy,simon:initSimon,chess:initChess,cotuong:initCoTuong};
   if(fns[id]) fns[id]();
 }
 
@@ -884,7 +1134,7 @@ function initGame(id) {
 function initTTT() {
   gameState = {board:Array(9).fill(''), turn:'X', over:false};
   document.getElementById('scoreboard').style.display='flex';
-  setStatus("Lượt của bạn — X");
+  setStatus("Lượt bạn — X");
   document.getElementById('gameBoard').innerHTML = `
     <div class="ttt-grid" id="tttGrid">
       ${Array(9).fill(0).map((_,i)=>`<div class="ttt-cell" id="tc${i}" onclick="tttClick(${i})"></div>`).join('')}
@@ -898,7 +1148,7 @@ function tttClick(i) {
   const w=tttWinner(s.board);
   if(w){tttEnd(w);return;}
   if(s.board.every(c=>c)){setStatus('Hòa! 🤝','var(--orange)');updateScores('draw');s.over=true;return;}
-  if(getMode()==='vs-ai'&&s.turn==='X'){s.turn='O';setStatus('AI đang suy nghĩ…','var(--muted)');setTimeout(()=>tttAI(),400);}
+  if(getMode()==='vs-ai'&&s.turn==='X'){s.turn='O';setStatus('Máy đang suy nghĩ...','var(--muted)');setTimeout(()=>tttAI(),400);}
   else{s.turn=s.turn==='X'?'O':'X';setStatus(`Lượt ${s.turn}`);}
 }
 function tttAI() {
@@ -914,7 +1164,7 @@ function tttAI() {
   const w=tttWinner(s.board);
   if(w){tttEnd(w);return;}
   if(s.board.every(c=>c)){setStatus('Hòa! 🤝','var(--orange)');updateScores('draw');s.over=true;return;}
-  s.turn='X';setStatus('Lượt của bạn — X');
+  s.turn='X';setStatus('Lượt bạn — X');
 }
 function tttMinimax(board,player,isMax,depth) {
   const w=tttWinner(board);
@@ -941,7 +1191,7 @@ function tttEnd(w) {
   const s=gameState; s.over=true;
   const line=TTT_LINES.find(([a,b,c])=>s.board[a]&&s.board[a]===s.board[b]&&s.board[a]===s.board[c]);
   line.forEach(i=>document.getElementById('tc'+i).classList.add('win-cell'));
-  const winner = w==='X'?'Bạn':'AI';
+  const winner = w==='X'?'Bạn':'Máy';
   const col = w==='X'?'var(--cyan)':'var(--pink)';
   setStatus(`${winner} thắng! 🎉`, col);
   updateScores(w==='X'?'p1':'p2');
@@ -979,8 +1229,8 @@ function c4Drop(col) {
   if(c4Check(s.board,row,col,1)){c4End(1);return;}
   if(s.board[0].every((_,c)=>c4FindRow(s.board,c)<0)){setStatus('Hòa!','var(--orange)');updateScores('draw');s.over=true;return;}
   s.turn=2;
-  if(getMode()==='vs-ai'){setStatus('AI đang tính…','var(--muted)');setTimeout(()=>c4AI(),450);}
-  else setStatus('Lượt P2 🔴');
+  if(getMode()==='vs-ai'){setStatus('Máy đang tính...','var(--muted)');setTimeout(()=>c4AI(),450);}
+  else setStatus('Lượt Người 2 🔴');
 }
 function c4FindRow(b,col){for(let r=5;r>=0;r--) if(!b[r][col]) return r; return -1;}
 function c4AI() {
@@ -1019,7 +1269,7 @@ function c4Check(b,r,c,p) {
 }
 function c4End(p) {
   const s=gameState; s.over=true;
-  const w=p===1?'Bạn':'AI'; const col=p===1?'var(--cyan)':'var(--pink)';
+  const w=p===1?'Bạn':'Máy'; const col=p===1?'var(--cyan)':'var(--pink)';
   setStatus(`${w} thắng! 🎉`,col); updateScores(p===1?'p1':'p2');
 }
 
@@ -1037,8 +1287,8 @@ function initMemory() {
   setStatus('Lật 2 thẻ giống nhau để ghép đôi 🧠');
   document.getElementById('gameBoard').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;max-width:420px;margin:0 auto 12px;">
-      <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Moves: <span id="memMoves" style="color:var(--cyan);">0</span></span>
-      <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Pairs: <span id="memPairs" style="color:var(--green);">0</span>/${pairs}</span>
+      <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Số bước: <span id="memMoves" style="color:var(--cyan);">0</span></span>
+      <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Cặp: <span id="memPairs" style="color:var(--green);">0</span>/${pairs}</span>
     </div>
     <div class="memory-grid" style="grid-template-columns:repeat(${cols},1fr);" id="memGrid">
       ${cards.map((_,i)=>`<div class="mem-card" id="mc${i}" onclick="memFlip(${i})">❓</div>`).join('')}
@@ -1104,6 +1354,7 @@ function initSnake() {
   document.addEventListener('keydown',snakeKey);
 }
 function snakeKey(e) {
+  if(!gameState||!gameState.snake) return;
   const map={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},
     w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0},W:{x:0,y:-1},S:{x:0,y:1},A:{x:-1,y:0},D:{x:1,y:0}};
   if(map[e.key]){e.preventDefault();snakeDir(map[e.key].x,map[e.key].y);}
@@ -1121,7 +1372,7 @@ function snakeTick() {
   const head={x:s.snake[0].x+s.dir.x,y:s.snake[0].y+s.dir.y};
   if(head.x<0||head.x>=s.W||head.y<0||head.y>=s.H||s.snake.some(p=>p.x===head.x&&p.y===head.y)){
     s.over=true;clearInterval(s.snakeInterval);
-    setStatus(`Game Over! Điểm: ${s.score} 💀`,'var(--pink)');return;
+    setStatus(`Thua rồi! Điểm: ${s.score} 💀`,'var(--pink)');return;
   }
   s.snake.unshift(head);
   if(head.x===s.food.x&&head.y===s.food.y){
@@ -1162,7 +1413,7 @@ function initMine() {
   const revealed=Array(R).fill(0).map(()=>Array(C).fill(false));
   gameState={R,C,M,board,flags,revealed,started:false,over:false,first:true};
   document.getElementById('scoreboard').style.display='none';
-  setStatus(`💣 ${M} quả mìn — Click chuột trái mở, phải cắm cờ`);
+  setStatus(`💣 ${M} quả mìn — Nhấp trái để mở, nhấp phải cắm cờ`);
   renderMine();
 }
 function minePlace(fr,fc) {
@@ -1183,12 +1434,12 @@ function mineClick(r,c) {
   if(s.board[r][c]===-1){
     s.revealed[r][c]=true;s.over=true;
     for(let i=0;i<s.R;i++) for(let j=0;j<s.C;j++) if(s.board[i][j]===-1) s.revealed[i][j]=true;
-    renderMine();setStatus('💥 Bạn đã chạm mìn! Game Over','var(--pink)');return;
+    renderMine();setStatus('💥 Bạn đã chạm mìn! Thua rồi','var(--pink)');return;
   }
   mineReveal(r,c);renderMine();
   const safe=s.R*s.C-s.M;
   const rev=s.revealed.flat().filter(Boolean).length;
-  if(rev>=safe){s.over=true;setStatus('🎉 Chiến thắng! Tất cả ô an toàn đã mở!','var(--green)');}
+  if(rev>=safe){s.over=true;setStatus('🎉 Thắng rồi! Tất cả ô an toàn đã mở!','var(--green)');}
 }
 function mineReveal(r,c) {
   const s=gameState;
@@ -1228,7 +1479,7 @@ function initWordle() {
   document.addEventListener('keydown',wordleKey);
 }
 function wordleKey(e){
-  if(!currentGame==='wordle'&&!gameState.word) return;
+  if(!gameState||!gameState.word) return;
   if(gameState.over) return;
   if(e.key==='Enter'){wordleSubmit();}
   else if(e.key==='Backspace'){gameState.currentGuess=gameState.currentGuess.slice(0,-1);renderWordle();}
@@ -1245,10 +1496,10 @@ function wordlePress(k){
 }
 function wordleSubmit(){
   const s=gameState;
-  if(s.currentGuess.length!==5){setStatus('Cần đủ 5 chữ!','var(--orange)');return;}
+  if(s.currentGuess.length!==5){setStatus('Cần đủ 5 chữ cái!','var(--orange)');return;}
   s.guesses.push(s.currentGuess);
   if(s.currentGuess===s.word){s.over=true;setStatus('🎉 Xuất sắc!','var(--green)');updateScores('p1');}
-  else if(s.guesses.length>=s.maxGuess){s.over=true;setStatus(`Từ đúng: ${s.word}`,'var(--pink)');updateScores('p2');}
+  else if(s.guesses.length>=s.maxGuess){s.over=true;setStatus(`Từ đúng là: ${s.word}`,'var(--pink)');updateScores('p2');}
   s.currentGuess='';renderWordle();
 }
 function wordleEval(guess,word){
@@ -1291,7 +1542,7 @@ function initPuzzle(){
   while(!puzzleSolvable(tiles,n)||puzzleSolved(tiles));
   gameState={tiles,n,moves:0};
   document.getElementById('scoreboard').style.display='none';
-  setStatus(`Sắp xếp các ô số theo thứ tự từ 1 đến ${n*n-1} 🔢`);
+  setStatus(`Sắp xếp ô số từ 1 đến ${n*n-1} 🔢`);
   renderPuzzle();
 }
 function puzzleSolvable(t,n){
@@ -1314,7 +1565,7 @@ function puzzleClick(i){
 function renderPuzzle(){
   const {tiles,n,moves}=gameState;
   document.getElementById('gameBoard').innerHTML=`
-    <div style="text-align:center;margin-bottom:10px;font-family:var(--mono);font-size:.72rem;color:var(--muted);">Moves: <span style="color:var(--cyan)">${moves}</span></div>
+    <div style="text-align:center;margin-bottom:10px;font-family:var(--mono);font-size:.72rem;color:var(--muted);">Số bước: <span style="color:var(--cyan)">${moves}</span></div>
     <div class="puzzle-grid" style="grid-template-columns:repeat(${n},1fr);max-width:${n*70}px;">
       ${tiles.map((v,i)=>`<div class="puzzle-tile ${v?'num':'empty'}" onclick="puzzleClick(${i})" style="font-size:${n===3?'1.4rem':'1rem'}">${v||''}</div>`).join('')}
     </div>`;
@@ -1323,13 +1574,13 @@ function renderPuzzle(){
 // ══════════════════════
 // 8. ROCK PAPER SCISSORS
 // ══════════════════════
-const RPS_ITEMS=['✊','✋','✌️'];const RPS_NAMES=['Rock','Paper','Scissors'];
+const RPS_ITEMS=['✊','✋','✌️'];const RPS_NAMES=['Đá','Giấy','Kéo'];
 const RPS_BEATS={0:2,1:0,2:1};
 function initRPS(){
   gameState={history:[],round:0};
   document.getElementById('scoreboard').style.display='flex';
   document.getElementById('p1Label').textContent='Bạn';
-  document.getElementById('p2Label').textContent=getMode()==='vs-ai'?'AI':'P2';
+  document.getElementById('p2Label').textContent=getMode()==='vs-ai'?'Máy':'Người 2';
   setStatus('Chọn: ✊ ✋ ✌️');
   renderRPS();
 }
@@ -1337,7 +1588,7 @@ function rpsPlay(choice){
   const s=gameState,mode=getMode(),lv=getLevel();
   let ai;
   if(mode==='vs-friend'){
-    if(!s.waitingP2){s.p1Choice=choice;s.waitingP2=true;setStatus('P2 chọn đi!');return;}
+    if(!s.waitingP2){s.p1Choice=choice;s.waitingP2=true;setStatus('Người 2 chọn đi!');return;}
     ai=choice; choice=s.p1Choice; s.waitingP2=false;
   } else {
     // AI strategy by level
@@ -1371,7 +1622,7 @@ function renderRPS(p1,p2,msg){
     mid=`<div class="rps-result">
       <div class="rps-pick"><span class="rps-pick-icon">${RPS_ITEMS[p1]}</span><span class="rps-pick-label">Bạn</span></div>
       <span class="rps-vs">VS</span>
-      <div class="rps-pick"><span class="rps-pick-icon">${RPS_ITEMS[p2]}</span><span class="rps-pick-label">${getMode()==='vs-ai'?'AI':'P2'}</span></div>
+      <div class="rps-pick"><span class="rps-pick-icon">${RPS_ITEMS[p2]}</span><span class="rps-pick-label">${getMode()==='vs-ai'?'Máy':'Người 2'}</span></div>
     </div>`;
   }
   document.getElementById('gameBoard').innerHTML=`
@@ -1379,7 +1630,7 @@ function renderRPS(p1,p2,msg){
     <div class="rps-options">
       ${RPS_ITEMS.map((ic,i)=>`<button class="rps-btn" onclick="rpsPlay(${i})" title="${RPS_NAMES[i]}">${ic}</button>`).join('')}
     </div>
-    <div style="text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--muted);">Round ${s.round} — Click để chơi tiếp</div>`;
+    <div style="text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--muted);">Vòng ${s.round} — Nhấp để chơi tiếp</div>`;
 }
 
 // ══════════════════════
@@ -1412,7 +1663,7 @@ function initQuiz(){
   const pool=[...QUIZ_BANK].sort(()=>Math.random()-.5).slice(0,QUIZ_COUNTS[getLevel()]);
   gameState={pool,idx:0,score:0,answered:false};
   document.getElementById('scoreboard').style.display='none';
-  setStatus(`Quiz IT — ${pool.length} câu hỏi 🧩`);
+  setStatus(`Câu đố IT — ${pool.length} câu hỏi 🧩`);
   renderQuiz();
 }
 function quizAnswer(i){
@@ -1453,15 +1704,15 @@ function renderQuiz(){
 function initReaction(){
   gameState={state:'idle',times:[],best:null,timer:null};
   document.getElementById('scoreboard').style.display='none';
-  setStatus('Click vào ô xanh khi nó xuất hiện ⚡');
+  setStatus('Nhấp vào ô xanh khi nó xuất hiện ⚡');
   renderReaction('wait');
 }
 function renderReaction(state,ms){
   const s=gameState;
-  const msgs={wait:'⏳ Chờ...',ready:'🟠 Sẵn sàng...',go:'⚡ BẤM NGAY!',result:`✅ ${ms}ms — ${ms<200?'Siêu nhanh!':ms<300?'Nhanh!':ms<500?'Tốt!':'Chậm rồi 😅'}`};
+  const msgs={wait:'⏳ Chờ đã...',ready:'🟠 Chuẩn bị...',go:'⚡ NHẤP NGAY!',result:`✅ ${ms}ms — ${ms<200?'Siêu nhanh!':ms<300?'Nhanh!':ms<500?'Tốt!':'Chậm rồi 😅'}`};
   const zone=`<div class="reaction-zone ${state}" id="reactionZone" onclick="reactionClick()">${msgs[state]||msgs.wait}</div>`;
   const hist=s.times.length?`<div class="reaction-history">${s.times.slice(-8).map(t=>`<span class="reaction-badge">${t}ms</span>`).join('')}</div>`:'';
-  const best=s.best?`<div style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:.72rem;color:var(--green);">🏅 Best: ${s.best}ms</div>`:'';
+  const best=s.best?`<div style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:.72rem;color:var(--green);">🏅 Kỷ lục: ${s.best}ms</div>`:'';
   document.getElementById('gameBoard').innerHTML=zone+hist+best;
 }
 function reactionClick(){
@@ -1475,7 +1726,7 @@ function reactionClick(){
   } else if(s.state==='wait'||s.state==='ready'){
     // Too early
     clearTimeout(s.timer);s.state='idle';
-    setStatus('⛔ Sớm quá! Thử lại','var(--pink)');
+    setStatus('⛔ Nhấp sớm quá! Thử lại','var(--pink)');
     renderReaction('wait');
     s.timer=setTimeout(()=>{
       s.state='go';s.startTime=Date.now();renderReaction('go');
@@ -1486,7 +1737,7 @@ function reactionClick(){
     s.times.push(ms);
     if(!s.best||ms<s.best) s.best=ms;
     s.state='result';
-    setStatus(`⚡ ${ms}ms — Click lại để thử tiếp`,ms<300?'var(--green)':ms<500?'var(--cyan)':'var(--orange)');
+    setStatus(`⚡ ${ms}ms — Nhấp lại để thử tiếp`,ms<300?'var(--green)':ms<500?'var(--cyan)':'var(--orange)');
     renderReaction('result',ms);
   }
 }
@@ -1497,7 +1748,7 @@ function reactionClick(){
 function init2048() {
   gameState = {board: Array(4).fill(0).map(()=>Array(4).fill(0)), score:0, best:parseInt(localStorage.getItem('2048best')||'0'), over:false, won:false};
   document.getElementById('scoreboard').style.display='none';
-  setStatus('Dùng phím mũi tên hoặc vuốt để ghép ô — mục tiêu: 2048! 🟦');
+  setStatus('Dùng phím mũi tên hoặc vuốt để ghép ô — mục tiêu đạt 2048! 🟦');
   add2048Tile(); add2048Tile();
   render2048();
   document.removeEventListener('keydown', key2048);
@@ -1542,10 +1793,10 @@ function move2048(dir) {
     if(s.score>s.best){s.best=s.score;localStorage.setItem('2048best',s.best);}
     // Check win
     if(!s.won && b.some(row=>row.some(v=>v>=2048))){
-      s.won=true; setStatus('🎉 Đạt 2048! Tiếp tục để phá kỷ lục!','var(--cyan)');
+      s.won=true; setStatus('🎉 Đã đạt 2048! Tiếp tục để phá kỷ lục!','var(--cyan)');
     }
     // Check lose
-    if(!can2048Move(b)){s.over=true;setStatus(`Game Over! Điểm: ${s.score} 💀`,'var(--pink)');}
+    if(!can2048Move(b)){s.over=true;setStatus(`Thua rồi! Điểm: ${s.score} 💀`,'var(--pink)');}
     render2048();
   }
 }
@@ -1570,12 +1821,12 @@ function render2048() {
   document.getElementById('gameBoard').innerHTML=`
     <div class="g2048-score">
       <div class="g2048-stat"><span class="g2048-stat-label">Điểm</span><span class="g2048-stat-val" id="sc2048">${s.score}</span></div>
-      <div class="g2048-stat"><span class="g2048-stat-label">Best</span><span class="g2048-stat-val">${s.best}</span></div>
+      <div class="g2048-stat"><span class="g2048-stat-label">Kỷ lục</span><span class="g2048-stat-val">${s.best}</span></div>
     </div>
     <div class="g2048-board">
       ${s.board.map(row=>row.map(v=>`<div class="g2048-cell ${getTileClass(v)}">${v||''}</div>`).join('')).join('')}
     </div>
-    <div class="g2048-hint">⬆ ⬇ ⬅ ➡ Phím mũi tên để di chuyển</div>
+    <div class="g2048-hint">⬆ ⬇ ⬅ ➡ Nhấn phím mũi tên để di chuyển</div>
     <div class="g2048-btns">
       <button class="btn-sm btn-sm-outline" onclick="move2048('up')">⬆</button>
       <button class="btn-sm btn-sm-outline" onclick="move2048('left')">⬅</button>
@@ -1597,9 +1848,9 @@ const SAFE_LEVELS = [4, 9, 14]; // 0-indexed: câu 5, 10, 15
 const MILLION_QUESTIONS = [
   // Dễ (level 0)
   {q:'Ngôn ngữ lập trình nào được tạo ra bởi Guido van Rossum?',a:['Java','Python','Ruby','Go'],c:1,lv:0},
-  {q:'HTML là viết tắt của?',a:['Hyper Text Markup Language','High Tech Machine Learning','Home Tool Markup Language','Hyper Transfer Mode Language'],c:0,lv:0},
+  {q:'HTML là viết tắt của?',a:['HyperText Markup Language','High Tech Machine Learning','Home Tool Markup Language','Hyper Transfer Mode Language'],c:0,lv:0},
   {q:'Git được tạo ra bởi ai?',a:['Mark Zuckerberg','Linus Torvalds','Bill Gates','Steve Jobs'],c:1,lv:0},
-  {q:'CSS là viết tắt của?',a:['Creative Style Sheet','Cascading Style Sheet','Computer Style System','Code Style Standard'],c:1,lv:0},
+  {q:'CSS là viết tắt của?',a:['Creative Style Sheets','Cascading Style Sheets','Computer Style System','Code Style Standard'],c:1,lv:0},
   {q:'Phím tắt Ctrl+Z dùng để làm gì?',a:['Copy','Paste','Undo','Save'],c:2,lv:0},
   {q:'RAM là viết tắt của?',a:['Random Access Memory','Read All Memory','Remote Access Module','Run After Mode'],c:0,lv:0},
   {q:'"Hello World" thường được dùng để làm gì?',a:['Test kết nối mạng','Chương trình đầu tiên học lập trình','Tên một framework','Test bảo mật'],c:1,lv:0},
@@ -1622,11 +1873,11 @@ const MILLION_QUESTIONS = [
   {q:'Event Loop trong Node.js hoạt động như thế nào?',a:['Multi-thread xử lý song song','Single-thread với non-blocking I/O qua callback queue','Multi-process fork','Synchronous execution only'],c:1,lv:2},
   {q:'Consistent Hashing giải quyết vấn đề gì?',a:['SQL query optimization','Phân phối load khi thêm/bỏ server trong distributed system','Memory management','Thread synchronization'],c:1,lv:2},
   {q:'GraphQL khác REST ở điểm quan trọng nào?',a:['GraphQL chỉ dùng GET','Client specify exactly what data they need','GraphQL không cần server','GraphQL nhanh hơn 10x'],c:1,lv:2},
-  {q:'Thuật toán Dijkstra dùng để làm gì?',a:['Sort mảng','Tìm đường đi ngắn nhất trong graph','Tìm kiếm binary','Mã hoá dữ liệu'],c:1,lv:2},
+  {q:'Thuật toán Dijkstra dùng để làm gì?',a:['Sort mảng','Tìm đường đi ngắn nhất trong graph','Binary search','Mã hoá dữ liệu'],c:1,lv:2},
   {q:'WebAssembly (WASM) là gì?',a:['JavaScript framework','Binary instruction format chạy trong browser gần tốc độ native','Database query language','CSS preprocessor'],c:1,lv:2},
   {q:'Byzantine Fault Tolerance trong distributed systems đề cập đến?',a:['Network latency','Xử lý khi một số node gửi thông tin sai/malicious','Database replication','Load balancing'],c:1,lv:2},
   {q:'Service Mesh giải quyết vấn đề gì trong microservices?',a:['Database scaling','Infrastructure layer xử lý service-to-service communication','Frontend routing','File storage'],c:1,lv:2},
-  {q:'Trong cryptography, Perfect Forward Secrecy đảm bảo gì?',a:['Mã hoá vĩnh viễn','Compromise session key cũ không ảnh hưởng session tương lai','Không cần private key','Hash không thể bẻ'],c:1,lv:2},
+  {q:'Trong cryptography, Perfect Forward Secrecy đảm bảo gì?',a:['Permanent encryption','Compromise session key cũ không ảnh hưởng session tương lai','Không cần private key','Hash không thể bẻ'],c:1,lv:2},
   {q:'CRDT (Conflict-free Replicated Data Type) dùng trong trường hợp nào?',a:['SQL optimization','Đồng bộ data phân tán không cần lock hay conflict resolution','Image compression','Network routing'],c:1,lv:2},
 ];
 
@@ -1810,6 +2061,829 @@ function lifelineAudience() {
   setStatus(`👥 Khán giả bình chọn:`, 'var(--violet)');
   const statusEl = document.getElementById('gameStatus');
   statusEl.innerHTML = `<div style="width:100%">👥 Khán giả bình chọn:<br><div style="margin-top:8px">${bars}</div></div>`;
+}
+
+
+// ══════════════════════════════════
+// BLACKJACK
+// ══════════════════════════════════
+const BJ_SUITS=['♠','♥','♦','♣'];const BJ_VALS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+function bjDeck(){const d=[];BJ_SUITS.forEach(s=>BJ_VALS.forEach(v=>d.push({s,v})));return d.sort(()=>Math.random()-.5);}
+function bjVal(v){if(['J','Q','K'].includes(v))return 10;if(v==='A')return 11;return parseInt(v);}
+function bjHandVal(hand){let t=hand.filter(c=>!c.hidden).reduce((s,c)=>s+bjVal(c.v),0);let aces=hand.filter(c=>c.v==='A'&&!c.hidden).length;while(t>21&&aces>0){t-=10;aces--;}return t;}
+function initBlackjack(){
+  const stakes=[10,50,200][getLevel()];
+  gameState={deck:bjDeck(),player:[],dealer:[],bet:stakes,chips:500,over:false,stakes};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus(`Blackjack — ${stakes} chip mỗi ván 🃏`);
+  bjDeal();
+}
+function bjDeal(){
+  const s=gameState;s.over=false;s.deck=bjDeck();
+  s.player=[s.deck.pop(),s.deck.pop()];
+  s.dealer=[s.deck.pop(),{...s.deck.pop(),hidden:true}];
+  s.chips-=s.bet;
+  renderBJ();
+  if(bjHandVal(s.player)===21){setTimeout(bjStand,600);}
+  else setStatus(`Chips: ${s.chips+s.bet} | Đặt cược: ${s.bet} — Rút hay Dừng?`);
+}
+function bjHit(){
+  const s=gameState;if(s.over)return;
+  s.player.push(s.deck.pop());renderBJ();
+  if(bjHandVal(s.player)>21){s.over=true;setStatus(`💥 Bust! Thua ${s.bet} chip — Chips còn: ${s.chips}`,'var(--pink)');renderBJ();}
+  else if(bjHandVal(s.player)===21){setTimeout(bjStand,400);}
+}
+function bjStand(){
+  const s=gameState;if(s.over)return;
+  s.dealer=s.dealer.map(c=>({...c,hidden:false}));
+  while(bjHandVal(s.dealer)<17)s.dealer.push(s.deck.pop());
+  const pv=bjHandVal(s.player),dv=bjHandVal(s.dealer);
+  s.over=true;
+  let msg,col;
+  if(dv>21||pv>dv){s.chips+=s.bet*2;msg=`🎉 Thắng! +${s.bet} chip — Chips: ${s.chips}`;col='var(--green)';}
+  else if(pv===dv){s.chips+=s.bet;msg=`🤝 Hòa! Hoàn lại ${s.bet} chip — Chips: ${s.chips}`;col='var(--orange)';}
+  else{msg=`💀 Thua ${s.bet} chip — Chips: ${s.chips}`;col='var(--pink)';}
+  setStatus(msg,col);renderBJ();
+}
+function bjDouble(){
+  const s=gameState;if(s.over||s.player.length>2)return;
+  s.chips-=s.bet;s.bet*=2;
+  s.player.push(s.deck.pop());renderBJ();
+  if(bjHandVal(s.player)>21){s.over=true;setStatus(`💥 Bust! Thua ${s.bet} chip — Chips: ${s.chips}`,'var(--pink)');}
+  else setTimeout(bjStand,400);
+}
+function bjCardHtml(c){
+  if(c.hidden)return`<div class="bj-card hidden">🂠</div>`;
+  const red=['♥','♦'].includes(c.s)?'red':'black';
+  return`<div class="bj-card ${red}"><span>${c.v}</span><span class="bj-card-suit">${c.s}</span></div>`;
+}
+function renderBJ(){
+  const s=gameState;
+  const dealerVal=s.dealer.filter(c=>!c.hidden).reduce((t,c)=>t+bjVal(c.v),0);
+  document.getElementById('gameBoard').innerHTML=`
+  <div class="bj-table">
+    <div class="bj-hand">
+      <div class="bj-hand-label">🤖 Dealer <span class="bj-hand-val">${s.over?bjHandVal(s.dealer):dealerVal}</span></div>
+      <div class="bj-cards">${s.dealer.map(bjCardHtml).join('')}</div>
+    </div>
+    <div class="bj-hand">
+      <div class="bj-hand-label">👤 Bạn <span class="bj-hand-val">${bjHandVal(s.player)}</span></div>
+      <div class="bj-cards">${s.player.map(bjCardHtml).join('')}</div>
+    </div>
+    <div class="bj-actions">
+      ${s.over
+        ?`<button class="btn-sm btn-sm-cyan" onclick="bjDeal()">🃏 Ván mới (${s.bet} chip)</button>`
+        :`<button class="btn-sm btn-sm-cyan" onclick="bjHit()">Hit</button>
+          <button class="btn-sm btn-sm-outline" onclick="bjStand()">Stand</button>
+          ${s.player.length===2?`<button class="btn-sm" style="background:rgba(255,107,53,.15);color:var(--orange);border:1px solid rgba(255,107,53,.25)" onclick="bjDouble()">Double</button>`:''}`
+      }
+    </div>
+    <div style="text-align:center;margin-top:10px;font-family:var(--mono);font-size:.7rem;color:var(--muted)">💰 Chips: <span style="color:var(--cyan)">${s.chips}</span></div>
+  </div>`;
+}
+
+// ══════════════════════════════════
+// ANAGRAM
+// ══════════════════════════════════
+const ANAGRAM_WORDS = {
+  0: [{w:'ARRAY',h:'Cấu trúc dữ liệu cơ bản',cat:'Data'},{w:'STACK',h:'LIFO data structure',cat:'Data'},{w:'QUEUE',h:'FIFO data structure',cat:'Data'},{w:'LOOPS',h:'Vòng lặp trong code',cat:'Code'},{w:'CLASS',h:'OOP building block',cat:'Code'},{w:'CACHE',h:'Lưu trữ tạm thời',cat:'System'},{w:'DEBUG',h:'Tìm và sửa lỗi',cat:'Dev'},{w:'QUERY',h:'Truy vấn database',cat:'DB'},{w:'PATCH',h:'HTTP update method',cat:'Web'},{w:'TOKEN',h:'Auth credential',cat:'Security'}],
+  1: [{w:'BINARY',h:'Base-2 number system',cat:'CS'},{w:'DOCKER',h:'Container platform',cat:'DevOps'},{w:'GITHUB',h:'Code hosting platform',cat:'Dev'},{w:'PYTHON',h:'Snake language 🐍',cat:'Language'},{w:'ROUTER',h:'Điều hướng request',cat:'Network'},{w:'THREAD',h:'Đơn vị thực thi',cat:'System'},{w:'OBJECT',h:'Instance của class',cat:'OOP'},{w:'BRANCH',h:'Git feature line',cat:'Git'},{w:'KERNEL',h:'OS core',cat:'System'},{w:'LAMBDA',h:'Hàm ẩn danh',cat:'FP'}],
+  2: [{w:'CLOSURE',h:'Function captures outer scope',cat:'JS'},{w:'PROMISE',h:'Async operation result',cat:'JS'},{w:'POINTER',h:'Memory address variable',cat:'C/C++'},{w:'BACKEND',h:'Server-side code',cat:'Dev'},{w:'RUNTIME',h:'Program execution time',cat:'CS'},{w:'WEBHOOK',h:'HTTP callback',cat:'API'},{w:'BOOLEAN',h:'True or false type',cat:'Types'},{w:'POLYMER',h:'Google web components lib',cat:'Web'},{w:'CLUSTER',h:'Group of servers',cat:'Infra'},{w:'DATASET',h:'Collection of data',cat:'Data'}],
+};
+function initAnagram(){
+  const pool=ANAGRAM_WORDS[getLevel()].sort(()=>Math.random()-.5);
+  const item=pool[0];
+  const scrambled=[...item.w].sort(()=>Math.random()-.5);
+  // Ensure not same as original
+  let tries=0;while(scrambled.join('')===item.w&&tries++<20)[...scrambled].sort(()=>Math.random()-.5).forEach((v,i)=>scrambled[i]=v);
+  gameState={words:pool,idx:0,current:item,scrambled,selected:[],answer:[],score:0,hints:2,over:false};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus(`Sắp xếp chữ cái thành từ IT đúng 🔤`);
+  renderAnagram();
+}
+function anagramPickLetter(i){
+  const s=gameState;if(s.over)return;
+  if(s.selected.includes(i))return;
+  s.selected.push(i);s.answer.push(s.scrambled[i]);
+  if(s.answer.length===s.current.w.length){
+    const ans=s.answer.join('');
+    if(ans===s.current.w){
+      s.score++;setStatus(`✅ Đúng! "${s.current.w}" — ${s.score}/${s.words.length}点`,'var(--green)');
+      setTimeout(()=>{
+        s.idx++;if(s.idx>=s.words.length){setStatus(`🎉 Hoàn thành! ${s.score}/${s.words.length} đúng`,'var(--cyan)');return;}
+        const item=s.words[s.idx];s.current=item;
+        const sc=[...item.w].sort(()=>Math.random()-.5);
+        s.scrambled=sc;s.selected=[];s.answer=[];renderAnagram();
+        setStatus(`Từ ${s.idx+1}/${s.words.length}`);
+      },1000);
+    } else {
+      setStatus(`❌ Sai rồi! Thử lại`,'var(--pink)');
+      setTimeout(()=>{s.selected=[];s.answer=[];renderAnagram();setStatus(`Sắp xếp chữ cái thành từ IT 🔤`);},800);
+    }
+  } else renderAnagram();
+}
+function anagramRemove(){
+  const s=gameState;if(!s.answer.length)return;
+  const idx=s.selected.pop();s.answer.pop();renderAnagram();
+}
+function anagramHint(){
+  const s=gameState;if(s.hints<=0){setStatus('Đã hết trợ giúp!','var(--orange)');return;}
+  s.hints--;setStatus(`💡 Gợi ý: ${s.current.h} (${s.hints} trợ giúp còn lại)`,'var(--violet)');
+}
+function renderAnagram(){
+  const s=gameState;const w=s.current;
+  document.getElementById('gameBoard').innerHTML=`
+  <div class="anagram-wrap">
+    <span class="anagram-category">${w.cat}</span>
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-bottom:6px">Từ ${s.idx+1}/${s.words.length} · ✅ ${s.score} đúng · 💡 ${s.hints} gợi ý</div>
+    <div class="anagram-answer">
+      ${Array(w.w.length).fill(0).map((_,i)=>`<div class="anagram-slot ${i<s.answer.length?'filled':''}" onclick="anagramRemove()">${s.answer[i]||''}</div>`).join('')}
+    </div>
+    <div class="anagram-scrambled">
+      ${s.scrambled.map((l,i)=>`<div class="anagram-letter ${s.selected.includes(i)?'selected':''}" onclick="anagramPickLetter(${i})">${s.selected.includes(i)?'·':l}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn-sm btn-sm-outline" onclick="anagramHint()">💡 Hint (${s.hints})</button>
+      <button class="btn-sm btn-sm-outline" onclick="initAnagram()">↺ New</button>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════
+// SUDOKU
+// ══════════════════════════════════
+function initSudoku(){
+  const lv=getLevel();
+  const blanks=[35,46,55][lv];
+  const base=solveSudoku(genSudokuBase());
+  const board=base.map(r=>[...r]);const given=board.map(r=>[...r]);
+  // Remove cells
+  let removed=0;const cells=[...Array(81).keys()].sort(()=>Math.random()-.5);
+  cells.forEach(i=>{if(removed<blanks){const r=Math.floor(i/9),c=i%9;board[r][c]=0;removed++;}});
+  gameState={board,given,solution:base,selected:null,errors:new Set(),over:false};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus(`Sudoku — Điền số 1-9 vào ô trống 🧮`);
+  renderSudoku();
+}
+function genSudokuBase(){
+  const b=Array(9).fill(0).map(()=>Array(9).fill(0));
+  fillSudoku(b,0,0);return b;
+}
+function fillSudoku(b,r,c){
+  if(r===9)return true;const nr=c===8?r+1:r,nc=c===8?0:c+1;
+  const nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5);
+  for(const n of nums){
+    if(canPlaceSudoku(b,r,c,n)){b[r][c]=n;if(fillSudoku(b,nr,nc))return true;b[r][c]=0;}
+  }
+  return false;
+}
+function canPlaceSudoku(b,r,c,n){
+  if(b[r].includes(n))return false;
+  if(b.some(row=>row[c]===n))return false;
+  const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  for(let i=br;i<br+3;i++)for(let j=bc;j<bc+3;j++)if(b[i][j]===n)return false;
+  return true;
+}
+function solveSudoku(b){const copy=b.map(r=>[...r]);fillSudoku(copy,0,0);return copy;}
+function sudokuSelect(r,c){
+  const s=gameState;if(s.given[r][c])return;
+  s.selected=s.selected&&s.selected[0]===r&&s.selected[1]===c?null:[r,c];
+  renderSudoku();
+}
+function sudokuInput(n){
+  const s=gameState;if(!s.selected||s.over)return;
+  const[r,c]=s.selected;
+  s.board[r][c]=n;
+  const key=`${r},${c}`;
+  if(n!==0&&n!==s.solution[r][c])s.errors.add(key);else s.errors.delete(key);
+  if(s.board.every((row,ri)=>row.every((v,ci)=>v===s.solution[ri][ci]))){
+    s.over=true;setStatus('🎉 Hoàn thành! Xuất sắc!','var(--green)');
+  }
+  renderSudoku();
+}
+function renderSudoku(){
+  const s=gameState;
+  let cells='';
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+    const isGiven=s.given[r][c]!==0;
+    const isSel=s.selected&&s.selected[0]===r&&s.selected[1]===c;
+    const isErr=s.errors.has(`${r},${c}`);
+    const isHL=s.selected&&!isSel&&(s.selected[0]===r||s.selected[1]===c||
+      (Math.floor(s.selected[0]/3)===Math.floor(r/3)&&Math.floor(s.selected[1]/3)===Math.floor(c/3)));
+    const isCorrect=!isGiven&&s.board[r][c]&&s.board[r][c]===s.solution[r][c];
+    const boxR=c===2||c===5?'box-right':'';const boxB=r===2||r===5?'box-bottom':'';
+    let cls=`sudoku-cell ${boxR} ${boxB}`;
+    if(isGiven)cls+=' given';else if(isErr)cls+=' error';else if(isCorrect)cls+=' correct';
+    if(isSel)cls+=' selected';else if(isHL)cls+=' highlight';
+    cells+=`<div class="${cls}" onclick="sudokuSelect(${r},${c})">${s.board[r][c]||''}</div>`;
+  }
+  const numpad=Array.from({length:9},(_,i)=>`<button class="sudoku-num" onclick="sudokuInput(${i+1})">${i+1}</button>`).join('')+
+    `<button class="sudoku-num" onclick="sudokuInput(0)" style="font-size:.6rem;color:var(--pink)">✕</button>`;
+  document.getElementById('gameBoard').innerHTML=`
+    <div style="text-align:center;font-family:var(--mono);font-size:.65rem;color:var(--pink);margin-bottom:6px">${s.errors.size>0?`❌ ${s.errors.size} lỗi`:''}</div>
+    <div class="sudoku-board">${cells}</div>
+    <div class="sudoku-numpad">${numpad}</div>`;
+}
+
+// ══════════════════════════════════
+// PONG
+// ══════════════════════════════════
+function initPong(){
+  const W=480,H=280,speed=[3,5,7][getLevel()];
+  gameState={W,H,ball:{x:W/2,y:H/2,vx:speed,vy:speed*(Math.random()>.5?1:-1)},
+    p1:{y:H/2-30,h:60,score:0},p2:{y:H/2-30,h:60,score:0},
+    over:false,paused:false,keys:{},speed};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('W/S hoặc ↑/↓ để điều khiển — Đánh bại Máy! 🏓');
+  document.getElementById('gameBoard').innerHTML=`
+    <canvas id="pong-canvas" width="${W}" height="${H}"></canvas>
+    <div class="pong-controls"><span>W/S: Di chuyển</span><span id="pong-score">0 : 0</span><span>Máy: Tự động</span></div>`;
+  document.removeEventListener('keydown',pongKey);document.removeEventListener('keyup',pongKeyUp);
+  document.addEventListener('keydown',pongKey);document.addEventListener('keyup',pongKeyUp);
+  if(gameState.pongRAF)cancelAnimationFrame(gameState.pongRAF);
+  pongLoop();
+}
+function pongKey(e){if(!gameState||!gameState.keys)return;if(['w','s','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();gameState.keys[e.key]=true;}}
+function pongKeyUp(e){if(gameState&&gameState.keys&&['w','s','ArrowUp','ArrowDown'].includes(e.key))gameState.keys[e.key]=false;}
+function pongLoop(){
+  const s=gameState;if(!s||s.over){return;}
+  const c=document.getElementById('pong-canvas');if(!c){return;}
+  const ctx=c.getContext('2d');const{W,H,ball,p1,p2}=s;
+  // Move player
+  const spd=5;
+  if(s.keys['w']||s.keys['ArrowUp']){p1.y=Math.max(0,p1.y-spd);}
+  if(s.keys['s']||s.keys['ArrowDown']){p1.y=Math.min(H-p1.h,p1.y+spd);}
+  // AI
+  const aiSpd=[2,4,6][getLevel()];
+  const target=ball.y-p2.h/2;
+  if(p2.y<target)p2.y=Math.min(p2.y+aiSpd,H-p2.h);
+  else p2.y=Math.max(p2.y-aiSpd,0);
+  // Ball
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.y<=0||ball.y>=H-8){ball.vy*=-1;}
+  // Paddles
+  if(ball.x<=18&&ball.y>=p1.y&&ball.y<=p1.y+p1.h){ball.vx=Math.abs(ball.vx);ball.vy+=((ball.y-p1.y-p1.h/2)/p1.h)*3;}
+  if(ball.x>=W-26&&ball.y>=p2.y&&ball.y<=p2.y+p2.h){ball.vx=-Math.abs(ball.vx);ball.vy+=((ball.y-p2.y-p2.h/2)/p2.h)*3;}
+  // Score
+  if(ball.x<0){p2.score++;ball.x=W/2;ball.y=H/2;ball.vx=s.speed;ball.vy=s.speed*(Math.random()>.5?1:-1);document.getElementById('pong-score').textContent=`${p1.score} : ${p2.score}`;}
+  if(ball.x>W){p1.score++;ball.x=W/2;ball.y=H/2;ball.vx=-s.speed;ball.vy=s.speed*(Math.random()>.5?1:-1);document.getElementById('pong-score').textContent=`${p1.score} : ${p2.score}`;}
+  if(p1.score>=7||p2.score>=7){s.over=true;setStatus(p1.score>=7?'🎉 Bạn thắng!':'💀 Máy thắng!',p1.score>=7?'var(--green)':'var(--pink)');return;}
+  // Draw
+  ctx.fillStyle='#03040a';ctx.fillRect(0,0,W,H);
+  ctx.setLineDash([6,6]);ctx.strokeStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#00f5d4';ctx.fillRect(10,p1.y,8,p1.h);
+  ctx.fillStyle='#f72585';ctx.fillRect(W-18,p2.y,8,p2.h);
+  ctx.fillStyle='#f0f2f8';ctx.beginPath();ctx.arc(ball.x,ball.y,6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(0,245,212,.3)';ctx.font='bold 24px monospace';
+  ctx.fillText(p1.score,W/2-36,30);ctx.fillStyle='rgba(247,37,133,.3)';ctx.fillText(p2.score,W/2+20,30);
+  s.pongRAF=requestAnimationFrame(pongLoop);
+}
+
+// ══════════════════════════════════
+// FLAPPY BIRD
+// ══════════════════════════════════
+function initFlappy(){
+  const W=360,H=520,gap=[160,130,100][getLevel()];
+  gameState={W,H,gap,bird:{y:H/2,vy:0},pipes:[],score:0,over:false,started:false,frame:0};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('Nhấp / Phím cách để nhảy — Tránh ống! 🐦');
+  document.getElementById('gameBoard').innerHTML=`<canvas id="flappy-canvas" width="${W}" height="${H}" onclick="flappyJump()"></canvas>`;
+  document.removeEventListener('keydown',flappyKey);
+  document.addEventListener('keydown',flappyKey);
+  if(gameState.flappyRAF)cancelAnimationFrame(gameState.flappyRAF);
+  flappyLoop();
+}
+function flappyKey(e){if(e.code==='Space'){e.preventDefault();flappyJump();}}
+function flappyJump(){const s=gameState;if(s.over){initFlappy();return;}s.started=true;s.bird.vy=-7;}
+function flappyLoop(){
+  const s=gameState;if(!s||s.over){return;}
+  const c=document.getElementById('flappy-canvas');if(!c)return;
+  const ctx=c.getContext('2d');const{W,H,gap,bird}=s;
+  s.frame++;
+  if(s.started){
+    bird.vy+=0.35;bird.y+=bird.vy;
+    if(s.frame%80===0)s.pipes.push({x:W,top:60+Math.random()*(H-gap-120)});
+    s.pipes=s.pipes.filter(p=>p.x>-60);
+    s.pipes.forEach(p=>{p.x-=3;if(p.x===60)s.score++;});
+    // Collision
+    if(bird.y<0||bird.y>H-20){s.over=true;setStatus(`💀 Thua rồi! Điểm: ${s.score}`,'var(--pink)');return;}
+    for(const p of s.pipes){
+      if(bird.y<p.top||bird.y>p.top+gap)if(Math.abs((p.x+25)-70)<22){s.over=true;setStatus(`💥 Crash! Điểm: ${s.score}`,'var(--pink)');return;}
+    }
+  }
+  // Draw
+  ctx.fillStyle='#03040a';ctx.fillRect(0,0,W,H);
+  // Stars
+  ctx.fillStyle='rgba(0,245,212,.3)';
+  for(let i=0;i<20;i++){const x=(i*137+s.frame)%W,y=(i*79)%H;ctx.fillRect(x,y,1,1);}
+  // Pipes
+  s.pipes.forEach(p=>{
+    const g=ctx.createLinearGradient(p.x,0,p.x+50,0);g.addColorStop(0,'rgba(168,85,247,.6)');g.addColorStop(1,'rgba(0,245,212,.4)');ctx.fillStyle=g;
+    ctx.fillRect(p.x,0,50,p.top);ctx.fillRect(p.x,p.top+gap,50,H);
+    ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(p.x-5,p.top-12,60,12);ctx.fillRect(p.x-5,p.top+gap,60,12);
+  });
+  // Bird
+  const bx=70;
+  ctx.save();ctx.translate(bx,bird.y);ctx.rotate(Math.min(Math.max(bird.vy*0.08,-0.5),0.5));
+  ctx.fillStyle='#f72585';ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(5,-3,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#03040a';ctx.beginPath();ctx.arc(6,-3,2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ff6b35';ctx.fillRect(10,-3,10,5);ctx.restore();
+  // Score
+  ctx.fillStyle='rgba(0,245,212,.9)';ctx.font='bold 22px monospace';ctx.textAlign='center';ctx.fillText(s.score,W/2,36);ctx.textAlign='left';
+  if(!s.started){ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='14px monospace';ctx.textAlign='center';ctx.fillText('Nhấp hoặc phím Cách để bắt đầu',W/2,H/2+40);ctx.textAlign='left';}
+  s.flappyRAF=requestAnimationFrame(flappyLoop);
+}
+
+// ══════════════════════════════════
+// SIMON SAYS
+// ══════════════════════════════════
+function initSimon(){
+  gameState={sequence:[],player:[],level:0,playing:false,over:false};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('Nhớ và lặp lại chuỗi màu sắc 🎵');
+  renderSimon();
+  setTimeout(simonNextLevel,800);
+}
+function renderSimon(active=-1){
+  const s=gameState;
+  document.getElementById('gameBoard').innerHTML=`
+  <div class="simon-wrap">
+    <div class="simon-level">Vòng ${s.level}</div>
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-bottom:4px">${s.playing?'Đang hiển thị...':'Lặp lại chuỗi!'}</div>
+    <div class="simon-board">
+      ${['🟢','🔵','🟠','🔴'].map((em,i)=>`<div class="simon-btn s${i} ${active===i?'lit':''}" id="sb${i}" onclick="simonPress(${i})">${em}</div>`).join('')}
+    </div>
+  </div>`;
+}
+function simonNextLevel(){
+  const s=gameState;s.level++;s.player=[];
+  s.sequence.push(Math.floor(Math.random()*4));
+  setStatus(`Vòng ${s.level} — Quan sát chuỗi ${s.sequence.length} bước`);
+  s.playing=true;renderSimon();
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>0){const prev=document.getElementById('sb'+(s.sequence[i-1]));if(prev)prev.classList.remove('lit');}
+    if(i>=s.sequence.length){clearInterval(iv);s.playing=false;setStatus('Đến lượt bạn! Nhấp theo thứ tự.');renderSimon();return;}
+    renderSimon(s.sequence[i]);i++;
+  },700);
+}
+function simonPress(btn){
+  const s=gameState;if(s.playing||s.over)return;
+  document.getElementById('sb'+btn)?.classList.add('lit');
+  setTimeout(()=>document.getElementById('sb'+btn)?.classList.remove('lit'),200);
+  s.player.push(btn);
+  const idx=s.player.length-1;
+  if(s.player[idx]!==s.sequence[idx]){
+    s.over=true;setStatus(`❌ Sai rồi! Dừng ở vòng ${s.level}`,'var(--pink)');return;
+  }
+  if(s.player.length===s.sequence.length){
+    setStatus(`✅ Đúng! Vòng ${s.level} hoàn thành!`,'var(--green)');
+    setTimeout(simonNextLevel,900);
+  }
+}
+
+// ══════════════════════════════════
+// CHESS (simplified)
+// ══════════════════════════════════
+const CHESS_PIECES={
+  wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
+  bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
+};
+function initChess(){
+  const board=[
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    Array(8).fill(null),Array(8).fill(null),Array(8).fill(null),Array(8).fill(null),
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR'],
+  ];
+  gameState={board,turn:'w',selected:null,legal:[],over:false,history:[],check:false};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('Cờ Vua — Nhấp chọn quân, nhấp đích để đi ♟️');
+  renderChess();
+}
+function chessClick(r,c){
+  const s=gameState;if(s.over)return;
+  if(s.selected){
+    if(s.legal.some(m=>m[0]===r&&m[1]===c)){
+      chessMove(s.selected,r,c);return;
+    }
+    if(s.board[r][c]&&s.board[r][c][0]===s.turn){s.selected=[r,c];s.legal=chessLegal(r,c);renderChess();return;}
+    s.selected=null;s.legal=[];renderChess();return;
+  }
+  if(s.board[r][c]&&s.board[r][c][0]===s.turn){s.selected=[r,c];s.legal=chessLegal(r,c);renderChess();}
+}
+function chessMove(from,tr,tc){
+  const s=gameState;const [fr,fc]=from;
+  const piece=s.board[fr][fc];const taken=s.board[tr][tc];
+  s.board[tr][tc]=piece;s.board[fr][fc]=null;
+  // Pawn promotion
+  if(piece==='wP'&&tr===0)s.board[tr][tc]='wQ';
+  if(piece==='bP'&&tr===7)s.board[tr][tc]='bQ';
+  s.history.push({from,to:[tr,tc],piece,taken});
+  if(taken&&taken[1]==='K'){s.over=true;setStatus(`🏆 Bạn thắng! Chiếu hết!`,'var(--cyan)');s.selected=null;s.legal=[];renderChess();return;}
+  s.turn=s.turn==='w'?'b':'w';s.selected=null;s.legal=[];
+  renderChess();
+  if(s.turn==='b'&&getMode()==='vs-ai'){setTimeout(chessAI,350);}
+}
+function chessLegal(r,c){
+  const s=gameState;const p=s.board[r][c];if(!p)return[];
+  const moves=[];const color=p[0];const type=p[1];
+  const opp=color==='w'?'b':'w';
+  const add=(tr,tc)=>{if(tr>=0&&tr<8&&tc>=0&&tc<8&&(!s.board[tr][tc]||s.board[tr][tc][0]===opp))moves.push([tr,tc]);};
+  const slide=(dr,dc)=>{let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(s.board[nr][nc]){if(s.board[nr][nc][0]===opp)moves.push([nr,nc]);break;}moves.push([nr,nc]);nr+=dr;nc+=dc;}};
+  if(type==='P'){const dir=color==='w'?-1:1;const start=color==='w'?6:1;
+    if(r+dir>=0&&r+dir<8&&!s.board[r+dir][c])moves.push([r+dir,c]);
+    if(r===start&&!s.board[r+dir][c]&&!s.board[r+2*dir][c])moves.push([r+2*dir,c]);
+    [[r+dir,c-1],[r+dir,c+1]].forEach(([tr,tc])=>{if(tr>=0&&tr<8&&tc>=0&&tc<8&&s.board[tr][tc]&&s.board[tr][tc][0]===opp)moves.push([tr,tc]);});}
+  if(type==='N'){[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(r+dr,c+dc));}
+  if(type==='B'||type==='Q'){[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>slide(dr,dc));}
+  if(type==='R'||type==='Q'){[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>slide(dr,dc));}
+  if(type==='K'){[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>add(r+dr,c+dc));}
+  return moves;
+}
+function chessAI(){
+  const s=gameState;if(s.over||s.turn!=='b')return;
+  const lv=getLevel();const moves=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    if(s.board[r][c]&&s.board[r][c][0]==='b'){
+      chessLegal(r,c).forEach(([tr,tc])=>moves.push({from:[r,c],to:[tr,tc],score:chessScore(tr,tc,lv)}));
+    }
+  }
+  if(!moves.length){s.over=true;setStatus('🏆 Bạn thắng! Máy hết nước đi!','var(--cyan)');return;}
+  moves.sort((a,b)=>b.score-a.score);
+  const pick=lv===0?moves[Math.floor(Math.random()*moves.length)]:lv===1?moves[Math.floor(Math.random()*Math.min(3,moves.length))]:moves[0];
+  chessMove(pick.from,pick.to[0],pick.to[1]);
+}
+function chessScore(r,c,lv){
+  const s=gameState;const scores={P:1,N:3,B:3,R:5,Q:9,K:100};
+  let sc=s.board[r][c]?scores[s.board[r][c][1]]||0:0;
+  if(lv>=2)sc+=(Math.abs(r-3.5)+Math.abs(c-3.5)<3)?0.5:0;
+  return sc+Math.random()*0.5;
+}
+function renderChess(){
+  const s=gameState;const files=['a','b','c','d','e','f','g','h'];
+  let cells='';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const light=(r+c)%2===0;const p=s.board[r][c];
+    const isSel=s.selected&&s.selected[0]===r&&s.selected[1]===c;
+    const isLegal=s.legal.some(m=>m[0]===r&&m[1]===c);
+    cells+=`<div class="chess-cell ${light?'light':'dark'} ${isSel?'selected':''} ${isLegal?'legal':''}" onclick="chessClick(${r},${c})">${p?CHESS_PIECES[p]:''}</div>`;
+  }
+  const labels=files.map(f=>`<div class="chess-label">${f}</div>`).join('');
+  document.getElementById('gameBoard').innerHTML=`
+    <div style="width:100%;max-width:600px;margin:0 auto;">
+      <div class="chess-board">${cells}</div>
+      <div class="chess-label-row">${labels}</div>
+      <div style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:.68rem;color:var(--muted)">
+        ${s.turn==='w'?'⬜ Lượt bạn (quân trắng)':'⬛ Máy đang suy nghĩ...'}
+      </div>
+    </div>`;
+}
+
+
+// ══════════════════════════════════════════════════
+// CỜ TƯỚNG (Chinese Chess / Xiangqi)
+// ══════════════════════════════════════════════════
+
+// Piece codes: r=red(bottom/player), b=black(top/AI)
+// Types: K=King/Tướng, A=Advisor/Sĩ, E=Elephant/Tượng,
+//        H=Horse/Mã, R=Rook/Xe, C=Cannon/Pháo, P=Pawn/Tốt
+
+const CT_PIECES = {
+  rK:'將', bK:'帥',
+  rA:'士', bA:'仕',
+  rE:'象', bE:'相',
+  rH:'馬', bH:'傌',
+  rR:'車', bR:'俥',
+  rC:'砲', bC:'炮',
+  rP:'卒', bP:'兵'
+};
+
+// Vietnamese piece names
+const CT_NAMES = {
+  K:'Tướng', A:'Sĩ', E:'Tượng', H:'Mã', R:'Xe', C:'Pháo', P:'Tốt'
+};
+
+// Piece values for AI
+const CT_VALUES = { K:10000, A:120, E:120, H:270, R:600, C:285, P:30 };
+
+// Center bonus for pieces
+const CT_POS_BONUS = {
+  H: [[0,0,0,0,0,0,0,0,0],[0,1,2,3,2,3,2,1,0],[0,2,4,6,4,6,4,2,0],
+      [2,4,8,8,8,8,8,4,2],[2,4,8,8,8,8,8,4,2],[2,4,8,8,8,8,8,4,2],
+      [0,2,4,6,4,6,4,2,0],[0,1,2,3,2,3,2,1,0],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0]],
+};
+
+function initCoTuong() {
+  // 10 rows x 9 cols board
+  const board = Array(10).fill(null).map(() => Array(9).fill(null));
+  // Black pieces (top, rows 0-4)
+  board[0] = ['bR','bH','bE','bA','bK','bA','bE','bH','bR'];
+  board[2][1]='bC'; board[2][7]='bC';
+  [0,2,4,6,8].forEach(c => board[3][c]='bP');
+  // Red pieces (bottom, rows 5-9)
+  [0,2,4,6,8].forEach(c => board[6][c]='rP');
+  board[7][1]='rC'; board[7][7]='rC';
+  board[9] = ['rR','rH','rE','rA','rK','rA','rE','rH','rR'];
+
+  gameState = {
+    board, turn:'r', selected:null, legal:[],
+    over:false, history:[], check:false,
+    scores:{r:0,b:0}
+  };
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('Cờ Tướng — Nhấp quân đỏ để chọn, nhấp đích để đi 🔴');
+  renderCoTuong();
+}
+
+function ctClick(r, c) {
+  const s = gameState; if(s.over) return;
+  const piece = s.board[r][c];
+
+  if(s.selected) {
+    // Try to move
+    if(s.legal.some(m => m[0]===r && m[1]===c)) {
+      ctMove(s.selected, r, c);
+      return;
+    }
+    // Reselect own piece
+    if(piece && piece[0] === s.turn) {
+      s.selected = [r,c];
+      s.legal = ctGetLegal(r, c);
+      renderCoTuong(); return;
+    }
+    s.selected = null; s.legal = [];
+    renderCoTuong(); return;
+  }
+  if(piece && piece[0] === s.turn) {
+    s.selected = [r,c]; s.legal = ctGetLegal(r,c);
+    renderCoTuong();
+  }
+}
+
+function ctMove(from, tr, tc) {
+  const s = gameState;
+  const [fr, fc] = from;
+  const piece = s.board[fr][fc];
+  const taken = s.board[tr][tc];
+
+  s.board[tr][tc] = piece;
+  s.board[fr][fc] = null;
+  s.history.push({from, to:[tr,tc], piece, taken});
+  s.selected = null; s.legal = [];
+
+  if(taken) {
+    if(taken[1]==='K') {
+      s.over=true;
+      const winner = s.turn==='r' ? '🔴 Đỏ (Bạn)' : '⚫ Đen (Máy)';
+      setStatus(`🏆 ${winner} thắng! Chiếu hết Tướng!`, s.turn==='r'?'var(--cyan)':'var(--pink)');
+      renderCoTuong(); return;
+    }
+  }
+
+  s.turn = s.turn==='r' ? 'b' : 'r';
+  renderCoTuong();
+
+  if(s.turn==='b' && getMode()==='vs-ai') {
+    setTimeout(ctAI, 400);
+  }
+}
+
+// ── LEGAL MOVES ──
+function ctGetLegal(r, c) {
+  const s = gameState;
+  const piece = s.board[r][c];
+  if(!piece) return [];
+  const color = piece[0], type = piece[1];
+  const moves = [];
+
+  const inBoard = (r,c) => r>=0&&r<10&&c>=0&&c<9;
+  const isEmpty = (r,c) => inBoard(r,c) && !s.board[r][c];
+  const isEnemy = (r,c) => inBoard(r,c) && s.board[r][c] && s.board[r][c][0]!==color;
+  const isOwn = (r,c) => inBoard(r,c) && s.board[r][c] && s.board[r][c][0]===color;
+  const canLand = (r,c) => inBoard(r,c) && !isOwn(r,c);
+  const palace = (color==='r') ? {r1:7,r2:9,c1:3,c2:5} : {r1:0,r2:2,c1:3,c2:5};
+  const inPalace = (r,c,col) => {
+    const p = col==='r' ? {r1:7,r2:9,c1:3,c2:5} : {r1:0,r2:2,c1:3,c2:5};
+    return r>=p.r1&&r<=p.r2&&c>=p.c1&&c<=p.c2;
+  };
+  const ownSide = (r,col) => col==='r' ? r>=5 : r<=4;
+
+  if(type==='K') { // Tướng: 1 ô trong cung
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const nr=r+dr,nc=c+dc;
+      if(inPalace(nr,nc,color)&&canLand(nr,nc)) moves.push([nr,nc]);
+    });
+    // Tướng đối mặt (flying general)
+  }
+
+  if(type==='A') { // Sĩ: chéo trong cung
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>{
+      const nr=r+dr,nc=c+dc;
+      if(inPalace(nr,nc,color)&&canLand(nr,nc)) moves.push([nr,nc]);
+    });
+  }
+
+  if(type==='E') { // Tượng: 2 ô chéo, không qua sông
+    [[-2,-2],[-2,2],[2,-2],[2,2]].forEach(([dr,dc])=>{
+      const nr=r+dr,nc=c+dc;
+      const mr=r+dr/2,mc=c+dc/2;
+      if(inBoard(nr,nc) && ownSide(nr,color) && !s.board[mr][mc] && canLand(nr,nc))
+        moves.push([nr,nc]);
+    });
+  }
+
+  if(type==='H') { // Mã: L-shape, bị chặn
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const mr=r+dr,mc=c+dc;
+      if(!inBoard(mr,mc)||s.board[mr][mc]) return;
+      const legs = dr===0 ? [[-1,dc<0?-1:1],[1,dc<0?-1:1]] : [[dr,dc===0?-1:dc<0?-1:1],[dr,dc===0?1:dc<0?-1:1]];
+      // Fix: perp directions
+      const perps = dr!==0 ? [[mr+1,mc],[mr-1,mc]] : [[mr,mc+1],[mr,mc-1]];
+      // Simplified: just 2 diagonal steps from the mid
+      const finals = dr!==0 ? [[mr+dr,mc-1],[mr+dr,mc+1]] : [[mr-1,mc+dc],[mr+1,mc+dc]];
+      finals.forEach(([nr,nc])=>{if(canLand(nr,nc))moves.push([nr,nc]);});
+    });
+  }
+
+  if(type==='R') { // Xe: thẳng không giới hạn
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{
+      let nr=r+dr,nc=c+dc;
+      while(inBoard(nr,nc)){
+        if(s.board[nr][nc]){ if(isEnemy(nr,nc)) moves.push([nr,nc]); break; }
+        moves.push([nr,nc]); nr+=dr; nc+=dc;
+      }
+    });
+  }
+
+  if(type==='C') { // Pháo: thẳng, ăn cần nhảy qua đúng 1 quân
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{
+      let nr=r+dr,nc=c+dc,jumped=false;
+      while(inBoard(nr,nc)){
+        if(!jumped){
+          if(s.board[nr][nc]) jumped=true;
+          else moves.push([nr,nc]);
+        } else {
+          if(s.board[nr][nc]){ if(isEnemy(nr,nc)) moves.push([nr,nc]); break; }
+        }
+        nr+=dr; nc+=dc;
+      }
+    });
+  }
+
+  if(type==='P') { // Tốt: tiến, qua sông thêm 2 hướng
+    const fwd = color==='r' ? -1 : 1;
+    const crossed = color==='r' ? r<=4 : r>=5;
+    if(inBoard(r+fwd,c) && canLand(r+fwd,c)) moves.push([r+fwd,c]);
+    if(crossed) {
+      [[0,-1],[0,1]].forEach(([dr,dc])=>{
+        if(canLand(r+dr,c+dc)) moves.push([r+dr,c+dc]);
+      });
+    }
+  }
+
+  return moves;
+}
+
+// ── AI ──
+function ctAI() {
+  const s = gameState; if(s.over || s.turn!=='b') return;
+  const lv = getLevel();
+  const allMoves = [];
+
+  for(let r=0;r<10;r++) for(let c=0;c<9;c++) {
+    if(s.board[r][c]&&s.board[r][c][0]==='b') {
+      ctGetLegal(r,c).forEach(([tr,tc])=>{
+        const taken = s.board[tr][tc];
+        let score = taken ? (CT_VALUES[taken[1]]||0) : 0;
+        // Positional bonus
+        if(lv>=2) {
+          const pb = CT_POS_BONUS[s.board[r][c][1]];
+          if(pb) score += pb[tr]?.[tc]||0;
+          score += Math.random()*5;
+        } else score += Math.random()*20;
+        allMoves.push({from:[r,c], to:[tr,tc], score});
+      });
+    }
+  }
+
+  if(!allMoves.length) {
+    s.over=true; setStatus('🏆 Bạn thắng! Máy hết nước đi!','var(--cyan)'); return;
+  }
+
+  allMoves.sort((a,b)=>b.score-a.score);
+  const pool = lv===0 ? allMoves : lv===1 ? allMoves.slice(0,Math.ceil(allMoves.length*0.4)) : allMoves.slice(0,3);
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  ctMove(pick.from, pick.to[0], pick.to[1]);
+}
+
+// ── RENDER ──
+function renderCoTuong() {
+  const s = gameState;
+  // Count pieces
+  const rPieces = [], bPieces = [];
+  s.board.forEach(row=>row.forEach(p=>{if(p&&p[0]==='r')rPieces.push(p);if(p&&p[0]==='b')bPieces.push(p);}));
+
+  let html = `
+  <div style="overflow-x:auto;">
+  <div style="width:100%;max-width:600px;margin:0 auto;">
+    <div style="
+      display:grid;grid-template-columns:repeat(9,1fr);
+      background:linear-gradient(135deg,rgba(255,165,0,.08),rgba(255,80,0,.05));
+      border:2px solid rgba(255,140,0,.35);border-radius:10px;
+      padding:4px;gap:2px;position:relative;
+    " id="ctBoard">`;
+
+  for(let r=0;r<10;r++) {
+    for(let c=0;c<9;c++) {
+      const piece = s.board[r][c];
+      const isSel = s.selected&&s.selected[0]===r&&s.selected[1]===c;
+      const isLegal = s.legal.some(m=>m[0]===r&&m[1]===c);
+      const isRiver = r===4||r===5;
+
+      let cellBg = 'rgba(255,255,255,.03)';
+      if(isRiver) cellBg = 'rgba(0,200,255,.04)';
+      if(isSel) cellBg = 'rgba(0,245,212,.2)';
+      if(isLegal) cellBg = piece ? 'rgba(247,37,133,.2)' : 'rgba(168,85,247,.15)';
+
+      const borderCol = isSel ? 'var(--cyan)' : isLegal ? (piece?'var(--pink)':'rgba(168,85,247,.4)') : 'rgba(255,255,255,.06)';
+
+      let pieceHtml = '';
+      if(piece) {
+        const isRed = piece[0]==='r';
+        const char = CT_PIECES[piece]||'?';
+        pieceHtml = `
+          <div style="
+            width:86%;height:86%;border-radius:50%;
+            background:${isRed?'radial-gradient(circle at 35% 35%,#ff6b35,#cc2200)':'radial-gradient(circle at 35% 35%,#2a2a2a,#111)'};
+            display:flex;align-items:center;justify-content:center;
+            font-size:clamp(.7rem,2vw,1.2rem);font-weight:900;
+            color:${isRed?'#ffe680':'#e8e8e8'};
+            box-shadow:${isRed?'0 2px 8px rgba(255,80,0,.5),inset 0 1px 0 rgba(255,255,255,.2)':'0 2px 8px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1)'};
+            border:${isRed?'1.5px solid rgba(255,200,0,.5)':'1.5px solid rgba(255,255,255,.15)'};
+            text-shadow:0 1px 2px rgba(0,0,0,.8);
+            position:relative;z-index:1;
+            transition:transform .15s;
+          ">${char}</div>`;
+      } else if(isLegal) {
+        pieceHtml = `<div style="width:30%;height:30%;border-radius:50%;background:rgba(168,85,247,.5);box-shadow:0 0 8px rgba(168,85,247,.4);"></div>`;
+      }
+
+      // Palace lines visual (draw X in palace cells)
+      const inRPalace = r>=7&&r<=9&&c>=3&&c<=5;
+      const inBPalace = r>=0&&r<=2&&c>=3&&c<=5;
+
+      html += `
+        <div onclick="ctClick(${r},${c})" style="
+          aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+          background:${cellBg};border:1px solid ${borderCol};
+          border-radius:4px;cursor:none;transition:all .15s;
+          position:relative;
+          ${isRiver&&r===4?'border-bottom:1px dashed rgba(0,200,255,.3);':''}
+          ${isRiver&&r===5?'border-top:1px dashed rgba(0,200,255,.3);':''}
+        ">
+          ${(inRPalace||inBPalace)&&!piece?`<div style="position:absolute;inset:0;opacity:.15;background:radial-gradient(circle,rgba(255,200,0,.3),transparent 70%)"></div>`:''}
+          ${pieceHtml}
+        </div>`;
+    }
+    // River label
+    if(r===4) {
+      html += `</div>
+        <div style="text-align:center;padding:3px;font-family:var(--mono);font-size:.6rem;color:rgba(0,200,255,.5);letter-spacing:.2em;background:rgba(0,200,255,.03);border-left:2px solid rgba(255,140,0,.35);border-right:2px solid rgba(255,140,0,.35);">
+          ── 楚 河 ──────────── 漢 界 ──
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:2px;">`;
+    }
+  }
+
+  html += `</div>
+
+  <!-- Captured pieces -->
+  <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 2px;">
+    <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">
+      ⚫ ${bPieces.length} quân còn
+    </div>
+    <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">
+      ${s.turn==='r'?'🔴 Lượt của bạn':'⚫ Máy đang suy nghĩ...'}
+    </div>
+    <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">
+      🔴 ${rPieces.length} quân còn
+    </div>
+  </div>
+
+  <!-- Piece legend -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center;">
+    ${Object.entries(CT_NAMES).map(([k,v])=>`
+      <span style="font-family:var(--mono);font-size:.6rem;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:2px 7px;border-radius:4px;">
+        ${CT_PIECES['r'+k]} = ${v}
+      </span>`).join('')}
+  </div>
+  </div>
+  </div>`;
+
+  document.getElementById('gameBoard').innerHTML = html;
 }
 
 </script>
