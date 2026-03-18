@@ -315,8 +315,8 @@ nav{
 .mem-card.matched{border-color:var(--green);box-shadow:0 0 10px rgba(6,214,160,.2);}
 .mem-card:not(.flipped):not(.matched):hover{transform:scale(1.05);}
 #snake-canvas{border:1px solid var(--border2);border-radius:10px;display:block;margin:0 auto;}
-.mine-grid{display:inline-grid;gap:3px;margin:0 auto;display:block;width:fit-content;}
-.mine-cell{width:32px;height:32px;border-radius:5px;cursor:none;background:rgba(255,255,255,.07);border:1px solid var(--border2);font-family:var(--mono);font-size:.72rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;}
+.mine-grid{display:grid;gap:3px;width:100%;}
+.mine-cell{width:100%;aspect-ratio:1;border-radius:4px;cursor:none;background:rgba(255,255,255,.07);border:1px solid var(--border2);font-family:var(--mono);font-size:clamp(.55rem,.8vw,.75rem);font-weight:700;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;min-width:0;}
 .mine-cell:not(.revealed):hover{background:rgba(0,245,212,.1);border-color:var(--cyan);}
 .mine-cell.revealed{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.05);}
 .mine-cell.flagged{background:rgba(255,107,53,.1);border-color:var(--orange);}
@@ -393,6 +393,57 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
   .about-grid,.contact-grid{grid-template-columns:1fr;}
   .write-form.open{grid-template-columns:1fr;}
 }
+
+/* ── 2048 ── */
+.g2048-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.25);border-radius:14px;padding:12px;max-width:340px;margin:0 auto;}
+.g2048-cell{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:1.1rem;transition:all .1s;border:1px solid rgba(255,255,255,.06);}
+.g2048-cell.e{background:rgba(255,255,255,.04);}
+.g2048-cell.t2{background:rgba(0,245,212,.15);color:var(--cyan);border-color:rgba(0,245,212,.3);}
+.g2048-cell.t4{background:rgba(0,245,212,.25);color:var(--cyan);border-color:rgba(0,245,212,.4);}
+.g2048-cell.t8{background:rgba(76,201,240,.3);color:var(--blue);border-color:rgba(76,201,240,.5);}
+.g2048-cell.t16{background:rgba(168,85,247,.3);color:var(--violet);border-color:rgba(168,85,247,.5);}
+.g2048-cell.t32{background:rgba(168,85,247,.45);color:var(--violet);border-color:rgba(168,85,247,.6);font-size:.95rem;}
+.g2048-cell.t64{background:rgba(255,107,53,.35);color:var(--orange);border-color:rgba(255,107,53,.55);font-size:.95rem;}
+.g2048-cell.t128{background:rgba(255,107,53,.5);color:var(--orange);border-color:rgba(255,107,53,.7);font-size:.8rem;}
+.g2048-cell.t256{background:rgba(247,37,133,.35);color:var(--pink);border-color:rgba(247,37,133,.55);font-size:.8rem;}
+.g2048-cell.t512{background:rgba(247,37,133,.5);color:var(--pink);border-color:rgba(247,37,133,.7);font-size:.75rem;}
+.g2048-cell.t1024{background:rgba(247,37,133,.7);color:#fff;border-color:var(--pink);font-size:.65rem;}
+.g2048-cell.t2048{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;border-color:var(--cyan);font-size:.65rem;box-shadow:0 0 20px rgba(0,245,212,.5);animation:glow2048 1s ease infinite;}
+.g2048-cell.tBig{background:rgba(255,255,255,.15);color:var(--text);font-size:.55rem;}
+@keyframes glow2048{0%,100%{box-shadow:0 0 16px rgba(0,245,212,.5);}50%{box-shadow:0 0 32px rgba(168,85,247,.7);}}
+.g2048-score{display:flex;gap:12px;justify-content:center;margin-bottom:14px;}
+.g2048-stat{text-align:center;padding:8px 20px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;}
+.g2048-stat-label{font-family:var(--mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;}
+.g2048-stat-val{font-size:1.2rem;font-weight:700;color:var(--text);}
+.g2048-hint{font-family:var(--mono);font-size:.65rem;color:var(--muted);text-align:center;margin-top:10px;}
+.g2048-btns{display:flex;gap:6px;justify-content:center;margin-top:10px;}
+
+/* ── AI LÀ TRIỆU PHÚ ── */
+.millionaire-wrap{max-width:640px;margin:0 auto;}
+.million-q{font-size:1rem;font-weight:600;color:var(--text);line-height:1.6;margin-bottom:20px;padding:20px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:12px;text-align:center;}
+.million-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.million-opt{
+  padding:12px 16px;border-radius:10px;border:1px solid var(--border2);
+  color:var(--text);font-size:.88rem;cursor:none;transition:all .2s;text-align:left;
+  background:rgba(255,255,255,.04);display:flex;align-items:center;gap:8px;
+}
+.million-opt .opt-letter{font-family:var(--mono);font-size:.75rem;color:var(--cyan);font-weight:700;min-width:18px;}
+.million-opt:hover:not(:disabled){background:rgba(0,245,212,.08);border-color:var(--cyan);}
+.million-opt.correct{background:rgba(6,214,160,.15);border-color:var(--green);color:var(--green);}
+.million-opt.wrong{background:rgba(247,37,133,.1);border-color:var(--pink);color:var(--pink);}
+.million-opt.eliminated{opacity:.3;pointer-events:none;}
+.million-ladder{display:flex;flex-direction:column;gap:3px;margin-top:12px;}
+.million-rung{display:flex;align-items:center;justify-content:space-between;padding:5px 14px;border-radius:6px;font-family:var(--mono);font-size:.68rem;transition:all .2s;}
+.million-rung.current{background:rgba(0,245,212,.12);border:1px solid rgba(0,245,212,.3);color:var(--cyan);}
+.million-rung.passed{color:var(--green);}
+.million-rung.safe{font-weight:700;color:var(--orange);}
+.million-rung.inactive{color:var(--muted);}
+.million-lifelines{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center;}
+.lifeline-btn{padding:7px 14px;border-radius:8px;font-family:var(--mono);font-size:.7rem;cursor:none;transition:all .2s;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);}
+.lifeline-btn:hover:not(:disabled){border-color:var(--violet);color:var(--violet);}
+.lifeline-btn:disabled{opacity:.3;cursor:not-allowed;}
+.million-prize{font-family:var(--mono);font-size:.78rem;color:var(--orange);font-weight:700;}
+
 </style>
 </head>
 <body>
@@ -589,6 +640,8 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
       <div class="game-card" onclick="loadGame('rps')"><span class="game-icon">✊</span><div class="game-name">Rock Paper Scissors</div><div class="game-desc">Oẳn tù tì</div></div>
       <div class="game-card" onclick="loadGame('quiz')"><span class="game-icon">🧩</span><div class="game-name">Tech Quiz</div><div class="game-desc">Kiến thức IT</div></div>
       <div class="game-card" onclick="loadGame('reaction')"><span class="game-icon">⚡</span><div class="game-name">Reaction Test</div><div class="game-desc">Tốc độ phản xạ</div></div>
+      <div class="game-card" onclick="loadGame('g2048')"><span class="game-icon">🟦</span><div class="game-name">2048</div><div class="game-desc">Ghép ô số</div></div>
+      <div class="game-card" onclick="loadGame('millionaire')"><span class="game-icon">💰</span><div class="game-name">Ai Là Triệu Phú</div><div class="game-desc">Trả lời 15 câu</div></div>
     </div>
     <div id="game-arena">
       <div class="arena-header">
@@ -751,6 +804,8 @@ const GAMES_META = {
   rps:        {name:'Rock Paper Scissors', modes:['vs-friend','vs-ai'], levels:['Easy','Medium','Hard']},
   quiz:       {name:'Tech Quiz',        modes:['solo'],               levels:['Beginner','Intermediate','Expert']},
   reaction:   {name:'Reaction Test',    modes:['solo'],               levels:['Normal']},
+  g2048:      {name:'2048',             modes:['solo'],               levels:['Classic']},
+  millionaire:{name:'Ai Là Triệu Phú', modes:['solo'],               levels:['Dễ','Trung bình','Khó']},
 };
 
 function loadGame(id) {
@@ -818,7 +873,8 @@ function initGame(id) {
   document.getElementById('p2Label').textContent=getMode()==='vs-ai'?'AI':'P2';
   const fns={ttt:initTTT,c4:initC4,memory:initMemory,snake:initSnake,
     minesweeper:initMine,wordle:initWordle,puzzle:initPuzzle,
-    rps:initRPS,quiz:initQuiz,reaction:initReaction};
+    rps:initRPS,quiz:initQuiz,reaction:initReaction,
+    g2048:init2048,millionaire:initMillionaire};
   if(fns[id]) fns[id]();
 }
 
@@ -1144,7 +1200,7 @@ function mineFlag(e,r,c){e.preventDefault();const s=gameState;if(s.over||s.revea
 const MINE_COLORS=['','#4cc9f0','#06d6a0','#f72585','#a855f7','#ff6b35','#00f5d4','#f0f2f8','#8a95b5'];
 function renderMine() {
   const s=gameState;
-  let html=`<div style="overflow-x:auto;padding-bottom:4px"><div class="mine-grid" style="grid-template-columns:repeat(${s.C},1fr);">`;
+  let html=`<div class="mine-grid" style="grid-template-columns:repeat(${s.C},1fr);">`;
   for(let r=0;r<s.R;r++) for(let c=0;c<s.C;c++) {
     let cls='mine-cell',content='',style='';
     if(s.revealed[r][c]){
@@ -1154,7 +1210,7 @@ function renderMine() {
     } else if(s.flags[r][c]){cls+=' flagged';content='🚩';}
     html+=`<div class="${cls}" style="${style}" onclick="mineClick(${r},${c})" oncontextmenu="mineFlag(event,${r},${c})">${content}</div>`;
   }
-  html+='</div></div>';
+  html+='</div>';
   document.getElementById('gameBoard').innerHTML=html;
 }
 
@@ -1434,6 +1490,328 @@ function reactionClick(){
     renderReaction('result',ms);
   }
 }
+
+// ══════════════════════════════════
+// 11. 2048
+// ══════════════════════════════════
+function init2048() {
+  gameState = {board: Array(4).fill(0).map(()=>Array(4).fill(0)), score:0, best:parseInt(localStorage.getItem('2048best')||'0'), over:false, won:false};
+  document.getElementById('scoreboard').style.display='none';
+  setStatus('Dùng phím mũi tên hoặc vuốt để ghép ô — mục tiêu: 2048! 🟦');
+  add2048Tile(); add2048Tile();
+  render2048();
+  document.removeEventListener('keydown', key2048);
+  document.addEventListener('keydown', key2048);
+}
+
+function key2048(e) {
+  if(!currentGame || currentGame !== 'g2048') return;
+  const map = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+  if(map[e.key]) { e.preventDefault(); move2048(map[e.key]); }
+}
+
+function add2048Tile() {
+  const empty=[];
+  gameState.board.forEach((row,r)=>row.forEach((v,c)=>{if(!v)empty.push([r,c]);}));
+  if(!empty.length) return;
+  const [r,c]=empty[Math.floor(Math.random()*empty.length)];
+  gameState.board[r][c]=Math.random()<0.9?2:4;
+}
+
+function move2048(dir) {
+  const s=gameState; if(s.over) return;
+  const prev=JSON.stringify(s.board);
+  const b=s.board;
+
+  function slide(row) {
+    let arr=row.filter(v=>v);
+    for(let i=0;i<arr.length-1;i++) {
+      if(arr[i]===arr[i+1]){arr[i]*=2;s.score+=arr[i];arr.splice(i+1,1);}
+    }
+    while(arr.length<4) arr.push(0);
+    return arr;
+  }
+
+  if(dir==='left')  {for(let r=0;r<4;r++) b[r]=slide(b[r]);}
+  if(dir==='right') {for(let r=0;r<4;r++) b[r]=slide([...b[r]].reverse()).reverse();}
+  if(dir==='up')    {for(let c=0;c<4;c++){let col=b.map(r=>r[c]);col=slide(col);col.forEach((v,r)=>b[r][c]=v);}}
+  if(dir==='down')  {for(let c=0;c<4;c++){let col=b.map(r=>r[c]).reverse();col=slide(col).reverse();col.forEach((v,r)=>b[r][c]=v);}}
+
+  if(JSON.stringify(b)!==prev) {
+    add2048Tile();
+    if(s.score>s.best){s.best=s.score;localStorage.setItem('2048best',s.best);}
+    // Check win
+    if(!s.won && b.some(row=>row.some(v=>v>=2048))){
+      s.won=true; setStatus('🎉 Đạt 2048! Tiếp tục để phá kỷ lục!','var(--cyan)');
+    }
+    // Check lose
+    if(!can2048Move(b)){s.over=true;setStatus(`Game Over! Điểm: ${s.score} 💀`,'var(--pink)');}
+    render2048();
+  }
+}
+
+function can2048Move(b) {
+  for(let r=0;r<4;r++) for(let c=0;c<4;c++) {
+    if(!b[r][c]) return true;
+    if(c<3&&b[r][c]===b[r][c+1]) return true;
+    if(r<3&&b[r][c]===b[r+1][c]) return true;
+  }
+  return false;
+}
+
+function getTileClass(v) {
+  if(!v) return 'e';
+  const map={2:'t2',4:'t4',8:'t8',16:'t16',32:'t32',64:'t64',128:'t128',256:'t256',512:'t512',1024:'t1024',2048:'t2048'};
+  return map[v]||'tBig';
+}
+
+function render2048() {
+  const s=gameState;
+  document.getElementById('gameBoard').innerHTML=`
+    <div class="g2048-score">
+      <div class="g2048-stat"><span class="g2048-stat-label">Điểm</span><span class="g2048-stat-val" id="sc2048">${s.score}</span></div>
+      <div class="g2048-stat"><span class="g2048-stat-label">Best</span><span class="g2048-stat-val">${s.best}</span></div>
+    </div>
+    <div class="g2048-board">
+      ${s.board.map(row=>row.map(v=>`<div class="g2048-cell ${getTileClass(v)}">${v||''}</div>`).join('')).join('')}
+    </div>
+    <div class="g2048-hint">⬆ ⬇ ⬅ ➡ Phím mũi tên để di chuyển</div>
+    <div class="g2048-btns">
+      <button class="btn-sm btn-sm-outline" onclick="move2048('up')">⬆</button>
+      <button class="btn-sm btn-sm-outline" onclick="move2048('left')">⬅</button>
+      <button class="btn-sm btn-sm-outline" onclick="move2048('down')">⬇</button>
+      <button class="btn-sm btn-sm-outline" onclick="move2048('right')">➡</button>
+    </div>`;
+}
+
+// ══════════════════════════════════
+// 12. AI LÀ TRIỆU PHÚ
+// ══════════════════════════════════
+const MILLION_PRIZES = [
+  '1.000đ','2.000đ','3.000đ','5.000đ','10.000đ',
+  '20.000đ','40.000đ','80.000đ','150.000đ','250.000đ',
+  '500.000đ','1.000.000đ','2.000.000đ','5.000.000đ','1.000.000.000đ'
+];
+const SAFE_LEVELS = [4, 9, 14]; // 0-indexed: câu 5, 10, 15
+
+const MILLION_QUESTIONS = [
+  // Dễ (level 0)
+  {q:'Ngôn ngữ lập trình nào được tạo ra bởi Guido van Rossum?',a:['Java','Python','Ruby','Go'],c:1,lv:0},
+  {q:'HTML là viết tắt của?',a:['Hyper Text Markup Language','High Tech Machine Learning','Home Tool Markup Language','Hyper Transfer Mode Language'],c:0,lv:0},
+  {q:'Git được tạo ra bởi ai?',a:['Mark Zuckerberg','Linus Torvalds','Bill Gates','Steve Jobs'],c:1,lv:0},
+  {q:'CSS là viết tắt của?',a:['Creative Style Sheet','Cascading Style Sheet','Computer Style System','Code Style Standard'],c:1,lv:0},
+  {q:'Phím tắt Ctrl+Z dùng để làm gì?',a:['Copy','Paste','Undo','Save'],c:2,lv:0},
+  {q:'RAM là viết tắt của?',a:['Random Access Memory','Read All Memory','Remote Access Module','Run After Mode'],c:0,lv:0},
+  {q:'"Hello World" thường được dùng để làm gì?',a:['Test kết nối mạng','Chương trình đầu tiên học lập trình','Tên một framework','Test bảo mật'],c:1,lv:0},
+  {q:'Đơn vị lưu trữ nào lớn hơn?',a:['MB','KB','GB','Byte'],c:2,lv:0},
+  {q:'URL là viết tắt của?',a:['Uniform Resource Locator','Universal Read Link','User Request Log','Unified Remote Location'],c:0,lv:0},
+  {q:'Công ty nào tạo ra hệ điều hành Windows?',a:['Apple','Google','Microsoft','IBM'],c:2,lv:0},
+  // Trung bình (level 1)
+  {q:'Protocol nào dùng để gửi email?',a:['HTTP','FTP','SMTP','SSH'],c:2,lv:1},
+  {q:'Design pattern nào tách biệt interface và implementation?',a:['Singleton','Factory','Bridge','Observer'],c:2,lv:1},
+  {q:'Trong JavaScript, closure là gì?',a:['Hàm đóng gói biến cục bộ','Hàm truy cập biến của outer scope','Class đóng gói data','Method của object'],c:1,lv:1},
+  {q:'Thuật toán nào có độ phức tạp O(n log n) trung bình?',a:['Bubble Sort','Insertion Sort','Merge Sort','Selection Sort'],c:2,lv:1},
+  {q:'Docker container khác VM ở điểm nào?',a:['Docker chạy chậm hơn','Docker dùng chung OS kernel','Docker cần nhiều RAM hơn','Docker không thể chạy trên Linux'],c:1,lv:1},
+  {q:'HTTP method nào được coi là idempotent?',a:['POST','PATCH','PUT','DELETE'],c:2,lv:1},
+  {q:'Index trong database giúp gì?',a:['Tăng dung lượng','Tăng tốc độ query','Mã hoá dữ liệu','Backup tự động'],c:1,lv:1},
+  {q:'CAP theorem nói về điều gì?',a:['CPU, API, Protocol','Consistency, Availability, Partition tolerance','Cache, Auth, Performance','Code, Architecture, Pipeline'],c:1,lv:1},
+  {q:'Trong React, key prop dùng để làm gì?',a:['CSS styling','Event handling','Giúp React identify list items','Passing data to child'],c:2,lv:1},
+  {q:'OAuth 2.0 là gì?',a:['Database protocol','Authorization framework','Encryption algorithm','Routing protocol'],c:1,lv:1},
+  // Khó (level 2)
+  {q:'SOLID: Liskov Substitution Principle nói gì?',a:['Class chỉ có 1 lý do thay đổi','Subtype phải thay thế được supertype','Depend on abstractions','Open for extension, closed for modification'],c:1,lv:2},
+  {q:'Event Loop trong Node.js hoạt động như thế nào?',a:['Multi-thread xử lý song song','Single-thread với non-blocking I/O qua callback queue','Multi-process fork','Synchronous execution only'],c:1,lv:2},
+  {q:'Consistent Hashing giải quyết vấn đề gì?',a:['SQL query optimization','Phân phối load khi thêm/bỏ server trong distributed system','Memory management','Thread synchronization'],c:1,lv:2},
+  {q:'GraphQL khác REST ở điểm quan trọng nào?',a:['GraphQL chỉ dùng GET','Client specify exactly what data they need','GraphQL không cần server','GraphQL nhanh hơn 10x'],c:1,lv:2},
+  {q:'Thuật toán Dijkstra dùng để làm gì?',a:['Sort mảng','Tìm đường đi ngắn nhất trong graph','Tìm kiếm binary','Mã hoá dữ liệu'],c:1,lv:2},
+  {q:'WebAssembly (WASM) là gì?',a:['JavaScript framework','Binary instruction format chạy trong browser gần tốc độ native','Database query language','CSS preprocessor'],c:1,lv:2},
+  {q:'Byzantine Fault Tolerance trong distributed systems đề cập đến?',a:['Network latency','Xử lý khi một số node gửi thông tin sai/malicious','Database replication','Load balancing'],c:1,lv:2},
+  {q:'Service Mesh giải quyết vấn đề gì trong microservices?',a:['Database scaling','Infrastructure layer xử lý service-to-service communication','Frontend routing','File storage'],c:1,lv:2},
+  {q:'Trong cryptography, Perfect Forward Secrecy đảm bảo gì?',a:['Mã hoá vĩnh viễn','Compromise session key cũ không ảnh hưởng session tương lai','Không cần private key','Hash không thể bẻ'],c:1,lv:2},
+  {q:'CRDT (Conflict-free Replicated Data Type) dùng trong trường hợp nào?',a:['SQL optimization','Đồng bộ data phân tán không cần lock hay conflict resolution','Image compression','Network routing'],c:1,lv:2},
+];
+
+function initMillionaire() {
+  const lv = getLevel();
+  // Lọc câu hỏi theo level, shuffle
+  const pool = MILLION_QUESTIONS
+    .filter(q => lv === 0 ? q.lv === 0 : lv === 1 ? q.lv <= 1 : true)
+    .sort(() => Math.random() - 0.5);
+  // Lấy 15 câu (5 dễ, 5 tb, 5 khó hoặc mix)
+  let selected = [];
+  if(lv === 0) selected = pool.filter(q=>q.lv===0).slice(0,15);
+  else if(lv === 1) selected = [...pool.filter(q=>q.lv===0).slice(0,5),...pool.filter(q=>q.lv===1).slice(0,10)];
+  else selected = [...pool.filter(q=>q.lv===0).slice(0,5),...pool.filter(q=>q.lv===1).slice(0,5),...pool.filter(q=>q.lv===2).slice(0,5)];
+  while(selected.length < 15) selected.push(...pool.slice(0, 15-selected.length));
+  selected = selected.slice(0,15);
+
+  gameState = {
+    questions: selected, current: 0, over: false,
+    lifelines: {fifty:false, phone:false, audience:false},
+    eliminated: [], prize: '0đ'
+  };
+  document.getElementById('scoreboard').style.display = 'none';
+  setStatus('🎰 Ai Là Triệu Phú — Trả lời 15 câu để thắng 1 tỷ đồng!');
+  renderMillionaire();
+}
+
+function renderMillionaire() {
+  const s = gameState;
+  if(s.current >= s.questions.length) return;
+  const q = s.questions[s.current];
+  const letters = ['A','B','C','D'];
+
+  // Shuffle answers
+  const ansArr = q.a.map((a,i)=>({text:a,orig:i})).sort(()=>Math.random()-.5);
+  gameState.ansOrder = ansArr;
+  const correctShuffled = ansArr.findIndex(a=>a.orig===q.c);
+  gameState.correctShuffled = correctShuffled;
+
+  const optsHtml = ansArr.map((a,i)=>{
+    const elim = s.eliminated.includes(i) ? 'eliminated' : '';
+    return `<button class="million-opt ${elim}" id="mopt${i}" onclick="millionaireAnswer(${i})" ${elim?'disabled':''}>
+      <span class="opt-letter">${letters[i]}:</span>${a.text}
+    </button>`;
+  }).join('');
+
+  // Prize ladder (hiển thị 8 câu gần nhất)
+  const start = Math.max(0, s.current - 3);
+  const ladderItems = Array.from({length:15},(_,i)=>i)
+    .filter(i => i >= start && i <= Math.min(14, start+7))
+    .reverse()
+    .map(i => {
+      let cls = 'inactive';
+      if(i === s.current) cls = 'current';
+      else if(i < s.current) cls = 'passed';
+      if(SAFE_LEVELS.includes(i)) cls += ' safe';
+      return `<div class="million-rung ${cls}"><span>Câu ${i+1}</span><span class="million-prize">${MILLION_PRIZES[i]}</span></div>`;
+    }).join('');
+
+  document.getElementById('gameBoard').innerHTML = `
+    <div class="millionaire-wrap">
+      <div class="million-lifelines">
+        <button class="lifeline-btn" id="ll-fifty" onclick="lifelineFifty()" ${s.lifelines.fifty?'disabled':''}>
+          ${s.lifelines.fifty?'✅':'💡'} 50:50
+        </button>
+        <button class="lifeline-btn" id="ll-phone" onclick="lifelinePhone()" ${s.lifelines.phone?'disabled':''}>
+          ${s.lifelines.phone?'✅':'📞'} Gọi Bạn
+        </button>
+        <button class="lifeline-btn" id="ll-audience" onclick="lifelineAudience()" ${s.lifelines.audience?'disabled':''}>
+          ${s.lifelines.audience?'✅':'👥'} Hỏi Khán Giả
+        </button>
+      </div>
+      <div class="million-q">
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-bottom:8px;">Câu ${s.current+1}/15 — ${MILLION_PRIZES[s.current]}</div>
+        ${q.q}
+      </div>
+      <div class="million-opts">${optsHtml}</div>
+      <div class="million-ladder">${ladderItems}</div>
+    </div>`;
+}
+
+function millionaireAnswer(idx) {
+  const s = gameState; if(s.over) return;
+  const correct = s.correctShuffled;
+  const btn = document.getElementById('mopt'+idx);
+  const correctBtn = document.getElementById('mopt'+correct);
+
+  // Disable all
+  document.querySelectorAll('.million-opt').forEach(b=>b.disabled=true);
+
+  if(idx === correct) {
+    btn.classList.add('correct');
+    setTimeout(() => {
+      s.current++;
+      if(s.current >= 15) {
+        s.over = true;
+        setStatus('🏆 Chúc mừng! Bạn thắng 1.000.000.000đ! 🎉', 'var(--cyan)');
+        document.getElementById('gameBoard').innerHTML = `
+          <div style="text-align:center;padding:48px 20px;">
+            <div style="font-size:4rem;margin-bottom:16px;">🏆</div>
+            <div style="font-family:var(--display);font-size:2rem;color:var(--cyan);margin-bottom:8px;">AI LÀ TRIỆU PHÚ!</div>
+            <div style="font-family:var(--mono);font-size:1rem;color:var(--text);">1.000.000.000đ</div>
+          </div>`;
+      } else {
+        s.eliminated = [];
+        if(SAFE_LEVELS.includes(s.current-1)) {
+          setStatus(`✅ Đạt mốc an toàn: ${MILLION_PRIZES[s.current-1]}! Tiếp tục nào!`, 'var(--green)');
+          setTimeout(renderMillionaire, 1200);
+        } else {
+          setStatus(`✅ Đúng rồi! Bạn đang có ${MILLION_PRIZES[s.current-1]}`, 'var(--green)');
+          setTimeout(renderMillionaire, 900);
+        }
+      }
+    }, 1000);
+  } else {
+    btn.classList.add('wrong');
+    correctBtn.classList.add('correct');
+    s.over = true;
+    const safePrize = SAFE_LEVELS.filter(l=>l<s.current).pop();
+    const finalPrize = safePrize !== undefined ? MILLION_PRIZES[safePrize] : '0đ';
+    setTimeout(() => {
+      setStatus(`❌ Sai rồi! Đáp án đúng là ${['A','B','C','D'][s.correctShuffled]}. Bạn nhận được ${finalPrize}`, 'var(--pink)');
+    }, 800);
+  }
+}
+
+// ── LIFELINES ──
+function lifelineFifty() {
+  const s = gameState; if(s.lifelines.fifty || s.over) return;
+  s.lifelines.fifty = true;
+  document.getElementById('ll-fifty').disabled = true;
+  document.getElementById('ll-fifty').textContent = '✅ 50:50';
+  // Loại 2 đáp án sai
+  const wrongs = [0,1,2,3].filter(i=>i!==s.correctShuffled && !s.eliminated.includes(i));
+  const toElim = wrongs.sort(()=>Math.random()-.5).slice(0,2);
+  toElim.forEach(i => {
+    s.eliminated.push(i);
+    const btn = document.getElementById('mopt'+i);
+    if(btn) { btn.classList.add('eliminated'); btn.disabled=true; }
+  });
+  setStatus('💡 50:50: Đã loại 2 đáp án sai!', 'var(--violet)');
+}
+
+function lifelinePhone() {
+  const s = gameState; if(s.lifelines.phone || s.over) return;
+  s.lifelines.phone = true;
+  document.getElementById('ll-phone').disabled = true;
+  document.getElementById('ll-phone').textContent = '✅ Gọi Bạn';
+  const correct = s.correctShuffled;
+  const letters = ['A','B','C','D'];
+  const confidence = [70,85,90,95][getLevel()] + Math.floor(Math.random()*10);
+  // Người bạn có thể sai ở level khó
+  const isRight = getLevel() <= 1 || Math.random() > 0.15;
+  const hint = isRight ? correct : [0,1,2,3].filter(i=>i!==correct)[Math.floor(Math.random()*3)];
+  setStatus(`📞 Bạn nói: "Mình nghĩ ${confidence}% là đáp án ${letters[hint]}!"`, 'var(--blue)');
+}
+
+function lifelineAudience() {
+  const s = gameState; if(s.lifelines.audience || s.over) return;
+  s.lifelines.audience = true;
+  document.getElementById('ll-audience').disabled = true;
+  document.getElementById('ll-audience').textContent = '✅ Hỏi KG';
+  const correct = s.correctShuffled;
+  const letters = ['A','B','C','D'];
+  // Tạo phần trăm bình chọn
+  let pcts = [5,5,5,5];
+  const mainPct = getLevel()<=1 ? 55+Math.floor(Math.random()*25) : 35+Math.floor(Math.random()*30);
+  pcts[correct] = mainPct;
+  let remaining = 100 - mainPct;
+  [0,1,2,3].filter(i=>i!==correct).forEach((i,idx,arr)=>{
+    if(idx===arr.length-1) pcts[i]=remaining;
+    else { const v=Math.floor(remaining/(arr.length-idx)); pcts[i]=v; remaining-=v; }
+  });
+  const bars = pcts.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+    <span style="font-family:var(--mono);font-size:.7rem;color:var(--cyan);min-width:14px">${letters[i]}</span>
+    <div style="flex:1;background:rgba(255,255,255,.06);border-radius:4px;height:16px;overflow:hidden">
+      <div style="width:${p}%;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transition:width .5s"></div>
+    </div>
+    <span style="font-family:var(--mono);font-size:.7rem;color:var(--text);min-width:30px">${p}%</span>
+  </div>`).join('');
+  setStatus(`👥 Khán giả bình chọn:`, 'var(--violet)');
+  const statusEl = document.getElementById('gameStatus');
+  statusEl.innerHTML = `<div style="width:100%">👥 Khán giả bình chọn:<br><div style="margin-top:8px">${bars}</div></div>`;
+}
+
 </script>
 </body>
 </html>
