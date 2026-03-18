@@ -100,8 +100,41 @@ nav{
   letter-spacing:-.02em;
 }
 .nav-brand-text{
-  font-family:var(--mono);font-size:.8rem;font-weight:500;
-  color:var(--text);letter-spacing:-.01em;
+  font-family:var(--mono);font-size:.92rem;font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  background:linear-gradient(90deg,var(--cyan),var(--violet),var(--pink),var(--cyan));
+  background-size:300% 100%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:brandShift 4s linear infinite;
+  position:relative;
+}
+.nav-brand-text::after{
+  content:'LongLTV';
+  position:absolute;
+  left:0;top:0;
+  font-family:var(--mono);font-size:.92rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--cyan);
+  -webkit-text-fill-color:var(--cyan);
+  clip-path:inset(0 100% 0 0);
+  animation:glitchReveal 4s linear infinite;
+  text-shadow:0 0 8px var(--cyan),0 0 16px var(--cyan);
+  opacity:.6;
+}
+@keyframes brandShift{
+  0%,100%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+}
+@keyframes glitchReveal{
+  0%,85%{clip-path:inset(0 100% 0 0);opacity:0;}
+  88%{clip-path:inset(0 60% 0 0);opacity:.8;transform:translateX(-2px);}
+  90%{clip-path:inset(0 40% 0 0);opacity:.5;transform:translateX(2px);}
+  92%{clip-path:inset(0 0% 0 0);opacity:.9;transform:translateX(0);}
+  96%{clip-path:inset(0 0% 0 0);opacity:.4;transform:translateX(-1px);}
+  100%{clip-path:inset(0 100% 0 0);opacity:0;}
 }
 .nav-status{
   display:flex;align-items:center;gap:7px;
@@ -128,20 +161,24 @@ nav{
   margin:0 auto;
   width:100%;
   box-sizing:border-box;
+  overflow:visible;
 }
 .hero-left{
   min-width:0;
   display:flex;flex-direction:column;justify-content:center;
+  overflow:visible;
 }
 
 .hero-badge{
   display:inline-flex;align-items:center;gap:8px;
   border:1px solid rgba(0,245,212,.2);
   background:rgba(0,245,212,.05);
-  padding:6px 14px;border-radius:100px;
-  font-family:var(--mono);font-size:.7rem;color:var(--cyan);
-  letter-spacing:.06em;text-transform:uppercase;
-  margin-bottom:32px;
+  padding:5px 14px;border-radius:100px;
+  font-family:var(--mono);font-size:.65rem;color:var(--cyan);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:28px;
+  width:fit-content;
+  white-space:nowrap;
   animation:fadeUp .6s ease both;
 }
 .hero-badge::before{content:'▸';font-size:.65rem;}
@@ -149,9 +186,11 @@ nav{
 .hero-title{
   font-family:var(--display);
   font-size:clamp(3rem,6.5vw,5.8rem);
-  font-weight:800;line-height:1.0;
+  font-weight:800;line-height:1.15;
   letter-spacing:-.02em;
-  margin-bottom:8px;
+  margin-bottom:16px;
+  padding-bottom:8px;
+  overflow:visible;
   animation:fadeUp .6s .08s ease both;
 }
 .hero-title .line1{color:var(--text);}
@@ -592,7 +631,7 @@ footer{
 <nav>
   <a href="#" class="nav-brand">
     <div class="nav-brand-icon" style="background:none;padding:0;overflow:hidden;border-radius:50%;width:34px;height:34px;flex-shrink:0;border:2px solid rgba(0,245,212,0.5);"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAAwADADASIAAhEBAxEB/8QAGwAAAgIDAQAAAAAAAAAAAAAABQYHCAACBAn/xAAzEAACAQMDAgQCCAcAAAAAAAABAgMEBREABiEHEhMxQVEiYQgJFBUyUoGRI0JxcpKx8f/EABoBAAEFAQAAAAAAAAAAAAAAAAUAAQIDBgT/xAAhEQABAwMFAQEAAAAAAAAAAAABAAIRAyExBBITQXFhof/aAAwDAQACEQMRAD8A9UNK3U3qZsvpBsm59Qd/3qG2Wa1ReJNK5yzseFjjXzeRjhVUcknTTqBvpsbLsXUDoPW7V3AR9lq7tbG7ShYv2VSOVHoCUVxk8c49RpiQLlSa0vIa3KqU/wBZj1T6l3Oer6X7RS0WqFy1JFLZ5rlNVRnOBK6HtRvIkIOCcZbGdWP6E/TCO46KO2ddbG2ybnPIkVurqyllpaS5uxwY08QfDIvGRnBDcYwRqG+lkFTtWVNvUmy0p6NHWGkMS9nf+UIBkNgefC+uM6lo0R6qbVrtt7q2o9NR006TUwmY96zQsHjlXu4AyvmCCAT76qFcu6geohU0AptkOk+K1Os1rE4liSVfJ1DeWPMZ1tq5DVmhO69s2zeG3q3bd3QtS1sfYxX8SEHKuvsVYAj5jRKeogpozNUTJGi+bMcAaS949Trbt6hnemWSWQJ/DZE7yzH8q+p9ecDThu6yQO0yFUXcFsvll3Kuz2uNEtbYal4p5SXHijgqyFWUjIwSD/2a+ktuSe8QU12uETROQSBI3bI2OEJYklifnzqMZ9pzybgq9yo33jS1dS8oqy5Zssc9rg8hse/txqQtjTtbLtQ3K4QRrZ4GEx8NPEkklDDsIX2U/FnzyBjQ0U38vHHf4tJW1IdpZJGM/VZPWaFpfKNzA0VQskdQcISCOccD3H6jRGOZJACOM8c6I4WbUS7t3vBSdSarbd2kKUr00MEBZsKrshctj1znHy7RpZvEIafwJnBERUoQwOcZxpE6lXOpvl0uW6akCKqgq2VY+7AVYmKquf7cjRC2XiGe2R17uBGI8s2c5Hy/qMa66YgKJRiltFLUePFMh+xtkyBcjvUEHsyOcZ5/fGjcVr7khK9vgSr3ow8iPb9PLQ63yyxrSxyDseSKSVlPPb3Ffh/x132W4/dtVUWOpOaaoUy03d/I+OQPbOrIi6V8J3MiVlmpq2N+zEZcgHHxAEa5NobqnpYYYa12MXP4jkknBJ/QAfvpfmlnoIYlTlRTN3AnjLc5/wBaB7YvsdwkpC8hnMaoJ2hQ9necF8E8Yyf2A1DYCLpSv//Z" style="width:34px;height:34px;object-fit:cover;object-position:center 20%;display:block;" alt="LVL"></div>
-    <span class="nav-brand-text">letranvietlong.dev</span>
+    <span class="nav-brand-text">LongLTV</span>
   </a>
   <div class="nav-status"><span class="sdot"></span>Available for work</div>
   <ul class="nav-links">
@@ -607,7 +646,7 @@ footer{
 <!-- HERO -->
 <section id="hero">
   <div class="hero-left">
-    <div class="hero-badge">Software Engineer — Da Nang, Vietnam</div>
+    <div class="hero-badge">Software Engineering · Đà Nẵng</div>
     <h1 class="hero-title">
       <div class="line1">Lê Trần</div>
       <div class="line2">Viết Long</div>
@@ -911,7 +950,7 @@ footer{
 <footer>
   <div class="footer-l">
     <div class="footer-logo" style="background:none;padding:0;overflow:hidden;border-radius:50%;width:28px;height:28px;flex-shrink:0;border:1px solid rgba(0,245,212,0.4);"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAAwADADASIAAhEBAxEB/8QAGwAAAgIDAQAAAAAAAAAAAAAABQYHCAACBAn/xAAzEAACAQMDAgQCCAcAAAAAAAABAgMEBREABiEHEhMxQVEiYQgJFBUyUoGRI0JxcpKx8f/EABoBAAEFAQAAAAAAAAAAAAAAAAUAAQIDBgT/xAAhEQABAwMFAQEAAAAAAAAAAAABAAIRAyExBBITQXFhof/aAAwDAQACEQMRAD8A9UNK3U3qZsvpBsm59Qd/3qG2Wa1ReJNK5yzseFjjXzeRjhVUcknTTqBvpsbLsXUDoPW7V3AR9lq7tbG7ShYv2VSOVHoCUVxk8c49RpiQLlSa0vIa3KqU/wBZj1T6l3Oer6X7RS0WqFy1JFLZ5rlNVRnOBK6HtRvIkIOCcZbGdWP6E/TCO46KO2ddbG2ybnPIkVurqyllpaS5uxwY08QfDIvGRnBDcYwRqG+lkFTtWVNvUmy0p6NHWGkMS9nf+UIBkNgefC+uM6lo0R6qbVrtt7q2o9NR006TUwmY96zQsHjlXu4AyvmCCAT76qFcu6geohU0AptkOk+K1Os1rE4liSVfJ1DeWPMZ1tq5DVmhO69s2zeG3q3bd3QtS1sfYxX8SEHKuvsVYAj5jRKeogpozNUTJGi+bMcAaS949Trbt6hnemWSWQJ/DZE7yzH8q+p9ecDThu6yQO0yFUXcFsvll3Kuz2uNEtbYal4p5SXHijgqyFWUjIwSD/2a+ktuSe8QU12uETROQSBI3bI2OEJYklifnzqMZ9pzybgq9yo33jS1dS8oqy5Zssc9rg8hse/txqQtjTtbLtQ3K4QRrZ4GEx8NPEkklDDsIX2U/FnzyBjQ0U38vHHf4tJW1IdpZJGM/VZPWaFpfKNzA0VQskdQcISCOccD3H6jRGOZJACOM8c6I4WbUS7t3vBSdSarbd2kKUr00MEBZsKrshctj1znHy7RpZvEIafwJnBERUoQwOcZxpE6lXOpvl0uW6akCKqgq2VY+7AVYmKquf7cjRC2XiGe2R17uBGI8s2c5Hy/qMa66YgKJRiltFLUePFMh+xtkyBcjvUEHsyOcZ5/fGjcVr7khK9vgSr3ow8iPb9PLQ63yyxrSxyDseSKSVlPPb3Ffh/x132W4/dtVUWOpOaaoUy03d/I+OQPbOrIi6V8J3MiVlmpq2N+zEZcgHHxAEa5NobqnpYYYa12MXP4jkknBJ/QAfvpfmlnoIYlTlRTN3AnjLc5/wBaB7YvsdwkpC8hnMaoJ2hQ9necF8E8Yyf2A1DYCLpSv//Z" style="width:28px;height:28px;object-fit:cover;object-position:center 20%;display:block;" alt="LVL"></div>
-    <span class="footer-copy"><span>Lê Trần Viết Long</span> · letranvietlong.dev</span>
+    <span class="footer-copy"><span>Lê Trần Viết Long</span> · LongLTV</span>
   </div>
   <span class="footer-copy">© 2026 · Software Engineer @ FPT Complex DaNang</span>
 </footer>
