@@ -150,10 +150,10 @@ nav{
   position:relative;z-index:1;
   min-height:100vh;
   display:grid;
-  grid-template-columns:1fr 340px;
+  grid-template-columns:1fr clamp(280px,28vw,480px);
   align-items:center;
-  gap:48px;
-  padding:100px clamp(32px,6vw,96px) 80px;
+  gap:clamp(24px,4vw,64px);
+  padding:100px clamp(24px,5vw,80px) 80px;
   width:100%;
   box-sizing:border-box;
   overflow:visible;
@@ -169,9 +169,9 @@ nav{
   border:1px solid rgba(0,245,212,.2);
   background:rgba(0,245,212,.05);
   padding:5px 14px;border-radius:100px;
-  font-family:var(--mono);font-size:.65rem;color:var(--cyan);
+  font-family:var(--mono);font-size:.7rem;color:var(--cyan);
   letter-spacing:.08em;text-transform:uppercase;
-  margin-bottom:28px;
+  margin-bottom:clamp(16px,2vw,32px);
   width:fit-content;
   white-space:nowrap;
   animation:fadeUp .6s ease both;
@@ -180,11 +180,11 @@ nav{
 
 .hero-title{
   font-family:var(--display);
-  font-size:clamp(3rem,6.5vw,5.8rem);
-  font-weight:800;line-height:1.15;
-  letter-spacing:-.02em;
-  margin-bottom:16px;
-  padding-bottom:8px;
+  font-size:5.8rem;
+  font-weight:800;line-height:1.05;
+  letter-spacing:-.03em;
+  margin-bottom:clamp(10px,1.5vw,20px);
+  padding-bottom:4px;
   overflow:visible;
   animation:fadeUp .6s .08s ease both;
 }
@@ -198,21 +198,26 @@ nav{
 @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
 .hero-role{
-  font-family:var(--mono);font-size:.85rem;
-  color:var(--muted);margin-bottom:28px;
+  font-family:var(--mono);
+  font-size:.85rem;
+  color:var(--muted);margin-bottom:clamp(16px,2vw,32px);
   animation:fadeUp .6s .14s ease both;
   font-feature-settings:"liga" 1,"calt" 1;
 }
 .hero-role span{color:var(--orange);}
 
 .hero-desc{
-  font-size:1.05rem;font-weight:300;color:#8a95b5;
-  line-height:1.85;margin-bottom:44px;max-width:520px;
+  font-size:1.05rem;
+  font-weight:300;color:#8a95b5;
+  line-height:1.85;
+  margin-bottom:clamp(28px,3vw,52px);
+  max-width:min(520px,90%);
   animation:fadeUp .6s .18s ease both;
 }
 
 .hero-chips{
-  display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px;
+  display:flex;flex-wrap:wrap;gap:clamp(6px,1vw,12px);
+  margin-bottom:clamp(24px,3vw,48px);
   animation:fadeUp .6s .22s ease both;
 }
 .chip{
@@ -249,7 +254,7 @@ nav{
 
 /* ── HERO VISUAL ── */
 .hero-right{
-  display:flex;flex-direction:column;gap:16px;
+  display:flex;flex-direction:column;gap:clamp(10px,1.2vw,18px);
   animation:fadeUp .8s .3s ease both;
   min-width:0;
   width:100%;
@@ -347,7 +352,7 @@ nav{
 .sec-label::before{content:'';display:block;width:20px;height:1px;background:var(--cyan);}
 .sec-title{
   font-family:var(--display);
-  font-size:clamp(2rem,4vw,3rem);font-weight:800;
+  font-size:3rem;font-weight:800;
   letter-spacing:-.02em;color:var(--text);line-height:1.1;margin-bottom:8px;
 }
 .sec-title .dim{color:var(--muted);font-weight:300;}
@@ -513,7 +518,7 @@ nav{
 .contact-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:32px;}
 .contact-big{
   font-family:var(--display);
-  font-size:clamp(2rem,4vw,3.2rem);font-weight:800;
+  font-size:3.2rem;font-weight:800;
   letter-spacing:-.02em;line-height:1.1;margin-bottom:20px;
 }
 .contact-big .g1{
@@ -605,10 +610,12 @@ footer{
   #hero{
     grid-template-columns:1fr;
     padding-top:120px;
-    gap:32px;
+    gap:28px;
     text-align:center;
   }
-  .hero-right{width:100%;max-width:400px;margin:0 auto;}
+  .hero-title{font-size:3.2rem;}
+  .hero-desc{max-width:100%;}
+  .hero-right{width:100%;max-width:440px;margin:0 auto;}
   .hero-ctas,.hero-chips{justify-content:center;}
   .about-grid,.contact-grid{grid-template-columns:1fr;}
   .write-form.open{grid-template-columns:1fr;}
@@ -906,8 +913,8 @@ footer{
     <div class="reveal">
       <h3 class="contact-big"><span class="g1">Hãy nói</span><br><span class="g2">chuyện nhé.</span></h3>
       <p class="contact-text">Dù bạn muốn hợp tác, trao đổi kỹ thuật, hay đơn giản chỉ muốn nói chuyện về tech và Đà Nẵng — cứ nhắn tôi.</p>
-      <a href="mailto:letranvietlong@gmail.com" class="contact-email-btn">
-        📧 letranvietlong@gmail.com
+      <a href="/cdn-cgi/l/email-protection#2c4049585e4d425a4549584043424b6c4b414d4540024f4341" class="contact-email-btn">
+        📧 <span class="__cf_email__" data-cfemail="117d746563707f677874657d7e7f7651767c70787d3f727e7c">[email&#160;protected]</span>
       </a>
     </div>
     <div class="socials-grid reveal">
@@ -956,7 +963,7 @@ footer{
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // CURSOR
 const cur=document.getElementById('cur'),ring=document.getElementById('cur-r');
 let mx=0,my=0,rx=0,ry=0;
@@ -1040,5 +1047,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 });
 </script>
+
+
 </body>
 </html>
