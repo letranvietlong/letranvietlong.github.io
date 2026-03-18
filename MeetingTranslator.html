@@ -162,15 +162,6 @@ main{max-width:100%;padding:20px 28px 60px;display:grid;gap:16px;}
 .anote:hover{border-color:var(--gold);color:var(--gold);}
 .est{padding:36px 16px;text-align:center;color:var(--ink4);font-size:13px;font-style:italic;}
 
-/* sessions */
-.sslist{max-height:180px;overflow-y:auto;}
-.ssitem{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;transition:background .15s;}
-.ssitem:last-child{border-bottom:none;}
-.ssitem:hover{background:var(--surface2);}
-.ssinf{flex:1;cursor:pointer;}
-.ssnm{font-size:13px;font-weight:600;color:var(--ink);}
-.ssmeta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);margin-top:2px;}
-
 /* modal */
 .overlay{position:fixed;inset:0;background:rgba(26,23,20,.5);z-index:500;display:none;align-items:center;justify-content:center;}
 .overlay.show{display:flex;}
@@ -185,14 +176,6 @@ main{max-width:100%;padding:20px 28px 60px;display:grid;gap:16px;}
 .mbtn.p:hover{background:#333;}
 .mbtn.c{background:var(--surface2);color:var(--ink2);}
 .mbtn.c:hover{background:var(--border);}
-
-/* fullscreen */
-body.fs .toolbar,body.fs .panels>.panel:first-child,body.fs .glsec,body.fs .sssec{display:none;}
-body.fs .panels{grid-template-columns:1fr;}
-body.fs .trt{font-size:26px !important;line-height:2.1;}
-body.fs main{padding-top:74px;}
-.fsexit{display:none;position:fixed;top:62px;right:16px;z-index:300;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;color:var(--ink2);box-shadow:0 4px 12px var(--shadow);}
-body.fs .fsexit{display:block;}
 
 /* toast */
 .toast{position:fixed;bottom:22px;right:22px;background:#1a1714;color:#fff;padding:9px 15px;border-radius:9px;font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;pointer-events:none;max-width:300px;}
@@ -228,8 +211,6 @@ body.fs .fsexit{display:block;}
     </div>
   </div>
 </div>
-
-<button class="fsexit" onclick="toggleFS()">✕ Thoát toàn màn hình</button>
 
 <!-- HEADER -->
 <header>
@@ -320,6 +301,21 @@ body.fs .fsexit{display:block;}
     </div>
   </div>
 
+  <!-- HISTORY -->
+  <div class="sbox">
+    <div class="shd">
+      <span class="stl">📜 Biên bản họp <span class="cbg" id="hstCnt">0</span></span>
+      <div style="display:flex;gap:5px;">
+        <button class="tbb" onclick="exportTxt()">📄 .txt</button>
+        <button class="tbb" onclick="exportCsv()">📊 .csv</button>
+        <button class="tbb" onclick="clearHist()" style="color:var(--jp);">🗑️ Xóa</button>
+      </div>
+    </div>
+    <div class="hlist" id="hstList">
+      <div class="est">Lịch sử dịch xuất hiện tại đây trong suốt buổi họp</div>
+    </div>
+  </div>
+
   <!-- GLOSSARY -->
   <div class="sbox glsec">
     <div class="shd">
@@ -337,31 +333,15 @@ body.fs .fsexit{display:block;}
     </div>
   </div>
 
-  <!-- HISTORY -->
-  <div class="sbox">
-    <div class="shd">
-      <span class="stl">📜 Biên bản họp <span class="cbg" id="hstCnt">0</span></span>
-      <div style="display:flex;gap:5px;">
-        <button class="tbb" onclick="exportTxt()">📄 .txt</button>
-        <button class="tbb" onclick="exportCsv()">📊 .csv</button>
-        <button class="tbb" onclick="clearHist()" style="color:var(--jp);">🗑️ Xóa</button>
-      </div>
-    </div>
-    <div class="hlist" id="hstList">
-      <div class="est">Lịch sử dịch xuất hiện tại đây trong suốt buổi họp</div>
-    </div>
-  </div>
-
 </main>
 
 <div class="toast" id="toast"></div>
 
 <script>
 let isListen=false,rec=null,trTimer=null;
-let hist=[],gloss=[],sessions=[];
+let hist=[],gloss=[];
 let curOrig='',curTr='';
 let annoOn=true,romajiOn=false,noteIdx=null;
-let sentences=[]; // stores {jp, vn, romaji} per sentence
 
 // ── API KEY ──
 function checkKey(){
@@ -434,9 +414,10 @@ function toggleRomaji(){
 
 // ── RETRANSLATE ──
 function retranslate(){
-  if(!curOrig){showToast('Chưa có nội dung để dịch lại');return;}
-  showToast('🔄 Đang dịch lại...');
-  doTr(curOrig,true);
+  if(!hist.length){showToast('Chưa có nội dung để dịch lại');return;}
+  showToast('🔄 Đang dịch lại câu cuối...');
+  setLoad();
+  doTr(hist[0].orig,true,false);
 }
 
 // ── GLOSSARY ──
@@ -510,8 +491,8 @@ function stopMic(){
   document.getElementById('micBtn').className='mcb';
   document.getElementById('micBtn').textContent='🎤';
   document.getElementById('micSt').className='mic-st';
-  document.getElementById('micSt').textContent='Nhấn để nghe · Space';
-  document.getElementById('micHint').textContent='Microphone sẵn sàng';
+  document.getElementById('micSt').textContent='Nhấn 🎤 hoặc Space để bắt đầu';
+  document.getElementById('micHint').textContent='Nhận diện tiếng Nhật · Tự động dịch sang tiếng Việt';
   document.getElementById('waveAnim').classList.add('hide');
   document.getElementById('intTxt').textContent='';
 }
@@ -531,7 +512,13 @@ async function doTr(text,isRetranslate=false,isSentence=false){
   const key=getKey();if(!key)return;
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1000,
         system:`You are a professional interpreter for Japanese-Vietnamese business meetings.
@@ -599,7 +586,7 @@ function renderHist(){
       </div>
     </div>`).join('');
 }
-function clearHist(){hist=[];curOrig='';curTr='';renderHist();}
+function clearHist(){hist=[];renderHist();}
 
 // ── NOTES ──
 function openNote(idx){
