@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VietLongCreator — AI Video Studio</title>
+<title>VietLongCreator — Studio Video AI</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300fff7'/%3E%3Cstop offset='50%25' stop-color='%23b800ff'/%3E%3Cstop offset='100%25' stop-color='%23ff0090'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300fff7' stop-opacity='0.15'/%3E%3Cstop offset='100%25' stop-color='%23ff0090' stop-opacity='0.05'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='10' fill='%23020812'/%3E%3Crect width='64' height='64' rx='10' fill='url(%23g2)'/%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='9' fill='none' stroke='url(%23g1)' stroke-width='1.5' opacity='0.8'/%3E%3Cpath d='M8 8 L14 8' stroke='%2300fff7' stroke-width='1.5' stroke-linecap='round' opacity='0.9'/%3E%3Cpath d='M8 8 L8 14' stroke='%2300fff7' stroke-width='1.5' stroke-linecap='round' opacity='0.9'/%3E%3Cpath d='M56 56 L50 56' stroke='%23ff0090' stroke-width='1.5' stroke-linecap='round' opacity='0.9'/%3E%3Cpath d='M56 56 L56 50' stroke='%23ff0090' stroke-width='1.5' stroke-linecap='round' opacity='0.9'/%3E%3Ctext x='32' y='26' font-family='Arial Black' font-weight='900' font-size='14' fill='url(%23g1)' text-anchor='middle' letter-spacing='0.5'%3EVL%3C/text%3E%3Crect x='12' y='30' width='40' height='1' fill='url(%23g1)' opacity='0.4'/%3E%3Ctext x='32' y='43' font-family='Arial' font-weight='700' font-size='7' fill='%23c8d8f0' text-anchor='middle' letter-spacing='3' opacity='0.9'%3ECREATOR%3C/text%3E%3Crect x='12' y='48' width='40' height='0.5' fill='url(%23g1)' opacity='0.3'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -491,7 +491,7 @@ textarea:focus{border-color:var(--purple);box-shadow:0 0 0 1px rgba(184,0,255,.2
 /* ── AI HERO ── */
 .ai-hero{text-align:center;padding:36px 20px 28px;position:relative;}
 .ai-hero::before{
-  content:'< NEURAL ENGINE ONLINE >';
+  content:'< HỆ THỐNG AI ĐANG HOẠT ĐỘNG >';
   position:absolute;top:14px;left:50%;transform:translateX(-50%);
   font-size:.44rem;color:var(--cyan-dim);letter-spacing:.28em;
   font-family:var(--font-hd);opacity:.5;white-space:nowrap;
@@ -668,7 +668,7 @@ textarea:focus{border-color:var(--purple);box-shadow:0 0 0 1px rgba(184,0,255,.2
 
 /* ── SPECTRUM ── */
 .spec-preview{height:56px;background:var(--bg);overflow:hidden;margin-bottom:10px;position:relative;border:1px solid var(--bdr2);}
-.spec-preview::before{content:'AUDIO SPECTRUM';position:absolute;top:4px;left:8px;font-size:.45rem;color:var(--cyan-dim);letter-spacing:.15em;font-family:var(--font-hd);z-index:1;opacity:.6;}
+.spec-preview::before{content:'PHỔ ÂM THANH TRỰC TIẾP';position:absolute;top:4px;left:8px;font-size:.45rem;color:var(--cyan-dim);letter-spacing:.15em;font-family:var(--font-hd);z-index:1;opacity:.6;}
 #spec-mini{width:100%;height:100%;display:block;}
 
 /* ── GRADIENT PREVIEW ── */
@@ -793,7 +793,7 @@ header::before{
     </div>
     <div class="logo-wordmark">
       <div class="logo-name">VietLong</div>
-      <div class="logo-tagline">AI Video Studio</div>
+      <div class="logo-tagline">Studio Video AI</div>
     </div>
   </div>
 
@@ -802,9 +802,9 @@ header::before{
     <div class="apikey-wrap" title="Gemini AI - Miễn phí, không cần API Key">
       <div class="akey-dot on" id="akey-dot"></div>
       <label>GEMINI AI</label>
-      <span style="font-family:var(--font-mono);font-size:.63rem;color:var(--green);letter-spacing:.04em;">FREE · No Key Required</span>
+      <span style="font-family:var(--font-mono);font-size:.63rem;color:var(--green);letter-spacing:.04em;">MIỄN PHÍ · Không cần Key</span>
     </div>
-    <div class="hbadge ai">⬡ AI CORE</div>
+    <div class="hbadge ai">⬡ AI NHÂN</div>
     <div class="hbadge v">v3.1</div>
   </div>
 </header>
@@ -813,8 +813,8 @@ header::before{
 <!-- MODE BAR -->
 <div class="mode-bar">
   <div class="mode-wrap">
-    <button class="mbt active" id="mb-up" onclick="switchMode('upload')">▶ UPLOAD_VIDEO + AUDIO</button>
-    <button class="mbt" id="mb-ai" onclick="switchMode('ai')">⬡ AI_GENERATE_FROM_AUDIO</button>
+    <button class="mbt active" id="mb-up" onclick="switchMode('upload')">▶ TẢI LÊN VIDEO + NHẠC</button>
+    <button class="mbt" id="mb-ai" onclick="switchMode('ai')">⬡ AI TẠO VIDEO TỪ NHẠC</button>
   </div>
 </div>
 
@@ -822,13 +822,13 @@ header::before{
 <div class="panel active" id="panel-upload">
 
   <div class="steps">
-    <div class="step active" id="s1"><div class="step-n">01</div><div class="step-l">UPLOAD</div></div>
+    <div class="step active" id="s1"><div class="step-n">01</div><div class="step-l">TẢI LÊN</div></div>
     <div class="ssep"></div>
-    <div class="step" id="s2"><div class="step-n">02</div><div class="step-l">OVERLAY</div></div>
+    <div class="step" id="s2"><div class="step-n">02</div><div class="step-l">LỚP PHỦ</div></div>
     <div class="ssep"></div>
-    <div class="step" id="s3"><div class="step-n">03</div><div class="step-l">PREVIEW</div></div>
+    <div class="step" id="s3"><div class="step-n">03</div><div class="step-l">XEM TRƯỚC</div></div>
     <div class="ssep"></div>
-    <div class="step" id="s4"><div class="step-n">04</div><div class="step-l">RENDER</div></div>
+    <div class="step" id="s4"><div class="step-n">04</div><div class="step-l">XUẤT VIDEO</div></div>
   </div>
 
   <!-- Upload row -->
@@ -839,19 +839,19 @@ header::before{
 
   <!-- Overlay config -->
   <div class="card">
-    <div class="st">⚙️ Overlay Config</div>
+    <div class="st">⚙️ Cấu Hình Hiệu Ứng Phủ</div>
     <div class="stabs">
-      <button class="stab active" onclick="stab('lyrics',this)">📝 Lyrics</button>
-      <button class="stab" onclick="stab('wave',this)">〰️ Waveform</button>
+      <button class="stab active" onclick="stab('lyrics',this)">📝 Lời Bài Hát</button>
+      <button class="stab" onclick="stab('wave',this)">〰️ Sóng Âm Thanh</button>
       <button class="stab" onclick="stab('both',this)">✨ Kết hợp</button>
     </div>
 
     <!-- LYRICS -->
     <div class="stab-panel active" id="stab-lyrics">
-      <textarea id="lyr" placeholder="Nhập lyrics...&#10;Mỗi dòng = 1 câu hiển thị theo thứ tự"></textarea>
-      <div class="hint">💡 Thời gian mỗi câu = tổng thời gian ÷ số dòng</div>
+      <textarea id="lyr" placeholder="Nhập lời bài hát...&#10;Mỗi dòng = 1 câu hiển thị theo thứ tự"></textarea>
+      <div class="hint">💡 Thời gian mỗi câu = tổng thời gian âm nhạc ÷ số dòng</div>
       <div class="row2" style="margin-top:12px">
-        <div class="fg"><label>Font</label><select id="lfont"><option value="'Syne',sans-serif">Syne — Hiện đại</option><option value="'Georgia',serif">Georgia — Cổ điển</option><option value="'Space Mono',monospace">Space Mono</option><option value="'Impact',sans-serif">Impact — Mạnh</option></select></div>
+        <div class="fg"><label>Phông Chữ</label><select id="lfont"><option value="'Syne',sans-serif">Syne — Hiện đại</option><option value="'Georgia',serif">Georgia — Cổ điển</option><option value="'Space Mono',monospace">Space Mono</option><option value="'Impact',sans-serif">Impact — Mạnh</option></select></div>
         <div class="fg"><label>Vị trí</label><select id="lpos"><option value="bottom">Phía dưới</option><option value="center">Giữa</option><option value="top">Phía trên</option></select></div>
         <div class="fg"><label>Cỡ chữ: <span id="fsv">28</span>px</label><input type="range" id="fsize" min="14" max="72" value="28" oninput="$('fsv').textContent=this.value"></div>
         <div class="fg"><label>Màu sắc</label>
@@ -863,17 +863,17 @@ header::before{
     <!-- WAVE -->
     <div class="stab-panel" id="stab-wave">
       <div class="wgrid">
-        <div class="wcard sel" onclick="selW(this,'bars')"><div class="wprev"><svg viewBox="0 0 80 34"><rect x="3" y="14" width="7" height="20" rx="1.5" fill="#ff2d78" opacity=".8"/><rect x="14" y="7" width="7" height="27" rx="1.5" fill="#ff2d78"/><rect x="25" y="2" width="7" height="32" rx="1.5" fill="#ff2d78"/><rect x="36" y="9" width="7" height="25" rx="1.5" fill="#ff2d78"/><rect x="47" y="16" width="7" height="18" rx="1.5" fill="#ff2d78" opacity=".8"/><rect x="58" y="11" width="7" height="23" rx="1.5" fill="#ff2d78"/><rect x="69" y="5" width="7" height="29" rx="1.5" fill="#ff2d78" opacity=".9"/></svg></div><div class="wname">BARS</div></div>
-        <div class="wcard" onclick="selW(this,'mirror')"><div class="wprev"><svg viewBox="0 0 80 34"><rect x="3" y="17" width="7" height="9" rx="1" fill="#00ffa3"/><rect x="14" y="13" width="7" height="13" rx="1" fill="#00ffa3"/><rect x="25" y="8" width="7" height="18" rx="1" fill="#00ffa3"/><rect x="36" y="11" width="7" height="15" rx="1" fill="#00ffa3"/><rect x="47" y="16" width="7" height="10" rx="1" fill="#00ffa3" opacity=".8"/><rect x="58" y="12" width="7" height="14" rx="1" fill="#00ffa3"/><rect x="69" y="7" width="7" height="19" rx="1" fill="#00ffa3" opacity=".9"/><rect x="3" y="8" width="7" height="9" rx="1" fill="#00ffa3" opacity=".4"/><rect x="14" y="8" width="7" height="5" rx="1" fill="#00ffa3" opacity=".4"/><rect x="25" y="8" width="7" height="0" rx="1" fill="#00ffa3" opacity=".4"/></svg></div><div class="wname">MIRROR</div></div>
-        <div class="wcard" onclick="selW(this,'line')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><polyline points="0,17 8,10 16,22 24,6 32,17 40,26 48,10 56,18 64,13 72,20 80,15" stroke="#00e5ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="wname">LINE</div></div>
-        <div class="wcard" onclick="selW(this,'filled')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><path d="M0,34 L0,20 C8,20 13,9 18,9 C23,9 27,22 36,22 C45,22 50,11 58,11 C63,11 68,24 80,24 L80,34 Z" fill="rgba(0,229,255,.3)" stroke="#00e5ff" stroke-width="1.5"/></svg></div><div class="wname">FILLED</div></div>
-        <div class="wcard" onclick="selW(this,'circle')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><circle cx="40" cy="17" r="13" stroke="#ffe500" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/><circle cx="40" cy="17" r="7" fill="rgba(255,229,0,.12)" stroke="#ffe500" stroke-width="1"/></svg></div><div class="wname">RADIAL</div></div>
-        <div class="wcard" onclick="selW(this,'dots')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><circle cx="7" cy="22" r="3" fill="#ff2d78"/><circle cx="18" cy="14" r="3" fill="#ff2d78"/><circle cx="29" cy="8" r="3" fill="#ff2d78"/><circle cx="40" cy="16" r="3" fill="#ff2d78"/><circle cx="51" cy="23" r="3" fill="#ff2d78"/><circle cx="62" cy="11" r="3" fill="#ff2d78"/><circle cx="73" cy="18" r="3" fill="#ff2d78"/></svg></div><div class="wname">DOTS</div></div>
-        <div class="wcard" onclick="selW(this,'steps')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><rect x="0" y="20" width="12" height="14" fill="#9b5de5" opacity=".7"/><rect x="12" y="13" width="12" height="21" fill="#9b5de5" opacity=".8"/><rect x="24" y="7" width="12" height="27" fill="#9b5de5"/><rect x="36" y="10" width="12" height="24" fill="#9b5de5" opacity=".9"/><rect x="48" y="17" width="12" height="17" fill="#9b5de5" opacity=".8"/><rect x="60" y="13" width="12" height="21" fill="#9b5de5" opacity=".7"/></svg></div><div class="wname">STEPS</div></div>
-        <div class="wcard" onclick="selW(this,'glow')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff2d78"/><stop offset="100%" stop-color="#ff2d78" stop-opacity="0"/></linearGradient></defs><rect x="3" y="6" width="7" height="28" rx="3.5" fill="url(#gl)"/><rect x="14" y="10" width="7" height="24" rx="3.5" fill="url(#gl)" opacity=".9"/><rect x="25" y="2" width="7" height="32" rx="3.5" fill="url(#gl)"/><rect x="36" y="8" width="7" height="26" rx="3.5" fill="url(#gl)" opacity=".95"/><rect x="47" y="14" width="7" height="20" rx="3.5" fill="url(#gl)" opacity=".8"/><rect x="58" y="5" width="7" height="29" rx="3.5" fill="url(#gl)"/><rect x="69" y="11" width="7" height="23" rx="3.5" fill="url(#gl)" opacity=".9"/></svg></div><div class="wname">GLOW</div></div>
+        <div class="wcard sel" onclick="selW(this,'bars')"><div class="wprev"><svg viewBox="0 0 80 34"><rect x="3" y="14" width="7" height="20" rx="1.5" fill="#ff2d78" opacity=".8"/><rect x="14" y="7" width="7" height="27" rx="1.5" fill="#ff2d78"/><rect x="25" y="2" width="7" height="32" rx="1.5" fill="#ff2d78"/><rect x="36" y="9" width="7" height="25" rx="1.5" fill="#ff2d78"/><rect x="47" y="16" width="7" height="18" rx="1.5" fill="#ff2d78" opacity=".8"/><rect x="58" y="11" width="7" height="23" rx="1.5" fill="#ff2d78"/><rect x="69" y="5" width="7" height="29" rx="1.5" fill="#ff2d78" opacity=".9"/></svg></div><div class="wname">CỘT</div></div>
+        <div class="wcard" onclick="selW(this,'mirror')"><div class="wprev"><svg viewBox="0 0 80 34"><rect x="3" y="17" width="7" height="9" rx="1" fill="#00ffa3"/><rect x="14" y="13" width="7" height="13" rx="1" fill="#00ffa3"/><rect x="25" y="8" width="7" height="18" rx="1" fill="#00ffa3"/><rect x="36" y="11" width="7" height="15" rx="1" fill="#00ffa3"/><rect x="47" y="16" width="7" height="10" rx="1" fill="#00ffa3" opacity=".8"/><rect x="58" y="12" width="7" height="14" rx="1" fill="#00ffa3"/><rect x="69" y="7" width="7" height="19" rx="1" fill="#00ffa3" opacity=".9"/><rect x="3" y="8" width="7" height="9" rx="1" fill="#00ffa3" opacity=".4"/><rect x="14" y="8" width="7" height="5" rx="1" fill="#00ffa3" opacity=".4"/><rect x="25" y="8" width="7" height="0" rx="1" fill="#00ffa3" opacity=".4"/></svg></div><div class="wname">PHẢN CHIẾU</div></div>
+        <div class="wcard" onclick="selW(this,'line')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><polyline points="0,17 8,10 16,22 24,6 32,17 40,26 48,10 56,18 64,13 72,20 80,15" stroke="#00e5ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="wname">ĐƯỜNG KẺ</div></div>
+        <div class="wcard" onclick="selW(this,'filled')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><path d="M0,34 L0,20 C8,20 13,9 18,9 C23,9 27,22 36,22 C45,22 50,11 58,11 C63,11 68,24 80,24 L80,34 Z" fill="rgba(0,229,255,.3)" stroke="#00e5ff" stroke-width="1.5"/></svg></div><div class="wname">LẤPĐẦY</div></div>
+        <div class="wcard" onclick="selW(this,'circle')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><circle cx="40" cy="17" r="13" stroke="#ffe500" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/><circle cx="40" cy="17" r="7" fill="rgba(255,229,0,.12)" stroke="#ffe500" stroke-width="1"/></svg></div><div class="wname">VÒNG TRÒN</div></div>
+        <div class="wcard" onclick="selW(this,'dots')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><circle cx="7" cy="22" r="3" fill="#ff2d78"/><circle cx="18" cy="14" r="3" fill="#ff2d78"/><circle cx="29" cy="8" r="3" fill="#ff2d78"/><circle cx="40" cy="16" r="3" fill="#ff2d78"/><circle cx="51" cy="23" r="3" fill="#ff2d78"/><circle cx="62" cy="11" r="3" fill="#ff2d78"/><circle cx="73" cy="18" r="3" fill="#ff2d78"/></svg></div><div class="wname">CHẤM</div></div>
+        <div class="wcard" onclick="selW(this,'steps')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><rect x="0" y="20" width="12" height="14" fill="#9b5de5" opacity=".7"/><rect x="12" y="13" width="12" height="21" fill="#9b5de5" opacity=".8"/><rect x="24" y="7" width="12" height="27" fill="#9b5de5"/><rect x="36" y="10" width="12" height="24" fill="#9b5de5" opacity=".9"/><rect x="48" y="17" width="12" height="17" fill="#9b5de5" opacity=".8"/><rect x="60" y="13" width="12" height="21" fill="#9b5de5" opacity=".7"/></svg></div><div class="wname">BẬC THANG</div></div>
+        <div class="wcard" onclick="selW(this,'glow')"><div class="wprev"><svg viewBox="0 0 80 34" fill="none"><defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff2d78"/><stop offset="100%" stop-color="#ff2d78" stop-opacity="0"/></linearGradient></defs><rect x="3" y="6" width="7" height="28" rx="3.5" fill="url(#gl)"/><rect x="14" y="10" width="7" height="24" rx="3.5" fill="url(#gl)" opacity=".9"/><rect x="25" y="2" width="7" height="32" rx="3.5" fill="url(#gl)"/><rect x="36" y="8" width="7" height="26" rx="3.5" fill="url(#gl)" opacity=".95"/><rect x="47" y="14" width="7" height="20" rx="3.5" fill="url(#gl)" opacity=".8"/><rect x="58" y="5" width="7" height="29" rx="3.5" fill="url(#gl)"/><rect x="69" y="11" width="7" height="23" rx="3.5" fill="url(#gl)" opacity=".9"/></svg></div><div class="wname">PHÁT SÁNG</div></div>
       </div>
       <div class="row2">
-        <div class="fg"><label>Màu sóng</label><input type="color" id="wcol" value="#ff2d78"></div>
+        <div class="fg"><label>Màu Sóng Âm</label><input type="color" id="wcol" value="#ff2d78"></div>
         <div class="fg"><label>Vị trí</label><select id="wpos"><option value="bottom">Phía dưới</option><option value="center">Giữa</option><option value="top">Phía trên</option></select></div>
         <div class="fg"><label>Chiều cao: <span id="whv">80</span>px</label><input type="range" id="wh" min="30" max="220" value="80" oninput="$('whv').textContent=this.value"></div>
         <div class="fg"><label>Độ nhạy: <span id="wsv">5</span></label><input type="range" id="ws" min="1" max="10" value="5" oninput="$('wsv').textContent=this.value"></div>
@@ -882,36 +882,36 @@ header::before{
 
     <!-- BOTH -->
     <div class="stab-panel" id="stab-both">
-      <div class="note" style="margin-bottom:14px">✨ Kết hợp Lyrics + Sóng âm cùng lúc</div>
+      <div class="note" style="margin-bottom:14px">✨ Kết hợp Lời Nhạc + Sóng Âm Thanh cùng lúc</div>
       <div class="row2">
         <div class="fg"><label>Vị trí lyrics</label><select id="blpos"><option value="center">Giữa</option><option value="top">Trên</option></select></div>
-        <div class="fg"><label>Loại sóng</label><select id="bwtype"><option value="bars">Bars</option><option value="mirror">Mirror</option><option value="glow">Glow</option></select></div>
+        <div class="fg"><label>Kiểu Sóng Âm</label><select id="bwtype"><option value="bars">Cột</option><option value="mirror">Phản Chiếu</option><option value="glow">Phát Sáng</option></select></div>
       </div>
     </div>
   </div>
 
   <!-- Preview -->
   <div class="card">
-    <div class="st">👁️ Preview</div>
+    <div class="st">👁️ Xem Trước Video</div>
     <div class="pvbox" id="pvbox">
       <video id="prev-vid" muted></video>
       <canvas id="ov-cvs"></canvas>
-      <div class="no-vid" id="novm"><span style="font-size:2.5rem;filter:drop-shadow(0 0 12px rgba(0,255,247,.5))">▶</span><span>// AWAITING VIDEO INPUT</span></div>
+      <div class="no-vid" id="novm"><span style="font-size:2.5rem;filter:drop-shadow(0 0 12px rgba(0,255,247,.5))">▶</span><span>// ĐANG CHỜ VIDEO ĐẦU VÀO</span></div>
     </div>
     <div class="playbar">
-      <button class="pbtn primary" id="pbtn" onclick="togglePlay()">▶ PLAY</button>
+      <button class="pbtn primary" id="pbtn" onclick="togglePlay()">▶ PHÁT</button>
       <button class="pbtn" onclick="restartUp()">↺</button>
       <span class="tdisp" id="tdisp">00:00 / 00:00</span>
     </div>
   </div>
 
   <div class="rsec">
-    <div class="rtitle">RENDER &amp; <span style="color:var(--pink)">EXPORT</span></div>
-    <div class="rsub">// ENCODE: video + audio + overlay → WebM output file</div>
-    <button class="rbtn" id="rbtn" onclick="startRender()"><span>⚡ RENDER VIDEO</span></button>
+    <div class="rtitle">XUẤT &amp; <span style="color:var(--pink)">TẠO FILE</span></div>
+    <div class="rsub">// XUẤT FILE: video + nhạc + lớp phủ → file WebM</div>
+    <button class="rbtn" id="rbtn" onclick="startRender()"><span>⚡ XUẤT VIDEO</span></button>
     <div id="rpw" class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill" id="rpf"></div></div><div class="pbar-txt" id="rpt">Đang chuẩn bị...</div></div>
-    <div id="rdl" class="dlwrap"><p>✅ Render xong!</p><a id="rdla" href="#" class="dlbtn"><span>⬇ TẢI VIDEO VỀ</span></a></div>
-    <div class="note">⚠️ Xuất WebM (Chrome/Edge). Dùng FFmpeg để convert sang MP4.</div>
+    <div id="rdl" class="dlwrap"><p>✅ Render xong!</p><a id="rdla" href="#" class="dlbtn"><span>⬇ TẢI VIDEO VỀ MÁY</span></a></div>
+    <div class="note">⚠️ Xuất file WebM (Chrome/Edge). Dùng FFmpeg để chuyển sang MP4 nếu cần.</div>
   </div>
 
 </div><!-- /panel-upload -->
@@ -922,75 +922,75 @@ header::before{
 
   <div class="ai-hero">
     <span class="ahi-icon"></span>
-    <div class="ahi-title" data-text="AI VIDEO GENERATOR">AI VIDEO GENERATOR</div>
-    <div class="ahi-sub">// UPLOAD AUDIO → AI ANALYZES WAVEFORM → GENERATES REACTIVE VISUAL → EXPORT<br>Không cần video. Neural engine tạo animation theo từng beat.</div>
+    <div class="ahi-title" data-text="TRÌNH TẠO VIDEO AI">TRÌNH TẠO VIDEO AI</div>
+    <div class="ahi-sub">// TẢI NHẠC → AI PHÂN TÍCH SÓNG ÂM → TẠO HIỆU ỨNG THEO NHỊP → XUẤT FILE<br>Không cần video. Không cần video. AI tự tạo hình ảnh động theo từng nhịp nhạc.</div>
   </div>
 
   <!-- FREE AI INFO BAR -->
   <div style="margin-bottom:16px;padding:12px 18px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.2);border-left:3px solid var(--green);display:flex;align-items:center;gap:12px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);">
     <span style="font-size:1.2rem">✅</span>
     <div>
-      <div style="font-family:var(--font-hd);font-size:.6rem;color:var(--green);letter-spacing:.1em;margin-bottom:3px">GOOGLE GEMINI AI — MIỄN PHÍ HOÀN TOÀN</div>
-      <div style="font-size:.6rem;color:var(--muted);font-family:var(--font-mono)">Không cần API Key · Không cần tài khoản · 1500 requests/ngày · Hoạt động trên mọi domain</div>
+      <div style="font-family:var(--font-hd);font-size:.6rem;color:var(--green);letter-spacing:.1em;margin-bottom:3px">GOOGLE GEMINI AI — HOÀN TOÀN MIỄN PHÍ</div>
+      <div style="font-size:.6rem;color:var(--muted);font-family:var(--font-mono)">Không cần API Key · Không cần tài khoản · 1500 lượt/ngày · Chạy được trên mọi nền tảng</div>
     </div>
   </div>
 
 
   <!-- STEP 1: AUDIO -->
   <div class="card">
-    <div class="st">01 — Upload Nhạc</div>
+    <div class="st">01 — Tải Lên Nhạc</div>
     <div class="uprow full">
-      <div class="ucard a" id="ai-adrop"><span class="ucard-icon">🎵</span><div class="ucard-title">MP3 / WAV / OGG</div><div class="ucard-sub">AI sẽ phân tích âm thanh và tạo visual theo nhịp thật của bài nhạc</div><button class="ubtn" onclick="$('ai-ainp').click()">CHỌN NHẠC</button><input type="file" id="ai-ainp" accept="audio/*"><div class="fok" id="ai-aok">✓ <span id="ai-aname">—</span></div></div>
+      <div class="ucard a" id="ai-adrop"><span class="ucard-icon">🎵</span><div class="ucard-title">MP3 / WAV / OGG</div><div class="ucard-sub">AI phân tích sóng âm và tạo hình ảnh động theo nhịp thật của bài nhạc</div><button class="ubtn" onclick="$('ai-ainp').click()">CHỌN NHẠC</button><input type="file" id="ai-ainp" accept="audio/*"><div class="fok" id="ai-aok">✓ <span id="ai-aname">—</span></div></div>
     </div>
   </div>
 
   <!-- STEP 2: AI MODE -->
   <div class="card">
-    <div class="st">02 — Chọn Cách AI Tạo Video</div>
+    <div class="st">02 — Chọn Kiểu AI Tạo Video</div>
     <div class="aimodes">
       <div class="aimt sel" id="aimt-vis" onclick="selAIMode('visualizer')">
         <span class="aimt-icon">🌊</span>
-        <div class="aimt-name">VISUALIZER</div>
-        <div class="aimt-desc">Spectrum, particles, sóng reactive theo beat</div>
+        <div class="aimt-name">BỘ TRỰC QUAN</div>
+        <div class="aimt-desc">Phổ âm, hạt sáng, sóng phản ứng theo nhịp</div>
       </div>
       <div class="aimt" id="aimt-grad" onclick="selAIMode('gradient')">
         <span class="aimt-icon">🌈</span>
-        <div class="aimt-name">GRADIENT ĐỘNG</div>
-        <div class="aimt-desc">Nền gradient / màu chuyển theo nhịp nhạc</div>
+        <div class="aimt-name">NỀN ĐỘNG</div>
+        <div class="aimt-desc">Nền gradient màu sắc chuyển theo nhịp nhạc</div>
       </div>
       <div class="aimt" id="aimt-t2v" onclick="selAIMode('text2video')">
         <span class="aimt-icon">✍️</span>
-        <div class="aimt-name">TEXT → VIDEO</div>
-        <div class="aimt-desc">Nhập mô tả, AI tạo concept & visual</div>
+        <div class="aimt-name">MÔ TẢ → VIDEO</div>
+        <div class="aimt-desc">Nhập mô tả, AI tạo concept và hình ảnh</div>
       </div>
       <div class="aimt" id="aimt-tmpl" onclick="selAIMode('template')">
         <span class="aimt-icon">🎨</span>
-        <div class="aimt-name">TEMPLATE</div>
-        <div class="aimt-desc">Chọn template, AI animate theo nhạc</div>
+        <div class="aimt-name">MẪU CÓ SẴN</div>
+        <div class="aimt-desc">Chọn mẫu, AI tự tạo hiệu ứng theo nhạc</div>
       </div>
     </div>
 
     <!-- VISUALIZER MODE -->
     <div class="aimode-panel active" id="aimp-visualizer">
-      <div class="st" style="margin-top:4px">Phong cách Visualizer</div>
+      <div class="st" style="margin-top:4px">Chọn Phong Cách Hiệu Ứng</div>
       <div class="vsgrid">
-        <div class="vscard sel" onclick="selVS(this,'particles')"><span class="vscard-icon">✨</span><div class="vscard-name">PARTICLES</div><div class="vscard-desc">Hạt sáng reactive</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'spectrum')"><span class="vscard-icon">📊</span><div class="vscard-name">SPECTRUM</div><div class="vscard-desc">Phổ tần số đẹp</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'galaxy')"><span class="vscard-icon">🌠</span><div class="vscard-name">GALAXY</div><div class="vscard-desc">Thiên hà xoáy</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'geometric')"><span class="vscard-icon">🔷</span><div class="vscard-name">GEOMETRIC</div><div class="vscard-desc">Hình học 3D</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'nebula')"><span class="vscard-icon">🌌</span><div class="vscard-name">NEBULA</div><div class="vscard-desc">Tinh vân vũ trụ</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'fire')"><span class="vscard-icon">🔥</span><div class="vscard-name">FIRE</div><div class="vscard-desc">Ngọn lửa rực rỡ</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'neon')"><span class="vscard-icon">⚡</span><div class="vscard-name">NEON GRID</div><div class="vscard-desc">Lưới neon cyberpunk</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selVS(this,'fluid')"><span class="vscard-icon">💧</span><div class="vscard-name">FLUID</div><div class="vscard-desc">Chất lỏng màu sắc</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard sel" onclick="selVS(this,'particles')"><span class="vscard-icon">✨</span><div class="vscard-name">HẠT SÁNG</div><div class="vscard-desc">Hạt sáng phản ứng theo nhịp</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'spectrum')"><span class="vscard-icon">📊</span><div class="vscard-name">PHỔ ÂM THANH</div><div class="vscard-desc">Hiển thị phổ tần số âm thanh</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'galaxy')"><span class="vscard-icon">🌠</span><div class="vscard-name">THIÊN HÀ</div><div class="vscard-desc">Thiên hà xoáy tròn</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'geometric')"><span class="vscard-icon">🔷</span><div class="vscard-name">HÌNH HỌC</div><div class="vscard-desc">Hình học 3D theo nhịp</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'nebula')"><span class="vscard-icon">🌌</span><div class="vscard-name">TINH VÂN</div><div class="vscard-desc">Tinh vân vũ trụ huyền ảo</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'fire')"><span class="vscard-icon">🔥</span><div class="vscard-name">LỬA</div><div class="vscard-desc">Ngọn lửa rực rỡ bùng cháy</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'neon')"><span class="vscard-icon">⚡</span><div class="vscard-name">LƯỚI NEON</div><div class="vscard-desc">Lưới ánh sáng neon</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selVS(this,'fluid')"><span class="vscard-icon">💧</span><div class="vscard-name">CHẤT LỎNG</div><div class="vscard-desc">Chất lỏng màu sắc chảy</div><div class="vscard-ck">✓</div></div>
       </div>
     </div>
 
     <!-- GRADIENT MODE -->
     <div class="aimode-panel" id="aimp-gradient">
-      <div class="st" style="margin-top:4px">Chế độ Gradient Động</div>
+      <div class="st" style="margin-top:4px">Hiệu Ứng Nền Chuyển Màu Động</div>
       <div class="grad-preview" id="gp" style="background:linear-gradient(135deg,#1a0533,#2d0a4e)"></div>
       <div class="row3" style="margin-bottom:12px">
-        <div class="fg"><label>Kiểu chuyển động</label><select id="gmove"><option value="radial">Radial Pulse</option><option value="sweep">Color Sweep</option><option value="breathe">Breathe</option><option value="wave">Wave Flow</option></select></div>
+        <div class="fg"><label>Kiểu chuyển động</label><select id="gmove"><option value="radial">Lan Toả Tròn</option><option value="sweep">Quét Màu</option><option value="breathe">Hít Thở</option><option value="wave">Sóng Chảy</option></select></div>
         <div class="fg"><label>Tốc độ</label><input type="range" id="gspd" min="1" max="10" value="5"></div>
         <div class="fg"><label>Cường độ pulse</label><input type="range" id="gpow" min="1" max="10" value="7"></div>
       </div>
@@ -1009,11 +1009,11 @@ header::before{
 
     <!-- TEXT2VIDEO MODE -->
     <div class="aimode-panel" id="aimp-text2video">
-      <div class="st" style="margin-top:4px">Mô Tả Video</div>
-      <textarea id="t2v-prompt" style="min-height:90px;border-color:rgba(155,93,229,.3)" placeholder="Mô tả visual bạn muốn AI tạo ra...&#10;Ví dụ: Hạt sáng màu tím trôi nhẹ trong vũ trụ đêm, ánh sao lấp lánh, cảm giác mơ mộng"></textarea>
+      <div class="st" style="margin-top:4px">Mô Tả Ý Tưởng Video</div>
+      <textarea id="t2v-prompt" style="min-height:90px;border-color:rgba(155,93,229,.3)" placeholder="Mô tả hình ảnh bạn muốn AI tạo ra...&#10;Ví dụ: Hạt sáng màu tím trôi nhẹ trong vũ trụ đêm, ánh sao lấp lánh, cảm giác mơ mộng"></textarea>
       <div style="display:flex;gap:9px;margin-top:9px;align-items:center;flex-wrap:wrap">
-        <button class="gibtn" id="gibtn" onclick="genPromptIdeas()">🪄 AI Gợi Ý</button>
-        <span style="font-size:.62rem;color:var(--muted)">hoặc nhập mô tả tự do ở trên</span>
+        <button class="gibtn" id="gibtn" onclick="genPromptIdeas()">🪄 AI Gợi Ý Ý Tưởng</button>
+        <span style="font-size:.62rem;color:var(--muted)">hoặc tự nhập mô tả ở trên</span>
       </div>
       <div id="ideas-ldg" style="display:none;font-size:.67rem;color:var(--c4);margin-top:7px">⏳ Đang tạo gợi ý...</div>
       <div id="ideas-list" style="display:none;flex-direction:column;gap:6px;margin-top:10px"></div>
@@ -1021,18 +1021,18 @@ header::before{
 
     <!-- TEMPLATE MODE -->
     <div class="aimode-panel" id="aimp-template">
-      <div class="st" style="margin-top:4px">Chọn Template</div>
+      <div class="st" style="margin-top:4px">Chọn Mẫu Video Có Sẵn</div>
       <div class="vsgrid">
-        <div class="vscard" onclick="selTpl(this,'lyric-video')"><span class="vscard-icon">🎤</span><div class="vscard-name">LYRIC VIDEO</div><div class="vscard-desc">Chữ lyrics nổi bật + nền</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard sel" onclick="selTpl(this,'music-card')"><span class="vscard-icon">🎴</span><div class="vscard-name">MUSIC CARD</div><div class="vscard-desc">Ảnh nghệ sĩ + sóng nhạc kiểu H2O Music</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selTpl(this,'concert')"><span class="vscard-icon">🎪</span><div class="vscard-name">CONCERT</div><div class="vscard-desc">Ánh đèn sân khấu</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selTpl(this,'lofi')"><span class="vscard-icon">☕</span><div class="vscard-name">LO-FI</div><div class="vscard-desc">Chill, retro, ấm áp</div><div class="vscard-ck">✓</div></div>
-        <div class="vscard" onclick="selTpl(this,'rave')"><span class="vscard-icon">🕺</span><div class="vscard-name">RAVE</div><div class="vscard-desc">Ánh sáng neon rực rỡ</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selTpl(this,'lyric-video')"><span class="vscard-icon">🎤</span><div class="vscard-name">VIDEO LỜI NHẠC</div><div class="vscard-desc">Lời bài hát nổi bật trên nền đẹp</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard sel" onclick="selTpl(this,'music-card')"><span class="vscard-icon">🎴</span><div class="vscard-name">THẺ ÂM NHẠC</div><div class="vscard-desc">Ảnh nghệ sĩ + sóng nhạc phong cách H2O</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selTpl(this,'concert')"><span class="vscard-icon">🎪</span><div class="vscard-name">SÂN KHẤU</div><div class="vscard-desc">Ánh đèn sân khấu hoành tráng</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selTpl(this,'lofi')"><span class="vscard-icon">☕</span><div class="vscard-name">LO-FI NHẸ NHÀNG</div><div class="vscard-desc">Phong cách lo-fi ấm áp</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selTpl(this,'rave')"><span class="vscard-icon">🕺</span><div class="vscard-name">NHẠC RAVE</div><div class="vscard-desc">Ánh đèn neon nhảy theo beat</div><div class="vscard-ck">✓</div></div>
       </div>
 
       <!-- MUSIC CARD OPTIONS — hiện khi chọn music-card -->
       <div id="music-card-opts" style="margin-top:14px;padding:16px;background:var(--bg2);border:1px solid var(--bdr);border-left:2px solid var(--cyan);display:block;">
-        <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:12px">🎴 MUSIC CARD CONFIG</div>
+        <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:12px">🎴 THIẾT LẬP THẺ ÂM NHẠC</div>
         <div class="row2" style="gap:12px;margin-bottom:12px">
           <div class="fg">
             <label>Tên bài hát</label>
@@ -1058,7 +1058,7 @@ header::before{
           <div style="display:flex;gap:10px;align-items:center;">
             <button onclick="$('mc-img-inp').click()" style="padding:7px 16px;background:rgba(0,255,247,.1);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-hd);font-size:.55rem;letter-spacing:.1em;cursor:pointer;white-space:nowrap;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);">📷 CHỌN ẢNH</button>
             <input type="file" id="mc-img-inp" accept="image/*" style="display:none" onchange="loadMCImage(this)">
-            <span id="mc-img-name" style="font-size:.6rem;color:var(--muted);font-family:var(--font-mono)">Chưa chọn ảnh — sẽ dùng placeholder</span>
+            <span id="mc-img-name" style="font-size:.6rem;color:var(--muted);font-family:var(--font-mono)">Chưa chọn — sẽ dùng ảnh mặc định</span>
           </div>
         </div>
         <div class="row2" style="gap:12px">
@@ -1085,17 +1085,17 @@ header::before{
 
   <!-- STEP 3: LYRICS & WAVEFORM OVERLAY -->
   <div class="card">
-    <div class="st">03 — Lyrics & Sóng Âm Overlay</div>
+    <div class="st">03 — Lời Nhạc & Sóng Âm Thanh</div>
     <div class="row2">
       <div>
-        <textarea id="ai-lyr" style="min-height:80px" placeholder="Lyrics (tùy chọn)...&#10;Mỗi dòng = 1 câu"></textarea>
-        <div class="hint">Để trống nếu không cần lyrics</div>
+        <textarea id="ai-lyr" style="min-height:80px" placeholder="Lời bài hát (tùy chọn)...&#10;Mỗi dòng = 1 câu"></textarea>
+        <div class="hint">Để trống nếu không cần lời bài hát</div>
       </div>
       <div>
         <div class="row2" style="gap:10px">
-          <div class="fg"><label>Loại sóng</label><select id="ai-wtype"><option value="bars">Bars</option><option value="mirror">Mirror</option><option value="glow">Glow</option><option value="circle">Radial</option><option value="line">Line</option><option value="none">Ẩn</option></select></div>
-          <div class="fg"><label>Màu sóng</label><input type="color" id="ai-wcol" value="#9b5de5"></div>
-          <div class="fg"><label>Vị trí sóng</label><select id="ai-wpos"><option value="bottom">Dưới</option><option value="center">Giữa</option></select></div>
+          <div class="fg"><label>Kiểu Sóng Âm</label><select id="ai-wtype"><option value="bars">Cột</option><option value="mirror">Phản Chiếu</option><option value="glow">Phát Sáng</option><option value="circle">Vòng Tròn</option><option value="line">Đường Kẻ</option><option value="none">Ẩn</option></select></div>
+          <div class="fg"><label>Màu Sóng Âm</label><input type="color" id="ai-wcol" value="#9b5de5"></div>
+          <div class="fg"><label>Vị Trí Sóng</label><select id="ai-wpos"><option value="bottom">Dưới</option><option value="center">Giữa</option></select></div>
           <div class="fg"><label>Độ nhạy: <span id="ai-wsv">6</span></label><input type="range" id="ai-ws" min="1" max="10" value="6" oninput="$('ai-wsv').textContent=this.value"></div>
         </div>
       </div>
@@ -1109,13 +1109,13 @@ header::before{
   <div id="ai-ldg">
     <div class="spin"></div>
     <div class="ldg-main" id="ldg-main">AI đang phân tích...</div>
-    <div class="ldg-sub" id="ldg-sub">Khởi tạo animation engine</div>
+    <div class="ldg-sub" id="ldg-sub">Đang tải hệ thống hiệu ứng</div>
   </div>
 
   <!-- AI PREVIEW -->
   <div id="ai-prev" style="display:none;margin-top:16px">
     <div class="card">
-      <div class="st">🎬 AI Video Preview</div>
+      <div class="st">🎬 Xem Trước Video AI</div>
       <!-- Live spectrum mini -->
       <div class="spec-preview">
         <canvas id="spec-mini"></canvas>
@@ -1125,20 +1125,20 @@ header::before{
         <canvas id="ai-ov-cvs"></canvas>
       </div>
       <div class="playbar">
-        <button class="pbtn primary" id="ai-pbtn" onclick="toggleAIPlay()">▶ PLAY</button>
+        <button class="pbtn primary" id="ai-pbtn" onclick="toggleAIPlay()">▶ PHÁT</button>
         <button class="pbtn" onclick="restartAI()">↺</button>
         <span class="tdisp" id="ai-tdisp">00:00 / 00:00</span>
         <div id="beat-ind" style="width:10px;height:10px;border-radius:50%;background:var(--c2);margin-left:8px;transition:transform .1s,opacity .1s;opacity:.3;"></div>
-        <span style="font-size:.6rem;color:var(--muted);margin-left:3px">BEAT</span>
+        <span style="font-size:.6rem;color:var(--muted);margin-left:3px">NHỊP</span>
       </div>
     </div>
 
     <div class="rsec">
-      <div class="rtitle">EXPORT <span style="color:var(--pink)">AI VIDEO</span></div>
-      <div class="rsub">// RENDER: AI animation + audio → WebM output</div>
-      <button class="rbtn" id="ai-rbtn" onclick="startAIRender()"><span>⚡ RENDER AI VIDEO</span></button>
+      <div class="rtitle">XUẤT <span style="color:var(--pink)">VIDEO AI</span></div>
+      <div class="rsub">// XUẤT FILE: hoạt ảnh AI + nhạc → WebM</div>
+      <button class="rbtn" id="ai-rbtn" onclick="startAIRender()"><span>⚡ XUẤT VIDEO AI</span></button>
       <div id="aipw" class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill" id="aipf"></div></div><div class="pbar-txt" id="aipt">Đang chuẩn bị...</div></div>
-      <div id="aidl" class="dlwrap"><p>✅ Render xong!</p><a id="aidla" href="#" class="dlbtn"><span>⬇ TẢI AI VIDEO VỀ</span></a></div>
+      <div id="aidl" class="dlwrap"><p>✅ Render xong!</p><a id="aidla" href="#" class="dlbtn"><span>⬇ TẢI VIDEO AI VỀ MÁY</span></a></div>
     </div>
   </div>
 
@@ -1168,7 +1168,7 @@ async function callAI(systemPrompt, userContent){
 
   // ── Strategy 1: Pollinations AI POST (miễn phí hoàn toàn, không cần key, hỗ trợ CORS) ──
   try{
-    setLdg('AI đang suy nghĩ...','Pollinations AI · Free');
+    setLdg('AI đang xử lý...','Pollinations AI · Miễn phí');
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1193,7 +1193,7 @@ async function callAI(systemPrompt, userContent){
 
   // ── Strategy 2: Pollinations AI GET (fallback với URL encoding) ──
   try{
-    setLdg('AI đang suy nghĩ...','Pollinations GET · Free');
+    setLdg('AI đang xử lý...','Pollinations AI · Dự phòng');
     // Giới hạn độ dài để không bị URL quá dài
     const shortPrompt = fullPrompt.substring(0, 800);
     const url = 'https://text.pollinations.ai/' + encodeURIComponent(shortPrompt)
@@ -1210,7 +1210,7 @@ async function callAI(systemPrompt, userContent){
 
   // ── Strategy 3: Hugging Face Mistral-7B (free inference, no key required) ──
   try{
-    setLdg('AI đang suy nghĩ...','HuggingFace Mistral · Free');
+    setLdg('AI đang xử lý...','HuggingFace Mistral · Miễn phí');
     const res = await fetch(
       'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',
       {
@@ -1235,7 +1235,7 @@ async function callAI(systemPrompt, userContent){
 
   // ── Strategy 4: Pollinations với model khác (mistral) ──
   try{
-    setLdg('AI đang suy nghĩ...','Pollinations Mistral · Free');
+    setLdg('AI đang xử lý...','Pollinations Mistral · Dự phòng');
     const res = await fetch('https://text.pollinations.ai/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1512,7 +1512,7 @@ async function playUp(){
     const s=audCtx.createMediaElementSource(audEl);s.connect(analyser);analyser.connect(audCtx.destination);
   }
   vidEl.play();if(audEl){audEl.currentTime=vidEl.currentTime;audEl.play();}
-  playing=true;$('pbtn').textContent='⏸ PAUSE';setStep(3,'active');renderLoop();
+  playing=true;$('pbtn').textContent='⏸ TẠM DỪNG';setStep(3,'active');renderLoop();
 }
 function pauseUp(){
   vidEl.pause();if(audEl)audEl.pause();
@@ -1689,7 +1689,7 @@ async function generateAIVideo(){
   $('genbtn').disabled=true;$('ai-ldg').style.display='block';$('ai-prev').style.display='none';
 
   const prompt=$('t2v-prompt').value||`Video nhạc phong cách ${aiMode==='visualizer'?aiVStyle:aiMode}`;
-  setLdg('AI đang phân tích yêu cầu...','Kết nối Claude API');
+  setLdg('AI đang phân tích yêu cầu...',' Đang kết nối dịch vụ AI');
 
   try{
     const sysPrompt=`Bạn tạo tham số JSON cho canvas animation music video. CHỈ JSON thuần, không markdown, không giải thích.
@@ -1717,7 +1717,7 @@ Schema: {
       system:sysPrompt,
       messages:[{role:'user',content:`Tạo tham số cho: "${prompt}". Mode: ${aiMode}. Style: ${aiVStyle}. Palette: ${aiGPal}. Template: ${aiTpl}.`}]
     });
-    setLdg('Đang xây dựng animation...','Parse parameters từ Claude');
+    setLdg('Đang xây dựng hiệu ứng...','Đọc thông số từ AI');
     const txt=d.content?.find(b=>b.type==='text')?.text||'{}';
     let p;try{p=JSON.parse(txt.replace(/```json|```/g,'').trim());}catch{p={};}
 
@@ -1734,7 +1734,7 @@ Schema: {
     p.style=p.style||(aiMode==='visualizer'?aiVStyle:aiMode);
     aiParams=p;
 
-    setLdg('Khởi động render engine...','Tạo particles và effects');
+    setLdg('Đang khởi động...','Tạo hạt sáng và hiệu ứng');
     await new Promise(r=>setTimeout(r,400));
     rszAI();initPtcls(p);setupAIAudio();
     $('ai-prev').style.display='block';
@@ -2356,7 +2356,7 @@ async function playAI(){
   if(!aiParams){alert('Tạo AI video trước!');return;}
   if(aiAudCtx&&aiAudCtx.state==='suspended')await aiAudCtx.resume();
   if(aiAudEl){aiAudEl.currentTime=0;aiAudEl.play();}
-  aiPlaying=true;$('ai-pbtn').textContent='⏸ PAUSE';aiLoop();
+  aiPlaying=true;$('ai-pbtn').textContent='⏸ TẠM DỪNG';aiLoop();
 }
 function pauseAI(){
   if(aiAudEl)aiAudEl.pause();
