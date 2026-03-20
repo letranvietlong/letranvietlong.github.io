@@ -1387,9 +1387,24 @@ function selW(el,type){
 // ================================================================
 function selAIMode(mode){
   aiMode=mode;
-  ['visualizer','gradient','text2video','template'].forEach(m=>{
-    $(`aimt-${m==='text2video'?'t2v':m==='template'?'tmpl':m}`).classList.toggle('sel',m===mode);
-    $(`aimp-${m}`).classList.toggle('active',m===mode);
+  // Map mode names → actual HTML IDs
+  const tabIdMap={
+    'visualizer':'aimt-vis',
+    'gradient':  'aimt-grad',
+    'text2video':'aimt-t2v',
+    'template':  'aimt-tmpl'
+  };
+  const panelIdMap={
+    'visualizer':'aimp-visualizer',
+    'gradient':  'aimp-gradient',
+    'text2video':'aimp-text2video',
+    'template':  'aimp-template'
+  };
+  Object.keys(tabIdMap).forEach(m=>{
+    const tabEl=$(tabIdMap[m]);
+    const panelEl=$(panelIdMap[m]);
+    if(tabEl)  tabEl.classList.toggle('sel',   m===mode);
+    if(panelEl)panelEl.classList.toggle('active',m===mode);
   });
 }
 function selVS(el,s){
