@@ -926,6 +926,16 @@ header::before{
     <div class="ahi-sub">// UPLOAD AUDIO → AI ANALYZES WAVEFORM → GENERATES REACTIVE VISUAL → EXPORT<br>Không cần video. Neural engine tạo animation theo từng beat.</div>
   </div>
 
+  <!-- CORS WARNING BANNER (auto-hide if on localhost) -->
+  <div id="cors-banner" style="display:none;margin-bottom:14px;padding:14px 18px;background:rgba(255,229,0,.04);border:1px solid rgba(255,229,0,.2);border-left:3px solid var(--yellow);position:relative;">
+    <div style="font-family:var(--font-hd);font-size:.6rem;color:var(--yellow);letter-spacing:.1em;margin-bottom:6px">⚠ CORS RESTRICTION DETECTED</div>
+    <div style="font-size:.62rem;color:var(--muted);font-family:var(--font-mono);line-height:1.8">
+      Trang đang chạy trên <strong style="color:var(--txt)">GitHub Pages</strong> — Anthropic API bị chặn CORS.<br>
+      <strong style="color:var(--cyan)">Giải pháp tốt nhất:</strong> Tải file HTML về máy → mở trực tiếp bằng Chrome/Edge.
+    </div>
+    <button onclick="this.parentElement.style.display='none'" style="position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.8rem">✕</button>
+  </div>
+
   <!-- STEP 1: AUDIO -->
   <div class="card">
     <div class="st">01 — Upload Nhạc</div>
@@ -1103,65 +1113,149 @@ function checkApiKey(){
   return true;
 }
 
-// CALL CLAUDE — tự động thử nhiều phương thức để tránh CORS
+// ================================================================
+// CALL CLAUDE — Multi-strategy CORS bypass
+// ================================================================
 async function callClaude(payload){
   const key=getApiKey();
-  const body=JSON.stringify(payload);
+  const bodyStr=JSON.stringify(payload);
 
-  // Helper: gọi 1 URL với headers cụ thể
-  async function tryFetch(url, headers){
-    const res=await fetch(url,{method:'POST',headers,body});
-    const data=await res.json();
-    // Anthropic trả lỗi với data.error
-    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    return data;
-  }
-
-  const baseHeaders={
-    'Content-Type':'application/json',
-    'x-api-key':key,
-    'anthropic-version':'2023-06-01'
-  };
-
-  // 1. Thử direct với header bypass
-  try{
-    return await tryFetch('https://api.anthropic.com/v1/messages',{
-      ...baseHeaders,
-      'anthropic-dangerous-direct-browser-ipc':'true'
+  // ── Chiến lược 1: Direct + dangerous header (localhost / file://)
+  async function tryDirect(){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-ipc':'true'
+      },
+      body:bodyStr
     });
-  }catch(e1){
-    // Nếu lỗi từ API thật (key sai, hết credits) thì dừng luôn
-    const msg=e1.message||'';
-    if(msg.includes('invalid_api_key')||msg.includes('authentication')||msg.includes('credit')||msg.includes('permission')){
-      throw e1;
+    if(!res.ok&&res.status!==200){
+      const e=await res.json().catch(()=>({}));
+      throw new Error(e?.error?.message||'HTTP '+res.status);
     }
-    console.warn('Direct failed, trying proxy...',msg);
+    const d=await res.json();
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    return d;
   }
 
-  // 2. Thử corsproxy.io
-  try{
-    const proxyUrl='https://corsproxy.io/?url='+encodeURIComponent('https://api.anthropic.com/v1/messages');
-    return await tryFetch(proxyUrl, baseHeaders);
-  }catch(e2){
-    const msg=e2.message||'';
-    if(msg.includes('invalid_api_key')||msg.includes('authentication')||msg.includes('credit')){throw e2;}
-    console.warn('corsproxy.io failed, trying fallback...',msg);
+  // ── Chiến lược 2: Dùng worker.novmr.com/api — hỗ trợ forward headers
+  async function tryProxy1(){
+    const PROXY='https://worker.novmr.com/api/';
+    const res=await fetch(PROXY+'https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01'
+      },
+      body:bodyStr
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
+    const d=await res.json();
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    return d;
   }
 
-  // 3. Thử proxy dự phòng: thirdparty.site
-  try{
-    const proxyUrl2='https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.anthropic.com/v1/messages');
-    return await tryFetch(proxyUrl2, baseHeaders);
-  }catch(e3){
-    const msg=e3.message||'';
-    if(msg.includes('invalid_api_key')||msg.includes('authentication')||msg.includes('credit')){throw e3;}
-    console.warn('allorigins failed, trying last resort...',msg);
+  // ── Chiến lược 3: corsproxy.io với header forward
+  async function tryProxy2(){
+    const res=await fetch('https://corsproxy.io/?url=https%3A%2F%2Fapi.anthropic.com%2Fv1%2Fmessages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'x-requested-with':'XMLHttpRequest'
+      },
+      body:bodyStr
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
+    const d=await res.json();
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    return d;
   }
 
-  // 4. Proxy cuối: crossorigin.me
-  const lastProxy='https://crossorigin.me/https://api.anthropic.com/v1/messages';
-  return await tryFetch(lastProxy, baseHeaders);
+  // ── Chiến lược 4: thingproxy.freeboard.io
+  async function tryProxy3(){
+    const res=await fetch('https://thingproxy.freeboard.io/fetch/https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01'
+      },
+      body:bodyStr
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
+    const d=await res.json();
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    return d;
+  }
+
+  // ── Chiến lược 5: Dùng CF Worker custom (nếu user đã deploy)
+  // Nếu muốn deploy CF Worker riêng, thay URL này
+  async function tryProxy4(){
+    const CF_WORKER = 'https://claude-proxy.vlcreator.workers.dev'; // optional
+    const res=await fetch(CF_WORKER,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01'
+      },
+      body:bodyStr
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
+    const d=await res.json();
+    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    return d;
+  }
+
+  // Hàm kiểm tra lỗi API thật (không cần retry)
+  function isRealAPIError(msg){
+    return msg.includes('invalid_api_key')||
+           msg.includes('authentication_error')||
+           msg.includes('permission_error')||
+           msg.includes('Your credit balance');
+  }
+
+  // Thử từng chiến lược theo thứ tự
+  const strategies=[
+    {name:'direct',fn:tryDirect},
+    {name:'worker.novmr',fn:tryProxy1},
+    {name:'corsproxy.io',fn:tryProxy2},
+    {name:'thingproxy',fn:tryProxy3},
+  ];
+
+  let lastError=null;
+  for(const s of strategies){
+    try{
+      setLdg&&setLdg('Đang kết nối AI...','Thử '+s.name+'...');
+      const result=await s.fn();
+      console.log('✅ Success via',s.name);
+      return result;
+    }catch(err){
+      const msg=err.message||'';
+      console.warn(`⚠️ ${s.name} failed:`,msg);
+      if(isRealAPIError(msg)){
+        // Lỗi API thật → dừng ngay, hiện thông báo rõ
+        throw new Error('❌ API Key lỗi: '+msg+'\n\nVui lòng kiểm tra lại API Key tại console.anthropic.com');
+      }
+      lastError=err;
+    }
+  }
+
+  // Tất cả proxy đều fail — hướng dẫn dùng Cloudflare Worker
+  throw new Error(
+    '❌ Không thể kết nối API do CORS.\n\n'+
+    '🔧 GIẢI PHÁP: Tạo Cloudflare Worker miễn phí:\n'+
+    '1. Vào cloudflare.com → Workers & Pages\n'+
+    '2. Tạo Worker mới, dán code từ: https://github.com/nicepkg/gpt-runner\n'+
+    '3. Deploy → copy URL → thay vào biến CF_WORKER trong code\n\n'+
+    'Hoặc chạy file này từ localhost thay vì GitHub Pages.'
+  );
 }
 let vidFile=null,audFile=null,aiAudFile=null;
 let audCtx=null,analyser=null,audEl=null;
@@ -1452,7 +1546,11 @@ function drawSpecMini(an){
 async function genPromptIdeas(){
   if(!checkApiKey())return;
   const btn=$('gibtn');btn.disabled=true;
-  $('ideas-ldg').style.display='block';$('ideas-list').style.display='none';
+  const ldg=$('ideas-ldg');
+  const list=$('ideas-list');
+  ldg.style.cssText='display:block;font-size:.67rem;color:var(--purple);margin-top:7px';
+  ldg.textContent='⏳ Đang kết nối AI...';
+  list.style.display='none';
   try{
     const d=await callClaude({
       model:'claude-sonnet-4-20250514',max_tokens:700,
@@ -1461,19 +1559,20 @@ async function genPromptIdeas(){
     });
     const txt=d.content?.find(b=>b.type==='text')?.text||'[]';
     let ideas;try{ideas=JSON.parse(txt.replace(/```json|```/g,'').trim());}
-    catch{ideas=['Hạt sáng trôi trong không gian tím huyền ảo','Sóng âm thanh neon xanh trên nền đêm','Vũ trụ xoáy tròn theo nhịp nhạc','Ngọn lửa màu sắc theo từng beat'];}
-    const list=$('ideas-list');list.innerHTML='';list.style.display='flex';
+    catch{ideas=['Hạt sáng trôi trong không gian tím huyền ảo','Sóng âm neon xanh trên nền đêm','Vũ trụ xoáy tròn theo nhịp nhạc','Ngọn lửa màu sắc theo từng beat'];}
+    list.innerHTML='';list.style.display='flex';
     ideas.forEach(idea=>{
       const div=document.createElement('div');div.className='idea-item';
-      div.textContent='💡 '+idea;
-      div.onclick=()=>$('t2v-prompt').value=idea;
+      div.textContent='💡 '+idea;div.onclick=()=>$('t2v-prompt').value=idea;
       list.appendChild(div);
     });
+    ldg.style.display='none';
   }catch(e){
     console.error('API Error:',e);
-    $('ideas-ldg').textContent='❌ Lỗi: '+(e.message||'Không kết nối được API');
+    ldg.style.cssText='display:block;font-size:.62rem;color:var(--pink);margin-top:7px;line-height:1.7;white-space:pre-line;padding:10px;background:rgba(255,0,144,.05);border-left:2px solid var(--pink)';
+    ldg.textContent='❌ '+(e.message||'Không kết nối được API');
   }
-  btn.disabled=false;$('ideas-ldg').style.display='none';
+  btn.disabled=false;
 }
 
 // ================================================================
@@ -1537,13 +1636,34 @@ Schema: {
   }catch(e){
     console.error('AI Gen Error:',e);
     const msg=e.message||'Lỗi không xác định';
-    alert('❌ Lỗi tạo AI video:\n'+msg+'\n\nKiểm tra:\n• API Key đúng chưa?\n• Còn credits không?');
+    // Hiện lỗi trong loading area thay vì alert
+    $('ai-ldg').style.display='block';
+    $('ldg-main').style.color='var(--pink)';
+    $('ldg-main').textContent='❌ Lỗi kết nối';
+    $('ldg-sub').style.cssText='color:var(--muted);font-size:.6rem;white-space:pre-line;line-height:1.8;margin-top:8px;text-align:left;max-width:520px;margin-left:auto;margin-right:auto';
+    $('ldg-sub').textContent=msg.includes('CORS')||msg.includes('proxy')||msg.includes('fetch')
+      ? '🔧 Lỗi CORS — Tất cả proxy đều bị chặn.\n\nGiải pháp:\n① Mở file HTML trực tiếp (không qua GitHub Pages)\n② Hoặc deploy Cloudflare Worker làm proxy riêng\n③ Hoặc chạy localhost với extension Allow CORS'
+      : msg;
   }
 
   $('genbtn').disabled=false;$('ai-ldg').style.display='none';
 }
 
-function setLdg(m,s){$('ldg-main').textContent=m;$('ldg-sub').textContent=s;}
+function setLdg(m,s){
+  const lm=$('ldg-main'),ls=$('ldg-sub');
+  if(lm){lm.style.color='';lm.textContent=m;}
+  if(ls){ls.style.cssText='font-size:.62rem;color:var(--purple);margin-top:6px;font-family:var(--font-mono);letter-spacing:.04em';ls.textContent=s;}
+}
+
+// Auto-detect GitHub Pages / non-local environment
+(function detectCORSRisk(){
+  const host=location.hostname;
+  const isLocal=host==='localhost'||host==='127.0.0.1'||host===''||location.protocol==='file:';
+  if(!isLocal){
+    const banner=$('cors-banner');
+    if(banner)banner.style.display='block';
+  }
+})();
 
 // ================================================================
 // SETUP AI AUDIO
