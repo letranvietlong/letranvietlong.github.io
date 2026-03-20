@@ -1411,7 +1411,17 @@ function handleAIAud(f){
 }
 
 function rszOv(){ovCvs.width=$('pvbox').clientWidth;ovCvs.height=$('pvbox').clientHeight;}
-function rszAI(){const w=aiBg.parentElement;aiBg.width=w.clientWidth;aiBg.height=w.clientHeight;aiOv.width=w.clientWidth;aiOv.height=w.clientHeight;specMini.width=specMini.parentElement.clientWidth;specMini.height=60;}
+function rszAI(){
+  const w=aiBg.parentElement;
+  // Nếu parent đang ẩn (display:none), dùng kích thước viewport mặc định
+  const W = w.clientWidth  || window.innerWidth  * 0.85;
+  const H = w.clientHeight || W * (9/16);
+  aiBg.width=W; aiBg.height=H;
+  aiOv.width=W; aiOv.height=H;
+  const sm=specMini.parentElement;
+  specMini.width  = sm.clientWidth  || W;
+  specMini.height = 60;
+}
 window.addEventListener('resize',()=>{rszOv();rszAI();});
 
 // ================================================================
@@ -1731,7 +1741,14 @@ Schema: {
     p.particleSize=Math.max(1,Math.min(8,p.particleSize||2.5));
     p.glowIntensity=Math.max(.1,Math.min(2,p.glowIntensity||.9));
     p.trailLength=Math.max(.7,Math.min(.98,p.trailLength||.93));
-    p.style=p.style||(aiMode==='visualizer'?aiVStyle:aiMode);
+
+    // Force style từ lựa chọn của người dùng (không để AI override)
+    if(aiMode==='visualizer')       p.style = aiVStyle;
+    else if(aiMode==='template')    p.style = aiTpl;      // 'music-card', 'concert', 'lofi'...
+    else if(aiMode==='gradient')    p.style = 'gradient';
+    else if(aiMode==='text2video')  p.style = p.style || aiVStyle || 'particles';
+    else                            p.style = p.style || 'particles';
+
     aiParams=p;
 
     setLdg('Đang khởi động...','Tạo hạt sáng và hiệu ứng');
@@ -2353,18 +2370,52 @@ function drawMusicCard(bg,ov,W,H,t,bass,mid,energy,an){
 // ================================================================
 function toggleAIPlay(){aiPlaying?pauseAI():playAI();}
 async function playAI(){
-  if(!aiParams){alert('Tạo AI video trước!');return;}
-  if(aiAudCtx&&aiAudCtx.state==='suspended')await aiAudCtx.resume();
+  if(!aiAudFile){alert('Vui lòng tải lên nhạc trước!');return;}
+
+  // Nếu chưa generate, tự tạo params từ lựa chọn hiện tại
+  if(!aiParams){
+    const defaultStyle = aiMode==='template' ? aiTpl
+                       : aiMode==='gradient'  ? 'gradient'
+                       : aiMode==='visualizer' ? aiVStyle : 'particles';
+    const smartJson = generateSmartDefault('', defaultStyle);
+    try{ aiParams = JSON.parse(smartJson); }catch{ aiParams = {}; }
+    const pal = palMap[aiGPal]||palMap.purple;
+    aiParams.bgColors    = aiParams.bgColors    || pal.bg;
+    aiParams.accentColor = aiParams.accentColor || pal.ac;
+    aiParams.accentColor2= aiParams.accentColor2|| pal.ac2;
+    aiParams.style       = defaultStyle;
+    aiParams.speed       = aiParams.speed || 1;
+    aiParams.particleCount = aiParams.particleCount || 150;
+    aiParams.glowIntensity = aiParams.glowIntensity || 0.9;
+    aiParams.trailLength   = aiParams.trailLength   || 0.93;
+    aiParams.bloomEffect   = true;
+    aiParams.pulseEffect   = true;
+  }
+
+  // Resize canvas trước khi play (tránh màn hình đen do canvas 0x0)
+  rszAI();
+  initPtcls(aiParams);
+  setupAIAudio();
+
+  // Hiện preview section nếu đang ẩn
+  const prevSec = $('ai-prev');
+  if(prevSec) prevSec.style.display = 'block';
+
+  if(aiAudCtx&&aiAudCtx.state==='suspended') await aiAudCtx.resume();
   if(aiAudEl){aiAudEl.currentTime=0;aiAudEl.play();}
-  aiPlaying=true;$('ai-pbtn').textContent='⏸ TẠM DỪNG';aiLoop();
+  aiPlaying=true;
+  $('ai-pbtn').textContent='⏸ TẠM DỪNG';
+  aiLoop();
 }
 function pauseAI(){
   if(aiAudEl)aiAudEl.pause();
-  aiPlaying=false;$('ai-pbtn').textContent='▶ PLAY';
+  aiPlaying=false;
+  $('ai-pbtn').textContent='▶ PHÁT';
   if(aiAnimFr)cancelAnimationFrame(aiAnimFr);
 }
 function restartAI(){
-  if(aiAudEl)aiAudEl.currentTime=0;aiT=0;
+  if(aiAudEl){aiAudEl.currentTime=0;}
+  aiT=0;aiGP=0;
   if(aiPlaying){aiAudEl&&aiAudEl.play();aiLoop();}
 }
 function aiLoop(){
