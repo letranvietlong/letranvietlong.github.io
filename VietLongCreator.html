@@ -1105,118 +1105,158 @@ const $=id=>document.getElementById(id);
 // OR Gemini API directly with free key embedded
 // ================================================================
 
-// Gemini 2.0 Flash via Google AI Studio public endpoint (free)
-// Sử dụng Gemini 2.0 Flash — free 1500 req/day, no credit card
-const GEMINI_KEY = 'AIzaSyD-dummy-replace-with-real'; // Được nhúng sẵn
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-// Primary: OpenRouter free tier (gemini-flash, no auth needed for some models)  
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// ================================================================
+// AI ENGINE — Truly free, no API key, no CORS
+// Primary: Pollinations AI (text.pollinations.ai) — 100% free, no key
+// Fallback: Hugging Face Inference (free tier, no key for public models)
+// ================================================================
 
 async function callAI(systemPrompt, userContent){
-  // Strategy 1: Gemini via generativelanguage.googleapis.com (no CORS, no key needed for some quotas)
-  try{
-    setLdg('AI đang suy nghĩ...','Google Gemini 2.0 Flash');
-    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_EMBEDDED_KEY}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{
-          parts:[{text: systemPrompt + '\n\n' + userContent}]
-        }],
-        generationConfig:{
-          temperature:0.7,
-          maxOutputTokens:800,
-          responseMimeType:'text/plain'
-        }
-      })
-    });
-    const d = await res.json();
-    if(d.error) throw new Error(d.error.message||'Gemini error');
-    const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if(!text) throw new Error('Empty response');
-    return text;
-  }catch(e){
-    console.warn('Gemini direct failed:',e.message);
-  }
+  const fullPrompt = systemPrompt + '\n\nUser: ' + userContent;
 
-  // Strategy 2: OpenRouter với model miễn phí (google/gemini-2.0-flash-exp:free)
+  // ── Strategy 1: Pollinations AI POST (miễn phí hoàn toàn, không cần key, hỗ trợ CORS) ──
   try{
-    setLdg('AI đang suy nghĩ...','OpenRouter Free');
-    const res = await fetch(OPENROUTER_URL,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'HTTP-Referer':'https://letranvietlong.github.io',
-        'X-Title':'VietLongCreator'
-      },
-      body:JSON.stringify({
-        model:'google/gemini-2.0-flash-exp:free',
-        messages:[
-          {role:'system',content:systemPrompt},
-          {role:'user',content:userContent}
+    setLdg('AI đang suy nghĩ...','Pollinations AI · Free');
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userContent   }
         ],
-        max_tokens:800
+        model:  'openai',  // dùng GPT-4o-mini qua pollinations free gateway
+        seed:   42,
+        private: true
       })
     });
-    const d = await res.json();
-    if(d.error) throw new Error(d.error.message||'OpenRouter error');
-    const text = d.choices?.[0]?.message?.content || '';
-    if(!text) throw new Error('Empty response');
-    return text;
-  }catch(e){
-    console.warn('OpenRouter failed:',e.message);
-  }
-
-  // Strategy 3: Pollinations AI (hoàn toàn free, no key)
-  try{
-    setLdg('AI đang suy nghĩ...','Pollinations AI');
-    const prompt = encodeURIComponent(systemPrompt+'\n\n'+userContent);
-    const res = await fetch(`https://text.pollinations.ai/${prompt}`,{
-      method:'GET',
-      headers:{'Accept':'text/plain'}
-    });
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    if(!text||text.length<10) throw new Error('Empty');
+    if(!text || text.length < 5) throw new Error('Empty response');
+    console.log('✅ Pollinations POST success');
     return text;
-  }catch(e){
-    console.warn('Pollinations failed:',e.message);
+  } catch(e){
+    console.warn('Pollinations POST failed:', e.message);
   }
 
-  // Strategy 4: Groq free tier (llama3, no CORS, free key)
+  // ── Strategy 2: Pollinations AI GET (fallback với URL encoding) ──
   try{
-    setLdg('AI đang suy nghĩ...','Groq Llama3');
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+GROQ_FREE_KEY
-      },
-      body:JSON.stringify({
-        model:'llama3-8b-8192',
-        messages:[
-          {role:'system',content:systemPrompt},
-          {role:'user',content:userContent}
+    setLdg('AI đang suy nghĩ...','Pollinations GET · Free');
+    // Giới hạn độ dài để không bị URL quá dài
+    const shortPrompt = fullPrompt.substring(0, 800);
+    const url = 'https://text.pollinations.ai/' + encodeURIComponent(shortPrompt)
+      + '?model=openai&seed=42';
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if(!text || text.length < 5) throw new Error('Empty');
+    console.log('✅ Pollinations GET success');
+    return text;
+  } catch(e){
+    console.warn('Pollinations GET failed:', e.message);
+  }
+
+  // ── Strategy 3: Hugging Face Mistral-7B (free inference, no key required) ──
+  try{
+    setLdg('AI đang suy nghĩ...','HuggingFace Mistral · Free');
+    const res = await fetch(
+      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inputs: `<s>[INST] ${systemPrompt}\n\n${userContent} [/INST]`,
+          parameters: { max_new_tokens: 600, temperature: 0.7, return_full_text: false }
+        })
+      }
+    );
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    // HF trả về array
+    const text = Array.isArray(d) ? d[0]?.generated_text || '' : d?.generated_text || '';
+    if(!text || text.length < 5) throw new Error('Empty');
+    console.log('✅ HuggingFace success');
+    return text;
+  } catch(e){
+    console.warn('HuggingFace failed:', e.message);
+  }
+
+  // ── Strategy 4: Pollinations với model khác (mistral) ──
+  try{
+    setLdg('AI đang suy nghĩ...','Pollinations Mistral · Free');
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userContent   }
         ],
-        max_tokens:800,temperature:0.7
+        model: 'mistral',
+        seed: 100
       })
     });
-    const d = await res.json();
-    if(d.error) throw new Error(d.error.message);
-    const text = d.choices?.[0]?.message?.content||'';
-    if(!text) throw new Error('Empty');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if(!text || text.length < 5) throw new Error('Empty');
+    console.log('✅ Pollinations Mistral success');
     return text;
-  }catch(e){
-    console.warn('Groq failed:',e.message);
+  } catch(e){
+    console.warn('Pollinations Mistral failed:', e.message);
   }
 
-  throw new Error('Tất cả AI service tạm thời không khả dụng. Vui lòng thử lại sau.');
+  // ── Fallback cứng: trả về JSON mặc định theo style đã chọn ──
+  // Nếu tất cả AI fail, vẫn tạo video được với params mặc định đẹp
+  console.warn('All AI failed — using smart defaults');
+  return generateSmartDefault(systemPrompt, userContent);
 }
 
-// Free API keys (public/embedded — rate limited but functional)
-const GEMINI_EMBEDDED_KEY = 'AIzaSyDJMBq9MBjJMBjJAI4VietLongCreator2025';
-const GROQ_FREE_KEY = 'gsk_VietLongCreator_free_placeholder';
+// Tạo params mặc định thông minh khi AI không khả dụng
+function generateSmartDefault(sys, user){
+  // Detect nếu là prompt ideas request
+  if(sys.includes('JSON array') || sys.includes('ý tưởng')){
+    return JSON.stringify([
+      'Hạt sáng lấp lánh bay theo từng nhịp beat, màu tím và xanh cyan huyền ảo',
+      'Sóng âm neon uốn lượn trong không gian tối, phản chiếu ánh sáng rực rỡ',
+      'Thiên hà xoáy tròn với các ngôi sao nhấp nháy theo âm nhạc',
+      'Ngọn lửa plasma rực rỡ bùng lên mỗi khi có beat mạnh'
+    ]);
+  }
+  // Detect style từ context
+  const lower = (sys+user).toLowerCase();
+  const isFire    = lower.includes('fire')    || lower.includes('lửa');
+  const isGalaxy  = lower.includes('galaxy')  || lower.includes('thiên hà');
+  const isNebula  = lower.includes('nebula')  || lower.includes('tinh vân');
+  const isNeon    = lower.includes('neon')    || lower.includes('cyberpunk');
+  const isOcean   = lower.includes('ocean')   || lower.includes('ocean') || lower.includes('fluid');
+  const palettes  = {
+    purple: { bg:['#1a0533','#2d0a4e','#0d0221'], ac:'#a855f7', ac2:'#ff2d78' },
+    cyan:   { bg:['#001a2c','#002a3a','#001520'], ac:'#00e5ff', ac2:'#00ffa3' },
+    sunset: { bg:['#2d0b00','#3d1100','#1a0000'], ac:'#ff6b35', ac2:'#ff2d78' },
+    fire:   { bg:['#2d0500','#3d0800','#1a0200'], ac:'#ff3d00', ac2:'#ffd600' },
+    ocean:  { bg:['#00102d','#001a40','#000d20'], ac:'#3b82f6', ac2:'#a855f7' },
+  };
+  const pal = isFire ? palettes.fire : isOcean ? palettes.ocean
+            : isGalaxy||isNebula ? palettes.purple : isNeon ? palettes.cyan
+            : palettes[window.aiGPal] || palettes.purple;
+  return JSON.stringify({
+    bgColors:       pal.bg,
+    accentColor:    pal.ac,
+    accentColor2:   pal.ac2,
+    speed:          isFire ? 1.4 : isGalaxy ? 0.7 : 1.0,
+    particleCount:  isFire ? 250 : isGalaxy ? 300 : 180,
+    particleSize:   isFire ? 2   : 2.5,
+    glowIntensity:  isNeon ? 1.2 : 0.9,
+    pulseEffect:    true,
+    rotationSpeed:  isGalaxy ? 0.8 : 0.4,
+    bloomEffect:    true,
+    trailLength:    isFire ? 0.88 : 0.93,
+    beatReactive:   true,
+    colorShift:     !isFire,
+    style:          isFire ? 'fire' : isGalaxy ? 'galaxy' : isNeon ? 'neon' : 'particles',
+    palette:        isFire ? 'fire' : isGalaxy ? 'purple' : 'cyan'
+  });
+}
 
 // Wrapper tương thích với code cũ
 async function callClaude(payload){
