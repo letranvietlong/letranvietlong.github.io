@@ -1771,7 +1771,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></script><script>
+<!-- cloudflare email decode - auto injected on CF --></script><script>
 // -- CURSOR --
 const cur=document.getElementById('cur'),ring=document.getElementById('cur-r');
 let mx=0,my=0,rx=0,ry=0;
@@ -1987,7 +1987,7 @@ function handleDeepLink() {
     if(page === 'games' && sub) {
       setTimeout(() => {
         const btn = document.querySelector(`[onclick*="loadGame('${sub}')"]`);
-        if(btn) { btn.classList.add('highlight-pulse'); loadGame(sub, btn); }
+        if(btn && typeof loadGame === 'function') { btn.classList.add('highlight-pulse'); loadGame(sub, btn); }
       }, 300);
     }
   } else {
@@ -2167,15 +2167,16 @@ function setLang(lang) {
   if(!hash) return;
   const parts = hash.split('/');
   if(parts[0] && parts[0] !== 'home') {
-    setTimeout(() => {
+    // Wait for all scripts to load before deep linking
+    window.addEventListener('load', function() {
       showPage(parts[0]);
       if(parts[0] === 'games' && parts[1]) {
         setTimeout(() => {
           const btn = document.querySelector(`[onclick*="loadGame('${parts[1]}')"]`);
           if(btn) btn.click();
-        }, 200);
+        }, 400);
       }
-    }, 100);
+    });
   }
 })();
 
