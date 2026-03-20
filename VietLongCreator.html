@@ -926,14 +926,109 @@ header::before{
     <div class="ahi-sub">// UPLOAD AUDIO → AI ANALYZES WAVEFORM → GENERATES REACTIVE VISUAL → EXPORT<br>Không cần video. Neural engine tạo animation theo từng beat.</div>
   </div>
 
-  <!-- CORS WARNING BANNER (auto-hide if on localhost) -->
-  <div id="cors-banner" style="display:none;margin-bottom:14px;padding:14px 18px;background:rgba(255,229,0,.04);border:1px solid rgba(255,229,0,.2);border-left:3px solid var(--yellow);position:relative;">
-    <div style="font-family:var(--font-hd);font-size:.6rem;color:var(--yellow);letter-spacing:.1em;margin-bottom:6px">⚠ CORS RESTRICTION DETECTED</div>
-    <div style="font-size:.62rem;color:var(--muted);font-family:var(--font-mono);line-height:1.8">
-      Trang đang chạy trên <strong style="color:var(--txt)">GitHub Pages</strong> — Anthropic API bị chặn CORS.<br>
-      <strong style="color:var(--cyan)">Giải pháp tốt nhất:</strong> Tải file HTML về máy → mở trực tiếp bằng Chrome/Edge.
+  <!-- CORS / PROXY SETUP PANEL -->
+  <div id="cors-banner" style="display:none;margin-bottom:16px;">
+
+    <!-- STATE: Needs setup -->
+    <div id="proxy-setup" style="background:var(--surf);border:1px solid var(--bdr);border-top:2px solid var(--yellow);padding:22px;position:relative;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:1.3rem">⚠️</span>
+        <div>
+          <div style="font-family:var(--font-hd);font-size:.65rem;color:var(--yellow);letter-spacing:.12em">CORS RESTRICTION ON GITHUB PAGES</div>
+          <div style="font-size:.6rem;color:var(--muted);margin-top:2px;font-family:var(--font-mono)">Anthropic API không cho phép gọi trực tiếp từ domain public</div>
+        </div>
+      </div>
+
+      <!-- 2 options side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;" id="proxy-options">
+
+        <!-- Option A: CF Worker -->
+        <div style="background:var(--bg2);border:1px solid rgba(0,255,247,.2);border-top:2px solid var(--cyan);padding:16px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);">
+          <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:8px">🔧 OPTION A — CLOUDFLARE WORKER</div>
+          <div style="font-size:.6rem;color:var(--muted);line-height:1.8;margin-bottom:12px;font-family:var(--font-mono)">
+            Deploy proxy riêng miễn phí ~3 phút.<br>Hoạt động vĩnh viễn, không giới hạn.
+          </div>
+          <button onclick="showCFSteps()" style="width:100%;padding:8px;background:rgba(0,255,247,.1);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-hd);font-size:.55rem;letter-spacing:.1em;cursor:pointer;text-transform:uppercase;transition:all .2s;" onmouseover="this.style.background='rgba(0,255,247,.18)'" onmouseout="this.style.background='rgba(0,255,247,.1)'">
+            XEM HƯỚNG DẪN →
+          </button>
+        </div>
+
+        <!-- Option B: Download local -->
+        <div style="background:var(--bg2);border:1px solid rgba(0,255,136,.2);border-top:2px solid var(--green);padding:16px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);">
+          <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--green);letter-spacing:.1em;margin-bottom:8px">⚡ OPTION B — CHẠY LOCAL</div>
+          <div style="font-size:.6rem;color:var(--muted);line-height:1.8;margin-bottom:12px;font-family:var(--font-mono)">
+            Tải file HTML về máy, mở bằng Chrome.<br>Đơn giản nhất, hoạt động ngay lập tức.
+          </div>
+          <a id="dl-html-btn" href="#" onclick="downloadThisPage(event)" style="display:block;width:100%;padding:8px;background:rgba(0,255,136,.1);border:1px solid var(--green);color:var(--green);font-family:var(--font-hd);font-size:.55rem;letter-spacing:.1em;cursor:pointer;text-transform:uppercase;text-align:center;text-decoration:none;transition:all .2s;box-sizing:border-box;" onmouseover="this.style.background='rgba(0,255,136,.18)'" onmouseout="this.style.background='rgba(0,255,136,.1)'">
+            ⬇ TẢI FILE VỀ MÁY
+          </a>
+        </div>
+      </div>
+
+      <!-- CF Worker Steps (hidden initially) -->
+      <div id="cf-steps" style="display:none;background:var(--bg2);border:1px solid var(--bdr);padding:16px;margin-bottom:14px;">
+        <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:12px">CLOUDFLARE WORKER SETUP — 3 BƯỚC</div>
+
+        <div style="font-size:.62rem;color:var(--txt);font-family:var(--font-mono);line-height:2;">
+          <div style="margin-bottom:8px"><span style="color:var(--cyan)">①</span> Vào <a href="https://workers.cloudflare.com" target="_blank" style="color:var(--cyan)">workers.cloudflare.com</a> → đăng ký miễn phí → <strong>Create Worker</strong></div>
+          <div style="margin-bottom:10px"><span style="color:var(--cyan)">②</span> Xóa code mặc định → dán code sau:</div>
+        </div>
+
+        <!-- Worker code block -->
+        <div style="position:relative;background:#000;border:1px solid var(--bdr2);padding:14px;margin-bottom:10px;font-family:var(--font-mono);font-size:.6rem;color:#7ec8e3;line-height:1.7;overflow-x:auto;">
+          <button onclick="copyCFCode()" id="copy-cf-btn" style="position:absolute;top:8px;right:8px;background:rgba(0,255,247,.1);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-hd);font-size:.48rem;padding:4px 10px;cursor:pointer;letter-spacing:.08em;">COPY</button>
+          <pre id="cf-code-block" style="margin:0;white-space:pre-wrap;word-break:break-all;">export default {
+  async fetch(request) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      }});
+    }
+    const body = await request.text();
+    const headers = Object.fromEntries(request.headers);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', body,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': headers['x-api-key'] || '',
+        'anthropic-version': headers['anthropic-version'] || '2023-06-01',
+      }
+    });
+    const data = await res.text();
+    return new Response(data, { headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    }});
+  }
+};</pre>
+        </div>
+
+        <div style="font-size:.62rem;color:var(--txt);font-family:var(--font-mono);line-height:2;margin-bottom:10px">
+          <span style="color:var(--cyan)">③</span> Nhấn <strong>Save & Deploy</strong> → copy URL dạng <code style="color:var(--yellow);background:rgba(255,229,0,.08);padding:1px 5px">https://xxxx.workers.dev</code> → dán vào ô bên dưới:
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="worker-url-input" placeholder="https://your-worker.workers.dev"
+            style="flex:1;background:var(--bg);border:1px solid var(--bdr2);border-left:2px solid var(--cyan);color:var(--cyan);font-family:var(--font-mono);font-size:.65rem;padding:8px 12px;outline:none;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);"
+            oninput="validateWorkerUrl(this.value)">
+          <button onclick="saveWorkerUrl()" id="save-worker-btn"
+            style="padding:8px 16px;background:rgba(0,255,247,.1);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-hd);font-size:.55rem;letter-spacing:.1em;cursor:pointer;white-space:nowrap;text-transform:uppercase;transition:all .2s;"
+            onmouseover="this.style.background='rgba(0,255,247,.2)'" onmouseout="this.style.background='rgba(0,255,247,.1)'">
+            LƯU & DÙNG
+          </button>
+        </div>
+        <div id="worker-url-status" style="font-size:.58rem;color:var(--muted);margin-top:5px;font-family:var(--font-mono);"></div>
+      </div>
+
+      <!-- If worker URL saved -->
+      <div id="proxy-active-bar" style="display:none;background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-left:2px solid var(--green);padding:10px 14px;display:none;align-items:center;justify-content:space-between;">
+        <span style="font-size:.6rem;color:var(--green);font-family:var(--font-hd);letter-spacing:.08em">✅ PROXY ACTIVE — <span id="proxy-url-display"></span></span>
+        <button onclick="clearWorkerUrl()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;font-family:var(--font-mono)">✕ XÓA</button>
+      </div>
+
     </div>
-    <button onclick="this.parentElement.style.display='none'" style="position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.8rem">✕</button>
   </div>
 
   <!-- STEP 1: AUDIO -->
@@ -1120,141 +1215,92 @@ async function callClaude(payload){
   const key=getApiKey();
   const bodyStr=JSON.stringify(payload);
 
-  // ── Chiến lược 1: Direct + dangerous header (localhost / file://)
-  async function tryDirect(){
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+  async function doFetch(url, extraHeaders={}){
+    const res=await fetch(url,{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
         'x-api-key':key,
         'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-ipc':'true'
+        ...extraHeaders
       },
       body:bodyStr
     });
-    if(!res.ok&&res.status!==200){
-      const e=await res.json().catch(()=>({}));
-      throw new Error(e?.error?.message||'HTTP '+res.status);
-    }
     const d=await res.json();
     if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    if(!res.ok)throw new Error('HTTP '+res.status);
     return d;
   }
 
-  // ── Chiến lược 2: Dùng worker.novmr.com/api — hỗ trợ forward headers
-  async function tryProxy1(){
-    const PROXY='https://worker.novmr.com/api/';
-    const res=await fetch(PROXY+'https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01'
-      },
-      body:bodyStr
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
-    const d=await res.json();
-    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    return d;
-  }
-
-  // ── Chiến lược 3: corsproxy.io với header forward
-  async function tryProxy2(){
-    const res=await fetch('https://corsproxy.io/?url=https%3A%2F%2Fapi.anthropic.com%2Fv1%2Fmessages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01',
-        'x-requested-with':'XMLHttpRequest'
-      },
-      body:bodyStr
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
-    const d=await res.json();
-    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    return d;
-  }
-
-  // ── Chiến lược 4: thingproxy.freeboard.io
-  async function tryProxy3(){
-    const res=await fetch('https://thingproxy.freeboard.io/fetch/https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01'
-      },
-      body:bodyStr
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
-    const d=await res.json();
-    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    return d;
-  }
-
-  // ── Chiến lược 5: Dùng CF Worker custom (nếu user đã deploy)
-  // Nếu muốn deploy CF Worker riêng, thay URL này
-  async function tryProxy4(){
-    const CF_WORKER = 'https://claude-proxy.vlcreator.workers.dev'; // optional
-    const res=await fetch(CF_WORKER,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01'
-      },
-      body:bodyStr
-    });
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+res.status);}
-    const d=await res.json();
-    if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-    return d;
-  }
-
-  // Hàm kiểm tra lỗi API thật (không cần retry)
-  function isRealAPIError(msg){
+  function isFatalError(msg){
     return msg.includes('invalid_api_key')||
            msg.includes('authentication_error')||
            msg.includes('permission_error')||
-           msg.includes('Your credit balance');
+           msg.includes('credit balance');
   }
 
-  // Thử từng chiến lược theo thứ tự
-  const strategies=[
-    {name:'direct',fn:tryDirect},
-    {name:'worker.novmr',fn:tryProxy1},
-    {name:'corsproxy.io',fn:tryProxy2},
-    {name:'thingproxy',fn:tryProxy3},
-  ];
-
-  let lastError=null;
-  for(const s of strategies){
+  // ── Priority 0: Saved CF Worker URL (người dùng đã setup) ──
+  const savedWorker=getWorkerUrl();
+  if(savedWorker){
     try{
-      setLdg&&setLdg('Đang kết nối AI...','Thử '+s.name+'...');
-      const result=await s.fn();
-      console.log('✅ Success via',s.name);
-      return result;
-    }catch(err){
-      const msg=err.message||'';
-      console.warn(`⚠️ ${s.name} failed:`,msg);
-      if(isRealAPIError(msg)){
-        // Lỗi API thật → dừng ngay, hiện thông báo rõ
-        throw new Error('❌ API Key lỗi: '+msg+'\n\nVui lòng kiểm tra lại API Key tại console.anthropic.com');
-      }
-      lastError=err;
+      setLdg('Đang kết nối qua CF Worker...','proxy: '+savedWorker.replace('https://','').substring(0,30));
+      return await doFetch(savedWorker);
+    }catch(e){
+      if(isFatalError(e.message||''))throw e;
+      console.warn('CF Worker failed:',e.message);
+      // Fall through to other methods
     }
   }
 
-  // Tất cả proxy đều fail — hướng dẫn dùng Cloudflare Worker
+  // ── Priority 1: Direct + dangerous header (localhost/file://) ──
+  try{
+    setLdg('Đang kết nối AI...','thử direct...');
+    return await doFetch('https://api.anthropic.com/v1/messages',{
+      'anthropic-dangerous-direct-browser-ipc':'true'
+    });
+  }catch(e){
+    if(isFatalError(e.message||''))throw new Error('❌ API Key lỗi: '+e.message);
+    console.warn('Direct failed:',e.message);
+  }
+
+  // ── Priority 2: worker.novmr.com ──
+  try{
+    setLdg('Thử proxy 1/3...','worker.novmr.com');
+    return await doFetch('https://worker.novmr.com/api/https://api.anthropic.com/v1/messages');
+  }catch(e){
+    if(isFatalError(e.message||''))throw e;
+    console.warn('novmr failed:',e.message);
+  }
+
+  // ── Priority 3: thingproxy ──
+  try{
+    setLdg('Thử proxy 2/3...','thingproxy.freeboard.io');
+    return await doFetch('https://thingproxy.freeboard.io/fetch/https://api.anthropic.com/v1/messages');
+  }catch(e){
+    if(isFatalError(e.message||''))throw e;
+    console.warn('thingproxy failed:',e.message);
+  }
+
+  // ── Priority 4: cors-anywhere (heroku) ──
+  try{
+    setLdg('Thử proxy 3/3...','cors-anywhere');
+    return await doFetch('https://cors-anywhere.herokuapp.com/https://api.anthropic.com/v1/messages',{
+      'origin':'https://letranvietlong.github.io'
+    });
+  }catch(e){
+    if(isFatalError(e.message||''))throw e;
+    console.warn('cors-anywhere failed:',e.message);
+  }
+
+  // ── Tất cả fail → hiện wizard ──
+  // Tự động hiện banner setup
+  const banner=$('cors-banner');
+  if(banner){banner.style.display='block';showCFSteps();}
   throw new Error(
-    '❌ Không thể kết nối API do CORS.\n\n'+
-    '🔧 GIẢI PHÁP: Tạo Cloudflare Worker miễn phí:\n'+
-    '1. Vào cloudflare.com → Workers & Pages\n'+
-    '2. Tạo Worker mới, dán code từ: https://github.com/nicepkg/gpt-runner\n'+
-    '3. Deploy → copy URL → thay vào biến CF_WORKER trong code\n\n'+
-    'Hoặc chạy file này từ localhost thay vì GitHub Pages.'
+    '❌ Không thể kết nối API — tất cả proxy bị chặn.\n\n'+
+    'Vui lòng làm theo hướng dẫn "OPTION A" phía trên\n'+
+    'để tạo Cloudflare Worker proxy riêng (miễn phí, ~3 phút).\n\n'+
+    'Hoặc chọn "OPTION B" để tải file về chạy local.'
   );
 }
 let vidFile=null,audFile=null,aiAudFile=null;
@@ -1655,13 +1701,108 @@ function setLdg(m,s){
   if(ls){ls.style.cssText='font-size:.62rem;color:var(--purple);margin-top:6px;font-family:var(--font-mono);letter-spacing:.04em';ls.textContent=s;}
 }
 
-// Auto-detect GitHub Pages / non-local environment
+// ── CF WORKER PROXY MANAGEMENT ──
+const CF_WORKER_KEY='vlcreator_worker_url';
+
+function getWorkerUrl(){return localStorage.getItem(CF_WORKER_KEY)||'';}
+
+function saveWorkerUrl(){
+  const url=($('worker-url-input')?.value||'').trim();
+  if(!url.startsWith('https://')){
+    $('worker-url-status').style.color='var(--pink)';
+    $('worker-url-status').textContent='❌ URL phải bắt đầu bằng https://';
+    return;
+  }
+  localStorage.setItem(CF_WORKER_KEY,url);
+  $('worker-url-status').style.color='var(--green)';
+  $('worker-url-status').textContent='✅ Đã lưu! Đang test kết nối...';
+  showProxyActive(url);
+  // Test connection
+  setTimeout(()=>testWorker(url),300);
+}
+
+function clearWorkerUrl(){
+  localStorage.removeItem(CF_WORKER_KEY);
+  $('proxy-active-bar').style.display='none';
+  $('worker-url-input').value='';
+  $('worker-url-status').textContent='';
+  showCFSteps();
+}
+
+async function testWorker(url){
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'test','anthropic-version':'2023-06-01'},body:'{"test":true}'});
+    // Any response (even 401) means CORS is working
+    $('worker-url-status').style.color='var(--green)';
+    $('worker-url-status').textContent='✅ Worker hoạt động! CORS đã được giải quyết.';
+  }catch(e){
+    $('worker-url-status').style.color='var(--yellow)';
+    $('worker-url-status').textContent='⚠ Không test được — thử gọi AI xem có hoạt động không.';
+  }
+}
+
+function showProxyActive(url){
+  const bar=$('proxy-active-bar');
+  const disp=$('proxy-url-display');
+  if(bar&&disp){
+    disp.textContent=url.replace('https://','').substring(0,35)+'...';
+    bar.style.display='flex';
+  }
+  const setup=$('proxy-setup');
+  if(setup){
+    // Collapse everything except active bar
+    $('proxy-options')&&($('proxy-options').style.display='none');
+    $('cf-steps')&&($('cf-steps').style.display='none');
+  }
+}
+
+function validateWorkerUrl(val){
+  const st=$('worker-url-status');if(!st)return;
+  if(!val){st.textContent='';return;}
+  if(val.startsWith('https://')){st.style.color='var(--green)';st.textContent='✓ URL hợp lệ';}
+  else{st.style.color='var(--pink)';st.textContent='Phải bắt đầu bằng https://';}
+}
+
+function showCFSteps(){
+  $('cf-steps')&&($('cf-steps').style.display='block');
+  $('proxy-options')&&($('proxy-options').style.display='none');
+}
+
+function copyCFCode(){
+  const code=$('cf-code-block')?.textContent||'';
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn=$('copy-cf-btn');
+    if(btn){btn.textContent='✓ COPIED';btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='COPY';btn.style.color='var(--cyan)';},2000);}
+  }).catch(()=>{
+    // Fallback
+    const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    const btn=$('copy-cf-btn');if(btn){btn.textContent='✓ COPIED';}
+  });
+}
+
+function downloadThisPage(e){
+  e.preventDefault();
+  const html=document.documentElement.outerHTML;
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='VietLongCreator.html';a.click();
+}
+
+// Auto-detect GitHub Pages / non-local
 (function detectCORSRisk(){
   const host=location.hostname;
   const isLocal=host==='localhost'||host==='127.0.0.1'||host===''||location.protocol==='file:';
+  const banner=$('cors-banner');
+  if(!banner)return;
   if(!isLocal){
-    const banner=$('cors-banner');
-    if(banner)banner.style.display='block';
+    banner.style.display='block';
+    // Check if worker URL already saved
+    const saved=getWorkerUrl();
+    if(saved){
+      $('worker-url-input')&&($('worker-url-input').value=saved);
+      showProxyActive(saved);
+    }
   }
 })();
 
