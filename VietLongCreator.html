@@ -531,6 +531,62 @@ function checkApiKey(){
   if(!key.startsWith('sk-ant-')){alert('⚠️ API Key không hợp lệ. Key phải bắt đầu bằng "sk-ant-"');return false;}
   return true;
 }
+
+// CALL CLAUDE — tự động thử nhiều phương thức để tránh CORS
+async function callClaude(payload){
+  const key=getApiKey();
+
+  // Phương thức 1: Direct với header bypass (hoạt động khi mở file local)
+  const directOpts={
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-ipc':'true'
+    },
+    body:JSON.stringify(payload)
+  };
+
+  // Phương thức 2: Qua corsproxy.io
+  const proxyUrl='https://corsproxy.io/?url='+encodeURIComponent('https://api.anthropic.com/v1/messages');
+  const proxyOpts={
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01'
+    },
+    body:JSON.stringify(payload)
+  };
+
+  // Thử direct trước
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',directOpts);
+    if(r.ok)return await r.json();
+    // Nếu lỗi 4xx từ API (key sai, hết credits...) thì throw luôn, không cần thử proxy
+    const err=await r.json().catch(()=>({}));
+    throw new Error(err?.error?.message||`HTTP ${r.status}`);
+  }catch(e){
+    // Nếu lỗi là CORS/network, thử proxy
+    if(e.message&&(e.message.includes('HTTP 4')||e.message.includes('HTTP 5'))){
+      throw e; // Lỗi API thật, không cần proxy
+    }
+    // Thử proxy
+    try{
+      const r2=await fetch(proxyUrl,proxyOpts);
+      if(r2.ok)return await r2.json();
+      const err2=await r2.json().catch(()=>({}));
+      throw new Error(err2?.error?.message||`HTTP ${r2.status}`);
+    }catch(e2){
+      // Phương thức 3: Thử proxy dự phòng api.allorigins.win
+      const fb='https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.anthropic.com/v1/messages');
+      const r3=await fetch(fb,proxyOpts);
+      if(!r3.ok){const e3=await r3.json().catch(()=>({}));throw new Error(e3?.error?.message||`HTTP ${r3.status}`);}
+      return await r3.json();
+    }
+  }
+}
 let vidFile=null,audFile=null,aiAudFile=null;
 let audCtx=null,analyser=null,audEl=null;
 let aiAudCtx=null,aiAnalyser=null,aiAudEl=null;
@@ -822,21 +878,11 @@ async function genPromptIdeas(){
   const btn=$('gibtn');btn.disabled=true;
   $('ideas-ldg').style.display='block';$('ideas-list').style.display='none';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-ipc':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:700,
-        system:`Tạo 4 ý tưởng prompt ngắn (2-3 câu) tiếng Việt cho AI music video visualizer. Style: ${aiVStyle}, mode: ${aiMode}. Trả về CHỈ JSON array: ["p1","p2","p3","p4"]`,
-        messages:[{role:'user',content:'Tạo 4 ý tưởng'}]
-      })
+    const d=await callClaude({
+      model:'claude-sonnet-4-20250514',max_tokens:700,
+      system:`Tạo 4 ý tưởng prompt ngắn (2-3 câu) tiếng Việt cho AI music video visualizer. Style: ${aiVStyle}, mode: ${aiMode}. Trả về CHỈ JSON array: ["p1","p2","p3","p4"]`,
+      messages:[{role:'user',content:'Tạo 4 ý tưởng'}]
     });
-    const d=await r.json();
     const txt=d.content?.find(b=>b.type==='text')?.text||'[]';
     let ideas;try{ideas=JSON.parse(txt.replace(/```json|```/g,'').trim());}
     catch{ideas=['Hạt sáng trôi trong không gian tím huyền ảo','Sóng âm thanh neon xanh trên nền đêm','Vũ trụ xoáy tròn theo nhịp nhạc','Ngọn lửa màu sắc theo từng beat'];}
@@ -886,22 +932,12 @@ Schema: {
   "palette":"${aiGPal}"
 }`;
 
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-ipc':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:800,
-        system:sysPrompt,
-        messages:[{role:'user',content:`Tạo tham số cho: "${prompt}". Mode: ${aiMode}. Style: ${aiVStyle}. Palette: ${aiGPal}. Template: ${aiTpl}.`}]
-      })
+    const d=await callClaude({
+      model:'claude-sonnet-4-20250514',max_tokens:800,
+      system:sysPrompt,
+      messages:[{role:'user',content:`Tạo tham số cho: "${prompt}". Mode: ${aiMode}. Style: ${aiVStyle}. Palette: ${aiGPal}. Template: ${aiTpl}.`}]
     });
     setLdg('Đang xây dựng animation...','Parse parameters từ Claude');
-    const d=await r.json();
     const txt=d.content?.find(b=>b.type==='text')?.text||'{}';
     let p;try{p=JSON.parse(txt.replace(/```json|```/g,'').trim());}catch{p={};}
 
