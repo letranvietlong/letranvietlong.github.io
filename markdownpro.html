@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarkdownPro — by LongLTV</title>
+<meta name="description" content="Trình soạn thảo Markdown trực tuyến với preview real-time, export PDF/HTML, syntax highlight và hỗ trợ tiếng Việt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Fira+Code:wght@300;400;500;600&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03040a;
+  --bg2: #070b14;
+  --glass: rgba(255,255,255,.04);
+  --glass2: rgba(255,255,255,.07);
+  --border: rgba(255,255,255,.08);
+  --border2: rgba(255,255,255,.13);
+  --text: #e8eaf0;
+  --muted: #6b7a9a;
+  --cyan: #00f5d4;
+  --violet: #a855f7;
+  --pink: #f72585;
+  --orange: #ff6b35;
+  --blue: #4cc9f0;
+  --green: #06d6a0;
+  --yellow: #ffd166;
+  --sans: 'Be Vietnam Pro', sans-serif;
+  --mono: 'Fira Code', monospace;
+  --display: 'Playfair Display', serif;
+  --toolbar-h: 52px;
+  --statusbar-h: 28px;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; overflow:hidden; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(rgba(0,245,212,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,212,.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  height: var(--toolbar-h);
+  background: rgba(7,11,20,.95);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+  z-index: 10;
+  flex-shrink: 0;
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-right: 20px; text-decoration: none;
+}
+.brand-icon { font-size: 1.3rem; }
+.brand-name {
+  font-family: var(--mono); font-size: .85rem; font-weight: 600;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: .04em;
+}
+.brand-ver {
+  font-family: var(--mono); font-size: .58rem; color: var(--muted);
+  background: var(--glass); border: 1px solid var(--border);
+  padding: 2px 6px; border-radius: 100px;
+}
+.menu-sep { width: 1px; height: 28px; background: var(--border); margin: 0 12px; }
+
+/* File menu */
+.menu-group { display: flex; align-items: center; gap: 2px; }
+.menu-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 7px;
+  font-family: var(--sans); font-size: .78rem; color: var(--muted);
+  background: transparent; border: none; cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.menu-btn:hover { background: var(--glass2); color: var(--text); }
+.menu-btn.active { background: rgba(0,245,212,.08); color: var(--cyan); }
+.menu-btn svg { width:14px; height:14px; flex-shrink:0; }
+
+.spacer { flex: 1; }
+
+/* Word count */
+.word-count {
+  font-family: var(--mono); font-size: .65rem; color: var(--muted);
+  display: flex; gap: 14px; margin-right: 12px;
+}
+.word-count span { display: flex; align-items: center; gap: 4px; }
+
+/* View toggle */
+.view-toggle {
+  display: flex; background: var(--glass); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-right: 8px;
+}
+.view-btn {
+  padding: 5px 12px; font-family: var(--mono); font-size: .7rem;
+  color: var(--muted); background: transparent; border: none; cursor: pointer;
+  transition: all .15s; display: flex; align-items: center; gap: 5px;
+}
+.view-btn:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.view-btn.on { background: rgba(0,245,212,.1); color: var(--cyan); }
+
+/* Settings btn */
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 7px; display: flex;
+  align-items: center; justify-content: center;
+  background: var(--glass); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all .15s; font-size: .85rem;
+}
+.icon-btn:hover { border-color: var(--border2); color: var(--text); }
+
+/* ── MAIN LAYOUT ── */
+#app {
+  flex: 1; display: flex; overflow: hidden; position: relative; z-index: 1;
+}
+
+/* ── SIDEBAR FILE TREE ── */
+#sidebar {
+  width: 220px; min-width: 220px; background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: width .25s ease; overflow: hidden;
+}
+#sidebar.collapsed { width: 0; min-width: 0; }
+.sidebar-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sidebar-title { font-family: var(--mono); font-size: .65rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.new-file-btn {
+  width: 22px; height: 22px; border-radius: 5px; display: flex;
+  align-items: center; justify-content: center;
+  background: rgba(0,245,212,.08); border: 1px solid rgba(0,245,212,.2);
+  color: var(--cyan); cursor: pointer; font-size: .9rem; transition: all .15s;
+}
+.new-file-btn:hover { background: rgba(0,245,212,.15); }
+.file-list { flex: 1; overflow-y: auto; padding: 6px; }
+.file-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 7px;
+  cursor: pointer; transition: all .15s; font-size: .8rem; color: var(--muted);
+  position: relative;
+}
+.file-item:hover { background: var(--glass); color: var(--text); }
+.file-item.active { background: rgba(0,245,212,.07); color: var(--cyan); border-left: 2px solid var(--cyan); padding-left: 6px; }
+.file-icon { font-size: .8rem; flex-shrink: 0; }
+.file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-del { opacity: 0; font-size: .75rem; color: var(--muted); transition: opacity .15s; }
+.file-item:hover .file-del { opacity: 1; }
+.file-del:hover { color: var(--pink); }
+
+/* ── EDITOR PANE ── */
+#editor-pane {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  min-width: 0;
+}
+#editor-wrap { flex: 1; display: flex; overflow: hidden; }
+
+/* Textarea editor */
+#editor-container {
+  flex: 1; display: flex; overflow: hidden;
+  background: transparent; position: relative;
+}
+#editor-inner {
+  flex: 1; display: flex; overflow: hidden;
+}
+#line-numbers {
+  width: 44px; background: rgba(0,0,0,.2);
+  border-right: 1px solid var(--border);
+  padding: 16px 0; overflow: hidden;
+  font-family: var(--mono); font-size: .75rem;
+  color: var(--muted); line-height: 1.7;
+  text-align: right; padding-right: 10px;
+  flex-shrink: 0; user-select: none;
+}
+#editor {
+  flex: 1; background: transparent; border: none; outline: none; resize: none;
+  font-family: var(--mono); font-size: .85rem; color: var(--text);
+  line-height: 1.7; padding: 16px; tab-size: 2;
+  caret-color: var(--cyan); white-space: pre; overflow-wrap: normal;
+  overflow: auto;
+}
+#editor::selection { background: rgba(0,245,212,.2); }
+#editor::placeholder { color: var(--muted); font-style: italic; }
+
+/* ── DIVIDER ── */
+#divider {
+  width: 4px; background: var(--border); cursor: col-resize;
+  transition: background .15s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#divider:hover, #divider.dragging { background: rgba(0,245,212,.3); }
+#divider::after {
+  content: '⋮'; color: var(--muted); font-size: .7rem; letter-spacing: -2px;
+  pointer-events: none;
+}
+
+/* ── PREVIEW PANE ── */
+#preview-pane {
+  flex: 1; overflow-y: auto; padding: 28px 40px;
+  background: transparent; min-width: 0;
+}
+#preview-pane::-webkit-scrollbar { width: 6px; }
+#preview-pane::-webkit-scrollbar-track { background: transparent; }
+#preview-pane::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── MARKDOWN PREVIEW STYLES ── */
+#preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+  font-family: var(--display); color: var(--text); margin-bottom: .6em; margin-top: 1.4em;
+  line-height: 1.25; letter-spacing: -.02em;
+}
+#preview h1 { font-size: 2.1rem; background: linear-gradient(135deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+#preview h2 { font-size: 1.55rem; color: var(--cyan); font-family: var(--sans); font-weight: 700; }
+#preview h3 { font-size: 1.2rem; color: var(--violet); font-family: var(--sans); font-weight: 600; }
+#preview h4 { font-size: 1rem; color: var(--blue); font-family: var(--sans); font-weight: 600; }
+#preview p { margin-bottom: 1em; line-height: 1.8; color: #c8ccd8; font-size: .93rem; }
+#preview a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid rgba(0,245,212,.3); transition: border-color .15s; }
+#preview a:hover { border-color: var(--cyan); }
+#preview strong { color: var(--text); font-weight: 700; }
+#preview em { color: var(--muted); font-style: italic; }
+#preview code {
+  font-family: var(--mono); font-size: .82rem;
+  background: rgba(0,245,212,.07); color: var(--cyan);
+  padding: 2px 7px; border-radius: 5px; border: 1px solid rgba(0,245,212,.15);
+}
+#preview pre {
+  background: rgba(0,0,0,.4); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px; overflow-x: auto; margin-bottom: 1.2em;
+  position: relative;
+}
+#preview pre code {
+  background: none; border: none; padding: 0; color: var(--text);
+  font-size: .82rem; line-height: 1.6;
+}
+#preview pre::before {
+  content: attr(data-lang);
+  position: absolute; top: 8px; right: 12px;
+  font-family: var(--mono); font-size: .6rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+#preview blockquote {
+  border-left: 3px solid var(--violet); margin: 1em 0;
+  padding: .8em 1.2em; background: rgba(168,85,247,.05); border-radius: 0 8px 8px 0;
+}
+#preview blockquote p { color: var(--muted); margin-bottom: 0; font-style: italic; }
+#preview ul, #preview ol { padding-left: 1.6em; margin-bottom: 1em; }
+#preview li { margin-bottom: .35em; line-height: 1.7; color: #c8ccd8; font-size: .93rem; }
+#preview ul li::marker { color: var(--cyan); }
+#preview ol li::marker { color: var(--cyan); font-family: var(--mono); }
+#preview hr { border: none; height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2em 0; }
+#preview table { width: 100%; border-collapse: collapse; margin-bottom: 1.2em; font-size: .88rem; }
+#preview th {
+  background: rgba(0,245,212,.08); color: var(--cyan); font-family: var(--mono);
+  font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+  padding: 10px 14px; border: 1px solid rgba(0,245,212,.15); text-align: left;
+}
+#preview td { padding: 9px 14px; border: 1px solid var(--border); color: #c8ccd8; vertical-align: top; }
+#preview tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+#preview img { max-width: 100%; border-radius: 8px; margin: .5em 0; }
+#preview del { color: var(--muted); }
+#preview input[type=checkbox] { accent-color: var(--cyan); margin-right: 6px; }
+
+/* Task list */
+#preview .task-item { list-style: none; margin-left: -1.4em; }
+
+/* ── STATUS BAR ── */
+#statusbar {
+  height: var(--statusbar-h); background: rgba(0,0,0,.4);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 20px;
+  padding: 0 16px; flex-shrink: 0;
+  font-family: var(--mono); font-size: .62rem; color: var(--muted);
+  z-index: 10;
+}
+.status-item { display: flex; align-items: center; gap: 5px; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-sep { width:1px; height:14px; background:var(--border); }
+#cursor-pos { margin-left: auto; }
+
+/* ── TOOLBAR (Formatting) ── */
+#toolbar {
+  padding: 5px 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 2px;
+  background: rgba(0,0,0,.2); flex-shrink: 0; flex-wrap: wrap;
+}
+.tool-btn {
+  padding: 4px 8px; border-radius: 5px; font-family: var(--mono);
+  font-size: .72rem; color: var(--muted); background: transparent;
+  border: none; cursor: pointer; transition: all .12s; display: flex;
+  align-items: center; gap: 4px; white-space: nowrap;
+}
+.tool-btn:hover { background: var(--glass2); color: var(--text); }
+.tool-btn.sep { width: 1px; height: 18px; background: var(--border); padding: 0; cursor: default; margin: 0 3px; }
+.tool-btn svg { width: 13px; height: 13px; }
+.tool-tip { position: relative; }
+.tool-tip::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 4px); left: 50%;
+  transform: translateX(-50%); background: rgba(0,0,0,.9); color: var(--text);
+  font-size: .6rem; padding: 3px 7px; border-radius: 4px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.tool-tip:hover::after { opacity: 1; }
+
+/* ── PANELS ── */
+.panel-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 100; display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.panel-overlay.show { display: flex; }
+.panel {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 28px; min-width: 360px; max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.panel h3 { font-family: var(--mono); font-size: .8rem; color: var(--cyan); margin-bottom: 18px; letter-spacing: .06em; text-transform: uppercase; }
+.panel-row { margin-bottom: 14px; }
+.panel-label { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-bottom: 6px; display: block; }
+.panel-input {
+  width: 100%; padding: 9px 12px; background: var(--glass);
+  border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text); font-family: var(--mono); font-size: .8rem; outline: none;
+  transition: border-color .15s;
+}
+.panel-input:focus { border-color: var(--cyan); }
+.panel-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.btn-primary {
+  padding: 8px 18px; background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: #03040a; font-family: var(--mono); font-size: .75rem; font-weight: 700;
+  border: none; border-radius: 8px; cursor: pointer; transition: all .15s;
+}
+.btn-primary:hover { box-shadow: 0 4px 14px rgba(0,245,212,.3); }
+.btn-ghost {
+  padding: 8px 18px; background: var(--glass); border: 1px solid var(--border2);
+  color: var(--muted); font-family: var(--mono); font-size: .75rem;
+  border-radius: 8px; cursor: pointer; transition: all .15s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── SETTINGS PANEL ── */
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.setting-row:last-child { border-bottom: none; }
+.setting-name { font-size: .83rem; color: var(--text); }
+.setting-sub { font-family: var(--mono); font-size: .65rem; color: var(--muted); margin-top: 2px; }
+.toggle-sw {
+  width: 36px; height: 20px; background: var(--border2); border-radius: 10px;
+  position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+}
+.toggle-sw.on { background: var(--cyan); }
+.toggle-sw::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s;
+}
+.toggle-sw.on::after { transform: translateX(16px); }
+select.panel-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a9a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+
+/* ── TOAST ── */
+#toast-host { position: fixed; top: 64px; right: 16px; z-index: 999; display: flex; flex-direction: column; gap: 6px; }
+.toast-n { padding: 9px 16px; border-radius: 9px; font-family: var(--mono); font-size: .72rem; display: flex; align-items: center; gap: 8px; animation: slideIn .25s ease; border: 1px solid; }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:none;opacity:1} }
+.toast-n.success { background: rgba(6,214,160,.12); border-color: rgba(6,214,160,.3); color: var(--green); }
+.toast-n.error   { background: rgba(247,37,133,.1); border-color: rgba(247,37,133,.25); color: var(--pink); }
+.toast-n.info    { background: rgba(0,245,212,.08); border-color: rgba(0,245,212,.2); color: var(--cyan); }
+
+/* ── FOCUS MODE ── */
+body.focus-mode #sidebar, body.focus-mode #toolbar, body.focus-mode #statusbar { display: none !important; }
+body.focus-mode #editor { font-size: 1rem; padding: 40px 80px; }
+body.focus-mode #preview-pane { padding: 40px 80px; }
+body.focus-mode #topbar { opacity: 0; transition: opacity .3s; }
+body.focus-mode #topbar:hover { opacity: 1; }
+
+/* ── FULL PREVIEW (only preview) ── */
+body.view-preview #editor-container, body.view-preview #divider { display: none !important; }
+body.view-editor #preview-pane, body.view-editor #divider { display: none !important; }
+
+/* ── SCROLLBARS ── */
+#editor::-webkit-scrollbar, #file-list::-webkit-scrollbar { width: 5px; height: 5px; }
+#editor::-webkit-scrollbar-track { background: transparent; }
+#editor::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── SEARCH HIGHLIGHT ── */
+mark.search-mark { background: rgba(255,209,102,.25); color: var(--yellow); border-radius: 2px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px) {
+  #sidebar { display: none; }
+  #divider { display: none; }
+  #editor-wrap { flex-direction: column; }
+  #preview-pane { padding: 16px; }
+}
+
+@media print {
+  #topbar, #toolbar, #statusbar, #sidebar, #divider, #editor-container { display: none !important; }
+  body { overflow: auto; background: #fff !important; color: #111 !important; }
+  #preview-pane { padding: 0; }
+  #preview h1 { background: none; -webkit-text-fill-color: #111; color: #111; }
+  #preview h2 { color: #333; }
+  #preview code { background: #f0f0f0; color: #333; }
+  #preview pre { background: #f0f0f0; border-color: #ddd; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <a class="brand" href="https://letranvietlong.github.io" target="_blank">
+    <span class="brand-icon">📝</span>
+    <span class="brand-name">MarkdownPro</span>
+    <span class="brand-ver">v1.0</span>
+  </a>
+
+  <div class="menu-sep"></div>
+
+  <div class="menu-group">
+    <button class="menu-btn tool-tip" data-tip="Ctrl+N" onclick="newFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Mới
+    </button>
+    <button class="menu-btn tool-tip" data-tip="Ctrl+O" onclick="openFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Mở
+    </button>
+    <button class="menu-btn tool-tip" data-tip="Ctrl+S" onclick="saveFile()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Lưu
+    </button>
+  </div>
+
+  <div class="menu-sep"></div>
+
+  <div class="menu-group">
+    <button class="menu-btn tool-tip" data-tip="Export Markdown (.md)" onclick="exportMD()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      .md
+    </button>
+    <button class="menu-btn tool-tip" data-tip="Export HTML" onclick="exportHTML()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      .html
+    </button>
+    <button class="menu-btn tool-tip" data-tip="In / Export PDF" onclick="exportPDF()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      PDF
+    </button>
+    <button class="menu-btn tool-tip" data-tip="Copy HTML" onclick="copyHTML()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy HTML
+    </button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="word-count" id="wordCount">
+    <span>📄 <b id="wc-words">0</b> từ</span>
+    <span>🔤 <b id="wc-chars">0</b> ký tự</span>
+    <span>📖 ~<b id="wc-read">0</b> phút</span>
+  </div>
+
+  <div class="view-toggle">
+    <button class="view-btn on tool-tip" id="vboth" data-tip="Chia đôi" onclick="setView('both',this)">⊞</button>
+    <button class="view-btn tool-tip" id="vedit" data-tip="Chỉ soạn" onclick="setView('editor',this)">✎</button>
+    <button class="view-btn tool-tip" id="vprev" data-tip="Chỉ xem" onclick="setView('preview',this)">👁</button>
+  </div>
+
+  <button class="icon-btn tool-tip" data-tip="Focus Mode (F11)" onclick="toggleFocus()">⛶</button>
+  <button class="icon-btn tool-tip" data-tip="Cài đặt" onclick="showSettings()" style="margin-left:4px">⚙</button>
+</header>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Files</span>
+      <button class="new-file-btn" onclick="newFile()" title="Tệp mới">+</button>
+    </div>
+    <div class="file-list" id="fileList"></div>
+  </aside>
+
+  <!-- EDITOR PANE -->
+  <div id="editor-pane">
+
+    <!-- TOOLBAR -->
+    <div id="toolbar">
+      <button class="tool-btn tool-tip" data-tip="H1" onclick="wrap('# ')"><b>H1</b></button>
+      <button class="tool-btn tool-tip" data-tip="H2" onclick="wrap('## ')"><b>H2</b></button>
+      <button class="tool-btn tool-tip" data-tip="H3" onclick="wrap('### ')"><b>H3</b></button>
+      <span class="tool-btn sep"></span>
+      <button class="tool-btn tool-tip" data-tip="In đậm (Ctrl+B)" onclick="wrapInline('**','**')"><b>B</b></button>
+      <button class="tool-btn tool-tip" data-tip="Nghiêng (Ctrl+I)" onclick="wrapInline('*','*')"><i>I</i></button>
+      <button class="tool-btn tool-tip" data-tip="Gạch (Ctrl+U)" onclick="wrapInline('~~','~~')"><s>S</s></button>
+      <button class="tool-btn tool-tip" data-tip="Code inline" onclick="wrapInline('`','`')"><code>`c`</code></button>
+      <span class="tool-btn sep"></span>
+      <button class="tool-btn tool-tip" data-tip="Link" onclick="insertLink()">🔗</button>
+      <button class="tool-btn tool-tip" data-tip="Hình ảnh" onclick="insertImage()">🖼</button>
+      <button class="tool-btn tool-tip" data-tip="Table" onclick="insertTable()">⊞</button>
+      <button class="tool-btn tool-tip" data-tip="Code block" onclick="insertCodeBlock()">{ }</button>
+      <span class="tool-btn sep"></span>
+      <button class="tool-btn tool-tip" data-tip="Danh sách" onclick="wrap('- ')">• List</button>
+      <button class="tool-btn tool-tip" data-tip="Danh sách số" onclick="wrap('1. ')">1. List</button>
+      <button class="tool-btn tool-tip" data-tip="Task list" onclick="wrap('- [ ] ')">☑ Task</button>
+      <button class="tool-btn tool-tip" data-tip="Blockquote" onclick="wrap('> ')">❝</button>
+      <button class="tool-btn tool-tip" data-tip="Đường kẻ ngang" onclick="insertHR()">──</button>
+    </div>
+
+    <!-- EDITOR WRAP -->
+    <div id="editor-wrap">
+      <div id="editor-container">
+        <div id="editor-inner">
+          <div id="line-numbers" id="lineNums"></div>
+          <textarea id="editor" placeholder="# Bắt đầu viết...&#10;&#10;MarkdownPro hỗ trợ Markdown đầy đủ với preview real-time.&#10;&#10;**Gợi ý:** Dùng toolbar hoặc phím tắt Ctrl+B, Ctrl+I..." spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <div id="divider" id="dividerEl"></div>
+
+      <div id="preview-pane">
+        <div id="preview"></div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div id="statusbar">
+      <div class="status-item">
+        <span class="status-dot"></span>
+        <span>Auto-saved</span>
+      </div>
+      <span class="status-sep"></span>
+      <span class="status-item">Markdown</span>
+      <span class="status-sep"></span>
+      <span class="status-item" id="sb-file">untitled.md</span>
+      <span id="cursor-pos" class="status-item">Dòng 1, Cột 1</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST HOST -->
+<div id="toast-host"></div>
+
+<!-- SETTINGS PANEL -->
+<div class="panel-overlay" id="settingsPanel">
+  <div class="panel" style="min-width:420px">
+    <h3>⚙ Cài đặt</h3>
+    <div class="setting-row">
+      <div><div class="setting-name">Font size</div><div class="setting-sub">Kích thước chữ editor</div></div>
+      <select class="panel-input" style="width:110px" id="st-fontsize" onchange="applySetting('fontsize',this.value)">
+        <option value="13px">13px</option>
+        <option value="14px" selected>14px</option>
+        <option value="15px">15px</option>
+        <option value="16px">16px</option>
+        <option value="18px">18px</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Line height</div><div class="setting-sub">Khoảng cách dòng</div></div>
+      <select class="panel-input" style="width:110px" id="st-lineheight" onchange="applySetting('lineheight',this.value)">
+        <option value="1.5">1.5</option>
+        <option value="1.7" selected>1.7</option>
+        <option value="1.9">1.9</option>
+        <option value="2.1">2.1</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Tab size</div><div class="setting-sub">Số spaces cho 1 tab</div></div>
+      <select class="panel-input" style="width:110px" id="st-tabsize" onchange="applySetting('tabsize',this.value)">
+        <option value="2" selected>2</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Line numbers</div><div class="setting-sub">Hiện số dòng</div></div>
+      <div class="toggle-sw on" id="st-linenums" onclick="toggleSetting('linenums',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Word wrap</div><div class="setting-sub">Xuống dòng tự động</div></div>
+      <div class="toggle-sw" id="st-wrap" onclick="toggleSetting('wrap',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Sync scroll</div><div class="setting-sub">Cuộn đồng bộ editor/preview</div></div>
+      <div class="toggle-sw on" id="st-syncscroll" onclick="toggleSetting('syncscroll',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-name">Spell check</div><div class="setting-sub">Kiểm tra chính tả</div></div>
+      <div class="toggle-sw" id="st-spell" onclick="toggleSetting('spell',this)"></div>
+    </div>
+    <div class="panel-actions">
+      <button class="btn-ghost" onclick="hideSettings()">Đóng</button>
+      <button class="btn-primary" onclick="resetSettings()">Reset mặc định</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK PANEL -->
+<div class="panel-overlay" id="linkPanel">
+  <div class="panel">
+    <h3>🔗 Chèn link</h3>
+    <div class="panel-row">
+      <label class="panel-label">Tiêu đề</label>
+      <input class="panel-input" id="link-text" placeholder="Tên hiển thị">
+    </div>
+    <div class="panel-row">
+      <label class="panel-label">URL</label>
+      <input class="panel-input" id="link-url" placeholder="https://...">
+    </div>
+    <div class="panel-actions">
+      <button class="btn-ghost" onclick="closePanel('linkPanel')">Huỷ</button>
+      <button class="btn-primary" onclick="confirmLink()">Chèn</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE PANEL -->
+<div class="panel-overlay" id="imagePanel">
+  <div class="panel">
+    <h3>🖼 Chèn hình ảnh</h3>
+    <div class="panel-row">
+      <label class="panel-label">Alt text</label>
+      <input class="panel-input" id="img-alt" placeholder="Mô tả hình ảnh">
+    </div>
+    <div class="panel-row">
+      <label class="panel-label">URL hình</label>
+      <input class="panel-input" id="img-url" placeholder="https://... hoặc paste URL">
+    </div>
+    <div class="panel-actions">
+      <button class="btn-ghost" onclick="closePanel('imagePanel')">Huỷ</button>
+      <button class="btn-primary" onclick="confirmImage()">Chèn</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".md,.txt,.markdown" style="display:none" onchange="handleFileOpen(event)">
+
+<script>
+// ============================================================
+// MARKDOWN PARSER (thuần JS — không dùng thư viện ngoài)
+// ============================================================
+function parseMarkdown(md) {
+  let html = md;
+
+  // Escape HTML special chars trong code blocks trước
+  const codeBlocks = [];
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre data-lang="${lang||'code'}"><code>${escaped}</code></pre>`);
+    return `\x00CODE${idx}\x00`;
+  });
+
+  const inlineCodes = [];
+  html = html.replace(/`([^`]+)`/g, (_, c) => {
+    const escaped = c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const idx = inlineCodes.length;
+    inlineCodes.push(`<code>${escaped}</code>`);
+    return `\x00INLINE${idx}\x00`;
+  });
+
+  // Headers
+  html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+  html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+  html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+  // HR
+  html = html.replace(/^[-*_]{3,}\s*$/gm, '<hr>');
+
+  // Blockquote
+  html = html.replace(/^>\s?(.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+  html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+
+  // Task list
+  html = html.replace(/^- \[x\]\s+(.+)$/gim, '<li class="task-item"><input type="checkbox" checked disabled> $1</li>');
+  html = html.replace(/^- \[ \]\s+(.+)$/gm, '<li class="task-item"><input type="checkbox" disabled> $1</li>');
+
+  // Unordered list
+  html = html.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^-\s+(.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^(\s*<li>.*<\/li>\n?)+/gm, m => `<ul>${m}</ul>`);
+
+  // Ordered list
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+
+  // Tables
+  html = html.replace(/^\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)*)/gm, (_, header, rows) => {
+    const ths = header.split('|').map(c=>c.trim()).filter(Boolean).map(c=>`<th>${c}</th>`).join('');
+    const trs = rows.trim().split('\n').map(row => {
+      const tds = row.split('|').map(c=>c.trim()).filter(Boolean).map(c=>`<td>${c}</td>`).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  });
+
+  // Bold, italic, strikethrough
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+  // Links & images
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Paragraphs — lines not already wrapped
+  const lines = html.split('\n');
+  const out = [];
+  let inList = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBlock = /^<(h[1-6]|ul|ol|li|blockquote|pre|hr|table|thead|tbody|tr|th|td|img)/.test(line.trim());
+    const isCode = line.includes('\x00CODE');
+    const isEmpty = line.trim() === '';
+    if (isBlock || isCode || isEmpty) { out.push(line); }
+    else { out.push(`<p>${line}</p>`); }
+  }
+  html = out.join('\n');
+
+  // Restore code blocks
+  codeBlocks.forEach((block, i) => { html = html.replace(`\x00CODE${i}\x00`, block); });
+  inlineCodes.forEach((block, i) => { html = html.replace(`\x00INLINE${i}\x00`, block); });
+
+  // Clean up empty paragraphs
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>\s*(<(?:ul|ol|blockquote|hr|table|pre|h[1-6]))/g, '$1');
+
+  return html;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const DEFAULT_CONTENT = `# 👋 Chào mừng đến với MarkdownPro
+
+**MarkdownPro** là trình soạn thảo Markdown trực tuyến với preview real-time, hỗ trợ tiếng Việt hoàn chỉnh và nhiều tính năng hữu ích.
+
+## ✨ Tính năng chính
+
+- 📝 **Soạn thảo** Markdown với syntax highlight
+- 👁 **Preview real-time** — thấy ngay kết quả khi gõ
+- 📤 **Export** sang .md, .html, PDF
+- 📁 **Quản lý file** — tạo nhiều tài liệu khác nhau
+- ⌨️ **Phím tắt** — Ctrl+B, Ctrl+I, Ctrl+S...
+- 🌙 **Focus mode** — viết không bị phân tâm (F11)
+
+## ⌨️ Phím tắt
+
+| Phím | Chức năng |
+|------|-----------|
+| \`Ctrl+B\` | **In đậm** |
+| \`Ctrl+I\` | *Nghiêng* |
+| \`Ctrl+S\` | Lưu file |
+| \`Ctrl+N\` | Tệp mới |
+| \`F11\` | Focus mode |
+| \`Tab\` | Thụt dòng |
+
+## 💻 Code example
+
+\`\`\`javascript
+function greet(name) {
+  console.log(\`Xin chào, \${name}!\`);
+  return \`Hello, \${name}!\`;
+}
+
+greet('LongLTV'); // Xin chào, LongLTV!
+\`\`\`
+
+## 📋 Task list
+
+- [x] Soạn thảo Markdown cơ bản
+- [x] Preview real-time
+- [x] Export PDF/HTML
+- [ ] Thêm tính năng collaboration
+- [ ] Dark/Light theme switch
+
+> **Mẹo:** Dùng \`F11\` để vào Focus Mode — viết tập trung hơn, không bị phân tâm bởi UI.
+
+---
+
+*Built by [Lê Trần Viết Long](https://letranvietlong.github.io) · LongLTV.dev*
+`;
+
+let files = JSON.parse(localStorage.getItem('mdpro_files') || 'null') || [
+  { id: 1, name: 'Welcome.md', content: DEFAULT_CONTENT, updated: Date.now() }
+];
+let currentFileId = files[0].id;
+let settings = JSON.parse(localStorage.getItem('mdpro_settings') || '{}');
+let syncScroll = true;
+let isDragging = false;
+let saveTimer = null;
+let nextId = Math.max(...files.map(f => f.id)) + 1;
+
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const lineNums = document.getElementById('line-numbers');
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  applySettings();
+  renderFileList();
+  loadFile(currentFileId);
+  editor.addEventListener('input', onEdit);
+  editor.addEventListener('scroll', onEditorScroll);
+  document.getElementById('preview-pane').addEventListener('scroll', onPreviewScroll);
+  editor.addEventListener('keydown', onKeyDown);
+  editor.addEventListener('keyup', updateCursor);
+  editor.addEventListener('click', updateCursor);
+  setupDivider();
+  window.addEventListener('keydown', globalKeys);
+
+  // Restore settings UI
+  const st = settings;
+  if (st.fontsize) document.getElementById('st-fontsize').value = st.fontsize;
+  if (st.lineheight) document.getElementById('st-lineheight').value = st.lineheight;
+  if (st.tabsize) document.getElementById('st-tabsize').value = st.tabsize;
+  if (st.linenums === false) document.getElementById('st-linenums').classList.remove('on');
+  if (st.syncscroll === false) { document.getElementById('st-syncscroll').classList.remove('on'); syncScroll = false; }
+  if (st.spell) document.getElementById('st-spell').classList.add('on');
+}
+
+function onEdit() {
+  const cur = getCurrentFile();
+  if (cur) { cur.content = editor.value; cur.updated = Date.now(); }
+  renderPreview();
+  updateLineNumbers();
+  updateWordCount();
+  updateCursor();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistSave, 800);
+}
+
+function renderPreview() {
+  preview.innerHTML = parseMarkdown(editor.value);
+  // Syntax highlight (basic keyword coloring)
+  preview.querySelectorAll('pre code').forEach(el => {
+    el.innerHTML = highlightCode(el.textContent, el.parentElement.dataset.lang || '');
+  });
+}
+
+function highlightCode(code, lang) {
+  const esc = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (!lang || lang === 'text') return esc;
+  const keywords = {
+    javascript: /\b(const|let|var|function|return|if|else|for|while|class|import|export|default|async|await|new|this|typeof|instanceof|null|undefined|true|false|try|catch|finally|throw|of|in)\b/g,
+    python: /\b(def|class|return|import|from|if|else|elif|for|while|in|not|and|or|True|False|None|with|as|try|except|finally|lambda|yield|pass|break|continue)\b/g,
+    html: /(&lt;\/?[\w]+|&gt;|&lt;)/g,
+    css: /([.#][\w-]+|:\w+|@\w+)/g,
+  };
+  const stringRe = /(["'`])([^"'`\n]*?)\1/g;
+  const commentRe = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)/g;
+  const numberRe = /\b(\d+\.?\d*)\b/g;
+
+  let result = esc;
+  result = result.replace(stringRe, '<span style="color:#a8e6cf">$1$2$1</span>');
+  result = result.replace(commentRe, '<span style="color:#6b7a9a;font-style:italic">$1</span>');
+  result = result.replace(numberRe, '<span style="color:#ffd166">$1</span>');
+  const kwRe = keywords[lang] || keywords.javascript;
+  result = result.replace(kwRe, '<span style="color:#a855f7">$&</span>');
+  return result;
+}
+
+function updateLineNumbers() {
+  const lines = editor.value.split('\n').length;
+  const show = settings.linenums !== false;
+  lineNums.style.display = show ? '' : 'none';
+  if (!show) return;
+  lineNums.innerHTML = Array.from({length: lines}, (_, i) => i+1).join('<br>');
+}
+
+function updateWordCount() {
+  const text = editor.value;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chars = text.length;
+  const read = Math.max(1, Math.round(words / 200));
+  document.getElementById('wc-words').textContent = words;
+  document.getElementById('wc-chars').textContent = chars;
+  document.getElementById('wc-read').textContent = read;
+}
+
+function updateCursor() {
+  const pos = editor.selectionStart;
+  const lines = editor.value.substring(0, pos).split('\n');
+  const line = lines.length;
+  const col = lines[lines.length - 1].length + 1;
+  document.getElementById('cursor-pos').textContent = `Dòng ${line}, Cột ${col}`;
+}
+
+// ============================================================
+// FILE MANAGEMENT
+// ============================================================
+function renderFileList() {
+  const list = document.getElementById('fileList');
+  list.innerHTML = files.sort((a,b) => b.updated - a.updated).map(f => `
+    <div class="file-item ${f.id === currentFileId ? 'active' : ''}" onclick="loadFile(${f.id})">
+      <span class="file-icon">📄</span>
+      <span class="file-name">${escHtml(f.name)}</span>
+      ${files.length > 1 ? `<span class="file-del" onclick="event.stopPropagation();deleteFile(${f.id})">✕</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function getCurrentFile() { return files.find(f => f.id === currentFileId); }
+
+function loadFile(id) {
+  currentFileId = id;
+  const f = getCurrentFile();
+  if (!f) return;
+  editor.value = f.content;
+  document.getElementById('sb-file').textContent = f.name;
+  renderPreview();
+  updateLineNumbers();
+  updateWordCount();
+  updateCursor();
+  renderFileList();
+}
+
+function newFile() {
+  const name = prompt('Tên file:', `Untitled ${nextId}.md`);
+  if (!name) return;
+  const f = { id: nextId++, name: name.endsWith('.md') ? name : name + '.md', content: `# ${name.replace('.md','')}\n\n`, updated: Date.now() };
+  files.push(f);
+  persistSave();
+  loadFile(f.id);
+  toast('📄 Tạo file mới: ' + f.name, 'success');
+}
+
+function deleteFile(id) {
+  if (!confirm('Xóa file này?')) return;
+  files = files.filter(f => f.id !== id);
+  if (currentFileId === id) loadFile(files[0].id);
+  persistSave();
+  renderFileList();
+  toast('🗑 Đã xóa file', 'info');
+}
+
+function saveFile() {
+  persistSave();
+  toast('💾 Đã lưu!', 'success');
+}
+
+function persistSave() {
+  const cur = getCurrentFile();
+  if (cur) cur.content = editor.value;
+  localStorage.setItem('mdpro_files', JSON.stringify(files));
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportMD() {
+  const f = getCurrentFile();
+  download(f.content, f.name, 'text/markdown');
+  toast('📥 Đã export Markdown', 'success');
+}
+
+function exportHTML() {
+  const f = getCurrentFile();
+  const fullHTML = `<!DOCTYPE html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHtml(f.name)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Be Vietnam Pro',sans-serif;max-width:780px;margin:40px auto;padding:0 24px;color:#1a1a2e;line-height:1.8;font-size:16px}
+h1,h2,h3{margin:1.4em 0 .6em;line-height:1.25}h1{font-size:2rem}h2{font-size:1.5rem;color:#4361ee}h3{font-size:1.15rem}
+p{margin-bottom:1em}a{color:#4361ee}
+code{background:#f0f4ff;padding:2px 6px;border-radius:4px;font-family:'Fira Code',monospace;font-size:.85em}
+pre{background:#f0f4ff;padding:20px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}
+blockquote{border-left:3px solid #4361ee;margin:1em 0;padding:.8em 1.2em;background:#f5f7ff}
+table{width:100%;border-collapse:collapse;margin-bottom:1.2em}th{background:#4361ee;color:#fff;padding:10px 14px;text-align:left}td{padding:9px 14px;border:1px solid #e0e0e0}
+img{max-width:100%;border-radius:8px}hr{border:none;height:1px;background:#e0e0e0;margin:2em 0}
+</style></head><body>${preview.innerHTML}</body></html>`;
+  download(fullHTML, f.name.replace('.md', '.html'), 'text/html');
+  toast('📥 Đã export HTML', 'success');
+}
+
+function exportPDF() {
+  toast('🖨 Đang mở hộp thoại in...', 'info');
+  setTimeout(() => window.print(), 300);
+}
+
+function copyHTML() {
+  navigator.clipboard.writeText(preview.innerHTML).then(() => toast('📋 Đã copy HTML!', 'success'));
+}
+
+function download(content, filename, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = filename; a.click();
+}
+
+function openFile() { document.getElementById('fileInput').click(); }
+function handleFileOpen(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const f = { id: nextId++, name: file.name, content: ev.target.result, updated: Date.now() };
+    files.push(f); loadFile(f.id); persistSave();
+    toast('📂 Đã mở: ' + file.name, 'success');
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ============================================================
+// TOOLBAR ACTIONS
+// ============================================================
+function wrap(prefix, suffix='') {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  const sel = editor.value.substring(s, e2);
+  const lineStart = editor.value.lastIndexOf('\n', s-1) + 1;
+  const before = editor.value.substring(0, lineStart);
+  const after = editor.value.substring(e2);
+  const newVal = before + prefix + (sel || 'text') + suffix + after;
+  editor.value = newVal;
+  editor.selectionStart = lineStart + prefix.length;
+  editor.selectionEnd = lineStart + prefix.length + (sel || 'text').length;
+  editor.focus(); onEdit();
+}
+
+function wrapInline(open, close) {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  const sel = editor.value.substring(s, e2) || 'text';
+  const before = editor.value.substring(0, s);
+  const after = editor.value.substring(e2);
+  editor.value = before + open + sel + close + after;
+  editor.selectionStart = s + open.length;
+  editor.selectionEnd = s + open.length + sel.length;
+  editor.focus(); onEdit();
+}
+
+function insertLink() {
+  document.getElementById('link-text').value = editor.value.substring(editor.selectionStart, editor.selectionEnd) || '';
+  document.getElementById('link-url').value = '';
+  document.getElementById('linkPanel').classList.add('show');
+  setTimeout(() => document.getElementById('link-text').focus(), 50);
+}
+function confirmLink() {
+  const text = document.getElementById('link-text').value || 'link';
+  const url = document.getElementById('link-url').value || '#';
+  insertAtCursor(`[${text}](${url})`);
+  closePanel('linkPanel');
+}
+
+function insertImage() {
+  document.getElementById('img-alt').value = '';
+  document.getElementById('img-url').value = '';
+  document.getElementById('imagePanel').classList.add('show');
+  setTimeout(() => document.getElementById('img-url').focus(), 50);
+}
+function confirmImage() {
+  const alt = document.getElementById('img-alt').value || 'image';
+  const url = document.getElementById('img-url').value || '';
+  insertAtCursor(`![${alt}](${url})`);
+  closePanel('imagePanel');
+}
+
+function insertTable() {
+  insertAtCursor('\n| Cột 1 | Cột 2 | Cột 3 |\n|-------|-------|-------|\n| Dữ liệu | Dữ liệu | Dữ liệu |\n');
+}
+function insertCodeBlock() {
+  insertAtCursor('\n```javascript\n// Code ở đây\n```\n');
+}
+function insertHR() {
+  insertAtCursor('\n---\n');
+}
+
+function insertAtCursor(text) {
+  const s = editor.selectionStart;
+  editor.value = editor.value.substring(0, s) + text + editor.value.substring(editor.selectionEnd);
+  editor.selectionStart = editor.selectionEnd = s + text.length;
+  editor.focus(); onEdit();
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+function onKeyDown(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const spaces = settings.tabsize === '4' ? '    ' : '  ';
+    insertAtCursor(spaces);
+  }
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'b') { e.preventDefault(); wrapInline('**','**'); }
+    if (e.key === 'i') { e.preventDefault(); wrapInline('*','*'); }
+    if (e.key === 's') { e.preventDefault(); saveFile(); }
+    if (e.key === 'n') { e.preventDefault(); newFile(); }
+    if (e.key === 'o') { e.preventDefault(); openFile(); }
+  }
+}
+
+function globalKeys(e) {
+  if (e.key === 'F11') { e.preventDefault(); toggleFocus(); }
+  if (e.key === 'Escape') {
+    closePanel('linkPanel'); closePanel('imagePanel'); hideSettings();
+  }
+}
+
+// ============================================================
+// VIEW TOGGLE
+// ============================================================
+function setView(mode, btn) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.body.classList.remove('view-editor','view-preview');
+  if (mode !== 'both') document.body.classList.add('view-' + mode);
+}
+
+function toggleFocus() {
+  document.body.classList.toggle('focus-mode');
+  toast(document.body.classList.contains('focus-mode') ? '🧘 Focus Mode bật — nhấn F11 để thoát' : '👁 Thoát Focus Mode', 'info');
+}
+
+// ============================================================
+// SYNC SCROLL
+// ============================================================
+let scrollSource = null;
+function onEditorScroll() {
+  if (scrollSource === 'preview' || !syncScroll) return;
+  scrollSource = 'editor';
+  const pct = editor.scrollTop / (editor.scrollHeight - editor.clientHeight || 1);
+  const pane = document.getElementById('preview-pane');
+  pane.scrollTop = pct * (pane.scrollHeight - pane.clientHeight);
+  clearTimeout(window._scrollT);
+  window._scrollT = setTimeout(() => scrollSource = null, 50);
+}
+function onPreviewScroll() {
+  if (scrollSource === 'editor' || !syncScroll) return;
+  scrollSource = 'preview';
+  const pane = document.getElementById('preview-pane');
+  const pct = pane.scrollTop / (pane.scrollHeight - pane.clientHeight || 1);
+  editor.scrollTop = pct * (editor.scrollHeight - editor.clientHeight);
+  clearTimeout(window._scrollT);
+  window._scrollT = setTimeout(() => scrollSource = null, 50);
+}
+
+// ============================================================
+// DIVIDER DRAG
+// ============================================================
+function setupDivider() {
+  const div = document.getElementById('divider');
+  const wrap = document.getElementById('editor-wrap');
+  let startX, startLeft;
+  div.addEventListener('mousedown', e => {
+    isDragging = true; startX = e.clientX;
+    const ec = document.getElementById('editor-container');
+    startLeft = ec.getBoundingClientRect().width;
+    div.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const ec = document.getElementById('editor-container');
+    const pp = document.getElementById('preview-pane');
+    const total = wrap.getBoundingClientRect().width - 4;
+    const newW = Math.max(200, Math.min(total - 200, startLeft + (e.clientX - startX)));
+    ec.style.flex = 'none'; ec.style.width = newW + 'px';
+    pp.style.flex = '1';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    div.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function showSettings() { document.getElementById('settingsPanel').classList.add('show'); }
+function hideSettings() { document.getElementById('settingsPanel').classList.remove('show'); }
+
+function applySetting(key, val) {
+  settings[key] = val;
+  localStorage.setItem('mdpro_settings', JSON.stringify(settings));
+  if (key === 'fontsize') editor.style.fontSize = val;
+  if (key === 'lineheight') editor.style.lineHeight = val;
+  if (key === 'tabsize') editor.style.tabSize = val;
+}
+
+function toggleSetting(key, el) {
+  el.classList.toggle('on');
+  const val = el.classList.contains('on');
+  settings[key] = val;
+  localStorage.setItem('mdpro_settings', JSON.stringify(settings));
+  if (key === 'linenums') { lineNums.style.display = val ? '' : 'none'; }
+  if (key === 'syncscroll') syncScroll = val;
+  if (key === 'wrap') { editor.style.whiteSpace = val ? 'pre-wrap' : 'pre'; editor.style.overflowWrap = val ? 'break-word' : 'normal'; }
+  if (key === 'spell') editor.spellcheck = val;
+}
+
+function applySettings() {
+  if (settings.fontsize) editor.style.fontSize = settings.fontsize;
+  if (settings.lineheight) editor.style.lineHeight = settings.lineheight;
+  if (settings.tabsize) editor.style.tabSize = settings.tabsize;
+  if (settings.wrap) { editor.style.whiteSpace = 'pre-wrap'; editor.style.overflowWrap = 'break-word'; }
+  if (settings.spell) editor.spellcheck = true;
+  if (settings.syncscroll === false) syncScroll = false;
+}
+
+function resetSettings() {
+  settings = {};
+  localStorage.removeItem('mdpro_settings');
+  editor.style.cssText = '';
+  ['st-linenums','st-syncscroll'].forEach(id => document.getElementById(id).classList.add('on'));
+  ['st-wrap','st-spell'].forEach(id => document.getElementById(id).classList.remove('on'));
+  syncScroll = true; lineNums.style.display = '';
+  toast('🔄 Đã reset cài đặt', 'info');
+}
+
+// ============================================================
+// PANELS
+// ============================================================
+function closePanel(id) {
+  document.getElementById(id).classList.remove('show');
+  editor.focus();
+}
+
+// Close panel on overlay click
+document.querySelectorAll('.panel-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// Enter key in panels
+document.getElementById('link-url').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLink(); });
+document.getElementById('img-url').addEventListener('keydown', e => { if (e.key === 'Enter') confirmImage(); });
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type='info', duration=2500) {
+  const host = document.getElementById('toast-host');
+  const el = document.createElement('div');
+  el.className = `toast-n ${type}`;
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(100%)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(), 300); }, duration);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+</body>
+</html>
