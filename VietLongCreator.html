@@ -1023,10 +1023,62 @@ header::before{
     <div class="aimode-panel" id="aimp-template">
       <div class="st" style="margin-top:4px">Chọn Template</div>
       <div class="vsgrid">
-        <div class="vscard sel" onclick="selTpl(this,'lyric-video')"><span class="vscard-icon">🎤</span><div class="vscard-name">LYRIC VIDEO</div><div class="vscard-desc">Chữ lyrics nổi bật + nền</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard" onclick="selTpl(this,'lyric-video')"><span class="vscard-icon">🎤</span><div class="vscard-name">LYRIC VIDEO</div><div class="vscard-desc">Chữ lyrics nổi bật + nền</div><div class="vscard-ck">✓</div></div>
+        <div class="vscard sel" onclick="selTpl(this,'music-card')"><span class="vscard-icon">🎴</span><div class="vscard-name">MUSIC CARD</div><div class="vscard-desc">Ảnh nghệ sĩ + sóng nhạc kiểu H2O Music</div><div class="vscard-ck">✓</div></div>
         <div class="vscard" onclick="selTpl(this,'concert')"><span class="vscard-icon">🎪</span><div class="vscard-name">CONCERT</div><div class="vscard-desc">Ánh đèn sân khấu</div><div class="vscard-ck">✓</div></div>
         <div class="vscard" onclick="selTpl(this,'lofi')"><span class="vscard-icon">☕</span><div class="vscard-name">LO-FI</div><div class="vscard-desc">Chill, retro, ấm áp</div><div class="vscard-ck">✓</div></div>
         <div class="vscard" onclick="selTpl(this,'rave')"><span class="vscard-icon">🕺</span><div class="vscard-name">RAVE</div><div class="vscard-desc">Ánh sáng neon rực rỡ</div><div class="vscard-ck">✓</div></div>
+      </div>
+
+      <!-- MUSIC CARD OPTIONS — hiện khi chọn music-card -->
+      <div id="music-card-opts" style="margin-top:14px;padding:16px;background:var(--bg2);border:1px solid var(--bdr);border-left:2px solid var(--cyan);display:block;">
+        <div style="font-family:var(--font-hd);font-size:.58rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:12px">🎴 MUSIC CARD CONFIG</div>
+        <div class="row2" style="gap:12px;margin-bottom:12px">
+          <div class="fg">
+            <label>Tên bài hát</label>
+            <input type="text" id="mc-title" placeholder="EM THUA CÔ TA" value="" style="text-transform:uppercase">
+          </div>
+          <div class="fg">
+            <label>Tên ca sĩ</label>
+            <input type="text" id="mc-artist" placeholder="MIN QUỲNH ANH" value="">
+          </div>
+        </div>
+        <div class="row2" style="gap:12px;margin-bottom:12px">
+          <div class="fg">
+            <label>Logo text (thay H2O)</label>
+            <input type="text" id="mc-logo" placeholder="VietLong" value="VietLong">
+          </div>
+          <div class="fg">
+            <label>Logo sub</label>
+            <input type="text" id="mc-logo-sub" placeholder="MUSIC" value="CREATOR">
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:12px">
+          <label>Upload ảnh nghệ sĩ (tùy chọn)</label>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button onclick="$('mc-img-inp').click()" style="padding:7px 16px;background:rgba(0,255,247,.1);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-hd);font-size:.55rem;letter-spacing:.1em;cursor:pointer;white-space:nowrap;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);">📷 CHỌN ẢNH</button>
+            <input type="file" id="mc-img-inp" accept="image/*" style="display:none" onchange="loadMCImage(this)">
+            <span id="mc-img-name" style="font-size:.6rem;color:var(--muted);font-family:var(--font-mono)">Chưa chọn ảnh — sẽ dùng placeholder</span>
+          </div>
+        </div>
+        <div class="row2" style="gap:12px">
+          <div class="fg">
+            <label>Màu nền chính</label>
+            <input type="color" id="mc-bg1" value="#0a2a4a">
+          </div>
+          <div class="fg">
+            <label>Màu nền phụ</label>
+            <input type="color" id="mc-bg2" value="#0d3d5e">
+          </div>
+          <div class="fg">
+            <label>Màu sóng nhạc</label>
+            <input type="color" id="mc-wave" value="#00d4ff">
+          </div>
+          <div class="fg">
+            <label>Màu chữ tên bài</label>
+            <input type="color" id="mc-title-col" value="#ffffff">
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1224,7 +1276,7 @@ function generateSmartDefault(sys, user){
   }
   // Detect style từ context
   const lower = (sys+user).toLowerCase();
-  const isFire    = lower.includes('fire')    || lower.includes('lửa');
+  const isMusicCard= lower.includes('music-card') || aiTpl==='music-card';
   const isGalaxy  = lower.includes('galaxy')  || lower.includes('thiên hà');
   const isNebula  = lower.includes('nebula')  || lower.includes('tinh vân');
   const isNeon    = lower.includes('neon')    || lower.includes('cyberpunk');
@@ -1253,7 +1305,7 @@ function generateSmartDefault(sys, user){
     trailLength:    isFire ? 0.88 : 0.93,
     beatReactive:   true,
     colorShift:     !isFire,
-    style:          isFire ? 'fire' : isGalaxy ? 'galaxy' : isNeon ? 'neon' : 'particles',
+    style: isMusicCard?'music-card': isFire ? 'fire' : isGalaxy ? 'galaxy' : isNeon ? 'neon' : 'particles',
     palette:        isFire ? 'fire' : isGalaxy ? 'purple' : 'cyan'
   });
 }
@@ -1414,6 +1466,24 @@ function selVS(el,s){
 function selTpl(el,t){
   document.querySelectorAll('#aimp-template .vscard').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');aiTpl=t;
+  // Show/hide music card config
+  const opts=$('music-card-opts');
+  if(opts) opts.style.display=(t==='music-card')?'block':'none';
+}
+
+// Load artist image for music card
+let mcImage=null;
+function loadMCImage(input){
+  const f=input.files[0];if(!f)return;
+  $('mc-img-name').textContent=f.name;
+  $('mc-img-name').style.color='var(--green)';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    mcImage=new Image();
+    mcImage.src=e.target.result;
+    mcImage.onload=()=>console.log('✅ Artist image loaded:',mcImage.width+'x'+mcImage.height);
+  };
+  reader.readAsDataURL(f);
 }
 function selGP(el,p){
   document.querySelectorAll('#gpalrow .pswatch').forEach(s=>s.classList.remove('sel'));
@@ -1824,6 +1894,13 @@ function renderAI(p){
   else if(style==='concert')drawConcert(bgCtx,W,H,aiT,bass,mid,ac,ac2);
   else if(style==='aurora')drawAurora(bgCtx,W,H,aiT,energy,ac,ac2,bgs);
   else if(style==='lyric-video')drawLyricVideoBG(bgCtx,W,H,aiT,energy,bgs,ac,ac2);
+  else if(style==='music-card'){
+    // Music card handles everything itself — skip particles + default overlays
+    drawMusicCard(bgCtx,ovCtx2,W,H,aiT,bass,mid,energy,aiAnalyser);
+    bgCtx.restore();
+    drawSpecMini(aiAnalyser);
+    return; // skip particle loop + default wave overlay
+  }
 
   // PARTICLES
   bgCtx.save();
@@ -2037,6 +2114,238 @@ function drawLyricVideoBG(c,W,H,t,e,bgs,ac,ac2){
     c.fillStyle=i%2===0?ac+'55':ac2+'55';c.fill();
   }
   c.shadowBlur=0;
+}
+
+// ================================================================
+// MUSIC CARD — Style giống H2O Music (ảnh nghệ sĩ + sóng nhạc)
+// ================================================================
+function drawMusicCard(bg,ov,W,H,t,bass,mid,energy,an){
+  // Read config
+  const bg1 = $('mc-bg1')?.value  || '#0a2a4a';
+  const bg2 = $('mc-bg2')?.value  || '#0d3d5e';
+  const waveCol= $('mc-wave')?.value    || '#00d4ff';
+  const titleCol=$('mc-title-col')?.value||'#ffffff';
+  const title = ($('mc-title')?.value  || 'TÊN BÀI HÁT').toUpperCase();
+  const artist= ($('mc-artist')?.value || '- CA SĨ -').toUpperCase();
+  const logoTxt= $('mc-logo')?.value   || 'VietLong';
+  const logoSub= $('mc-logo-sub')?.value||'CREATOR';
+
+  // ── 1. BACKGROUND — animated leaf/bokeh gradient like H2O ──
+  const grad=bg.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, bg1);
+  grad.addColorStop(.5,bg2);
+  grad.addColorStop(1, bg1);
+  bg.fillStyle=grad;
+  bg.fillRect(0,0,W,H);
+
+  // Animated bokeh circles (lá cây / giọt nước)
+  bg.save();
+  for(let i=0;i<18;i++){
+    const px=W*((i*0.137+Math.sin(t*0.2+i)*0.06+1)%1);
+    const py=H*((i*0.191+Math.cos(t*0.15+i*1.3)*0.06+1)%1);
+    const r =W*0.04*(0.4+Math.sin(t*0.3+i)*0.3);
+    const alp=0.07+Math.abs(Math.sin(t*0.4+i))*0.08;
+    const leafGrad=bg.createRadialGradient(px,py,0,px,py,r);
+    leafGrad.addColorStop(0,waveCol+'55');
+    leafGrad.addColorStop(1,'transparent');
+    bg.fillStyle=leafGrad;bg.globalAlpha=alp;
+    bg.beginPath();bg.arc(px,py,r,0,Math.PI*2);bg.fill();
+  }
+  // Sparkle stars
+  for(let i=0;i<30;i++){
+    const sx=W*((i*0.317+0.05)%1);
+    const sy=H*((i*0.233+0.05)%1);
+    const sa=0.2+0.8*Math.abs(Math.sin(t*1.5+i*2.1));
+    bg.globalAlpha=sa*0.6;bg.fillStyle='#ffffff';
+    bg.beginPath();bg.arc(sx,sy,1+Math.sin(t+i)*0.5,0,Math.PI*2);bg.fill();
+  }
+  bg.globalAlpha=1;bg.restore();
+
+  // ── 2. CARD — centered image card ──
+  const cardW = W*0.38;
+  const cardH = cardW*1.18;
+  const cardX = (W-cardW)/2;
+  const cardY = H*0.06;
+
+  // Card shadow / glow
+  bg.save();
+  bg.shadowColor='rgba(0,0,0,0.6)';
+  bg.shadowBlur=40+bass*30;
+  bg.fillStyle='rgba(0,0,0,0.01)';
+  bg.fillRect(cardX-4,cardY-4,cardW+8,cardH+8);
+  bg.shadowBlur=0;
+  bg.restore();
+
+  // Draw artist image or placeholder
+  bg.save();
+  // Clip to card shape
+  bg.beginPath();
+  bg.roundRect?bg.roundRect(cardX,cardY,cardW,cardH,8):bg.rect(cardX,cardY,cardW,cardH);
+  bg.clip();
+
+  if(mcImage && mcImage.complete && mcImage.naturalWidth>0){
+    // Fit image to card (cover)
+    const ir=mcImage.naturalWidth/mcImage.naturalHeight;
+    const cr=cardW/cardH;
+    let sw,sh,sx,sy;
+    if(ir>cr){sh=cardH;sw=sh*ir;sx=cardX-(sw-cardW)/2;sy=cardY;}
+    else{sw=cardW;sh=sw/ir;sx=cardX;sy=cardY-(sh-cardH)/2;}
+    bg.drawImage(mcImage,sx,sy,sw,sh);
+  } else {
+    // Gradient placeholder
+    const pg=bg.createLinearGradient(cardX,cardY,cardX+cardW,cardY+cardH);
+    pg.addColorStop(0,'#1a3a5c');pg.addColorStop(1,'#0d2840');
+    bg.fillStyle=pg;bg.fillRect(cardX,cardY,cardW,cardH);
+    // Person silhouette placeholder
+    bg.fillStyle='rgba(255,255,255,0.08)';
+    const cx2=cardX+cardW/2,cy2=cardY+cardH*0.38;
+    bg.beginPath();bg.arc(cx2,cy2,cardW*0.22,0,Math.PI*2);bg.fill();
+    bg.beginPath();bg.ellipse(cx2,cy2+cardW*0.42,cardW*0.3,cardH*0.32,0,0,Math.PI*2);bg.fill();
+    bg.fillStyle='rgba(255,255,255,0.15)';
+    bg.font=`bold ${Math.floor(cardW*0.09)}px 'Orbitron',sans-serif`;
+    bg.textAlign='center';bg.textBaseline='middle';
+    bg.fillText('UPLOAD ẢNH',cx2,cardY+cardH*0.82);
+  }
+  bg.restore();
+
+  // Card border
+  bg.save();
+  bg.strokeStyle='rgba(255,255,255,0.35)';bg.lineWidth=1.5;
+  bg.beginPath();
+  bg.roundRect?bg.roundRect(cardX,cardY,cardW,cardH,8):bg.rect(cardX,cardY,cardW,cardH);
+  bg.stroke();
+  bg.restore();
+
+  // ── Camera corner brackets ──
+  const bLen=cardW*0.08, bThick=2.5;
+  bg.save();bg.strokeStyle='rgba(255,255,255,0.85)';bg.lineWidth=bThick;bg.lineCap='round';
+  const corners=[[cardX,cardY,1,1],[cardX+cardW,cardY,-1,1],[cardX,cardY+cardH,1,-1],[cardX+cardW,cardY+cardH,-1,-1]];
+  corners.forEach(([cx,cy,dx,dy])=>{
+    bg.beginPath();bg.moveTo(cx+dx*bLen,cy);bg.lineTo(cx,cy);bg.lineTo(cx,cy+dy*bLen);bg.stroke();
+  });
+  bg.restore();
+
+  // ── 3. PROGRESS BAR inside card (bottom) ──
+  const pbY=cardY+cardH-cardH*0.12;
+  const pbX=cardX+cardW*0.06;
+  const pbW=cardW*0.88;
+  const pbH=3;
+  // Track
+  bg.save();
+  bg.fillStyle='rgba(255,255,255,0.2)';
+  bg.beginPath();bg.roundRect?bg.roundRect(pbX,pbY,pbW,pbH,2):bg.rect(pbX,pbY,pbW,pbH);
+  bg.fill();
+  // Progress animated by time
+  const prog=((t*0.08)%1);
+  bg.fillStyle=waveCol;
+  bg.shadowColor=waveCol;bg.shadowBlur=8;
+  bg.beginPath();bg.roundRect?bg.roundRect(pbX,pbY,pbW*prog,pbH,2):bg.rect(pbX,pbY,pbW*prog,pbH);
+  bg.fill();bg.shadowBlur=0;
+  // Dot
+  bg.fillStyle='#fff';
+  bg.beginPath();bg.arc(pbX+pbW*prog,pbY+pbH/2,5,0,Math.PI*2);bg.fill();
+  bg.restore();
+
+  // Remix label bottom-right
+  bg.save();
+  bg.fillStyle='rgba(0,0,0,0.5)';
+  const rlW=cardW*0.28,rlH=cardH*0.055,rlX=cardX+cardW-rlW-cardW*0.04,rlY=cardY+cardH*0.83;
+  bg.beginPath();bg.roundRect?bg.roundRect(rlX,rlY,rlW,rlH,3):bg.rect(rlX,rlY,rlW,rlH);
+  bg.fill();
+  bg.fillStyle='rgba(255,255,255,0.8)';
+  bg.font=`bold ${Math.floor(rlH*0.55)}px 'Orbitron',monospace`;
+  bg.textAlign='center';bg.textBaseline='middle';
+  bg.fillText(logoTxt.toUpperCase()+' REMIX',rlX+rlW/2,rlY+rlH/2);
+  bg.restore();
+
+  // ── 4. WAVEFORM — beneath the card ──
+  const waveY=cardY+cardH+H*0.02;
+  const waveH=H*0.1*(1+bass*0.5);
+  if(an){
+    const buf=new Uint8Array(an.frequencyBinCount);
+    an.getByteFrequencyData(buf);
+    const bCount=Math.min(buf.length,60);
+    const bw=(W*0.75)/bCount;
+    const startX=W*0.125;
+    ov.save();
+    for(let i=0;i<bCount;i++){
+      const v=(buf[i]/255)*waveH*(parseInt($('ai-ws')?.value||6)/5);
+      const x=startX+i*bw;
+      const wg=ov.createLinearGradient(0,waveY,0,waveY+v);
+      wg.addColorStop(0,waveCol+'ff');
+      wg.addColorStop(1,waveCol+'22');
+      ov.fillStyle=wg;
+      ov.shadowColor=waveCol;ov.shadowBlur=8+bass*12;
+      const bwPad=Math.max(bw*0.6,2);
+      ov.beginPath();
+      if(ov.roundRect)ov.roundRect(x,waveY,bwPad,v,bwPad/2);
+      else ov.rect(x,waveY,bwPad,v);
+      ov.fill();
+    }
+    ov.shadowBlur=0;ov.restore();
+  } else {
+    // Animated fallback wave
+    ov.save();ov.strokeStyle=waveCol;ov.lineWidth=2.5;ov.lineJoin='round';
+    ov.shadowColor=waveCol;ov.shadowBlur=10;
+    ov.beginPath();
+    for(let x=0;x<=W;x+=3){
+      const y=waveY+waveH*0.5+Math.sin(x/W*Math.PI*8+t*4)*waveH*0.4*(0.5+energy*0.5);
+      x===0?ov.moveTo(x,y):ov.lineTo(x,y);
+    }
+    ov.stroke();ov.shadowBlur=0;ov.restore();
+  }
+
+  // ── 5. SONG TITLE ──
+  const tyY=waveY+waveH+H*0.05;
+  ov.save();
+  ov.textAlign='center';ov.textBaseline='middle';
+  // Title shadow/glow
+  ov.shadowColor=titleCol;ov.shadowBlur=20+bass*15;
+  ov.fillStyle=titleCol;
+  const titleSize=Math.min(W*0.065, H*0.075);
+  ov.font=`900 ${titleSize}px 'Orbitron',sans-serif`;
+  ov.fillText(title,W/2,tyY,W*0.9);
+  ov.shadowBlur=0;
+
+  // Artist name
+  const artSize=titleSize*0.45;
+  ov.font=`500 ${artSize}px 'Rajdhani',sans-serif`;
+  ov.fillStyle='rgba(255,255,255,0.75)';
+  ov.letterSpacing='2px';
+  ov.fillText('— '+artist+' —',W/2,tyY+titleSize*1.1,W*0.85);
+  ov.restore();
+
+  // ── 6. LOGO (top-right, like H2O MUSIC) ──
+  const logoX=W-W*0.04;
+  const logoY=H*0.04;
+  ov.save();
+  // Logo bg pill
+  const logoBgW=W*0.14, logoBgH=H*0.09;
+  const logoBgX=logoX-logoBgW, logoBgY=logoY;
+  ov.fillStyle='rgba(0,0,0,0.55)';
+  ov.beginPath();
+  if(ov.roundRect)ov.roundRect(logoBgX-4,logoBgY-4,logoBgW+8,logoBgH+8,6);
+  else ov.rect(logoBgX-4,logoBgY-4,logoBgW+8,logoBgH+8);
+  ov.fill();
+  // Logo text
+  const logoSize=logoBgH*0.52;
+  ov.font=`900 ${logoSize}px 'Orbitron',sans-serif`;
+  ov.textAlign='center';ov.textBaseline='middle';
+  // Color: first letter highlight
+  const parts=logoTxt.split('');
+  ov.fillStyle=waveCol;
+  ov.shadowColor=waveCol;ov.shadowBlur=12;
+  ov.fillText(logoTxt,logoBgX+logoBgW/2,logoBgY+logoBgH*0.38);
+  // Sub text
+  ov.shadowBlur=0;
+  ov.font=`700 ${logoSize*0.45}px 'Orbitron',sans-serif`;
+  ov.fillStyle='rgba(255,255,255,0.7)';
+  ov.letterSpacing='3px';
+  ov.fillText(logoSub.toUpperCase(),logoBgX+logoBgW/2,logoBgY+logoBgH*0.72);
+  ov.restore();
+
+  // Spectrum mini still runs
+  drawSpecMini(an);
 }
 
 // ================================================================
