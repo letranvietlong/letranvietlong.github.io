@@ -29,7 +29,14 @@ header{position:sticky;top:0;z-index:100;padding:0 40px;height:64px;display:flex
 .logo-v{color:var(--c1)}.logo-m{color:var(--c2)}
 .logo-pulse{width:8px;height:8px;background:var(--c3);border-radius:50%;box-shadow:0 0 8px var(--c3);animation:lp 1.8s ease-in-out infinite;}
 @keyframes lp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.5}}
-.hbadges{display:flex;gap:8px;}
+.hbadges{display:flex;gap:8px;align-items:center;}
+.apikey-wrap{display:flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;}
+.apikey-wrap label{font-size:.58rem;color:var(--muted);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;}
+.apikey-wrap input{background:transparent;border:none;outline:none;color:var(--txt);font-family:'Space Mono',monospace;font-size:.65rem;width:170px;letter-spacing:.04em;}
+.apikey-wrap input::placeholder{color:var(--muted);}
+.akey-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s,box-shadow .3s;}
+.akey-dot.on{background:var(--c5);box-shadow:0 0 6px var(--c5);}
+@media(max-width:640px){.apikey-wrap input{width:90px;}}
 .hbadge{font-size:.6rem;padding:3px 10px;border-radius:20px;letter-spacing:.1em;border:1px solid;font-family:'Space Mono',monospace;}
 .hbadge.ai{border-color:rgba(155,93,229,.5);background:rgba(155,93,229,.1);color:var(--c4);}
 .hbadge.v{border-color:var(--bdr);background:var(--surf);color:var(--muted);}
@@ -220,7 +227,15 @@ textarea:focus{border-color:var(--c4);}
 <body>
 <header>
   <div class="logo"><span class="logo-v">VIDEO</span><div class="logo-pulse"></div><span class="logo-m">MIX</span></div>
-  <div class="hbadges"><div class="hbadge ai">✨ AI STUDIO</div><div class="hbadge v">v3.0</div></div>
+  <div class="hbadges">
+    <div class="apikey-wrap">
+      <div class="akey-dot" id="akey-dot"></div>
+      <label>API KEY</label>
+      <input type="password" id="apikey-input" placeholder="sk-ant-..." oninput="onApiKeyChange(this.value)" autocomplete="off">
+    </div>
+    <div class="hbadge ai">✨ AI STUDIO</div>
+    <div class="hbadge v">v3.0</div>
+  </div>
 </header>
 
 <main>
@@ -502,6 +517,20 @@ textarea:focus{border-color:var(--c4);}
 // GLOBALS
 // ================================================================
 const $=id=>document.getElementById(id);
+
+// API KEY
+function getApiKey(){return ($('apikey-input')?.value||'').trim();}
+function onApiKeyChange(val){
+  const dot=$('akey-dot');
+  const ok=val.startsWith('sk-ant-')&&val.length>20;
+  dot.classList.toggle('on',ok);
+}
+function checkApiKey(){
+  const key=getApiKey();
+  if(!key){alert('⚠️ Vui lòng nhập Anthropic API Key vào ô ở góc trên phải!\n\nLấy API key tại: console.anthropic.com');return false;}
+  if(!key.startsWith('sk-ant-')){alert('⚠️ API Key không hợp lệ. Key phải bắt đầu bằng "sk-ant-"');return false;}
+  return true;
+}
 let vidFile=null,audFile=null,aiAudFile=null;
 let audCtx=null,analyser=null,audEl=null;
 let aiAudCtx=null,aiAnalyser=null,aiAudEl=null;
@@ -789,11 +818,18 @@ function drawSpecMini(an){
 // AI PROMPT IDEAS
 // ================================================================
 async function genPromptIdeas(){
+  if(!checkApiKey())return;
   const btn=$('gibtn');btn.disabled=true;
   $('ideas-ldg').style.display='block';$('ideas-list').style.display='none';
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':getApiKey(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-ipc':'true'
+      },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:700,
         system:`Tạo 4 ý tưởng prompt ngắn (2-3 câu) tiếng Việt cho AI music video visualizer. Style: ${aiVStyle}, mode: ${aiMode}. Trả về CHỈ JSON array: ["p1","p2","p3","p4"]`,
@@ -811,7 +847,10 @@ async function genPromptIdeas(){
       div.onclick=()=>$('t2v-prompt').value=idea;
       list.appendChild(div);
     });
-  }catch(e){$('ideas-ldg').textContent='❌ Lỗi API';}
+  }catch(e){
+    console.error('API Error:',e);
+    $('ideas-ldg').textContent='❌ Lỗi: '+(e.message||'Không kết nối được API');
+  }
   btn.disabled=false;$('ideas-ldg').style.display='none';
 }
 
@@ -820,6 +859,7 @@ async function genPromptIdeas(){
 // ================================================================
 async function generateAIVideo(){
   if(!aiAudFile){alert('Vui lòng upload nhạc trước!');return;}
+  if(!checkApiKey())return;
   $('genbtn').disabled=true;$('ai-ldg').style.display='block';$('ai-prev').style.display='none';
 
   const prompt=$('t2v-prompt').value||`Video nhạc phong cách ${aiMode==='visualizer'?aiVStyle:aiMode}`;
@@ -847,7 +887,13 @@ Schema: {
 }`;
 
     const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':getApiKey(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-ipc':'true'
+      },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:800,
         system:sysPrompt,
@@ -876,7 +922,11 @@ Schema: {
     await new Promise(r=>setTimeout(r,400));
     rszAI();initPtcls(p);setupAIAudio();
     $('ai-prev').style.display='block';
-  }catch(e){alert('Lỗi: '+e.message);console.error(e);}
+  }catch(e){
+    console.error('AI Gen Error:',e);
+    const msg=e.message||'Lỗi không xác định';
+    alert('❌ Lỗi tạo AI video:\n'+msg+'\n\nKiểm tra:\n• API Key đúng chưa?\n• Còn credits không?');
+  }
 
   $('genbtn').disabled=false;$('ai-ldg').style.display='none';
 }
