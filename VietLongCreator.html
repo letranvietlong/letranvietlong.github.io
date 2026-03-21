@@ -435,9 +435,63 @@ main {
 .exp-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 
 .prog-bar-wrap { display:none; margin-top:18px; }
-.prog-track { height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:7px; }
-.prog-fill { height:100%; background:linear-gradient(90deg,var(--a1),var(--a2)); width:0%; transition:width .3s; }
-.prog-lbl { font-size:.66rem; color:var(--tx3); font-family:var(--fm); }
+.prog-header {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:8px;
+}
+.prog-status {
+  font-size:.72rem; color:var(--tx2); font-family:var(--fm);
+}
+.prog-pct {
+  font-family:var(--fh); font-weight:800;
+  font-size:1.5rem; color:var(--a1);
+  line-height:1; letter-spacing:-.02em;
+  transition:all .3s;
+}
+.prog-pct.done { color:var(--a2); }
+.prog-track {
+  height:6px; background:var(--line);
+  border-radius:3px; overflow:hidden; margin-bottom:10px;
+  position:relative;
+}
+.prog-track::after {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(
+    90deg,
+    transparent 0px, transparent 8px,
+    rgba(255,255,255,.04) 8px, rgba(255,255,255,.04) 10px
+  );
+}
+.prog-fill {
+  height:100%;
+  background:linear-gradient(90deg,var(--a1),var(--a3),var(--a2));
+  background-size:200% 100%;
+  animation:progShimmer 1.5s linear infinite;
+  width:0%; transition:width .35s cubic-bezier(.4,0,.2,1);
+  border-radius:3px; position:relative; z-index:1;
+}
+.prog-fill.done {
+  background:var(--a2);
+  animation:none;
+}
+@keyframes progShimmer {
+  0%{background-position:200% 0}
+  100%{background-position:0% 0}
+}
+.prog-segments {
+  display:flex; gap:4px; margin-bottom:6px;
+}
+.prog-seg {
+  flex:1; height:2px; border-radius:1px;
+  background:var(--line2); transition:background .3s;
+}
+.prog-seg.active { background:var(--a1); }
+.prog-seg.done { background:var(--a2); }
+.prog-detail {
+  display:flex; justify-content:space-between; align-items:center;
+}
+.prog-lbl { font-size:.64rem; color:var(--tx3); font-family:var(--fm); }
+.prog-time { font-size:.64rem; color:var(--muted); font-family:var(--fm); }
 
 .dl-success {
   display:none; margin-top:16px; padding:16px;
@@ -594,8 +648,23 @@ main {
     <div class="exp-sub">Render toàn bộ video + nhạc thành file WebM chất lượng cao<br>Dùng FFmpeg để convert sang MP4 nếu cần</div>
     <button class="exp-btn" id="expbtn" onclick="startExport()">⚡ Xuất Video</button>
     <div class="prog-bar-wrap" id="progwrap">
+      <div class="prog-header">
+        <div class="prog-status" id="progtxt">Đang chuẩn bị...</div>
+        <div class="prog-pct" id="progpct">0%</div>
+      </div>
+      <!-- 5 giai đoạn -->
+      <div class="prog-segments" id="progsegs">
+        <div class="prog-seg" id="seg0"></div>
+        <div class="prog-seg" id="seg1"></div>
+        <div class="prog-seg" id="seg2"></div>
+        <div class="prog-seg" id="seg3"></div>
+        <div class="prog-seg" id="seg4"></div>
+      </div>
       <div class="prog-track"><div class="prog-fill" id="progfill"></div></div>
-      <div class="prog-lbl" id="progtxt">Đang chuẩn bị...</div>
+      <div class="prog-detail">
+        <div class="prog-lbl" id="proglbl">Khởi tạo...</div>
+        <div class="prog-time" id="progtime"></div>
+      </div>
     </div>
     <div class="dl-success" id="dlbox">
       <p>✅ Xuất thành công! Video đã sẵn sàng.</p>
@@ -1351,12 +1420,21 @@ function drawSpec(){
 async function startExport(){
   const btn=$('expbtn');btn.disabled=true;
   $('progwrap').style.display='block';$('dlbox').style.display='none';
-  upProg(5,'Đang chuẩn bị...');
-  stopPlay();aiT=0;aiGP=0;
+
+  upProg(0,'Khởi tạo hệ thống...');
+  stopPlay();aiT=0;aiGP=0;bgCache=null;bgFrameCount=0;
   if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+
+  await new Promise(r=>setTimeout(r,80)); // cho UI render trước
+  upProg(5,'Khởi tạo hệ thống...');
+
   if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
   if(actx.state==='suspended')await actx.resume();
   if(!analyser)setupAudio();
+
+  upProg(10,'Cấu hình audio stream...');
+  await new Promise(r=>setTimeout(r,60));
+
   const rc=document.createElement('canvas');rc.width=bgCvs.width;rc.height=bgCvs.height;
   const rctx=rc.getContext('2d');
   const stream=rc.captureStream(30);
@@ -1365,35 +1443,100 @@ async function startExport(){
     if(analyser)analyser.connect(dest);
     for(const tr of dest.stream.getAudioTracks())stream.addTrack(tr);
   }
+
   let mt='video/webm;codecs=vp9';
   if(!MediaRecorder.isTypeSupported(mt))mt='video/webm;codecs=vp8';
   if(!MediaRecorder.isTypeSupported(mt))mt='video/webm';
+
+  upProg(15,'Cấu hình bộ mã hóa video...');
+  await new Promise(r=>setTimeout(r,60));
+
   const chunks=[];
   const mr=new MediaRecorder(stream,{mimeType:mt,videoBitsPerSecond:6000000});
   mr.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+
   mr.onstop=()=>{
-    const blob=new Blob(chunks,{type:'video/webm'});
-    const url=URL.createObjectURL(blob);
-    $('dllink').href=url;
-    $('dllink').download=`VietLongCreator_${chosenTpl?.id||'video'}.webm`;
-    $('dlbox').style.display='block';
-    btn.disabled=false;upProg(100,'✅ Xuất thành công!');
+    upProg(96,'Đóng gói file video...');
+    setTimeout(()=>{
+      const blob=new Blob(chunks,{type:'video/webm'});
+      const url=URL.createObjectURL(blob);
+      $('dllink').href=url;
+      $('dllink').download=`VietLongCreator_${chosenTpl?.id||'video'}.webm`;
+      $('dlbox').style.display='block';
+      btn.disabled=false;
+      upProg(100,'Hoàn tất!','');
+    },300);
     if(audEl)audEl.pause();
   };
+
   if(audEl){audEl.currentTime=0;audEl.play();}
-  mr.start(100);upProg(10,'Đang ghi hình...');
-  const dur=audEl?.duration||30;const t0=performance.now();
+  mr.start(100);
+  upProg(20,'Bắt đầu ghi hình...');
+
+  const dur=audEl?.duration||30;
+  const t0=performance.now();
+
   function fr(){
     const el=(performance.now()-t0)/1000;
-    if(el>=dur){mr.stop();if(audEl)audEl.pause();return;}
+    if(el>=dur){
+      upProg(94,'Hoàn tất render, đang đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
+      mr.stop();return;
+    }
+    // Đọc audio cho export frame
+    if(analyser&&_freqBuf) analyser.getByteFrequencyData(_freqBuf);
+
     aiT=el*.4;aiGP=el*.0026;
-    drawFrame();rctx.drawImage(bgCvs,0,0);rctx.drawImage(ovCvs,0,0);
-    upProg(Math.min(90,Math.round(10+el/dur*80)),`${fmt(el)} / ${fmt(dur)}`);
+    drawFrame();
+    rctx.drawImage(bgCvs,0,0);rctx.drawImage(ovCvs,0,0);
+
+    // Progress: 20% → 92% trong suốt thời gian render
+    const pct=20+Math.round(el/dur*72);
+    const remain=dur-el;
+    const timeStr=`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`;
+    upProg(pct,'Đang render & ghi hình...',timeStr);
+
     requestAnimationFrame(fr);
   }
   fr();
 }
-function upProg(p,t){$('progfill').style.width=p+'%';$('progtxt').textContent=t;}
+/* ── STAGES cho progress bar ── */
+const EXPORT_STAGES=[
+  {from:0,  to:8,  seg:0, lbl:'Khởi tạo hệ thống...'},
+  {from:8,  to:15, seg:1, lbl:'Cấu hình audio stream...'},
+  {from:15, to:20, seg:2, lbl:'Bắt đầu ghi hình...'},
+  {from:20, to:92, seg:3, lbl:'Đang render & ghi hình...'},
+  {from:92, to:100,seg:4, lbl:'Hoàn tất & đóng gói...'},
+];
+
+function upProg(p, lbl, timeStr=''){
+  const pct=Math.round(p);
+  // Percentage
+  const pctEl=$('progpct');
+  if(pctEl){ pctEl.textContent=pct+'%'; pctEl.classList.toggle('done',pct>=100); }
+  // Fill bar
+  const fill=$('progfill');
+  if(fill){ fill.style.width=pct+'%'; fill.classList.toggle('done',pct>=100); }
+  // Label
+  if(lbl) { const l=$('proglbl'); if(l)l.textContent=lbl; }
+  // Time
+  const te=$('progtime'); if(te)te.textContent=timeStr;
+  // Status text (top)
+  const st=$('progtxt');
+  if(st){
+    if(pct>=100) st.textContent='✅ Xuất thành công!';
+    else if(pct>=20) st.textContent=`Đang xuất video — ${timeStr||''}`;
+    else st.textContent='Đang khởi động...';
+  }
+  // Segments
+  const stage=EXPORT_STAGES.findIndex(s=>pct<=s.to);
+  const activeSeg=stage===-1?4:EXPORT_STAGES[stage].seg;
+  for(let i=0;i<=4;i++){
+    const s=$(`seg${i}`);if(!s)continue;
+    if(i<activeSeg) s.className='prog-seg done';
+    else if(i===activeSeg) s.className='prog-seg active';
+    else s.className='prog-seg';
+  }
+}
 </script>
 </body>
 </html>
