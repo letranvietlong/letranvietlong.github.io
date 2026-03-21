@@ -680,7 +680,40 @@ const TMPLS = [
 const fmt=s=>{s=isNaN(s)||s<0?0:s;return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;};
 const h2r=h=>{try{return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}catch{return[0,0,0];}};
 function rrF(c,x,y,w,h,r){if(w<=0||h<=0)return;c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();c.fill();}
-function nrg(r){if(!analyser)return .3;const b=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(b);if(r==='bass'){const s=b.slice(0,Math.floor(b.length*.12));return Array.from(s).reduce((a,v)=>a+v,0)/(s.length*255);}if(r==='mid'){const s=b.slice(Math.floor(b.length*.12),Math.floor(b.length*.5));return Array.from(s).reduce((a,v)=>a+v,0)/(s.length*255);}return Array.from(b).reduce((a,v)=>a+v,0)/(b.length*255);}
+/* ── AUDIO DATA CACHE — đọc 1 lần/frame thay vì 3 lần ── */
+let _freqBuf=null,_freqDirty=true;
+let _bass=.3,_mid=.3,_eng=.3;
+function readAudioOnce(){
+  if(!analyser)return;
+  if(!_freqBuf||_freqBuf.length!==analyser.frequencyBinCount)
+    _freqBuf=new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(_freqBuf);
+  const len=_freqBuf.length;
+  const bassEnd=Math.floor(len*.12),midEnd=Math.floor(len*.5);
+  let bs=0,ms=0,all=0;
+  for(let i=0;i<len;i++){
+    const v=_freqBuf[i];all+=v;
+    if(i<bassEnd)bs+=v;
+    else if(i<midEnd)ms+=v;
+  }
+  _bass=bs/(bassEnd*255);
+  _mid=ms/((midEnd-bassEnd)*255);
+  _eng=all/(len*255);
+}
+function nrg(r){
+  if(r==='bass')return _bass;
+  if(r==='mid')return _mid;
+  return _eng;
+}
+
+/* ── FPS THROTTLE: giới hạn 30fps thay vì 60fps ── */
+let lastFrameTime=0;
+const TARGET_FPS=30;
+const FRAME_MS=1000/TARGET_FPS;
+
+/* ── BG CACHE: chỉ vẽ lại background tĩnh mỗi 4 frame ── */
+let bgFrameCount=0;
+let bgCache=null,bgCacheCtx=null;
 
 /* ── WIZARD ── */
 function goStep(n){
@@ -695,7 +728,14 @@ function goStep(n){
   });
   if(n===2)renderGallery();
   if(n===3&&chosenTpl)buildCfg();
-  if(n===4){initCanvas();setupAudio();}
+  if(n===4){
+    // Dừng TẤT CẢ mini preview animations để giải phóng CPU
+    Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
+    for(const k in miniAnim)miniAnim[k]=null;
+    bgCache=null; // reset bg cache cho canvas mới
+    bgFrameCount=0;
+    initCanvas();setupAudio();
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -753,17 +793,18 @@ function renderGallery(){
 
 function runMiniAnim(t){
   const cv=$(`cv-${t.id}`);if(!cv)return;
-  const ctx=cv.getContext('2d');let ti=0,fid;
-  function fr(){
+  const ctx=cv.getContext('2d');let ti=0,fid,last=0;
+  function fr(ts){
+    if(ts-last<66){fid=requestAnimationFrame(fr);miniAnim[t.id]=fid;return;} // 15fps
+    last=ts;
     const W=cv.width,H=cv.height;
     const bass=.28+Math.abs(Math.sin(ti*1.6))*.38;
-    const fd=new Uint8Array(64).map((_,i)=>105+Math.sin(ti*3+i*.28)*55+Math.cos(ti*6+i*.6)*28);
+    const fd=new Uint8Array(32).map((_,i)=>105+Math.sin(ti*3+i*.28)*55+Math.cos(ti*6+i*.6)*28); // 32 bars thay vì 64
     drawMiniFrame(ctx,W,H,t,ti,bass,fd);
-    ti+=.018;
-    fid=requestAnimationFrame(fr);
+    ti+=.025;
+    fid=requestAnimationFrame(fr);miniAnim[t.id]=fid;
   }
-  fr();
-  miniAnim[t.id]=fid;
+  fid=requestAnimationFrame(fr);miniAnim[t.id]=fid;
 }
 
 function drawMiniFrame(c,W,H,t,ti,bass,fd){
@@ -1006,8 +1047,12 @@ function stopPlay(){
 }
 function doRestart(){stopPlay();setTimeout(startPlay,80);}
 
-function renderLoop(){
+function renderLoop(ts=0){
   if(!playing)return;
+  // Throttle to 30fps
+  if(ts-lastFrameTime<FRAME_MS){raf=requestAnimationFrame(renderLoop);return;}
+  lastFrameTime=ts;
+  readAudioOnce(); // đọc audio data 1 lần duy nhất mỗi frame
   drawFrame();drawSpec();
   if(audEl)$('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
   raf=requestAnimationFrame(renderLoop);
@@ -1032,38 +1077,50 @@ function drawFrame(){
   else if(s==='sp')fullSP(W,H,aiT,bass,p,title,artist);
 }
 
-/* ── FULL MUSIC CARD ── */
+/* ── FULL MUSIC CARD — Performance optimized ── */
 function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
-  // BG
-  const gr=bgX.createLinearGradient(0,0,W,H);
-  gr.addColorStop(0,p.b1);gr.addColorStop(1,p.b2||p.b1);
-  bgX.fillStyle=gr;bgX.fillRect(0,0,W,H);
-  // Bokeh
-  bgX.save();
-  for(let i=0;i<30;i++){
-    const bx=W*((i*.137+Math.sin(t*.22+i)*.06+1)%1);
-    const by=H*((i*.193+Math.cos(t*.16+i*1.3)*.06+1)%1);
-    const r=W*.04*(0.35+Math.abs(Math.sin(t*.3+i))*.42);
-    const al=.05+Math.abs(Math.sin(t*.4+i))*.08;
-    const b2=bgX.createRadialGradient(bx,by,0,bx,by,r);
-    b2.addColorStop(0,(p.bk||p.wc||'#22d3ee')+'44');b2.addColorStop(1,'transparent');
-    bgX.globalAlpha=al;bgX.fillStyle=b2;bgX.beginPath();bgX.arc(bx,by,r,0,Math.PI*2);bgX.fill();
-  }
-  // Sparkle stars
-  for(let i=0;i<50;i++){
-    const sx=W*((i*.317+.04)%1),sy=H*((i*.237+.04)%1);
-    const sa=.15+.7*Math.abs(Math.sin(t*1.4+i*2.2));
-    bgX.globalAlpha=sa*.42;bgX.fillStyle='#ffffff';
-    bgX.beginPath();bgX.arc(sx,sy,.65+Math.sin(t+i)*.32,0,Math.PI*2);bgX.fill();
-  }
-  bgX.globalAlpha=1;bgX.restore();
+  bgFrameCount++;
 
-  // Card frame
+  // ── BACKGROUND — chỉ vẽ lại mỗi 3 frame (nền ít thay đổi) ──
+  if(bgFrameCount%3===0||!bgCache){
+    if(!bgCache||bgCache.width!==W||bgCache.height!==H){
+      bgCache=document.createElement('canvas');bgCache.width=W;bgCache.height=H;
+      bgCacheCtx=bgCache.getContext('2d');
+    }
+    const bc=bgCacheCtx;
+    const gr=bc.createLinearGradient(0,0,W,H);
+    gr.addColorStop(0,p.b1);gr.addColorStop(1,p.b2||p.b1);
+    bc.fillStyle=gr;bc.fillRect(0,0,W,H);
+
+    // Bokeh: giảm từ 30 → 10, bỏ createRadialGradient, dùng fillRect với globalAlpha
+    bc.save();
+    for(let i=0;i<10;i++){
+      const bx=W*((i*.137+Math.sin(t*.22+i)*.06+1)%1);
+      const by=H*((i*.193+Math.cos(t*.16+i*1.3)*.06+1)%1);
+      const r=W*.055*(0.3+Math.abs(Math.sin(t*.3+i))*.4);
+      bc.globalAlpha=.07+Math.abs(Math.sin(t*.4+i))*.06;
+      bc.fillStyle=p.bk||p.wc||'#22d3ee';
+      bc.beginPath();bc.arc(bx,by,r,0,Math.PI*2);bc.fill();
+    }
+    // Stars: giảm từ 50 → 20
+    for(let i=0;i<20;i++){
+      const sx=W*((i*.317+.04)%1),sy=H*((i*.237+.04)%1);
+      bc.globalAlpha=.1+.3*Math.abs(Math.sin(t*1.4+i*2.2));
+      bc.fillStyle='#ffffff';
+      bc.beginPath();bc.arc(sx,sy,.8,0,Math.PI*2);bc.fill();
+    }
+    bc.globalAlpha=1;bc.restore();
+  }
+  bgX.drawImage(bgCache,0,0);
+
+  // ── CARD — chỉ clip/draw image (không shadow per-frame) ──
   const cw=W*.36,ch=cw*1.18,cx=(W-cw)/2,cy=H*.05;
-  // Shadow
-  bgX.save();bgX.shadowColor='rgba(0,0,0,.6)';bgX.shadowBlur=44+bass*32;
-  bgX.fillStyle='rgba(0,0,0,.01)';bgX.fillRect(cx,cy,cw,ch);bgX.shadowBlur=0;bgX.restore();
-  // Clip & draw artist image or placeholder
+
+  // Card shadow — bỏ dynamic shadowBlur, dùng static dark rect
+  bgX.fillStyle='rgba(0,0,0,.35)';
+  bgX.fillRect(cx+4,cy+4,cw,ch); // simple offset shadow
+
+  // Artist image
   bgX.save();bgX.beginPath();
   if(bgX.roundRect)bgX.roundRect(cx,cy,cw,ch,8);else bgX.rect(cx,cy,cw,ch);
   bgX.clip();
@@ -1074,85 +1131,91 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
     else{sw=cw;sh=sw/ir;sx=cx;sy=cy-(sh-ch)/2;}
     bgX.drawImage(artImg,sx,sy,sw,sh);
   } else {
-    const pg=bgX.createLinearGradient(cx,cy,cx+cw,cy+ch);
-    pg.addColorStop(0,'#1a3a5c');pg.addColorStop(1,'#0a1e30');
-    bgX.fillStyle=pg;bgX.fillRect(cx,cy,cw,ch);
-    bgX.fillStyle='rgba(255,255,255,.08)';
-    bgX.font=`${cw*.3}px Arial`;bgX.textAlign='center';bgX.textBaseline='middle';
+    bgX.fillStyle=p.b1||'#031d2e';bgX.fillRect(cx,cy,cw,ch);
+    bgX.fillStyle='rgba(255,255,255,.1)';
+    bgX.font=`${cw*.28}px Arial`;bgX.textAlign='center';bgX.textBaseline='middle';
     bgX.fillText('🎵',cx+cw/2,cy+ch*.44);
-    bgX.fillStyle='rgba(255,255,255,.22)';
-    bgX.font=`bold ${cw*.07}px Arial`;
+    bgX.fillStyle='rgba(255,255,255,.2)';
+    bgX.font=`bold ${cw*.068}px Arial`;
     bgX.fillText('UPLOAD ẢNH',cx+cw/2,cy+ch*.78);
   }
   bgX.restore();
+
   // Card border
-  bgX.strokeStyle='rgba(255,255,255,.24)';bgX.lineWidth=1.5;
+  bgX.strokeStyle='rgba(255,255,255,.22)';bgX.lineWidth=1.5;
   bgX.beginPath();if(bgX.roundRect)bgX.roundRect(cx,cy,cw,ch,8);else bgX.rect(cx,cy,cw,ch);bgX.stroke();
-  // Camera corner brackets
-  const bl=cw*.09;bgX.strokeStyle='rgba(255,255,255,.82)';bgX.lineWidth=Math.max(2,W*.003);bgX.lineCap='round';
+
+  // Corner brackets
+  const bl=cw*.09;bgX.strokeStyle='rgba(255,255,255,.78)';bgX.lineWidth=Math.max(2,W*.003);bgX.lineCap='round';
   [[cx,cy,1,1],[cx+cw,cy,-1,1],[cx,cy+ch,1,-1],[cx+cw,cy+ch,-1,-1]].forEach(([px,py,dx,dy])=>{
     bgX.beginPath();bgX.moveTo(px+dx*bl,py);bgX.lineTo(px,py);bgX.lineTo(px,py+dy*bl);bgX.stroke();
   });
-  // Progress bar inside card
+
+  // Progress bar — không dùng shadowBlur
   const pbY=cy+ch-ch*.09,pbX=cx+cw*.07,pbW=cw*.86,pbH=Math.max(2.5,H*.004);
-  bgX.fillStyle='rgba(255,255,255,.18)';
-  if(bgX.roundRect)bgX.roundRect(pbX,pbY,pbW,pbH,2);else bgX.rect(pbX,pbY,pbW,pbH);bgX.fill();
+  bgX.fillStyle='rgba(255,255,255,.15)';bgX.fillRect(pbX,pbY,pbW,pbH);
   const prog=(t*.065)%1;
-  bgX.fillStyle=p.wc||'#22d3ee';bgX.shadowColor=p.wc||'#22d3ee';bgX.shadowBlur=8;
-  if(bgX.roundRect)bgX.roundRect(pbX,pbY,pbW*prog,pbH,2);else bgX.rect(pbX,pbY,pbW*prog,pbH);bgX.fill();
-  bgX.fillStyle='#fff';bgX.shadowBlur=0;
-  bgX.beginPath();bgX.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(4,H*.006),0,Math.PI*2);bgX.fill();
+  bgX.fillStyle=p.wc||'#22d3ee';bgX.fillRect(pbX,pbY,pbW*prog,pbH);
+  bgX.fillStyle='#fff';bgX.beginPath();bgX.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(4,H*.006),0,Math.PI*2);bgX.fill();
+
   // Remix label
   const rlW=cw*.3,rlH=ch*.055,rlX=cx+cw-rlW-cw*.04,rlY=cy+ch*.84;
-  bgX.fillStyle='rgba(0,0,0,.58)';
-  if(bgX.roundRect)bgX.roundRect(rlX,rlY,rlW,rlH,3);else bgX.rect(rlX,rlY,rlW,rlH);bgX.fill();
-  bgX.fillStyle='rgba(255,255,255,.75)';bgX.font=`bold ${rlH*.5}px Orbitron,monospace`;
+  bgX.fillStyle='rgba(0,0,0,.55)';bgX.fillRect(rlX,rlY,rlW,rlH);
+  bgX.fillStyle='rgba(255,255,255,.72)';bgX.font=`bold ${rlH*.5}px Arial`;
   bgX.textAlign='center';bgX.textBaseline='middle';
   bgX.fillText(logo.toUpperCase()+' REMIX',rlX+rlW/2,rlY+rlH/2);
 
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
-  // Wave bars under card
-  const waveY=cy+ch+H*.02,waveH=H*.09*(1+bass*.55);
-  if(analyser){
-    const buf=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(buf);
-    const bCnt=Math.min(buf.length,72),bw=(W*.74)/bCnt,sx=W*.13;
-    ovX.save();
+  const wc=p.wc||'#22d3ee';
+  const waveY=cy+ch+H*.02,waveH=H*.09*(1+bass*.5);
+
+  // Wave bars — giảm từ 72 → 40, bỏ createLinearGradient và shadowBlur per-bar
+  if(_freqBuf){
+    const bCnt=40; // giảm mạnh số cột
+    const step=Math.floor(_freqBuf.length/bCnt);
+    const bw=(W*.74)/bCnt,sx2=W*.13;
+    // 1 gradient duy nhất cho toàn bộ wave
+    const wg=ovX.createLinearGradient(0,waveY,0,waveY+waveH*2);
+    wg.addColorStop(0,wc+'ee');wg.addColorStop(1,wc+'22');
+    ovX.fillStyle=wg;
+    // Shadow nhẹ một lần
+    ovX.shadowColor=wc;ovX.shadowBlur=Math.round(6+bass*8);
     for(let i=0;i<bCnt;i++){
-      const v=(buf[i]/255)*waveH*1.2,bx=sx+i*bw;
-      const wg=ovX.createLinearGradient(0,waveY,0,waveY+v);
-      const wc=p.wc||'#22d3ee';
-      wg.addColorStop(0,wc+'ff');wg.addColorStop(1,wc+'18');
-      ovX.fillStyle=wg;ovX.shadowColor=wc;ovX.shadowBlur=8+bass*14;
-      const bpad=Math.max(bw*.62,2);
-      if(ovX.roundRect)ovX.roundRect(bx,waveY,bpad,Math.max(v,1),bpad/2);
-      else ovX.rect(bx,waveY,bpad,Math.max(v,1));
-      ovX.fill();
+      const v=(_freqBuf[i*step]/255)*waveH*1.3;
+      const bx=sx2+i*bw;
+      ovX.fillRect(bx,waveY,Math.max(bw*.62,2),Math.max(v,1));
     }
-    ovX.shadowBlur=0;ovX.restore();
+    ovX.shadowBlur=0;
   }
-  // Song title
+
+  // Song title — bỏ dynamic shadowBlur
   const tyY=waveY+waveH+H*.055;
   ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
   const tsz=Math.min(W*.056,42);
-  ovX.font=`900 ${tsz}px Syne,Orbitron,Arial,sans-serif`;
-  ovX.shadowColor='rgba(0,0,0,.95)';ovX.shadowBlur=22+bass*16;
-  ovX.fillStyle='#ffffff';ovX.fillText(title,W/2,tyY,W*.88);ovX.shadowBlur=0;
+  ovX.font=`900 ${tsz}px Syne,Arial,sans-serif`;
+  ovX.fillStyle='rgba(0,0,0,.5)';
+  ovX.fillText(title,W/2+2,tyY+2,W*.88); // drop shadow thủ công
+  ovX.fillStyle='#ffffff';
+  ovX.fillText(title,W/2,tyY,W*.88);
   ovX.font=`400 ${tsz*.43}px DM Sans,Arial,sans-serif`;
-  ovX.fillStyle='rgba(255,255,255,.62)';
+  ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —',W/2,tyY+tsz*1.12,W*.82);
   ovX.restore();
-  // Logo top-right
+
+  // Logo top-right — đơn giản hóa, không shadowBlur
   const lx=W*.972,ly=H*.04,lw=Math.min(W*.135,115),lh=H*.088;
-  ovX.fillStyle='rgba(0,0,0,.58)';
-  if(ovX.roundRect)ovX.roundRect(lx-lw-6,ly-5,lw+12,lh+10,8);else ovX.rect(lx-lw-6,ly-5,lw+12,lh+10);ovX.fill();
+  ovX.fillStyle='rgba(0,0,0,.6)';
+  if(ovX.roundRect)ovX.roundRect(lx-lw-6,ly-5,lw+12,lh+10,8);
+  else ovX.rect(lx-lw-6,ly-5,lw+12,lh+10);ovX.fill();
   const lfsz=Math.min(lh*.47,18);
-  ovX.font=`900 ${lfsz}px Syne,Orbitron,monospace`;ovX.textAlign='center';ovX.textBaseline='middle';
-  ovX.fillStyle=p.wc||'#22d3ee';ovX.shadowColor=p.wc||'#22d3ee';ovX.shadowBlur=10;
-  ovX.fillText(logo,lx-lw/2,ly+lh*.36);ovX.shadowBlur=0;
-  ovX.font=`700 ${lfsz*.4}px Syne,Orbitron,monospace`;
-  ovX.fillStyle='rgba(255,255,255,.58)';
-  ovX.fillText(lsub.toUpperCase(),lx-lw/2,ly+lh*.73);
+  ovX.font=`900 ${lfsz}px Arial`;ovX.textAlign='center';ovX.textBaseline='middle';
+  ovX.fillStyle=wc;
+  ovX.fillText(logo,lx-lw/2,ly+lh*.36);
+  ovX.font=`700 ${lfsz*.4}px Arial`;
+  ovX.fillStyle='rgba(255,255,255,.55)';
+  ovX.fillText(lsub.toUpperCase(),lx-lw/2,ly+lh*.72);
+
   // Lyrics
   drawLyrics(ovX,W,H);
 }
@@ -1160,22 +1223,25 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
 /* ── PARTICLES FULL ── */
 function initParts(W,H,ac,ac2){
   ptArr=[];
-  for(let i=0;i<200;i++){
-    ptArr.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.7,vy:(Math.random()-.5)*.7,sz:Math.random()*2.4+.7,c:i%2===0?ac:ac2,a:Math.random()*.7+.3,ph:Math.random()*Math.PI*2,ps:Math.random()*.03+.01});
+  for(let i=0;i<100;i++){ // giảm từ 200 → 100
+    ptArr.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.6,vy:(Math.random()-.5)*.6,sz:Math.random()*2.2+.6,c:i%2===0?ac:ac2,a:Math.random()*.7+.3});
   }
 }
 function fullPT(W,H,t,bass,eng,p,wt,title,artist){
-  const[r,g,b]=h2r(p.b1);bgX.fillStyle=`rgba(${r},${g},${b},0.1)`;bgX.fillRect(0,0,W,H);
-  const gr=bgX.createRadialGradient(W/2+Math.sin(aiGP)*W*.22,H/2+Math.cos(aiGP*.7)*H*.22,0,W/2,H/2,Math.max(W,H)*.72);
-  gr.addColorStop(0,(p.ac||'#a855f7')+'28');gr.addColorStop(1,'transparent');
-  bgX.fillStyle=gr;bgX.globalAlpha=.22+bass*.16;bgX.fillRect(0,0,W,H);bgX.globalAlpha=1;
-  bgX.save();bgX.shadowBlur=15;bgX.shadowColor=p.ac||'#a855f7';
+  const[r,g,b]=h2r(p.b1||'#04060f');
+  bgX.fillStyle=`rgba(${r},${g},${b},0.1)`;bgX.fillRect(0,0,W,H);
+  // 1 radial gradient đơn giản
+  const gr=bgX.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.65);
+  gr.addColorStop(0,(p.ac||'#a855f7')+'20');gr.addColorStop(1,'transparent');
+  bgX.fillStyle=gr;bgX.fillRect(0,0,W,H);
+  // Particles — bỏ shadowBlur riêng lẻ
+  bgX.save();bgX.shadowBlur=6;bgX.shadowColor=p.ac||'#a855f7';
   for(const pt of ptArr){
-    pt.x+=pt.vx*(1+bass*1.9);pt.y+=pt.vy*(1+bass*1.9);pt.ph+=pt.ps;
+    pt.x+=pt.vx*(1+bass*1.5);pt.y+=pt.vy*(1+bass*1.5);
     if(pt.x<-10)pt.x=W+10;if(pt.x>W+10)pt.x=-10;
     if(pt.y<-10)pt.y=H+10;if(pt.y>H+10)pt.y=-10;
-    bgX.globalAlpha=pt.a*(.42+eng*.52);bgX.fillStyle=pt.c;
-    bgX.beginPath();bgX.arc(pt.x,pt.y,Math.max(.4,pt.sz*(1+bass*.42)),0,Math.PI*2);bgX.fill();
+    bgX.globalAlpha=pt.a*(.4+eng*.45);bgX.fillStyle=pt.c;
+    bgX.beginPath();bgX.arc(pt.x,pt.y,Math.max(.4,pt.sz*(1+bass*.3)),0,Math.PI*2);bgX.fill();
   }
   bgX.restore();
   ovX.clearRect(0,0,W,H);
@@ -1184,53 +1250,58 @@ function fullPT(W,H,t,bass,eng,p,wt,title,artist){
   drawLyrics(ovX,W,H);
 }
 function fullSP(W,H,t,bass,p,title,artist){
-  const[r,g,b]=h2r(p.b1);bgX.fillStyle=`rgba(${r},${g},${b},0.13)`;bgX.fillRect(0,0,W,H);
-  if(analyser){
-    const buf=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(buf);
-    const bw=W/buf.length;bgX.save();
-    for(let i=0;i<buf.length;i++){
-      const v=(buf[i]/255)*(H*.66)*(1+bass*.52);
-      const hue=192+i/buf.length*138;
-      const gr=bgX.createLinearGradient(0,H,0,H-v);
-      gr.addColorStop(0,`hsla(${hue},100%,60%,.88)`);gr.addColorStop(1,`hsla(${hue+28},100%,70%,.07)`);
-      bgX.fillStyle=gr;bgX.shadowColor=`hsl(${hue},100%,60%)`;bgX.shadowBlur=v*.1;
-      bgX.fillRect(i*bw,H-v,Math.max(bw-1,2),v);
+  const[r,g,b]=h2r(p.b1||'#010d18');
+  bgX.fillStyle=`rgba(${r},${g},${b},0.13)`;bgX.fillRect(0,0,W,H);
+  if(_freqBuf){ // dùng buffer đã đọc sẵn thay vì getByteFrequencyData lần nữa
+    const bw=W/_freqBuf.length;bgX.save();bgX.shadowBlur=0;
+    // Chỉ vẽ nửa trước (half resolution) để tăng tốc
+    const step=2; // skip 1 bar, giảm 50% draw calls
+    for(let i=0;i<_freqBuf.length;i+=step){
+      const v=(_freqBuf[i]/255)*(H*.66)*(1+bass*.5);
+      const hue=192+i/_freqBuf.length*138;
+      bgX.fillStyle=`hsl(${hue},95%,60%)`;
+      bgX.globalAlpha=.75+v/H*.2;
+      bgX.fillRect(i*bw,H-v,Math.max(bw*step-1,2),v);
     }
-    bgX.shadowBlur=0;bgX.restore();
+    bgX.globalAlpha=1;bgX.restore();
   }
   ovX.clearRect(0,0,W,H);drawTitleOv(W,H*.21,title,artist);drawLyrics(ovX,W,H);
 }
 
 /* ── WAVE OVERLAY ── */
 function drawWaveOv(W,H,wt,wc,wh,ws,wp){
-  let data,buf;
-  if(analyser){buf=analyser.frequencyBinCount;data=new Uint8Array(buf);analyser.getByteFrequencyData(data);}
-  else{buf=64;data=new Uint8Array(buf).map(()=>Math.random()*80+40);}
+  // Dùng buffer đã cache từ readAudioOnce()
+  const data=_freqBuf||(new Uint8Array(64).fill(80));
+  const buf=data.length;
   const bY=wp==='bottom'?H-10:wp==='top'?10:H/2;
   const bw=Math.max(1,Math.floor(W/buf)-1);
   ovX.save();
   if(wt==='bars'){
+    // 1 gradient chung, không tạo mới mỗi bar
+    const g=ovX.createLinearGradient(0,bY,0,bY-wh);
+    g.addColorStop(0,wc);g.addColorStop(1,wc+'22');
+    ovX.fillStyle=g;ovX.shadowColor=wc;ovX.shadowBlur=4;
     for(let i=0;i<buf;i++){
       const v=(data[i]/255)*wh*(ws/5),x=(i/buf)*W;
-      const g=ovX.createLinearGradient(0,bY,0,bY-v);g.addColorStop(0,wc);g.addColorStop(1,wc+'18');
-      ovX.fillStyle=g;ovX.shadowColor=wc;ovX.shadowBlur=4;
-      rrF(ovX,x,bY-v,Math.max(bw,2),Math.max(v,.5),1.5);
-    }ovX.shadowBlur=0;
+      ovX.fillRect(x,bY-v,Math.max(bw,2),Math.max(v,.5));
+    }
+    ovX.shadowBlur=0;
   } else if(wt==='mirror'){
+    ovX.fillStyle=wc;
     for(let i=0;i<buf;i++){
       const v=(data[i]/255)*wh*(ws/5)/2,x=(i/buf)*W;
-      ovX.fillStyle=wc;ovX.globalAlpha=.84;rrF(ovX,x,bY-v,Math.max(bw,2),Math.max(v,.5),1.5);
-      ovX.globalAlpha=.36;rrF(ovX,x,bY,Math.max(bw,2),Math.max(v,.5),1.5);ovX.globalAlpha=1;
-    }
+      ovX.globalAlpha=.82;ovX.fillRect(x,bY-v,Math.max(bw,2),Math.max(v,.5));
+      ovX.globalAlpha=.35;ovX.fillRect(x,bY,Math.max(bw,2),Math.max(v,.5));
+    }ovX.globalAlpha=1;
   } else if(wt==='glow'){
+    ovX.shadowColor=wc;ovX.shadowBlur=8;ovX.fillStyle=wc+'bb';
     for(let i=0;i<buf;i++){
       const v=(data[i]/255)*wh*(ws/5),x=(i/buf)*W;
-      ovX.shadowColor=wc;ovX.shadowBlur=v*.28;ovX.fillStyle=wc+'cc';
-      rrF(ovX,x,bY-v,Math.max(bw,3),Math.max(v,.5),Math.min(bw/2,5));
+      ovX.fillRect(x,bY-v,Math.max(bw,3),Math.max(v,.5));
     }ovX.shadowBlur=0;
   } else if(wt==='circle'){
     const cx2=W/2,cy=H/2,br=Math.min(W,H)*.15;
-    ovX.strokeStyle=wc;ovX.lineWidth=2;ovX.shadowColor=wc;ovX.shadowBlur=12;
+    ovX.strokeStyle=wc;ovX.lineWidth=2;ovX.shadowColor=wc;ovX.shadowBlur=10;
     for(let i=0;i<buf;i++){
       const ang=(i/buf)*Math.PI*2,v=(data[i]/255)*wh*(ws/5)*.5;
       const x1=cx2+Math.cos(ang)*br,y1=cy+Math.sin(ang)*br;
