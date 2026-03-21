@@ -303,7 +303,14 @@ main {
     rgba(0,229,195,.012) 60px, rgba(0,229,195,.012) 61px
   );
 }
-.step { display:flex; align-items:center; gap:8px; cursor:default; position:relative; z-index:1; }
+.step { display:flex; align-items:center; gap:8px; cursor:default; position:relative; z-index:1; transition:opacity .2s; }
+.step.done { cursor:pointer; }
+.step.done:hover { opacity:.82; }
+.step.done:hover .step-n {
+  box-shadow:0 0 14px rgba(0,229,195,.5),inset 0 0 10px rgba(0,229,195,.1);
+  transform:scale(1.08);
+}
+.step.done:hover .step-l { text-shadow:0 0 8px rgba(0,229,195,.4); }
 .step-n {
   width:30px; height:30px;
   display:grid; place-items:center;
@@ -873,13 +880,13 @@ main {
 
 <!-- STEP WIZARD -->
 <div class="steps" id="steps">
-  <div class="step active" id="ws1"><div class="step-n">1</div><div class="step-l">Tải Nhạc</div></div>
+  <div class="step active" id="ws1" onclick="clickStep(1)"><div class="step-n">1</div><div class="step-l">Tải Nhạc</div></div>
   <div class="step-line" id="wl1"></div>
-  <div class="step" id="ws2"><div class="step-n">2</div><div class="step-l">Chọn Mẫu</div></div>
+  <div class="step" id="ws2" onclick="clickStep(2)"><div class="step-n">2</div><div class="step-l">Chọn Mẫu</div></div>
   <div class="step-line" id="wl2"></div>
-  <div class="step" id="ws3"><div class="step-n">3</div><div class="step-l">Tuỳ Chỉnh</div></div>
+  <div class="step" id="ws3" onclick="clickStep(3)"><div class="step-n">3</div><div class="step-l">Tuỳ Chỉnh</div></div>
   <div class="step-line" id="wl3"></div>
-  <div class="step" id="ws4"><div class="step-n">4</div><div class="step-l">Xuất Video</div></div>
+  <div class="step" id="ws4" onclick="clickStep(4)"><div class="step-n">4</div><div class="step-l">Xuất Video</div></div>
 </div>
 
 <!-- ======= STEP 1: UPLOAD ======= -->
@@ -1159,7 +1166,7 @@ function goStep(n){
     if(i<4)$(`wl${i}`).classList.toggle('done',i<n);
   });
   if(n===2)renderGallery();
-  if(n===3&&chosenTpl)buildCfg();
+  if(n===3&&chosenTpl)buildCfg(false); // false = chỉ rebuild nếu cần
   if(n===4){
     // Dừng TẤT CẢ mini preview animations để giải phóng CPU
     Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
@@ -1169,6 +1176,13 @@ function goStep(n){
     initCanvas();setupAudio();
   }
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Click step đã done → quay lại, không cho nhảy tới step chưa tới
+function clickStep(n){
+  if(n===step||n>step) return; // step hiện tại hoặc chưa đến → bỏ qua
+  stopPlay(); // dừng preview nếu đang chạy
+  goStep(n);
 }
 
 /* ── UPLOAD ── */
@@ -1422,14 +1436,36 @@ function pickTpl(t){
   $(`cv-${t.id}`)?.closest('.tcard')?.classList.add('selected');
   $('btn3').disabled=false;
   $('tpl-label').textContent=t.name;
-  buildCfg();
+  buildCfg(true); // force rebuild vì template mới
 }
 
 /* ── CONFIG PANEL ── */
-function buildCfg(){
+let _lastCfgTplId=null;
+
+function buildCfg(force=false){
   if(!chosenTpl)return;
+
+  // Không rebuild nếu cùng template và không force — giữ nguyên dữ liệu
+  if(!force && _lastCfgTplId===chosenTpl.id && $('cc-title')){
+    // Khôi phục preview ảnh nếu cần
+    if(artImg&&artImg.src){
+      const bg=$('artbg');
+      if(bg&&!bg.classList.contains('show')){bg.style.backgroundImage=`url(${artImg.src})`;bg.classList.add('show');}
+    }
+    return;
+  }
+
+  // Lưu giá trị hiện tại trước khi rebuild
+  const sv={
+    title:  $('cc-title')?.value  || '',
+    artist: $('cc-artist')?.value || '',
+    remix:  $('cc-remix')?.value  || 'VIET LONG REMIX',
+    lyr:    $('cc-lyr')?.value    || '',
+    wt:     $('cc-wt')?.value     || 'bars',
+  };
+
   const t=chosenTpl,s=t.style;
-  const isMC=s==='mc', isLV=s==='lv';
+  const isMC=s==='mc',isLV=s==='lv';
   const p=t.pal;
   const wc=p.wc||p.ac||'#22d3ee';
   const ac=p.ac||p.wc||'#22d3ee';
@@ -1446,54 +1482,47 @@ function buildCfg(){
       </div>
       <input type="file" id="artfi" accept="image/*" onchange="loadArtImg(this)">
     </div>`:``}
-
     <div class="cfg-layout">
-      <div class="fg">
-        <label>Tên Bài Hát</label>
-        <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase()">
-      </div>
-      <div class="fg">
-        <label>Tên Ca Sĩ / Nghệ Sĩ</label>
-        <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH">
-      </div>
-      ${isMC?`
-      <div class="fg">
-        <label>Nhãn Trong Thẻ Ảnh</label>
-        <input type="text" id="cc-remix" value="VIET LONG REMIX" placeholder="VD: VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
-      </div>`:``}      <div class="fg">
-        <label>Màu Nền Chính</label>
-        <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value">
-      </div>
-      <div class="fg">
-        <label>Màu Hiệu Ứng Chính</label>
-        <input type="color" id="cc-wc" value="${wc}" oninput="chosenTpl.pal.wc=this.value;chosenTpl.pal.ac=this.value">
-      </div>
-      ${s==='sp'||s==='wv'?`
-      <div class="fg">
-        <label>Màu Hiệu Ứng Phụ</label>
-        <input type="color" id="cc-ac2" value="${ac2}" oninput="chosenTpl.pal.ac2=this.value">
-      </div>`:''}
-      ${s==='pt'||s==='wv'?`
-      <div class="fg">
-        <label>Kiểu Sóng Âm</label>
+      <div class="fg"><label>Tên Bài Hát</label>
+        <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fg"><label>Tên Ca Sĩ / Nghệ Sĩ</label>
+        <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH"></div>
+      ${isMC?`<div class="fg"><label>Nhãn Trong Thẻ Ảnh</label>
+        <input type="text" id="cc-remix" placeholder="VD: VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>`:``}
+      <div class="fg"><label>Màu Nền Chính</label>
+        <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value"></div>
+      <div class="fg"><label>Màu Hiệu Ứng Chính</label>
+        <input type="color" id="cc-wc" value="${wc}" oninput="chosenTpl.pal.wc=this.value;chosenTpl.pal.ac=this.value"></div>
+      ${s==='sp'||s==='wv'?`<div class="fg"><label>Màu Hiệu Ứng Phụ</label>
+        <input type="color" id="cc-ac2" value="${ac2}" oninput="chosenTpl.pal.ac2=this.value"></div>`:''}
+      ${s==='pt'||s==='wv'?`<div class="fg"><label>Kiểu Sóng Âm</label>
         <select id="cc-wt">
-          <option value="bars">Cột Đứng</option>
-          <option value="mirror">Phản Chiếu</option>
-          <option value="glow">Phát Sáng</option>
-          <option value="circle">Vòng Tròn</option>
-          <option value="none">Ẩn</option>
-        </select>
-      </div>`:''}
+          <option value="bars">Cột Đứng</option><option value="mirror">Phản Chiếu</option>
+          <option value="glow">Phát Sáng</option><option value="circle">Vòng Tròn</option>
+          <option value="none">Ẩn</option></select></div>`:''}
     </div>
-
     <div class="fg" style="margin-top:14px">
       <label>${isLV?'Lời Bài Hát (Hiển thị trung tâm video)':'Lời Bài Hát (Tùy Chọn)'}</label>
-      <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...&#10;Mỗi dòng sẽ hiển thị tuần tự đồng bộ với nhạc':'Nhập lời bài hát tùy chọn...&#10;Mỗi dòng = 1 câu'}" rows="${isLV?8:4}"></textarea>
-      <div class="hint">${isLV?'💡 Template Lyric Video — lời nhạc là nội dung chính, hiển thị lớn ở trung tâm':'💡 Để trống nếu không cần hiển thị lời nhạc'}</div>
+      <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...':'Nhập lời bài hát...'}" rows="${isLV?8:4}"></textarea>
+      <div class="hint">${isLV?'💡 Mỗi dòng hiển thị tuần tự đồng bộ nhịp nhạc':'💡 Để trống nếu không cần lời nhạc'}</div>
     </div>
-
-    <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả thực tế với nhạc của bạn.</div>
+    <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả với nhạc của bạn.</div>
   `;
+
+  // Điền lại giá trị đã lưu
+  if($('cc-title'))  $('cc-title').value  = sv.title;
+  if($('cc-artist')) $('cc-artist').value = sv.artist;
+  if($('cc-remix'))  $('cc-remix').value  = sv.remix;
+  if($('cc-lyr'))    $('cc-lyr').value    = sv.lyr;
+  if($('cc-wt'))     $('cc-wt').value     = sv.wt;
+
+  // Khôi phục preview ảnh nghệ sĩ
+  if(artImg&&artImg.src){
+    const bg=$('artbg');
+    if(bg){bg.style.backgroundImage=`url(${artImg.src})`;bg.classList.add('show');}
+  }
+
+  _lastCfgTplId=chosenTpl.id;
 }
 function loadArtImg(inp){
   const f=inp.files[0];if(!f)return;
@@ -1791,9 +1820,9 @@ function bgGalaxy(c,W,H,t,bass,p){
     const ny=H*(nb.y+Math.cos(t*.05+nb.r)*0.015);
     const nr=Math.max(W,H)*nb.r*(1+bass*.08);
     const ng=c.createRadialGradient(nx,ny,0,nx,ny,nr);
-    ng.addColorStop(0,nb.col.replace(')',`,${nb.a*(1+bass*.4)})`).replace('#','rgba(').replace(/([\da-f]{2})/gi,(_,m)=>parseInt(m,16)+',').slice(0,-1));
-    // Simple approach
-    ng.addColorStop(0,`${nb.col}${Math.round(nb.a*255*(1+bass*.4)).toString(16).padStart(2,'0')}`);
+    const [rr,gg,bb]=h2r(nb.col);
+    const alpha=Math.min(1,nb.a*(1+bass*.4));
+    ng.addColorStop(0,`rgba(${rr},${gg},${bb},${alpha})`);
     ng.addColorStop(1,'transparent');
     c.fillStyle=ng;c.beginPath();c.arc(nx,ny,nr,0,Math.PI*2);c.fill();
   });
