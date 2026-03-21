@@ -1005,40 +1005,56 @@ const bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
 const bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
 const spCvs=$('spec-cvs'), spX=spCvs.getContext('2d');
 
-/* ── TEMPLATE DEFINITIONS — 10 Professional YouTube Templates ── */
+/* ── TEMPLATE DEFINITIONS — 12 Professional YouTube Templates ── */
 const TMPLS = [
   // ── MUSIC CARD series (ảnh nghệ sĩ) ──
   {
+    id:'mc-rose',
+    name:'Music Card · Hoa Hồng',
+    desc:'Nền cánh hoa hồng đỏ rực, ánh sáng bokeh lan toả — chuẩn H2O Music style.',
+    tags:['H2O Style','Phổ Biến','YouTube Ready'],
+    pal:{b1:'#1a0005',b2:'#3d0010',wc:'#ff6b9d',bk:'#e11d48'},
+    style:'mc', bg:'rose'
+  },
+  {
     id:'mc-ocean',
     name:'Music Card · Đại Dương',
-    desc:'Ảnh nghệ sĩ + sóng nhạc H2O-style. Nền lá xanh bokeh, tinh tế và sang trọng.',
-    tags:['Phổ Biến','Ảnh Nghệ Sĩ','YouTube Ready'],
-    pal:{b1:'#031d2e',b2:'#052e46',wc:'#22d3ee',bk:'#06b6d4'},
-    style:'mc'
+    desc:'Nền lá xanh nhiệt đới, giọt nước bokeh, sóng nhạc H2O-style sang trọng.',
+    tags:['Ballad','Pop','Sóng Nhạc'],
+    pal:{b1:'#021520',b2:'#042a3e',wc:'#22d3ee',bk:'#06b6d4'},
+    style:'mc', bg:'ocean'
+  },
+  {
+    id:'mc-galaxy',
+    name:'Music Card · Lưới Vũ Trụ',
+    desc:'Lưới kỹ thuật số xanh galaxy xoáy — phong cách Orinn Team, hiện đại.',
+    tags:['Hiện Đại','Kỹ Thuật Số','Galaxy'],
+    pal:{b1:'#02041a',b2:'#060d30',wc:'#60a5fa',bk:'#818cf8'},
+    style:'mc', bg:'galaxy'
   },
   {
     id:'mc-purple',
     name:'Music Card · Hoàng Hôn',
-    desc:'Gradient tím-hồng, ánh sao, phù hợp ballad/pop. Hiệu ứng bokeh huyền ảo.',
-    tags:['Ballad','Pop','Lãng Mạn'],
-    pal:{b1:'#0f0520',b2:'#1e0a3c',wc:'#d946ef',bk:'#a855f7'},
-    style:'mc'
+    desc:'Gradient tím-hồng huyền ảo, cánh hoa tím bokeh, phù hợp ballad lãng mạn.',
+    tags:['Ballad','Lãng Mạn','Tím'],
+    pal:{b1:'#0d021a',b2:'#1a0535',wc:'#d946ef',bk:'#a855f7'},
+    style:'mc', bg:'purple'
   },
   {
     id:'mc-fire',
-    name:'Music Card · Lửa',
-    desc:'Nền đỏ rực, plasma bùng lên theo beat. Mạnh mẽ, dành cho EDM/Dance/Remix.',
+    name:'Music Card · Lửa Rực',
+    desc:'Nền lửa đỏ cam, tia sáng plasma bùng theo beat. EDM/Dance/Remix mạnh mẽ.',
     tags:['EDM','Dance','Remix'],
-    pal:{b1:'#200500',b2:'#350900',wc:'#fb923c',bk:'#ef4444'},
-    style:'mc'
+    pal:{b1:'#1a0200',b2:'#350600',wc:'#fb923c',bk:'#ef4444'},
+    style:'mc', bg:'fire'
   },
   {
     id:'mc-night',
     name:'Music Card · Đêm Bạc',
-    desc:'Tối giản đen velvet, ánh bạc, đẹp chuẩn layout YouTube. Indie/Acoustic.',
-    tags:['Indie','Acoustic','Tối Giản'],
-    pal:{b1:'#080808',b2:'#0f0f0f',wc:'#e2e8f0',bk:'#94a3b8'},
-    style:'mc'
+    desc:'Nền đen velvet với hạt bokeh bạc tinh tế, tối giản sang trọng. Indie/Acoustic.',
+    tags:['Indie','Acoustic','Sang Trọng'],
+    pal:{b1:'#060606',b2:'#0e0e0e',wc:'#e2e8f0',bk:'#94a3b8'},
+    style:'mc', bg:'night'
   },
   // ── LYRIC VIDEO series (chữ lyrics nổi bật) ──
   {
@@ -1264,29 +1280,14 @@ function drawMiniFrame(c,W,H,t,ti,bass,fd){
 
 /* Mini Music Card */
 function miniMC(c,W,H,t,ti,bass,fd){
-  const p=t.pal;
-  // BG gradient
-  const g=c.createLinearGradient(0,0,W,H);g.addColorStop(0,p.b1);g.addColorStop(1,p.b2);
-  c.fillStyle=g;c.fillRect(0,0,W,H);
-  // Bokeh blobs
+  const p=t.pal, bgType=t.bg||'ocean';
+  // Vẽ background theo loại template (thu nhỏ)
   c.save();
-  for(let i=0;i<12;i++){
-    const bx=W*((i*.137+Math.sin(ti*.22+i)*.06+1)%1);
-    const by=H*((i*.193+Math.cos(ti*.16+i*1.3)*.06+1)%1);
-    const r=W*.038*(0.3+Math.abs(Math.sin(ti*.35+i))*.35);
-    const al=.05+Math.abs(Math.sin(ti*.4+i))*.08;
-    const bg2=c.createRadialGradient(bx,by,0,bx,by,r);
-    bg2.addColorStop(0,(p.bk||p.wc)+'55');bg2.addColorStop(1,'transparent');
-    c.globalAlpha=al;c.fillStyle=bg2;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
-  }
-  // Stars
-  for(let i=0;i<30;i++){
-    const sx=W*((i*.312+.05)%1),sy=H*((i*.237+.05)%1);
-    const sa=.15+.7*Math.abs(Math.sin(ti*1.4+i*2.2));
-    c.globalAlpha=sa*.4;c.fillStyle='#ffffff';
-    c.beginPath();c.arc(sx,sy,.7+Math.sin(ti+i)*.3,0,Math.PI*2);c.fill();
-  }
-  c.globalAlpha=1;c.restore();
+  // Scale context để các hàm full-size hoạt động đúng
+  const scaleX=W/1280, scaleY=H/720;
+  c.scale(scaleX,scaleY);
+  drawMCBackground(c,1280,720,ti,bass,p,bgType);
+  c.restore();
   // Card rect
   const cw=W*.41,ch=cw*1.16,cx=(W-cw)/2,cy=H*.04;
   c.save();c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=18+bass*20;
@@ -1589,38 +1590,332 @@ function drawFrame(){
 }
 
 /* ── FULL MUSIC CARD — Performance optimized ── */
+/* ═══════════════════════════════════════════════════════
+   MUSIC CARD BACKGROUND SYSTEM — 6 chủ đề chuyên nghiệp
+═══════════════════════════════════════════════════════ */
+function drawMCBackground(c,W,H,t,bass,p,type){
+  if(type==='rose')    bgRose(c,W,H,t,bass,p);
+  else if(type==='ocean')  bgOcean(c,W,H,t,bass,p);
+  else if(type==='galaxy') bgGalaxy(c,W,H,t,bass,p);
+  else if(type==='purple') bgPurple(c,W,H,t,bass,p);
+  else if(type==='fire')   bgFire(c,W,H,t,bass,p);
+  else if(type==='night')  bgNight(c,W,H,t,bass,p);
+  else bgOcean(c,W,H,t,bass,p);
+}
+
+/* ── 1. ROSE — Cánh hoa hồng đỏ + bokeh ánh sáng (H2O style) ── */
+function bgRose(c,W,H,t,bass,p){
+  // Nền đỏ sâu gradient
+  const g=c.createRadialGradient(W*.5,H*.4,0,W*.5,H*.5,Math.max(W,H)*.75);
+  g.addColorStop(0,'#3d0015');g.addColorStop(.5,'#250008');g.addColorStop(1,'#0f0003');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Cánh hoa lớn — vẽ bằng ellipse rotated
+  c.save();
+  const petals=[
+    {x:.12,y:.15,rx:W*.22,ry:H*.38,rot:-.4,a:.55,col:'#7f0020'},
+    {x:.88,y:.12,rx:W*.20,ry:H*.35,rot:.5, a:.5, col:'#6b001a'},
+    {x:.05,y:.55,rx:W*.18,ry:H*.32,rot:-.6,a:.45,col:'#8f0025'},
+    {x:.92,y:.60,rx:W*.19,ry:H*.34,rot:.4, a:.48,col:'#750018'},
+    {x:.20,y:.85,rx:W*.25,ry:H*.28,rot:-.3,a:.4, col:'#5a0010'},
+    {x:.75,y:.88,rx:W*.22,ry:H*.26,rot:.35,a:.38,col:'#600012'},
+    {x:.50,y:.02,rx:W*.16,ry:H*.25,rot:.1, a:.35,col:'#8a001e'},
+  ];
+  petals.forEach(p2=>{
+    const px=W*p2.x+Math.sin(t*.15+p2.rot)*W*.012;
+    const py=H*p2.y+Math.cos(t*.12+p2.rot)*H*.01;
+    c.save();c.translate(px,py);c.rotate(p2.rot+Math.sin(t*.08)*0.03);
+    c.beginPath();c.ellipse(0,0,p2.rx,p2.ry,0,0,Math.PI*2);
+    c.fillStyle=p2.col;c.globalAlpha=p2.a;c.fill();
+    // Đường gân lá
+    c.strokeStyle='rgba(255,100,130,.15)';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(0,-p2.ry*.8);c.lineTo(0,p2.ry*.8);c.stroke();
+    c.restore();
+  });
+  c.restore();
+
+  // Bokeh ánh sáng hồng/trắng
+  c.save();
+  for(let i=0;i<18;i++){
+    const bx=W*((i*.137+Math.sin(t*.18+i)*.05+1)%1);
+    const by=H*((i*.193+Math.cos(t*.14+i*1.2)*.06+1)%1);
+    const r=W*(0.018+Math.abs(Math.sin(t*.25+i))*.028);
+    const al=.08+Math.abs(Math.sin(t*.35+i))*.12;
+    const g2=c.createRadialGradient(bx,by,0,bx,by,r);
+    g2.addColorStop(0,'rgba(255,150,180,.9)');g2.addColorStop(.4,'rgba(255,80,120,.3)');g2.addColorStop(1,'transparent');
+    c.globalAlpha=al;c.fillStyle=g2;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  // Tia sáng lens flare
+  for(let i=0;i<6;i++){
+    const lx=W*(.15+i*.14+Math.sin(t*.1+i)*.02);
+    const ly=H*(.05+i*.12+Math.cos(t*.08+i)*.02);
+    c.globalAlpha=.04+Math.abs(Math.sin(t*.3+i))*.05;
+    c.fillStyle='#ffccd5';
+    c.beginPath();c.arc(lx,ly,W*.008,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+
+  // Sparkle trắng nhỏ
+  c.save();
+  for(let i=0;i<35;i++){
+    const sx=W*((i*.311+.03)%1),sy=H*((i*.213+.04)%1);
+    const sa=.15+.65*Math.abs(Math.sin(t*1.3+i*2.1));
+    c.globalAlpha=sa*.5;c.fillStyle='#ffffff';
+    const sz=.4+Math.abs(Math.sin(t*.8+i))*.7;
+    c.beginPath();c.arc(sx,sy,sz,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+}
+
+/* ── 2. OCEAN — Lá nhiệt đới xanh + giọt nước bokeh ── */
+function bgOcean(c,W,H,t,bass,p){
+  const g=c.createRadialGradient(W*.3,H*.3,0,W*.5,H*.5,Math.max(W,H)*.8);
+  g.addColorStop(0,'#032d45');g.addColorStop(.6,'#021c2e');g.addColorStop(1,'#010c18');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Lá cây nhiệt đới lớn
+  c.save();
+  const leaves=[
+    {x:.0, y:.0, sx:1.2,sy:1.4,rot:-.2,a:.6,hue:160},
+    {x:.7, y:-.1,sx:1.1,sy:1.3,rot:.3, a:.55,hue:155},
+    {x:-.1,y:.5, sx:1.0,sy:1.2,rot:-.4,a:.5,hue:165},
+    {x:.8, y:.5, sx:0.9,sy:1.1,rot:.5, a:.45,hue:158},
+    {x:.2, y:.8, sx:1.1,sy:1.0,rot:-.1,a:.4,hue:162},
+    {x:.6, y:.85,sx:1.0,sy:.95,rot:.2, a:.38,hue:157},
+  ];
+  leaves.forEach((l,idx)=>{
+    const px=W*l.x+Math.sin(t*.12+idx)*.008*W;
+    const py=H*l.y+Math.cos(t*.1+idx)*.006*H;
+    c.save();c.translate(px,py);c.rotate(l.rot+Math.sin(t*.06+idx)*.02);
+    c.globalAlpha=l.a;
+    // Vẽ lá bằng bezier
+    const lw=W*l.sx*.18,lh=H*l.sy*.32;
+    c.fillStyle=`hsl(${l.hue},60%,${14+idx*2}%)`;
+    c.beginPath();
+    c.moveTo(0,-lh*.8);
+    c.bezierCurveTo(lw*.6,-lh*.5,lw*.7,lh*.2,0,lh*.8);
+    c.bezierCurveTo(-lw*.7,lh*.2,-lw*.6,-lh*.5,0,-lh*.8);
+    c.fill();
+    // Gân lá sáng
+    c.strokeStyle=`hsla(${l.hue},70%,35%,.4)`;c.lineWidth=1.2;
+    c.beginPath();c.moveTo(0,-lh*.75);c.lineTo(0,lh*.75);c.stroke();
+    c.restore();
+  });
+  c.restore();
+
+  // Giọt nước bokeh xanh
+  c.save();
+  for(let i=0;i<16;i++){
+    const bx=W*((i*.157+Math.sin(t*.2+i)*.05+1)%1);
+    const by=H*((i*.211+Math.cos(t*.16+i*1.1)*.05+1)%1);
+    const r=W*(0.016+Math.abs(Math.sin(t*.3+i))*.022);
+    const al=.07+Math.abs(Math.sin(t*.38+i))*.1;
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,'rgba(100,220,255,.95)');gd.addColorStop(.5,'rgba(0,180,220,.3)');gd.addColorStop(1,'transparent');
+    c.globalAlpha=al;c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+
+  // Sparkle sao
+  c.save();
+  for(let i=0;i<30;i++){
+    const sx=W*((i*.317+.03)%1),sy=H*((i*.231+.04)%1);
+    const sa=.1+.5*Math.abs(Math.sin(t*1.2+i*2.3));
+    c.globalAlpha=sa*.5;c.fillStyle='#ffffff';
+    c.beginPath();c.arc(sx,sy,.6+Math.abs(Math.sin(t+i))*.5,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+}
+
+/* ── 3. GALAXY — Lưới kỹ thuật số + vũ trụ xoáy (Orinn style) ── */
+function bgGalaxy(c,W,H,t,bass,p){
+  // Nền không gian
+  const g=c.createRadialGradient(W*.5,H*.45,0,W*.5,H*.5,Math.max(W,H)*.7);
+  g.addColorStop(0,'#0a0f3a');g.addColorStop(.5,'#040820');g.addColorStop(1,'#010310');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Vũ trụ xoáy trung tâm
+  c.save();
+  const cx2=W*.5,cy2=H*.45;
+  for(let ring=0;ring<5;ring++){
+    const r=W*(.08+ring*.06)*(1+bass*.08);
+    const al=(.25-ring*.04)*(0.5+bass*.3);
+    const gr=c.createRadialGradient(cx2,cy2,r*.7,cx2,cy2,r);
+    gr.addColorStop(0,'transparent');
+    gr.addColorStop(.7,`hsla(${220+ring*15},100%,65%,${al})`);
+    gr.addColorStop(1,'transparent');
+    c.fillStyle=gr;c.beginPath();c.arc(cx2,cy2,r,0,Math.PI*2);c.fill();
+  }
+  c.restore();
+
+  // Lưới kỹ thuật số
+  c.save();c.globalAlpha=.12;c.strokeStyle='#4a7aff';c.lineWidth=.8;
+  const gsize=W*.06;
+  for(let x=0;x<W;x+=gsize){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke();}
+  for(let y=0;y<H;y+=gsize){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
+  // Đường chéo từ trung tâm
+  c.globalAlpha=.06;c.strokeStyle='#818cf8';
+  for(let i=0;i<12;i++){
+    const ang=i/12*Math.PI*2+t*.05;
+    c.beginPath();c.moveTo(cx2,cy2);
+    c.lineTo(cx2+Math.cos(ang)*W,cy2+Math.sin(ang)*H);c.stroke();
+  }
+  c.globalAlpha=1;c.restore();
+
+  // Hạt sao chuyển động
+  c.save();
+  for(let i=0;i<60;i++){
+    const angle=i/60*Math.PI*2+t*(0.02+i*.001);
+    const dist=W*(.05+((i*.137)%1)*.42);
+    const sx2=cx2+Math.cos(angle)*dist;
+    const sy2=cy2+Math.sin(angle)*dist*.65;
+    const sa=.2+.7*Math.abs(Math.sin(t*.8+i*1.5));
+    const sz2=.4+Math.abs(Math.sin(t+i))*.8;
+    c.globalAlpha=sa*.7;
+    c.fillStyle=i%3===0?'#a5b4fc':i%3===1?'#93c5fd':'#ffffff';
+    c.beginPath();c.arc(sx2,sy2,sz2,0,Math.PI*2);c.fill();
+  }
+  // Hiệu ứng scan line ngang nhẹ
+  c.globalAlpha=.04;c.fillStyle='#60a5fa';
+  const scanY=(t*H*.08)%H;
+  c.fillRect(0,scanY,W,2);
+  c.globalAlpha=1;c.restore();
+}
+
+/* ── 4. PURPLE — Cánh hoa tím + bokeh sao (Ballad style) ── */
+function bgPurple(c,W,H,t,bass,p){
+  const g=c.createRadialGradient(W*.4,H*.35,0,W*.5,H*.5,Math.max(W,H)*.8);
+  g.addColorStop(0,'#1a0535');g.addColorStop(.5,'#0d0220');g.addColorStop(1,'#050010');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Cánh hoa tím/hồng blurred
+  c.save();
+  const pPetals=[
+    {x:.08,y:.1,rx:W*.18,ry:H*.35,rot:-.35,a:.5,col:'#6b21a8'},
+    {x:.85,y:.08,rx:W*.17,ry:H*.32,rot:.4,a:.45,col:'#7c3aed'},
+    {x:.06,y:.6, rx:W*.16,ry:H*.3, rot:-.5,a:.42,col:'#5b21b6'},
+    {x:.9, y:.58,rx:W*.15,ry:H*.28,rot:.45,a:.4,col:'#6d28d9'},
+    {x:.25,y:.9, rx:W*.2, ry:H*.22,rot:-.2,a:.35,col:'#4c1d95'},
+    {x:.7, y:.88,rx:W*.18,ry:H*.2, rot:.25,a:.32,col:'#581c87'},
+  ];
+  pPetals.forEach((p2,idx)=>{
+    const px=W*p2.x+Math.sin(t*.14+idx)*.01*W;
+    const py=H*p2.y+Math.cos(t*.11+idx)*.008*H;
+    c.save();c.translate(px,py);c.rotate(p2.rot+Math.sin(t*.07+idx)*.025);
+    c.beginPath();c.ellipse(0,0,p2.rx,p2.ry,0,0,Math.PI*2);
+    c.fillStyle=p2.col;c.globalAlpha=p2.a;c.fill();
+    c.restore();
+  });
+  c.restore();
+
+  // Bokeh tím hồng lấp lánh
+  c.save();
+  for(let i=0;i<20;i++){
+    const bx=W*((i*.143+Math.sin(t*.2+i)*.05+1)%1);
+    const by=H*((i*.197+Math.cos(t*.15+i*1.1)*.05+1)%1);
+    const r=W*(0.015+Math.abs(Math.sin(t*.28+i))*.025);
+    const al=.06+Math.abs(Math.sin(t*.4+i))*.1;
+    const cols=['rgba(216,70,239,.9)','rgba(168,85,247,.9)','rgba(244,114,182,.9)'];
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,cols[i%3]);gd.addColorStop(.5,cols[i%3].replace('.9','.3'));gd.addColorStop(1,'transparent');
+    c.globalAlpha=al;c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  // Sparkle trắng vàng
+  for(let i=0;i<40;i++){
+    const sx=W*((i*.307+.02)%1),sy=H*((i*.219+.03)%1);
+    c.globalAlpha=(.12+.5*Math.abs(Math.sin(t*1.1+i*2)))*.6;
+    c.fillStyle=i%4===0?'#fde68a':'#ffffff';
+    c.beginPath();c.arc(sx,sy,.5+Math.abs(Math.sin(t*.7+i))*.8,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+}
+
+/* ── 5. FIRE — Lửa plasma đỏ cam rực ── */
+function bgFire(c,W,H,t,bass,p){
+  // Nền than đen đỏ
+  const g=c.createRadialGradient(W*.5,H*.8,0,W*.5,H*.5,Math.max(W,H));
+  g.addColorStop(0,'#4a0800');g.addColorStop(.4,'#200300');g.addColorStop(1,'#080000');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Lửa plasma — nhiều lớp hình sin
+  c.save();
+  const flameColors=['rgba(255,50,0,.18)','rgba(255,120,0,.15)','rgba(255,180,0,.1)'];
+  flameColors.forEach((col,fi)=>{
+    c.fillStyle=col;
+    c.beginPath();c.moveTo(0,H);
+    for(let x=0;x<=W;x+=4){
+      const flameH=H*(0.25+fi*.1)*(0.7+bass*.5);
+      const y=H-flameH*(0.5+0.5*Math.sin(x/W*Math.PI*4+t*(2+fi)+(fi*1.3)));
+      c.lineTo(x,y);
+    }
+    c.lineTo(W,H);c.closePath();c.fill();
+  });
+
+  // Hạt tia lửa bay lên
+  c.save();
+  for(let i=0;i<25;i++){
+    const progress=((t*.3+i*.07)%1);
+    const sx2=W*((i*.137+Math.sin(i*2.3)*.1+.5+Math.sin(t*.5+i)*.08)%1);
+    const sy2=H*(1-progress)-(progress*H*.15*Math.sin(i*1.5));
+    const sz2=(1-progress)*(1.5+Math.sin(i*2)*1);
+    if(sz2<.1)return;
+    c.globalAlpha=(1-progress)*0.7;
+    c.fillStyle=progress<.3?'#fbbf24':progress<.6?'#f97316':'#ef4444';
+    c.beginPath();c.arc(sx2,sy2,sz2,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+
+  // Ánh sáng nóng từ dưới
+  const hg=c.createLinearGradient(0,H,0,H*.5);
+  hg.addColorStop(0,'rgba(255,80,0,.15)');hg.addColorStop(1,'transparent');
+  c.fillStyle=hg;c.fillRect(0,0,W,H);
+  c.restore();
+}
+
+/* ── 6. NIGHT — Velvet đen + hạt bạc tinh tế ── */
+function bgNight(c,W,H,t,bass,p){
+  // Nền đen velvet với gradient rất nhẹ
+  const g=c.createRadialGradient(W*.5,H*.3,0,W*.5,H*.5,Math.max(W,H)*.8);
+  g.addColorStop(0,'#141414');g.addColorStop(.5,'#0a0a0a');g.addColorStop(1,'#050505');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Bokeh trắng bạc mờ nhạt — sang trọng tối giản
+  c.save();
+  for(let i=0;i<14;i++){
+    const bx=W*((i*.163+Math.sin(t*.15+i)*.04+1)%1);
+    const by=H*((i*.197+Math.cos(t*.12+i*1.2)*.04+1)%1);
+    const r=W*(0.025+Math.abs(Math.sin(t*.2+i))*.035);
+    const al=.03+Math.abs(Math.sin(t*.3+i))*.06;
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,'rgba(220,230,240,.8)');gd.addColorStop(.5,'rgba(180,200,220,.2)');gd.addColorStop(1,'transparent');
+    c.globalAlpha=al;c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  // Hạt bạc nhỏ
+  for(let i=0;i<50;i++){
+    const sx=W*((i*.311+.02)%1),sy=H*((i*.213+.03)%1);
+    const sa=.05+.3*Math.abs(Math.sin(t*.9+i*1.8));
+    c.globalAlpha=sa;c.fillStyle='#e2e8f0';
+    c.beginPath();c.arc(sx,sy,.4+Math.abs(Math.sin(t*.5+i))*.6,0,Math.PI*2);c.fill();
+  }
+  // Đường viền ánh sáng tinh tế từ trên
+  const tg=c.createLinearGradient(0,0,0,H*.2);
+  tg.addColorStop(0,'rgba(148,163,184,.04)');tg.addColorStop(1,'transparent');
+  c.globalAlpha=1;c.fillStyle=tg;c.fillRect(0,0,W,H);
+  c.restore();
+}
+
+
 function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   bgFrameCount++;
+  const bgType = chosenTpl?.bg || 'ocean';
 
-  // ── BACKGROUND — chỉ vẽ lại mỗi 3 frame (nền ít thay đổi) ──
-  if(bgFrameCount%3===0||!bgCache){
+  // ── BACKGROUND — vẽ lại mỗi 2 frame ──
+  if(bgFrameCount%2===0||!bgCache){
     if(!bgCache||bgCache.width!==W||bgCache.height!==H){
       bgCache=document.createElement('canvas');bgCache.width=W;bgCache.height=H;
       bgCacheCtx=bgCache.getContext('2d');
     }
-    const bc=bgCacheCtx;
-    const gr=bc.createLinearGradient(0,0,W,H);
-    gr.addColorStop(0,p.b1);gr.addColorStop(1,p.b2||p.b1);
-    bc.fillStyle=gr;bc.fillRect(0,0,W,H);
-
-    // Bokeh: giảm từ 30 → 10, bỏ createRadialGradient, dùng fillRect với globalAlpha
-    bc.save();
-    for(let i=0;i<10;i++){
-      const bx=W*((i*.137+Math.sin(t*.22+i)*.06+1)%1);
-      const by=H*((i*.193+Math.cos(t*.16+i*1.3)*.06+1)%1);
-      const r=W*.055*(0.3+Math.abs(Math.sin(t*.3+i))*.4);
-      bc.globalAlpha=.07+Math.abs(Math.sin(t*.4+i))*.06;
-      bc.fillStyle=p.bk||p.wc||'#22d3ee';
-      bc.beginPath();bc.arc(bx,by,r,0,Math.PI*2);bc.fill();
-    }
-    // Stars: giảm từ 50 → 20
-    for(let i=0;i<20;i++){
-      const sx=W*((i*.317+.04)%1),sy=H*((i*.237+.04)%1);
-      bc.globalAlpha=.1+.3*Math.abs(Math.sin(t*1.4+i*2.2));
-      bc.fillStyle='#ffffff';
-      bc.beginPath();bc.arc(sx,sy,.8,0,Math.PI*2);bc.fill();
-    }
-    bc.globalAlpha=1;bc.restore();
+    drawMCBackground(bgCacheCtx,W,H,t,bass,p,bgType);
   }
   bgX.drawImage(bgCache,0,0);
 
