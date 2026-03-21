@@ -1462,14 +1462,11 @@ function buildCfg(){
         <label>Tên Ca Sĩ / Nghệ Sĩ</label>
         <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH">
       </div>
-      ${isMC||isLV?`
+      ${isMC?`
       <div class="fg">
-        <label>Tên Kênh / Logo</label>
-        <input type="text" id="cc-logo" value="VietLong" placeholder="VietLong">
-      </div>
-      ${isMC?`<div class="fg"><label>Sub Logo</label><input type="text" id="cc-lsub" value="CREATOR" placeholder="CREATOR"></div>`:''}
-      `:''}
-      <div class="fg">
+        <label>Nhãn Trong Thẻ Ảnh</label>
+        <input type="text" id="cc-remix" value="VIET LONG REMIX" placeholder="VD: VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      </div>`:``}      <div class="fg">
         <label>Màu Nền Chính</label>
         <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value">
       </div>
@@ -1577,14 +1574,12 @@ function drawFrame(){
   const p=chosenTpl.pal;
   const title=($('cc-title')?.value||'TÊN BÀI HÁT').toUpperCase();
   const artist=$('cc-artist')?.value||'— Ca Sĩ —';
-  const logo=$('cc-logo')?.value||'VietLong';
-  const lsub=$('cc-lsub')?.value||'CREATOR';
   const wt=$('cc-wt')?.value||'bars';
   const s=chosenTpl.style;
-  if(s==='mc')    fullMC(W,H,aiT,bass,mid,eng,p,title,artist,logo,lsub);
+  if(s==='mc')    fullMC(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='pt')   fullPT(W,H,aiT,bass,eng,p,wt,title,artist);
   else if(s==='sp')   fullSP(W,H,aiT,bass,p,title,artist);
-  else if(s==='lv')   fullLV(W,H,aiT,bass,mid,eng,p,title,artist,logo);
+  else if(s==='lv')   fullLV(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='tunnel')fullTunnel(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='wv')   fullWV(W,H,aiT,bass,eng,p,title,artist);
 }
@@ -1905,7 +1900,7 @@ function bgNight(c,W,H,t,bass,p){
 }
 
 
-function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
+function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   bgFrameCount++;
   const bgType = chosenTpl?.bg || 'ocean';
 
@@ -1969,12 +1964,14 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   bgX.fillStyle=p.wc||'#22d3ee';bgX.fillRect(pbX,pbY,pbW*prog,pbH);
   bgX.fillStyle='#fff';bgX.beginPath();bgX.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(4,H*.006),0,Math.PI*2);bgX.fill();
 
-  // Remix label
-  const rlW=cw*.3,rlH=ch*.055,rlX=cx+cw-rlW-cw*.04,rlY=cy+ch*.84;
-  bgX.fillStyle='rgba(0,0,0,.55)';bgX.fillRect(rlX,rlY,rlW,rlH);
-  bgX.fillStyle='rgba(255,255,255,.72)';bgX.font=`bold ${rlH*.5}px Arial`;
+  // Remix label — lấy từ input hoặc mặc định
+  const remixLabel=($('cc-remix')?.value||'REMIX').toUpperCase();
+  const rlH=ch*.052,rlW=Math.max(cw*.28, bgX.measureText?.(remixLabel+(bgX.font||''),(rlH*.5+'px Arial'))?.width+20||cw*.28);
+  const rlX=cx+cw-rlW-cw*.04,rlY=cy+ch*.845;
+  bgX.fillStyle='rgba(0,0,0,.58)';bgX.fillRect(rlX,rlY,rlW,rlH);
+  bgX.fillStyle='rgba(255,255,255,.78)';bgX.font=`600 ${rlH*.52}px Be Vietnam Pro,Arial`;
   bgX.textAlign='center';bgX.textBaseline='middle';
-  bgX.fillText(logo.toUpperCase()+' REMIX',rlX+rlW/2,rlY+rlH/2);
+  bgX.fillText(remixLabel,rlX+rlW/2,rlY+rlH/2);
 
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
@@ -2019,19 +2016,6 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —', W/2, tyY+tsz*1.12, W*.82);
   ovX.restore();
-
-  // Logo top-right — đơn giản hóa, không shadowBlur
-  const lx=W*.972,ly=H*.04,lw=Math.min(W*.135,115),lh=H*.088;
-  ovX.fillStyle='rgba(0,0,0,.6)';
-  if(ovX.roundRect)ovX.roundRect(lx-lw-6,ly-5,lw+12,lh+10,8);
-  else ovX.rect(lx-lw-6,ly-5,lw+12,lh+10);ovX.fill();
-  const lfsz=Math.min(lh*.47,18);
-  ovX.font=`900 ${lfsz}px Arial`;ovX.textAlign='center';ovX.textBaseline='middle';
-  ovX.fillStyle=wc;
-  ovX.fillText(logo,lx-lw/2,ly+lh*.36);
-  ovX.font=`700 ${lfsz*.4}px Arial`;
-  ovX.fillStyle='rgba(255,255,255,.55)';
-  ovX.fillText(lsub.toUpperCase(),lx-lw/2,ly+lh*.72);
 
   // Lyrics
   drawLyrics(ovX,W,H);
@@ -2086,7 +2070,7 @@ function fullSP(W,H,t,bass,p,title,artist){
 }
 
 /* ── FULL LYRIC VIDEO ── */
-function fullLV(W,H,t,bass,mid,eng,p,title,artist,logo){
+function fullLV(W,H,t,bass,mid,eng,p,title,artist){
   // Dark bg with animated color orbs
   const[r,g,b]=h2r(p.b1||'#03040a');
   bgX.fillStyle=`rgba(${r},${g},${b},0.12)`;bgX.fillRect(0,0,W,H);
@@ -2142,10 +2126,6 @@ function fullLV(W,H,t,bass,mid,eng,p,title,artist,logo){
   ovX.font=`400 ${lsz*.38}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —',W/2,H*.5+lsz*.85,W*.8);
-  // Logo watermark bottom-right
-  ovX.font=`700 ${Math.min(W*.024,16)}px Orbitron,monospace`;
-  ovX.fillStyle='rgba(255,255,255,.35)';ovX.textAlign='right';
-  ovX.fillText(logo,W-W*.025,H-H*.04);
   ovX.restore();
 }
 
