@@ -973,8 +973,14 @@ main {
       </div>
     </div>
     <div class="dl-success" id="dlbox">
-      <p>✅ Xuất thành công! Video đã sẵn sàng.</p>
-      <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
+      <p>✅ Xuất thành công! Video HD 1280×720 đã sẵn sàng.</p>
+      <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy (.webm)</a>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.2);border-radius:8px;font-size:.65rem;color:#ffd166;line-height:1.8;">
+        <strong>🎬 Chuyển sang MP4 để upload YouTube:</strong><br>
+        • <strong>Online (dễ nhất):</strong> Vào <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" style="color:#00e5c3">cloudconvert.com</a> → Upload → Convert to MP4<br>
+        • <strong>VLC:</strong> Media → Convert/Save → chọn file → Profile MP4 → Start<br>
+        • <strong>FFmpeg:</strong> <code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px">ffmpeg -i video.webm -c:v libx264 -c:a aac output.mp4</code>
+      </div>
     </div>
   </div>
   <div class="nav-row">
@@ -1508,12 +1514,17 @@ function loadArtImg(inp){
 /* ── CANVAS INIT ── */
 function initCanvas(){
   const w=$('pvframe');
-  const W=w.clientWidth,H=Math.round(W*9/16)||Math.round(window.innerWidth*.8*9/16);
-  bgCvs.width=W;bgCvs.height=H;ovCvs.width=W;ovCvs.height=H;
-  spCvs.width=w.clientWidth;spCvs.height=44;
-  aiT=0;aiGP=0;ptArr=[];
+  // Preview: theo kích thước container thực tế
+  const W=w.clientWidth||Math.round(window.innerWidth*.85);
+  const H=Math.round(W*9/16);
+  bgCvs.width=W; bgCvs.height=H;
+  ovCvs.width=W; ovCvs.height=H;
+  spCvs.width=w.clientWidth||W; spCvs.height=44;
+  aiT=0; aiGP=0; ptArr=[];
   if(chosenTpl?.style==='pt') initParts(W,H,chosenTpl.pal.ac,chosenTpl.pal.ac2);
 }
+// Kích thước cố định cho export — luôn HD 1280x720
+const EXPORT_W=1280, EXPORT_H=720;
 window.addEventListener('resize',()=>{if(step===4)initCanvas();});
 
 function setupAudio(){
@@ -1613,8 +1624,13 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   }
   bgX.drawImage(bgCache,0,0);
 
-  // ── CARD — chỉ clip/draw image (không shadow per-frame) ──
-  const cw=W*.36,ch=cw*1.18,cx=(W-cw)/2,cy=H*.05;
+  // ── CARD — kích thước cân đối, đảm bảo đủ chỗ cho sóng + title ──
+  // Card chiếm ~62% chiều cao, để lại 38% cho sóng + title
+  const maxCardH = H * 0.60;
+  const cw = Math.min(W * 0.34, maxCardH / 1.18);
+  const ch = cw * 1.18;
+  const cx = (W - cw) / 2;
+  const cy = H * 0.04;
 
   // Card shadow — bỏ dynamic shadowBlur, dùng static dark rect
   bgX.fillStyle='rgba(0,0,0,.35)';
@@ -1668,7 +1684,13 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
   const wc=p.wc||'#22d3ee';
-  const waveY=cy+ch+H*.02,waveH=H*.09*(1+bass*.5);
+  const waveY=cy+ch+H*.018;
+  // Tính chiều cao sóng sao cho title luôn nằm trong frame
+  const remainH = H - waveY;
+  const titleSz = Math.min(W*.056, 42);
+  const minTitleSpace = titleSz * 2.5; // title + artist
+  const maxWaveH = remainH - minTitleSpace - H*.02;
+  const waveH = Math.min(maxWaveH, H*.08*(1+bass*.4));
 
   // Wave bars — giảm từ 72 → 40, bỏ createLinearGradient và shadowBlur per-bar
   if(_freqBuf){
@@ -1689,18 +1711,18 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
     ovX.shadowBlur=0;
   }
 
-  // Song title — bỏ dynamic shadowBlur
-  const tyY=waveY+waveH+H*.055;
-  ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
-  const tsz=Math.min(W*.056,42);
+  // Song title — vị trí cố định, không bị đẩy ra ngoài
+  const tyY = waveY + waveH + H*.04;
+  ovX.save(); ovX.textAlign='center'; ovX.textBaseline='middle';
+  const tsz = titleSz;
   ovX.font=`900 ${tsz}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(0,0,0,.5)';
-  ovX.fillText(title,W/2+2,tyY+2,W*.88); // drop shadow thủ công
+  ovX.fillText(title, W/2+2, tyY+2, W*.9);
   ovX.fillStyle='#ffffff';
-  ovX.fillText(title,W/2,tyY,W*.88);
+  ovX.fillText(title, W/2, tyY, W*.9);
   ovX.font=`400 ${tsz*.43}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.6)';
-  ovX.fillText('— '+artist+' —',W/2,tyY+tsz*1.12,W*.82);
+  ovX.fillText('— '+artist+' —', W/2, tyY+tsz*1.12, W*.82);
   ovX.restore();
 
   // Logo top-right — đơn giản hóa, không shadowBlur
@@ -1994,79 +2016,137 @@ async function startExport(){
   const btn=$('expbtn');btn.disabled=true;
   $('progwrap').style.display='block';$('dlbox').style.display='none';
 
-  upProg(0,'Khởi tạo hệ thống...');
-  stopPlay();aiT=0;aiGP=0;bgCache=null;bgFrameCount=0;
-  if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+  upProg(0,'Khởi tạo...');
+  stopPlay(); aiT=0; aiGP=0; bgCache=null; bgFrameCount=0;
 
-  await new Promise(r=>setTimeout(r,80)); // cho UI render trước
+  await new Promise(r=>setTimeout(r,80));
   upProg(5,'Khởi tạo hệ thống...');
 
-  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
-  if(actx.state==='suspended')await actx.resume();
-  if(!analyser)setupAudio();
+  if(!actx) actx=new(window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') await actx.resume();
+  if(!analyser) setupAudio();
 
-  upProg(10,'Cấu hình audio stream...');
+  upProg(10,'Cấu hình audio...');
   await new Promise(r=>setTimeout(r,60));
 
-  const rc=document.createElement('canvas');rc.width=bgCvs.width;rc.height=bgCvs.height;
-  const rctx=rc.getContext('2d');
-  const stream=rc.captureStream(30);
-  if(audEl&&actx){
-    const dest=actx.createMediaStreamDestination();
-    if(analyser)analyser.connect(dest);
-    for(const tr of dest.stream.getAudioTracks())stream.addTrack(tr);
-  }
+  // ── Canvas xuất HD 1280×720, KHÔNG phụ thuộc kích thước màn hình ──
+  const EW=EXPORT_W, EH=EXPORT_H;
+  const ec=document.createElement('canvas');
+  ec.width=EW; ec.height=EH;
+  const ectx=ec.getContext('2d');
 
+  // Canvas tạm để render (cùng kích thước export)
+  const tmpBg=document.createElement('canvas'); tmpBg.width=EW; tmpBg.height=EH;
+  const tmpOv=document.createElement('canvas'); tmpOv.width=EW; tmpOv.height=EH;
+  const tmpBgX=tmpBg.getContext('2d');
+  const tmpOvX=tmpOv.getContext('2d');
+
+  // Tạo analyser RIÊNG cho export để đọc audio realtime
+  const exportActx=new(window.AudioContext||window.webkitAudioContext)();
+  const exportAn=exportActx.createAnalyser();
+  exportAn.fftSize=2048;
+  const exportAudEl=new Audio();
+  exportAudEl.src=URL.createObjectURL(audFile);
+  exportAudEl.crossOrigin='anonymous';
+  await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
+  const exportSrc=exportActx.createMediaElementSource(exportAudEl);
+  exportSrc.connect(exportAn);
+
+  // Stream audio vào video
+  const stream=ec.captureStream(30);
+  const audioDest=exportActx.createMediaStreamDestination();
+  exportSrc.connect(audioDest);
+  exportAn.connect(audioDest); // không cần connect tới output speaker
+  for(const tr of audioDest.stream.getAudioTracks()) stream.addTrack(tr);
+
+  upProg(15,'Cấu hình bộ mã hóa...');
+  await new Promise(r=>setTimeout(r,60));
+
+  // Chọn codec tốt nhất
   let mt='video/webm;codecs=vp9';
-  if(!MediaRecorder.isTypeSupported(mt))mt='video/webm;codecs=vp8';
-  if(!MediaRecorder.isTypeSupported(mt))mt='video/webm';
-
-  upProg(15,'Cấu hình bộ mã hóa video...');
-  await new Promise(r=>setTimeout(r,60));
+  if(!MediaRecorder.isTypeSupported(mt)) mt='video/webm;codecs=vp8';
+  if(!MediaRecorder.isTypeSupported(mt)) mt='video/webm';
 
   const chunks=[];
-  const mr=new MediaRecorder(stream,{mimeType:mt,videoBitsPerSecond:6000000});
-  mr.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  const mr=new MediaRecorder(stream,{
+    mimeType:mt,
+    videoBitsPerSecond:12000000  // 12 Mbps — chất lượng cao
+  });
+  mr.ondataavailable=e=>{if(e.data.size>0) chunks.push(e.data);};
 
   mr.onstop=()=>{
-    upProg(96,'Đóng gói file video...');
+    upProg(96,'Đóng gói file...');
     setTimeout(()=>{
       const blob=new Blob(chunks,{type:'video/webm'});
       const url=URL.createObjectURL(blob);
       $('dllink').href=url;
-      $('dllink').download=`VietLongCreator_${chosenTpl?.id||'video'}.webm`;
+      $('dllink').download=`VietLongCreator_${chosenTpl?.id||'video'}_1280x720.webm`;
       $('dlbox').style.display='block';
       btn.disabled=false;
       upProg(100,'Hoàn tất!','');
-    },300);
-    if(audEl)audEl.pause();
+      // Dọn dẹp
+      exportAudEl.pause(); exportActx.close();
+    },400);
   };
 
-  if(audEl){audEl.currentTime=0;audEl.play();}
+  exportAudEl.currentTime=0;
+  exportAudEl.play();
   mr.start(100);
-  upProg(20,'Bắt đầu ghi hình...');
+  upProg(20,'Đang render HD 1280×720...');
 
-  const dur=audEl?.duration||30;
+  const dur=exportAudEl.duration||30;
   const t0=performance.now();
+
+  // Buffer riêng cho export
+  const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
+
+  // Lưu ctx gốc, swap sang export ctx
+  const origBgX=bgX, origOvX=ovX;
 
   function fr(){
     const el=(performance.now()-t0)/1000;
-    if(el>=dur){
-      upProg(94,'Hoàn tất render, đang đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
-      mr.stop();return;
+    if(el>=dur+0.1){
+      upProg(94,'Hoàn tất, đang đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
+      mr.stop(); return;
     }
-    // Đọc audio cho export frame
-    if(analyser&&_freqBuf) analyser.getByteFrequencyData(_freqBuf);
 
-    aiT=el*.4;aiGP=el*.0026;
+    // ── Đọc audio realtime từ exportAn ──
+    exportAn.getByteFrequencyData(expFreqBuf);
+    _freqBuf=expFreqBuf; // override global buffer
+    const len=expFreqBuf.length;
+    const bassEnd=Math.floor(len*.12), midEnd=Math.floor(len*.5);
+    let bs=0,ms=0,all=0;
+    for(let i=0;i<len;i++){
+      const v=expFreqBuf[i]; all+=v;
+      if(i<bassEnd)bs+=v; else if(i<midEnd)ms+=v;
+    }
+    _bass=bs/(bassEnd*255);
+    _mid=ms/((midEnd-bassEnd)*255);
+    _eng=all/(len*255);
+
+    // ── Render vào canvas HD ──
+    // Redirect bgX/ovX sang HD canvas tạm
+    Object.assign(bgX,{canvas:tmpBg});
+    // Không thể redirect ctx trực tiếp — dùng approach khác:
+    // Vẽ vào bgCvs/ovCvs tạm resize
+    const savedW=bgCvs.width, savedH=bgCvs.height;
+    bgCvs.width=EW; bgCvs.height=EH;
+    ovCvs.width=EW; ovCvs.height=EH;
+
+    aiT=el*.4; aiGP=el*.0026;
     drawFrame();
-    rctx.drawImage(bgCvs,0,0);rctx.drawImage(ovCvs,0,0);
 
-    // Progress: 20% → 92% trong suốt thời gian render
+    // Ghép bg + overlay vào export canvas
+    ectx.drawImage(bgCvs,0,0,EW,EH);
+    ectx.drawImage(ovCvs,0,0,EW,EH);
+
+    // Khôi phục kích thước preview
+    bgCvs.width=savedW; bgCvs.height=savedH;
+    ovCvs.width=savedW; ovCvs.height=savedH;
+
     const pct=20+Math.round(el/dur*72);
-    const remain=dur-el;
-    const timeStr=`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`;
-    upProg(pct,'Đang render & ghi hình...',timeStr);
+    const remain=Math.max(0,dur-el);
+    upProg(pct,`Render HD ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
 
     requestAnimationFrame(fr);
   }
