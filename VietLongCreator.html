@@ -1422,7 +1422,7 @@ main {
         <div class="auto-card-title">Cài Đặt Video</div>
         <div class="auto-fg">
           <label>Tiêu đề video (template)</label>
-          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Music Video 2025" oninput="saveAutoSettings()">
+          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Nhạc Remix Tiktok 2026" oninput="saveAutoSettings()">
           <div class="hint2">{title} · {artist} · {date} · {year}</div>
         </div>
         <div class="auto-fg">
@@ -1449,7 +1449,65 @@ Tạo bởi VietLong Creator · Auto Music Video
           <input type="text" id="auto-remix-label" value="VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();saveAutoSettings()">
         </div>
       </div>
-    </div>
+
+      <!-- Image Source Card -->
+      <div class="auto-card" style="margin-top:14px">
+        <div class="auto-card-title">🖼 Ảnh Nghệ Sĩ Tự Động</div>
+
+        <div class="auto-fg">
+          <label>Nguồn ảnh</label>
+          <select id="img-source" onchange="onImgSourceChange();saveAutoSettings()">
+            <option value="pexels">Pexels (miễn phí · có phép thương mại)</option>
+            <option value="unsplash">Unsplash (miễn phí · có phép thương mại)</option>
+            <option value="none">Không dùng ảnh tự động</option>
+          </select>
+        </div>
+
+        <div id="img-api-pexels">
+          <div class="auto-fg">
+            <label>Pexels API Key</label>
+            <input type="password" id="pexels-api-key" placeholder="Lấy miễn phí tại pexels.com/api" oninput="saveAutoSettings()">
+            <div class="hint2">
+              Đăng ký miễn phí: <a href="https://www.pexels.com/api/" target="_blank" style="color:var(--a2)">pexels.com/api</a> → 200 requests/giờ
+            </div>
+          </div>
+        </div>
+
+        <div id="img-api-unsplash" style="display:none">
+          <div class="auto-fg">
+            <label>Unsplash Access Key</label>
+            <input type="password" id="unsplash-api-key" placeholder="Lấy miễn phí tại unsplash.com/developers" oninput="saveAutoSettings()">
+            <div class="hint2">
+              Đăng ký miễn phí: <a href="https://unsplash.com/developers" target="_blank" style="color:var(--a2)">unsplash.com/developers</a> → 50 requests/giờ
+            </div>
+          </div>
+        </div>
+
+        <div id="img-style-row">
+          <div class="auto-fg">
+            <label>Phong cách ảnh</label>
+            <select id="img-style" onchange="saveAutoSettings()">
+              <option value="aesthetic">✨ Aesthetic · Phong cách nghệ thuật</option>
+              <option value="portrait">🌸 Portrait · Chân dung đẹp</option>
+              <option value="fashion">💄 Fashion · Thời trang</option>
+              <option value="lifestyle">🌟 Lifestyle · Cuộc sống</option>
+              <option value="nature">🌿 Nature · Thiên nhiên lãng mạn</option>
+              <option value="random">🎲 Ngẫu nhiên theo thể loại nhạc</option>
+            </select>
+            <div class="hint2">AI tự chọn từ khóa phù hợp thể loại: ballad → soft portrait, EDM → vibrant neon...</div>
+          </div>
+        </div>
+
+        <!-- Preview ảnh -->
+        <div style="margin-top:10px">
+          <button onclick="previewFetchImage()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
+            🔍 Test tìm ảnh ngay
+          </button>
+          <div id="img-preview-strip" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+        </div>
+      </div>
+
+    </div><!-- end left col -->
 
     <!-- RIGHT COL -->
     <div>
@@ -1478,12 +1536,12 @@ Tạo bởi VietLong Creator · Auto Music Video
           </div>
         </div>
         <div class="auto-fg" style="margin-top:10px">
-          <label>Trạng thái lịch</label>
+          <label>Lịch trong trình duyệt (chỉ khi tab đang mở)</label>
           <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
             <div class="toggle-wrap">
               <input type="checkbox" id="auto-enabled" onchange="toggleAutoSchedule()" style="width:auto">
             </div>
-            <span id="schedule-status-txt" style="font-size:.68rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Đã tắt — nhấn để bật lịch tự động</span>
+            <span id="schedule-status-txt" style="font-size:.68rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Đã tắt · Để chạy 24/7 → dùng GitHub Actions bên dưới</span>
           </div>
         </div>
         <div style="margin-top:10px;padding:10px;background:var(--ink);border-radius:8px;font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;line-height:1.7" id="next-run-info">
@@ -1516,19 +1574,80 @@ Tạo bởi VietLong Creator · Auto Music Video
       <!-- Backend Guide -->
       <div class="backend-guide">
         <div style="font-size:.65rem;font-weight:700;color:#a5b4fc;font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
-          🖥 CHẠY TỰ ĐỘNG 24/7 — CẦN BACKEND
+          ⚡ CHẠY TỰ ĐỘNG 24/7 — GITHUB ACTIONS (MIỄN PHÍ)
         </div>
-        <div style="font-size:.66rem;color:var(--tx2);line-height:1.7">
-          Lịch tự động trong browser chỉ chạy khi tab đang mở. Để chạy 24/7, bạn cần deploy script Node.js nhỏ:
+        <div style="font-size:.66rem;color:var(--tx2);line-height:1.8;margin-bottom:10px">
+          GitHub Pages không có server, nhưng <strong style="color:#a5b4fc">GitHub Actions</strong> chạy được cron job miễn phí ngay trên repo của bạn — không cần VPS, không tốn tiền.
         </div>
-        <pre id="backend-code">npm install node-cron axios
-node vietlong-auto.js
 
-# Script sẽ được tạo tự động khi nhấn "Xuất Script"</pre>
-        <button onclick="exportBackendScript()" style="margin-top:10px;padding:7px 16px;border-radius:7px;border:1px solid #a5b4fc;background:rgba(165,180,252,.1);color:#a5b4fc;cursor:pointer;font-size:.65rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
-          ↓ Xuất backend script (Node.js)
-        </button>
+        <!-- Steps -->
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+          <div class="ga-step"><span class="ga-step-n">1</span><div>
+            <div class="ga-step-title">Tạo file workflow trong repo</div>
+            <div class="ga-step-desc">Tạo <code>.github/workflows/auto-upload.yml</code> trong repo GitHub của bạn</div>
+          </div></div>
+          <div class="ga-step"><span class="ga-step-n">2</span><div>
+            <div class="ga-step-title">Thêm Secrets vào repo</div>
+            <div class="ga-step-desc">Settings → Secrets → <code>YT_API_KEY</code>, <code>YT_OAUTH_TOKEN</code>, <code>YT_CHANNEL_ID</code></div>
+          </div></div>
+          <div class="ga-step"><span class="ga-step-n">3</span><div>
+            <div class="ga-step-title">Xuất workflow file bên dưới</div>
+            <div class="ga-step-desc">Nhấn nút → tải file → commit vào repo → GitHub tự chạy theo lịch</div>
+          </div></div>
+        </div>
+
+        <pre id="backend-code" style="font-size:.58rem">name: VietLong Auto Upload
+on:
+  schedule:
+    - cron: '0 1,13 * * 1-5'  # 08:00 và 20:00 GMT+7 (T2-T6)
+  workflow_dispatch:            # Chạy thủ công được
+
+jobs:
+  auto-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: '18' }
+      - run: npm install axios form-data
+      - run: node .github/scripts/auto-upload.js
+        env:
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          YT_OAUTH_TOKEN: ${{ secrets.YT_OAUTH_TOKEN }}
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+          SONGS_PER_RUN: "2"
+          KEYWORDS: "nhạc hot việt nam,remix 2025"</pre>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button onclick="exportGHWorkflow()" style="padding:7px 14px;border-radius:7px;border:1px solid #a5b4fc;background:rgba(165,180,252,.1);color:#a5b4fc;cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
+            ↓ Xuất auto-upload.yml
+          </button>
+          <button onclick="exportGHScript()" style="padding:7px 14px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
+            ↓ Xuất auto-upload.js
+          </button>
+          <a href="https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule" target="_blank" style="padding:7px 14px;border-radius:7px;border:1px solid var(--line2);color:var(--tx3);font-size:.63rem;font-family:'IBM Plex Mono',monospace;text-decoration:none;display:inline-flex;align-items:center">
+            📖 Docs
+          </a>
+        </div>
       </div>
+
+      <style>
+      .ga-step {
+        display:flex; align-items:flex-start; gap:10px;
+        padding:8px 10px; border-radius:7px;
+        background:rgba(165,180,252,.06); border:1px solid rgba(165,180,252,.15);
+      }
+      .ga-step-n {
+        width:20px; height:20px; border-radius:50%; flex-shrink:0;
+        background:rgba(165,180,252,.2); border:1px solid #a5b4fc;
+        display:grid; place-items:center;
+        font-size:.58rem; font-weight:700; color:#a5b4fc;
+        font-family:'IBM Plex Mono',monospace;
+      }
+      .ga-step-title { font-size:.65rem; font-weight:700; color:var(--tx); }
+      .ga-step-desc  { font-size:.6rem; color:var(--tx3); margin-top:2px; line-height:1.5; }
+      .ga-step-desc code { color:#a5b4fc; background:rgba(165,180,252,.1); padding:1px 4px; border-radius:3px; }
+      </style>
 
     </div>
   </div>
@@ -1563,10 +1682,15 @@ let autoSettings = {
   searchKeywords:'nhạc hot 2025,remix việt,ballad việt nam',
   songsPerRun:2, templateChoice:'ai', scheduleEnabled:false,
   timeSlots:['08:00','20:00'], activeDays:[1,2,3,4,5],
-  ytTitleTpl:'{title} - {artist} | Music Video 2025',
+  ytTitleTpl:'{title} - {artist} | Nhạc Remix Tiktok 2026',
   ytDescTpl:'🎵 {title} - {artist}\nTạo bởi VietLong Creator\n\n#{genre} #NhacViet #MusicVideo',
   ytTags:'nhạc việt,music video,remix,nhạc hot',
   ytPrivacy:'private', remixLabel:'VIET LONG REMIX',
+  // Ảnh nghệ sĩ
+  imgSource:'pexels',       // pexels | unsplash | none
+  pexelsApiKey:'',
+  unsplashApiKey:'',
+  imgStyle:'aesthetic',     // aesthetic | portrait | fashion | lifestyle | random
 };
 let autoQueue = [];   // [{id,title,artist,status,progress,ytId,thumb}]
 let autoStats = {total:0, uploaded:0};
@@ -1600,6 +1724,10 @@ function saveAutoSettings(){
   autoSettings.ytPrivacy    = $('yt-privacy')?.value||'private';
   autoSettings.remixLabel   = $('auto-remix-label')?.value||'VIET LONG REMIX';
   autoSettings.activeDays   = [...document.querySelectorAll('#day-picker input:checked')].map(el=>+el.value);
+  autoSettings.imgSource    = $('img-source')?.value||'pexels';
+  autoSettings.pexelsApiKey = $('pexels-api-key')?.value||'';
+  autoSettings.unsplashApiKey=$('unsplash-api-key')?.value||'';
+  autoSettings.imgStyle     = $('img-style')?.value||'aesthetic';
   try{ localStorage.setItem('vlc_auto_settings', JSON.stringify(autoSettings)); }catch(_){}
   updateNextRunInfo();
 }
@@ -1622,6 +1750,12 @@ function loadAutoSettings(){
   if($('yt-privacy'))      $('yt-privacy').value        = autoSettings.ytPrivacy;
   if($('auto-remix-label'))$('auto-remix-label').value  = autoSettings.remixLabel;
   if($('auto-enabled'))    $('auto-enabled').checked    = autoSettings.scheduleEnabled;
+  // Image settings
+  if($('img-source'))      $('img-source').value        = autoSettings.imgSource||'pexels';
+  if($('pexels-api-key'))  $('pexels-api-key').value    = autoSettings.pexelsApiKey||'';
+  if($('unsplash-api-key'))$('unsplash-api-key').value  = autoSettings.unsplashApiKey||'';
+  if($('img-style'))       $('img-style').value         = autoSettings.imgStyle||'aesthetic';
+  onImgSourceChange();
   // Days
   document.querySelectorAll('#day-picker input').forEach(el=>{
     el.checked = autoSettings.activeDays.includes(+el.value);
@@ -1708,7 +1842,7 @@ function updateNextRunInfo(){
   }
   if(!(autoSettings.timeSlots?.length)){ el.textContent='⏰ Chưa có khung giờ nào'; return; }
   const next=getNextRunTime();
-  if(next){ el.innerHTML=`⏰ Lần chạy tiếp: <strong style="color:var(--a2)">${next}</strong>`; $('stat-next').textContent=next.split(' ')[1]||'--:--'; }
+  if(next){ el.innerHTML=`⏰ Lần chạy tiếp: <strong style="color:var(--a2)">${next.label}</strong>`; $('stat-next').textContent=next.time; }
   else{ el.textContent='⏰ Không có lịch trong tuần này'; }
 }
 function getNextRunTime(){
@@ -1720,7 +1854,10 @@ function getNextRunTime(){
     for(const slot of slots){
       const [h,m]=slot.split(':').map(Number);
       const t=new Date(check);t.setHours(h,m,0,0);
-      if(t>now) return `${check.toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'})} ${slot}`;
+      if(t>now) return {
+        label:`${check.toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'})} lúc ${slot}`,
+        time: slot,
+      };
     }
   }
   return null;
@@ -1742,14 +1879,19 @@ async function runAutomationNow(){
     if(!songs.length){ alog('warn','Không tìm được bài nhạc nào. Kiểm tra API key.'); return; }
     alog('ok',`Tìm được ${songs.length} bài: ${songs.map(s=>s.title).join(', ')}`);
 
-    // 2. Chọn template bằng AI
-    alog('dim','[2/4] AI chọn template phù hợp...');
+    // 2. Chọn template + tìm ảnh bằng AI
+    alog('dim','[2/4] AI chọn template + tìm ảnh...');
     for(const song of songs){
       const tplId = await aiPickTemplate(song);
       alog('ok',`"${song.title}" → template: ${tplId}`);
+
+      // Fetch ảnh từ Pexels/Unsplash
+      const imgData = await fetchArtistImage(song);
+
       const item = {
         id: Date.now()+Math.random(), title:song.title, artist:song.artist,
         genre:song.genre||'pop', tplId, thumbUrl:song.thumb||'',
+        imgUrl: imgData?.url||'', imgCredit: imgData?.credit||'',
         status:'queued', progress:0, ytId:'', createdAt:new Date().toISOString()
       };
       autoQueue.unshift(item);
@@ -1855,6 +1997,14 @@ async function processQueuedItems(){
     item.status='rendering'; item.progress=10;
     refreshQueueUI();
     alog('dim',`Đang render: "${item.title}"...`);
+
+    // Load ảnh nghệ sĩ vào artImg nếu có
+    if(item.imgUrl){
+      alog('dim',`Load ảnh: ${item.imgUrl.slice(0,60)}...`);
+      const loaded = await loadImgFromUrl(item.imgUrl);
+      if(loaded){ artImg=loaded; alog('ok','Ảnh đã load thành công'); }
+      else { artImg=null; alog('warn','Không load được ảnh, dùng placeholder'); }
+    } else { artImg=null; }
     await new Promise(r=>setTimeout(r,800));
     // Simulate render progress
     for(let p=20;p<=90;p+=20){
@@ -1937,9 +2087,10 @@ function refreshQueueUI(){
     d.className=`queue-item ${item.status==='done'?'done':item.status==='failed'?'failed':item.status.includes('ing')?'running':''}`;
     d.innerHTML=`
       <div class="qi-status">${icons[item.status]||'⏳'}</div>
+      ${item.imgUrl?`<img src="${item.imgUrl}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" title="📸 ${item.imgCredit||''}">`:''} 
       <div class="qi-info">
         <div class="qi-title">${item.title}</div>
-        <div class="qi-meta">${item.artist} · ${item.tplId||'auto'} · ${new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN')}</div>
+        <div class="qi-meta">${item.artist} · ${item.tplId||'auto'} · ${new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN')}${item.imgCredit?' · 📸 '+item.imgCredit:''}</div>
         ${item.status==='rendering'||item.status==='uploading'?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${item.progress||0}%"></div></div>`:''}
       </div>
       <div class="qi-action">${item.ytId&&item.ytId!==''&&!item.ytId.startsWith('demo')?`<a href="https://youtu.be/${item.ytId}" target="_blank" style="color:var(--a2);text-decoration:none">▶ Xem</a>`:item.status}</div>
@@ -1951,6 +2102,168 @@ function refreshQueueUI(){
 
 function saveQueue(){
   try{ localStorage.setItem('vlc_auto_queue', JSON.stringify(autoQueue.slice(0,50))); }catch(_){}
+}
+
+/* ═══════════════════════════════════════════════════
+   IMAGE ENGINE — Pexels / Unsplash tự động theo nhạc
+═══════════════════════════════════════════════════ */
+
+// ── UI toggle source ──
+function onImgSourceChange(){
+  const src=$('img-source')?.value||'pexels';
+  const pxEl=$('img-api-pexels');
+  const unEl=$('img-api-unsplash');
+  const stEl=$('img-style-row');
+  if(pxEl) pxEl.style.display = src==='pexels'  ?'block':'none';
+  if(unEl) unEl.style.display = src==='unsplash' ?'block':'none';
+  if(stEl) stEl.style.display = src==='none'     ?'none' :'block';
+}
+
+// ── Mapping thể loại → từ khóa ảnh ──
+const IMG_KEYWORDS = {
+  ballad:    ['soft portrait woman','dreamy girl aesthetic','beautiful woman sunset','elegant portrait','romantic woman photography'],
+  pop:       ['trendy girl fashion','stylish woman portrait','vibrant lifestyle girl','cute girl aesthetic','youthful fashion photography'],
+  edm:       ['neon lights woman','colorful light portrait','festival girl vibrant','glowing neon aesthetic','electric atmosphere woman'],
+  lofi:      ['cozy girl aesthetic','warm cafe portrait','vintage woman soft light','aesthetic lofi girl','dreamy warm tones woman'],
+  rap:       ['urban woman street style','bold fashion portrait','confident woman aesthetic','streetwear girl','modern woman portrait'],
+  indie:     ['indie girl nature','ethereal woman outdoors','soft natural portrait','boho aesthetic woman','peaceful outdoor portrait'],
+  default:   ['beautiful woman portrait','aesthetic girl photography','elegant female portrait','gorgeous woman natural light','stylish girl photography'],
+};
+
+// ── Chọn từ khóa theo thể loại + style ──
+function buildImgQuery(genre, style){
+  const styleMap = {
+    aesthetic: ['aesthetic','soft light','dreamy','ethereal','beautiful'],
+    portrait:  ['portrait','face','close up','elegant'],
+    fashion:   ['fashion','stylish','trendy','chic'],
+    lifestyle: ['lifestyle','candid','natural','outdoor'],
+    nature:    ['nature','flowers','soft','pastel'],
+    random:    [],
+  };
+  const genreKws = IMG_KEYWORDS[genre] || IMG_KEYWORDS.default;
+  // Pick base keyword from genre pool
+  const base = genreKws[Math.floor(Math.random()*genreKws.length)];
+  if(style==='random') return base;
+  const styleSuffix = styleMap[style]||[];
+  const sfx = styleSuffix[Math.floor(Math.random()*styleSuffix.length)]||'';
+  return sfx ? `${base} ${sfx}` : base;
+}
+
+// ── Fetch từ Pexels ──
+async function fetchFromPexels(query, count=4){
+  const key = autoSettings.pexelsApiKey;
+  if(!key) throw new Error('Chưa có Pexels API Key');
+  const url=`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count*3}&orientation=portrait`;
+  const res=await fetch(url,{headers:{'Authorization':key}});
+  if(!res.ok) throw new Error(`Pexels API lỗi ${res.status}: ${await res.text()}`);
+  const data=await res.json();
+  const photos=(data.photos||[]).filter(p=>p.width<p.height); // portrait only
+  // Shuffle và lấy count ảnh
+  const shuffled=photos.sort(()=>Math.random()-.5).slice(0,count);
+  return shuffled.map(p=>({
+    url:     p.src.large2x || p.src.large || p.src.original,
+    thumb:   p.src.medium,
+    credit:  p.photographer,
+    creditUrl:p.photographer_url,
+    source: 'pexels',
+  }));
+}
+
+// ── Fetch từ Unsplash ──
+async function fetchFromUnsplash(query, count=4){
+  const key = autoSettings.unsplashApiKey;
+  if(!key) throw new Error('Chưa có Unsplash API Key');
+  const url=`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count*2}&orientation=portrait&content_filter=high`;
+  const res=await fetch(url,{headers:{'Authorization':'Client-ID '+key}});
+  if(!res.ok) throw new Error(`Unsplash API lỗi ${res.status}`);
+  const data=await res.json();
+  const photos=(data.results||[]).slice(0,count);
+  return photos.map(p=>({
+    url:     p.urls.regular,
+    thumb:   p.urls.small,
+    credit:  p.user.name,
+    creditUrl:p.user.links.html+'?utm_source=VietLongCreator&utm_medium=referral',
+    source: 'unsplash',
+  }));
+}
+
+// ── Main: fetch ảnh cho 1 bài nhạc ──
+async function fetchArtistImage(song){
+  const src   = autoSettings.imgSource||'pexels';
+  const style = autoSettings.imgStyle||'aesthetic';
+  if(src==='none') return null;
+
+  const genre = (song.genre||'pop').toLowerCase();
+  const query = buildImgQuery(genre, style);
+  alog('dim',`Tìm ảnh: "${query}" (${src}, ${style})`);
+
+  try{
+    let results=[];
+    if(src==='pexels')   results=await fetchFromPexels(query,6);
+    if(src==='unsplash') results=await fetchFromUnsplash(query,6);
+    if(!results.length) throw new Error('Không tìm thấy ảnh phù hợp');
+
+    const chosen = results[Math.floor(Math.random()*results.length)];
+    alog('ok',`Ảnh OK: ${chosen.thumb} (📸 ${chosen.credit})`);
+    return chosen;
+  }catch(e){
+    alog('warn',`Không lấy được ảnh: ${e.message}`);
+    return null;
+  }
+}
+
+// ── Load ảnh vào Image element ──
+function loadImgFromUrl(url){
+  return new Promise((resolve)=>{
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>resolve(img);
+    img.onerror=()=>resolve(null);
+    img.src=url;
+  });
+}
+
+// ── Preview test ──
+async function previewFetchImage(){
+  const strip=$('img-preview-strip'); if(!strip)return;
+  strip.innerHTML='<span style="font-size:.62rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace">Đang tìm ảnh...</span>';
+  saveAutoSettings();
+
+  // Test 3 thể loại
+  const tests=[
+    {genre:'ballad', style:autoSettings.imgStyle||'aesthetic'},
+    {genre:'edm',    style:autoSettings.imgStyle||'aesthetic'},
+    {genre:'pop',    style:autoSettings.imgStyle||'aesthetic'},
+  ];
+
+  strip.innerHTML='';
+  for(const test of tests){
+    const query=buildImgQuery(test.genre, test.style);
+    try{
+      let results=[];
+      const src=autoSettings.imgSource||'pexels';
+      if(src==='pexels')   results=await fetchFromPexels(query,2);
+      if(src==='unsplash') results=await fetchFromUnsplash(query,2);
+      if(src==='none'){strip.innerHTML='<span style="font-size:.62rem;color:var(--tx3)">Tắt tự động ảnh</span>';return;}
+
+      results.forEach(r=>{
+        const wrap=document.createElement('div');
+        wrap.style.cssText='position:relative;flex-shrink:0';
+        wrap.innerHTML=`
+          <img src="${r.thumb}" style="width:72px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line2)" title="${test.genre}">
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);font-size:.48rem;color:#fff;padding:2px 3px;border-radius:0 0 5px 5px;font-family:'IBM Plex Mono',monospace;text-align:center">${test.genre}</div>
+        `;
+        strip.appendChild(wrap);
+      });
+    }catch(e){
+      const err=document.createElement('div');
+      err.style.cssText='font-size:.6rem;color:#f87171;font-family:\'IBM Plex Mono\',monospace;padding:4px';
+      err.textContent=e.message.slice(0,50);
+      strip.appendChild(err);
+    }
+  }
+  if(!strip.children.length){
+    strip.innerHTML='<span style="font-size:.62rem;color:#f87171">Lỗi · Kiểm tra API key</span>';
+  }
 }
 
 // ── Logging ──
@@ -1971,71 +2284,314 @@ function clearLog(){
   autoLog=[];
 }
 
-// ── Export backend script ──
-function exportBackendScript(){
-  const s=autoSettings;
-  const script=`#!/usr/bin/env node
-// VietLong Creator — Backend Automation Script
-// Chạy: node vietlong-auto.js
+// ── Export GitHub Actions workflow YAML ──
+function exportGHWorkflow(){
+  const s = autoSettings;
+  // Convert local time slots to UTC cron (assume GMT+7)
+  const cronParts = (s.timeSlots||['08:00','20:00']).map(slot=>{
+    const [h,m]=slot.split(':').map(Number);
+    const utcH = ((h - 7) + 24) % 24;
+    return `${m} ${utcH} * * ${(s.activeDays||[1,2,3,4,5]).join(',')}`;
+  });
+  const scheduleLines = cronParts.map(c=>`    - cron: '${c}'  # GMT+7`).join('\n');
+  const yaml = `# VietLong Creator — GitHub Actions Auto Upload
+# File này: .github/workflows/auto-upload.yml
+# Docs: https://docs.github.com/actions
 
-const cron = require('node-cron');
+name: VietLong Auto Upload
+
+on:
+  schedule:
+${scheduleLines}
+  workflow_dispatch:   # Cho phép chạy thủ công từ tab Actions
+
+jobs:
+  auto-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install axios form-data
+
+      - name: Run VietLong Auto Upload
+        run: node .github/scripts/auto-upload.js
+        env:
+          YT_API_KEY:      \${{ secrets.YT_API_KEY }}
+          YT_OAUTH_TOKEN:  \${{ secrets.YT_OAUTH_TOKEN }}
+          YT_REFRESH_TOKEN:\${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID:    \${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET:\${{ secrets.YT_CLIENT_SECRET }}
+          YT_CHANNEL_ID:   '${s.channelId||''}'
+          SONGS_PER_RUN:   '${s.songsPerRun||2}'
+          KEYWORDS:        '${(s.searchKeywords||'nhạc hot việt nam').replace(/'/g,"\\\'")}'
+          TEMPLATE_CHOICE: '${s.templateChoice||'ai'}'
+          YT_PRIVACY:      '${s.ytPrivacy||'private'}'
+          YT_TITLE_TPL:    '${(s.ytTitleTpl||'{title} - {artist}').replace(/'/g,"\\\'")}'
+          YT_TAGS:         '${(s.ytTags||'nhạc việt').replace(/'/g,"\\\'")}'
+          REMIX_LABEL:     '${(s.remixLabel||'VIET LONG REMIX').replace(/'/g,"\\\'")}'
+`;
+  downloadFile('auto-upload.yml', yaml, 'text/yaml');
+  alog('ok','Đã xuất auto-upload.yml → đặt vào .github/workflows/ trong repo');
+  alog('info','Thêm Secrets: Settings → Secrets and variables → Actions');
+}
+
+// ── Export Node.js script cho GitHub Actions ──
+function exportGHScript(){
+  const s = autoSettings;
+  const script = `#!/usr/bin/env node
+/**
+ * VietLong Creator — Auto Upload Script
+ * Đặt file này tại: .github/scripts/auto-upload.js
+ * 
+ * Cách lấy OAuth2 tokens:
+ * 1. console.cloud.google.com → Credentials → OAuth 2.0 Client ID (Desktop app)
+ * 2. Dùng OAuth playground: https://developers.google.com/oauthplayground
+ *    - Scope: https://www.googleapis.com/auth/youtube.upload
+ *    - Lấy refresh_token, lưu vào GitHub Secret: YT_REFRESH_TOKEN
+ */
+
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
+const path = require('path');
 
-const CONFIG = {
-  ytApiKey:    '${s.ytApiKey||'YOUR_YT_API_KEY'}',
-  channelId:   '${s.channelId||'YOUR_CHANNEL_ID'}',
-  oauthToken:  'YOUR_OAUTH2_ACCESS_TOKEN', // lấy qua OAuth2 flow
-  songsPerRun: ${s.songsPerRun||2},
-  keywords:    '${s.searchKeywords||'nhạc hot việt nam'}',
-  privacy:     '${s.ytPrivacy||'private'}',
-  titleTpl:    '${(s.ytTitleTpl||'{title} - {artist}').replace(/'/g,"\\'")}',
-  // Lịch chạy: ${(s.timeSlots||[]).join(', ')} các ngày ${(s.activeDays||[]).join(',')}
+const ENV = {
+  apiKey:       process.env.YT_API_KEY      || '',
+  oauthToken:   process.env.YT_OAUTH_TOKEN  || '',
+  refreshToken: process.env.YT_REFRESH_TOKEN|| '',
+  clientId:     process.env.YT_CLIENT_ID    || '',
+  clientSecret: process.env.YT_CLIENT_SECRET|| '',
+  channelId:    process.env.YT_CHANNEL_ID   || '',
+  songsPerRun:  parseInt(process.env.SONGS_PER_RUN||'2'),
+  keywords:     process.env.KEYWORDS        || 'nhạc hot việt nam',
+  privacy:      process.env.YT_PRIVACY      || 'private',
+  titleTpl:     process.env.YT_TITLE_TPL    || '{title} - {artist} | Nhạc Remix Tiktok 2026',
+  tags:         process.env.YT_TAGS         || 'nhạc việt,music video,remix',
+  remixLabel:   process.env.REMIX_LABEL     || 'VIET LONG REMIX',
+  templateChoice:process.env.TEMPLATE_CHOICE|| 'ai',
 };
 
-// Cron schedule (chạy vào 8:00 và 20:00 hàng ngày T2-T6)
-// Điều chỉnh theo cài đặt của bạn
-const SCHEDULE = '0 8,20 * * 1-5';
+function log(msg){ console.log('[' + new Date().toISOString() + '] ' + msg); }
 
-async function fetchTrendingMusic(){
-  // Gọi YouTube Data API để lấy nhạc trending Vietnam
-  const url = \`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&videoCategoryId=10&regionCode=VN&maxResults=5&key=\${CONFIG.ytApiKey}\`;
+// ── Refresh OAuth2 access token ──
+async function refreshAccessToken(){
+  if(!ENV.refreshToken || !ENV.clientId) return ENV.oauthToken;
+  const body = JSON.stringify({
+    client_id: ENV.clientId, client_secret: ENV.clientSecret,
+    refresh_token: ENV.refreshToken, grant_type: 'refresh_token'
+  });
+  return new Promise((resolve,reject)=>{
+    const req = https.request({
+      hostname:'oauth2.googleapis.com', path:'/token', method:'POST',
+      headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+    },res=>{
+      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
+        try{ resolve(JSON.parse(d).access_token||ENV.oauthToken); }catch{ resolve(ENV.oauthToken); }
+      });
+    });
+    req.on('error',reject); req.write(body); req.end();
+  });
+}
+
+// ── Fetch trending music from YouTube ──
+async function fetchTrendingSongs(){
+  const n = ENV.songsPerRun;
+  const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics' +
+    '&chart=mostPopular&videoCategoryId=10&regionCode=VN' +
+    '&maxResults=' + (n*3) + '&key=' + ENV.apiKey;
+  log('Tìm nhạc trending VN...');
   return new Promise((resolve,reject)=>{
     https.get(url, res=>{
-      let data='';
-      res.on('data',d=>data+=d);
-      res.on('end',()=>resolve(JSON.parse(data)));
+      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
+        try{
+          const data=JSON.parse(d);
+          if(data.error) throw new Error(data.error.message);
+          const songs=(data.items||[]).slice(0,n).map(v=>({
+            title: v.snippet.title.split(/[-–|]/)[0].trim().toUpperCase(),
+            artist: v.snippet.channelTitle.replace(/official|vevo/gi,'').trim(),
+            videoId: v.id,
+            viewCount: v.statistics?.viewCount||0,
+            genre: detectGenre(v.snippet.title+' '+v.snippet.description),
+          }));
+          resolve(songs);
+        }catch(e){ reject(e); }
+      });
     }).on('error',reject);
   });
 }
 
-async function runCycle(){
-  console.log('['+new Date().toISOString()+'] Bắt đầu automation cycle...');
-  try{
-    const trending = await fetchTrendingMusic();
-    const songs = (trending.items||[]).slice(0,CONFIG.songsPerRun);
-    console.log('Bài nhạc tìm được:', songs.map(s=>s.snippet.title));
-    // TODO: render video + upload YouTube
-    // Xem docs tại: https://developers.google.com/youtube/v3/guides/uploading_a_video
-    console.log('✅ Hoàn tất. Cần tích hợp thêm render + upload.');
-  }catch(e){
-    console.error('Lỗi:', e.message);
-  }
+function detectGenre(text){
+  const t=text.toLowerCase();
+  if(/remix|edm|dance|trap/.test(t)) return 'edm';
+  if(/lofi|lo-fi|chill/.test(t)) return 'lofi';
+  if(/ballad|tình|yêu|nhớ|buồn/.test(t)) return 'ballad';
+  if(/rap|hiphop|hip hop/.test(t)) return 'rap';
+  return 'pop';
 }
 
-// Chạy ngay khi start
-runCycle();
+function aiPickTemplate(genre, title){
+  if(ENV.templateChoice !== 'ai') return ENV.templateChoice;
+  if(/edm|remix/.test(genre)) return 'mc-fire';
+  if(/lofi|chill/.test(genre)) return 'mc-lofi';
+  if(/ballad/.test(genre)||/tình|yêu|nhớ/.test(title.toLowerCase())) return 'mc-rose';
+  if(/rap/.test(genre)) return 'mc-cyber';
+  const pool=['mc-ocean','mc-galaxy','mc-aurora','mc-purple','mc-dream'];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
 
-// Chạy theo lịch
-cron.schedule(SCHEDULE, runCycle);
-console.log('VietLong Auto đang chạy. Lịch:', SCHEDULE);
+function buildTitle(song){
+  const d=new Date();
+  return ENV.titleTpl
+    .replace(/{title}/g,  song.title)
+    .replace(/{artist}/g, song.artist)
+    .replace(/{date}/g,   d.toLocaleDateString('vi-VN'))
+    .replace(/{year}/g,   d.getFullYear())
+    .replace(/{genre}/g,  song.genre||'pop');
+}
+
+// ── Upload video to YouTube ──
+async function uploadVideo(song, videoBuffer, accessToken){
+  const title = buildTitle(song);
+  const tags = ENV.tags.split(',').map(t=>t.trim()).filter(Boolean);
+  tags.push(song.artist.replace(/\\s+/g,''), song.genre||'nhacviet');
+  
+  const meta = JSON.stringify({
+    snippet:{
+      title, description: ENV.titleTpl.replace(/{title}/g,song.title).replace(/{artist}/g,song.artist),
+      tags, categoryId:'10',
+    },
+    status:{ privacyStatus: ENV.privacy, selfDeclaredMadeForKids: false },
+  });
+
+  log('Upload: "' + title + '" → YouTube (' + ENV.privacy + ')');
+  
+  // Resumable upload
+  return new Promise((resolve,reject)=>{
+    const metaBuf = Buffer.from(meta);
+    const initReq = https.request({
+      hostname:'www.googleapis.com',
+      path:'/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+accessToken,
+        'Content-Type':'application/json',
+        'Content-Length':metaBuf.length,
+        'X-Upload-Content-Type':'video/webm',
+        'X-Upload-Content-Length':videoBuffer.length,
+      }
+    },res=>{
+      const uploadUrl=res.headers.location;
+      if(!uploadUrl){reject(new Error('No upload URL: '+JSON.stringify(res.headers)));return;}
+      log('Upload URL nhận được, đang upload video...');
+      // Upload binary
+      const u=new URL(uploadUrl);
+      const uploadReq = https.request({
+        hostname:u.hostname, path:u.pathname+u.search, method:'PUT',
+        headers:{'Content-Type':'video/webm','Content-Length':videoBuffer.length}
+      },r=>{
+        let d=''; r.on('data',c=>d+=c); r.on('end',()=>{
+          try{ resolve(JSON.parse(d)); }catch{ resolve({id:'unknown'}); }
+        });
+      });
+      uploadReq.on('error',reject);
+      uploadReq.write(videoBuffer);
+      uploadReq.end();
+    });
+    initReq.on('error',reject);
+    initReq.write(metaBuf);
+    initReq.end();
+  });
+}
+
+// ── Main ──
+async function main(){
+  log('=== VietLong Auto Upload bắt đầu ===');
+  
+  if(!ENV.apiKey){ log('LỖI: Thiếu YT_API_KEY'); process.exit(1); }
+  
+  // Refresh access token
+  const accessToken = await refreshAccessToken();
+  log('Access token: ' + (accessToken?'OK':'THIẾU'));
+  
+  // Fetch trending songs
+  const songs = await fetchTrendingSongs();
+  log('Tìm được ' + songs.length + ' bài: ' + songs.map(s=>s.title).join(', '));
+  
+  const results = [];
+  for(const song of songs){
+    log('--- Xử lý: "' + song.title + '" by ' + song.artist + ' ---');
+    const tpl = aiPickTemplate(song.genre, song.title);
+    log('Template AI chọn: ' + tpl);
+    
+    // NOTE: Render video cần headless browser (Puppeteer)
+    // Uncomment để dùng Puppeteer:
+    // const videoBuffer = await renderWithPuppeteer(song, tpl);
+    
+    // Placeholder: tạo video giả để test pipeline
+    const videoBuffer = Buffer.alloc(1024, 0); // thay bằng Puppeteer render thực
+    log('Render xong (placeholder): ' + videoBuffer.length + ' bytes');
+    
+    if(accessToken && accessToken!==ENV.oauthToken){
+      try{
+        const res = await uploadVideo(song, videoBuffer, accessToken);
+        log('Upload OK: https://youtu.be/' + (res.id||'?'));
+        results.push({...song, tpl, ytId:res.id, status:'ok'});
+      }catch(e){
+        log('Upload lỗi: ' + e.message);
+        results.push({...song, tpl, status:'error', error:e.message});
+      }
+    } else {
+      log('Bỏ qua upload (thiếu OAuth token)');
+      results.push({...song, tpl, status:'skip'});
+    }
+  }
+  
+  // Lưu log kết quả
+  const logPath = 'auto-results-' + new Date().toISOString().slice(0,10) + '.json';
+  fs.writeFileSync(logPath, JSON.stringify(results, null, 2));
+  log('Lưu kết quả: ' + logPath);
+  log('=== Hoàn tất ===');
+}
+
+main().catch(e=>{ console.error('FATAL:', e); process.exit(1); });
+
+/* 
+ * === ĐỂ RENDER VIDEO THẬT VỚI PUPPETEER ===
+ * npm install puppeteer
+ * 
+ * async function renderWithPuppeteer(song, tplId){
+ *   const puppeteer = require('puppeteer');
+ *   const browser = await puppeteer.launch({args:['--no-sandbox']});
+ *   const page = await browser.newPage();
+ *   await page.goto('https://letranvietlong.github.io/VietLongCreator.html');
+ *   // ... điều khiển UI để render video
+ *   // ... capture MediaRecorder output
+ *   await browser.close();
+ * }
+ */
 `;
-  const blob=new Blob([script],{type:'text/javascript'});
+  downloadFile('auto-upload.js', script, 'text/javascript');
+  alog('ok','Đã xuất auto-upload.js → đặt vào .github/scripts/ trong repo');
+  alog('info','Cần OAuth2: oauthplayground.google.com → scope youtube.upload → lấy refresh_token');
+  alog('info','Thêm vào GitHub Secrets: YT_API_KEY, YT_REFRESH_TOKEN, YT_CLIENT_ID, YT_CLIENT_SECRET');
+}
+
+// ── Utility ──
+function downloadFile(filename, content, mime){
+  const blob=new Blob([content],{type:mime});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='vietlong-auto.js';
+  a.download=filename;
   a.click();
-  alog('ok','Đã xuất vietlong-auto.js · Chạy: npm install node-cron && node vietlong-auto.js');
 }
 
 // ── Init automation on load ──
@@ -4139,17 +4695,29 @@ async function startExport(){
   // Buffer riêng cho export
   const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
 
-  // Lưu ctx gốc, swap sang export ctx
-  const origBgX=bgX, origOvX=ovX;
+  // ── Tạo canvas HD riêng biệt — KHÔNG dùng chung với preview ──
+  const expBg=document.createElement('canvas'); expBg.width=EW; expBg.height=EH;
+  const expOv=document.createElement('canvas'); expOv.width=EW; expOv.height=EH;
+  const expBgX=expBg.getContext('2d');
+  const expOvX=expOv.getContext('2d');
+
+  // Lưu refs canvas gốc
+  const _origBgCvs=bgCvs, _origOvCvs=ovCvs;
+  const _origBgX=bgX,    _origOvX=ovX;
+  const _origPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
+  const _origPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
 
   function fr(){
     const el=(performance.now()-t0)/1000;
     if(el>=dur+0.1){
       upProg(94,'Hoàn tất, đang đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
+      // Khôi phục canvas gốc ngay
+      bgCvs.width=_origPW; bgCvs.height=_origPH;
+      ovCvs.width=_origPW; ovCvs.height=_origPH;
       mr.stop(); return;
     }
 
-    // ── Đọc audio realtime từ exportAn ──
+    // ── Đọc audio realtime ──
     exportAn.getByteFrequencyData(expFreqBuf);
     _freqBuf=expFreqBuf;
     const len=expFreqBuf.length;
@@ -4163,36 +4731,30 @@ async function startExport(){
     _mid=ms/((midEnd-bassEnd)*255);
     _eng=all/(len*255);
 
-    // ── SWAP: dùng canvas HD thay cho canvas preview ──
-    // Lưu refs gốc
-    const origBgCvs=bgCvs, origOvCvs=ovCvs;
-    const origBgX=bgX, origOvX=ovX;
-    // Gán tạm canvas HD vào các biến global
-    // (không thể gán const, dùng cách thay đổi kích thước bgCvs thực)
+    // ── Swap sang canvas HD ──
     bgCvs.width=EW; bgCvs.height=EH;
     ovCvs.width=EW; ovCvs.height=EH;
-    bgCache=null; // force redraw bg ở kích thước mới
+    bgCache=null;
 
     aiT=el*.4; aiGP=el*.0026;
     drawFrame();
 
-    // Ghép vào ec để stream
+    // ── Copy vào export canvas để stream ──
     ectx.clearRect(0,0,EW,EH);
     ectx.drawImage(bgCvs,0,0);
     ectx.drawImage(ovCvs,0,0);
 
-    // ── RESTORE kích thước preview ──
-    const preW=parseInt(bgCvs.getAttribute('data-pw'))||750;
-    const preH=parseInt(bgCvs.getAttribute('data-ph'))||Math.round(preW*9/16);
-    bgCvs.width=preW; bgCvs.height=preH;
-    ovCvs.width=preW; ovCvs.height=preH;
-    bgCache=null; // reset để preview vẽ lại đúng kích thước
+    // ── Restore preview size ngay sau mỗi frame ──
+    bgCvs.width=_origPW; bgCvs.height=_origPH;
+    ovCvs.width=_origPW; ovCvs.height=_origPH;
+    bgCache=null;
 
     const pct=20+Math.round(el/dur*72);
     const remain=Math.max(0,dur-el);
     upProg(pct,`Render HD ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
 
-    requestAnimationFrame(fr);
+    // Dùng setTimeout thay requestAnimationFrame — không bị throttle khi đổi tab
+    setTimeout(fr, 1000/30); // 30fps
   }
   fr();
 }
