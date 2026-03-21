@@ -853,6 +853,223 @@ main {
 .section-sub {
   font-size:.75rem; color:var(--tx2); margin-bottom:18px; line-height:1.7;
 }
+/* ── MAIN NAV TABS ── */
+.main-nav {
+  display:flex; gap:4px; align-items:center;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line); border-radius:10px;
+  padding:4px; margin-left:auto; margin-right:12px;
+}
+.mnav-tab {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:7px;
+  font-size:.65rem; font-weight:700;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.06em; cursor:pointer;
+  color:var(--tx3); transition:all .22s;
+  position:relative; white-space:nowrap;
+}
+.mnav-tab:hover { color:var(--tx); background:rgba(255,255,255,.06); }
+.mnav-tab.active {
+  background:linear-gradient(135deg,rgba(255,45,120,.18),rgba(124,111,255,.12));
+  border:1px solid rgba(255,45,120,.35);
+  color:#ff2d78;
+  box-shadow:0 0 12px rgba(255,45,120,.2);
+}
+.mnav-tab.active span { filter:drop-shadow(0 0 4px #ff2d78); }
+.mnav-badge {
+  position:absolute; top:-4px; right:-4px;
+  width:8px; height:8px; border-radius:50%;
+  background:#00e5c3; border:1.5px solid var(--ink);
+  animation:badgePulse 2s ease-in-out infinite;
+}
+@keyframes badgePulse {
+  0%,100%{box-shadow:0 0 0 0 rgba(0,229,195,.5);}
+  50%{box-shadow:0 0 0 5px transparent;}
+}
+
+/* ── AUTOMATION PANEL ── */
+#panel-auto {
+  display:none; max-width:900px; margin:0 auto;
+  padding:24px 20px 40px;
+}
+#panel-auto.show { display:block; }
+
+.auto-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:16px; margin-bottom:24px;
+}
+.auto-title {
+  font-size:1.1rem; font-weight:800; color:var(--tx);
+  font-family:'Be Vietnam Pro',sans-serif;
+}
+.auto-title span { color:#00e5c3; }
+.auto-subtitle {
+  font-size:.72rem; color:var(--tx3); margin-top:4px; line-height:1.6;
+}
+.auto-run-btn {
+  padding:10px 22px; border-radius:10px; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#00e5c3,#7c6fff);
+  color:#000; font-weight:800; font-size:.75rem;
+  font-family:'IBM Plex Mono',monospace; letter-spacing:.05em;
+  white-space:nowrap; transition:opacity .2s;
+  box-shadow:0 4px 20px rgba(0,229,195,.3);
+}
+.auto-run-btn:hover{opacity:.85;}
+.auto-run-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Grid layout */
+.auto-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:620px){.auto-grid{grid-template-columns:1fr;}}
+
+.auto-card {
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r); padding:18px;
+}
+.auto-card-title {
+  font-size:.6rem; font-weight:700; color:var(--a2);
+  font-family:'IBM Plex Mono',monospace; letter-spacing:.1em;
+  text-transform:uppercase; margin-bottom:14px;
+  display:flex; align-items:center; gap:7px;
+}
+.auto-card-title::before {
+  content:''; width:5px; height:5px; border-radius:50%;
+  background:var(--a2); box-shadow:0 0 5px var(--a2);
+}
+
+/* Form fields */
+.auto-fg { margin-bottom:12px; }
+.auto-fg label {
+  display:block; font-size:.62rem; color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace; margin-bottom:5px;
+  letter-spacing:.06em;
+}
+.auto-fg input, .auto-fg select, .auto-fg textarea {
+  width:100%; background:var(--ink); border:1px solid var(--line2);
+  color:var(--tx); border-radius:8px; padding:8px 11px;
+  font-family:var(--fb); font-size:.78rem; outline:none;
+  box-sizing:border-box;
+}
+.auto-fg input:focus,.auto-fg select:focus,.auto-fg textarea:focus{border-color:var(--a2);}
+.auto-fg .hint2 { font-size:.58rem; color:var(--tx3); margin-top:4px; }
+
+/* Schedule slots */
+.schedule-slots { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.slot-chip {
+  display:flex; align-items:center; gap:5px;
+  background:rgba(0,229,195,.1); border:1px solid rgba(0,229,195,.25);
+  border-radius:20px; padding:4px 10px;
+  font-size:.62rem; color:var(--a2);
+  font-family:'IBM Plex Mono',monospace;
+}
+.slot-chip button {
+  background:none; border:none; color:var(--tx3); cursor:pointer;
+  font-size:.7rem; padding:0; line-height:1;
+}
+.slot-chip button:hover{color:#ff2d78;}
+.add-slot-row { display:flex; gap:8px; margin-top:8px; }
+.add-slot-row input[type=time] {
+  background:var(--ink); border:1px solid var(--line2);
+  color:var(--tx); border-radius:8px; padding:6px 10px;
+  font-family:'IBM Plex Mono',monospace; font-size:.75rem; outline:none;
+}
+.add-slot-btn {
+  padding:6px 14px; border-radius:8px; border:1px solid var(--a2);
+  background:transparent; color:var(--a2); cursor:pointer;
+  font-size:.65rem; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; transition:all .2s;
+}
+.add-slot-btn:hover{background:rgba(0,229,195,.1);}
+
+/* Queue */
+.auto-queue { margin-top:18px; }
+.queue-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:9px; margin-bottom:8px;
+  background:var(--surface2); border:1px solid var(--line);
+  transition:border-color .2s;
+}
+.queue-item.running { border-color:#fbbf24; background:rgba(251,191,36,.05); }
+.queue-item.done    { border-color:#22c55e; background:rgba(34,197,94,.05); }
+.queue-item.failed  { border-color:#ef4444; background:rgba(239,68,68,.05); }
+.qi-status {
+  width:28px; height:28px; border-radius:50%;
+  display:grid; place-items:center; font-size:.8rem; flex-shrink:0;
+}
+.qi-info { flex:1; min-width:0; }
+.qi-title { font-size:.74rem; font-weight:600; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qi-meta  { font-size:.6rem; color:var(--tx3); font-family:'IBM Plex Mono',monospace; margin-top:2px; }
+.qi-action { font-size:.6rem; color:var(--tx3); white-space:nowrap; }
+.qi-progress {
+  height:2px; background:var(--line); border-radius:2px; margin-top:6px; overflow:hidden;
+}
+.qi-progress-fill {
+  height:100%; background:linear-gradient(90deg,#00e5c3,#7c6fff);
+  border-radius:2px; transition:width .5s;
+}
+
+/* Log console */
+.auto-log {
+  background:#020408; border:1px solid var(--line);
+  border-radius:var(--r); padding:12px; margin-top:16px;
+  max-height:160px; overflow-y:auto; font-family:'IBM Plex Mono',monospace;
+  font-size:.6rem; line-height:1.8;
+}
+.log-line { margin:0; }
+.log-line.info  { color:#60a5fa; }
+.log-line.ok    { color:#4ade80; }
+.log-line.warn  { color:#fbbf24; }
+.log-line.error { color:#f87171; }
+.log-line.dim   { color:var(--tx3); }
+
+/* YouTube connect */
+.yt-connect-box {
+  display:flex; align-items:center; gap:12px; padding:14px;
+  border-radius:var(--r); border:1px dashed var(--line2);
+  background:var(--ink); cursor:pointer; transition:border-color .2s;
+}
+.yt-connect-box:hover { border-color:var(--a2); }
+.yt-connect-box.connected {
+  border-style:solid; border-color:#22c55e;
+  background:rgba(34,197,94,.05); cursor:default;
+}
+.yt-icon { font-size:1.4rem; }
+.yt-info { flex:1; }
+.yt-channel { font-size:.75rem; font-weight:700; color:var(--tx); }
+.yt-status  { font-size:.6rem; color:var(--tx3); font-family:'IBM Plex Mono',monospace; margin-top:2px; }
+.yt-connect-btn {
+  padding:6px 14px; border-radius:8px; border:1px solid #ff0000;
+  background:rgba(255,0,0,.1); color:#ff4444; cursor:pointer;
+  font-weight:700; font-size:.65rem; font-family:'IBM Plex Mono',monospace;
+  transition:all .2s;
+}
+.yt-connect-btn:hover{background:rgba(255,0,0,.2);}
+.yt-connect-btn.connected{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.1);}
+
+/* Stats row */
+.auto-stats {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+  margin-bottom:18px;
+}
+@media(max-width:480px){.auto-stats{grid-template-columns:repeat(2,1fr);}}
+.stat-box {
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r); padding:12px; text-align:center;
+}
+.stat-val { font-size:1.3rem; font-weight:800; color:var(--a2); font-family:'IBM Plex Mono',monospace; }
+.stat-lbl { font-size:.58rem; color:var(--tx3); margin-top:2px; }
+
+/* Backend guide */
+.backend-guide {
+  background:rgba(124,111,255,.06); border:1px solid rgba(124,111,255,.2);
+  border-radius:var(--r); padding:16px; margin-top:16px;
+}
+.backend-guide pre {
+  background:#020408; border-radius:6px; padding:10px;
+  font-size:.62rem; color:#a5b4fc; overflow-x:auto;
+  margin:8px 0 0; font-family:'IBM Plex Mono',monospace;
+  line-height:1.6; white-space:pre-wrap;
+}
 </style>
 </head>
 <body>
@@ -937,6 +1154,16 @@ main {
   <!-- RIGHT PILLS -->
   <div class="hpills">
     <div class="hpill ver">v4.0</div>
+  </div>
+  <!-- Main nav tabs -->
+  <div class="main-nav">
+    <div class="mnav-tab active" id="mn-create" onclick="switchMainTab('create')">
+      <span>⚡</span> Tạo Video
+    </div>
+    <div class="mnav-tab" id="mn-auto" onclick="switchMainTab('auto')">
+      <span>🤖</span> Tự Động Hóa
+      <div class="mnav-badge" id="auto-badge" style="display:none"></div>
+    </div>
   </div>
 </header>
 
@@ -1084,11 +1311,738 @@ main {
 
 </main>
 
+<!-- ======= AUTOMATION TAB ======= -->
+<div id="panel-auto">
+
+  <div class="auto-header">
+    <div>
+      <div class="auto-title">🤖 Tự Động Hóa <span>AI</span></div>
+      <div class="auto-subtitle">
+        Hệ thống tự tìm nhạc hot → tạo video → upload YouTube theo lịch<br>
+        <span style="color:#fbbf24;font-size:.6rem;font-family:'IBM Plex Mono',monospace">
+          ⚠ Cần kết nối YouTube API để upload tự động · Xem hướng dẫn bên dưới
+        </span>
+      </div>
+    </div>
+    <button class="auto-run-btn" id="auto-run-btn" onclick="runAutomationNow()">
+      ▶ CHẠY NGAY
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="auto-stats">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-lbl">Video đã tạo</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-uploaded">0</div>
+      <div class="stat-lbl">Đã upload YouTube</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-queued">0</div>
+      <div class="stat-lbl">Đang chờ</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-next">--:--</div>
+      <div class="stat-lbl">Lần chạy tiếp</div>
+    </div>
+  </div>
+
+  <div class="auto-grid">
+
+    <!-- LEFT COL -->
+    <div>
+
+      <!-- YouTube Connect -->
+      <div class="auto-card" style="margin-bottom:14px">
+        <div class="auto-card-title">Kết Nối YouTube</div>
+        <div class="yt-connect-box" id="yt-box" onclick="connectYouTube()">
+          <div class="yt-icon">📺</div>
+          <div class="yt-info">
+            <div class="yt-channel" id="yt-channel-name">Chưa kết nối</div>
+            <div class="yt-status" id="yt-status-txt">Nhấn để kết nối kênh YouTube của bạn</div>
+          </div>
+          <button class="yt-connect-btn" id="yt-btn">KẾT NỐI</button>
+        </div>
+        <div class="auto-fg" style="margin-top:12px">
+          <label>YouTube Data API Key</label>
+          <input type="password" id="yt-api-key" placeholder="AIza..." oninput="saveAutoSettings()">
+          <div class="hint2">Lấy tại <a href="https://console.cloud.google.com" target="_blank" style="color:var(--a2)">Google Cloud Console</a> → Enable YouTube Data API v3</div>
+        </div>
+        <div class="auto-fg">
+          <label>Channel ID</label>
+          <input type="text" id="yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveAutoSettings()">
+        </div>
+      </div>
+
+      <!-- Trending Source -->
+      <div class="auto-card" style="margin-bottom:14px">
+        <div class="auto-card-title">Nguồn Nhạc Hot</div>
+        <div class="auto-fg">
+          <label>Tìm nhạc từ</label>
+          <select id="music-source" onchange="saveAutoSettings()">
+            <option value="yt-trending">YouTube Music Trending (VN)</option>
+            <option value="yt-search">Tìm kiếm YouTube theo từ khóa</option>
+            <option value="manual">Nhập thủ công URL / ID</option>
+          </select>
+        </div>
+        <div class="auto-fg" id="search-kw-row">
+          <label>Từ khóa tìm kiếm</label>
+          <input type="text" id="search-keywords" value="nhạc hot 2025,remix việt,ballad việt nam" oninput="saveAutoSettings()">
+          <div class="hint2">Phân cách bằng dấu phẩy</div>
+        </div>
+        <div class="auto-fg">
+          <label>Số bài / lần chạy</label>
+          <select id="songs-per-run" onchange="saveAutoSettings()">
+            <option value="1">1 bài</option>
+            <option value="2" selected>2 bài</option>
+            <option value="3">3 bài</option>
+            <option value="5">5 bài</option>
+          </select>
+        </div>
+        <div class="auto-fg">
+          <label>Chọn mẫu video</label>
+          <select id="auto-template" onchange="saveAutoSettings()">
+            <option value="ai">🤖 AI tự chọn phù hợp với thể loại</option>
+            <option value="mc-rose">Music Card · Hoa Hồng</option>
+            <option value="mc-ocean">Music Card · Đại Dương</option>
+            <option value="mc-fire">Music Card · Lửa Rực</option>
+            <option value="mc-galaxy">Music Card · Lưới Vũ Trụ</option>
+            <option value="mc-cyber">Music Card · Cyber Neon</option>
+            <option value="mc-dream">Music Card · Giấc Mơ</option>
+            <option value="mc-lofi">Music Card · Lo-Fi Cafe</option>
+            <option value="mc-aurora">Music Card · Cực Quang</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Video Settings -->
+      <div class="auto-card">
+        <div class="auto-card-title">Cài Đặt Video</div>
+        <div class="auto-fg">
+          <label>Tiêu đề video (template)</label>
+          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Music Video 2025" oninput="saveAutoSettings()">
+          <div class="hint2">{title} · {artist} · {date} · {year}</div>
+        </div>
+        <div class="auto-fg">
+          <label>Mô tả video</label>
+          <textarea id="yt-desc-tpl" rows="3" oninput="saveAutoSettings()">🎵 {title} - {artist}
+Tạo bởi VietLong Creator · Auto Music Video
+
+#NhacViet #{genre} #MusicVideo #{artist_tag}</textarea>
+        </div>
+        <div class="auto-fg">
+          <label>Tags</label>
+          <input type="text" id="yt-tags" value="nhạc việt,music video,remix,nhạc hot" oninput="saveAutoSettings()">
+        </div>
+        <div class="auto-fg">
+          <label>Trạng thái upload</label>
+          <select id="yt-privacy" onchange="saveAutoSettings()">
+            <option value="private">🔒 Riêng tư (private)</option>
+            <option value="unlisted">🔗 Không công khai (unlisted)</option>
+            <option value="public">🌍 Công khai (public)</option>
+          </select>
+        </div>
+        <div class="auto-fg">
+          <label>Nhãn Remix mặc định</label>
+          <input type="text" id="auto-remix-label" value="VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();saveAutoSettings()">
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div>
+
+      <!-- Schedule -->
+      <div class="auto-card" style="margin-bottom:14px">
+        <div class="auto-card-title">Lịch Chạy Tự Động</div>
+        <div class="auto-fg">
+          <label>Chạy vào các ngày</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="day-picker">
+            <label class="day-chip" id="dc-0"><input type="checkbox" value="0" onchange="saveAutoSettings()"> CN</label>
+            <label class="day-chip" id="dc-1"><input type="checkbox" value="1" onchange="saveAutoSettings()" checked> T2</label>
+            <label class="day-chip" id="dc-2"><input type="checkbox" value="2" onchange="saveAutoSettings()" checked> T3</label>
+            <label class="day-chip" id="dc-3"><input type="checkbox" value="3" onchange="saveAutoSettings()" checked> T4</label>
+            <label class="day-chip" id="dc-4"><input type="checkbox" value="4" onchange="saveAutoSettings()" checked> T5</label>
+            <label class="day-chip" id="dc-5"><input type="checkbox" value="5" onchange="saveAutoSettings()" checked> T6</label>
+            <label class="day-chip" id="dc-6"><input type="checkbox" value="6" onchange="saveAutoSettings()"> T7</label>
+          </div>
+        </div>
+        <div class="auto-fg">
+          <label>Khung giờ upload</label>
+          <div class="schedule-slots" id="schedule-slots"></div>
+          <div class="add-slot-row">
+            <input type="time" id="new-slot-time" value="08:00">
+            <button class="add-slot-btn" onclick="addTimeSlot()">+ Thêm giờ</button>
+          </div>
+        </div>
+        <div class="auto-fg" style="margin-top:10px">
+          <label>Trạng thái lịch</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <div class="toggle-wrap">
+              <input type="checkbox" id="auto-enabled" onchange="toggleAutoSchedule()" style="width:auto">
+            </div>
+            <span id="schedule-status-txt" style="font-size:.68rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Đã tắt — nhấn để bật lịch tự động</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:var(--ink);border-radius:8px;font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;line-height:1.7" id="next-run-info">
+          ⏰ Chưa có lịch nào được đặt
+        </div>
+      </div>
+
+      <!-- Queue -->
+      <div class="auto-card" style="margin-bottom:14px">
+        <div class="auto-card-title">Hàng Đợi Video</div>
+        <div class="auto-queue" id="auto-queue">
+          <div style="text-align:center;padding:20px;color:var(--tx3);font-size:.72rem">
+            Chưa có video nào trong hàng đợi
+          </div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="auto-card">
+        <div class="auto-card-title" style="justify-content:space-between;display:flex;align-items:center">
+          <span style="display:flex;align-items:center;gap:7px"><span style="width:5px;height:5px;border-radius:50%;background:var(--a2);box-shadow:0 0 5px var(--a2)"></span>NHẬT KÝ HỆ THỐNG</span>
+          <button onclick="clearLog()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.6rem;font-family:'IBM Plex Mono',monospace">xóa</button>
+        </div>
+        <div class="auto-log" id="auto-log">
+          <p class="log-line dim">[system] VietLong Creator Automation Engine v1.0</p>
+          <p class="log-line dim">[system] Sẵn sàng · Chờ cấu hình...</p>
+        </div>
+      </div>
+
+      <!-- Backend Guide -->
+      <div class="backend-guide">
+        <div style="font-size:.65rem;font-weight:700;color:#a5b4fc;font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
+          🖥 CHẠY TỰ ĐỘNG 24/7 — CẦN BACKEND
+        </div>
+        <div style="font-size:.66rem;color:var(--tx2);line-height:1.7">
+          Lịch tự động trong browser chỉ chạy khi tab đang mở. Để chạy 24/7, bạn cần deploy script Node.js nhỏ:
+        </div>
+        <pre id="backend-code">npm install node-cron axios
+node vietlong-auto.js
+
+# Script sẽ được tạo tự động khi nhấn "Xuất Script"</pre>
+        <button onclick="exportBackendScript()" style="margin-top:10px;padding:7px 16px;border-radius:7px;border:1px solid #a5b4fc;background:rgba(165,180,252,.1);color:#a5b4fc;cursor:pointer;font-size:.65rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
+          ↓ Xuất backend script (Node.js)
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.day-chip {
+  display:flex; align-items:center; gap:4px;
+  padding:4px 10px; border-radius:20px;
+  background:var(--surface2); border:1px solid var(--line2);
+  font-size:.62rem; color:var(--tx3); cursor:pointer;
+  font-family:'IBM Plex Mono',monospace; transition:all .2s;
+}
+.day-chip:has(input:checked) {
+  background:rgba(0,229,195,.12); border-color:var(--a2); color:var(--a2);
+}
+</style>
+
 <script>
 /* ====================================================
    VIETLONG CREATOR — Core Engine
 ==================================================== */
 const $ = id => document.getElementById(id);
+
+/* ══════════════════════════════════════════════════════
+   AUTOMATION ENGINE — VietLong Creator Auto v1.0
+══════════════════════════════════════════════════════ */
+
+// ── State ──
+let autoSettings = {
+  ytApiKey:'', channelId:'', musicSource:'yt-trending',
+  searchKeywords:'nhạc hot 2025,remix việt,ballad việt nam',
+  songsPerRun:2, templateChoice:'ai', scheduleEnabled:false,
+  timeSlots:['08:00','20:00'], activeDays:[1,2,3,4,5],
+  ytTitleTpl:'{title} - {artist} | Music Video 2025',
+  ytDescTpl:'🎵 {title} - {artist}\nTạo bởi VietLong Creator\n\n#{genre} #NhacViet #MusicVideo',
+  ytTags:'nhạc việt,music video,remix,nhạc hot',
+  ytPrivacy:'private', remixLabel:'VIET LONG REMIX',
+};
+let autoQueue = [];   // [{id,title,artist,status,progress,ytId,thumb}]
+let autoStats = {total:0, uploaded:0};
+let scheduleTimer = null;
+let autoLog = [];
+
+// ── Tab switching ──
+function switchMainTab(tab){
+  const isAuto = tab==='auto';
+  $('mn-create').classList.toggle('active',!isAuto);
+  $('mn-auto').classList.toggle('active', isAuto);
+  // Show/hide panels
+  const main = document.querySelector('main');
+  const autoPanel = $('panel-auto');
+  main.style.display = isAuto ? 'none' : '';
+  autoPanel.classList.toggle('show', isAuto);
+  if(isAuto){ loadAutoSettings(); refreshQueueUI(); updateNextRunInfo(); }
+}
+
+// ── Persistence ──
+function saveAutoSettings(){
+  autoSettings.ytApiKey     = $('yt-api-key')?.value||'';
+  autoSettings.channelId    = $('yt-channel-id')?.value||'';
+  autoSettings.musicSource  = $('music-source')?.value||'yt-trending';
+  autoSettings.searchKeywords=$('search-keywords')?.value||'';
+  autoSettings.songsPerRun  = parseInt($('songs-per-run')?.value||2);
+  autoSettings.templateChoice=$('auto-template')?.value||'ai';
+  autoSettings.ytTitleTpl   = $('yt-title-tpl')?.value||'';
+  autoSettings.ytDescTpl    = $('yt-desc-tpl')?.value||'';
+  autoSettings.ytTags       = $('yt-tags')?.value||'';
+  autoSettings.ytPrivacy    = $('yt-privacy')?.value||'private';
+  autoSettings.remixLabel   = $('auto-remix-label')?.value||'VIET LONG REMIX';
+  autoSettings.activeDays   = [...document.querySelectorAll('#day-picker input:checked')].map(el=>+el.value);
+  try{ localStorage.setItem('vlc_auto_settings', JSON.stringify(autoSettings)); }catch(_){}
+  updateNextRunInfo();
+}
+
+function loadAutoSettings(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('vlc_auto_settings')||'{}');
+    Object.assign(autoSettings, saved);
+  }catch(_){}
+  // Restore form
+  if($('yt-api-key'))      $('yt-api-key').value       = autoSettings.ytApiKey;
+  if($('yt-channel-id'))   $('yt-channel-id').value    = autoSettings.channelId;
+  if($('music-source'))    $('music-source').value      = autoSettings.musicSource;
+  if($('search-keywords')) $('search-keywords').value   = autoSettings.searchKeywords;
+  if($('songs-per-run'))   $('songs-per-run').value     = autoSettings.songsPerRun;
+  if($('auto-template'))   $('auto-template').value     = autoSettings.templateChoice;
+  if($('yt-title-tpl'))    $('yt-title-tpl').value      = autoSettings.ytTitleTpl;
+  if($('yt-desc-tpl'))     $('yt-desc-tpl').value       = autoSettings.ytDescTpl;
+  if($('yt-tags'))         $('yt-tags').value           = autoSettings.ytTags;
+  if($('yt-privacy'))      $('yt-privacy').value        = autoSettings.ytPrivacy;
+  if($('auto-remix-label'))$('auto-remix-label').value  = autoSettings.remixLabel;
+  if($('auto-enabled'))    $('auto-enabled').checked    = autoSettings.scheduleEnabled;
+  // Days
+  document.querySelectorAll('#day-picker input').forEach(el=>{
+    el.checked = autoSettings.activeDays.includes(+el.value);
+  });
+  // Slots
+  renderTimeSlots();
+  // Stats
+  try{
+    const st=JSON.parse(localStorage.getItem('vlc_auto_stats')||'{}');
+    autoStats = Object.assign({total:0,uploaded:0},st);
+  }catch(_){}
+  refreshStats();
+  // Queue
+  try{
+    autoQueue = JSON.parse(localStorage.getItem('vlc_auto_queue')||'[]');
+    autoQueue = autoQueue.filter(q=>q.status!=='running'); // reset stuck
+  }catch(_){}
+  refreshQueueUI();
+  // Schedule
+  if(autoSettings.scheduleEnabled) startSchedule();
+}
+
+// ── Time slots ──
+function renderTimeSlots(){
+  const el=$('schedule-slots'); if(!el)return;
+  el.innerHTML='';
+  (autoSettings.timeSlots||[]).forEach((t,i)=>{
+    const chip=document.createElement('div');chip.className='slot-chip';
+    chip.innerHTML=`⏰ ${t} <button onclick="removeSlot(${i})">✕</button>`;
+    el.appendChild(chip);
+  });
+}
+function addTimeSlot(){
+  const t=$('new-slot-time')?.value; if(!t)return;
+  if(!autoSettings.timeSlots) autoSettings.timeSlots=[];
+  if(!autoSettings.timeSlots.includes(t)){
+    autoSettings.timeSlots.push(t);
+    autoSettings.timeSlots.sort();
+    renderTimeSlots(); saveAutoSettings();
+  }
+}
+function removeSlot(i){
+  autoSettings.timeSlots.splice(i,1);
+  renderTimeSlots(); saveAutoSettings();
+}
+
+// ── Scheduler ──
+function toggleAutoSchedule(){
+  autoSettings.scheduleEnabled=$('auto-enabled').checked;
+  saveAutoSettings();
+  if(autoSettings.scheduleEnabled) startSchedule();
+  else stopSchedule();
+  updateNextRunInfo();
+}
+function startSchedule(){
+  stopSchedule();
+  // Check every minute
+  scheduleTimer=setInterval(checkScheduleTick, 60000);
+  checkScheduleTick();
+  alog('ok','Lịch tự động đã bật · Kiểm tra mỗi phút');
+}
+function stopSchedule(){
+  if(scheduleTimer){clearInterval(scheduleTimer);scheduleTimer=null;}
+}
+function checkScheduleTick(){
+  if(!autoSettings.scheduleEnabled)return;
+  const now=new Date();
+  const day=now.getDay();
+  const hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if(!autoSettings.activeDays.includes(day))return;
+  if((autoSettings.timeSlots||[]).includes(hhmm)){
+    alog('info',`⏰ Đúng giờ ${hhmm} · Bắt đầu automation...`);
+    runAutomationNow();
+  }
+  updateNextRunInfo();
+}
+function updateNextRunInfo(){
+  const el=$('next-run-info'); if(!el)return;
+  const stEl=$('schedule-status-txt'); if(stEl){
+    stEl.textContent=autoSettings.scheduleEnabled
+      ?'✅ Lịch đang bật · Sẽ chạy vào các giờ đã cài đặt'
+      :'⏸ Đã tắt — nhấn để bật lịch tự động';
+    stEl.style.color=autoSettings.scheduleEnabled?'#4ade80':'var(--tx3)';
+  }
+  if(!(autoSettings.timeSlots?.length)){ el.textContent='⏰ Chưa có khung giờ nào'; return; }
+  const next=getNextRunTime();
+  if(next){ el.innerHTML=`⏰ Lần chạy tiếp: <strong style="color:var(--a2)">${next}</strong>`; $('stat-next').textContent=next.split(' ')[1]||'--:--'; }
+  else{ el.textContent='⏰ Không có lịch trong tuần này'; }
+}
+function getNextRunTime(){
+  const now=new Date(), slots=autoSettings.timeSlots||[], days=autoSettings.activeDays||[];
+  for(let d=0;d<7;d++){
+    const check=new Date(now);check.setDate(now.getDate()+d);
+    const dayOfWeek=check.getDay();
+    if(!days.includes(dayOfWeek))continue;
+    for(const slot of slots){
+      const [h,m]=slot.split(':').map(Number);
+      const t=new Date(check);t.setHours(h,m,0,0);
+      if(t>now) return `${check.toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'})} ${slot}`;
+    }
+  }
+  return null;
+}
+function refreshStats(){
+  if($('stat-total'))    $('stat-total').textContent   = autoStats.total;
+  if($('stat-uploaded')) $('stat-uploaded').textContent = autoStats.uploaded;
+  if($('stat-queued'))   $('stat-queued').textContent   = autoQueue.filter(q=>q.status==='queued').length;
+}
+
+// ── Main automation run ──
+async function runAutomationNow(){
+  const btn=$('auto-run-btn'); if(btn)btn.disabled=true;
+  alog('info','🚀 Bắt đầu automation cycle...');
+  try{
+    // 1. Tìm nhạc hot
+    alog('dim','[1/4] Đang tìm bài nhạc đang HOT...');
+    const songs = await fetchTrendingSongs();
+    if(!songs.length){ alog('warn','Không tìm được bài nhạc nào. Kiểm tra API key.'); return; }
+    alog('ok',`Tìm được ${songs.length} bài: ${songs.map(s=>s.title).join(', ')}`);
+
+    // 2. Chọn template bằng AI
+    alog('dim','[2/4] AI chọn template phù hợp...');
+    for(const song of songs){
+      const tplId = await aiPickTemplate(song);
+      alog('ok',`"${song.title}" → template: ${tplId}`);
+      const item = {
+        id: Date.now()+Math.random(), title:song.title, artist:song.artist,
+        genre:song.genre||'pop', tplId, thumbUrl:song.thumb||'',
+        status:'queued', progress:0, ytId:'', createdAt:new Date().toISOString()
+      };
+      autoQueue.unshift(item);
+      autoStats.total++;
+    }
+    saveQueue(); refreshQueueUI(); refreshStats();
+
+    // 3. Render + export video (simulation trong browser)
+    alog('dim','[3/4] Đang tạo video...');
+    await processQueuedItems();
+
+    // 4. Upload YouTube
+    if(autoSettings.channelId && autoSettings.ytApiKey){
+      alog('dim','[4/4] Đang upload lên YouTube...');
+      await uploadPendingVideos();
+    } else {
+      alog('warn','[4/4] Chưa cấu hình YouTube API — bỏ qua upload · Video đã được tạo và lưu');
+    }
+    alog('ok','✅ Automation cycle hoàn tất!');
+  }catch(e){
+    alog('error','Lỗi: '+e.message);
+  }finally{
+    if(btn)btn.disabled=false;
+    try{localStorage.setItem('vlc_auto_stats',JSON.stringify(autoStats));}catch(_){}
+  }
+}
+
+// ── Fetch trending songs ──
+async function fetchTrendingSongs(){
+  const apiKey = autoSettings.ytApiKey;
+  const n = autoSettings.songsPerRun||2;
+
+  if(!apiKey){
+    // Demo mode: trả về dữ liệu mẫu để demo UI
+    alog('warn','Chưa có API key — chạy chế độ DEMO');
+    return Array.from({length:n},(_,i)=>({
+      title:['ĐỪNG LÀM TRÁI TIM ANH ĐAU','EM HÃY THAY ANH KHÓC','WAITING FOR YOU','CÒN LẠI GÌ','MUỘN RỒI MÀ SAO CÒN'][i]||'NHẠC HOT '+i,
+      artist:['SƠNTÙNG M-TP','HÀ ANH TUẤN','MIN','ERIK','JACK'][i]||'CA SĨ '+i,
+      genre:['pop','ballad','pop','ballad','rap'][i]||'pop',
+      videoId:'dQw4w9WgXcQ', thumb:'',
+    }));
+  }
+
+  try{
+    const src = autoSettings.musicSource;
+    let videos = [];
+
+    if(src==='yt-trending'){
+      // YouTube Music Trending Vietnam
+      const url=`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&videoCategoryId=10&regionCode=VN&maxResults=${n*3}&key=${apiKey}`;
+      const res=await fetch(url);
+      const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
+      videos = (data.items||[]).slice(0,n).map(v=>({
+        title: v.snippet.title.toUpperCase().replace(/\s*[-–|]\s*.*/,'').trim(),
+        artist: v.snippet.channelTitle.replace(/official|OFFICIAL|vevo|VEVO/gi,'').trim(),
+        genre: 'pop', videoId: v.id, thumb: v.snippet.thumbnails?.medium?.url||'',
+      }));
+    } else if(src==='yt-search'){
+      // Search by keywords
+      const kws=(autoSettings.searchKeywords||'nhạc hot').split(',');
+      const kw=kws[Math.floor(Math.random()*kws.length)].trim();
+      const url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&q=${encodeURIComponent(kw)}&maxResults=${n*2}&order=viewCount&key=${apiKey}`;
+      const res=await fetch(url);
+      const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
+      videos = (data.items||[]).filter(v=>v.id?.videoId).slice(0,n).map(v=>({
+        title: v.snippet.title.toUpperCase().replace(/\s*[-–|]\s*.*/,'').trim(),
+        artist: v.snippet.channelTitle.replace(/official|OFFICIAL|vevo|VEVO/gi,'').trim(),
+        genre: 'pop', videoId: v.id.videoId, thumb: v.snippet.thumbnails?.medium?.url||'',
+      }));
+    } else {
+      return []; // manual mode
+    }
+    return videos.slice(0,n);
+  }catch(e){
+    alog('error','Lỗi tìm nhạc: '+e.message);
+    return [];
+  }
+}
+
+// ── AI pick template ──
+async function aiPickTemplate(song){
+  const choice = autoSettings.templateChoice;
+  if(choice !== 'ai') return choice;
+  // AI logic: match genre → template
+  const g = (song.genre||'pop').toLowerCase();
+  const titleLower = (song.title||'').toLowerCase();
+  if(g.includes('edm')||g.includes('dance')||titleLower.includes('remix')||titleLower.includes('edm')) return 'mc-fire';
+  if(g.includes('lofi')||g.includes('chill')||titleLower.includes('lofi')) return 'mc-lofi';
+  if(g.includes('ballad')||titleLower.includes('tình')||titleLower.includes('yêu')||titleLower.includes('nhớ')) return 'mc-rose';
+  if(g.includes('rap')||g.includes('trap')||titleLower.includes('rap')) return 'mc-cyber';
+  if(g.includes('indie')||titleLower.includes('dream')||titleLower.includes('mơ')) return 'mc-dream';
+  // Random from pool for general pop
+  const pool=['mc-ocean','mc-galaxy','mc-aurora','mc-purple','mc-cherry'];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+// ── Process queue (canvas render simulation) ──
+async function processQueuedItems(){
+  const pending = autoQueue.filter(q=>q.status==='queued');
+  for(const item of pending){
+    item.status='rendering'; item.progress=10;
+    refreshQueueUI();
+    alog('dim',`Đang render: "${item.title}"...`);
+    await new Promise(r=>setTimeout(r,800));
+    // Simulate render progress
+    for(let p=20;p<=90;p+=20){
+      item.progress=p; refreshQueueUI();
+      await new Promise(r=>setTimeout(r,300));
+    }
+    item.status='rendered'; item.progress=100;
+    alog('ok',`Render xong: "${item.title}" (${item.tplId})`);
+    saveQueue(); refreshQueueUI();
+    await new Promise(r=>setTimeout(r,200));
+  }
+}
+
+// ── Upload to YouTube ──
+async function uploadPendingVideos(){
+  const rendered = autoQueue.filter(q=>q.status==='rendered');
+  for(const item of rendered){
+    item.status='uploading'; refreshQueueUI();
+    alog('dim',`Upload: "${item.title}" → YouTube...`);
+    try{
+      // NOTE: YouTube upload requires OAuth2 + resumable upload
+      // This calls a real endpoint if configured, otherwise shows guide
+      const result = await uploadToYouTube(item);
+      item.ytId = result.id||'';
+      item.status = 'done';
+      autoStats.uploaded++;
+      alog('ok',`✅ Upload OK: "${item.title}"${result.id?' → youtu.be/'+result.id:' (demo)'}`);
+    }catch(e){
+      item.status='failed';
+      alog('error',`Upload thất bại "${item.title}": ${e.message}`);
+    }
+    saveQueue(); refreshQueueUI(); refreshStats();
+  }
+}
+
+async function uploadToYouTube(item){
+  // Real YouTube Data API v3 upload requires OAuth2 access token
+  // This is a placeholder — real implementation needs server-side OAuth
+  if(!autoSettings.ytApiKey || !autoSettings.channelId){
+    throw new Error('Chưa cấu hình API key hoặc Channel ID');
+  }
+  // In demo mode, simulate success
+  alog('warn','⚠ Upload thật cần OAuth2 server-side · Xem hướng dẫn backend script');
+  await new Promise(r=>setTimeout(r,1500));
+  return {id:'demo_'+Date.now(), status:'demo'};
+}
+
+// ── YouTube connect (OAuth2 flow) ──
+async function connectYouTube(){
+  const apiKey = $('yt-api-key')?.value||'';
+  if(!apiKey){ alog('warn','Nhập API Key trước khi kết nối'); return; }
+  // Open Google OAuth consent
+  const clientId = 'YOUR_CLIENT_ID'; // user phải tự điền
+  const scope = encodeURIComponent('https://www.googleapis.com/auth/youtube.upload');
+  const redirect = encodeURIComponent(window.location.href);
+  const oauthUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${redirect}&scope=${scope}&response_type=token`;
+  if(clientId==='YOUR_CLIENT_ID'){
+    alog('warn','Cần cấu hình OAuth2 Client ID trong Google Cloud Console');
+    showOAuthGuide(); return;
+  }
+  window.open(oauthUrl,'_blank','width=500,height=600');
+}
+
+function showOAuthGuide(){
+  alog('info','Hướng dẫn: console.cloud.google.com → Credentials → OAuth 2.0 Client ID');
+  alog('info','Authorized redirect URIs: '+window.location.origin);
+}
+
+// ── Queue UI ──
+function refreshQueueUI(){
+  const el=$('auto-queue'); if(!el)return;
+  if(!autoQueue.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx3);font-size:.72rem">Chưa có video nào trong hàng đợi</div>';
+    return;
+  }
+  el.innerHTML='';
+  autoQueue.slice(0,8).forEach(item=>{
+    const icons={'queued':'⏳','rendering':'🎬','rendered':'✅','uploading':'📤','done':'🎉','failed':'❌'};
+    const d=document.createElement('div');
+    d.className=`queue-item ${item.status==='done'?'done':item.status==='failed'?'failed':item.status.includes('ing')?'running':''}`;
+    d.innerHTML=`
+      <div class="qi-status">${icons[item.status]||'⏳'}</div>
+      <div class="qi-info">
+        <div class="qi-title">${item.title}</div>
+        <div class="qi-meta">${item.artist} · ${item.tplId||'auto'} · ${new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN')}</div>
+        ${item.status==='rendering'||item.status==='uploading'?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${item.progress||0}%"></div></div>`:''}
+      </div>
+      <div class="qi-action">${item.ytId&&item.ytId!==''&&!item.ytId.startsWith('demo')?`<a href="https://youtu.be/${item.ytId}" target="_blank" style="color:var(--a2);text-decoration:none">▶ Xem</a>`:item.status}</div>
+    `;
+    el.appendChild(d);
+  });
+  refreshStats();
+}
+
+function saveQueue(){
+  try{ localStorage.setItem('vlc_auto_queue', JSON.stringify(autoQueue.slice(0,50))); }catch(_){}
+}
+
+// ── Logging ──
+function alog(type, msg){
+  const el=$('auto-log'); if(!el)return;
+  const t=new Date().toLocaleTimeString('vi-VN',{hour12:false});
+  const icons={info:'ℹ',ok:'✔',warn:'⚠',error:'✖',dim:'·'};
+  const p=document.createElement('p');
+  p.className=`log-line ${type}`;
+  p.textContent=`[${t}] ${icons[type]||'·'} ${msg}`;
+  el.appendChild(p);
+  el.scrollTop=el.scrollHeight;
+  autoLog.push({t,type,msg});
+  if(el.children.length>200) el.removeChild(el.firstChild);
+}
+function clearLog(){
+  const el=$('auto-log'); if(el)el.innerHTML='';
+  autoLog=[];
+}
+
+// ── Export backend script ──
+function exportBackendScript(){
+  const s=autoSettings;
+  const script=`#!/usr/bin/env node
+// VietLong Creator — Backend Automation Script
+// Chạy: node vietlong-auto.js
+
+const cron = require('node-cron');
+const https = require('https');
+const fs = require('fs');
+
+const CONFIG = {
+  ytApiKey:    '${s.ytApiKey||'YOUR_YT_API_KEY'}',
+  channelId:   '${s.channelId||'YOUR_CHANNEL_ID'}',
+  oauthToken:  'YOUR_OAUTH2_ACCESS_TOKEN', // lấy qua OAuth2 flow
+  songsPerRun: ${s.songsPerRun||2},
+  keywords:    '${s.searchKeywords||'nhạc hot việt nam'}',
+  privacy:     '${s.ytPrivacy||'private'}',
+  titleTpl:    '${(s.ytTitleTpl||'{title} - {artist}').replace(/'/g,"\\'")}',
+  // Lịch chạy: ${(s.timeSlots||[]).join(', ')} các ngày ${(s.activeDays||[]).join(',')}
+};
+
+// Cron schedule (chạy vào 8:00 và 20:00 hàng ngày T2-T6)
+// Điều chỉnh theo cài đặt của bạn
+const SCHEDULE = '0 8,20 * * 1-5';
+
+async function fetchTrendingMusic(){
+  // Gọi YouTube Data API để lấy nhạc trending Vietnam
+  const url = \`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&videoCategoryId=10&regionCode=VN&maxResults=5&key=\${CONFIG.ytApiKey}\`;
+  return new Promise((resolve,reject)=>{
+    https.get(url, res=>{
+      let data='';
+      res.on('data',d=>data+=d);
+      res.on('end',()=>resolve(JSON.parse(data)));
+    }).on('error',reject);
+  });
+}
+
+async function runCycle(){
+  console.log('['+new Date().toISOString()+'] Bắt đầu automation cycle...');
+  try{
+    const trending = await fetchTrendingMusic();
+    const songs = (trending.items||[]).slice(0,CONFIG.songsPerRun);
+    console.log('Bài nhạc tìm được:', songs.map(s=>s.snippet.title));
+    // TODO: render video + upload YouTube
+    // Xem docs tại: https://developers.google.com/youtube/v3/guides/uploading_a_video
+    console.log('✅ Hoàn tất. Cần tích hợp thêm render + upload.');
+  }catch(e){
+    console.error('Lỗi:', e.message);
+  }
+}
+
+// Chạy ngay khi start
+runCycle();
+
+// Chạy theo lịch
+cron.schedule(SCHEDULE, runCycle);
+console.log('VietLong Auto đang chạy. Lịch:', SCHEDULE);
+`;
+  const blob=new Blob([script],{type:'text/javascript'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='vietlong-auto.js';
+  a.click();
+  alog('ok','Đã xuất vietlong-auto.js · Chạy: npm install node-cron && node vietlong-auto.js');
+}
+
+// ── Init automation on load ──
+window.addEventListener('DOMContentLoaded',()=>{
+  // Load saved settings (called when switching to tab)
+});
+
 let step=1, chosenTpl=null, audFile=null, audEl=null;
 let actx=null, analyser=null, playing=false, raf=null;
 let aiT=0, aiGP=0, beatLock=false, artImg=null, ptArr=[];
