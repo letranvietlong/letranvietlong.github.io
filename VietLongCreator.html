@@ -438,6 +438,70 @@ main {
 .al-change:hover { border-color:var(--a1); color:var(--a1); }
 
 /* ── STEP 2: TEMPLATE GALLERY ── */
+
+/* ── FILTER TABS ── */
+.filter-bar {
+  display:flex; gap:8px; flex-wrap:wrap;
+  margin-bottom:20px; padding-bottom:16px;
+  border-bottom:1px solid var(--line);
+}
+.ftab {
+  padding:5px 14px; border-radius:20px;
+  font-size:.62rem; font-weight:600;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.06em; cursor:pointer;
+  border:1px solid var(--line2);
+  background:var(--surface2); color:var(--tx3);
+  transition:all .22s; white-space:nowrap;
+}
+.ftab:hover { border-color:var(--a3); color:var(--a3); }
+.ftab.active {
+  background:rgba(124,111,255,.15);
+  border-color:var(--a3); color:var(--a3);
+  box-shadow:0 0 10px rgba(124,111,255,.2);
+}
+/* ── AI DETECT BADGE ── */
+.ai-detect-box {
+  display:none; margin-top:14px;
+  padding:14px 16px;
+  background:linear-gradient(135deg,rgba(0,229,195,.07),rgba(124,111,255,.05));
+  border:1px solid rgba(0,229,195,.2);
+  border-radius:var(--r);
+}
+.ai-detect-box.show { display:block; }
+.ai-detect-title {
+  font-size:.62rem; color:var(--a2);
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.08em; margin-bottom:10px;
+  display:flex; align-items:center; gap:7px;
+}
+.ai-detect-title::before {
+  content:''; width:6px; height:6px; border-radius:50%;
+  background:var(--a2); display:inline-block;
+  box-shadow:0 0 6px var(--a2);
+  animation:blinkDot 1.4s ease-in-out infinite;
+}
+.ai-detect-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.ai-detect-row input[type=text] {
+  flex:1; min-width:140px;
+  background:var(--ink); border:1px solid var(--line2);
+  color:var(--tx); border-radius:8px; padding:7px 11px;
+  font-family:var(--fb); font-size:.78rem; outline:none;
+}
+.ai-detect-row input:focus { border-color:var(--a2); }
+.ai-apply-btn {
+  padding:7px 16px; border-radius:8px; border:none;
+  background:var(--a2); color:var(--ink);
+  font-weight:700; font-size:.72rem; cursor:pointer;
+  font-family:var(--fb); transition:opacity .2s; white-space:nowrap;
+}
+.ai-apply-btn:hover { opacity:.82; }
+.ai-detect-status {
+  font-size:.64rem; color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  margin-top:8px; line-height:1.6;
+}
+
 /* ── GALLERY ── */
 .gallery-group { margin-bottom:28px; }
 .gallery-group-title {
@@ -911,6 +975,18 @@ main {
   </div>
 
   <div class="note">💡 Website sẽ tự động tạo hiệu ứng hình ảnh đồng bộ với nhịp nhạc của bạn — không cần video gốc.</div>
+
+  <!-- AI Nhận Dạng Bài Hát -->
+  <div class="ai-detect-box" id="ai-detect-box">
+    <div class="ai-detect-title">✦ AI NHẬN DẠNG BÀI HÁT</div>
+    <div class="ai-detect-row">
+      <input type="text" id="ai-title-inp" placeholder="Tên bài hát...">
+      <input type="text" id="ai-artist-inp" placeholder="Tên ca sĩ...">
+      <button class="ai-apply-btn" onclick="applyAIInfo()">Áp Dụng →</button>
+    </div>
+    <div class="ai-detect-status" id="ai-detect-status">Đang nhận dạng...</div>
+  </div>
+
   <div class="nav-row">
     <span></span>
     <button class="nbtn primary" id="btn2" onclick="goStep(2)" disabled>Chọn Mẫu Video →</button>
@@ -921,6 +997,16 @@ main {
 <div class="panel hidden" id="p2">
   <div class="panel-title">🎨 Bước 2 — Chọn Mẫu Video</div>
   <div class="section-sub">Di chuột lên mẫu để xem demo trực tiếp · Canvas animate 15fps không lag · Tất cả mẫu đều chuẩn tỉ lệ YouTube 16:9</div>
+  <!-- Filter tabs -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="ftab active" data-filter="all" onclick="setFilter('all')">🎬 Tất Cả</div>
+    <div class="ftab" data-filter="mc" onclick="setFilter('mc')">🎴 Music Card</div>
+    <div class="ftab" data-filter="mc-ballad" onclick="setFilter('mc-ballad')">🌸 Ballad / Pop</div>
+    <div class="ftab" data-filter="mc-edm" onclick="setFilter('mc-edm')">🔥 EDM / Remix</div>
+    <div class="ftab" data-filter="mc-vibe" onclick="setFilter('mc-vibe')">✨ Vibe / Chill</div>
+    <div class="ftab" data-filter="lv" onclick="setFilter('lv')">📝 Lyric Video</div>
+    <div class="ftab" data-filter="viz" onclick="setFilter('viz')">🎛 Visualizer</div>
+  </div>
   <div id="gallery"></div>
   <div class="nav-row" style="margin-top:22px">
     <button class="nbtn" onclick="goStep(1)">← Quay Lại</button>
@@ -1012,107 +1098,67 @@ const bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
 const bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
 const spCvs=$('spec-cvs'), spX=spCvs.getContext('2d');
 
-/* ── TEMPLATE DEFINITIONS — 12 Professional YouTube Templates ── */
+/* ── TEMPLATE DEFINITIONS — 18 Professional Templates ── */
 const TMPLS = [
-  // ── MUSIC CARD series (ảnh nghệ sĩ) ──
-  {
-    id:'mc-rose',
-    name:'Music Card · Hoa Hồng',
-    desc:'Nền cánh hoa hồng đỏ rực, ánh sáng bokeh lan toả — chuẩn H2O Music style.',
-    tags:['H2O Style','Phổ Biến','YouTube Ready'],
-    pal:{b1:'#1a0005',b2:'#3d0010',wc:'#ff6b9d',bk:'#e11d48'},
-    style:'mc', bg:'rose'
-  },
-  {
-    id:'mc-ocean',
-    name:'Music Card · Đại Dương',
-    desc:'Nền lá xanh nhiệt đới, giọt nước bokeh, sóng nhạc H2O-style sang trọng.',
-    tags:['Ballad','Pop','Sóng Nhạc'],
-    pal:{b1:'#021520',b2:'#042a3e',wc:'#22d3ee',bk:'#06b6d4'},
-    style:'mc', bg:'ocean'
-  },
-  {
-    id:'mc-galaxy',
-    name:'Music Card · Lưới Vũ Trụ',
-    desc:'Lưới kỹ thuật số xanh galaxy xoáy — phong cách Orinn Team, hiện đại.',
-    tags:['Hiện Đại','Kỹ Thuật Số','Galaxy'],
-    pal:{b1:'#02041a',b2:'#060d30',wc:'#60a5fa',bk:'#818cf8'},
-    style:'mc', bg:'galaxy'
-  },
-  {
-    id:'mc-purple',
-    name:'Music Card · Hoàng Hôn',
-    desc:'Gradient tím-hồng huyền ảo, cánh hoa tím bokeh, phù hợp ballad lãng mạn.',
-    tags:['Ballad','Lãng Mạn','Tím'],
-    pal:{b1:'#0d021a',b2:'#1a0535',wc:'#d946ef',bk:'#a855f7'},
-    style:'mc', bg:'purple'
-  },
-  {
-    id:'mc-fire',
-    name:'Music Card · Lửa Rực',
-    desc:'Nền lửa đỏ cam, tia sáng plasma bùng theo beat. EDM/Dance/Remix mạnh mẽ.',
-    tags:['EDM','Dance','Remix'],
-    pal:{b1:'#1a0200',b2:'#350600',wc:'#fb923c',bk:'#ef4444'},
-    style:'mc', bg:'fire'
-  },
-  {
-    id:'mc-night',
-    name:'Music Card · Đêm Bạc',
-    desc:'Nền đen velvet với hạt bokeh bạc tinh tế, tối giản sang trọng. Indie/Acoustic.',
-    tags:['Indie','Acoustic','Sang Trọng'],
-    pal:{b1:'#060606',b2:'#0e0e0e',wc:'#e2e8f0',bk:'#94a3b8'},
-    style:'mc', bg:'night'
-  },
-  // ── LYRIC VIDEO series (chữ lyrics nổi bật) ──
-  {
-    id:'lyric-dark',
-    name:'Lyric Video · Neon Dark',
-    desc:'Nền đen tuyền, chữ lyrics phát sáng neon, hiệu ứng typewriter chuyên nghiệp.',
-    tags:['Lyrics','Neon','Professional'],
-    pal:{b1:'#03040a',b2:'#060812',wc:'#00e5ff',ac:'#7c6fff',ac2:'#ff2d78'},
-    style:'lv'
-  },
-  {
-    id:'lyric-gold',
-    name:'Lyric Video · Gold Luxury',
-    desc:'Nền tối sang trọng, chữ vàng kim loại, bokeh ánh vàng. Phong cách R&B/Soul.',
-    tags:['R&B','Soul','Sang Trọng'],
-    pal:{b1:'#0a0800',b2:'#150f00',wc:'#fbbf24',ac:'#f59e0b',ac2:'#fcd34d'},
-    style:'lv'
-  },
-  // ── VISUALIZER series (hình ảnh động thuần) ──
-  {
-    id:'viz-spectrum',
-    name:'Visualizer · Spectrum Pro',
-    desc:'Phổ âm thanh 3D đầy màu sắc với ánh sáng neon. Chuẩn cho mọi thể loại nhạc.',
-    tags:['Phổ Âm','EDM','Kỹ Thuật'],
-    pal:{b1:'#020812',b2:'#040d1a',ac:'#22d3ee',ac2:'#4ade80'},
-    style:'sp'
-  },
-  {
-    id:'viz-tunnel',
-    name:'Visualizer · Cyber Tunnel',
-    desc:'Đường hầm ánh sáng cyberpunk chạy vào vô cực, co giãn theo từng nhịp beat.',
-    tags:['Cyberpunk','EDM','Ảo Giác'],
-    pal:{b1:'#030010',b2:'#06002a',ac:'#7c6fff',ac2:'#ff2d78'},
-    style:'tunnel'
-  },
-  {
-    id:'viz-particles',
-    name:'Visualizer · Galaxy Dust',
-    desc:'Ngân hà hạt sáng hàng nghìn điểm bay, xoáy và phát sáng theo nhịp nhạc.',
-    tags:['Nhẹ Nhàng','Ballad','Lãng Mạn'],
-    pal:{b1:'#04060f',ac:'#a855f7',ac2:'#ff2d78'},
-    style:'pt'
-  },
-  {
-    id:'viz-waveform',
-    name:'Visualizer · Waveform',
-    desc:'Sóng âm thanh mượt mà trung tâm, hiệu ứng gương phản chiếu. Minimalist đẹp.',
-    tags:['Minimalist','Chill','Lo-Fi'],
-    pal:{b1:'#020508',b2:'#040a10',ac:'#38bdf8',ac2:'#818cf8'},
-    style:'wv'
-  }
+  // ── MUSIC CARD · BALLAD/POP ──
+  {id:'mc-rose',    name:'Music Card · Hoa Hồng',    cat:'mc-ballad',
+   desc:'Cánh hoa hồng đỏ parallax 3 tầng, bokeh ánh sáng hồng lung linh — H2O style.',
+   tags:['H2O Style','Phổ Biến'], pal:{b1:'#1a0005',b2:'#3d0010',wc:'#ff6b9d',bk:'#e11d48'}, style:'mc',bg:'rose'},
+  {id:'mc-ocean',   name:'Music Card · Đại Dương',   cat:'mc-ballad',
+   desc:'Lá nhiệt đới parallax, sóng nước 4 lớp chạy ngang, bokeh giọt nước xanh cyan.',
+   tags:['Ballad','Pop'], pal:{b1:'#021520',b2:'#042a3e',wc:'#22d3ee',bk:'#06b6d4'}, style:'mc',bg:'ocean'},
+  {id:'mc-purple',  name:'Music Card · Hoàng Hôn',   cat:'mc-ballad',
+   desc:'Cánh hoa tím 3 tầng depth, light rays tím xoay, bokeh tím-hồng huyền ảo.',
+   tags:['Ballad','Lãng Mạn'], pal:{b1:'#0d021a',b2:'#1a0535',wc:'#d946ef',bk:'#a855f7'}, style:'mc',bg:'purple'},
+  {id:'mc-cherry',  name:'Music Card · Hoa Anh Đào',  cat:'mc-ballad',
+   desc:'Nền hồng pastel nhẹ nhàng, hoa anh đào rơi theo nhịp, ánh vàng bokeh ấm áp.',
+   tags:['Nhẹ Nhàng','Lãng Mạn'], pal:{b1:'#1a0510',b2:'#2d0a1a',wc:'#f9a8d4',bk:'#ec4899'}, style:'mc',bg:'cherry'},
+  {id:'mc-aurora',  name:'Music Card · Cực Quang',    cat:'mc-ballad',
+   desc:'Bầu trời cực quang xanh lá chảy sóng, tinh tú xoay nhẹ, huyền ảo và thơ mộng.',
+   tags:['Indie','Thơ Mộng'], pal:{b1:'#000d0a',b2:'#001a12',wc:'#34d399',bk:'#10b981'}, style:'mc',bg:'aurora'},
+  // ── MUSIC CARD · EDM/REMIX ──
+  {id:'mc-fire',    name:'Music Card · Lửa Rực',     cat:'mc-edm',
+   desc:'Lửa plasma 5 lớp turbulence bùng theo beat, tia lửa bay lên — EDM cực cháy.',
+   tags:['EDM','Dance'], pal:{b1:'#1a0200',b2:'#350600',wc:'#fb923c',bk:'#ef4444'}, style:'mc',bg:'fire'},
+  {id:'mc-cyber',   name:'Music Card · Cyber Neon',  cat:'mc-edm',
+   desc:'Nền đen cyberpunk, lưới neon xanh-tím phát sáng, tia laser cắt không gian.',
+   tags:['Cyberpunk','EDM'], pal:{b1:'#000510',b2:'#000a20',wc:'#00e5ff',bk:'#7c3aed'}, style:'mc',bg:'cyber'},
+  {id:'mc-electric',name:'Music Card · Điện Năng',   cat:'mc-edm',
+   desc:'Tia sét điện chớp theo beat, plasma vàng bạch kim, năng lượng mạnh mẽ.',
+   tags:['Remix','Trap'], pal:{b1:'#05050a',b2:'#0a0a18',wc:'#fbbf24',bk:'#f59e0b'}, style:'mc',bg:'electric'},
+  {id:'mc-galaxy',  name:'Music Card · Lưới Vũ Trụ', cat:'mc-edm',
+   desc:'Lưới kỹ thuật số xoay, nebula cloud, 150 sao quỹ đạo — Orinn Team phong cách.',
+   tags:['Hiện Đại','Galaxy'], pal:{b1:'#02041a',b2:'#060d30',wc:'#60a5fa',bk:'#818cf8'}, style:'mc',bg:'galaxy'},
+  // ── MUSIC CARD · VIBE/CHILL ──
+  {id:'mc-night',   name:'Music Card · Đêm Bạc',     cat:'mc-vibe',
+   desc:'Velvet đen, spotlight chuyển động, bokeh bạc 3 tầng, grain texture sang trọng.',
+   tags:['Indie','Acoustic'], pal:{b1:'#060606',b2:'#0e0e0e',wc:'#e2e8f0',bk:'#94a3b8'}, style:'mc',bg:'night'},
+  {id:'mc-lofi',    name:'Music Card · Lo-Fi Cafe',   cat:'mc-vibe',
+   desc:'Tông ấm amber vintage, bokeh đèn mờ ấm áp, mưa nhỏ rơi — chill và cozy.',
+   tags:['Lo-Fi','Chill'], pal:{b1:'#0d0800',b2:'#1a1000',wc:'#fbbf24',bk:'#d97706'}, style:'mc',bg:'lofi'},
+  {id:'mc-dream',   name:'Music Card · Giấc Mơ',     cat:'mc-vibe',
+   desc:'Gradient pastel đổi màu chậm, bong bóng xà phòng 7 sắc, mây trôi mơ mộng.',
+   tags:['Dream','Vibes'], pal:{b1:'#0a0515',b2:'#100a25',wc:'#a78bfa',bk:'#8b5cf6'}, style:'mc',bg:'dream'},
+  // ── LYRIC VIDEO ──
+  {id:'lyric-dark', name:'Lyric Video · Neon Dark',   cat:'lv',
+   desc:'Nền đen, lyrics neon phát sáng glow, orbs màu sắc di chuyển theo nhịp.',
+   tags:['Lyrics','Neon'], pal:{b1:'#03040a',b2:'#060812',wc:'#00e5ff',ac:'#7c6fff',ac2:'#ff2d78'}, style:'lv'},
+  {id:'lyric-gold', name:'Lyric Video · Gold Luxury',  cat:'lv',
+   desc:'Nền tối sang trọng, chữ vàng ánh kim, bokeh ánh vàng — R&B/Soul phong cách.',
+   tags:['R&B','Sang Trọng'], pal:{b1:'#0a0800',b2:'#150f00',wc:'#fbbf24',ac:'#f59e0b',ac2:'#fcd34d'}, style:'lv'},
+  // ── VISUALIZER ──
+  {id:'viz-spectrum',name:'Visualizer · Spectrum Pro', cat:'viz',
+   desc:'Phổ tần số neon 3D đầy màu, gradient đổi màu real-time theo từng nhịp nhạc.',
+   tags:['Phổ Âm','EDM'], pal:{b1:'#020812',b2:'#040d1a',ac:'#22d3ee',ac2:'#4ade80'}, style:'sp'},
+  {id:'viz-tunnel', name:'Visualizer · Cyber Tunnel',  cat:'viz',
+   desc:'Đường hầm cyberpunk vô cực, rings mở theo beat, lưới grid xoay liên tục.',
+   tags:['Cyberpunk','EDM'], pal:{b1:'#030010',b2:'#06002a',ac:'#7c6fff',ac2:'#ff2d78'}, style:'tunnel'},
+  {id:'viz-particles',name:'Visualizer · Galaxy Dust', cat:'viz',
+   desc:'100 hạt sáng ngân hà bay, xoáy và phát sáng theo nhịp nhạc lãng mạn.',
+   tags:['Ballad','Chill'], pal:{b1:'#04060f',ac:'#a855f7',ac2:'#ff2d78'}, style:'pt'},
+  {id:'viz-waveform',name:'Visualizer · Waveform',     cat:'viz',
+   desc:'Sóng âm trung tâm gương phản chiếu, fill gradient đẹp — minimalist chuẩn.',
+   tags:['Minimalist','Lo-Fi'], pal:{b1:'#020508',b2:'#040a10',ac:'#38bdf8',ac2:'#818cf8'}, style:'wv'},
 ];
 
 /* ── UTILS ── */
@@ -1166,7 +1212,14 @@ function goStep(n){
     if(i<4)$(`wl${i}`).classList.toggle('done',i<n);
   });
   if(n===2)renderGallery();
-  if(n===3&&chosenTpl)buildCfg(false); // false = chỉ rebuild nếu cần
+  if(n===3&&chosenTpl){
+    buildCfg(false);
+    // Tự động điền từ AI detect nếu chưa có
+    const aiTitle=($('ai-title-inp')?.value||'').toUpperCase().trim();
+    const aiArtist=($('ai-artist-inp')?.value||'').trim();
+    if(aiTitle&&!$('cc-title')?.value) $('cc-title').value=aiTitle;
+    if(aiArtist&&!$('cc-artist')?.value) $('cc-artist').value=aiArtist;
+  }
   if(n===4){
     // Dừng TẤT CẢ mini preview animations để giải phóng CPU
     Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
@@ -1203,69 +1256,213 @@ function handleAud(f){
   audEl.src=URL.createObjectURL(f);
   audEl.crossOrigin='anonymous';
   audEl.addEventListener('ended',stopPlay);
+  // Kích hoạt nhận dạng bài hát
+  detectSongInfo(f);
 }
 function resetAudio(){
-  audFile=null;$('fi').value='';
   $('abar').classList.remove('show');
+  $('ai-detect-box').classList.remove('show');
   $('btn2').disabled=true;
   stopPlay();
 }
 
-/* ── GALLERY ── */
-const GROUPS = [
-  { key:'mc',     label:'🎴 Music Card',       sub:'Ảnh nghệ sĩ + sóng nhạc — phong cách H2O Music' },
-  { key:'lv',     label:'📝 Lyric Video',       sub:'Lời bài hát nổi bật, đồng bộ nhịp nhạc' },
-  { key:'sp|tunnel|pt|wv', label:'🎛 Visualizer', sub:'Hình ảnh động thuần — không cần ảnh nghệ sĩ' },
-];
+/* ── AI NHẬN DẠNG BÀI HÁT ── */
+async function detectSongInfo(file){
+  const box=$('ai-detect-box');
+  const status=$('ai-detect-status');
+  box.classList.add('show');
+  status.textContent='⏳ Đang phân tích âm thanh...';
+  $('ai-title-inp').value='';
+  $('ai-artist-inp').value='';
+
+  try{
+    // Bước 1: Đọc metadata từ file (ID3 tags)
+    const meta = await readAudioMeta(file);
+    if(meta.title||meta.artist){
+      $('ai-title-inp').value  = meta.title  || '';
+      $('ai-artist-inp').value = meta.artist || '';
+      status.textContent=`✅ Tìm thấy từ metadata file · Chỉnh sửa nếu cần`;
+      return;
+    }
+
+    // Bước 2: Thử nhận dạng qua tên file
+    const nameGuess = guessFromFilename(file.name);
+    if(nameGuess.title){
+      $('ai-title-inp').value  = nameGuess.title.toUpperCase();
+      $('ai-artist-inp').value = nameGuess.artist||'';
+      status.textContent=`🎵 Nhận dạng từ tên file · Kiểm tra và chỉnh sửa nếu cần`;
+      return;
+    }
+
+    // Bước 3: Không tìm được — để người dùng nhập thủ công
+    status.textContent='💡 Không nhận dạng được · Vui lòng nhập thủ công bên dưới';
+    $('ai-title-inp').placeholder='Nhập tên bài hát...';
+    $('ai-artist-inp').placeholder='Nhập tên ca sĩ...';
+
+  }catch(e){
+    status.textContent='⚠ Lỗi nhận dạng · Nhập thủ công';
+  }
+}
+
+// Đọc ID3 metadata từ file MP3/audio
+async function readAudioMeta(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const buf=new Uint8Array(e.target.result);
+      const meta={title:'',artist:''};
+      try{
+        // ID3v2 tag — 3 bytes "ID3"
+        if(buf[0]===0x49&&buf[1]===0x44&&buf[2]===0x33){
+          // Parse ID3v2 frames
+          let pos=10; // skip ID3 header
+          // Extended header check
+          if(buf[5]&0x40) pos+=((buf[10]<<21)|(buf[11]<<14)|(buf[12]<<7)|buf[13])+4;
+          const end=Math.min(buf.length,32768);
+          while(pos<end-10){
+            const frameId=String.fromCharCode(buf[pos],buf[pos+1],buf[pos+2],buf[pos+3]);
+            const frameSize=(buf[pos+4]<<24)|(buf[pos+5]<<16)|(buf[pos+6]<<8)|buf[pos+7];
+            if(frameSize<=0||frameSize>65535)break;
+            const dataStart=pos+10;
+            const encoding=buf[dataStart];
+            const raw=buf.slice(dataStart+1,dataStart+frameSize);
+            let str='';
+            if(encoding===1||encoding===2){
+              // UTF-16
+              for(let i=0;i<raw.length-1;i+=2) if(raw[i]||raw[i+1]) str+=String.fromCharCode((raw[i]<<8)|raw[i+1]);
+            } else {
+              for(let i=0;i<raw.length;i++) if(raw[i]) str+=String.fromCharCode(raw[i]);
+            }
+            str=str.replace(/\0/g,'').trim();
+            if(frameId==='TIT2')meta.title=str;
+            if(frameId==='TPE1')meta.artist=str;
+            pos+=10+frameSize;
+          }
+        }
+        // ID3v1 tag — last 128 bytes
+        if(!meta.title&&buf.length>=128){
+          const v1=buf.slice(buf.length-128);
+          if(v1[0]===0x54&&v1[1]===0x41&&v1[2]===0x47){ // "TAG"
+            meta.title= readFixed(v1,3,33).trim();
+            meta.artist=readFixed(v1,33,63).trim();
+          }
+        }
+      }catch(_){}
+      resolve(meta);
+    };
+    reader.readAsArrayBuffer(file.slice(0,65536)); // chỉ đọc 64KB đầu
+  });
+}
+
+function readFixed(buf,start,end){
+  let s='';
+  for(let i=start;i<end;i++){if(buf[i]===0)break;s+=String.fromCharCode(buf[i]);}
+  return s;
+}
+
+// Đoán từ tên file: "Tên bài - Ca sĩ.mp3" hoặc "Ca sĩ - Tên bài.mp3"
+function guessFromFilename(name){
+  let n=name.replace(/\.[^.]+$/,'').replace(/[_]/g,' ').trim();
+  // Bỏ các prefix số: "01.", "02 -"
+  n=n.replace(/^\d+[\.\-\s]+/,'').trim();
+  const sep=n.match(/\s[-–—]\s/);
+  if(sep){
+    const parts=n.split(sep[0]);
+    const a=parts[0].trim(), b=parts[1]?.trim()||'';
+    // Heuristic: phần ngắn hơn thường là ca sĩ
+    if(a.length<=b.length) return{artist:a,title:b.toUpperCase()};
+    return{title:a.toUpperCase(),artist:b};
+  }
+  return{title:n.toUpperCase()||'',artist:''};
+}
+
+// Áp dụng thông tin vào form Step 3
+function applyAIInfo(){
+  const title=($('ai-title-inp')?.value||'').toUpperCase().trim();
+  const artist=($('ai-artist-inp')?.value||'').trim();
+  // Lưu vào cfg saved để buildCfg restore
+  if(title||artist){
+    // Nếu đang ở step 3, gán trực tiếp
+    if($('cc-title')) $('cc-title').value=title;
+    if($('cc-artist')) $('cc-artist').value=artist;
+    $('ai-detect-status').textContent='✅ Đã áp dụng! Tiếp tục chọn mẫu →';
+  }
+}
+
+
+let activeFilter='all';
+
+function setFilter(f){
+  activeFilter=f;
+  document.querySelectorAll('.ftab').forEach(el=>el.classList.toggle('active',el.dataset.filter===f));
+  renderGallery();
+}
 
 const miniAnim={};
 function renderGallery(){
   const g=$('gallery');g.innerHTML='';
   Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
 
-  let globalIdx=0;
-  GROUPS.forEach(grp=>{
-    const keys=grp.key.split('|');
-    const list=TMPLS.filter(t=>keys.includes(t.style));
-    if(!list.length)return;
-
-    // Group header
-    const gh=document.createElement('div');
-    gh.className='gallery-group';
-    gh.innerHTML=`<div class="gallery-group-title">
-      ${grp.label} <span class="gcnt">${list.length} mẫu</span>
-      <span style="font-size:.58rem;color:var(--tx3);font-family:var(--fm);font-weight:400;text-transform:none;letter-spacing:0">${grp.sub}</span>
-    </div>
-    <div class="gallery" id="ggroup-${grp.key.replace('|','-')}"></div>`;
-    g.appendChild(gh);
-
-    const grid=gh.querySelector('.gallery');
-    list.forEach(t=>{
-      globalIdx++;
-      const idx=globalIdx;
-      const d=document.createElement('div');
-      d.className='tcard'+(chosenTpl?.id===t.id?' selected':'');
-      d.innerHTML=`
-        <div class="tc-preview">
-          <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
-          <div class="tc-badge">DEMO TRỰC TIẾP</div>
-          <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
-          <div class="tc-selected-mark">✓</div>
-          <div class="tcard-num">${String(idx).padStart(2,'0')}</div>
-        </div>
-        <div class="tc-body">
-          <div class="tc-name">${t.name}</div>
-          <div class="tc-desc">${t.desc}</div>
-          <div class="tc-pills">
-            ${t.tags.map((x,i)=>`<span class="tc-pill${i===t.tags.length-1&&x.includes('Ready')?' yt':''}">${x}</span>`).join('')}
-          </div>
-        </div>`;
-      d.addEventListener('click',()=>pickTpl(t));
-      grid.appendChild(d);
-      runMiniAnim(t);
-    });
+  const filtered=TMPLS.filter(t=>{
+    if(activeFilter==='all')return true;
+    if(activeFilter==='mc') return t.style==='mc';
+    if(activeFilter==='lv') return t.style==='lv';
+    if(activeFilter==='viz')return ['sp','tunnel','pt','wv'].includes(t.style);
+    return t.cat===activeFilter;
   });
+
+  if(!filtered.length){
+    g.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3);font-size:.78rem">Không có mẫu nào trong danh mục này.</div>';
+    return;
+  }
+
+  const showGroups=activeFilter==='all';
+  const catMeta={
+    'mc-ballad':{icon:'🌸',label:'Ballad · Pop · Lãng Mạn'},
+    'mc-edm':   {icon:'🔥',label:'EDM · Dance · Remix'},
+    'mc-vibe':  {icon:'✨',label:'Vibe · Chill · Indie'},
+    'lv':       {icon:'📝',label:'Lyric Video'},
+    'viz':      {icon:'🎛',label:'Visualizer'},
+  };
+
+  if(showGroups){
+    ['mc-ballad','mc-edm','mc-vibe','lv','viz'].forEach(cat=>{
+      const list=filtered.filter(t=>t.cat===cat);
+      if(!list.length)return;
+      const cm=catMeta[cat]||{icon:'🎬',label:cat};
+      const grpDiv=document.createElement('div');
+      grpDiv.className='gallery-group';
+      grpDiv.innerHTML=`<div class="gallery-group-title">${cm.icon} ${cm.label} <span class="gcnt">${list.length} mẫu</span></div><div class="gallery"></div>`;
+      g.appendChild(grpDiv);
+      list.forEach((t,i)=>addCard(grpDiv.querySelector('.gallery'),t,i+1));
+    });
+  } else {
+    const grid=document.createElement('div');grid.className='gallery';g.appendChild(grid);
+    filtered.forEach((t,i)=>addCard(grid,t,i+1));
+  }
 }
+
+function addCard(grid,t,idx){
+  const d=document.createElement('div');
+  d.className='tcard'+(chosenTpl?.id===t.id?' selected':'');
+  d.innerHTML=`
+    <div class="tc-preview">
+      <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
+      <div class="tc-badge">DEMO TRỰC TIẾP</div>
+      <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
+      <div class="tc-selected-mark">✓</div>
+      <div class="tcard-num">${String(idx).padStart(2,'0')}</div>
+    </div>
+    <div class="tc-body">
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-pills">${t.tags.map(x=>`<span class="tc-pill">${x}</span>`).join('')}</div>
+    </div>`;
+  d.addEventListener('click',()=>pickTpl(t));
+  grid.appendChild(d);
+  runMiniAnim(t);
+}
+
 
 function runMiniAnim(t){
   const cv=$(`cv-${t.id}`);if(!cv)return;
@@ -1614,12 +1811,18 @@ function drawFrame(){
    MUSIC CARD BACKGROUND SYSTEM — 6 chủ đề chuyên nghiệp
 ═══════════════════════════════════════════════════════ */
 function drawMCBackground(c,W,H,t,bass,p,type){
-  if(type==='rose')    bgRose(c,W,H,t,bass,p);
-  else if(type==='ocean')  bgOcean(c,W,H,t,bass,p);
-  else if(type==='galaxy') bgGalaxy(c,W,H,t,bass,p);
-  else if(type==='purple') bgPurple(c,W,H,t,bass,p);
-  else if(type==='fire')   bgFire(c,W,H,t,bass,p);
-  else if(type==='night')  bgNight(c,W,H,t,bass,p);
+  if(type==='rose')     bgRose(c,W,H,t,bass,p);
+  else if(type==='ocean')   bgOcean(c,W,H,t,bass,p);
+  else if(type==='galaxy')  bgGalaxy(c,W,H,t,bass,p);
+  else if(type==='purple')  bgPurple(c,W,H,t,bass,p);
+  else if(type==='fire')    bgFire(c,W,H,t,bass,p);
+  else if(type==='night')   bgNight(c,W,H,t,bass,p);
+  else if(type==='cherry')  bgCherry(c,W,H,t,bass,p);
+  else if(type==='aurora')  bgAurora(c,W,H,t,bass,p);
+  else if(type==='cyber')   bgCyber(c,W,H,t,bass,p);
+  else if(type==='electric')bgElectric(c,W,H,t,bass,p);
+  else if(type==='lofi')    bgLofi(c,W,H,t,bass,p);
+  else if(type==='dream')   bgDream(c,W,H,t,bass,p);
   else bgOcean(c,W,H,t,bass,p);
 }
 
@@ -2092,6 +2295,290 @@ function bgNight(c,W,H,t,bass,p){
 
   const vg=c.createRadialGradient(W*.5,H*.5,Math.min(W,H)*.22,W*.5,H*.5,Math.max(W,H)*.75);
   vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.52)');
+  c.fillStyle=vg;c.fillRect(0,0,W,H);
+}
+
+
+/* ── CHERRY — Hoa Anh Đào rơi nhẹ nhàng ── */
+function bgCherry(c,W,H,t,bass,p){
+  // Nền gradient hồng pastel ấm
+  const g=c.createRadialGradient(W*(.5+Math.sin(t*.2)*.1),H*.35,0,W*.5,H*.5,Math.max(W,H)*.9);
+  g.addColorStop(0,`hsl(${340+bass*8},70%,${20+bass*7}%)`);
+  g.addColorStop(.5,'#1a0510');g.addColorStop(1,'#080003');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Cành cây mảnh
+  c.save();c.strokeStyle='rgba(180,80,120,.25)';c.lineWidth=1.2;
+  [[W*.08,H*.95,W*.35,H*.3,W*.55,H*.05],[W*.92,H*.9,W*.65,H*.35,W*.45,H*.1]].forEach(([x1,y1,x2,y2,x3,y3])=>{
+    c.beginPath();c.moveTo(x1,y1);c.quadraticCurveTo(x2,y2,x3,y3);c.stroke();
+  });c.restore();
+
+  // Hoa rơi — các cánh hoa nhỏ bay xuống
+  c.save();
+  for(let i=0;i<35;i++){
+    const progress=((t*.18+i*.032)%1);
+    const fx=W*((i*.137+Math.sin(i*2.3+t*.3)*.08+.5)%1);
+    const fy=H*progress+Math.sin(t*.5+i)*W*.02;
+    const rot=t*.5+i*1.3;
+    const sz=3+Math.sin(i*1.7)*2;
+    const alpha=(1-Math.abs(progress-.5)*2)*.7*(1+bass*.3);
+    c.save();c.translate(fx,fy);c.rotate(rot);c.globalAlpha=alpha;
+    c.fillStyle=i%3===0?'#ffb3c6':i%3===1?'#ffd6e0':'#ff8fab';
+    // Cánh hoa ellipse nhỏ
+    c.beginPath();c.ellipse(0,0,sz,sz*.55,0,0,Math.PI*2);c.fill();
+    c.restore();
+  }
+  c.restore();
+
+  // Bokeh ánh vàng ấm
+  c.save();
+  for(let i=0;i<18;i++){
+    const bx=W*((i*.157+Math.sin(t*.2+i*.9)*.06+1)%1);
+    const by=H*((i*.211+Math.cos(t*.16+i*1.1)*.05+1)%1);
+    const r=W*(0.018+Math.abs(Math.sin(t*.3+i))*.025)*(1+bass*.2);
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,'rgba(255,200,220,.9)');gd.addColorStop(1,'transparent');
+    c.globalAlpha=(.05+Math.abs(Math.sin(t*.4+i))*.08)*(1+bass*.25);
+    c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  for(let i=0;i<40;i++){
+    const sa=(.08+.6*Math.abs(Math.sin(t*1.4+i*2)))*(1+bass*.4);
+    c.globalAlpha=sa*.5;c.fillStyle='#ffffff';
+    c.beginPath();c.arc(W*((i*.311+.02)%1),H*((i*.213+.03)%1),.4+Math.abs(Math.sin(t+i))*.8*(1+bass*.5),0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+  const vg=c.createRadialGradient(W*.5,H*.5,Math.min(W,H)*.2,W*.5,H*.5,Math.max(W,H)*.72);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.45)');
+  c.fillStyle=vg;c.fillRect(0,0,W,H);
+}
+
+/* ── AURORA — Cực quang xanh lá ── */
+function bgAurora(c,W,H,t,bass,p){
+  c.fillStyle='#000d08';c.fillRect(0,0,W,H);
+  // Dải cực quang — nhiều lớp sóng màu
+  const auroraCols=['rgba(0,255,120,','rgba(0,200,180,','rgba(50,150,255,','rgba(0,255,80,'];
+  c.save();
+  for(let layer=0;layer<4;layer++){
+    const col=auroraCols[layer];
+    const yBase=H*(0.1+layer*.08);
+    const amp=H*(0.08+layer*.03)*(1+bass*.4);
+    const alpha=0.08+bass*.06;
+    c.fillStyle=`${col}${alpha})`;
+    c.beginPath();c.moveTo(0,H);
+    for(let x=0;x<=W;x+=3){
+      const y=yBase+Math.sin(x/W*Math.PI*(2+layer)+t*(0.4+layer*.15))*amp
+              +Math.sin(x/W*Math.PI*(4+layer)+t*(0.6+layer*.1))*amp*.4;
+      c.lineTo(x,y);
+    }
+    c.lineTo(W,H);c.closePath();c.fill();
+    // Glow phía trên
+    const gg=c.createLinearGradient(0,yBase-amp,0,yBase+amp*2);
+    gg.addColorStop(0,`${col}${0.12+bass*.08})`);gg.addColorStop(1,'transparent');
+    c.fillStyle=gg;c.fillRect(0,yBase-amp,W,amp*3);
+  }
+  c.restore();
+  // Sao trời
+  c.save();
+  for(let i=0;i<80;i++){
+    const sa=(.05+.4*Math.abs(Math.sin(t*.7+i*1.8)))*(1+bass*.2);
+    c.globalAlpha=sa;c.fillStyle='#c8f0ff';
+    c.beginPath();c.arc(W*((i*.2371+.01)%1),H*((i*.1893+.02)%1)*.6,.5+Math.abs(Math.sin(t*.4+i))*.6,0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+  const vg=c.createRadialGradient(W*.5,H*.5,Math.min(W,H)*.1,W*.5,H*.5,Math.max(W,H)*.7);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.6)');
+  c.fillStyle=vg;c.fillRect(0,0,W,H);
+}
+
+/* ── CYBER — Cyberpunk Neon ── */
+function bgCyber(c,W,H,t,bass,p){
+  c.fillStyle='#000510';c.fillRect(0,0,W,H);
+  // Grid neon
+  c.save();
+  c.globalAlpha=.1+bass*.06;c.strokeStyle='#00e5ff';c.lineWidth=.6;
+  const gs=W*.045;
+  for(let x=0;x<W;x+=gs){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke();}
+  for(let y=0;y<H;y+=gs){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
+  c.restore();
+  // Tia laser chéo
+  c.save();c.globalCompositeOperation='screen';
+  const laserCols=['rgba(0,229,255,','rgba(124,111,255,','rgba(255,45,120,'];
+  for(let i=0;i<6;i++){
+    const ang=(i/6*Math.PI+t*.06)%(Math.PI);
+    const cx2=W*.5,cy2=H*.45;
+    const lg=c.createLinearGradient(cx2,cy2,cx2+Math.cos(ang)*W,cy2+Math.sin(ang)*H);
+    const col=laserCols[i%3];
+    lg.addColorStop(0,`${col}${0.08+bass*.1})`);lg.addColorStop(1,'transparent');
+    c.fillStyle=lg;c.beginPath();
+    const hw=0.03;
+    c.moveTo(cx2,cy2);
+    c.lineTo(cx2+Math.cos(ang-hw)*W,cy2+Math.sin(ang-hw)*H);
+    c.lineTo(cx2+Math.cos(ang+hw)*W,cy2+Math.sin(ang+hw)*H);
+    c.closePath();c.fill();
+  }
+  c.globalCompositeOperation='source-over';c.restore();
+  // Neon bokeh + glitch flicker
+  c.save();
+  for(let i=0;i<20;i++){
+    const bx=W*((i*.143+Math.sin(t*.25+i*.9)*.07+1)%1);
+    const by=H*((i*.197+Math.cos(t*.19+i*1.1)*.06+1)%1);
+    const r=W*(0.014+Math.abs(Math.sin(t*.32+i))*.022)*(1+bass*.28);
+    const cols2=['rgba(0,229,255,.9)','rgba(124,111,255,.9)','rgba(255,45,120,.9)'];
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,cols2[i%3]);gd.addColorStop(1,'transparent');
+    c.globalAlpha=(.05+Math.abs(Math.sin(t*.4+i))*.09)*(1+bass*.3);
+    c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  // Scan line chạy
+  const scanY=(t*H*.15)%H;
+  c.globalAlpha=.07+bass*.05;c.fillStyle='#00e5ff';c.fillRect(0,scanY,W,1.5);
+  c.globalAlpha=1;c.restore();
+  const vg=c.createRadialGradient(W*.5,H*.5,W*.15,W*.5,H*.5,Math.max(W,H)*.72);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.55)');
+  c.fillStyle=vg;c.fillRect(0,0,W,H);
+}
+
+/* ── ELECTRIC — Tia sét điện ── */
+function bgElectric(c,W,H,t,bass,p){
+  const g=c.createRadialGradient(W*.5,H*.3,0,W*.5,H*.5,Math.max(W,H)*.85);
+  g.addColorStop(0,`hsl(45,100%,${8+bass*10}%)`);g.addColorStop(.4,'#080600');g.addColorStop(1,'#020100');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Tia sét chớp
+  if(bass>.35){
+    c.save();c.globalCompositeOperation='screen';
+    const numBolts=Math.floor(1+bass*3);
+    for(let b=0;b<numBolts;b++){
+      const sx=W*(0.3+Math.random()*.4),sy=0;
+      const ex=W*(0.2+Math.random()*.6),ey=H*.65;
+      c.strokeStyle=`rgba(255,240,80,${0.15+bass*.35})`;
+      c.lineWidth=1+bass*2;c.shadowColor='#ffe044';c.shadowBlur=12+bass*15;
+      c.beginPath();c.moveTo(sx,sy);
+      let cx2=sx,cy=sy;
+      while(cy<ey){
+        cx2+=(Math.random()-.5)*W*.12;cy+=H*.1;
+        c.lineTo(cx2,cy);
+      }c.stroke();
+      // Branch
+      c.lineWidth=.7;c.globalAlpha=.5;
+      c.beginPath();c.moveTo(cx2,cy-H*.1);
+      c.lineTo(cx2+(Math.random()-.5)*W*.15,cy+H*.1);c.stroke();
+    }
+    c.shadowBlur=0;c.globalAlpha=1;
+    c.globalCompositeOperation='source-over';c.restore();
+  }
+  // Vòng plasma
+  c.save();c.globalCompositeOperation='screen';
+  for(let ring=0;ring<4;ring++){
+    const r=W*(.08+ring*.07)*(1+bass*.15);
+    const gr=c.createRadialGradient(W*.5,H*.35,r*.6,W*.5,H*.35,r);
+    gr.addColorStop(0,'transparent');gr.addColorStop(.6,`rgba(255,220,0,${(.12-ring*.02)*(0.5+bass*.5)})`);gr.addColorStop(1,'transparent');
+    c.fillStyle=gr;c.beginPath();c.arc(W*.5,H*.35,r,0,Math.PI*2);c.fill();
+  }
+  c.globalCompositeOperation='source-over';c.restore();
+  // Hạt điện nhỏ
+  c.save();
+  for(let i=0;i<30;i++){
+    const px=W*((i*.173+Math.sin(t*.8+i)*.05+.5)%1);
+    const py=H*((i*.211+Math.cos(t*.6+i)*.04+.3)%1);
+    c.globalAlpha=(.1+.6*Math.abs(Math.sin(t*2+i)))*(1+bass*.4);
+    c.fillStyle=i%2===0?'#ffe566':'#ffffff';
+    c.beginPath();c.arc(px,py,.6+Math.abs(Math.sin(t*1.5+i))*1.2*(1+bass*.6),0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+}
+
+/* ── LOFI — Cafe ấm áp ── */
+function bgLofi(c,W,H,t,bass,p){
+  // Nền gradient amber ấm
+  const g=c.createRadialGradient(W*(.35+Math.sin(t*.15)*.1),H*.35,0,W*.5,H*.55,Math.max(W,H)*.85);
+  g.addColorStop(0,`hsl(38,${70+bass*15}%,${16+bass*6}%)`);
+  g.addColorStop(.4,'#100800');g.addColorStop(1,'#050200');
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Hiệu ứng màn mưa nhỏ
+  c.save();c.globalAlpha=.07+bass*.04;c.strokeStyle='#c8a070';c.lineWidth=.6;
+  for(let i=0;i<40;i++){
+    const rx=W*((i*.137+t*.05+1)%1);
+    const ry=H*((i*.197+t*.12)%1);
+    c.beginPath();c.moveTo(rx,ry);c.lineTo(rx-2,ry+8);c.stroke();
+  }
+  c.restore();
+
+  // Bokeh đèn cafe mờ ấm
+  c.save();
+  for(let i=0;i<16;i++){
+    const bx=W*((i*.163+Math.sin(t*.12+i*.9)*.04+1)%1);
+    const by=H*((i*.197+Math.cos(t*.1+i*1.1)*.03+1)%1);
+    const r=W*(0.03+Math.abs(Math.sin(t*.18+i))*.04)*(1+bass*.18);
+    const al=(.04+Math.abs(Math.sin(t*.28+i))*.07)*(1+bass*.2);
+    const gd=c.createRadialGradient(bx,by,0,bx,by,r);
+    gd.addColorStop(0,'rgba(255,180,80,.9)');gd.addColorStop(.5,'rgba(200,120,40,.3)');gd.addColorStop(1,'transparent');
+    c.globalAlpha=al;c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+  }
+  // Hạt bụi vàng
+  for(let i=0;i<50;i++){
+    const sa=(.04+.35*Math.abs(Math.sin(t*.8+i*1.8)))*(1+bass*.25);
+    c.globalAlpha=sa;c.fillStyle=i%3===0?'#ffd080':'#ffb850';
+    c.beginPath();c.arc(W*((i*.311+.02+Math.sin(t*.1+i)*.008)%1),H*((i*.213+.03+Math.cos(t*.08+i)*.006)%1),.4+Math.abs(Math.sin(t*.4+i))*.7*(1+bass*.4),0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+
+  // Vignette nặng hơn cho cảm giác cozy
+  const vg=c.createRadialGradient(W*.5,H*.45,Math.min(W,H)*.1,W*.5,H*.5,Math.max(W,H)*.8);
+  vg.addColorStop(0,'transparent');vg.addColorStop(.5,'rgba(0,0,0,.2)');vg.addColorStop(1,'rgba(0,0,0,.65)');
+  c.fillStyle=vg;c.fillRect(0,0,W,H);
+}
+
+/* ── DREAM — Giấc mơ pastel 7 sắc ── */
+function bgDream(c,W,H,t,bass,p){
+  // Nền tối với gradient đổi màu chậm
+  const hue1=(t*8)%360;
+  const g=c.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,`hsl(${hue1},60%,12%)`);
+  g.addColorStop(.5,`hsl(${(hue1+120)%360},55%,10%)`);
+  g.addColorStop(1,`hsl(${(hue1+240)%360},50%,8%)`);
+  c.fillStyle=g;c.fillRect(0,0,W,H);
+
+  // Bong bóng xà phòng — 7 sắc cầu vồng
+  c.save();
+  for(let i=0;i<22;i++){
+    const bx=W*((i*.157+Math.sin(t*.12+i*.85)*.06+1)%1);
+    const by=H*((i*.211+Math.cos(t*.1+i*1.05)*.05+1)%1);
+    const r=W*(0.022+Math.abs(Math.sin(t*.22+i))*.028)*(1+bass*.22);
+    const hue2=(hue1+i*18)%360;
+    const gd=c.createRadialGradient(bx-r*.25,by-r*.25,0,bx,by,r);
+    gd.addColorStop(0,`hsla(${hue2},100%,90%,.35)`);
+    gd.addColorStop(.4,`hsla(${(hue2+60)%360},100%,70%,.1)`);
+    gd.addColorStop(.8,`hsla(${(hue2+120)%360},100%,60%,.15)`);
+    gd.addColorStop(1,'transparent');
+    c.globalAlpha=(.12+Math.abs(Math.sin(t*.35+i))*.1)*(1+bass*.3);
+    c.fillStyle=gd;c.beginPath();c.arc(bx,by,r,0,Math.PI*2);c.fill();
+    // Highlight trên bong bóng
+    c.globalAlpha=(.08+Math.abs(Math.sin(t*.4+i))*.08)*(1+bass*.2);
+    c.fillStyle='rgba(255,255,255,.8)';
+    c.beginPath();c.arc(bx-r*.3,by-r*.3,r*.2,0,Math.PI*2);c.fill();
+  }
+  // Mây pastel trôi
+  for(let i=0;i<5;i++){
+    const cx2=W*((i*.22+Math.sin(t*.06+i)*.05+.5)%1);
+    const cy2=H*(.15+i*.14+Math.sin(t*.05+i)*.03);
+    const cr=W*.12*(1+bass*.1);
+    const cg=c.createRadialGradient(cx2,cy2,0,cx2,cy2,cr);
+    const ch=(hue1+i*72)%360;
+    cg.addColorStop(0,`hsla(${ch},80%,80%,.12)`);cg.addColorStop(1,'transparent');
+    c.fillStyle=cg;c.globalAlpha=1;c.beginPath();c.arc(cx2,cy2,cr,0,Math.PI*2);c.fill();
+  }
+  // Sparkle 7 màu
+  for(let i=0;i<55;i++){
+    const sa=(.06+.65*Math.abs(Math.sin(t*1.3+i*2)))*(1+bass*.45);
+    const sh=(hue1+i*7)%360;
+    c.globalAlpha=sa*.55;c.fillStyle=`hsl(${sh},100%,85%)`;
+    c.beginPath();c.arc(W*((i*.307+.01+Math.sin(t*.12+i)*.01)%1),H*((i*.213+.02+Math.cos(t*.1+i)*.008)%1),.4+Math.abs(Math.sin(t*.8+i))*.9*(1+bass*.5),0,Math.PI*2);c.fill();
+  }
+  c.globalAlpha=1;c.restore();
+  const vg=c.createRadialGradient(W*.5,H*.5,Math.min(W,H)*.2,W*.5,H*.5,Math.max(W,H)*.72);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.45)');
   c.fillStyle=vg;c.fillRect(0,0,W,H);
 }
 
