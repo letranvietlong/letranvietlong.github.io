@@ -5,30 +5,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>VietLong Creator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ===================================================
    VIETLONG CREATOR — Premium Music Video Studio
-   Design: Dark editorial, generous whitespace, 
-   neon-on-dark accents, Syne display + DM Sans body
+   Fonts: Be Vietnam Pro (body/UI) + IBM Plex Mono (code/labels)
+          Orbitron (logo only — Latin)
 =================================================== */
 :root {
   --ink:#08090d; --ink2:#0f1116; --ink3:#161922;
   --surface:#1a1d26; --surface2:#1f222e;
   --line:#2a2e3d; --line2:#353a4d;
-  --tx:#e8eaf2; --tx2:#9ca3c0; --tx3:#5a6180;
-  --a1:#ff2d78;  /* hot pink */
-  --a2:#00e5c3;  /* mint */
-  --a3:#7c6fff;  /* violet */
-  --a4:#ffd166;  /* amber */
-  --a5:#ff6b35;  /* orange */
+  --tx:#dce6f5; --tx2:#9ca3c0; --tx3:#5a6180;
+  --a1:#ff2d78;
+  --a2:#00e5c3;
+  --a3:#7c6fff;
+  --a4:#ffd166;
+  --a5:#ff6b35;
   --glow1:0 0 24px rgba(255,45,120,.35);
   --glow2:0 0 24px rgba(0,229,195,.35);
   --glow3:0 0 24px rgba(124,111,255,.35);
   --r:12px; --r2:20px;
-  --fh:'Syne',sans-serif;
-  --fb:'DM Sans',sans-serif;
-  --fm:'JetBrains Mono',monospace;
+  --fh:'Be Vietnam Pro',sans-serif;
+  --fb:'Be Vietnam Pro',sans-serif;
+  --fm:'IBM Plex Mono',monospace;
 }
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 html { scroll-behavior:smooth; }
@@ -193,7 +194,7 @@ header::before {
 
 /* Sub tag below name */
 .logo-sub {
-  font-family:'JetBrains Mono',monospace;
+  font-family:'IBM Plex Mono',monospace;
   font-size:.42rem; letter-spacing:.22em;
   color:transparent;
   display:flex; align-items:center; gap:5px;
@@ -225,7 +226,7 @@ header::before {
 }
 .hpill {
   font-size:.56rem; padding:4px 11px;
-  font-family:'JetBrains Mono',monospace;
+  font-family:'IBM Plex Mono',monospace;
   letter-spacing:.1em; position:relative;
   clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
   overflow:hidden;
@@ -306,7 +307,7 @@ main {
 .step-n {
   width:30px; height:30px;
   display:grid; place-items:center;
-  font-size:.62rem; font-weight:700; font-family:'JetBrains Mono',monospace;
+  font-size:.62rem; font-weight:700; font-family:'IBM Plex Mono',monospace;
   background:var(--surface2); border:1px solid var(--line2);
   color:var(--tx3); transition:all .35s; flex-shrink:0;
   clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
@@ -314,7 +315,7 @@ main {
 .step-l {
   font-size:.66rem; color:var(--tx3); white-space:nowrap;
   font-weight:600; transition:color .35s;
-  font-family:'JetBrains Mono',monospace;
+  font-family:'IBM Plex Mono',monospace;
   letter-spacing:.05em; text-transform:uppercase;
 }
 .step.active .step-n {
@@ -433,7 +434,7 @@ main {
 /* ── GALLERY ── */
 .gallery-group { margin-bottom:28px; }
 .gallery-group-title {
-  font-size:.6rem; font-weight:700; font-family:'JetBrains Mono',monospace;
+  font-size:.6rem; font-weight:700; font-family:'IBM Plex Mono',monospace;
   letter-spacing:.15em; text-transform:uppercase;
   color:var(--tx3); margin-bottom:12px;
   display:flex; align-items:center; gap:10px;
@@ -480,7 +481,7 @@ main {
   background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
   border:1px solid rgba(255,255,255,.15);
   display:grid; place-items:center;
-  font-size:.5rem; font-family:'JetBrains Mono',monospace;
+  font-size:.5rem; font-family:'IBM Plex Mono',monospace;
   color:rgba(255,255,255,.55);
 }
 .tc-preview {
@@ -494,7 +495,7 @@ main {
   position:absolute; top:8px; left:8px;
   background:rgba(0,0,0,.7); backdrop-filter:blur(8px);
   padding:3px 8px; border-radius:4px;
-  font-size:.5rem; font-family:'JetBrains Mono',monospace;
+  font-size:.5rem; font-family:'IBM Plex Mono',monospace;
   color:#ffd166; letter-spacing:.08em;
   border:1px solid rgba(255,209,102,.2);
 }
@@ -525,7 +526,7 @@ main {
 .tcard:hover .tc-play-ring { opacity:1; transform:scale(1); }
 .tc-body { padding:13px 14px 15px; }
 .tc-name {
-  font-family:'Syne',sans-serif; font-weight:700;
+  font-family:'Be Vietnam Pro',sans-serif; font-weight:700;
   font-size:.8rem; margin-bottom:4px; color:var(--tx);
   line-height:1.3;
 }
@@ -534,7 +535,7 @@ main {
 .tc-pill {
   font-size:.52rem; padding:2px 7px; border-radius:8px;
   background:var(--surface2); border:1px solid var(--line2);
-  color:var(--tx3); font-family:'JetBrains Mono',monospace;
+  color:var(--tx3); font-family:'IBM Plex Mono',monospace;
 }
 .tc-pill.yt {
   background:rgba(255,45,120,.08); border-color:rgba(255,45,120,.25);
@@ -858,20 +859,12 @@ main {
       <div class="logo-name" data-text="VietLong Creator">
         <span class="logo-name-inner">VietLong Creator</span>
       </div>
-      <div class="logo-sub">
-        <span class="logo-sub-text">AI Video Studio</span>
-      </div>
     </div>
 
   </div>
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill status">
-      <div class="status-dot"></div>
-      AI ONLINE
-    </div>
-    <div class="hpill free">✦ MIỄN PHÍ</div>
     <div class="hpill ver">v4.0</div>
   </div>
 </header>
@@ -1700,12 +1693,12 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist,logo,lsub){
   const tyY=waveY+waveH+H*.055;
   ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
   const tsz=Math.min(W*.056,42);
-  ovX.font=`900 ${tsz}px Syne,Arial,sans-serif`;
+  ovX.font=`900 ${tsz}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(0,0,0,.5)';
   ovX.fillText(title,W/2+2,tyY+2,W*.88); // drop shadow thủ công
   ovX.fillStyle='#ffffff';
   ovX.fillText(title,W/2,tyY,W*.88);
-  ovX.font=`400 ${tsz*.43}px DM Sans,Arial,sans-serif`;
+  ovX.font=`400 ${tsz*.43}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —',W/2,tyY+tsz*1.12,W*.82);
   ovX.restore();
@@ -1822,14 +1815,14 @@ function fullLV(W,H,t,bass,mid,eng,p,title,artist,logo){
   // Main lyric text
   const lsz=Math.min(W*.072,54)*(bass>.6?1.04:1);
   ovX.textAlign='center';ovX.textBaseline='middle';
-  ovX.font=`900 ${lsz}px Syne,Orbitron,Arial,sans-serif`;
+  ovX.font=`900 ${lsz}px Be Vietnam Pro,Arial,sans-serif`;
   // Glow
   ovX.shadowColor=p.ac;ovX.shadowBlur=24+bass*18;
   ovX.fillStyle=p.ac;ovX.globalAlpha=.3;ovX.fillText(line,W/2,H*.5,W*.88);
   ovX.shadowBlur=0;ovX.globalAlpha=1;ovX.fillStyle='#ffffff';
   ovX.fillText(line,W/2,H*.5,W*.88);
   // Artist sub
-  ovX.font=`400 ${lsz*.38}px DM Sans,Arial,sans-serif`;
+  ovX.font=`400 ${lsz*.38}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —',W/2,H*.5+lsz*.85,W*.8);
   // Logo watermark bottom-right
@@ -1875,7 +1868,7 @@ function fullTunnel(W,H,t,bass,mid,eng,p,title,artist){
   ovX.font=`900 ${tsz}px Orbitron,Arial,sans-serif`;
   ovX.shadowColor=p.ac||'#7c6fff';ovX.shadowBlur=18+bass*14;
   ovX.fillStyle='#ffffff';ovX.fillText(title,W/2,H*.5,W*.88);ovX.shadowBlur=0;
-  ovX.font=`400 ${tsz*.42}px DM Sans,Arial,sans-serif`;
+  ovX.font=`400 ${tsz*.42}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.6)';
   ovX.fillText('— '+artist+' —',W/2,H*.5+tsz*1.1,W*.8);
   ovX.restore();drawLyrics(ovX,W,H);
@@ -1964,10 +1957,10 @@ function drawTitleOv(W,Y,title,artist){
   if(!title&&!artist)return;
   ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
   const ts=Math.min(W*.052,38);
-  ovX.font=`900 ${ts}px Syne,Orbitron,Arial,sans-serif`;
+  ovX.font=`900 ${ts}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.shadowColor='rgba(0,0,0,.9)';ovX.shadowBlur=16;
   ovX.fillStyle='#fff';ovX.fillText(title||'',W/2,Y,W*.88);ovX.shadowBlur=0;
-  ovX.font=`400 ${ts*.42}px DM Sans,Arial,sans-serif`;
+  ovX.font=`400 ${ts*.42}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.fillStyle='rgba(255,255,255,.58)';
   ovX.fillText('— '+(artist||'')+' —',W/2,Y+ts*1.12,W*.82);
   ovX.restore();
@@ -1978,7 +1971,7 @@ function drawLyrics(c,W,H){
   const dur=audEl.duration||60,cur=audEl.currentTime||0;
   const idx=Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1);
   const line=lines[idx];const fs=Math.min(W*.036,26);
-  c.save();c.font=`600 ${fs}px DM Sans,Arial,sans-serif`;c.textAlign='center';c.textBaseline='middle';
+  c.save();c.font=`600 ${fs}px Be Vietnam Pro,Arial,sans-serif`;c.textAlign='center';c.textBaseline='middle';
   const tw=c.measureText(line).width,bw=Math.min(tw+40,W-44),bh=fs+22,x=W/2,y=H-bh/2-28;
   c.fillStyle='rgba(0,0,0,.68)';rrF(c,x-bw/2,y-bh/2,bw,bh,8);
   c.shadowColor='rgba(0,0,0,.85)';c.shadowBlur=8;c.fillStyle='#fff';c.fillText(line,x,y,W-50);c.shadowBlur=0;c.restore();
