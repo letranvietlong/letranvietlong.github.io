@@ -999,8 +999,8 @@ main {
   <div class="section-sub">Di chuột lên mẫu để xem demo trực tiếp · Canvas animate 15fps không lag · Tất cả mẫu đều chuẩn tỉ lệ YouTube 16:9</div>
   <!-- Filter tabs -->
   <div class="filter-bar" id="filter-bar">
-    <div class="ftab active" data-filter="all" onclick="setFilter('all')">🎬 Tất Cả</div>
-    <div class="ftab" data-filter="mc" onclick="setFilter('mc')">🎴 Music Card</div>
+    <div class="ftab" data-filter="all" onclick="setFilter('all')">🎬 Tất Cả</div>
+    <div class="ftab active" data-filter="mc" onclick="setFilter('mc')">🎴 Music Card</div>
     <div class="ftab" data-filter="mc-ballad" onclick="setFilter('mc-ballad')">🌸 Ballad / Pop</div>
     <div class="ftab" data-filter="mc-edm" onclick="setFilter('mc-edm')">🔥 EDM / Remix</div>
     <div class="ftab" data-filter="mc-vibe" onclick="setFilter('mc-vibe')">✨ Vibe / Chill</div>
@@ -1390,7 +1390,7 @@ function applyAIInfo(){
 }
 
 
-let activeFilter='all';
+let activeFilter='mc';
 
 function setFilter(f){
   activeFilter=f;
@@ -2750,54 +2750,83 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
     ovX.shadowBlur=0;
   }
 
-  // ── TITLE + ARTIST — hiệu ứng chuyên nghiệp ──
-  const tyY = waveY + waveH + H*.048;
-  const tsz = Math.min(W*.058, 46) * (1 + bass * 0.022); // co giãn nhẹ theo beat
+  // ── TITLE + ARTIST — Premium Typography ──
+  const tyY = waveY + waveH + H*.052;
+  const tsz = Math.min(W*.056, 44) * (1 + bass * 0.018);
   ovX.save();
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
-  // ── Tên bài hát ──
+  // ── TITLE — 4 lớp render ──
   ovX.font=`900 ${tsz}px Be Vietnam Pro,Arial,sans-serif`;
+  ovX.letterSpacing = `${Math.round(tsz*0.04)}px`;
 
-  // Lớp 1: glow màu accent
-  ovX.shadowColor=wc; ovX.shadowBlur=20+bass*16;
-  ovX.fillStyle=wc; ovX.globalAlpha=0.22;
+  // Lớp 0: blur glow rộng (hào quang xa)
+  ovX.globalAlpha=0.12+bass*0.06;
+  ovX.shadowColor=wc; ovX.shadowBlur=40+bass*30;
+  ovX.fillStyle=wc;
   ovX.fillText(title, W/2, tyY, W*.88);
 
-  // Lớp 2: stroke trắng mỏng (outline)
+  // Lớp 1: glow accent sắc nét
+  ovX.globalAlpha=0.30+bass*0.12;
+  ovX.shadowColor=wc; ovX.shadowBlur=14+bass*10;
+  ovX.fillStyle=wc;
+  ovX.fillText(title, W/2, tyY, W*.88);
+
+  // Lớp 2: dark stroke = depth
   ovX.globalAlpha=1; ovX.shadowBlur=0;
-  ovX.strokeStyle='rgba(0,0,0,.55)'; ovX.lineWidth=4;
+  ovX.strokeStyle='rgba(0,0,0,.6)'; ovX.lineWidth=Math.max(3,tsz*.08);
   ovX.strokeText(title, W/2, tyY, W*.88);
 
-  // Lớp 3: fill trắng sáng
-  ovX.fillStyle='#ffffff';
-  ovX.shadowColor='rgba(0,0,0,.8)'; ovX.shadowBlur=12;
+  // Lớp 3: gradient fill trắng → accent
+  const tgrad=ovX.createLinearGradient(W*.1,tyY-tsz*.5,W*.9,tyY+tsz*.5);
+  tgrad.addColorStop(0,'#ffffff');
+  tgrad.addColorStop(0.45,`rgba(255,255,255,0.95)`);
+  tgrad.addColorStop(0.7,wc+'dd');
+  tgrad.addColorStop(1,'#ffffff');
+  ovX.fillStyle=tgrad;
+  ovX.shadowColor='rgba(0,0,0,.5)'; ovX.shadowBlur=8;
   ovX.fillText(title, W/2, tyY, W*.88);
+  ovX.shadowBlur=0; ovX.letterSpacing='0px';
+
+  // ── SEPARATOR — đường kẻ ngang có dot ──
+  const sepY = tyY + tsz * 0.72;
+  const sepW = Math.min(W * 0.32, 180);
+  // Line trái
+  const lg1=ovX.createLinearGradient(W/2-sepW,sepY,W/2-tsz*.35,sepY);
+  lg1.addColorStop(0,'transparent'); lg1.addColorStop(1,`${wc}88`);
+  ovX.strokeStyle=lg1; ovX.lineWidth=1; ovX.globalAlpha=1;
+  ovX.beginPath(); ovX.moveTo(W/2-sepW,sepY); ovX.lineTo(W/2-tsz*.3,sepY); ovX.stroke();
+  // Dot trung tâm
+  ovX.fillStyle=wc; ovX.globalAlpha=0.7+bass*0.25;
+  ovX.shadowColor=wc; ovX.shadowBlur=6+bass*4;
+  ovX.beginPath(); ovX.arc(W/2,sepY,2.5,0,Math.PI*2); ovX.fill();
+  ovX.shadowBlur=0; ovX.globalAlpha=1;
+  // Line phải
+  const lg2=ovX.createLinearGradient(W/2+tsz*.35,sepY,W/2+sepW,sepY);
+  lg2.addColorStop(0,`${wc}88`); lg2.addColorStop(1,'transparent');
+  ovX.strokeStyle=lg2;
+  ovX.beginPath(); ovX.moveTo(W/2+tsz*.3,sepY); ovX.lineTo(W/2+sepW,sepY); ovX.stroke();
+
+  // ── ARTIST — letter-spaced uppercase sang trọng ──
+  const asz = Math.min(W*.024, 18);
+  const artistY = sepY + tsz * 0.52;
+  ovX.font=`600 ${asz}px Be Vietnam Pro,Arial,sans-serif`;
+  ovX.letterSpacing=`${Math.round(asz*0.35)}px`;
+
+  // Glow nhẹ
+  ovX.globalAlpha=0.5+bass*0.15;
+  ovX.shadowColor=wc; ovX.shadowBlur=8+bass*6;
+  ovX.fillStyle=wc;
+  ovX.fillText(artist.toUpperCase(), W/2, artistY, W*.75);
+
+  // Fill trắng chính
   ovX.shadowBlur=0;
+  ovX.globalAlpha=0.82+bass*0.1;
+  ovX.fillStyle='rgba(255,255,255,0.88)';
+  ovX.fillText(artist.toUpperCase(), W/2, artistY, W*.75);
 
-  // ── Tên ca sĩ — có dấu gạch ngang đặc biệt ──
-  const asz = tsz * 0.40;
-  const artistStr = artist;
-  ovX.font=`500 ${asz}px Be Vietnam Pro,Arial,sans-serif`;
-
-  // Line trang trí trái-phải
-  const artistW = ovX.measureText(artistStr).width;
-  const lineLen = Math.min((W*.82 - artistW) / 2 - 14, W*.08);
-  const artistY = tyY + tsz * 1.08;
-  if(lineLen > 10){
-    ovX.strokeStyle=`rgba(255,255,255,.35)`; ovX.lineWidth=1;
-    ovX.beginPath();
-    ovX.moveTo(W/2 - artistW/2 - 10 - lineLen, artistY);
-    ovX.lineTo(W/2 - artistW/2 - 10, artistY);
-    ovX.stroke();
-    ovX.beginPath();
-    ovX.moveTo(W/2 + artistW/2 + 10, artistY);
-    ovX.lineTo(W/2 + artistW/2 + 10 + lineLen, artistY);
-    ovX.stroke();
-  }
-  ovX.fillStyle='rgba(255,255,255,.75)';
-  ovX.fillText(artistStr, W/2, artistY, W*.82);
-
+  ovX.letterSpacing='0px';
+  ovX.globalAlpha=1;
   ovX.restore();
 
   // Lyrics
