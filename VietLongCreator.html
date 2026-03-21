@@ -430,31 +430,58 @@ main {
 .al-change:hover { border-color:var(--a1); color:var(--a1); }
 
 /* ── STEP 2: TEMPLATE GALLERY ── */
+/* ── GALLERY ── */
+.gallery-group { margin-bottom:28px; }
+.gallery-group-title {
+  font-size:.6rem; font-weight:700; font-family:'JetBrains Mono',monospace;
+  letter-spacing:.15em; text-transform:uppercase;
+  color:var(--tx3); margin-bottom:12px;
+  display:flex; align-items:center; gap:10px;
+}
+.gallery-group-title::after {
+  content:''; flex:1; height:1px;
+  background:linear-gradient(90deg,var(--line),transparent);
+}
+.gallery-group-title .gcnt {
+  font-size:.52rem; color:var(--tx3);
+  background:var(--surface2); border:1px solid var(--line2);
+  padding:1px 6px; border-radius:10px;
+}
 .gallery {
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:16px;
+  gap:14px;
 }
-@media(max-width:700px){ .gallery{grid-template-columns:1fr 1fr;} }
-@media(max-width:430px){ .gallery{grid-template-columns:1fr;} }
+@media(max-width:720px){ .gallery{grid-template-columns:1fr 1fr;} }
+@media(max-width:440px){ .gallery{grid-template-columns:1fr;} }
 
 .tcard {
-  border:2px solid var(--line);
-  border-radius:var(--r2);
+  border:1.5px solid var(--line);
+  border-radius:16px;
   overflow:hidden;
   cursor:pointer;
-  transition:all .3s;
+  transition:all .28s cubic-bezier(.4,0,.2,1);
   background:var(--ink2);
   position:relative;
 }
 .tcard:hover {
-  border-color:var(--a3);
-  transform:translateY(-4px);
-  box-shadow:0 16px 40px rgba(0,0,0,.5), var(--glow3);
+  border-color:rgba(124,111,255,.5);
+  transform:translateY(-5px);
+  box-shadow:0 20px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(124,111,255,.2);
 }
 .tcard.selected {
-  border-color:var(--a2);
-  box-shadow:0 0 0 1px var(--a2), 0 16px 40px rgba(0,229,195,.1);
+  border-color:#00e5c3;
+  box-shadow:0 0 0 2px #00e5c3, 0 16px 40px rgba(0,229,195,.12);
+}
+/* Numbered index badge */
+.tcard-num {
+  position:absolute; bottom:8px; left:8px; z-index:5;
+  width:20px; height:20px; border-radius:50%;
+  background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.15);
+  display:grid; place-items:center;
+  font-size:.5rem; font-family:'JetBrains Mono',monospace;
+  color:rgba(255,255,255,.55);
 }
 .tc-preview {
   position:relative;
@@ -465,47 +492,53 @@ main {
 .tc-canvas { width:100%; height:100%; display:block; }
 .tc-badge {
   position:absolute; top:8px; left:8px;
-  background:rgba(0,0,0,.65); backdrop-filter:blur(8px);
-  padding:3px 8px; border-radius:5px;
-  font-size:.52rem; font-family:var(--fm);
-  color:var(--a4); letter-spacing:.07em;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(8px);
+  padding:3px 8px; border-radius:4px;
+  font-size:.5rem; font-family:'JetBrains Mono',monospace;
+  color:#ffd166; letter-spacing:.08em;
+  border:1px solid rgba(255,209,102,.2);
 }
 .tc-selected-mark {
   position:absolute; top:8px; right:8px;
-  width:24px; height:24px; border-radius:50%;
-  background:var(--a2); color:var(--ink);
+  width:22px; height:22px; border-radius:50%;
+  background:#00e5c3; color:var(--ink);
   display:none; place-items:center;
-  font-size:.72rem; font-weight:700;
+  font-size:.68rem; font-weight:700;
+  box-shadow:0 0 10px rgba(0,229,195,.5);
 }
 .tcard.selected .tc-selected-mark { display:grid; }
 .tc-hover-overlay {
   position:absolute; inset:0;
   display:flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,0); transition:background .25s;
+  background:rgba(0,0,0,0); transition:background .22s;
 }
-.tcard:hover .tc-hover-overlay { background:rgba(0,0,0,.2); }
+.tcard:hover .tc-hover-overlay { background:rgba(0,0,0,.22); }
 .tc-play-ring {
-  width:44px; height:44px; border-radius:50%;
-  background:rgba(255,255,255,.12); backdrop-filter:blur(10px);
-  border:1.5px solid rgba(255,255,255,.25);
+  width:46px; height:46px; border-radius:50%;
+  background:rgba(255,255,255,.14); backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,.3);
   display:flex; align-items:center; justify-content:center;
-  font-size:1.1rem;
-  opacity:0; transform:scale(.8);
-  transition:all .25s;
+  font-size:1.15rem; padding-left:3px;
+  opacity:0; transform:scale(.75);
+  transition:all .22s;
 }
 .tcard:hover .tc-play-ring { opacity:1; transform:scale(1); }
-.tc-body { padding:14px 16px 16px; }
+.tc-body { padding:13px 14px 15px; }
 .tc-name {
-  font-family:var(--fh); font-weight:700;
-  font-size:.82rem; margin-bottom:4px; color:var(--tx);
+  font-family:'Syne',sans-serif; font-weight:700;
+  font-size:.8rem; margin-bottom:4px; color:var(--tx);
+  line-height:1.3;
 }
-.tc-desc { font-size:.67rem; color:var(--tx2); line-height:1.55; }
-.tc-pills { display:flex; gap:5px; flex-wrap:wrap; margin-top:9px; }
+.tc-desc { font-size:.65rem; color:var(--tx2); line-height:1.55; }
+.tc-pills { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
 .tc-pill {
-  font-size:.54rem; padding:2px 7px;
-  border-radius:8px;
+  font-size:.52rem; padding:2px 7px; border-radius:8px;
   background:var(--surface2); border:1px solid var(--line2);
-  color:var(--tx3); font-family:var(--fm);
+  color:var(--tx3); font-family:'JetBrains Mono',monospace;
+}
+.tc-pill.yt {
+  background:rgba(255,45,120,.08); border-color:rgba(255,45,120,.25);
+  color:#ff2d78;
 }
 
 /* ── STEP 3: CUSTOMIZE ── */
@@ -887,8 +920,8 @@ main {
 <!-- ======= STEP 2: GALLERY ======= -->
 <div class="panel hidden" id="p2">
   <div class="panel-title">🎨 Bước 2 — Chọn Mẫu Video</div>
-  <div class="section-sub">Di chuột lên mẫu để xem demo trực tiếp. Tất cả mẫu đều animate theo đúng nhịp nhạc của bạn.</div>
-  <div class="gallery" id="gallery"></div>
+  <div class="section-sub">Di chuột lên mẫu để xem demo trực tiếp · Canvas animate 15fps không lag · Tất cả mẫu đều chuẩn tỉ lệ YouTube 16:9</div>
+  <div id="gallery"></div>
   <div class="nav-row" style="margin-top:22px">
     <button class="nbtn" onclick="goStep(1)">← Quay Lại</button>
     <button class="nbtn primary" id="btn3" onclick="goStep(3)" disabled>Tuỳ Chỉnh Mẫu →</button>
@@ -973,55 +1006,90 @@ const bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
 const bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
 const spCvs=$('spec-cvs'), spX=spCvs.getContext('2d');
 
-/* ── TEMPLATE DEFINITIONS ── */
+/* ── TEMPLATE DEFINITIONS — 10 Professional YouTube Templates ── */
 const TMPLS = [
+  // ── MUSIC CARD series (ảnh nghệ sĩ) ──
   {
-    id:'mc-ocean', name:'Thẻ Nhạc · Đại Dương',
-    desc:'Ảnh nghệ sĩ nổi bật, nền lá xanh với giọt nước animated, sóng nhạc H2O-style',
-    tags:['Phổ Biến','Ảnh Nghệ Sĩ','Sóng Nhạc'],
-    accentColor:'#0ea5e9',
+    id:'mc-ocean',
+    name:'Music Card · Đại Dương',
+    desc:'Ảnh nghệ sĩ + sóng nhạc H2O-style. Nền lá xanh bokeh, tinh tế và sang trọng.',
+    tags:['Phổ Biến','Ảnh Nghệ Sĩ','YouTube Ready'],
     pal:{b1:'#031d2e',b2:'#052e46',wc:'#22d3ee',bk:'#06b6d4'},
-    style:'mc', colorScheme:'ocean'
+    style:'mc'
   },
   {
-    id:'mc-purple', name:'Thẻ Nhạc · Hoàng Hôn',
-    desc:'Gradient tím-hồng huyền ảo, hiệu ứng ánh sao, phù hợp nhạc ballad và pop',
-    tags:['Ballad','Lãng Mạn','Gradient'],
-    accentColor:'#a855f7',
+    id:'mc-purple',
+    name:'Music Card · Hoàng Hôn',
+    desc:'Gradient tím-hồng, ánh sao, phù hợp ballad/pop. Hiệu ứng bokeh huyền ảo.',
+    tags:['Ballad','Pop','Lãng Mạn'],
     pal:{b1:'#0f0520',b2:'#1e0a3c',wc:'#d946ef',bk:'#a855f7'},
-    style:'mc', colorScheme:'purple'
+    style:'mc'
   },
   {
-    id:'mc-fire', name:'Thẻ Nhạc · Lửa Rực',
-    desc:'Nền than đỏ, hiệu ứng lửa plasma bùng lên theo beat, phù hợp EDM và Dance',
-    tags:['EDM','Dance','Năng Động'],
-    accentColor:'#f97316',
+    id:'mc-fire',
+    name:'Music Card · Lửa',
+    desc:'Nền đỏ rực, plasma bùng lên theo beat. Mạnh mẽ, dành cho EDM/Dance/Remix.',
+    tags:['EDM','Dance','Remix'],
     pal:{b1:'#200500',b2:'#350900',wc:'#fb923c',bk:'#ef4444'},
-    style:'mc', colorScheme:'fire'
+    style:'mc'
   },
   {
-    id:'mc-night', name:'Thẻ Nhạc · Đêm Bạc',
-    desc:'Tối giản sang trọng, nền đen velvet, ánh bạc tinh tế, indie / acoustic',
-    tags:['Indie','Tối Giản','Acoustic'],
-    accentColor:'#94a3b8',
-    pal:{b1:'#080808',b2:'#111111',wc:'#cbd5e1',bk:'#94a3b8'},
-    style:'mc', colorScheme:'night'
+    id:'mc-night',
+    name:'Music Card · Đêm Bạc',
+    desc:'Tối giản đen velvet, ánh bạc, đẹp chuẩn layout YouTube. Indie/Acoustic.',
+    tags:['Indie','Acoustic','Tối Giản'],
+    pal:{b1:'#080808',b2:'#0f0f0f',wc:'#e2e8f0',bk:'#94a3b8'},
+    style:'mc'
+  },
+  // ── LYRIC VIDEO series (chữ lyrics nổi bật) ──
+  {
+    id:'lyric-dark',
+    name:'Lyric Video · Neon Dark',
+    desc:'Nền đen tuyền, chữ lyrics phát sáng neon, hiệu ứng typewriter chuyên nghiệp.',
+    tags:['Lyrics','Neon','Professional'],
+    pal:{b1:'#03040a',b2:'#060812',wc:'#00e5ff',ac:'#7c6fff',ac2:'#ff2d78'},
+    style:'lv'
   },
   {
-    id:'particles', name:'Vũ Trụ Hạt Sáng',
-    desc:'Hàng ngàn hạt sáng tím-hồng bay và phát sáng theo từng nhịp nhạc',
-    tags:['Lãng Mạn','Chill','Nhẹ Nhàng'],
-    accentColor:'#a855f7',
+    id:'lyric-gold',
+    name:'Lyric Video · Gold Luxury',
+    desc:'Nền tối sang trọng, chữ vàng kim loại, bokeh ánh vàng. Phong cách R&B/Soul.',
+    tags:['R&B','Soul','Sang Trọng'],
+    pal:{b1:'#0a0800',b2:'#150f00',wc:'#fbbf24',ac:'#f59e0b',ac2:'#fcd34d'},
+    style:'lv'
+  },
+  // ── VISUALIZER series (hình ảnh động thuần) ──
+  {
+    id:'viz-spectrum',
+    name:'Visualizer · Spectrum Pro',
+    desc:'Phổ âm thanh 3D đầy màu sắc với ánh sáng neon. Chuẩn cho mọi thể loại nhạc.',
+    tags:['Phổ Âm','EDM','Kỹ Thuật'],
+    pal:{b1:'#020812',b2:'#040d1a',ac:'#22d3ee',ac2:'#4ade80'},
+    style:'sp'
+  },
+  {
+    id:'viz-tunnel',
+    name:'Visualizer · Cyber Tunnel',
+    desc:'Đường hầm ánh sáng cyberpunk chạy vào vô cực, co giãn theo từng nhịp beat.',
+    tags:['Cyberpunk','EDM','Ảo Giác'],
+    pal:{b1:'#030010',b2:'#06002a',ac:'#7c6fff',ac2:'#ff2d78'},
+    style:'tunnel'
+  },
+  {
+    id:'viz-particles',
+    name:'Visualizer · Galaxy Dust',
+    desc:'Ngân hà hạt sáng hàng nghìn điểm bay, xoáy và phát sáng theo nhịp nhạc.',
+    tags:['Nhẹ Nhàng','Ballad','Lãng Mạn'],
     pal:{b1:'#04060f',ac:'#a855f7',ac2:'#ff2d78'},
     style:'pt'
   },
   {
-    id:'spectrum', name:'Phổ Âm Neon',
-    desc:'Toàn bộ phổ tần số hiển thị dạng cột neon đổi màu, phù hợp nhạc điện tử',
-    tags:['EDM','Kỹ Thuật','Trực Quan'],
-    accentColor:'#22d3ee',
-    pal:{b1:'#010d18',ac:'#22d3ee',ac2:'#4ade80'},
-    style:'sp'
+    id:'viz-waveform',
+    name:'Visualizer · Waveform',
+    desc:'Sóng âm thanh mượt mà trung tâm, hiệu ứng gương phản chiếu. Minimalist đẹp.',
+    tags:['Minimalist','Chill','Lo-Fi'],
+    pal:{b1:'#020508',b2:'#040a10',ac:'#38bdf8',ac2:'#818cf8'},
+    style:'wv'
   }
 ];
 
@@ -1115,28 +1183,58 @@ function resetAudio(){
 }
 
 /* ── GALLERY ── */
+const GROUPS = [
+  { key:'mc',     label:'🎴 Music Card',       sub:'Ảnh nghệ sĩ + sóng nhạc — phong cách H2O Music' },
+  { key:'lv',     label:'📝 Lyric Video',       sub:'Lời bài hát nổi bật, đồng bộ nhịp nhạc' },
+  { key:'sp|tunnel|pt|wv', label:'🎛 Visualizer', sub:'Hình ảnh động thuần — không cần ảnh nghệ sĩ' },
+];
+
 const miniAnim={};
 function renderGallery(){
   const g=$('gallery');g.innerHTML='';
   Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
-  TMPLS.forEach(t=>{
-    const d=document.createElement('div');
-    d.className='tcard'+(chosenTpl?.id===t.id?' selected':'');
-    d.innerHTML=`
-      <div class="tc-preview">
-        <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
-        <div class="tc-badge">DEMO TRỰC TIẾP</div>
-        <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
-        <div class="tc-selected-mark">✓</div>
-      </div>
-      <div class="tc-body">
-        <div class="tc-name">${t.name}</div>
-        <div class="tc-desc">${t.desc}</div>
-        <div class="tc-pills">${t.tags.map(x=>`<span class="tc-pill">${x}</span>`).join('')}</div>
-      </div>`;
-    d.addEventListener('click',()=>pickTpl(t));
-    g.appendChild(d);
-    runMiniAnim(t);
+
+  let globalIdx=0;
+  GROUPS.forEach(grp=>{
+    const keys=grp.key.split('|');
+    const list=TMPLS.filter(t=>keys.includes(t.style));
+    if(!list.length)return;
+
+    // Group header
+    const gh=document.createElement('div');
+    gh.className='gallery-group';
+    gh.innerHTML=`<div class="gallery-group-title">
+      ${grp.label} <span class="gcnt">${list.length} mẫu</span>
+      <span style="font-size:.58rem;color:var(--tx3);font-family:var(--fm);font-weight:400;text-transform:none;letter-spacing:0">${grp.sub}</span>
+    </div>
+    <div class="gallery" id="ggroup-${grp.key.replace('|','-')}"></div>`;
+    g.appendChild(gh);
+
+    const grid=gh.querySelector('.gallery');
+    list.forEach(t=>{
+      globalIdx++;
+      const idx=globalIdx;
+      const d=document.createElement('div');
+      d.className='tcard'+(chosenTpl?.id===t.id?' selected':'');
+      d.innerHTML=`
+        <div class="tc-preview">
+          <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
+          <div class="tc-badge">DEMO TRỰC TIẾP</div>
+          <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
+          <div class="tc-selected-mark">✓</div>
+          <div class="tcard-num">${String(idx).padStart(2,'0')}</div>
+        </div>
+        <div class="tc-body">
+          <div class="tc-name">${t.name}</div>
+          <div class="tc-desc">${t.desc}</div>
+          <div class="tc-pills">
+            ${t.tags.map((x,i)=>`<span class="tc-pill${i===t.tags.length-1&&x.includes('Ready')?' yt':''}">${x}</span>`).join('')}
+          </div>
+        </div>`;
+      d.addEventListener('click',()=>pickTpl(t));
+      grid.appendChild(d);
+      runMiniAnim(t);
+    });
   });
 }
 
@@ -1157,9 +1255,12 @@ function runMiniAnim(t){
 }
 
 function drawMiniFrame(c,W,H,t,ti,bass,fd){
-  if(t.style==='mc')miniMC(c,W,H,t,ti,bass,fd);
+  if(t.style==='mc')     miniMC(c,W,H,t,ti,bass,fd);
   else if(t.style==='pt')miniPT(c,W,H,t,ti,bass);
   else if(t.style==='sp')miniSP(c,W,H,t,ti,fd);
+  else if(t.style==='lv')miniLV(c,W,H,t,ti,bass,fd);
+  else if(t.style==='tunnel')miniTunnel(c,W,H,t,ti,bass);
+  else if(t.style==='wv')miniWV(c,W,H,t,ti,bass,fd);
 }
 
 /* Mini Music Card */
@@ -1274,6 +1375,53 @@ function miniSP(c,W,H,t,ti,fd){
   c.font=`${H*.046}px Arial`;c.fillText('— Ca Sĩ —',W/2,H*.30);
 }
 
+/* Mini Lyric Video */
+function miniLV(c,W,H,t,ti,bass,fd){
+  const p=t.pal;const[r,g,b]=h2r(p.b1);
+  c.fillStyle=`rgba(${r},${g},${b},0.14)`;c.fillRect(0,0,W,H);
+  [[.2,.3,p.ac],[.75,.55,p.ac2||p.ac],[.5,.82,p.ac]].forEach(([ox,oy,col],i)=>{
+    const bx=W*(ox+Math.sin(ti*.3+i)*.06),by=H*(oy+Math.cos(ti*.25+i)*.06);
+    const gr=c.createRadialGradient(bx,by,0,bx,by,W*.3);gr.addColorStop(0,col+'2e');gr.addColorStop(1,'transparent');
+    c.fillStyle=gr;c.fillRect(0,0,W,H);
+  });
+  const bw=W/fd.length;c.save();c.globalAlpha=.45;
+  for(let i=0;i<fd.length;i++){const v=(fd[i]/255)*(H*.18);const hue=200+i/fd.length*150;c.fillStyle=`hsl(${hue},90%,65%)`;c.fillRect(i*bw,H-v,Math.max(bw-1,1),v);}
+  c.restore();
+  c.save();c.shadowColor=p.ac;c.shadowBlur=8*(0.5+bass*.5);c.fillStyle=p.ac;
+  c.font=`900 ${H*.1}px Arial`;c.textAlign='center';c.textBaseline='middle';c.fillText('♫ LYRICS VIDEO',W/2,H*.42);
+  c.shadowBlur=0;c.globalAlpha=.5;c.font=`${H*.052}px Arial`;c.fillStyle='#fff';
+  c.fillText('Đồng bộ nhịp nhạc',W/2,H*.57);c.restore();
+}
+/* Mini Cyber Tunnel */
+function miniTunnel(c,W,H,t,ti,bass){
+  const p=t.pal;c.fillStyle=p.b1;c.fillRect(0,0,W,H);
+  const cx2=W/2,cy2=H/2;
+  for(let i=7;i>=1;i--){
+    const scale=0.9-(i/7)*0.7+((ti*0.4+i/7)%1)*0.7;
+    const w2=(W*.44)*scale,h2=(H*.44)*scale;
+    const alpha=(1-scale)*0.6*(0.5+bass*.5);
+    c.strokeStyle=`hsla(${240+ti*18+i*18},100%,65%,${alpha})`;c.lineWidth=1.5;
+    c.strokeRect(cx2-w2,cy2-h2,w2*2,h2*2);
+  }
+  const gr=c.createRadialGradient(cx2,cy2,0,cx2,cy2,W*.28*(1+bass*.28));
+  gr.addColorStop(0,p.ac+'3a');gr.addColorStop(1,'transparent');c.fillStyle=gr;c.fillRect(0,0,W,H);
+  c.fillStyle='rgba(255,255,255,.88)';c.font=`bold ${H*.065}px Arial`;c.textAlign='center';c.textBaseline='middle';c.fillText('TÊN BÀI HÁT',W/2,H*.5);
+  c.fillStyle='rgba(255,255,255,.4)';c.font=`${H*.046}px Arial`;c.fillText('— Ca Sĩ —',W/2,H*.63);
+}
+/* Mini Waveform */
+function miniWV(c,W,H,t,ti,bass,fd){
+  const p=t.pal;const[r,g,b]=h2r(p.b1);
+  c.fillStyle=`rgba(${r},${g},${b},0.12)`;c.fillRect(0,0,W,H);
+  c.fillStyle='rgba(255,255,255,.85)';c.font=`bold ${H*.065}px Arial`;c.textAlign='center';c.textBaseline='middle';c.fillText('TÊN BÀI HÁT',W/2,H*.2);
+  c.fillStyle='rgba(255,255,255,.4)';c.font=`${H*.046}px Arial`;c.fillText('— Ca Sĩ —',W/2,H*.31);
+  const cy=H*.62,amp=H*.22*(1+bass*.4);
+  c.save();c.strokeStyle=p.ac;c.lineWidth=2;
+  c.beginPath();for(let i=0;i<fd.length;i++){const v=(fd[i]/255)*amp,x=(i/fd.length)*W;i===0?c.moveTo(x,cy-v):c.lineTo(x,cy-v);}c.stroke();
+  c.globalAlpha=.38;c.beginPath();for(let i=0;i<fd.length;i++){const v=(fd[i]/255)*amp*.55,x=(i/fd.length)*W;i===0?c.moveTo(x,cy+v):c.lineTo(x,cy+v);}c.stroke();
+  c.globalAlpha=1;c.fillStyle=p.ac+'18';c.beginPath();c.moveTo(0,cy);for(let i=0;i<fd.length;i++){const v=(fd[i]/255)*amp,x=(i/fd.length)*W;c.lineTo(x,cy-v);}for(let i=fd.length-1;i>=0;i--){const v=(fd[i]/255)*amp*.55,x=(i/fd.length)*W;c.lineTo(x,cy+v);}c.closePath();c.fill();
+  c.restore();
+}
+
 function pickTpl(t){
   chosenTpl=t;
   document.querySelectorAll('.tcard').forEach(c=>c.classList.remove('selected'));
@@ -1286,9 +1434,13 @@ function pickTpl(t){
 /* ── CONFIG PANEL ── */
 function buildCfg(){
   if(!chosenTpl)return;
-  const t=chosenTpl,isMC=t.style==='mc';
+  const t=chosenTpl,s=t.style;
+  const isMC=s==='mc', isLV=s==='lv';
   const p=t.pal;
   const wc=p.wc||p.ac||'#22d3ee';
+  const ac=p.ac||p.wc||'#22d3ee';
+  const ac2=p.ac2||ac;
+
   $('cfg').innerHTML=`
     ${isMC?`
     <div style="margin-bottom:18px">
@@ -1300,37 +1452,37 @@ function buildCfg(){
       </div>
       <input type="file" id="artfi" accept="image/*" onchange="loadArtImg(this)">
     </div>`:``}
+
     <div class="cfg-layout">
       <div class="fg">
         <label>Tên Bài Hát</label>
         <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase()">
       </div>
       <div class="fg">
-        <label>Tên Ca Sĩ</label>
+        <label>Tên Ca Sĩ / Nghệ Sĩ</label>
         <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH">
       </div>
-      ${isMC?`
+      ${isMC||isLV?`
       <div class="fg">
         <label>Tên Kênh / Logo</label>
         <input type="text" id="cc-logo" value="VietLong" placeholder="VietLong">
       </div>
-      <div class="fg">
-        <label>Sub Logo</label>
-        <input type="text" id="cc-lsub" value="CREATOR" placeholder="CREATOR">
-      </div>`:``}
+      ${isMC?`<div class="fg"><label>Sub Logo</label><input type="text" id="cc-lsub" value="CREATOR" placeholder="CREATOR"></div>`:''}
+      `:''}
       <div class="fg">
         <label>Màu Nền Chính</label>
         <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value">
       </div>
       <div class="fg">
-        <label>Màu Nền Phụ</label>
-        <input type="color" id="cc-b2" value="${p.b2||p.b1||'#052e46'}" oninput="chosenTpl.pal.b2=this.value">
-      </div>
-      <div class="fg">
-        <label>Màu Sóng / Hiệu Ứng</label>
+        <label>Màu Hiệu Ứng Chính</label>
         <input type="color" id="cc-wc" value="${wc}" oninput="chosenTpl.pal.wc=this.value;chosenTpl.pal.ac=this.value">
       </div>
-      ${!isMC?`
+      ${s==='sp'||s==='wv'?`
+      <div class="fg">
+        <label>Màu Hiệu Ứng Phụ</label>
+        <input type="color" id="cc-ac2" value="${ac2}" oninput="chosenTpl.pal.ac2=this.value">
+      </div>`:''}
+      ${s==='pt'||s==='wv'?`
       <div class="fg">
         <label>Kiểu Sóng Âm</label>
         <select id="cc-wt">
@@ -1340,14 +1492,17 @@ function buildCfg(){
           <option value="circle">Vòng Tròn</option>
           <option value="none">Ẩn</option>
         </select>
-      </div>`:``}
+      </div>`:''}
     </div>
+
     <div class="fg" style="margin-top:14px">
-      <label>Lời Bài Hát (Tuỳ Chọn)</label>
-      <textarea id="cc-lyr" placeholder="Nhập lời bài hát ở đây...&#10;Mỗi dòng = 1 câu, sẽ hiển thị tuần tự"></textarea>
-      <div class="hint">💡 Để trống nếu không cần hiển thị lời nhạc</div>
+      <label>${isLV?'Lời Bài Hát (Hiển thị trung tâm video)':'Lời Bài Hát (Tùy Chọn)'}</label>
+      <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...&#10;Mỗi dòng sẽ hiển thị tuần tự đồng bộ với nhạc':'Nhập lời bài hát tùy chọn...&#10;Mỗi dòng = 1 câu'}" rows="${isLV?8:4}"></textarea>
+      <div class="hint">${isLV?'💡 Template Lyric Video — lời nhạc là nội dung chính, hiển thị lớn ở trung tâm':'💡 Để trống nếu không cần hiển thị lời nhạc'}</div>
     </div>
-    <div class="info-box">ℹ Chỉnh xong, nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả với nhạc thật của bạn.</div>`;
+
+    <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả thực tế với nhạc của bạn.</div>
+  `;
 }
 function loadArtImg(inp){
   const f=inp.files[0];if(!f)return;
@@ -1421,9 +1576,12 @@ function drawFrame(){
   const lsub=$('cc-lsub')?.value||'CREATOR';
   const wt=$('cc-wt')?.value||'bars';
   const s=chosenTpl.style;
-  if(s==='mc')fullMC(W,H,aiT,bass,mid,eng,p,title,artist,logo,lsub);
-  else if(s==='pt')fullPT(W,H,aiT,bass,eng,p,wt,title,artist);
-  else if(s==='sp')fullSP(W,H,aiT,bass,p,title,artist);
+  if(s==='mc')    fullMC(W,H,aiT,bass,mid,eng,p,title,artist,logo,lsub);
+  else if(s==='pt')   fullPT(W,H,aiT,bass,eng,p,wt,title,artist);
+  else if(s==='sp')   fullSP(W,H,aiT,bass,p,title,artist);
+  else if(s==='lv')   fullLV(W,H,aiT,bass,mid,eng,p,title,artist,logo);
+  else if(s==='tunnel')fullTunnel(W,H,aiT,bass,mid,eng,p,title,artist);
+  else if(s==='wv')   fullWV(W,H,aiT,bass,eng,p,title,artist);
 }
 
 /* ── FULL MUSIC CARD — Performance optimized ── */
@@ -1615,6 +1773,148 @@ function fullSP(W,H,t,bass,p,title,artist){
     bgX.globalAlpha=1;bgX.restore();
   }
   ovX.clearRect(0,0,W,H);drawTitleOv(W,H*.21,title,artist);drawLyrics(ovX,W,H);
+}
+
+/* ── FULL LYRIC VIDEO ── */
+function fullLV(W,H,t,bass,mid,eng,p,title,artist,logo){
+  // Dark bg with animated color orbs
+  const[r,g,b]=h2r(p.b1||'#03040a');
+  bgX.fillStyle=`rgba(${r},${g},${b},0.12)`;bgX.fillRect(0,0,W,H);
+  const orbs=[
+    {ox:.22,oy:.35,col:p.ac,sz:.55,spd:.28},
+    {ox:.78,oy:.55,col:p.ac2||p.ac,sz:.48,spd:.22},
+    {ox:.5, oy:.85,col:p.ac,sz:.4, spd:.34}
+  ];
+  orbs.forEach((o,i)=>{
+    const bx=W*(o.ox+Math.sin(aiT*o.spd+i)*0.08);
+    const by=H*(o.oy+Math.cos(aiT*(o.spd*.8)+i)*0.06);
+    const grd=bgX.createRadialGradient(bx,by,0,bx,by,Math.max(W,H)*o.sz*(1+bass*.25));
+    grd.addColorStop(0,o.col+'28');grd.addColorStop(1,'transparent');
+    bgX.fillStyle=grd;bgX.fillRect(0,0,W,H);
+  });
+  // Thin spectrum at bottom 15%
+  if(_freqBuf){
+    const bw=W/_freqBuf.length,bh=H*.15;
+    bgX.save();
+    for(let i=0;i<_freqBuf.length;i++){
+      const v=(_freqBuf[i]/255)*bh*(1+bass*.5);
+      const hue=190+i/_freqBuf.length*160;
+      const gr=bgX.createLinearGradient(0,H,0,H-v);
+      gr.addColorStop(0,`hsla(${hue},90%,62%,.7)`);gr.addColorStop(1,'transparent');
+      bgX.fillStyle=gr;bgX.fillRect(i*bw,H-v,Math.max(bw-1,1),v);
+    }
+    bgX.restore();
+  }
+  ovX.clearRect(0,0,W,H);
+  // Lyrics — center stage, large
+  const raw=$('cc-lyr')?.value||'';
+  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
+  const dur=audEl?.duration||60,cur=audEl?.currentTime||0;
+  const idx=lines.length?Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1):-1;
+  const line=lines[idx]||title||'TÊN BÀI HÁT';
+  // Background text shadow strip
+  ovX.save();
+  const stripH=H*.28,stripY=(H-stripH)/2;
+  const stripG=ovX.createLinearGradient(0,stripY,0,stripY+stripH);
+  stripG.addColorStop(0,'transparent');stripG.addColorStop(.3,'rgba(0,0,0,.65)');
+  stripG.addColorStop(.7,'rgba(0,0,0,.65)');stripG.addColorStop(1,'transparent');
+  ovX.fillStyle=stripG;ovX.fillRect(0,stripY,W,stripH);
+  // Main lyric text
+  const lsz=Math.min(W*.072,54)*(bass>.6?1.04:1);
+  ovX.textAlign='center';ovX.textBaseline='middle';
+  ovX.font=`900 ${lsz}px Syne,Orbitron,Arial,sans-serif`;
+  // Glow
+  ovX.shadowColor=p.ac;ovX.shadowBlur=24+bass*18;
+  ovX.fillStyle=p.ac;ovX.globalAlpha=.3;ovX.fillText(line,W/2,H*.5,W*.88);
+  ovX.shadowBlur=0;ovX.globalAlpha=1;ovX.fillStyle='#ffffff';
+  ovX.fillText(line,W/2,H*.5,W*.88);
+  // Artist sub
+  ovX.font=`400 ${lsz*.38}px DM Sans,Arial,sans-serif`;
+  ovX.fillStyle='rgba(255,255,255,.6)';
+  ovX.fillText('— '+artist+' —',W/2,H*.5+lsz*.85,W*.8);
+  // Logo watermark bottom-right
+  ovX.font=`700 ${Math.min(W*.024,16)}px Orbitron,monospace`;
+  ovX.fillStyle='rgba(255,255,255,.35)';ovX.textAlign='right';
+  ovX.fillText(logo,W-W*.025,H-H*.04);
+  ovX.restore();
+}
+
+/* ── FULL CYBER TUNNEL ── */
+function fullTunnel(W,H,t,bass,mid,eng,p,title,artist){
+  const cx2=W/2,cy2=H/2;
+  // Clear with trail
+  const[r,g,b]=h2r(p.b1||'#030010');
+  bgX.fillStyle=`rgba(${r},${g},${b},0.18)`;bgX.fillRect(0,0,W,H);
+  // Tunnel rings
+  bgX.save();
+  for(let i=20;i>=1;i--){
+    const phase=((t*0.45+i/20)%1);
+    const scale=phase;
+    const w2=(W*.48)*scale,h2=(H*.48)*scale;
+    if(w2<2||h2<2) continue;
+    const alpha=(1-phase)*0.55*(0.4+bass*.55);
+    const hue=(220+t*25+i*12)%360;
+    bgX.strokeStyle=`hsla(${hue},100%,65%,${alpha})`;
+    bgX.lineWidth=Math.max(1,2*(1-phase));
+    bgX.strokeRect(cx2-w2,cy2-h2,w2*2,h2*2);
+  }
+  // Grid lines
+  bgX.globalAlpha=0.08+bass*.04;
+  bgX.strokeStyle=p.ac||'#7c6fff';bgX.lineWidth=1;
+  for(let x=0;x<W;x+=W*.1){bgX.beginPath();bgX.moveTo(x,0);bgX.lineTo(cx2,cy2);bgX.stroke();}
+  for(let y=0;y<H;y+=H*.1){bgX.beginPath();bgX.moveTo(0,y);bgX.lineTo(cx2,cy2);bgX.stroke();}
+  bgX.globalAlpha=1;bgX.restore();
+  // Center glow
+  const gr=bgX.createRadialGradient(cx2,cy2,0,cx2,cy2,W*.3*(1+bass*.3));
+  gr.addColorStop(0,(p.ac||'#7c6fff')+'3a');gr.addColorStop(1,'transparent');
+  bgX.fillStyle=gr;bgX.fillRect(0,0,W,H);
+  ovX.clearRect(0,0,W,H);
+  // Text center
+  const tsz=Math.min(W*.058,44);
+  ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
+  ovX.font=`900 ${tsz}px Orbitron,Arial,sans-serif`;
+  ovX.shadowColor=p.ac||'#7c6fff';ovX.shadowBlur=18+bass*14;
+  ovX.fillStyle='#ffffff';ovX.fillText(title,W/2,H*.5,W*.88);ovX.shadowBlur=0;
+  ovX.font=`400 ${tsz*.42}px DM Sans,Arial,sans-serif`;
+  ovX.fillStyle='rgba(255,255,255,.6)';
+  ovX.fillText('— '+artist+' —',W/2,H*.5+tsz*1.1,W*.8);
+  ovX.restore();drawLyrics(ovX,W,H);
+}
+
+/* ── FULL WAVEFORM VISUALIZER ── */
+function fullWV(W,H,t,bass,eng,p,title,artist){
+  const[r,g,b]=h2r(p.b1||'#020508');
+  bgX.fillStyle=`rgba(${r},${g},${b},0.1)`;bgX.fillRect(0,0,W,H);
+  // Subtle radial bg glow
+  const gr=bgX.createRadialGradient(W/2,H*.6,0,W/2,H*.6,W*.55);
+  gr.addColorStop(0,(p.ac||'#38bdf8')+'18');gr.addColorStop(1,'transparent');
+  bgX.fillStyle=gr;bgX.fillRect(0,0,W,H);
+  // Waveform
+  if(_freqBuf){
+    const cy=H*.62,amp=H*.3*(1+bass*.4);
+    const data=_freqBuf,len=data.length;
+    bgX.save();
+    // Filled area
+    const fillG=bgX.createLinearGradient(0,cy-amp,0,cy);
+    fillG.addColorStop(0,(p.ac||'#38bdf8')+'55');fillG.addColorStop(1,(p.ac||'#38bdf8')+'08');
+    bgX.fillStyle=fillG;bgX.beginPath();bgX.moveTo(0,cy);
+    for(let i=0;i<len;i++){const v=(data[i]/255)*amp,x=(i/len)*W;bgX.lineTo(x,cy-v);}
+    bgX.lineTo(W,cy);bgX.closePath();bgX.fill();
+    // Top line
+    bgX.strokeStyle=p.ac||'#38bdf8';bgX.lineWidth=2;bgX.shadowColor=p.ac||'#38bdf8';bgX.shadowBlur=10;
+    bgX.beginPath();
+    for(let i=0;i<len;i++){const v=(data[i]/255)*amp,x=(i/len)*W;i===0?bgX.moveTo(x,cy-v):bgX.lineTo(x,cy-v);}
+    bgX.stroke();bgX.shadowBlur=0;
+    // Mirror bottom
+    bgX.globalAlpha=.35;bgX.strokeStyle=p.ac2||p.ac||'#818cf8';bgX.lineWidth=1.5;
+    bgX.beginPath();
+    for(let i=0;i<len;i++){const v=(data[i]/255)*amp*.5,x=(i/len)*W;i===0?bgX.moveTo(x,cy+v):bgX.lineTo(x,cy+v);}
+    bgX.stroke();bgX.globalAlpha=1;bgX.restore();
+    // Horizontal center line
+    bgX.save();bgX.strokeStyle='rgba(255,255,255,.12)';bgX.lineWidth=1;
+    bgX.beginPath();bgX.moveTo(0,cy);bgX.lineTo(W,cy);bgX.stroke();bgX.restore();
+  }
+  ovX.clearRect(0,0,W,H);drawTitleOv(W,H*.27,title,artist);drawLyrics(ovX,W,H);
 }
 
 /* ── WAVE OVERLAY ── */
