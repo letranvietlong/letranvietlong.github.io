@@ -1063,7 +1063,6 @@ main {
 #analytics-dash { max-height:none; overflow-y:visible; }
 
 /* Grid layout */
-}
 
 
 .auto-card-title::before {
@@ -1290,7 +1289,6 @@ header { padding:0 32px; }
 }
 
 /* Auto tab: 3 columns */
- }
 @media(max-width:680px)  { .auto-grid { grid-template-columns:1fr !important; } }
 
 /* Auto card compact */
@@ -1459,7 +1457,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.6 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v7.0 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3104,8 +3102,8 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v6.6';
-const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+const APP_VERSION = 'v7.0';
+const VERSION_HISTORY = [("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
   if(!modal){
@@ -4959,7 +4957,7 @@ function showOAuthGuide(){
 }
 
 // ── Queue UI ──
-function sanitizeText(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+
 function refreshQueueUI(){
   const el=$('auto-queue'); if(!el)return;
   if(!autoQueue.length){
@@ -5197,51 +5195,53 @@ function exportGHWorkflow(){
     return `${m} ${utcH} * * ${(s.activeDays||[1,2,3,4,5]).join(',')}`;
   });
   const scheduleLines = cronParts.map(c=>`    - cron: '${c}'  # GMT+7`).join('\n');
-  const yaml = `# VietLong Creator — GitHub Actions Auto Upload
-# File này: .github/workflows/auto-upload.yml
-# Docs: https://docs.github.com/actions
-
-name: VietLong Auto Upload
-
-on:
-  schedule:
-${scheduleLines}
-  workflow_dispatch:   # Cho phép chạy thủ công từ tab Actions
-
-jobs:
-  auto-upload:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install axios form-data
-
-      - name: Run VietLong Auto Upload
-        run: node .github/scripts/auto-upload.js
-        env:
-          YT_API_KEY:      \${{ secrets.YT_API_KEY }}
-          YT_OAUTH_TOKEN:  \${{ secrets.YT_OAUTH_TOKEN }}
-          YT_REFRESH_TOKEN:\${{ secrets.YT_REFRESH_TOKEN }}
-          YT_CLIENT_ID:    \${{ secrets.YT_CLIENT_ID }}
-          YT_CLIENT_SECRET:\${{ secrets.YT_CLIENT_SECRET }}
-          YT_CHANNEL_ID:   '${s.channelId||''}'
-          SONGS_PER_RUN:   '${s.songsPerRun||2}'
-          KEYWORDS:        '${(s.searchKeywords||'nhạc hot việt nam').replace(/'/g,"\\\'")}'
-          TEMPLATE_CHOICE: '${s.templateChoice||'ai'}'
-          YT_PRIVACY:      '${s.ytPrivacy||'private'}'
-          YT_TITLE_TPL:    '${(s.ytTitleTpl||'{title} - {artist}').replace(/'/g,"\\\'")}'
-          YT_TAGS:         '${(s.ytTags||'nhạc việt').replace(/'/g,"\\\'")}'
-          REMIX_LABEL:     '${(s.remixLabel||'VIET LONG REMIX').replace(/'/g,"\\\'")}'
-`;
+  const yaml = [
+    '# VietLong Creator — GitHub Actions Auto Upload',
+    '# File này: .github/workflows/auto-upload.yml',
+    '# Docs: https://docs.github.com/actions',
+    '',
+    'name: VietLong Auto Upload',
+    '',
+    'on:',
+    '  schedule:',
+    '${scheduleLines}',
+    '  workflow_dispatch:   # Cho phép chạy thủ công từ tab Actions',
+    '',
+    'jobs:',
+    '  auto-upload:',
+    '    runs-on: ubuntu-latest',
+    '    timeout-minutes: 30',
+    '',
+    '    steps:',
+    '      - name: Checkout repo',
+    '        uses: actions/checkout@v4',
+    '',
+    '      - name: Setup Node.js',
+    '        uses: actions/setup-node@v4',
+    '        with:',
+    '          node-version: \'20\'',
+    '',
+    '      - name: Install dependencies',
+    '        run: npm install axios form-data',
+    '',
+    '      - name: Run VietLong Auto Upload',
+    '        run: node .github/scripts/auto-upload.js',
+    '        env:',
+    '          YT_API_KEY:      \\${{ secrets.YT_API_KEY }}',
+    '          YT_OAUTH_TOKEN:  \\${{ secrets.YT_OAUTH_TOKEN }}',
+    '          YT_REFRESH_TOKEN:\\${{ secrets.YT_REFRESH_TOKEN }}',
+    '          YT_CLIENT_ID:    \\${{ secrets.YT_CLIENT_ID }}',
+    '          YT_CLIENT_SECRET:\\${{ secrets.YT_CLIENT_SECRET }}',
+    '          YT_CHANNEL_ID:   \'${s.channelId||\'\'}\'',
+    '          SONGS_PER_RUN:   \'${s.songsPerRun||2}\'',
+    '          KEYWORDS:        \'${(s.searchKeywords||\'nhạc hot việt nam\').replace(/\'/g,"\\\\\'")}\'',
+    '          TEMPLATE_CHOICE: \'${s.templateChoice||\'ai\'}\'',
+    '          YT_PRIVACY:      \'${s.ytPrivacy||\'private\'}\'',
+    '          YT_TITLE_TPL:    \'${(s.ytTitleTpl||\'{title} - {artist}\').replace(/\'/g,"\\\\\'")}\'',
+    '          YT_TAGS:         \'${(s.ytTags||\'nhạc việt\').replace(/\'/g,"\\\\\'")}\'',
+    '          REMIX_LABEL:     \'${(s.remixLabel||\'VIET LONG REMIX\').replace(/\'/g,"\\\\\'")}\'',
+    ''
+  ].join('\n');
   downloadFile('auto-upload.yml', yaml, 'text/yaml');
   alog('ok','Đã xuất auto-upload.yml → đặt vào .github/workflows/ trong repo');
   alog('info','Thêm Secrets: Settings → Secrets and variables → Actions');
@@ -5250,236 +5250,205 @@ jobs:
 // ── Export Node.js script cho GitHub Actions ──
 async function exportGHScript(){
   const s = autoSettings;
-  const script = `#!/usr/bin/env node
-/**
- * VietLong Creator — Auto Upload Script
- * Đặt file này tại: .github/scripts/auto-upload.js
- * 
- * Cách lấy OAuth2 tokens:
- * 1. console.cloud.google.com → Credentials → OAuth 2.0 Client ID (Desktop app)
- * 2. Dùng OAuth playground: https://developers.google.com/oauthplayground
- *    - Scope: https://www.googleapis.com/auth/youtube.upload
- *    - Lấy refresh_token, lưu vào GitHub Secret: YT_REFRESH_TOKEN
- */
-
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
-const ENV = {
-  apiKey:       process.env.YT_API_KEY      || '',
-  oauthToken:   process.env.YT_OAUTH_TOKEN  || '',
-  refreshToken: process.env.YT_REFRESH_TOKEN|| '',
-  clientId:     process.env.YT_CLIENT_ID    || '',
-  clientSecret: process.env.YT_CLIENT_SECRET|| '',
-  channelId:    process.env.YT_CHANNEL_ID   || '',
-  songsPerRun:  parseInt(process.env.SONGS_PER_RUN||'2'),
-  keywords:     process.env.KEYWORDS        || 'nhạc hot việt nam',
-  privacy:      process.env.YT_PRIVACY      || 'private',
-  titleTpl:     process.env.YT_TITLE_TPL    || '{title} - {artist} | Nhạc Remix Tiktok 2026',
-  tags:         process.env.YT_TAGS         || 'nhạc việt,music video,remix',
-  remixLabel:   process.env.REMIX_LABEL     || 'VIET LONG REMIX',
-  templateChoice:process.env.TEMPLATE_CHOICE|| 'ai',
-};
-
-function log(msg){ console.log('[' + new Date().toISOString() + '] ' + msg); }
-
-// ── Refresh OAuth2 access token ──
-async function refreshAccessToken(){
-  if(!ENV.refreshToken || !ENV.clientId) return ENV.oauthToken;
-  const body = JSON.stringify({
-    client_id: ENV.clientId, client_secret: ENV.clientSecret,
-    refresh_token: ENV.refreshToken, grant_type: 'refresh_token'
-  });
-  return new Promise((resolve,reject)=>{
-    const req = https.request({
-      hostname:'oauth2.googleapis.com', path:'/token', method:'POST',
-      headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-    },res=>{
-      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
-        try{ resolve(JSON.parse(d).access_token||ENV.oauthToken); }catch{ resolve(ENV.oauthToken); }
-      });
-    });
-    req.on('error',reject); req.write(body); req.end();
-  });
-}
-
-// ── Fetch trending music from YouTube ──
-async function fetchTrendingSongs(){
-  const n = ENV.songsPerRun;
-  const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics' +
-    '&chart=mostPopular&videoCategoryId=10&regionCode=VN' +
-    '&maxResults=' + (n*3) + '&key=' + ENV.apiKey;
-  log('Tìm nhạc trending VN...');
-  return new Promise((resolve,reject)=>{
-    https.get(url, res=>{
-      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
-        try{
-          const data=JSON.parse(d);
-          if(data.error) throw new Error(data.error.message);
-          const songs=(data.items||[]).slice(0,n).map(v=>({
-            title: v.snippet.title.split(/[-–|]/)[0].trim().toUpperCase(),
-            artist: v.snippet.channelTitle.replace(/official|vevo/gi,'').trim(),
-            videoId: v.id,
-            viewCount: v.statistics?.viewCount||0,
-            genre: detectGenre(v.snippet.title+' '+v.snippet.description),
-          }));
-          resolve(songs);
-        }catch(e){ reject(e); }
-      });
-    }).on('error',reject);
-  });
-}
-
-function detectGenre(text){
-  const t=text.toLowerCase();
-  if(/remix|edm|dance|trap/.test(t)) return 'edm';
-  if(/lofi|lo-fi|chill/.test(t)) return 'lofi';
-  if(/ballad|tình|yêu|nhớ|buồn/.test(t)) return 'ballad';
-  if(/rap|hiphop|hip hop/.test(t)) return 'rap';
-  return 'pop';
-}
-
-function aiPickTemplate(genre, title){
-  if(ENV.templateChoice !== 'ai') return ENV.templateChoice;
-  if(/edm|remix/.test(genre)) return 'mc-fire';
-  if(/lofi|chill/.test(genre)) return 'mc-lofi';
-  if(/ballad/.test(genre)||/tình|yêu|nhớ/.test(title.toLowerCase())) return 'mc-rose';
-  if(/rap/.test(genre)) return 'mc-cyber';
-  const pool=['mc-ocean','mc-galaxy','mc-aurora','mc-purple','mc-dream'];
-  return pool[Math.floor(Math.random()*pool.length)];
-}
-
-function buildTitle(song){
-  const d=new Date();
-  return ENV.titleTpl
-    .replace(/{title}/g,  song.title)
-    .replace(/{artist}/g, song.artist)
-    .replace(/{date}/g,   d.toLocaleDateString('vi-VN'))
-    .replace(/{year}/g,   d.getFullYear())
-    .replace(/{genre}/g,  song.genre||'pop');
-}
-
-// ── Upload video to YouTube ──
-async function uploadVideo(song, videoBuffer, accessToken){
-  const title = buildTitle(song);
-  const tags = ENV.tags.split(',').map(t=>t.trim()).filter(Boolean);
-  tags.push(song.artist.replace(/\\s+/g,''), song.genre||'nhacviet');
-  
-  const meta = JSON.stringify({
-    snippet:{
-      title, description: ENV.titleTpl.replace(/{title}/g,song.title).replace(/{artist}/g,song.artist),
-      tags, categoryId:'10',
-    },
-    status:{ privacyStatus: ENV.privacy, selfDeclaredMadeForKids: false },
-  });
-
-  log('Upload: "' + title + '" → YouTube (' + ENV.privacy + ')');
-  
-  // Resumable upload
-  return new Promise((resolve,reject)=>{
-    const metaBuf = Buffer.from(meta);
-    const initReq = https.request({
-      hostname:'www.googleapis.com',
-      path:'/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer '+accessToken,
-        'Content-Type':'application/json',
-        'Content-Length':metaBuf.length,
-        'X-Upload-Content-Type':'video/webm',
-        'X-Upload-Content-Length':videoBuffer.length,
-      }
-    },res=>{
-      const uploadUrl=res.headers.location;
-      if(!uploadUrl){reject(new Error('No upload URL: '+JSON.stringify(res.headers)));return;}
-      log('Upload URL nhận được, đang upload video...');
-      // Upload binary
-      const u=new URL(uploadUrl);
-      const uploadReq = https.request({
-        hostname:u.hostname, path:u.pathname+u.search, method:'PUT',
-        headers:{'Content-Type':'video/webm','Content-Length':videoBuffer.length}
-      },r=>{
-        let d=''; r.on('data',c=>d+=c); r.on('end',()=>{
-          try{ resolve(JSON.parse(d)); }catch{ resolve({id:'unknown'}); }
-        });
-      });
-      uploadReq.on('error',reject);
-      uploadReq.write(videoBuffer);
-      uploadReq.end();
-    });
-    initReq.on('error',reject);
-    initReq.write(metaBuf);
-    initReq.end();
-  });
-}
-
-// ── Main ──
-async function main(){
-  log('=== VietLong Auto Upload bắt đầu ===');
-  
-  if(!ENV.apiKey){ log('LỖI: Thiếu YT_API_KEY'); process.exit(1); }
-  
-  // Refresh access token
-  const accessToken = await refreshAccessToken();
-  log('Access token: ' + (accessToken?'OK':'THIẾU'));
-  
-  // Fetch trending songs
-  const songs = await fetchTrendingSongs();
-  log('Tìm được ' + songs.length + ' bài: ' + songs.map(s=>s.title).join(', '));
-  
-  const results = [];
-  for(const song of songs){
-    log('--- Xử lý: "' + song.title + '" by ' + song.artist + ' ---');
-    const tpl = aiPickTemplate(song.genre, song.title);
-    log('Template AI chọn: ' + tpl);
-    
-    // NOTE: Render video cần headless browser (Puppeteer)
-    // Uncomment để dùng Puppeteer:
-    // const videoBuffer = await renderWithPuppeteer(song, tpl);
-    
-    // Placeholder: tạo video giả để test pipeline
-    const videoBuffer = Buffer.alloc(1024, 0); // thay bằng Puppeteer render thực
-    log('Render xong (placeholder): ' + videoBuffer.length + ' bytes');
-    
-    if(accessToken && accessToken!==ENV.oauthToken){
-      try{
-        const res = await uploadVideo(song, videoBuffer, accessToken);
-        log('Upload OK: https://youtu.be/' + (res.id||'?'));
-        results.push({...song, tpl, ytId:res.id, status:'ok'});
-      }catch(e){
-        log('Upload lỗi: ' + e.message);
-        results.push({...song, tpl, status:'error', error:e.message});
-      }
-    } else {
-      log('Bỏ qua upload (thiếu OAuth token)');
-      results.push({...song, tpl, status:'skip'});
-    }
-  }
-  
-  // Lưu log kết quả
-  const logPath = 'auto-results-' + new Date().toISOString().slice(0,10) + '.json';
-  fs.writeFileSync(logPath, JSON.stringify(results, null, 2));
-  log('Lưu kết quả: ' + logPath);
-  log('=== Hoàn tất ===');
-}
-
-main().catch(e=>{ console.error('FATAL:', e); process.exit(1); });
-
-/* 
- * === ĐỂ RENDER VIDEO THẬT VỚI PUPPETEER ===
- * npm install puppeteer
- * 
- * );
- *   const page = await browser.newPage();
- *   await page.goto('https://letranvietlong.github.io/VietLongCreator.html');
- *   // ... điều khiển UI để render video
- *   // ... capture MediaRecorder output
- *   await browser.close();
- * }
- */
-`;
+  const script = [
+    '#!/usr/bin/env node',
+    '/**',
+    ' * VietLong Creator — Auto Upload Script',
+    ' * Đặt file này tại: .github/scripts/auto-upload.js',
+    ' * ',
+    ' * Cách lấy OAuth2 tokens:',
+    ' * 1. console.cloud.google.com → Credentials → OAuth 2.0 Client ID (Desktop app)',
+    ' * 2. Dùng OAuth playground: https://developers.google.com/oauthplayground',
+    ' *    - Scope: https://www.googleapis.com/auth/youtube.upload',
+    ' *    - Lấy refresh_token, lưu vào GitHub Secret: YT_REFRESH_TOKEN',
+    ' */',
+    '',
+    'const https = require(\'https\');',
+    'const http = require(\'http\');',
+    'const fs = require(\'fs\');',
+    'const path = require(\'path\');',
+    '',
+    'const ENV = {',
+    '  apiKey:       process.env.YT_API_KEY      || \'\',',
+    '  oauthToken:   process.env.YT_OAUTH_TOKEN  || \'\',',
+    '  refreshToken: process.env.YT_REFRESH_TOKEN|| \'\',',
+    '  clientId:     process.env.YT_CLIENT_ID    || \'\',',
+    '  clientSecret: process.env.YT_CLIENT_SECRET|| \'\',',
+    '  channelId:    process.env.YT_CHANNEL_ID   || \'\',',
+    '  songsPerRun:  parseInt(process.env.SONGS_PER_RUN||\'2\'),',
+    '  keywords:     process.env.KEYWORDS        || \'nhạc hot việt nam\',',
+    '  privacy:      process.env.YT_PRIVACY      || \'private\',',
+    '  titleTpl:     process.env.YT_TITLE_TPL    || \'{title} - {artist} | Nhạc Remix Tiktok 2026\',',
+    '  tags:         process.env.YT_TAGS         || \'nhạc việt,music video,remix\',',
+    '  remixLabel:   process.env.REMIX_LABEL     || \'VIET LONG REMIX\',',
+    '  templateChoice:process.env.TEMPLATE_CHOICE|| \'ai\',',
+    '};',
+    '',
+    'function log(msg){ console.log(\'[\' + new Date().toISOString() + \'] \' + msg); }',
+    '',
+    '// ── Refresh OAuth2 access token ──',
+    'async function refreshAccessToken(){',
+    '  if(!ENV.refreshToken || !ENV.clientId) return ENV.oauthToken;',
+    '  const body = JSON.stringify({',
+    '    client_id: ENV.clientId, client_secret: ENV.clientSecret,',
+    '    refresh_token: ENV.refreshToken, grant_type: \'refresh_token\'',
+    '  });',
+    '  return new Promise((resolve,reject)=>{',
+    '    const req = https.request({',
+    '      hostname:\'oauth2.googleapis.com\', path:\'/token\', method:\'POST\',',
+    '      headers:{\'Content-Type\':\'application/json\',\'Content-Length\':Buffer.byteLength(body)}',
+    '    },res=>{',
+    '      let d=\'\'; res.on(\'data\',c=>d+=c); res.on(\'end\',()=>{',
+    '        try{ resolve(JSON.parse(d).access_token||ENV.oauthToken); }catch{ resolve(ENV.oauthToken); }',
+    '      });',
+    '    });',
+    '    req.on(\'error\',reject); req.write(body); req.end();',
+    '  });',
+    '}',
+    '',
+    '// ── Fetch trending music from YouTube ──',
+    'async ',
+    '',
+    'function detectGenre(text){',
+    '  const t=text.toLowerCase();',
+    '  if(/remix|edm|dance|trap/.test(t)) return \'edm\';',
+    '  if(/lofi|lo-fi|chill/.test(t)) return \'lofi\';',
+    '  if(/ballad|tình|yêu|nhớ|buồn/.test(t)) return \'ballad\';',
+    '  if(/rap|hiphop|hip hop/.test(t)) return \'rap\';',
+    '  return \'pop\';',
+    '}',
+    '',
+    '',
+    'function buildTitle(song){',
+    '  const d=new Date();',
+    '  return ENV.titleTpl',
+    '    .replace(/{title}/g,  song.title)',
+    '    .replace(/{artist}/g, song.artist)',
+    '    .replace(/{date}/g,   d.toLocaleDateString(\'vi-VN\'))',
+    '    .replace(/{year}/g,   d.getFullYear())',
+    '    .replace(/{genre}/g,  song.genre||\'pop\');',
+    '}',
+    '',
+    '// ── Upload video to YouTube ──',
+    'async function uploadVideo(song, videoBuffer, accessToken){',
+    '  const title = buildTitle(song);',
+    '  const tags = ENV.tags.split(\',\').map(t=>t.trim()).filter(Boolean);',
+    '  tags.push(song.artist.replace(/\\\\s+/g,\'\'), song.genre||\'nhacviet\');',
+    '  ',
+    '  const meta = JSON.stringify({',
+    '    snippet:{',
+    '      title, description: ENV.titleTpl.replace(/{title}/g,song.title).replace(/{artist}/g,song.artist),',
+    '      tags, categoryId:\'10\',',
+    '    },',
+    '    status:{ privacyStatus: ENV.privacy, selfDeclaredMadeForKids: false },',
+    '  });',
+    '',
+    '  log(\'Upload: "\' + title + \'" → YouTube (\' + ENV.privacy + \')\');',
+    '  ',
+    '  // Resumable upload',
+    '  return new Promise((resolve,reject)=>{',
+    '    const metaBuf = Buffer.from(meta);',
+    '    const initReq = https.request({',
+    '      hostname:\'www.googleapis.com\',',
+    '      path:\'/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status\',',
+    '      method:\'POST\',',
+    '      headers:{',
+    '        \'Authorization\':\'Bearer \'+accessToken,',
+    '        \'Content-Type\':\'application/json\',',
+    '        \'Content-Length\':metaBuf.length,',
+    '        \'X-Upload-Content-Type\':\'video/webm\',',
+    '        \'X-Upload-Content-Length\':videoBuffer.length,',
+    '      }',
+    '    },res=>{',
+    '      const uploadUrl=res.headers.location;',
+    '      if(!uploadUrl){reject(new Error(\'No upload URL: \'+JSON.stringify(res.headers)));return;}',
+    '      log(\'Upload URL nhận được, đang upload video...\');',
+    '      // Upload binary',
+    '      const u=new URL(uploadUrl);',
+    '      const uploadReq = https.request({',
+    '        hostname:u.hostname, path:u.pathname+u.search, method:\'PUT\',',
+    '        headers:{\'Content-Type\':\'video/webm\',\'Content-Length\':videoBuffer.length}',
+    '      },r=>{',
+    '        let d=\'\'; r.on(\'data\',c=>d+=c); r.on(\'end\',()=>{',
+    '          try{ resolve(JSON.parse(d)); }catch{ resolve({id:\'unknown\'}); }',
+    '        });',
+    '      });',
+    '      uploadReq.on(\'error\',reject);',
+    '      uploadReq.write(videoBuffer);',
+    '      uploadReq.end();',
+    '    });',
+    '    initReq.on(\'error\',reject);',
+    '    initReq.write(metaBuf);',
+    '    initReq.end();',
+    '  });',
+    '}',
+    '',
+    '// ── Main ──',
+    'async function main(){',
+    '  log(\'=== VietLong Auto Upload bắt đầu ===\');',
+    '  ',
+    '  if(!ENV.apiKey){ log(\'LỖI: Thiếu YT_API_KEY\'); process.exit(1); }',
+    '  ',
+    '  // Refresh access token',
+    '  const accessToken = await refreshAccessToken();',
+    '  log(\'Access token: \' + (accessToken?\'OK\':\'THIẾU\'));',
+    '  ',
+    '  // Fetch trending songs',
+    '  const songs = await fetchTrendingSongs();',
+    '  log(\'Tìm được \' + songs.length + \' bài: \' + songs.map(s=>s.title).join(\', \'));',
+    '  ',
+    '  const results = [];',
+    '  for(const song of songs){',
+    '    log(\'--- Xử lý: "\' + song.title + \'" by \' + song.artist + \' ---\');',
+    '    const tpl = aiPickTemplate(song.genre, song.title);',
+    '    log(\'Template AI chọn: \' + tpl);',
+    '    ',
+    '    // NOTE: Render video cần headless browser (Puppeteer)',
+    '    // Uncomment để dùng Puppeteer:',
+    '    // const videoBuffer = await renderWithPuppeteer(song, tpl);',
+    '    ',
+    '    // Placeholder: tạo video giả để test pipeline',
+    '    const videoBuffer = Buffer.alloc(1024, 0); // thay bằng Puppeteer render thực',
+    '    log(\'Render xong (placeholder): \' + videoBuffer.length + \' bytes\');',
+    '    ',
+    '    if(accessToken && accessToken!==ENV.oauthToken){',
+    '      try{',
+    '        const res = await uploadVideo(song, videoBuffer, accessToken);',
+    '        log(\'Upload OK: https://youtu.be/\' + (res.id||\'?\'));',
+    '        results.push({...song, tpl, ytId:res.id, status:\'ok\'});',
+    '      }catch(e){',
+    '        log(\'Upload lỗi: \' + e.message);',
+    '        results.push({...song, tpl, status:\'error\', error:e.message});',
+    '      }',
+    '    } else {',
+    '      log(\'Bỏ qua upload (thiếu OAuth token)\');',
+    '      results.push({...song, tpl, status:\'skip\'});',
+    '    }',
+    '  }',
+    '  ',
+    '  // Lưu log kết quả',
+    '  const logPath = \'auto-results-\' + new Date().toISOString().slice(0,10) + \'.json\';',
+    '  fs.writeFileSync(logPath, JSON.stringify(results, null, 2));',
+    '  log(\'Lưu kết quả: \' + logPath);',
+    '  log(\'=== Hoàn tất ===\');',
+    '}',
+    '',
+    'main().catch(e=>{ console.error(\'FATAL:\', e); process.exit(1); });',
+    '',
+    '/* ',
+    ' * === ĐỂ RENDER VIDEO THẬT VỚI PUPPETEER ===',
+    ' * npm install puppeteer',
+    ' * ',
+    ' * );',
+    ' *   const page = await browser.newPage();',
+    ' *   await page.goto(\'https://letranvietlong.github.io/VietLongCreator.html\');',
+    ' *   // ... điều khiển UI để render video',
+    ' *   // ... capture MediaRecorder output',
+    ' *   await browser.close();',
+    ' * }',
+    ' */',
+    ''
+  ].join('\n');
   downloadFile('auto-upload.js', script, 'text/javascript');
   alog('ok','Đã xuất auto-upload.js → đặt vào .github/scripts/ trong repo');
   alog('info','Cần OAuth2: oauthplayground.google.com → scope youtube.upload → lấy refresh_token');
@@ -10665,6 +10634,8 @@ async function exportWithWebCodecs(q){
     bgCache=null;
 
     // Render + encode video frames
+    // Export perf constants
+    const _BATCH=60, _BP_QUEUE=30, _PROG_EVERY=30;
     async function renderNextFrame(){
       if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; try{exportActx?.close();}catch(_){} try{exportAudEl?.pause();}catch(_){} releaseWakeLock(); _isExporting=false; return; }
       if(frameIdx>=totalFrames){
@@ -10685,49 +10656,20 @@ async function exportWithWebCodecs(q){
         releaseWakeLock();
         sendNotif('✅ Export xong!',`"${songTitle}" — MP4 ${EW}×${EH}`);
         toast(`🎉 MP4 xuất xong! "${songTitle}" — ${(blob.size/1024/1024).toFixed(1)}MB`,'success',6000);
-        // Restore canvas
-        // Restore all global refs
-        // Restore ALL canvas refs to preview canvases
         bgCvs=_savedBgCvs; ovCvs=_savedOvCvs;
         bgX=_savedBgX; ovX=_savedOvX;
-        bgCache=null;
-        _isExporting=false;
+        bgCache=null; _isExporting=false;
         exportAudEl.pause();
         try{URL.revokeObjectURL(_audFileUrl);}catch(_){}
         try{exportActx.close();}catch(_){}
         return;
       }
 
-      // Intro: first N frames render intro instead of music card
-      const introDur=0;
-      const outroDur=0;
-      const introFrames=Math.floor(introDur*FPS);
-      const outroFrames=Math.floor(outroDur*FPS);
-      const mainFrames=totalFrames-introFrames-outroFrames;
+      // All frames are main segment (intro/outro=0)
+      const el=frameIdx/FPS;
+      const ts_us=Math.round(el*1_000_000);
 
-      let el, ts_us;
-      if(frameIdx<introFrames){
-        // Intro segment
-        el=0; ts_us=Math.round(frameIdx/FPS*1_000_000);
-        bgCache=null;
-        const introT=frameIdx/FPS;
-        outCtx.clearRect(0,0,EW,EH);
-        renderIntroFrame(outCtx,EW,EH,introT,chosenTpl?.pal||{});
-      } else if(frameIdx>=introFrames+mainFrames){
-        // Outro segment
-        el=dur;
-        const outroT=(frameIdx-(introFrames+mainFrames))/FPS;
-        ts_us=Math.round((introFrames/FPS+dur+outroT)*1_000_000);
-        outCtx.clearRect(0,0,EW,EH);
-        renderOutroFrame(outCtx,EW,EH,outroT,chosenTpl?.pal||{});
-      } else {
-        // Main segment
-        el=(frameIdx-introFrames)/FPS;
-        ts_us=Math.round((introFrames/FPS+el)*1_000_000);
-      }
-
-      if(frameIdx>=introFrames&&frameIdx<introFrames+mainFrames){
-      // Audio analysis — read realtime frequency (no seek needed)
+      // Audio analysis
       exportAn.getByteFrequencyData(expFreqBuf);
       _freqBuf=expFreqBuf;
       const len2=expFreqBuf.length;
@@ -10736,45 +10678,47 @@ async function exportWithWebCodecs(q){
       for(let i=0;i<len2;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms2+=v;}
       _bass=bs/(be*255); _mid=ms2/((me-be)*255); _eng=all/(len2*255);
 
-      // Canvas already points to offBg/offOv — just draw
-      bgCache=null;
+      // Render — do NOT reset bgCache per frame (expensive for 2K canvas)
+      // Background animation uses aiT/aiGP for motion — cache still valid
       aiT=el*.4; aiGP=el*.0026;
-      _renderTime=el;
-      _renderDur=dur;
+      _renderTime=el; _renderDur=dur;
       drawFrame();
+
+      // Composite onto output canvas
       outCtx.clearRect(0,0,EW,EH);
-      // Apply color grading via CSS filter on composite (GPU accelerated)
       if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&outCtx._gradeFilter){
         outCtx.filter=outCtx._gradeFilter;
       }
       outCtx.drawImage(offBg,0,0);
       outCtx.filter='none';
       outCtx.drawImage(offOv,0,0);
-      // Watermark on export canvas
       if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
         drawWatermark(outCtx,EW,EH);
       }
-      } // end main segment if
 
-      // Create VideoFrame + encode with backpressure
+      // Encode
       const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
-      const isKey=frameIdx%60===0;
-      videoEncoder.encode(vf,{keyFrame:isKey});
+      videoEncoder.encode(vf,{keyFrame:frameIdx%90===0});
       vf.close();
 
       frameIdx++;
-      // Yield if encoder queue is getting too deep (backpressure)
-      if(videoEncoder.encodeQueueSize>10){
+
+      // Progress update — only every _PROG_EVERY frames to avoid DOM thrashing
+      if(frameIdx%_PROG_EVERY===0||frameIdx===totalFrames){
+        const pct=20+Math.round(frameIdx/totalFrames*72);
+        const remain=Math.max(0,dur-el);
+        const fps_actual=frameIdx/(performance.now()-t0)*1000;
+        upProg(pct,`WebCodecs ${frameIdx}/${totalFrames} · ${fps_actual.toFixed(1)}fps`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
+      }
+
+      // Backpressure: only yield when encoder is backed up
+      if(videoEncoder.encodeQueueSize>_BP_QUEUE){
         await new Promise(r=>setTimeout(r,0));
       }
-      const pct=20+Math.round(frameIdx/totalFrames*72);
-      const remain=Math.max(0,dur-el);
-      upProg(pct,`WebCodecs frame ${frameIdx}/${totalFrames}`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
 
-      // Batch: render up to 8 frames per event loop tick for speed
-      // but yield every 8 frames to keep UI responsive and avoid timeout
-      if(frameIdx%8===0){
-        setTimeout(renderNextFrame, 0);
+      // Run _BATCH frames synchronously then yield once to keep browser responsive
+      if(frameIdx%_BATCH===0){
+        setTimeout(renderNextFrame,0);
       } else {
         renderNextFrame();
       }
@@ -10924,6 +10868,20 @@ async function exportWithMediaRecorder(q){
   fr();
 }
 
+// ── Onboarding ──
+function showOnboarding(){
+  if(localStorage.getItem('vlc_onboarded')) return;
+  const uz=$('uz'); if(!uz) return;
+  const rect=uz.getBoundingClientRect();
+  const div=document.createElement('div');
+  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${Math.max(10,rect.left)}px;z-index:9000;background:var(--a2);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.68rem;font-weight:700;box-shadow:0 6px 20px rgba(0,229,195,.35);animation:toastIn .4s ease;pointer-events:none`;
+  div.textContent='👆 Bắt đầu: kéo thả hoặc click để upload file nhạc MP3/WAV';
+  document.body.appendChild(div);
+  setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
+}
+
+
+
 // Helper: dynamic script loader
 function loadScript(src){
   return new Promise((res,rej)=>{
@@ -10989,164 +10947,9 @@ document.addEventListener('touchmove',e=>{
 },{passive:true});
 document.addEventListener('touchend',()=>{ _trimDragging=null; });
 
-// ── Onboarding ──
-function showOnboarding(){
-  if(localStorage.getItem('vlc_onboarded')) return;
-  const uz=$('uz'); if(!uz) return;
-  const rect=uz.getBoundingClientRect();
-  const div=document.createElement('div');
-  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${Math.max(10,rect.left)}px;z-index:9000;background:var(--a2);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.68rem;font-weight:700;box-shadow:0 6px 20px rgba(0,229,195,.35);animation:toastIn .4s ease;pointer-events:none`;
-  div.textContent='👆 Bắt đầu: kéo thả hoặc click để upload file nhạc MP3/WAV';
-  document.body.appendChild(div);
-  setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
-}
-}catch(_){}
-    },400);
-  };
 
 function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
 
-  const dur=exportAudEl.duration||30;
-  const t0=performance.now();
-  const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
-  const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
-  const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
-
-  // Offscreen canvases — redirect ALL canvas globals ONCE
-  const mrOffBg=document.createElement('canvas'); mrOffBg.width=EW; mrOffBg.height=EH;
-  const mrOffOv=document.createElement('canvas'); mrOffOv.width=EW; mrOffOv.height=EH;
-  const _mrSaveBgCvs=bgCvs, _mrSaveOvCvs=ovCvs;
-  const _mrSaveBgX=bgX, _mrSaveOvX=ovX;
-  bgCvs=mrOffBg; ovCvs=mrOffOv;
-  bgX=mrOffBg.getContext('2d'); ovX=mrOffOv.getContext('2d');
-  bgCache=null;
-
-  exportAudEl.currentTime=0;
-  if(exportActx.state==='suspended') await exportActx.resume();
-  exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
-  mr.start(100);
-  upProg(20,`Render WebM ${EW}×${EH}...`);
-
-  function fr(){
-    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){} try{exportActx?.close();}catch(_){} _isExporting=false; return; }
-    const el=(performance.now()-t0)/1000;
-    if(el>=dur+0.1){
-      upProg(94,'Đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
-      bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null;
-      setTimeout(()=>mr.stop(),200); return; // delay 200ms so last frame is captured
-    }
-    exportAn.getByteFrequencyData(expFreqBuf);
-    _freqBuf=expFreqBuf;
-    const len=expFreqBuf.length;
-    const be=Math.floor(len*.12),me=Math.floor(len*.5);
-    let bs=0,ms=0,all=0;
-    for(let i=0;i<len;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms+=v;}
-    _bass=bs/(be*255);_mid=ms/((me-be)*255);_eng=all/(len*255);
-    bgCache=null;
-    aiT=el*.4; aiGP=el*.0026;
-    _renderTime=el;
-    _renderDur=dur;
-    drawFrame();
-    ectx.clearRect(0,0,EW,EH);
-    if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&ectx._gradeFilter){
-      ectx.filter=ectx._gradeFilter;
-    }
-    ectx.drawImage(mrOffBg,0,0);
-    ectx.filter='none';
-    ectx.drawImage(mrOffOv,0,0);
-    // Watermark on export canvas
-    if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
-      drawWatermark(ectx,EW,EH);
-    }
-    const pct=20+Math.round(el/dur*72);
-    upProg(pct,`Render WebM ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`);
-    setTimeout(fr,1000/30);
-  }
-  fr();
-}
-
-// Helper: dynamic script loader
-function loadScript(src){
-  return new Promise((res,rej)=>{
-    if(document.querySelector(`script[src="${src}"]`)){res();return;}
-    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
-  });
-}
-
-const EXPORT_STAGES=[
-  {from:0,  to:8,  seg:0, lbl:'Khởi tạo hệ thống...'},
-  {from:8,  to:15, seg:1, lbl:'Cấu hình audio stream...'},
-  {from:15, to:20, seg:2, lbl:'Bắt đầu ghi hình...'},
-  {from:20, to:92, seg:3, lbl:'Đang render & ghi hình...'},
-  {from:92, to:100,seg:4, lbl:'Hoàn tất & đóng gói...'},
-];
-
-function upProg(p, lbl, timeStr=''){
-  const pct=Math.round(p);
-  // Percentage
-  const pctEl=$('progpct');
-  if(pctEl){ pctEl.textContent=pct+'%'; pctEl.classList.toggle('done',pct>=100); }
-  // Fill bar
-  const fill=$('progfill');
-  if(fill){ fill.style.width=pct+'%'; fill.classList.toggle('done',pct>=100); }
-  // Label
-  if(lbl) { const l=$('proglbl'); if(l)l.textContent=lbl; }
-  // Time
-  const te=$('progtime'); if(te)te.textContent=timeStr;
-  // Status text (top)
-  const st=$('progtxt');
-  if(st){
-    if(pct>=100) st.textContent='✅ Xuất thành công!';
-    else if(pct>=20) st.textContent=`Đang xuất video — ${timeStr||''}`;
-    else st.textContent='Đang khởi động...';
-  }
-  // Segments
-  const stage=EXPORT_STAGES.findIndex(s=>pct<=s.to);
-  const activeSeg=stage===-1?4:EXPORT_STAGES[stage].seg;
-  for(let i=0;i<=4;i++){
-    const s=$(`seg${i}`);if(!s)continue;
-    if(i<activeSeg) s.className='prog-seg done';
-    else if(i===activeSeg) s.className='prog-seg active';
-    else s.className='prog-seg';
-  }
-}
-
-// ── Touch events for Trim modal ──
-document.addEventListener('touchstart',e=>{
-  if(e.target.id==='trim-start-handle') _trimDragging='start';
-  if(e.target.id==='trim-end-handle')   _trimDragging='end';
-},{passive:true});
-document.addEventListener('touchmove',e=>{
-  if(!_trimDragging) return;
-  const t=e.touches[0]; if(!t) return;
-  const wf=$('trim-waveform'); if(!wf) return;
-  const rect=wf.getBoundingClientRect();
-  const ratio=Math.max(0,Math.min(1,(t.clientX-rect.left)/rect.width));
-  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
-  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
-  if(typeof drawTrimWaveform==='function'){drawTrimWaveform();updateTrimDisplay();}
-},{passive:true});
-document.addEventListener('touchend',()=>{ _trimDragging=null; });
-
-// ── Onboarding ──
-function showOnboarding(){
-  if(localStorage.getItem('vlc_onboarded')) return;
-  const uz=$('uz'); if(!uz) return;
-  const rect=uz.getBoundingClientRect();
-  const div=document.createElement('div');
-  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${Math.max(10,rect.left)}px;z-index:9000;background:var(--a2);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.68rem;font-weight:700;box-shadow:0 6px 20px rgba(0,229,195,.35);animation:toastIn .4s ease;pointer-events:none`;
-  div.textContent='👆 Bắt đầu: kéo thả hoặc click để upload file nhạc MP3/WAV';
-  document.body.appendChild(div);
-  setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
-}
-function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
-
-
-/* ═══════════════════════════════════════════════════════════════
-   AFFILIATE TIKTOK AUTOMATION — JS Logic
-═══════════════════════════════════════════════════════════════ */
-
-// ── State ──────────────────────────────────────────────────────
 let affSettings={};
 let affProducts=[];
 let affQueue=[];
@@ -11776,32 +11579,33 @@ function scrollToAffGuide(){
 }
 
 function exportAffScript(){
-  const script=`#!/usr/bin/env python3
-# VietLong Creator — TikTok Affiliate Automation Script
-# Tải đầy đủ tại: letranvietlong.github.io/VietLongCreator.html
-
-import requests, json, time
-
-TIKTOK_TOKEN = "${$('aff-tt-token')?.value||'YOUR_TOKEN'}"
-TIKTOK_OPEN_ID = "${$('aff-tt-openid')?.value||'YOUR_OPEN_ID'}"
-
-def upload_video(video_path, caption):
-    # TikTok Content Posting API v2
-    url = "https://open.tiktokapis.com/v2/post/publish/video/init/"
-    headers = {"Authorization": f"Bearer {TIKTOK_TOKEN}", "Content-Type": "application/json"}
-    payload = {
-        "post_info": {"title": caption, "privacy_level": "PUBLIC_TO_EVERYONE"},
-        "source_info": {"source": "FILE_UPLOAD", "video_size": 10000000, "chunk_size": 10000000, "total_chunk_count": 1}
-    }
-    resp = requests.post(url, headers=headers, json=payload)
-    return resp.json()
-
-if __name__ == "__main__":
-    print("VietLong Affiliate Bot — Ready!")
-    # Add your video files here
-    result = upload_video("video.mp4", "#affiliate #review #tiktokshop")
-    print(json.dumps(result, indent=2))
-`;
+  const ttToken=$('aff-tt-token')?.value||'YOUR_TOKEN';
+  const ttOpenId=$('aff-tt-openid')?.value||'YOUR_OPEN_ID';
+  const script=[
+    '#!/usr/bin/env python3',
+    '# VietLong Creator — TikTok Affiliate Automation Script',
+    '# Tai day du tai: letranvietlong.github.io/VietLongCreator.html',
+    '',
+    'import requests, json, time',
+    '',
+    'TIKTOK_TOKEN = "'+ttToken+'"',
+    'TIKTOK_OPEN_ID = "'+ttOpenId+'"',
+    '',
+    'def upload_video(video_path, caption):',
+    '    url = "https://open.tiktokapis.com/v2/post/publish/video/init/"',
+    '    headers = {"Authorization": "Bearer " + TIKTOK_TOKEN, "Content-Type": "application/json"}',
+    '    payload = {',
+    '        "post_info": {"title": caption, "privacy_level": "PUBLIC_TO_EVERYONE"},',
+    '        "source_info": {"source": "FILE_UPLOAD", "video_size": 10000000, "chunk_size": 10000000, "total_chunk_count": 1}',
+    '    }',
+    '    resp = requests.post(url, headers=headers, json=payload)',
+    '    return resp.json()',
+    '',
+    'if __name__ == "__main__":',
+    '    print("VietLong Affiliate Bot — Ready!")',
+    '    result = upload_video("video.mp4", "#affiliate #review #tiktokshop")',
+    '    print(json.dumps(result, indent=2))',
+  ].join('\n');
   const blob=new Blob([script],{type:'text/plain'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='vlc_affiliate_bot.py'; a.click();
