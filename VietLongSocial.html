@@ -567,36 +567,39 @@ main { flex: 1; padding: 20px 28px; display: flex; flex-direction: column; gap: 
 <div class="toasts" id="toasts"></div>
 
 <script>
-/* ── PLATFORM CONFIG ── */
+/* ══════════════════════════════════════════════
+   VietLongSocial — PLATFORM CONFIG
+══════════════════════════════════════════════ */
 const PLAT = {
   youtube: {
     name:'YOUTUBE', ico:'▶', cls:'yt', ph:'https://www.youtube.com/@MrBeast',
     parse(u){
       const m = u.match(/youtube\.com\/@([^\/\?&\s]+)/)
              || u.match(/youtube\.com\/c\/([^\/\?&\s]+)/)
-             || u.match(/youtube\.com\/channel\/([^\/\?&\s]+)/)
+             || u.match(/youtube\.com\/channel\/(UC[^\/\?&\s]+)/)
              || u.match(/youtube\.com\/user\/([^\/\?&\s]+)/);
-      return m ? m[1] : u.replace(/^@/,'').trim() || null;
+      return m ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
     },
     keys:['followers','videos','views'],
     labels:{followers:'SUBSCRIBERS',videos:'TOTAL VIDEOS',views:'TOTAL VIEWS'},
     primary:'followers'
   },
-  tiktok: {
-    name:'TIKTOK', ico:'♪', cls:'tt', ph:'https://www.tiktok.com/@username',
+  tiktok:{
+    name:'TIKTOK', ico:'♪', cls:'tt', ph:'https://www.tiktok.com/@thubee26',
     parse(u){
       const m = u.match(/tiktok\.com\/@([^\/\?&\s]+)/);
-      return m ? m[1] : u.replace(/^@/,'').trim() || null;
+      return m ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
     },
     keys:['followers','likes','videos'],
     labels:{followers:'FOLLOWERS',likes:'TOTAL LIKES',videos:'VIDEOS'},
     primary:'followers'
   },
-  instagram: {
-    name:'INSTAGRAM', ico:'◈', cls:'ig', ph:'https://www.instagram.com/username',
+  instagram:{
+    name:'INSTAGRAM', ico:'◈', cls:'ig', ph:'https://www.instagram.com/cristiano',
     parse(u){
       const m = u.match(/instagram\.com\/([^\/\?&\s]+)/);
-      return (m && !['p','reel','explore'].includes(m[1])) ? m[1] : u.replace(/^@/,'').trim() || null;
+      return (m && !['p','reel','explore','accounts'].includes(m[1]))
+        ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
     },
     keys:['followers','following','posts'],
     labels:{followers:'FOLLOWERS',following:'FOLLOWING',posts:'POSTS'},
@@ -607,202 +610,229 @@ const PLAT = {
 let cur = 'youtube';
 let trackers = {};
 
+/* ── FORMAT NUMBERS ── */
 function fmt(n) {
   if (typeof n !== 'number') return n || '—';
-  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
   return n.toLocaleString('vi-VN');
 }
 
+/* ── TOAST ── */
+function toast(msg, type='') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(12px)'; setTimeout(()=>t.remove(),300); }, 3500);
+}
+
+/* ── SELECT PLATFORM ── */
 function selTab(btn, p) {
-  document.querySelectorAll('.tb').forEach(b => b.classList.remove('ac'));
-  btn.classList.add('ac');
-  cur = p;
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('ac'));
+  btn.classList.add('ac'); cur=p;
   document.getElementById('ui').placeholder = PLAT[p].ph;
 }
 
-/* ── CORS PROXY → livecounts.io ── */
-const PROXIES = [
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-  u => `https://thingproxy.freeboard.io/fetch/${u}`,
-];
+/* ══════════════════════════════════════════════
+   DATA FETCHING — platform specific
+══════════════════════════════════════════════ */
 
-// livecounts endpoints - username appended as path segment
-const EP = {
-  youtube: {
-    search: u => `https://api.livecounts.io/youtube-live-subscriber-counter/search/${encodeURIComponent(u)}`,
-    stats:  id => `https://api.livecounts.io/youtube-live-subscriber-counter/stats/${encodeURIComponent(id)}`,
-  },
-  tiktok: {
-    search: u => `https://tiktok.livecounts.io/user/search/${encodeURIComponent(u)}`,
-    stats:  id => `https://tiktok.livecounts.io/user/stats/${encodeURIComponent(id)}`,
-  },
-  instagram: {
-    search: u => `https://api.livecounts.io/instagram-live-follower-counter/search/${encodeURIComponent(u)}`,
-    stats:  id => `https://api.livecounts.io/instagram-live-follower-counter/stats/${encodeURIComponent(id)}`,
-  },
-};
+/* CORS Proxy helper */
+const CORS = u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`;
+const CORS2 = u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`;
 
-async function proxyFetch(targetUrl) {
-  const errors = [];
-  for (const mk of PROXIES) {
+async function getText(url, useProxy=true) {
+  const targets = useProxy
+    ? [CORS(url), CORS2(url), url]
+    : [url];
+  for (const target of targets) {
     try {
-      const proxyUrl = mk(targetUrl);
-      const r = await fetch(proxyUrl, {
-        signal: AbortSignal.timeout(9000),
-        headers: { 'Accept': 'application/json, text/plain, */*' }
-      });
-      if (!r.ok) { errors.push(`HTTP ${r.status} from ${proxyUrl.split('?')[0]}`); continue; }
+      const r = await fetch(target, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) continue;
       const t = await r.text();
-      if (t && t.trim().length > 2 && !t.includes('Error') && !t.includes('error":"')) {
-        return t;
+      if (t && t.length > 10) return t;
+    } catch {}
+  }
+  return null;
+}
+
+/* ─── YOUTUBE ─── */
+async function fetchYouTube(username) {
+  // Step 1: resolve handle → channelId via YouTube oEmbed (free, no key)
+  const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/@${encodeURIComponent(username)}&format=json`;
+  let channelName = username;
+
+  try {
+    const oe = await getText(oembedUrl, false);
+    if (oe) {
+      const j = JSON.parse(oe);
+      channelName = j.author_name || username;
+    }
+  } catch {}
+
+  // Step 2: Try YouTube channel page scrape via proxy to get subscriber count
+  // YouTube embeds stats in initial data JSON on channel page
+  const channelUrl = `https://www.youtube.com/@${encodeURIComponent(username)}`;
+  const html = await getText(channelUrl);
+  if (html) {
+    // Try to extract subscriberCountText from ytInitialData
+    const patterns = [
+      /"subscriberCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/,
+      /"subscriberCountText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/,
+      /"metadataParts".*?"text"\s*:\s*"([0-9,.KMBtỷ triệu nghìn]+\s*(?:subscribers?|người đăng ký)?)"/.source,
+      /(\d[\d,.]+[KMB]?)\s*subscribers/i,
+      /"videosCountText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/,
+    ];
+
+    let subRaw = null, videoRaw = null, viewRaw = null;
+
+    // Extract subscriber count
+    const subMatch = html.match(/"subscriberCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/)
+                  || html.match(/"subscriberCountText"\s*:\s*\{"runs":\[{"text":"([^"]+)"/)
+                  || html.match(/(\d+(?:[.,]\d+)*[KMBtỷ triệu]*)\s*(?:subscribers?|người đăng ký)/i);
+    if (subMatch) subRaw = subMatch[1];
+
+    // Extract video count
+    const vidMatch = html.match(/"videosCountText"\s*:\s*\{"runs":\[{"text":"([^"]+)"/)
+                  || html.match(/(\d+(?:[.,]\d+)*)\s*(?:videos?|video)/i);
+    if (vidMatch) videoRaw = vidMatch[1];
+
+    // Extract view count from viewCount property
+    const viewMatch = html.match(/"viewCount"\s*:\s*"(\d+)"/);
+    if (viewMatch) viewRaw = viewMatch[1];
+
+    const parseShort = (s) => {
+      if (!s) return 0;
+      s = s.toString().trim().replace(/,/g,'.');
+      if (/[Tt]ỷ/.test(s)) return parseFloat(s) * 1e9;
+      if (/triệu/.test(s)) return parseFloat(s) * 1e6;
+      if (/nghìn/.test(s)) return parseFloat(s) * 1e3;
+      if (/B$/i.test(s)) return parseFloat(s) * 1e9;
+      if (/M$/i.test(s)) return parseFloat(s) * 1e6;
+      if (/K$/i.test(s)) return parseFloat(s) * 1e3;
+      return parseFloat(s.replace(/[^0-9.]/g,'')) || 0;
+    };
+
+    if (subRaw) {
+      return {
+        name: channelName,
+        handle: username,
+        followers: parseShort(subRaw),
+        videos: parseShort(videoRaw),
+        views: viewRaw ? parseInt(viewRaw) : 0,
+      };
+    }
+  }
+
+  // Fallback — show channel name only with 0 counts (at least something)
+  return null;
+}
+
+/* ─── TIKTOK ─── */
+async function fetchTikTok(username) {
+  // Scrape TikTok page to extract stats from embedded JSON
+  const url = `https://www.tiktok.com/@${encodeURIComponent(username)}`;
+  const html = await getText(url);
+  if (!html) return null;
+
+  // TikTok embeds user data in __UNIVERSAL_DATA_FOR_REHYDRATION__ or window.__INITIAL_STATE__
+  let followers = 0, likes = 0, videos = 0, name = username;
+
+  // Pattern 1: stats object in page JSON
+  const statsMatch = html.match(/"followerCount"\s*:\s*(\d+)/);
+  const likesMatch = html.match(/"heartCount"\s*:\s*(\d+)/);
+  const videoMatch = html.match(/"videoCount"\s*:\s*(\d+)/);
+  const nameMatch  = html.match(/"nickname"\s*:\s*"([^"]+)"/);
+
+  if (statsMatch) followers = parseInt(statsMatch[1]);
+  if (likesMatch) likes     = parseInt(likesMatch[1]);
+  if (videoMatch) videos    = parseInt(videoMatch[1]);
+  if (nameMatch)  name      = nameMatch[1];
+
+  if (followers > 0) return { name, handle: username, followers, likes, videos };
+
+  // Pattern 2: itemInfo.authorStats
+  const authStats = html.match(/"authorStats"\s*:\s*\{[^}]+\}/);
+  if (authStats) {
+    const f2 = authStats[0].match(/"followerCount"\s*:\s*(\d+)/);
+    const l2 = authStats[0].match(/"heartCount"\s*:\s*(\d+)/);
+    const v2 = authStats[0].match(/"videoCount"\s*:\s*(\d+)/);
+    if (f2) return {
+      name, handle: username,
+      followers: parseInt(f2[1])||0,
+      likes:     parseInt(l2?.[1])||0,
+      videos:    parseInt(v2?.[1])||0,
+    };
+  }
+
+  return null;
+}
+
+/* ─── INSTAGRAM ─── */
+async function fetchInstagram(username) {
+  // Instagram graph endpoint (public, no auth for basic info)
+  const urls = [
+    `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
+    `https://www.instagram.com/${username}/?__a=1&__d=dis`,
+  ];
+
+  for (const url of urls) {
+    const raw = await getText(url);
+    if (!raw) continue;
+    try {
+      const j = JSON.parse(raw);
+      // Format 1: web_profile_info
+      const u = j?.data?.user || j?.graphql?.user;
+      if (u) {
+        return {
+          name:      u.full_name || username,
+          handle:    username,
+          followers: u.edge_followed_by?.count || u.follower_count || 0,
+          following: u.edge_follow?.count      || u.following_count || 0,
+          posts:     u.edge_owner_to_timeline_media?.count || u.media_count || 0,
+        };
       }
-      errors.push(`Empty/error response from proxy`);
-    } catch(e) { errors.push(e.message); }
+    } catch {}
   }
-  throw new Error('All proxies failed: ' + errors.join(' | '));
-}
 
-function deepParse(raw) {
-  // Try to extract JSON from any string
-  if (!raw || raw.trim().length < 2) return null;
-  raw = raw.trim();
-  // Direct parse
-  try { return JSON.parse(raw); } catch {}
-  // Extract JSON array or object
-  const patterns = [/(\[[\s\S]*\])/, /(\{[\s\S]*\})/];
-  for (const p of patterns) {
-    const m = raw.match(p);
-    if (m) { try { return JSON.parse(m[1]); } catch {} }
+  // Fallback: scrape Instagram page HTML
+  const html = await getText(`https://www.instagram.com/${username}/`);
+  if (html) {
+    const fMatch = html.match(/"edge_followed_by"\s*:\s*\{"count"\s*:\s*(\d+)\}/);
+    const pMatch = html.match(/"edge_owner_to_timeline_media"\s*:\s*\{"count"\s*:\s*(\d+)\}/);
+    const nMatch = html.match(/"full_name"\s*:\s*"([^"]+)"/);
+    if (fMatch) return {
+      name:      nMatch ? nMatch[1] : username,
+      handle:    username,
+      followers: parseInt(fMatch[1])||0,
+      following: 0,
+      posts:     pMatch ? parseInt(pMatch[1]) : 0,
+    };
   }
   return null;
 }
 
-function parseData(platform, username, raw) {
-  if (!raw || raw.trim().length < 3) return null;
-  let j = deepParse(raw);
-  if (!j) return null;
-  // Unwrap allorigins envelope {contents, status}
-  if (j && typeof j === 'object' && j.contents && typeof j.contents === 'string') {
-    j = deepParse(j.contents) ?? j;
-  }
-  // Flatten array
-  if (Array.isArray(j)) {
-    if (!j.length) return null;
-    // If array of numbers [fans, hearts, videos] — livecounts stats format
-    if (j.every(x => typeof x === 'number' || x === null)) {
-      if (platform === 'tiktok')    return { name:username, handle:username, followers:+j[0]||0, likes:+j[1]||0, videos:+j[2]||0 };
-      if (platform === 'youtube')   return { name:username, handle:username, followers:+j[0]||0, videos:+j[1]||0, views:+j[2]||0 };
-      if (platform === 'instagram') return { name:username, handle:username, followers:+j[0]||0, following:+j[1]||0, posts:+j[2]||0 };
-    }
-    j = j[0];
-  }
-  if (!j || typeof j !== 'object') return null;
-
-  if (platform === 'youtube') {
-    const subs  = j.subscriberCount ?? j.subscriber_count ?? j.followers
-               ?? j.Subscribers     ?? j.sub_count         ?? j.subs
-               ?? j[0] ?? j.stats?.[0];
-    const vids  = j.videoCount  ?? j.video_count  ?? j.videos ?? j[1] ?? j.stats?.[1];
-    const views = j.viewCount   ?? j.view_count   ?? j.views  ?? j[2] ?? j.stats?.[2];
-    const name  = j.channelName ?? j.title ?? j.name ?? j.channel_name ?? j.snippet?.title ?? username;
-    if (subs !== undefined && subs !== null)
-      return { name, handle:username, followers:Math.abs(+subs)||0, videos:+vids||0, views:+views||0 };
-  }
-
-  if (platform === 'tiktok') {
-    const followers = j.followerCount ?? j.followers ?? j.fans  ?? j.fan_count
-                   ?? j.follower_count ?? j[0]        ?? j.stats?.[0];
-    const likes     = j.heartCount ?? j.likeCount ?? j.likes  ?? j.hearts
-                   ?? j.heart_count ?? j.digg_count ?? j[1]   ?? j.stats?.[1];
-    const videos    = j.videoCount ?? j.videos   ?? j.aweme_count ?? j.video_count
-                   ?? j[2] ?? j.stats?.[2];
-    const name      = j.nickname ?? j.name ?? j.displayName ?? j.unique_id ?? j.uniqueId ?? username;
-    if (followers !== undefined && followers !== null)
-      return { name, handle:username, followers:+followers||0, likes:+likes||0, videos:+videos||0 };
-  }
-
-  if (platform === 'instagram') {
-    const followers = j.followerCount ?? j.followers ?? j.edge_followed_by?.count
-                   ?? j.follower_count ?? j[0]        ?? j.stats?.[0];
-    const following = j.followingCount ?? j.following ?? j.edge_follow?.count
-                   ?? j.following_count ?? j[1]        ?? j.stats?.[1];
-    const posts     = j.mediaCount     ?? j.posts     ?? j.edge_owner_to_timeline_media?.count
-                   ?? j.media_count    ?? j[2]         ?? j.stats?.[2];
-    const name      = j.fullName ?? j.full_name ?? j.username ?? j.name ?? username;
-    if (followers !== undefined && followers !== null)
-      return { name, handle:username, followers:+followers||0, following:+following||0, posts:+posts||0 };
-  }
-  return null;
-}
-
-/* ── DEBUG PANEL ── */
-function showDebug(title, data) {
-  let panel = document.getElementById('dbgPanel');
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id = 'dbgPanel';
-    panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:220px;overflow:auto;background:#020509;border-top:2px solid #00f5ff;font-family:monospace;font-size:11px;color:#39ff14;padding:8px 12px;z-index:99999;white-space:pre-wrap;word-break:break-all';
-    panel.innerHTML = '<button onclick="this.parentElement.remove()" style="float:right;background:#ff006e;color:#fff;border:none;padding:2px 8px;cursor:pointer;font-size:10px">✕ CLOSE</button>';
-    document.body.appendChild(panel);
-  }
-  const line = document.createElement('div');
-  line.style.borderBottom = '1px solid rgba(0,245,255,.15)';
-  line.style.paddingBottom = '4px';
-  line.style.marginBottom = '4px';
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${title}: ${typeof data === 'string' ? data.substring(0,400) : JSON.stringify(data).substring(0,400)}`;
-  panel.appendChild(line);
-  panel.scrollTop = panel.scrollHeight;
-}
-
+/* ── MAIN FETCH ── */
 async function fetchData(platform, username, prev=null) {
-  const ep = EP[platform];
-  let searchRaw = null, statsRaw = null, targetId = username;
-
-  // STEP 1: Search for user ID
   try {
-    showDebug('SEARCH URL', ep.search(username));
-    searchRaw = await proxyFetch(ep.search(username));
-    showDebug('SEARCH RAW', searchRaw);
-    const sj = JSON.parse(searchRaw);
-    const first = Array.isArray(sj) ? sj[0] : sj;
-    if (first) {
-      targetId = first.id ?? first.channelId ?? first.userId ?? first.uniqueId ?? first.tiktokId ?? first.youtubeId ?? username;
-      showDebug('TARGET ID', targetId);
+    let data = null;
+    if      (platform === 'youtube')   data = await fetchYouTube(username);
+    else if (platform === 'tiktok')    data = await fetchTikTok(username);
+    else if (platform === 'instagram') data = await fetchInstagram(username);
+
+    if (data) {
+      if (prev) {
+        const pk = PLAT[platform].primary;
+        data._delta = data[pk] - (prev[pk]||0);
+      }
+      return { ok:true, data };
     }
-  } catch(e) { showDebug('SEARCH ERR', e.message); }
-
-  // STEP 2: Get stats
-  try {
-    showDebug('STATS URL', ep.stats(targetId));
-    statsRaw = await proxyFetch(ep.stats(targetId));
-    showDebug('STATS RAW', statsRaw);
-    const parsed = parseData(platform, username, statsRaw);
-    if (parsed) {
-      showDebug('PARSED OK', parsed);
-      if (prev) { const pk=PLAT[platform].primary; parsed._delta = parsed[pk]-(prev[pk]||0); }
-      return { ok:true, data:parsed };
-    } else { showDebug('PARSE FAIL', 'parseData returned null'); }
-  } catch(e) { showDebug('STATS ERR', e.message); }
-
-  // STEP 3: Fallback - parse from search result
-  if (searchRaw) {
-    const parsed = parseData(platform, username, searchRaw);
-    if (parsed) {
-      showDebug('FALLBACK OK', parsed);
-      if (prev) { const pk=PLAT[platform].primary; parsed._delta = parsed[pk]-(prev[pk]||0); }
-      return { ok:true, data:parsed };
-    }
-  }
-
-  showDebug('ALL FAILED', {searchRaw: searchRaw?.substring(0,100), statsRaw: statsRaw?.substring(0,100)});
+  } catch(e) { console.warn('[VLS] fetchData error:', e.message); }
   return { ok:false };
 }
 
-/* ── ADD ── */
+/* ── ADD TRACKER ── */
 async function add() {
   const raw = document.getElementById('ui').value.trim();
   if (!raw) { toast('⚠ Nhập URL hoặc username', 'err'); return; }
@@ -814,12 +844,15 @@ async function add() {
 
   const btn = document.getElementById('sbtn');
   btn.innerHTML = '<span class="spn"></span>SCANNING...'; btn.disabled = true;
-  toast('📡 Đang kết nối livecounts.io...');
+  toast(`📡 Đang quét @${username}...`);
 
   const result = await fetchData(cur, username);
   btn.innerHTML = '⬡ SCAN'; btn.disabled = false;
 
-  if (!result.ok) { toast('⚠ Không lấy được data. Kiểm tra username.', 'err'); return; }
+  if (!result.ok) {
+    toast('⚠ Không lấy được dữ liệu. Kiểm tra username hoặc thử lại.', 'err');
+    return;
+  }
 
   trackers[id] = { id, platform:cur, username, data:result.data };
   document.getElementById('ui').value = '';
@@ -831,29 +864,22 @@ async function add() {
 
 /* ── RENDER CARD ── */
 function render(id) {
-  const t = trackers[id];
-  const cfg = PLAT[t.platform];
-  const d = t.data;
-  const cls = cfg.cls;
+  const t = trackers[id]; const cfg = PLAT[t.platform]; const d = t.data; const cls = cfg.cls;
   document.getElementById('c_'+id)?.remove();
-
-  const pv = d[cfg.primary] || 0;
-  const sec = cfg.keys.filter(k => k !== cfg.primary);
-  const secH = sec.map((k,i) => `
+  const pv  = d[cfg.primary]||0;
+  const sec = cfg.keys.filter(k=>k!==cfg.primary);
+  const secH = sec.map(k=>`
     <div class="sb">
       <div class="sl">${cfg.labels[k]}</div>
-      <div class="sv" id="sv_${id}_${k}" style="font-size:18px;color:#b0d8ff;text-shadow:0 0 6px rgba(176,216,255,.3)">${fmt(d[k]||0)}</div>
+      <div class="sv" id="sv_${id}_${k}" style="font-size:18px;color:#b0d8ff">${fmt(d[k]||0)}</div>
     </div>`).join('');
-
-  const delta = d._delta ?? 0;
-  const dH = delta > 0 ? `<div class="sdelta du">▲ +${fmt(delta)} so lần trước</div>`
-           : delta < 0 ? `<div class="sdelta dd">▼ ${fmt(Math.abs(delta))} so lần trước</div>`
-           :              `<div class="sdelta dn">— Đang theo dõi realtime...</div>`;
-
-  const pct = Math.min((pv / 1e8) * 100, 100);
+  const delta = d._delta??0;
+  const dH = delta>0 ? `<div class="sdelta du">▲ +${fmt(delta)} so lần trước</div>`
+           : delta<0 ? `<div class="sdelta dd">▼ ${fmt(Math.abs(delta))} so lần trước</div>`
+           :            `<div class="sdelta dn">— Đang theo dõi realtime...</div>`;
 
   const card = document.createElement('div');
-  card.className = 'card'; card.id = 'c_'+id;
+  card.className='card'; card.id='c_'+id;
   card.innerHTML = `
     <div class="cstripe ${cls}"></div>
     <div class="cbody">
@@ -889,73 +915,60 @@ function render(id) {
         <button class="ab rm" onclick="doRemove('${id}')">✕ REMOVE</button>
       </div>
     </div>`;
-
   document.getElementById('grid').appendChild(card);
-  setTimeout(() => { const p = document.getElementById('pf_'+id); if(p) p.style.width = pct+'%'; }, 400);
+  setTimeout(()=>{ const p=document.getElementById('pf_'+id); if(p)p.style.width=Math.min((pv/1e8)*100,100)+'%'; }, 400);
 }
 
 /* ── UPDATE DOM ── */
 function updateDOM(id) {
-  const t = trackers[id]; if (!t) return;
-  const cfg = PLAT[t.platform]; const d = t.data;
-
-  cfg.keys.forEach(k => {
-    const el = document.getElementById(`sv_${id}_${k}`); if (!el) return;
-    const nv = fmt(d[k]||0);
-    if (el.textContent !== nv) { el.textContent = nv; el.classList.remove('fl'); void el.offsetWidth; el.classList.add('fl'); }
+  const t=trackers[id]; if(!t) return;
+  const cfg=PLAT[t.platform]; const d=t.data;
+  cfg.keys.forEach(k=>{
+    const el=document.getElementById(`sv_${id}_${k}`); if(!el) return;
+    const nv=fmt(d[k]||0);
+    if(el.textContent!==nv){ el.textContent=nv; el.classList.remove('fl'); void el.offsetWidth; el.classList.add('fl'); }
   });
-
-  const box = document.getElementById(`sv_${id}_${cfg.primary}`)?.closest('.sb');
-  if (box) {
-    let dd = box.querySelector('.sdelta');
-    if (!dd) { dd = document.createElement('div'); box.appendChild(dd); }
-    const delta = d._delta ?? 0;
-    dd.className = `sdelta ${delta>0?'du':delta<0?'dd':'dn'}`;
-    dd.textContent = delta>0 ? `▲ +${fmt(delta)} so lần trước` : delta<0 ? `▼ ${fmt(Math.abs(delta))} so lần trước` : '— Đang theo dõi realtime...';
+  const primBox=document.getElementById(`sv_${id}_${cfg.primary}`)?.closest('.sb');
+  if(primBox){
+    let dd=primBox.querySelector('.sdelta');
+    if(!dd){dd=document.createElement('div');primBox.appendChild(dd);}
+    const delta=d._delta??0;
+    dd.className=`sdelta ${delta>0?'du':delta<0?'dd':'dn'}`;
+    dd.textContent=delta>0?`▲ +${fmt(delta)} so lần trước`:delta<0?`▼ ${fmt(Math.abs(delta))} so lần trước`:'— Đang theo dõi realtime...';
   }
-
-  const ut = document.getElementById('ut_'+id); if (ut) ut.textContent = new Date().toLocaleTimeString('vi-VN');
-  const pv = d[cfg.primary]||0;
-  const pf = document.getElementById('pf_'+id); if (pf) pf.style.width = Math.min((pv/1e8)*100,100)+'%';
+  const ut=document.getElementById('ut_'+id); if(ut) ut.textContent=new Date().toLocaleTimeString('vi-VN');
+  const pf=document.getElementById('pf_'+id); if(pf) pf.style.width=Math.min(((d[PLAT[t.platform].primary]||0)/1e8)*100,100)+'%';
 }
 
-/* ── REFRESH / AUTO ── */
+/* ── AUTO REFRESH ── */
 async function doRefresh(id, silent=false) {
-  const t = trackers[id]; if (!t) return;
-  if (!silent) toast(`⟳ Refreshing @${t.username}...`);
-  const r = await fetchData(t.platform, t.username, t.data);
-  if (!r.ok) { if(!silent) toast('⚠ Refresh thất bại','err'); return; }
-  t.data = r.data; updateDOM(id);
-  if (!silent) toast(`✓ Updated @${t.username}`, 'ok');
+  const t=trackers[id]; if(!t) return;
+  if(!silent) toast(`⟳ Refreshing @${t.username}...`);
+  const r=await fetchData(t.platform, t.username, t.data);
+  if(!r.ok){ if(!silent) toast('⚠ Refresh thất bại','err'); return; }
+  t.data=r.data; updateDOM(id);
+  if(!silent) toast(`✓ Updated @${t.username}`,'ok');
 }
 
 function startAuto(id) {
-  if (trackers[id]?.iv) clearInterval(trackers[id].iv);
-  const iv = setInterval(() => doRefresh(id, true), 15000);
-  if (trackers[id]) trackers[id].iv = iv;
+  if(trackers[id]?.iv) clearInterval(trackers[id].iv);
+  const iv=setInterval(()=>doRefresh(id,true),20000);
+  if(trackers[id]) trackers[id].iv=iv;
 }
 
 function doRemove(id) {
-  const t = trackers[id]; if (!t) return;
+  const t=trackers[id]; if(!t) return;
   clearInterval(t.iv); delete trackers[id];
-  const el = document.getElementById('c_'+id);
-  if (el) { el.style.opacity='0'; el.style.transform='scale(.93)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); }
-  if (!Object.keys(trackers).length) document.getElementById('empty').style.display='flex';
-  toast('✕ Removed', 'err');
-}
-
-/* ── TOAST ── */
-function toast(msg, type='') {
-  const c = document.getElementById('toasts');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(12px)'; setTimeout(()=>t.remove(),300); }, 3200);
+  const el=document.getElementById('c_'+id);
+  if(el){el.style.opacity='0';el.style.transform='scale(.93)';el.style.transition='all .3s';setTimeout(()=>el.remove(),300);}
+  if(!Object.keys(trackers).length) document.getElementById('empty').style.display='flex';
+  toast('✕ Removed','err');
 }
 
 /* ── CLOCK ── */
-setInterval(()=>{ document.getElementById('clk').textContent = new Date().toLocaleTimeString('vi-VN',{hour12:false}); }, 1000);
-document.getElementById('clk').textContent = new Date().toLocaleTimeString('vi-VN',{hour12:false});
-document.getElementById('ui').placeholder = PLAT['youtube'].ph;
+setInterval(()=>{ document.getElementById('clk').textContent=new Date().toLocaleTimeString('vi-VN',{hour12:false}); },1000);
+document.getElementById('clk').textContent=new Date().toLocaleTimeString('vi-VN',{hour12:false});
+document.getElementById('ui').placeholder=PLAT['youtube'].ph;
 </script>
 </body>
 </html>
