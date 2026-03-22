@@ -1459,6 +1459,13 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
     <span class="tdisp" id="tdisp">00:00 / 00:00</span>
     <div class="beat-ring" id="beat"></div>
     <span style="font-size:.6rem;color:var(--tx3);font-family:var(--fm)">NHỊP</span>
+    <!-- Volume control -->
+    <div style="display:flex;align-items:center;gap:5px;margin-left:10px">
+      <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:2px 4px">🔊</button>
+      <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1"
+        oninput="setVolume(this.value)"
+        style="width:60px;height:3px;cursor:pointer;accent-color:var(--a2)">
+    </div>
     <span style="margin-left:auto;font-size:.66rem;color:var(--tx3)">Mẫu: <strong id="tpl-label" style="color:var(--a2)">—</strong></span>
   </div>
 
@@ -1476,7 +1483,13 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
       <button class="eq-btn"        id="eq-tiktok"  onclick="setExportQuality('tiktok')">📱 TikTok · 9:16</button>
     </div>
 
-    <button class="exp-btn" id="expbtn" onclick="startExport()">⚡ Xuất Video</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="exp-btn" id="expbtn" onclick="startExport()">⚡ Xuất Video</button>
+      <button id="cancel-export-btn" onclick="cancelExport()"
+        style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:all .2s">
+        ✕ Hủy Export
+      </button>
+    </div>
     <div class="prog-bar-wrap" id="progwrap">
       <div class="prog-header">
         <div class="prog-status" id="progtxt">Đang chuẩn bị...</div>
@@ -1498,6 +1511,19 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
     <div class="dl-success" id="dlbox">
       <p id="dl-success-msg">✅ Xuất thành công! Video đã sẵn sàng.</p>
       <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button onclick="shareExportedVideo()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.65rem;font-weight:700;font-family:'IBM Plex Mono',monospace">
+          📤 Chia Sẻ
+        </button>
+        <button onclick="copyExportLink()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);cursor:pointer;font-size:.65rem;font-family:'IBM Plex Mono',monospace">
+          📋 Copy Link
+        </button>
+      </div>
+    </div>
+    <!-- Export History -->
+    <div id="export-history-panel" style="display:none;margin-top:14px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:8px">📂 LỊCH SỬ EXPORT GẦN ĐÂY</div>
+      <div id="export-history-list"></div>
     </div>
   </div>
   <div class="nav-row">
@@ -1640,6 +1666,15 @@ Tạo bởi VietLong Creator · Auto Music Video
             <option value="unlisted">🔗 Không công khai (unlisted)</option>
             <option value="public">🌍 Công khai (public)</option>
           </select>
+        </div>
+        <div class="auto-fg">
+          <label>Nhãn Remix mặc định</label>
+        <!-- Settings JSON export/import -->
+        <div class="auto-fg" style="margin-top:14px">
+          <div style="display:flex;gap:8px">
+            <button onclick="exportSettingsJSON()" style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">📦 Xuất Settings</button>
+            <button onclick="importSettingsJSON()" style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">📥 Import Settings</button>
+          </div>
         </div>
         <div class="auto-fg">
           <label>Nhãn Remix mặc định</label>
@@ -1861,6 +1896,61 @@ jobs:
 .day-chip:has(input:checked) {
   background:rgba(0,229,195,.12); border-color:var(--a2); color:var(--a2);
 }
+
+/* ── Volume control ── */
+#vol-slider { accent-color:var(--a2); }
+#mute-btn { transition:all .15s; }
+#mute-btn:hover { color:var(--a2)!important; }
+
+/* ── Export cancel btn show/hide ── */
+#cancel-export-btn { transition:all .2s; }
+#cancel-export-btn:hover { background:rgba(248,113,113,.2)!important; }
+
+/* ── Export history ── */
+.eh-item {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 10px; border-radius:7px;
+  background:var(--surface2); margin-bottom:5px;
+  font-size:.64rem; cursor:pointer; transition:all .18s;
+  border:1px solid transparent;
+}
+.eh-item:hover { border-color:var(--a2); }
+.eh-thumb { width:40px; height:26px; border-radius:4px; object-fit:cover; flex-shrink:0; background:var(--ink); }
+.eh-info { flex:1; min-width:0; }
+.eh-title { font-weight:700; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.eh-meta  { color:var(--tx3); font-size:.58rem; margin-top:1px; }
+
+/* ── Onboarding tooltip ── */
+.onboard-tip {
+  position:absolute; z-index:500;
+  background:var(--a2); color:var(--ink);
+  border-radius:9px; padding:8px 14px;
+  font-size:.68rem; font-weight:700;
+  box-shadow:0 6px 20px rgba(0,229,195,.35);
+  animation:toastIn .4s ease;
+  white-space:nowrap; pointer-events:none;
+}
+.onboard-tip::after {
+  content:''; position:absolute; top:100%; left:20px;
+  border:6px solid transparent;
+  border-top-color:var(--a2);
+}
+
+/* ── Lyrics tap-sync ── */
+.lyric-sync-row {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 8px; border-radius:6px;
+  background:var(--surface2); margin-bottom:3px;
+  cursor:pointer; transition:all .15s;
+  border:1px solid var(--line2);
+}
+.lyric-sync-row:hover { border-color:var(--a2); }
+.lyric-sync-row.synced { border-color:rgba(0,229,195,.4); background:rgba(0,229,195,.06); }
+.lyric-sync-ts { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--a2); min-width:42px; }
+.lyric-sync-txt { flex:1; font-size:.68rem; color:var(--tx2); }
+
+/* ── Touch drag support ── */
+.trim-handle { touch-action:none; }
 </style>
 
 <script>
@@ -1875,6 +1965,253 @@ const $ = id => document.getElementById(id);
    7.ColorPreset 8.MultiImage 9.BPM 10.Notification 11.GradCache
    12.Security 13.MediaSession 14.WakeLock 15.PWA 16.Analytics
 ═══════════════════════════════════════════════════════════════ */
+
+// ─────────────────────────────────────────
+// VOLUME CONTROL
+// ─────────────────────────────────────────
+let _isMuted=false, _volBeforeMute=1;
+function setVolume(v){
+  const vol=parseFloat(v);
+  if(typeof audEl!=='undefined'&&audEl) audEl.volume=vol;
+  _isMuted=(vol===0);
+  const btn=$('mute-btn');
+  if(btn) btn.textContent=vol===0?'🔇':vol<0.4?'🔉':'🔊';
+}
+function toggleMute(){
+  const sl=$('vol-slider'); if(!sl) return;
+  if(_isMuted){ sl.value=_volBeforeMute||0.8; setVolume(_volBeforeMute||0.8); }
+  else { _volBeforeMute=parseFloat(sl.value); sl.value=0; setVolume(0); }
+}
+
+// ─────────────────────────────────────────
+// CANCEL EXPORT
+// ─────────────────────────────────────────
+let _exportAborted=false;
+function cancelExport(){
+  _exportAborted=true;
+  $('cancel-export-btn').style.display='none';
+  $('expbtn').disabled=false;
+  $('progwrap').style.display='none';
+  toast('🛑 Đã hủy export','warn',2000);
+  releaseWakeLock();
+}
+function _showCancelBtn(show){
+  const b=$('cancel-export-btn');
+  if(b) b.style.display=show?'inline-flex':'none';
+}
+
+// ─────────────────────────────────────────
+// EXPORT HISTORY (last 10)
+// ─────────────────────────────────────────
+const HISTORY_KEY='vlc_export_history';
+function addExportHistory(entry){
+  try{
+    let hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    hist.unshift({...entry, ts:Date.now()});
+    hist=hist.slice(0,10);
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(hist));
+    renderExportHistory();
+  }catch(_){}
+}
+function renderExportHistory(){
+  const panel=$('export-history-panel');
+  const list=$('export-history-list');
+  if(!panel||!list) return;
+  try{
+    const hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    if(!hist.length){ panel.style.display='none'; return; }
+    panel.style.display='block';
+    list.innerHTML='';
+    hist.forEach(h=>{
+      const d=document.createElement('div');
+      d.className='eh-item';
+      d.title=`${h.title} — ${new Date(h.ts).toLocaleString('vi-VN')}`;
+      d.innerHTML=`
+        <div class="eh-thumb" style="${h.thumb?`background-image:url(${sanitizeText(h.thumb)});background-size:cover`:''}">${h.thumb?'':'🎵'}</div>
+        <div class="eh-info">
+          <div class="eh-title">${sanitizeText(h.title||'Không tên')}</div>
+          <div class="eh-meta">${sanitizeText(h.tpl||'')} · ${h.fmt||'MP4'} · ${new Date(h.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})} ${new Date(h.ts).toLocaleDateString('vi-VN')}</div>
+        </div>
+        <span style="font-size:.65rem;color:var(--tx3)">${h.size||''}</span>
+      `;
+      list.appendChild(d);
+    });
+  }catch(_){ panel.style.display='none'; }
+}
+
+// ─────────────────────────────────────────
+// SHARE & COPY after export
+// ─────────────────────────────────────────
+let _lastExportUrl='', _lastExportFile=null;
+async function shareExportedVideo(){
+  if(!_lastExportFile){toast('Chưa có video để chia sẻ','warn');return;}
+  if(navigator.share&&navigator.canShare?.({files:[_lastExportFile]})){
+    try{
+      await navigator.share({title:$('cc-title')?.value||'VietLong Creator',files:[_lastExportFile]});
+      return;
+    }catch(_){}
+  }
+  // Fallback: open in new tab
+  if(_lastExportUrl) window.open(_lastExportUrl,'_blank');
+  else toast('Trình duyệt không hỗ trợ share file','warn');
+}
+function copyExportLink(){
+  if(!_lastExportUrl){toast('Chưa có video','warn');return;}
+  navigator.clipboard?.writeText(_lastExportUrl)
+    .then(()=>toast('📋 Đã copy link video','success',2000))
+    .catch(()=>toast('Không copy được','warn'));
+}
+
+// ─────────────────────────────────────────
+// SETTINGS JSON EXPORT / IMPORT
+// ─────────────────────────────────────────
+function exportSettingsJSON(){
+  const data={
+    autoSettings,
+    exportedAt:new Date().toISOString(),
+    version:'4.0'
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`VietLongCreator_settings_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('📦 Đã xuất settings.json','success',2000);
+}
+function importSettingsJSON(){
+  const fi=document.createElement('input');
+  fi.type='file'; fi.accept='.json,application/json';
+  fi.onchange=async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const text=await f.text();
+      const data=JSON.parse(text);
+      if(data.autoSettings){
+        Object.assign(autoSettings,data.autoSettings);
+        saveAutoSettings(); loadAutoSettings();
+        toast('✅ Đã import settings thành công','success',3000);
+      } else throw new Error('File không hợp lệ');
+    }catch(err){ toast('❌ Lỗi import: '+err.message,'error'); }
+  };
+  fi.click();
+}
+
+// ─────────────────────────────────────────
+// LYRICS TAP-TO-SYNC
+// ─────────────────────────────────────────
+let _lyricTimestamps=[]; // [{time, text}]
+let _lyrSyncMode=false;
+
+function openLyricSync(){
+  const raw=$('cc-lyr')?.value||'';
+  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
+  if(!lines.length){toast('Chưa có lời bài hát','warn');return;}
+  if(!audEl||!audFile){toast('Chưa upload nhạc','warn');return;}
+
+  _lyricTimestamps=lines.map(t=>({time:0,text:t,synced:false}));
+  _lyrSyncMode=true;
+
+  // Build modal
+  let modal=$('lyric-sync-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='lyric-sync-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw);max-height:80vh;overflow-y:auto">
+      <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:6px;font-family:'IBM Plex Mono',monospace">🎵 TAP-TO-SYNC LYRICS</div>
+      <div style="font-size:.64rem;color:var(--tx3);margin-bottom:12px">Nhấn từng câu đúng lúc nhạc đang chạy để đánh dấu thời gian</div>
+      <div id="lyr-sync-list"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="startLyrSync()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.7rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">▶ Phát & Bắt đầu</button>
+        <button onclick="applyLyrSync()" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--a2);background:none;color:var(--a2);font-weight:700;font-size:.7rem;cursor:pointer">✅ Áp Dụng</button>
+        <button onclick="closeLyrSync()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.7rem">Huỷ</button>
+      </div>
+    </div>
+  `;
+  renderLyrSyncList();
+  modal.style.display='flex';
+}
+function renderLyrSyncList(){
+  const list=$('lyr-sync-list'); if(!list) return;
+  list.innerHTML='';
+  _lyricTimestamps.forEach((row,i)=>{
+    const d=document.createElement('div');
+    d.className='lyric-sync-row'+(row.synced?' synced':'');
+    d.id=`lsr-${i}`;
+    const ts=row.synced?`${String(Math.floor(row.time/60)).padStart(2,'0')}:${String(Math.floor(row.time%60)).padStart(2,'0')}`:'--:--';
+    d.innerHTML=`<span class="lyric-sync-ts">${ts}</span><span class="lyric-sync-txt">${sanitizeText(row.text)}</span><button onclick="tapLyrSync(${i})" style="padding:3px 10px;border-radius:5px;border:1px solid var(--a2);background:none;color:var(--a2);cursor:pointer;font-size:.6rem">⏱ Tap</button>`;
+    list.appendChild(d);
+  });
+}
+function startLyrSync(){
+  if(typeof startPlay==='function') startPlay();
+}
+function tapLyrSync(i){
+  const t=audEl?.currentTime||_renderTime||0;
+  _lyricTimestamps[i]={..._lyricTimestamps[i],time:t,synced:true};
+  renderLyrSyncList();
+}
+function applyLyrSync(){
+  // Build timestamped lyrics as "MM:SS text" format
+  const lines=_lyricTimestamps.filter(r=>r.synced).map(r=>{
+    const mm=String(Math.floor(r.time/60)).padStart(2,'0');
+    const ss=String(Math.floor(r.time%60)).padStart(2,'0');
+    return `[${mm}:${ss}] ${r.text}`;
+  }).join('\n');
+  if($('cc-lyr')) $('cc-lyr').value=lines;
+  closeLyrSync();
+  toast('🎵 Đã đồng bộ lyrics với thời gian thật!','success',3000);
+}
+function closeLyrSync(){
+  const m=$('lyric-sync-modal'); if(m) m.style.display='none';
+  _lyrSyncMode=false;
+}
+
+// ─────────────────────────────────────────
+// ONBOARDING — first time tooltip
+// ─────────────────────────────────────────
+function showOnboarding(){
+  if(localStorage.getItem('vlc_onboarded')) return;
+  const tips=[
+    {sel:'#fi-label',text:'👆 Bắt đầu: Upload file nhạc MP3/WAV'},
+    {sel:'#uz',text:'🎵 Kéo thả file nhạc vào đây'},
+  ];
+  const tip=tips.find(t=>document.querySelector(t.sel));
+  if(!tip) return;
+  const el=document.querySelector(tip.sel);
+  if(!el) return;
+  const rect=el.getBoundingClientRect();
+  const div=document.createElement('div');
+  div.className='onboard-tip';
+  div.textContent=tip.text;
+  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${rect.left}px;z-index:9000`;
+  document.body.appendChild(div);
+  setTimeout(()=>{
+    div.style.opacity='0'; div.style.transition='opacity .4s';
+    setTimeout(()=>div.remove(),400);
+  },4000);
+}
+function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
+
+// Touch events for Trim modal drag handles
+document.addEventListener('touchstart',e=>{
+  if(e.target.id==='trim-start-handle') _trimDragging='start';
+  if(e.target.id==='trim-end-handle')   _trimDragging='end';
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!_trimDragging) return;
+  const touch=e.touches[0]; if(!touch) return;
+  const wf=$('trim-waveform'); if(!wf) return;
+  const rect=wf.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(touch.clientX-rect.left)/rect.width));
+  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
+  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
+  drawTrimWaveform(); updateTrimDisplay();
+},{passive:true});
+document.addEventListener('touchend',()=>{ _trimDragging=null; });
 
 // ─────────────────────────────────────────
 // 1. TOAST NOTIFICATION SYSTEM
@@ -2800,23 +3137,64 @@ function refreshQueueUI(){
     return;
   }
   el.innerHTML='';
-  autoQueue.slice(0,8).forEach(item=>{
+  autoQueue.slice(0,20).forEach((item,idx)=>{
     const icons={'queued':'⏳','rendering':'🎬','rendered':'✅','uploading':'📤','done':'🎉','failed':'❌'};
     const d=document.createElement('div');
     d.className=`queue-item ${item.status==='done'?'done':item.status==='failed'?'failed':item.status.includes('ing')?'running':''}`;
+
+    // Safe DOM build — no innerHTML with user data (XSS prevention)
+    const safeTitle=sanitizeText(item.title||'Không tên');
+    const safeArtist=sanitizeText(item.artist||'');
+    const safeTpl=sanitizeText(item.tplId||'auto');
+    const safeCredit=sanitizeText(item.imgCredit||'');
+    const dateStr=new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN');
+
+    const icon=icons[item.status]||'⏳';
+    const actionHtml=item.ytId&&!item.ytId.startsWith('demo')
+      ?`<a href="https://youtu.be/${sanitizeText(item.ytId)}" target="_blank" rel="noopener" style="color:var(--a2);text-decoration:none">▶ Xem</a>`
+      :`<button onclick="removeQueueItem(${idx})" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px" title="Xóa">✕</button>`;
+    const retryBtn=item.status==='failed'
+      ?`<button onclick="retryQueueItem(${idx})" style="background:none;border:1px solid var(--a2);color:var(--a2);cursor:pointer;font-size:.6rem;padding:2px 8px;border-radius:5px;margin-left:4px">↻ Thử lại</button>`
+      :'';
+    const imgHtml=item.imgUrl
+      ?`<img src="${sanitizeText(item.imgUrl)}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="${safeCredit}">`
+      :'';
+    const progHtml=(item.status==='rendering'||item.status==='uploading')
+      ?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${Math.min(100,item.progress||0)}%"></div></div>`
+      :'';
+
     d.innerHTML=`
-      <div class="qi-status">${icons[item.status]||'⏳'}</div>
-      ${item.imgUrl?`<img src="${item.imgUrl}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" title="📸 ${item.imgCredit||''}">`:''} 
+      <div class="qi-status">${icon}</div>
+      ${imgHtml}
       <div class="qi-info">
-        <div class="qi-title">${item.title}</div>
-        <div class="qi-meta">${item.artist} · ${item.tplId||'auto'} · ${new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN')}${item.imgCredit?' · 📸 '+item.imgCredit:''}</div>
-        ${item.status==='rendering'||item.status==='uploading'?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${item.progress||0}%"></div></div>`:''}
+        <div class="qi-title">${safeTitle}</div>
+        <div class="qi-meta">${safeArtist} · ${safeTpl} · ${dateStr}${safeCredit?' · 📸 '+safeCredit:''}</div>
+        ${progHtml}
       </div>
-      <div class="qi-action">${item.ytId&&item.ytId!==''&&!item.ytId.startsWith('demo')?`<a href="https://youtu.be/${item.ytId}" target="_blank" style="color:var(--a2);text-decoration:none">▶ Xem</a>`:item.status}</div>
+      <div class="qi-action" style="display:flex;align-items:center;gap:4px">${actionHtml}${retryBtn}</div>
     `;
     el.appendChild(d);
   });
   refreshStats();
+}
+
+// ── Queue item actions ──
+function removeQueueItem(idx){
+  autoQueue.splice(idx,1);
+  saveQueue(); refreshQueueUI(); refreshStats();
+  toast('🗑 Đã xóa khỏi hàng đợi','info',1500);
+}
+function retryQueueItem(idx){
+  const item=autoQueue[idx]; if(!item)return;
+  item.status='queued'; item.progress=0; item.ytId='';
+  saveQueue(); refreshQueueUI();
+  toast(`↻ Đã đặt lại "${sanitizeText(item.title)}" để thử lại`,'info',2000);
+}
+function clearCompletedQueue(){
+  const before=autoQueue.length;
+  autoQueue=autoQueue.filter(i=>i.status!=='done'&&i.status!=='failed');
+  saveQueue(); refreshQueueUI(); refreshStats();
+  toast(`🧹 Đã xóa ${before-autoQueue.length} mục hoàn thành`,'success',2000);
 }
 
 function saveQueue(){
@@ -3067,236 +3445,6 @@ jobs:
 function exportGHScript(){
   const s = autoSettings;
   const script = `#!/usr/bin/env node
-/**
- * VietLong Creator — Auto Upload Script
- * Đặt file này tại: .github/scripts/auto-upload.js
- * 
- * Cách lấy OAuth2 tokens:
- * 1. console.cloud.google.com → Credentials → OAuth 2.0 Client ID (Desktop app)
- * 2. Dùng OAuth playground: https://developers.google.com/oauthplayground
- *    - Scope: https://www.googleapis.com/auth/youtube.upload
- *    - Lấy refresh_token, lưu vào GitHub Secret: YT_REFRESH_TOKEN
- */
-
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
-const ENV = {
-  apiKey:       process.env.YT_API_KEY      || '',
-  oauthToken:   process.env.YT_OAUTH_TOKEN  || '',
-  refreshToken: process.env.YT_REFRESH_TOKEN|| '',
-  clientId:     process.env.YT_CLIENT_ID    || '',
-  clientSecret: process.env.YT_CLIENT_SECRET|| '',
-  channelId:    process.env.YT_CHANNEL_ID   || '',
-  songsPerRun:  parseInt(process.env.SONGS_PER_RUN||'2'),
-  keywords:     process.env.KEYWORDS        || 'nhạc hot việt nam',
-  privacy:      process.env.YT_PRIVACY      || 'private',
-  titleTpl:     process.env.YT_TITLE_TPL    || '{title} - {artist} | Nhạc Remix Tiktok 2026',
-  tags:         process.env.YT_TAGS         || 'nhạc việt,music video,remix',
-  remixLabel:   process.env.REMIX_LABEL     || 'VIET LONG REMIX',
-  templateChoice:process.env.TEMPLATE_CHOICE|| 'ai',
-};
-
-function log(msg){ console.log('[' + new Date().toISOString() + '] ' + msg); }
-
-// ── Refresh OAuth2 access token ──
-async function refreshAccessToken(){
-  if(!ENV.refreshToken || !ENV.clientId) return ENV.oauthToken;
-  const body = JSON.stringify({
-    client_id: ENV.clientId, client_secret: ENV.clientSecret,
-    refresh_token: ENV.refreshToken, grant_type: 'refresh_token'
-  });
-  return new Promise((resolve,reject)=>{
-    const req = https.request({
-      hostname:'oauth2.googleapis.com', path:'/token', method:'POST',
-      headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-    },res=>{
-      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
-        try{ resolve(JSON.parse(d).access_token||ENV.oauthToken); }catch{ resolve(ENV.oauthToken); }
-      });
-    });
-    req.on('error',reject); req.write(body); req.end();
-  });
-}
-
-// ── Fetch trending music from YouTube ──
-async function fetchTrendingSongs(){
-  const n = ENV.songsPerRun;
-  const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics' +
-    '&chart=mostPopular&videoCategoryId=10&regionCode=VN' +
-    '&maxResults=' + (n*3) + '&key=' + ENV.apiKey;
-  log('Tìm nhạc trending VN...');
-  return new Promise((resolve,reject)=>{
-    https.get(url, res=>{
-      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
-        try{
-          const data=JSON.parse(d);
-          if(data.error) throw new Error(data.error.message);
-          const songs=(data.items||[]).slice(0,n).map(v=>({
-            title: v.snippet.title.split(/[-–|]/)[0].trim().toUpperCase(),
-            artist: v.snippet.channelTitle.replace(/official|vevo/gi,'').trim(),
-            videoId: v.id,
-            viewCount: v.statistics?.viewCount||0,
-            genre: detectGenre(v.snippet.title+' '+v.snippet.description),
-          }));
-          resolve(songs);
-        }catch(e){ reject(e); }
-      });
-    }).on('error',reject);
-  });
-}
-
-function detectGenre(text){
-  const t=text.toLowerCase();
-  if(/remix|edm|dance|trap/.test(t)) return 'edm';
-  if(/lofi|lo-fi|chill/.test(t)) return 'lofi';
-  if(/ballad|tình|yêu|nhớ|buồn/.test(t)) return 'ballad';
-  if(/rap|hiphop|hip hop/.test(t)) return 'rap';
-  return 'pop';
-}
-
-function aiPickTemplate(genre, title){
-  if(ENV.templateChoice !== 'ai') return ENV.templateChoice;
-  if(/edm|remix/.test(genre)) return 'mc-fire';
-  if(/lofi|chill/.test(genre)) return 'mc-lofi';
-  if(/ballad/.test(genre)||/tình|yêu|nhớ/.test(title.toLowerCase())) return 'mc-rose';
-  if(/rap/.test(genre)) return 'mc-cyber';
-  const pool=['mc-ocean','mc-galaxy','mc-aurora','mc-purple','mc-dream'];
-  return pool[Math.floor(Math.random()*pool.length)];
-}
-
-function buildTitle(song){
-  const d=new Date();
-  return ENV.titleTpl
-    .replace(/{title}/g,  song.title)
-    .replace(/{artist}/g, song.artist)
-    .replace(/{date}/g,   d.toLocaleDateString('vi-VN'))
-    .replace(/{year}/g,   d.getFullYear())
-    .replace(/{genre}/g,  song.genre||'pop');
-}
-
-// ── Upload video to YouTube ──
-async function uploadVideo(song, videoBuffer, accessToken){
-  const title = buildTitle(song);
-  const tags = ENV.tags.split(',').map(t=>t.trim()).filter(Boolean);
-  tags.push(song.artist.replace(/\\s+/g,''), song.genre||'nhacviet');
-  
-  const meta = JSON.stringify({
-    snippet:{
-      title, description: ENV.titleTpl.replace(/{title}/g,song.title).replace(/{artist}/g,song.artist),
-      tags, categoryId:'10',
-    },
-    status:{ privacyStatus: ENV.privacy, selfDeclaredMadeForKids: false },
-  });
-
-  log('Upload: "' + title + '" → YouTube (' + ENV.privacy + ')');
-  
-  // Resumable upload
-  return new Promise((resolve,reject)=>{
-    const metaBuf = Buffer.from(meta);
-    const initReq = https.request({
-      hostname:'www.googleapis.com',
-      path:'/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer '+accessToken,
-        'Content-Type':'application/json',
-        'Content-Length':metaBuf.length,
-        'X-Upload-Content-Type':'video/webm',
-        'X-Upload-Content-Length':videoBuffer.length,
-      }
-    },res=>{
-      const uploadUrl=res.headers.location;
-      if(!uploadUrl){reject(new Error('No upload URL: '+JSON.stringify(res.headers)));return;}
-      log('Upload URL nhận được, đang upload video...');
-      // Upload binary
-      const u=new URL(uploadUrl);
-      const uploadReq = https.request({
-        hostname:u.hostname, path:u.pathname+u.search, method:'PUT',
-        headers:{'Content-Type':'video/webm','Content-Length':videoBuffer.length}
-      },r=>{
-        let d=''; r.on('data',c=>d+=c); r.on('end',()=>{
-          try{ resolve(JSON.parse(d)); }catch{ resolve({id:'unknown'}); }
-        });
-      });
-      uploadReq.on('error',reject);
-      uploadReq.write(videoBuffer);
-      uploadReq.end();
-    });
-    initReq.on('error',reject);
-    initReq.write(metaBuf);
-    initReq.end();
-  });
-}
-
-// ── Main ──
-async function main(){
-  log('=== VietLong Auto Upload bắt đầu ===');
-  
-  if(!ENV.apiKey){ log('LỖI: Thiếu YT_API_KEY'); process.exit(1); }
-  
-  // Refresh access token
-  const accessToken = await refreshAccessToken();
-  log('Access token: ' + (accessToken?'OK':'THIẾU'));
-  
-  // Fetch trending songs
-  const songs = await fetchTrendingSongs();
-  log('Tìm được ' + songs.length + ' bài: ' + songs.map(s=>s.title).join(', '));
-  
-  const results = [];
-  for(const song of songs){
-    log('--- Xử lý: "' + song.title + '" by ' + song.artist + ' ---');
-    const tpl = aiPickTemplate(song.genre, song.title);
-    log('Template AI chọn: ' + tpl);
-    
-    // NOTE: Render video cần headless browser (Puppeteer)
-    // Uncomment để dùng Puppeteer:
-    // const videoBuffer = await renderWithPuppeteer(song, tpl);
-    
-    // Placeholder: tạo video giả để test pipeline
-    const videoBuffer = Buffer.alloc(1024, 0); // thay bằng Puppeteer render thực
-    log('Render xong (placeholder): ' + videoBuffer.length + ' bytes');
-    
-    if(accessToken && accessToken!==ENV.oauthToken){
-      try{
-        const res = await uploadVideo(song, videoBuffer, accessToken);
-        log('Upload OK: https://youtu.be/' + (res.id||'?'));
-        results.push({...song, tpl, ytId:res.id, status:'ok'});
-      }catch(e){
-        log('Upload lỗi: ' + e.message);
-        results.push({...song, tpl, status:'error', error:e.message});
-      }
-    } else {
-      log('Bỏ qua upload (thiếu OAuth token)');
-      results.push({...song, tpl, status:'skip'});
-    }
-  }
-  
-  // Lưu log kết quả
-  const logPath = 'auto-results-' + new Date().toISOString().slice(0,10) + '.json';
-  fs.writeFileSync(logPath, JSON.stringify(results, null, 2));
-  log('Lưu kết quả: ' + logPath);
-  log('=== Hoàn tất ===');
-}
-
-main().catch(e=>{ console.error('FATAL:', e); process.exit(1); });
-
-/* 
- * === ĐỂ RENDER VIDEO THẬT VỚI PUPPETEER ===
- * npm install puppeteer
- * 
- * async function renderWithPuppeteer(song, tplId){
- *   const puppeteer = require('puppeteer');
- *   const browser = await puppeteer.launch({args:['--no-sandbox']});
- *   const page = await browser.newPage();
- *   await page.goto('https://letranvietlong.github.io/VietLongCreator.html');
- *   // ... điều khiển UI để render video
- *   // ... capture MediaRecorder output
- *   await browser.close();
- * }
- */
 `;
   downloadFile('auto-upload.js', script, 'text/javascript');
   alog('ok','Đã xuất auto-upload.js → đặt vào .github/scripts/ trong repo');
@@ -3321,7 +3469,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 let step=1, chosenTpl=null, audFile=null, audEl=null;
 let actx=null, analyser=null, playing=false, raf=null;
 let aiT=0, aiGP=0, beatLock=false, artImg=null, ptArr=[];
-let lastBg1='',lastBg2='';
+
 
 const bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
 const bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
@@ -3395,7 +3543,7 @@ const fmt=s=>{s=isNaN(s)||s<0?0:s;return`${String(Math.floor(s/60)).padStart(2,'
 const h2r=h=>{try{return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}catch{return[0,0,0];}};
 function rrF(c,x,y,w,h,r){if(w<=0||h<=0)return;c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();c.fill();}
 /* ── AUDIO DATA CACHE — đọc 1 lần/frame thay vì 3 lần ── */
-let _freqBuf=null,_freqDirty=true;
+let _freqBuf=null;
 let _bass=.3,_mid=.3,_eng=.3;
 // ── Thời gian render hiện tại — dùng thay vì audEl.currentTime để đúng khi export ──
 let _renderTime=0;   // giây hiện tại (set mỗi frame, kể cả khi export)
@@ -3429,8 +3577,7 @@ const TARGET_FPS=30;
 const FRAME_MS=1000/TARGET_FPS;
 
 /* ── BG CACHE: chỉ vẽ lại background tĩnh mỗi 4 frame ── */
-let bgFrameCount=0;
-let bgCache=null,bgCacheCtx=null;
+let bgCache=null;
 
 /* ── WIZARD ── */
 function goStep(n){
@@ -3456,14 +3603,15 @@ function goStep(n){
     // Dừng TẤT CẢ mini preview animations để giải phóng CPU
     Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
     for(const k in miniAnim)miniAnim[k]=null;
-    bgCache=null; bgFrameCount=0;
-    // ⚠️ Panel phải visible TRƯỚC khi đọc clientWidth — dùng requestAnimationFrame để chờ layout
+    bgCache=null;    // ⚠️ Panel phải visible TRƯỚC khi đọc clientWidth — dùng requestAnimationFrame để chờ layout
     requestAnimationFrame(()=>{
       requestAnimationFrame(()=>{
         initCanvas();
         setupAudio();
         // Bắt đầu idle animation ngay
         startIdleLoop();
+        updateExportBadge();
+        renderExportHistory();
       });
     });
   }
@@ -3486,6 +3634,7 @@ uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
 uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');if(e.dataTransfer.files[0])handleAud(e.dataTransfer.files[0]);});
 function handleAud(f){
   if(!f||!f.type.startsWith('audio/'))return;
+  markOnboarded();
   audFile=f;
   $('aname').textContent=f.name;
   $('ameta').textContent=`${(f.size/1024/1024).toFixed(2)} MB · ${(f.type.split('/')[1]||'audio').toUpperCase()}`;
@@ -3951,6 +4100,7 @@ function buildCfg(force=false){
       <label>${isLV?'Lời Bài Hát (Hiển thị trung tâm video)':'Lời Bài Hát (Tùy Chọn)'}</label>
       <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...':'Nhập lời bài hát...'}" rows="${isLV?8:4}" oninput="scheduleDraftSave()"></textarea>
       <div class="hint">${isLV?'💡 Mỗi dòng hiển thị tuần tự đồng bộ nhịp nhạc':'💡 Để trống nếu không cần lời nhạc'}</div>
+      <button onclick="openLyricSync()" style="margin-top:6px;padding:5px 12px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🎵 Tap-to-Sync Lyrics</button>
     </div>
     <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả với nhạc của bạn.</div>
   `;
@@ -4904,9 +5054,7 @@ function bgDream(c,W,H,t,bass,p){
   c.fillStyle=vg;c.fillRect(0,0,W,H);
 }
 
-function fullMC(W,H,t,bass,mid,eng,p,title,artist){
-  bgFrameCount++;
-  const bgType = chosenTpl?.bg || 'ocean';
+function fullMC(W,H,t,bass,mid,eng,p,title,artist){  const bgType = chosenTpl?.bg || 'ocean';
 
   // ── BACKGROUND — vẽ mỗi frame để animation mượt ──
   drawMCBackground(bgX,W,H,t,bass,p,bgType);
@@ -5236,7 +5384,7 @@ function fullLV(W,H,t,bass,mid,eng,p,title,artist){
   ovX.clearRect(0,0,W,H);
   // Lyrics — center stage, large
   const raw=$('cc-lyr')?.value||'';
-  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
+  const lines=raw.trim()?raw.split(/\r?\n/).filter(l=>l.trim()):[];
   const dur=(_renderDur||audEl?.duration)||60,cur=_renderTime||0;
   const idx=lines.length?Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1):-1;
   const line=lines[idx]||title||'TÊN BÀI HÁT';
@@ -5508,8 +5656,7 @@ async function exportWithWebCodecs(q){
     const outCvs  =document.createElement('canvas'); outCvs.width=EW;   outCvs.height=EH;
     const outCtx  =outCvs.getContext('2d');
 
-    // Save + override global canvas refs
-    const _oBgCvs=bgCvs,_oOvCvs=ovCvs;
+    // Save preview canvas sizes
     const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
     const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
 
@@ -5540,8 +5687,6 @@ async function exportWithWebCodecs(q){
 
     // VideoEncoder
     upProg(12,'Khởi tạo VideoEncoder...');
-    const frameQueue=[];
-    let videoEncoderDone=false;
     const videoEncoder=new VideoEncoder({
       output:(chunk,meta)=>{ muxer.addVideoChunk(chunk,meta); },
       error:e=>console.error('VideoEncoder:',e),
@@ -5625,6 +5770,10 @@ async function exportWithWebCodecs(q){
 
     // Render + encode video frames
     async function renderNextFrame(){
+      if(_exportAborted){
+        bgCvs.width=_oPW; bgCvs.height=_oPH;
+        releaseWakeLock(); return;
+      }
       if(frameIdx>=totalFrames){
         // Done — flush + finalize
         upProg(94,'Đóng gói MP4...');
@@ -5633,6 +5782,8 @@ async function exportWithWebCodecs(q){
         const {buffer}=target;
         const blob=new Blob([buffer],{type:'video/mp4'});
         const url=URL.createObjectURL(blob);
+        // Auto-revoke after 10 min to free memory
+        setTimeout(()=>URL.revokeObjectURL(url), 600_000);
         const songTitle=$('cc-title')?.value||'Video';
         const fname=`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`;
         $('dllink').href=url; $('dllink').download=fname;
@@ -5652,8 +5803,7 @@ async function exportWithWebCodecs(q){
       const el=frameIdx/FPS;
       const ts_us=Math.round(el*1_000_000);
 
-      // Audio analysis at this timestamp
-      exportAudEl.currentTime=el;
+      // Audio analysis — read current frequency data (no seek needed)
       exportAn.getByteFrequencyData(expFreqBuf);
       _freqBuf=expFreqBuf;
       const len2=expFreqBuf.length;
@@ -5710,8 +5860,7 @@ async function exportWithMediaRecorder(q){
   const btn=$('expbtn');
   const EW=q.w||1280, EH=q.h||720;
   upProg(0,'Khởi tạo MediaRecorder...');
-  stopPlay(); aiT=0; aiGP=0; bgCache=null; bgFrameCount=0;
-  await new Promise(r=>setTimeout(r,80));
+  stopPlay(); aiT=0; aiGP=0; bgCache=null;  await new Promise(r=>setTimeout(r,80));
 
   if(!actx) actx=new(window.AudioContext||window.webkitAudioContext)();
   if(actx.state==='suspended') await actx.resume();
@@ -5756,9 +5905,14 @@ async function exportWithMediaRecorder(q){
       $('dlbox').style.display='block';
       btn.disabled=false; upProg(100,'Hoàn tất!','');
       releaseWakeLock();
+      _showCancelBtn(false);
       const songTitle=$('cc-title')?.value||'Video';
       sendNotif('✅ Export xong!',`"${songTitle}" — WebM ${EW}×${EH}`);
       toast(`🎉 WebM xuất xong! "${songTitle}"`, 'success', 5000);
+      _lastExportUrl=url;
+      try{ _lastExportFile=new File([blob],fname,{type:'video/webm'}); }catch(_){}
+      addExportHistory({title:songTitle,tpl:chosenTpl?.id||'',fmt:'WebM',size:(blob.size/1024/1024).toFixed(1)+'MB',thumb:typeof artImg!=='undefined'&&artImg?.src?artImg.src:''});
+      renderExportHistory();
       exportAudEl.pause(); exportActx.close();
     },400);
   };
@@ -5776,6 +5930,7 @@ async function exportWithMediaRecorder(q){
   upProg(20,`Render WebM ${EW}×${EH}...`);
 
   function fr(){
+    if(_exportAborted){ bgCvs.width=_oPW; bgCvs.height=_oPH; return; }
     const el=(performance.now()-t0)/1000;
     if(el>=dur+0.1){
       upProg(94,'Đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
