@@ -1578,7 +1578,6 @@ header { padding:0 32px; }
       <button class="ratio-btn" id="ratio-916" onclick="setRatio('9:16')">9:16 TikTok</button>
     </div>
     <button onclick="openTrimModal()" style="margin-left:auto;padding:5px 12px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .18s" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--line2)';this.style.color='var(--tx3)'">✂ Cắt nhạc</button>
-  </div>
   <div class="playbar">
     <button class="pbtn active" id="pbtn" onclick="togglePlay()">▶ Phát</button>
     <button class="pbtn" onclick="doRestart()">↺ Lại Đầu</button>
@@ -1633,7 +1632,8 @@ header { padding:0 32px; }
     </div>
   </details>
 
-    </div><!-- /left -->
+    </div>
+  </div><!-- /left -->
 
     <!-- RIGHT: Export -->
     <div>
@@ -1653,13 +1653,13 @@ header { padding:0 32px; }
       <button id="plt-tt" onclick="switchPlatform('tiktok')"  style="flex:1;padding:7px;border:none;background:var(--surface2);color:var(--tx3);font-size:.65rem;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace">🎵 TikTok</button>
     </div>
     <div id="eq-youtube" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
-      <button class="eq-btn active" data-q="yt_fhd" onclick="setExportQuality('yt_fhd')"><span style="color:#fbbf24">★</span> Full HD · 1080p · 16Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
+      <button class="eq-btn active" data-q="yt_2k"  onclick="setExportQuality('yt_2k')"><span style="color:#fbbf24">★</span> 2K · 1440p · 25Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
+      <button class="eq-btn" data-q="yt_fhd" onclick="setExportQuality('yt_fhd')">Full HD · 1080p · 16Mbps</button>
       <button class="eq-btn" data-q="yt_hd"  onclick="setExportQuality('yt_hd')">HD · 720p · 8Mbps</button>
-      <button class="eq-btn" data-q="yt_2k"  onclick="setExportQuality('yt_2k')">2K · 1440p · 25Mbps</button>
     </div>
     <div id="eq-tiktok" style="display:none;flex-direction:column;gap:5px;margin-bottom:10px">
-      <button class="eq-btn active" data-q="tt_std" onclick="setExportQuality('tt_std')"><span style="color:#fbbf24">★</span> Standard · 1080p · 6Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
-      <button class="eq-btn" data-q="tt_hq" onclick="setExportQuality('tt_hq')">High Quality · 1080p · 10Mbps · 60fps</button>
+      <button class="eq-btn active" data-q="tt_hq"  onclick="setExportQuality('tt_hq')"><span style="color:#fbbf24">★</span> High Quality · 1080p · 10Mbps · 60fps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
+      <button class="eq-btn" data-q="tt_std" onclick="setExportQuality('tt_std')">Standard · 1080p · 6Mbps</button>
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
@@ -2399,6 +2399,111 @@ body:has(#panel-auto.show) .step-bar {
 [data-theme="light"] .auto-workspace { background: #f4f4f8; }
 
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.tc-dbl-hint {
+  position:absolute; bottom:8px; left:0; right:0;
+  text-align:center; font-size:.55rem; font-weight:700;
+  color:rgba(255,255,255,.75); letter-spacing:.06em;
+  opacity:0; transition:opacity .2s;
+  font-family:'IBM Plex Mono',monospace;
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
+  pointer-events:none;
+}
+.tcard:hover .tc-dbl-hint { opacity:1; }
+.tcard.selected .tc-dbl-hint { display:none; }
+.tc-hover-overlay { flex-direction:column; gap:4px; }
+/* ── PAGINATION ── */
+.gallery-pagination {
+  display:flex; align-items:center; justify-content:center;
+  gap:6px; margin-top:22px; padding:4px 0;
+  flex-wrap:wrap;
+}
+.pg-btn {
+  min-width:34px; height:34px; border-radius:8px;
+  border:1px solid var(--line2); background:var(--surface2);
+  color:var(--tx2); font-size:.72rem; font-weight:600;
+  font-family:'IBM Plex Mono',monospace;
+  cursor:pointer; transition:all .18s;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 10px;
+}
+.pg-btn:hover { border-color:var(--a2); color:var(--a2); background:rgba(0,229,195,.08); }
+.pg-btn.active {
+  background:var(--a2); color:#000; border-color:var(--a2);
+  box-shadow:0 2px 12px rgba(0,229,195,.35);
+  font-weight:800;
+}
+.pg-btn:disabled { opacity:.35; cursor:not-allowed; pointer-events:none; }
+.pg-btn.pg-arrow { font-size:.9rem; }
+.pg-info {
+  font-size:.6rem; color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  padding:0 8px; white-space:nowrap;
+}
+.pg-dots { color:var(--tx3); font-size:.8rem; padding:0 2px; letter-spacing:2px; }
+
+/* ── STEP 4: 9:16 TikTok layout ── */
+#p4 .s4-grid {
+  display:grid;
+  grid-template-columns: minmax(0,1.2fr) minmax(320px,480px);
+  gap:20px;
+  align-items:start;
+  transition:grid-template-columns .3s ease;
+}
+#p4 .s4-grid.is-916 {
+  /* 9:16: left col shrinks to just fit the portrait canvas */
+  grid-template-columns: auto 1fr;
+  justify-items:center;
+  align-items:start;
+  gap:24px;
+}
+#p4 .s4-left {
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+#p4 .s4-grid.is-916 .s4-left {
+  /* Center the portrait preview in its col */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:auto;
+}
+/* When 9:16: make preview frame centered and larger */
+#p4 .s4-grid.is-916 .preview-frame {
+  margin:0 auto;
+}
+#p4 .s4-grid.is-916 .ratio-916 {
+  height:76vh;
+  width:calc(76vh * 9 / 16) !important;
+}
+/* Controls below preview stay full-width of left col */
+#p4 .s4-grid.is-916 .s4-controls {
+  width:100%;
+  max-width:calc(76vh * 9 / 16);
+  margin:0 auto;
+}
+/* 16:9: controls normal width */
+#p4 .s4-controls {
+  width:100%;
+}
+/* Right export col: sticky so it stays visible while scrolling */
+#p4 .s4-right {
+  position:sticky;
+  top:72px;
+}
+@media(max-width:900px){
+  #p4 .s4-grid,
+  #p4 .s4-grid.is-916 {
+    grid-template-columns:1fr;
+  }
+  #p4 .s4-right { position:static; }
+  #p4 .s4-grid.is-916 .ratio-916 {
+    height:60vw;
+    width:calc(60vw * 9 / 16) !important;
+  }
+}
 </style>
 
 <script>
@@ -5291,9 +5396,12 @@ function applyAIInfo(){
 
 
 let activeFilter='mc';
+let galleryPage=1;
+const GALLERY_PER_PAGE=12;
 
 function setFilter(f){
   activeFilter=f;
+  galleryPage=1;
   document.querySelectorAll('.ftab').forEach(el=>el.classList.toggle('active',el.dataset.filter===f));
   renderGallery();
 }
@@ -5325,6 +5433,12 @@ function renderGallery(){
     'viz':      {icon:'🎛',label:'Visualizer'},
   };
 
+  // ── Pagination (flat mode only) ──
+  const usePagination=!showGroups;
+  const totalPages=usePagination?Math.ceil(filtered.length/GALLERY_PER_PAGE):1;
+  galleryPage=Math.max(1,Math.min(galleryPage,totalPages));
+  const pageItems=usePagination?filtered.slice((galleryPage-1)*GALLERY_PER_PAGE,galleryPage*GALLERY_PER_PAGE):filtered;
+
   if(showGroups){
     ['mc-ballad','mc-edm','mc-vibe','lv','viz'].forEach(cat=>{
       const list=filtered.filter(t=>t.cat===cat);
@@ -5337,9 +5451,68 @@ function renderGallery(){
       list.forEach((t,i)=>addCard(grpDiv.querySelector('.gallery'),t,i+1));
     });
   } else {
+    const globalOffset=(galleryPage-1)*GALLERY_PER_PAGE;
     const grid=document.createElement('div');grid.className='gallery';g.appendChild(grid);
-    filtered.forEach((t,i)=>addCard(grid,t,i+1));
+    pageItems.forEach((t,i)=>addCard(grid,t,globalOffset+i+1));
   }
+
+  // ── Render pagination bar ──
+  if(usePagination&&totalPages>1){
+    const pb=document.createElement('div');pb.className='gallery-pagination';
+    // Prev button
+    const prev=document.createElement('button');
+    prev.className='pg-btn pg-arrow';prev.textContent='←';prev.title='Trang trước';
+    prev.disabled=(galleryPage===1);
+    prev.onclick=()=>{galleryPage--;renderGallery();scrollToGallery();};
+    pb.appendChild(prev);
+
+    // Page number buttons with smart truncation
+    const pageNums=buildPageNums(galleryPage,totalPages);
+    pageNums.forEach(n=>{
+      if(n==='...'){
+        const dots=document.createElement('span');dots.className='pg-dots';dots.textContent='···';
+        pb.appendChild(dots);
+      } else {
+        const btn=document.createElement('button');
+        btn.className='pg-btn'+(n===galleryPage?' active':'');
+        btn.textContent=String(n);
+        btn.onclick=(()=>{const pg=n;return()=>{galleryPage=pg;renderGallery();scrollToGallery();};})();
+        pb.appendChild(btn);
+      }
+    });
+
+    // Next button
+    const next=document.createElement('button');
+    next.className='pg-btn pg-arrow';next.textContent='→';next.title='Trang sau';
+    next.disabled=(galleryPage===totalPages);
+    next.onclick=()=>{galleryPage++;renderGallery();scrollToGallery();};
+    pb.appendChild(next);
+
+    // Info
+    const info=document.createElement('span');info.className='pg-info';
+    const start=(galleryPage-1)*GALLERY_PER_PAGE+1;
+    const end2=Math.min(galleryPage*GALLERY_PER_PAGE,filtered.length);
+    info.textContent=`${start}–${end2} / ${filtered.length} mẫu`;
+    pb.appendChild(info);
+
+    g.appendChild(pb);
+  }
+}
+
+function buildPageNums(cur,total){
+  if(total<=7) return Array.from({length:total},(_,i)=>i+1);
+  const pages=[];
+  pages.push(1);
+  if(cur>3) pages.push('...');
+  for(let p=Math.max(2,cur-1);p<=Math.min(total-1,cur+1);p++) pages.push(p);
+  if(cur<total-2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
+
+function scrollToGallery(){
+  const el=$('gallery');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function addCard(grid,t,idx){
@@ -5349,7 +5522,7 @@ function addCard(grid,t,idx){
     <div class="tc-preview">
       <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
       <div class="tc-badge">DEMO TRỰC TIẾP</div>
-      <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
+      <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div><div class="tc-dbl-hint">2× chọn nhanh</div></div>
       <div class="tc-selected-mark">✓</div>
       <div class="tcard-num">${String(idx).padStart(2,'0')}</div>
     </div>
@@ -5359,6 +5532,7 @@ function addCard(grid,t,idx){
       <div class="tc-pills">${t.tags.map(x=>`<span class="tc-pill">${x}</span>`).join('')}</div>
     </div>`;
   d.addEventListener('click',()=>pickTpl(t));
+  d.addEventListener('dblclick',()=>{ pickTpl(t); goStep(3); toast('✅ Đã chọn: '+t.name,'success',1800); });
   grid.appendChild(d);
   runMiniAnim(t);
 }
@@ -9130,9 +9304,13 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   // ── BACKGROUND — vẽ mỗi frame để animation mượt ──
   drawMCBackground(bgX,W,H,t,bass,p,bgType);
 
-  // ── CARD — Multi-axis beat animation ──  const maxCardH = H * 0.60;
-  // 9:16: card width = 68% of W so it fills portrait frame properly
-  const baseCardW = Math.min(W * 0.34, maxCardH / 1.18);
+  // ── CARD — Multi-axis beat animation ──
+  const is916 = currentRatio === '9:16';
+  // 9:16: card wider to fill portrait frame, 16:9: standard sizing
+  const maxCardH = is916 ? H * 0.52 : H * 0.60;
+  const baseCardW = is916
+    ? Math.min(W * 0.62, maxCardH / 1.18)   // wider card for portrait
+    : Math.min(W * 0.34, maxCardH / 1.18);  // standard for landscape
 
   // Breathing + beat pulse trên nhiều trục
   const breathe = 1 + Math.sin(aiT * 1.2) * 0.006;
@@ -9145,7 +9323,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   const shakeX = bass > 0.62 ? Math.sin(aiT * 26) * W * 0.0045 * bass : 0;
   const shakeY = bass > 0.62 ? Math.cos(aiT * 20) * H * 0.0022 * bass : 0;
   const cx = (W - cw) / 2 + shakeX;
-  const cy = H * 0.04 + shakeY;
+  // 9:16: center the card vertically (shift down), 16:9: near top
+  const cy = is916 ? H * 0.08 + shakeY : H * 0.04 + shakeY;
   const cardCX = cx + cw/2, cardCY = cy + ch/2;
 
   // ── Outer glow aura khi beat mạnh ──
@@ -9262,12 +9441,13 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   ovX.clearRect(0,0,W,H);
   const wc=p.wc||'#22d3ee';
   const waveY=cy+ch+H*.018;
-  // Tính chiều cao sóng sao cho title luôn nằm trong frame
+  // 9:16: less wave height so title fits nicely below center
   const remainH = H - waveY;
   const titleSz = Math.min(W*.056, 42);
-  const minTitleSpace = titleSz * 2.5; // title + artist
+  const minTitleSpace = titleSz * 2.5;
   const maxWaveH = remainH - minTitleSpace - H*.02;
-  const waveH = Math.min(maxWaveH, H*.08*(1+bass*.4));
+  const waveHBase = is916 ? H*.05 : H*.08;
+  const waveH = Math.min(maxWaveH, waveHBase*(1+bass*.4));
 
   // Wave bars — giảm từ 72 → 40, bỏ createLinearGradient và shadowBlur per-bar
   if(_freqBuf){
@@ -9290,7 +9470,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
 
   // ── TITLE + ARTIST — Premium Typography ──
   const tyY = waveY + waveH + H*.052;
-  const tsz = Math.min(W*.056, 44) * (1 + bass * 0.018);
+  // 9:16: slightly smaller text so it fits in portrait width nicely
+  const tsz = Math.min(is916 ? W*.072 : W*.056, 44) * (1 + bass * 0.018);
   ovX.save();
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
@@ -9683,9 +9864,9 @@ function switchPlatform(p){
   if(ttBtn){ttBtn.style.background=!isYT?'rgba(0,230,255,.15)':'var(--surface2)';ttBtn.style.color=!isYT?'#00e6ff':'var(--tx3)';}
   document.getElementById('eq-youtube').style.display=isYT?'flex':'none';
   document.getElementById('eq-tiktok').style.display=!isYT?'flex':'none';
-  setExportQuality(isYT?'yt_fhd':'tt_std');
+  setExportQuality(isYT?'yt_2k':'tt_hq');
 }
-let currentQuality='best';
+let currentQuality='yt_2k';
 
 function setExportQuality(q){
   currentQuality=q;
