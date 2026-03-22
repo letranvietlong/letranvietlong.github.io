@@ -713,20 +713,29 @@ main {
   position:relative; background:#000;
   border-radius:var(--r2); overflow:hidden;
   aspect-ratio:16/9; width:100%;
-  display:flex; align-items:center; justify-content:center;
   transition:aspect-ratio .3s;
 }
 .preview-frame.ratio-916 {
   aspect-ratio:9/16;
-  max-height:70vh;
-  width:auto;
+  max-height:72vh;
+  width:auto !important;
   margin:0 auto;
+  /* ResizeObserver in initCanvas will resize canvases automatically */
 }
-#bgcvs { display:block; width:100%; height:100%; object-fit:contain; }
+#bgcvs {
+  display:block;
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  /* width/height set by JS initCanvas */
+}
 #ovcvs {
   position:absolute;
-  top:0; left:0; width:100%; height:100%;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
   pointer-events:none;
+  display:block;
+  /* width/height set by JS initCanvas — same as bgCvs */
 }
 
 .playbar {
@@ -1149,19 +1158,10 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 /* ── FULLSCREEN ── */
 #pvframe:-webkit-full-screen{width:100vw!important;height:100vh!important;}
 #pvframe:fullscreen,#pvframe:-webkit-full-screen{
-  width:100vw!important;height:100vh!important;background:#000;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  aspect-ratio:unset!important;border-radius:0!important;
+  width:100vw!important;height:100vh!important;
+  background:#000;aspect-ratio:unset!important;border-radius:0!important;
 }
-#pvframe:fullscreen #bgcvs,#pvframe:-webkit-full-screen #bgcvs{
-  width:auto!important;height:100vh!important;
-  max-width:100vw!important;max-height:100vh!important;
-}
-#pvframe:fullscreen #ovcvs,#pvframe:-webkit-full-screen #ovcvs{
-  width:auto!important;height:100vh!important;
-  max-width:100vw!important;max-height:100vh!important;
-  top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;
-}
+/* bgCvs + ovCvs handled by ResizeObserver — no override needed */
 .preview-frame{position:relative;}
 .fullscreen-btn{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.7rem;backdrop-filter:blur(8px);transition:all .2s;}
 .fullscreen-btn:hover{background:rgba(255,255,255,.15);}
@@ -1413,7 +1413,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.2 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.4 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3152,6 +3152,8 @@ function toggleFullscreen(){
 document.addEventListener('fullscreenchange',()=>{
   const btn=document.querySelector('.fullscreen-btn');
   if(btn) btn.textContent=document.fullscreenElement?'✕':'⛶';
+  // ResizeObserver handles canvas resize, but call initCanvas explicitly as fallback
+  requestAnimationFrame(()=>{ if(typeof initCanvas==='function') initCanvas(); });
 });
 
 // ─────────────────────────────────────────
@@ -5298,36 +5300,53 @@ function loadArtImg(inp){
 
 /* ── CANVAS INIT ── */
 function initCanvas(){
-  const w=$('pvframe');
-  const W=w.clientWidth||w.parentElement?.clientWidth||Math.round(window.innerWidth*.72)||1280;
-  let cW, cH;
+  const pvframe=$('pvframe');
+  if(!pvframe) return;
 
-  if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
-    // 9:16: height drives the sizing, cap to 70vh
-    const maxH=Math.round(window.innerHeight*.7);
-    cW=Math.round(maxH*(9/16));
-    cH=maxH;
-  } else {
-    // 16:9 default
-    cW=W;
-    cH=Math.round(W*9/16);
+  // Use container dimensions directly (after layout)
+  const doInit=()=>{
+    const pW=pvframe.clientWidth  || pvframe.offsetWidth  || 800;
+    const pH=pvframe.clientHeight || pvframe.offsetHeight || 450;
+
+    let cW,cH;
+    if(currentRatio==='9:16'){
+      cH=pH||Math.round(window.innerHeight*.7);
+      cW=Math.round(cH*(9/16));
+    } else {
+      cW=pW; cH=Math.round(pW*9/16);
+    }
+
+    // Set canvas pixel dimensions
+    bgCvs.width=cW; bgCvs.height=cH;
+    ovCvs.width=cW; ovCvs.height=cH;
+
+    // Set CSS so both canvases are identical size, centered in container
+    const cssW=cW+'px', cssH=cH+'px';
+    bgCvs.style.width=cssW; bgCvs.style.height=cssH;
+    ovCvs.style.width=cssW; ovCvs.style.height=cssH;
+
+    bgCvs.setAttribute('data-pw',cW);
+    bgCvs.setAttribute('data-ph',cH);
+    spCvs.width=pW; spCvs.height=44;
+
+    if(typeof clearGradCache==='function') clearGradCache();
+    aiT=0; aiGP=0; ptArr=[];
+    if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+  };
+
+  // Run after layout paint
+  requestAnimationFrame(doInit);
+
+  // Watch for container size changes (resize, fullscreen, ratio change)
+  if(!pvframe._roAttached){
+    pvframe._roAttached=true;
+    if(window.ResizeObserver){
+      new ResizeObserver(()=>requestAnimationFrame(doInit)).observe(pvframe);
+    }
   }
-
-  bgCvs.width=cW;  bgCvs.height=cH;
-  ovCvs.width=cW;  ovCvs.height=cH;
-
-  // Sync ovcvs pixel dimensions to bgcvs so they overlap perfectly
-  ovCvs.style.width  = bgCvs.offsetWidth  ? bgCvs.offsetWidth+'px'  : '';
-  ovCvs.style.height = bgCvs.offsetHeight ? bgCvs.offsetHeight+'px' : '';
-
-  bgCvs.setAttribute('data-pw',cW);
-  bgCvs.setAttribute('data-ph',cH);
-  spCvs.width=W; spCvs.height=44;
-
-  if(typeof clearGradCache==='function') clearGradCache();
-  aiT=0; aiGP=0; ptArr=[];
-  if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
 }
+window._syncOvCvs=()=>{}; // no-op, handled by ResizeObserver now
+
 
 // ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
 let idleRaf=null;
