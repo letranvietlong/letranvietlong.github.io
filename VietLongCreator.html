@@ -721,12 +721,7 @@ main {
   width:auto;
   margin:0 auto;
 }
-#bgcvs {
-  display:block;
-  position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
-}
+#bgcvs { display:block; max-width:100%; max-height:100%; }
 #ovcvs {
   position:absolute;
   top:50%; left:50%; transform:translate(-50%,-50%);
@@ -1229,6 +1224,21 @@ header { padding:0 32px; }
 /* Canvas preview takes more space */
 #prev-wrap { width:100%; }
 #bgcvs, #ovcvs { width:100% !important; height:auto !important; max-height:60vh; }
+
+/* ── 9:16 TikTok: fill container, no black bars ── */
+.preview-frame.ratio-916 {
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.preview-frame.ratio-916 #bgcvs,
+.preview-frame.ratio-916 #ovcvs {
+  position:absolute;
+  top:0; left:0;
+  width:100% !important;
+  height:100% !important;
+}
 </style>
 </head>
 <body>
@@ -1375,7 +1385,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.9.5 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.0 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1481,6 +1491,8 @@ header { padding:0 32px; }
     <!-- LEFT: Preview -->
     <div>
 
+  <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
+
   <div class="spec-strip" id="spec-strip-el" style="display:none"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
     <canvas id="bgcvs"></canvas>
@@ -1571,12 +1583,12 @@ header { padding:0 32px; }
     </div>
     <div id="eq-youtube" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
       <button class="eq-btn active" data-q="yt_fhd" onclick="setExportQuality('yt_fhd')"><span style="color:#fbbf24">★</span> Full HD · 1080p · 16Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
-      <button class="eq-btn" data-q="yt_hd"  onclick="setExportQuality('yt_hd')" >HD · 720p · 8Mbps</button>
-      <button class="eq-btn" data-q="yt_2k"  onclick="setExportQuality('yt_2k')" >2K · 1440p · 25Mbps</button>
+      <button class="eq-btn" data-q="yt_hd"  onclick="setExportQuality('yt_hd')">HD · 720p · 8Mbps</button>
+      <button class="eq-btn" data-q="yt_2k"  onclick="setExportQuality('yt_2k')">2K · 1440p · 25Mbps</button>
     </div>
     <div id="eq-tiktok" style="display:none;flex-direction:column;gap:5px;margin-bottom:10px">
       <button class="eq-btn active" data-q="tt_std" onclick="setExportQuality('tt_std')"><span style="color:#fbbf24">★</span> Standard · 1080p · 6Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
-      <button class="eq-btn" data-q="tt_hq"  onclick="setExportQuality('tt_hq')" >High Quality · 1080p · 10Mbps · 60fps</button>
+      <button class="eq-btn" data-q="tt_hq" onclick="setExportQuality('tt_hq')">High Quality · 1080p · 10Mbps · 60fps</button>
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
@@ -1980,7 +1992,7 @@ header { max-width:100% !important; padding:0 32px; }
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v5.9.2';
+const APP_VERSION = 'v6.0';
 const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -4807,8 +4819,7 @@ function guessFromFilename(name){
   if(sep){
     const parts=n.split(sep[0]);
     const a=parts[0].trim(), b=parts[1]?.trim()||'';
-    // Convention nhạc Việt phổ biến: "Tên Bài - Ca Sĩ"
-    // parts[0] = tên bài hát, parts[1] = ca sĩ
+    // Convention nhạc Việt: "Tên Bài - Ca Sĩ"
     return{title:a.toUpperCase(), artist:b};
   }
   return{title:n.toUpperCase()||'',artist:''};
@@ -5271,10 +5282,12 @@ function initCanvas(){
   let cW, cH;
 
   if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
-    // 9:16: height drives the sizing, cap to 70vh
-    const maxH=Math.round(window.innerHeight*.7);
-    cW=Math.round(maxH*(9/16));
-    cH=maxH;
+    // 9:16: size to pvframe container
+    const pH=w.clientHeight||Math.round(window.innerHeight*.7);
+    cH=pH||Math.round(window.innerHeight*.7);
+    cW=Math.round(cH*(9/16));
+    // Override: use pvframe width if container is portrait
+    if(W<cW){ cW=W; cH=Math.round(W*(16/9)); }
   } else {
     // 16:9 default
     cW=W;
@@ -5350,23 +5363,12 @@ async function startPlay(){
     audEl.currentTime=(audEl.duration||0)*trimState.start;
   else audEl.currentTime=0;
   audEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
-  // Guard: ensure audio is playable, recreate from audFile if needed
-  if(audEl.networkState===HTMLMediaElement.NETWORK_NO_SOURCE||
-     !audEl.src||audEl.src==='about:blank'){
-    if(audFile){
-      // Re-create audEl from original file
-      audEl.pause();
-      audEl.src=URL.createObjectURL(audFile);
-      audEl.crossOrigin='anonymous';
-      await new Promise(r=>{audEl.oncanplaythrough=r;audEl.onerror=r;});
-    } else {
-      console.warn('[VLC] No audio source available');
-      return;
-    }
+  // Auto-recover if blob URL became invalid
+  if(audEl.networkState===3/*NETWORK_NO_SOURCE*/&&audFile){
+    audEl.src=URL.createObjectURL(audFile);
+    await new Promise(r=>{audEl.oncanplaythrough=r;audEl.onerror=r;setTimeout(r,3000);});
   }
-  audEl.play().catch(e=>{
-    if(e.name!=='AbortError') console.warn('[VLC] play() failed:',e.message);
-  });
+  audEl.play().catch(e=>{ if(e.name!=='AbortError') console.warn('[VLC] play():',e.message); });
   playing=true;aiT=0;aiGP=0;
   // Media Session
   const title=$('cc-title')?.value||'Bài Hát';
@@ -6747,23 +6749,22 @@ function drawSpec(){
 
 // ── Quality presets ──
 const EXPORT_QUALITY = {
-  yt_hd:  {videoBps:8_000_000,  audioBps:192_000, label:'HD 720p',     w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
-  yt_fhd: {videoBps:16_000_000, audioBps:192_000, label:'Full HD 1080p',w:1920,h:1080,fps:30, ext:'mp4', platform:'youtube'},
-  yt_2k:  {videoBps:25_000_000, audioBps:320_000, label:'2K 1440p',    w:2560,h:1440, fps:30, ext:'mp4', platform:'youtube'},
-  tt_std: {videoBps:6_000_000,  audioBps:192_000, label:'Standard 1080p',w:1080,h:1920,fps:30,ext:'mp4', platform:'tiktok'},
-  tt_hq:  {videoBps:10_000_000, audioBps:192_000, label:'HQ 1080p 60fps',w:1080,h:1920,fps:60,ext:'mp4', platform:'tiktok'},
+  yt_hd:  {videoBps:8_000_000,  audioBps:192_000, label:'HD 720p',       w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
+  yt_fhd: {videoBps:16_000_000, audioBps:192_000, label:'Full HD 1080p', w:1920,h:1080, fps:30, ext:'mp4', platform:'youtube'},
+  yt_2k:  {videoBps:25_000_000, audioBps:320_000, label:'2K 1440p',      w:2560,h:1440, fps:30, ext:'mp4', platform:'youtube'},
+  tt_std: {videoBps:6_000_000,  audioBps:192_000, label:'Standard 1080p',w:1080,h:1920, fps:30, ext:'mp4', platform:'tiktok'},
+  tt_hq:  {videoBps:10_000_000, audioBps:192_000, label:'HQ 60fps',      w:1080,h:1920, fps:60, ext:'mp4', platform:'tiktok'},
   // legacy
-  fast:   {videoBps:4_000_000,  audioBps:128_000, label:'Fast 720p',   w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
-  good:   {videoBps:8_000_000,  audioBps:192_000, label:'Good 720p',   w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
-  best:   {videoBps:16_000_000, audioBps:192_000, label:'Best 1080p',  w:1920,h:1080, fps:30, ext:'mp4', platform:'youtube'},
-  tiktok: {videoBps:6_000_000,  audioBps:192_000, label:'TikTok 1080p',w:1080,h:1920, fps:30, ext:'mp4', platform:'tiktok'},
+  fast:{videoBps:4_000_000,audioBps:128_000,label:'Fast',w:1280,h:720,fps:30,ext:'mp4',platform:'youtube'},
+  good:{videoBps:8_000_000,audioBps:192_000,label:'Good',w:1280,h:720,fps:30,ext:'mp4',platform:'youtube'},
+  best:{videoBps:16_000_000,audioBps:192_000,label:'Best',w:1920,h:1080,fps:30,ext:'mp4',platform:'youtube'},
+  tiktok:{videoBps:6_000_000,audioBps:192_000,label:'TikTok',w:1080,h:1920,fps:30,ext:'mp4',platform:'tiktok'},
 };
 let currentPlatform='youtube';
 function switchPlatform(p){
   currentPlatform=p;
   const isYT=p==='youtube';
-  const ytBtn=document.getElementById('plt-yt');
-  const ttBtn=document.getElementById('plt-tt');
+  const ytBtn=document.getElementById('plt-yt'),ttBtn=document.getElementById('plt-tt');
   if(ytBtn){ytBtn.style.background=isYT?'rgba(255,50,50,.25)':'var(--surface2)';ytBtn.style.color=isYT?'#ff5555':'var(--tx3)';}
   if(ttBtn){ttBtn.style.background=!isYT?'rgba(0,230,255,.15)':'var(--surface2)';ttBtn.style.color=!isYT?'#00e6ff':'var(--tx3)';}
   document.getElementById('eq-youtube').style.display=isYT?'flex':'none';
@@ -6775,8 +6776,8 @@ let currentQuality='best';
 function setExportQuality(q){
   currentQuality=q;
   const preset=EXPORT_QUALITY[q];
-  if(preset?.platform==='tiktok'&&currentRatio!=='9:16'){setRatio('9:16');}
-  else if(preset?.platform==='youtube'&&currentRatio!=='16:9'){setRatio('16:9');}
+  if(preset?.platform==='tiktok'&&currentRatio!=='9:16') setRatio('9:16');
+  else if(preset?.platform==='youtube'&&currentRatio!=='16:9') setRatio('16:9');
   document.querySelectorAll('.eq-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('[data-q="'+q+'"]')?.classList.add('active');
 }
