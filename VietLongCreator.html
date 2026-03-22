@@ -381,8 +381,8 @@ main {
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:var(--r2);
-  padding:16px 22px;
-  margin-bottom:10px;
+  padding:22px 28px;
+  margin-bottom:14px;
 }
 .panel.hidden { display:none; }
 .panel-title {
@@ -551,26 +551,25 @@ main {
 }
 .gallery {
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
 }
-@media(max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr);} }
-@media(max-width:700px)  { .gallery{grid-template-columns:1fr 1fr;} }
-@media(max-width:440px)  { .gallery{grid-template-columns:1fr;} }
+@media(max-width:720px){ .gallery{grid-template-columns:1fr 1fr;} }
+@media(max-width:440px){ .gallery{grid-template-columns:1fr;} }
 
 .tcard {
   border:1.5px solid var(--line);
-  border-radius:10px;
+  border-radius:16px;
   overflow:hidden;
   cursor:pointer;
-  transition:all .22s cubic-bezier(.4,0,.2,1);
+  transition:all .28s cubic-bezier(.4,0,.2,1);
   background:var(--ink2);
   position:relative;
 }
 .tcard:hover {
   border-color:rgba(124,111,255,.5);
-  transform:translateY(-3px);
-  box-shadow:0 12px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(124,111,255,.2);
+  transform:translateY(-5px);
+  box-shadow:0 20px 48px rgba(0,0,0,.55), 0 0 0 1px rgba(124,111,255,.2);
 }
 .tcard.selected {
   border-color:#00e5c3;
@@ -594,10 +593,10 @@ main {
 }
 .tc-canvas { width:100%; height:100%; display:block; }
 .tc-badge {
-  position:absolute; top:5px; left:5px;
-  background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
-  padding:2px 6px; border-radius:4px;
-  font-size:.48rem; font-family:'IBM Plex Mono',monospace;
+  position:absolute; top:8px; left:8px;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(8px);
+  padding:3px 8px; border-radius:4px;
+  font-size:.5rem; font-family:'IBM Plex Mono',monospace;
   color:#ffd166; letter-spacing:.08em;
   border:1px solid rgba(255,209,102,.2);
 }
@@ -626,16 +625,16 @@ main {
   transition:all .22s;
 }
 .tcard:hover .tc-play-ring { opacity:1; transform:scale(1); }
-.tc-body { padding:9px 11px 11px; }
+.tc-body { padding:13px 14px 15px; }
 .tc-name {
   font-family:'Be Vietnam Pro',sans-serif; font-weight:700;
-  font-size:.72rem; margin-bottom:3px; color:var(--tx);
-  line-height:1.25;
+  font-size:.8rem; margin-bottom:4px; color:var(--tx);
+  line-height:1.3;
 }
-.tc-desc { font-size:.6rem; color:var(--tx2); line-height:1.45; }
-.tc-pills { display:flex; gap:3px; flex-wrap:wrap; margin-top:5px; }
+.tc-desc { font-size:.65rem; color:var(--tx2); line-height:1.55; }
+.tc-pills { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
 .tc-pill {
-  font-size:.48rem; padding:2px 7px; border-radius:8px;
+  font-size:.52rem; padding:2px 7px; border-radius:8px;
   background:var(--surface2); border:1px solid var(--line2);
   color:var(--tx3); font-family:'IBM Plex Mono',monospace;
 }
@@ -703,36 +702,35 @@ main {
 }
 
 /* ── STEP 4: PREVIEW ── */
-.spec-strip { background:var(--ink2); border-radius:9px; overflow:hidden; height:44px; }
-.spec-strip.hidden-strip { display:none; }
+.spec-strip {
+  background:var(--ink2);
+  border-radius:9px; overflow:hidden;
+  margin-bottom:10px; height:44px;
+}
 #spec-cvs { width:100%; height:44px; display:block; }
 .preview-frame {
   position:relative; background:#000;
   border-radius:var(--r2); overflow:hidden;
-  aspect-ratio:16/9; width:100%;
+  aspect-ratio:16/9;
+  display:flex; align-items:center; justify-content:center;
   transition:aspect-ratio .3s;
 }
 .preview-frame.ratio-916 {
   aspect-ratio:9/16;
-  max-height:72vh;
-  width:auto !important;
+  max-height:70vh;
+  width:auto;
   margin:0 auto;
-  /* ResizeObserver in initCanvas will resize canvases automatically */
 }
 #bgcvs {
   display:block;
   position:absolute;
   top:50%; left:50%;
   transform:translate(-50%,-50%);
-  /* width/height set by JS initCanvas */
 }
 #ovcvs {
   position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
+  top:50%; left:50%; transform:translate(-50%,-50%);
   pointer-events:none;
-  display:block;
-  /* width/height set by JS initCanvas — same as bgCvs */
 }
 
 .playbar {
@@ -1154,11 +1152,7 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .kb-desc{font-size:.66rem;color:var(--tx2);}
 /* ── FULLSCREEN ── */
 #pvframe:-webkit-full-screen{width:100vw!important;height:100vh!important;}
-#pvframe:fullscreen,#pvframe:-webkit-full-screen{
-  width:100vw!important;height:100vh!important;
-  background:#000;aspect-ratio:unset!important;border-radius:0!important;
-}
-/* bgCvs + ovCvs handled by ResizeObserver — no override needed */
+#pvframe:fullscreen{width:100vw!important;height:100vh!important;background:#000;}
 .preview-frame{position:relative;}
 .fullscreen-btn{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.7rem;backdrop-filter:blur(8px);transition:all .2s;}
 .fullscreen-btn:hover{background:rgba(255,255,255,.15);}
@@ -1235,35 +1229,6 @@ header { padding:0 32px; }
 /* Canvas preview takes more space */
 #prev-wrap { width:100%; }
 #bgcvs, #ovcvs { width:100% !important; height:auto !important; max-height:60vh; }
-
-/* ── Fullscreen mode ── */
-#pvframe:fullscreen,
-#pvframe:-webkit-full-screen,
-#pvframe:-moz-full-screen {
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100vw !important;
-  height:100vh !important;
-  border-radius:0;
-  aspect-ratio:unset;
-}
-#pvframe:fullscreen #bgcvs,
-#pvframe:-webkit-full-screen #bgcvs {
-  width:auto !important;
-  height:100vh !important;
-  max-width:100vw !important;
-  max-height:100vh !important;
-  object-fit:contain;
-}
-#pvframe:fullscreen #ovcvs,
-#pvframe:-webkit-full-screen #ovcvs {
-  width:auto !important;
-  height:100vh !important;
-  max-width:100vw !important;
-  max-height:100vh !important;
-}
 </style>
 </head>
 <body>
@@ -1410,7 +1375,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.6 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.9.5 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1511,12 +1476,12 @@ header { padding:0 32px; }
 <!-- ======= STEP 4: PREVIEW & EXPORT ======= -->
 <div class="panel hidden" id="p4">
   <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
-  <div style="display:grid;grid-template-columns:1fr minmax(320px,400px);gap:20px;align-items:start">
+  <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,480px);gap:20px;align-items:start">
 
     <!-- LEFT: Preview -->
     <div>
 
-  <div class="spec-strip hidden-strip" id="spec-strip-el"><canvas id="spec-cvs"></canvas></div>
+  <div class="spec-strip" id="spec-strip-el" style="display:none"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
     <canvas id="bgcvs"></canvas>
     <canvas id="ovcvs"></canvas>
@@ -1599,12 +1564,19 @@ header { padding:0 32px; }
       Đang kiểm tra phương pháp export tốt nhất...
     </div>
 
-    <!-- Quality presets -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-      <button class="eq-btn"        id="eq-good"    onclick="setExportQuality('good')"  >✅ Good · 8Mbps</button>
-      <button class="eq-btn"        id="eq-fast"    onclick="setExportQuality('fast')"  >⚡ Fast · 4Mbps</button>
-      <button class="eq-btn active" id="eq-best"    onclick="setExportQuality('best')"  >🏆 Best · 16Mbps</button>
-      <button class="eq-btn"        id="eq-tiktok"  onclick="setExportQuality('tiktok')">📱 TikTok · 9:16</button>
+    <!-- Platform tabs -->
+    <div style="display:flex;gap:0;margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid var(--line2)">
+      <button id="plt-yt" onclick="switchPlatform('youtube')" style="flex:1;padding:7px;border:none;background:rgba(255,50,50,.25);color:#ff5555;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;border-right:1px solid var(--line2)">▶ YouTube</button>
+      <button id="plt-tt" onclick="switchPlatform('tiktok')"  style="flex:1;padding:7px;border:none;background:var(--surface2);color:var(--tx3);font-size:.65rem;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace">🎵 TikTok</button>
+    </div>
+    <div id="eq-youtube" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">
+      <button class="eq-btn active" data-q="yt_fhd" onclick="setExportQuality('yt_fhd')"><span style="color:#fbbf24">★</span> Full HD · 1080p · 16Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
+      <button class="eq-btn" data-q="yt_hd"  onclick="setExportQuality('yt_hd')" >HD · 720p · 8Mbps</button>
+      <button class="eq-btn" data-q="yt_2k"  onclick="setExportQuality('yt_2k')" >2K · 1440p · 25Mbps</button>
+    </div>
+    <div id="eq-tiktok" style="display:none;flex-direction:column;gap:5px;margin-bottom:10px">
+      <button class="eq-btn active" data-q="tt_std" onclick="setExportQuality('tt_std')"><span style="color:#fbbf24">★</span> Standard · 1080p · 6Mbps <small style="opacity:.6;margin-left:4px">Khuyên dùng</small></button>
+      <button class="eq-btn" data-q="tt_hq"  onclick="setExportQuality('tt_hq')" >High Quality · 1080p · 10Mbps · 60fps</button>
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
@@ -2008,7 +1980,7 @@ header { max-width:100% !important; padding:0 32px; }
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v5.4';
+const APP_VERSION = 'v5.9.2';
 const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -2145,8 +2117,6 @@ function clearStickers(){ _stickers=[]; }
 function drawStickers(ctx,W,H,bass){
   if(!_stickers.length) return;
   ctx.save();
-  // Clip stickers to canvas bounds
-  ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip();
   _stickers.forEach(s=>{
     const x=s.x*W, y=s.y*H;
     const scale=s.scale*(s.beatBounce?1+bass*0.2:1);
@@ -3149,8 +3119,6 @@ function toggleFullscreen(){
 document.addEventListener('fullscreenchange',()=>{
   const btn=document.querySelector('.fullscreen-btn');
   if(btn) btn.textContent=document.fullscreenElement?'✕':'⛶';
-  // ResizeObserver handles canvas resize, but call initCanvas explicitly as fallback
-  requestAnimationFrame(()=>{ if(typeof initCanvas==='function') initCanvas(); });
 });
 
 // ─────────────────────────────────────────
@@ -4839,8 +4807,9 @@ function guessFromFilename(name){
   if(sep){
     const parts=n.split(sep[0]);
     const a=parts[0].trim(), b=parts[1]?.trim()||'';
-    // Format chuẩn: "Ca Sĩ - Tên Bài Hát"
-    return{artist:a, title:b.toUpperCase()};
+    // Convention nhạc Việt phổ biến: "Tên Bài - Ca Sĩ"
+    // parts[0] = tên bài hát, parts[1] = ca sĩ
+    return{title:a.toUpperCase(), artist:b};
   }
   return{title:n.toUpperCase()||'',artist:''};
 }
@@ -5297,56 +5266,36 @@ function loadArtImg(inp){
 
 /* ── CANVAS INIT ── */
 function initCanvas(){
-  const pvframe=$('pvframe');
-  if(!pvframe) return;
+  const w=$('pvframe');
+  const W=w.clientWidth||w.parentElement?.clientWidth||Math.round(window.innerWidth*.72)||1280;
+  let cW, cH;
 
-  // Use container dimensions directly (after layout)
-  const doInit=()=>{
-    const pW=pvframe.clientWidth  || pvframe.offsetWidth  || 800;
-    const pH=pvframe.clientHeight || pvframe.offsetHeight || 450;
-
-    let cW,cH;
-    if(currentRatio==='9:16'){
-      cH=pH||Math.round(window.innerHeight*.7);
-      cW=Math.round(cH*(9/16));
-    } else {
-      cW=pW; cH=Math.round(pW*9/16);
-    }
-
-    // Set canvas pixel dimensions
-    bgCvs.width=cW; bgCvs.height=cH;
-    ovCvs.width=cW; ovCvs.height=cH;
-
-    // Set CSS so both canvases are identical size, centered in container
-    const cssW=cW+'px', cssH=cH+'px';
-    bgCvs.style.width=cssW; bgCvs.style.height=cssH;
-    ovCvs.style.width=cssW; ovCvs.style.height=cssH;
-
-    bgCvs.setAttribute('data-pw',cW);
-    bgCvs.setAttribute('data-ph',cH);
-    spCvs.width=pW; spCvs.height=44;
-
-    if(typeof clearGradCache==='function') clearGradCache();
-    aiT=0; aiGP=0; ptArr=[];
-    if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
-  };
-
-  // Run after layout paint
-  requestAnimationFrame(doInit);
-
-  // Watch for container size changes (resize, fullscreen, ratio change)
-  if(!pvframe._roAttached){
-    pvframe._roAttached=true;
-    if(window.ResizeObserver){
-      new ResizeObserver(()=>requestAnimationFrame(doInit)).observe(pvframe);
-    }
+  if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
+    // 9:16: height drives the sizing, cap to 70vh
+    const maxH=Math.round(window.innerHeight*.7);
+    cW=Math.round(maxH*(9/16));
+    cH=maxH;
+  } else {
+    // 16:9 default
+    cW=W;
+    cH=Math.round(W*9/16);
   }
+
+  bgCvs.width=cW;  bgCvs.height=cH;
+  ovCvs.width=cW;  ovCvs.height=cH;
+
+  // Sync ovcvs pixel dimensions to bgcvs so they overlap perfectly
+  ovCvs.style.width  = bgCvs.offsetWidth  ? bgCvs.offsetWidth+'px'  : '';
+  ovCvs.style.height = bgCvs.offsetHeight ? bgCvs.offsetHeight+'px' : '';
+
+  bgCvs.setAttribute('data-pw',cW);
+  bgCvs.setAttribute('data-ph',cH);
+  spCvs.width=W; spCvs.height=44;
+
+  if(typeof clearGradCache==='function') clearGradCache();
+  aiT=0; aiGP=0; ptArr=[];
+  if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
 }
-window._syncOvCvs=()=>{}; // no-op
-
-
-// handled by ResizeObserver now
-
 
 // ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
 let idleRaf=null;
@@ -5391,7 +5340,7 @@ function setupAudio(){
 /* ── PLAYBACK ── */
 function togglePlay(){playing?stopPlay():startPlay();}
 async function startPlay(){
-  if(!audEl)return;
+  if(!audEl||!audFile)return; // no audio loaded
   if(playing)return; // prevent double-start race
   stopIdleLoop();
   if(raf){cancelAnimationFrame(raf);raf=null;} // cancel any stale rAF
@@ -5401,7 +5350,23 @@ async function startPlay(){
     audEl.currentTime=(audEl.duration||0)*trimState.start;
   else audEl.currentTime=0;
   audEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
-  audEl.play();
+  // Guard: ensure audio is playable, recreate from audFile if needed
+  if(audEl.networkState===HTMLMediaElement.NETWORK_NO_SOURCE||
+     !audEl.src||audEl.src==='about:blank'){
+    if(audFile){
+      // Re-create audEl from original file
+      audEl.pause();
+      audEl.src=URL.createObjectURL(audFile);
+      audEl.crossOrigin='anonymous';
+      await new Promise(r=>{audEl.oncanplaythrough=r;audEl.onerror=r;});
+    } else {
+      console.warn('[VLC] No audio source available');
+      return;
+    }
+  }
+  audEl.play().catch(e=>{
+    if(e.name!=='AbortError') console.warn('[VLC] play() failed:',e.message);
+  });
   playing=true;aiT=0;aiGP=0;
   // Media Session
   const title=$('cc-title')?.value||'Bài Hát';
@@ -6782,17 +6747,38 @@ function drawSpec(){
 
 // ── Quality presets ──
 const EXPORT_QUALITY = {
-  fast:   {videoBps:4_000_000,  audioBps:128_000, label:'Fast · 4Mbps · 720p',  w:1280,h:720,  fps:30, ext:'mp4'},
-  good:   {videoBps:8_000_000,  audioBps:192_000, label:'Good · 8Mbps · 720p',  w:1280,h:720,  fps:30, ext:'mp4'},
-  best:   {videoBps:16_000_000, audioBps:192_000, label:'Best · 16Mbps · 1080p',w:1920,h:1080, fps:30, ext:'mp4'},
-  tiktok: {videoBps:6_000_000,  audioBps:192_000, label:'TikTok · 9:16 · 1080p',w:1080,h:1920, fps:30, ext:'mp4'},
+  yt_hd:  {videoBps:8_000_000,  audioBps:192_000, label:'HD 720p',     w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
+  yt_fhd: {videoBps:16_000_000, audioBps:192_000, label:'Full HD 1080p',w:1920,h:1080,fps:30, ext:'mp4', platform:'youtube'},
+  yt_2k:  {videoBps:25_000_000, audioBps:320_000, label:'2K 1440p',    w:2560,h:1440, fps:30, ext:'mp4', platform:'youtube'},
+  tt_std: {videoBps:6_000_000,  audioBps:192_000, label:'Standard 1080p',w:1080,h:1920,fps:30,ext:'mp4', platform:'tiktok'},
+  tt_hq:  {videoBps:10_000_000, audioBps:192_000, label:'HQ 1080p 60fps',w:1080,h:1920,fps:60,ext:'mp4', platform:'tiktok'},
+  // legacy
+  fast:   {videoBps:4_000_000,  audioBps:128_000, label:'Fast 720p',   w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
+  good:   {videoBps:8_000_000,  audioBps:192_000, label:'Good 720p',   w:1280,h:720,  fps:30, ext:'mp4', platform:'youtube'},
+  best:   {videoBps:16_000_000, audioBps:192_000, label:'Best 1080p',  w:1920,h:1080, fps:30, ext:'mp4', platform:'youtube'},
+  tiktok: {videoBps:6_000_000,  audioBps:192_000, label:'TikTok 1080p',w:1080,h:1920, fps:30, ext:'mp4', platform:'tiktok'},
 };
+let currentPlatform='youtube';
+function switchPlatform(p){
+  currentPlatform=p;
+  const isYT=p==='youtube';
+  const ytBtn=document.getElementById('plt-yt');
+  const ttBtn=document.getElementById('plt-tt');
+  if(ytBtn){ytBtn.style.background=isYT?'rgba(255,50,50,.25)':'var(--surface2)';ytBtn.style.color=isYT?'#ff5555':'var(--tx3)';}
+  if(ttBtn){ttBtn.style.background=!isYT?'rgba(0,230,255,.15)':'var(--surface2)';ttBtn.style.color=!isYT?'#00e6ff':'var(--tx3)';}
+  document.getElementById('eq-youtube').style.display=isYT?'flex':'none';
+  document.getElementById('eq-tiktok').style.display=!isYT?'flex':'none';
+  setExportQuality(isYT?'yt_fhd':'tt_std');
+}
 let currentQuality='best';
 
 function setExportQuality(q){
   currentQuality=q;
+  const preset=EXPORT_QUALITY[q];
+  if(preset?.platform==='tiktok'&&currentRatio!=='9:16'){setRatio('9:16');}
+  else if(preset?.platform==='youtube'&&currentRatio!=='16:9'){setRatio('16:9');}
   document.querySelectorAll('.eq-btn').forEach(b=>b.classList.remove('active'));
-  $(`eq-${q}`)?.classList.add('active');
+  document.querySelector('[data-q="'+q+'"]')?.classList.add('active');
 }
 
 // Detect WebCodecs support once
