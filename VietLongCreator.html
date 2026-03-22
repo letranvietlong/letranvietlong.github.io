@@ -311,8 +311,8 @@ header::before {
 /* ── MAIN ── */
 main {
   position:relative; z-index:5;
-  max-width:1060px; margin:0 auto;
-  padding:36px 24px 100px;
+  max-width:100%;
+  padding:20px 32px 80px;
 }
 
 /* ── STEP TABS — Cyberpunk ── */
@@ -381,8 +381,8 @@ main {
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:var(--r2);
-  padding:30px;
-  margin-bottom:18px;
+  padding:22px 28px;
+  margin-bottom:14px;
 }
 .panel.hidden { display:none; }
 .panel-title {
@@ -1190,6 +1190,55 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .artimg-slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 /* ── REDUCED MOTION ── */
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+
+/* ── Full-width responsive layout ── */
+header { padding:0 32px; }
+
+/* Step 4: Preview (canvas) + Export side by side */
+#step4-inner {
+  display:grid;
+  grid-template-columns:minmax(400px,1fr) minmax(340px,480px);
+  gap:20px;
+  align-items:start;
+}
+@media(max-width:900px){
+  #step4-inner { grid-template-columns:1fr; }
+}
+
+/* Step 3: Config form in 2 cols */
+#step3-inner {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  align-items:start;
+}
+@media(max-width:820px){
+  #step3-inner { grid-template-columns:1fr; }
+}
+
+/* Auto tab: 3 columns */
+.auto-grid {
+  display:grid !important;
+  grid-template-columns:1fr 1fr 1fr !important;
+  gap:14px;
+}
+@media(max-width:1100px){ .auto-grid { grid-template-columns:1fr 1fr !important; } }
+@media(max-width:680px)  { .auto-grid { grid-template-columns:1fr !important; } }
+
+/* Auto card compact */
+.auto-card { padding:14px; }
+.auto-card-title { font-size:.63rem !important; }
+.auto-fg label { font-size:.6rem; }
+.auto-fg input, .auto-fg select, .auto-fg textarea {
+  font-size:.65rem; padding:5px 9px;
+}
+
+/* Step bar full width */
+.step-bar { max-width:100%; }
+
+/* Canvas preview takes more space */
+#prev-wrap { width:100%; }
+#bgcvs, #ovcvs { width:100% !important; height:auto !important; max-height:60vh; }
 </style>
 </head>
 <body>
@@ -1336,8 +1385,8 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="toggleKbModal()" title="Phím tắt (?)" style="cursor:pointer">v4.0 ⌨</div>
-  </div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.3.1 📋</div>
+  </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
     <div class="mnav-tab active" id="mn-create" onclick="switchMainTab('create')">
@@ -1437,6 +1486,12 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 <!-- ======= STEP 4: PREVIEW & EXPORT ======= -->
 <div class="panel hidden" id="p4">
   <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
+  <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,480px);gap:20px;align-items:start">
+
+    <!-- LEFT: Preview -->
+    <div>
+
+  <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
 
   <div class="spec-strip"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
@@ -1459,16 +1514,62 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
     <span class="tdisp" id="tdisp">00:00 / 00:00</span>
     <div class="beat-ring" id="beat"></div>
     <span style="font-size:.6rem;color:var(--tx3);font-family:var(--fm)">NHỊP</span>
-    <!-- Volume control -->
-    <div style="display:flex;align-items:center;gap:5px;margin-left:10px">
-      <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:2px 4px">🔊</button>
-      <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1"
-        oninput="setVolume(this.value)"
-        style="width:60px;height:3px;cursor:pointer;accent-color:var(--a2)">
+    <div style="display:flex;align-items:center;gap:5px;margin-left:8px">
+      <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng (M)" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:2px 4px;line-height:1">🔊</button>
+      <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" style="width:58px;height:3px;cursor:pointer;accent-color:var(--a2)">
     </div>
-    <span style="margin-left:auto;font-size:.66rem;color:var(--tx3)">Mẫu: <strong id="tpl-label" style="color:var(--a2)">—</strong></span>
+    <div style="display:flex;gap:3px;margin-left:8px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span style="margin-left:auto;font-size:.66rem;color:var(--tx3)">Mẫu: <strong id="tpl-label" style="color:var(--a2)">—</strong></span>
   </div>
 
+  <div style="margin:6px 0 2px;position:relative">
+    <canvas id="beat-timeline-cvs" style="width:100%;height:28px;border-radius:6px;cursor:pointer;display:block" onclick="seekFromTimeline(event)"></canvas>
+    <button onclick="buildBeatTimeline()" style="position:absolute;right:4px;top:4px;padding:2px 7px;border-radius:4px;border:none;background:rgba(0,0,0,.5);color:var(--a2);font-size:.55rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">🥁 Beats</button>
+  </div>
+  <!-- Intro/Outro settings -->
+  <details style="margin-bottom:10px">
+    <summary style="cursor:pointer;font-size:.65rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;padding:6px 0">⚙ Intro / Outro / Countdown</summary>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:6px">
+      <div class="intro-toggle">
+        <input type="checkbox" id="intro-chk" onchange="toggleIntro(this.checked)">
+        <label for="intro-chk" style="font-size:.65rem;color:var(--tx)">Intro (3s)</label>
+        <input type="text" id="intro-text" placeholder="VietLong Creator" value="VietLong Creator" oninput="_introText=this.value" style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
+      </div>
+      <div class="intro-toggle">
+        <input type="checkbox" id="outro-chk" onchange="toggleOutro(this.checked)">
+        <label for="outro-chk" style="font-size:.65rem;color:var(--tx)">Outro (3s)</label>
+        <input type="text" id="outro-channel" placeholder="Tên kênh YouTube" oninput="_outroChannel=this.value" style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+        <span style="font-size:.62rem;color:var(--tx3)">⏱ Countdown:</span>
+        <select id="cd-dur" style="padding:3px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
+          <option value="3">3s</option><option value="5">5s</option><option value="10">10s</option>
+        </select>
+        <button onclick="startCountdown($('cd-dur').value)" style="padding:4px 10px;border-radius:5px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer">▶ Bắt đầu</button>
+        <button onclick="stopCountdown()" style="padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:none;color:var(--tx3);font-size:.6rem;cursor:pointer">✕ Stop</button>
+      </div>
+    </div>
+  </details>
+  <!-- Chapters -->
+  <details style="margin-bottom:10px">
+    <summary style="cursor:pointer;font-size:.65rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;padding:6px 0">📍 Video Chapters / Markers</summary>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:6px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="text" id="chapter-label" placeholder="Tên đoạn..." style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
+        <button onclick="addChapter($('chapter-label').value);$('chapter-label').value=''" style="padding:4px 10px;border-radius:5px;border:none;background:var(--a2);color:var(--ink);font-size:.6rem;cursor:pointer;font-weight:700">+ Add</button>
+        <button onclick="generateYTChapters()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer">📋 Copy YT</button>
+      </div>
+      <div id="chapter-list"></div>
+    </div>
+  </details>
+
+    </div><!-- /left -->
+
+    <!-- RIGHT: Export -->
+    <div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <button onclick="generateThumbnail()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🖼 Thumbnail</button>
+    <button onclick="exportGIF()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🎞 GIF 15s</button>
+  </div>
   <div class="export-card">
     <div class="exp-h">Xuất Video <span>Hoàn Chỉnh</span></div>
     <div class="exp-sub" id="export-method-badge" style="margin-bottom:10px">
@@ -1483,12 +1584,9 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
       <button class="eq-btn"        id="eq-tiktok"  onclick="setExportQuality('tiktok')">📱 TikTok · 9:16</button>
     </div>
 
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
       <button class="exp-btn" id="expbtn" onclick="startExport()">⚡ Xuất Video</button>
-      <button id="cancel-export-btn" onclick="cancelExport()"
-        style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:all .2s">
-        ✕ Hủy Export
-      </button>
+      <button id="cancel-export-btn" onclick="cancelExport()" style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace">✕ Hủy</button>
     </div>
     <div class="prog-bar-wrap" id="progwrap">
       <div class="prog-header">
@@ -1511,19 +1609,6 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
     <div class="dl-success" id="dlbox">
       <p id="dl-success-msg">✅ Xuất thành công! Video đã sẵn sàng.</p>
       <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button onclick="shareExportedVideo()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.65rem;font-weight:700;font-family:'IBM Plex Mono',monospace">
-          📤 Chia Sẻ
-        </button>
-        <button onclick="copyExportLink()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);cursor:pointer;font-size:.65rem;font-family:'IBM Plex Mono',monospace">
-          📋 Copy Link
-        </button>
-      </div>
-    </div>
-    <!-- Export History -->
-    <div id="export-history-panel" style="display:none;margin-top:14px">
-      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:8px">📂 LỊCH SỬ EXPORT GẦN ĐÂY</div>
-      <div id="export-history-list"></div>
     </div>
   </div>
   <div class="nav-row">
@@ -1535,103 +1620,99 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 </main>
 
 <!-- ======= AUTOMATION TAB ======= -->
+
+    </div><!-- /right -->
+
+  </div><!-- /2-col grid -->
 <div id="panel-auto">
 
   <div class="auto-header">
     <div>
       <div class="auto-title">🤖 Tự Động Hóa <span>AI</span></div>
-      <div class="auto-subtitle">
-        Hệ thống tự tìm nhạc hot → tạo video → upload YouTube theo lịch<br>
-        <span style="color:#fbbf24;font-size:.6rem;font-family:'IBM Plex Mono',monospace">
-          ⚠ Cần kết nối YouTube API để upload tự động · Xem hướng dẫn bên dưới
-        </span>
+      <div class="auto-subtitle">Tự tìm nhạc hot → tạo video → upload YouTube theo lịch</div>
+      <div class="auto-warn" id="auto-warn-api" style="margin-top:4px">
+        ⚠ Cần kết nối YouTube API để upload tự động ·
+        <span onclick="scrollToGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
       </div>
     </div>
-    <button class="auto-run-btn" id="auto-run-btn" onclick="runAutomationNow()">
-      ▶ CHẠY NGAY
-    </button>
+    <button class="auto-run-btn" onclick="runAutomationNow()">▶ CHẠY NGAY</button>
   </div>
 
-  <!-- Stats -->
+  <!-- Stats Row -->
   <div class="auto-stats">
-    <div class="stat-box">
-      <div class="stat-val" id="stat-total">0</div>
-      <div class="stat-lbl">Video đã tạo</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="stat-uploaded">0</div>
-      <div class="stat-lbl">Đã upload YouTube</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="stat-queued">0</div>
-      <div class="stat-lbl">Đang chờ</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val" id="stat-next">--:--</div>
-      <div class="stat-lbl">Lần chạy tiếp</div>
-    </div>
+    <div class="stat-box"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Video đã tạo</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-uploaded">0</div><div class="stat-lbl">Đã upload</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-queued">0</div><div class="stat-lbl">Đang chờ</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-next" style="font-size:.85rem">--:--</div><div class="stat-lbl">Lần tiếp theo</div></div>
   </div>
 
-  <div class="auto-grid">
+  <!-- 3-column layout -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">
 
-    <!-- LEFT COL -->
-    <div>
+    <!-- COL 1: Config -->
+    <div style="display:flex;flex-direction:column;gap:10px">
 
-      <!-- YouTube Connect -->
-      <div class="auto-card" style="margin-bottom:14px">
-        <div class="auto-card-title">Kết Nối YouTube</div>
-        <div class="yt-connect-box" id="yt-box" onclick="connectYouTube()">
-          <div class="yt-icon">📺</div>
-          <div class="yt-info">
-            <div class="yt-channel" id="yt-channel-name">Chưa kết nối</div>
-            <div class="yt-status" id="yt-status-txt">Nhấn để kết nối kênh YouTube của bạn</div>
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">📺 KẾT NỐI YOUTUBE</div>
+        <div class="yt-connect-box" id="yt-box" onclick="connectYouTube()" style="padding:8px;margin-bottom:8px">
+          <div class="yt-icon" style="font-size:1.1rem">📺</div>
+          <div class="yt-info" style="flex:1;min-width:0">
+            <div class="yt-channel" id="yt-channel-name" style="font-size:.68rem">Chưa kết nối</div>
+            <div class="yt-status" id="yt-status-txt" style="font-size:.58rem">Nhấn để kết nối</div>
           </div>
-          <button class="yt-connect-btn" id="yt-btn">KẾT NỐI</button>
+          <button class="yt-connect-btn" id="yt-btn" style="padding:4px 10px;font-size:.6rem">KẾT NỐI</button>
         </div>
-        <div class="auto-fg" style="margin-top:12px">
-          <label>YouTube Data API Key</label>
-          <input type="password" id="yt-api-key" placeholder="AIza..." oninput="saveAutoSettings()">
-          <div class="hint2">Lấy tại <a href="https://console.cloud.google.com" target="_blank" style="color:var(--a2)">Google Cloud Console</a> → Enable YouTube Data API v3</div>
+        <div class="auto-fg" style="margin-bottom:5px">
+          <label style="font-size:.58rem">YouTube Data API Key</label>
+          <input type="password" id="yt-api-key" placeholder="AIza..." oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+          <div class="hint2" style="font-size:.54rem"><a href="https://console.cloud.google.com" target="_blank" style="color:var(--a2)">Google Cloud Console</a> → Enable YouTube Data API v3</div>
         </div>
         <div class="auto-fg">
-          <label>Channel ID</label>
-          <input type="text" id="yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveAutoSettings()">
+          <label style="font-size:.58rem">Channel ID</label>
+          <input type="text" id="yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
         </div>
       </div>
 
-      <!-- Trending Source -->
-      <div class="auto-card" style="margin-bottom:14px">
-        <div class="auto-card-title">Nguồn Nhạc Hot</div>
-        <div class="auto-fg">
-          <label>Tìm nhạc từ</label>
-          <select id="music-source" onchange="saveAutoSettings()">
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🎵 NGUỒN NHẠC</div>
+        <div class="auto-fg" style="margin-bottom:5px">
+          <label style="font-size:.58rem">Tìm nhạc từ</label>
+          <select id="music-source" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
             <option value="yt-trending">YouTube Music Trending (VN)</option>
-            <option value="yt-search">Tìm kiếm YouTube theo từ khóa</option>
-            <option value="manual">Nhập thủ công URL / ID</option>
+            <option value="yt-search">Tìm kiếm theo từ khóa</option>
+            <option value="manual">Nhập thủ công URL/ID</option>
           </select>
         </div>
-        <div class="auto-fg" id="search-kw-row">
-          <label>Từ khóa tìm kiếm</label>
-          <input type="text" id="search-keywords" value="nhạc hot 2025,remix việt,ballad việt nam" oninput="saveAutoSettings()">
-          <div class="hint2">Phân cách bằng dấu phẩy</div>
+        <div class="auto-fg" id="search-kw-row" style="margin-bottom:5px">
+          <label style="font-size:.58rem">Từ khóa tìm kiếm</label>
+          <input type="text" id="search-keywords" value="nhạc hot 2025,remix việt,ballad việt nam" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+          <div class="hint2" style="font-size:.54rem">Phân cách bằng dấu phẩy</div>
         </div>
-        <div class="auto-fg">
-          <label>Số bài / lần chạy</label>
-          <select id="songs-per-run" onchange="saveAutoSettings()">
-            <option value="1">1 bài</option>
-            <option value="2" selected>2 bài</option>
-            <option value="3">3 bài</option>
-            <option value="5">5 bài</option>
-          </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div class="auto-fg">
+            <label style="font-size:.58rem">Số bài / lần</label>
+            <select id="songs-per-run" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+              <option value="1">1 bài</option><option value="2" selected>2 bài</option>
+              <option value="3">3 bài</option><option value="5">5 bài</option>
+            </select>
+          </div>
+          <div class="auto-fg">
+            <label style="font-size:.58rem">Upload mode</label>
+            <select id="yt-privacy" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+              <option value="private">🔒 Private</option>
+              <option value="unlisted">🔗 Unlisted</option>
+              <option value="public">🌍 Public</option>
+            </select>
+          </div>
         </div>
-        <div class="auto-fg">
-          <label>Chọn mẫu video</label>
-          <select id="auto-template" onchange="saveAutoSettings()">
-            <option value="ai">🤖 AI tự chọn phù hợp với thể loại</option>
+        <div class="auto-fg" style="margin-top:5px">
+          <label style="font-size:.58rem">Mẫu video</label>
+          <select id="auto-template" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+            <option value="ai">🤖 AI tự chọn phù hợp thể loại</option>
             <option value="mc-rose">Music Card · Hoa Hồng</option>
             <option value="mc-ocean">Music Card · Đại Dương</option>
             <option value="mc-fire">Music Card · Lửa Rực</option>
-            <option value="mc-galaxy">Music Card · Lưới Vũ Trụ</option>
+            <option value="mc-galaxy">Music Card · Vũ Trụ</option>
             <option value="mc-cyber">Music Card · Cyber Neon</option>
             <option value="mc-dream">Music Card · Giấc Mơ</option>
             <option value="mc-lofi">Music Card · Lo-Fi Cafe</option>
@@ -1640,250 +1721,156 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
         </div>
       </div>
 
-      <!-- Video Settings -->
       <div class="auto-card">
-        <div class="auto-card-title">Cài Đặt Video</div>
-        <div class="auto-fg">
-          <label>Tiêu đề video (template)</label>
-          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Nhạc Remix Tiktok 2026" oninput="saveAutoSettings()">
-          <div class="hint2">{title} · {artist} · {date} · {year}</div>
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">⚙ CÀI ĐẶT VIDEO</div>
+        <div class="auto-fg" style="margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+            <label style="flex:1;font-size:.58rem">Tiêu đề</label>
+            <button onclick="optimizeTitles()" style="padding:2px 7px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.54rem;cursor:pointer">🤖 AI</button>
+          </div>
+          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Nhạc Remix Tiktok 2026" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+          <div class="hint2" style="font-size:.52rem">{title} · {artist} · {date} · {year}</div>
         </div>
-        <div class="auto-fg">
-          <label>Mô tả video</label>
-          <textarea id="yt-desc-tpl" rows="3" oninput="saveAutoSettings()">🎵 {title} - {artist}
+        <div class="auto-fg" style="margin-bottom:5px">
+          <label style="font-size:.58rem">Mô tả video</label>
+          <textarea id="yt-desc-tpl" rows="2" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem;resize:vertical">🎵 {title} - {artist}
 Tạo bởi VietLong Creator · Auto Music Video
 
-#NhacViet #{genre} #MusicVideo #{artist_tag}</textarea>
+#{genre} #NhacViet #MusicVideo #{artist_tag}</textarea>
         </div>
-        <div class="auto-fg">
-          <label>Tags</label>
-          <input type="text" id="yt-tags" value="nhạc việt,music video,remix,nhạc hot" oninput="saveAutoSettings()">
+        <div class="auto-fg" style="margin-bottom:5px">
+          <label style="font-size:.58rem">Tags</label>
+          <input type="text" id="yt-tags" value="nhạc việt,music video,remix,nhạc hot" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
         </div>
-        <div class="auto-fg">
-          <label>Trạng thái upload</label>
-          <select id="yt-privacy" onchange="saveAutoSettings()">
-            <option value="private">🔒 Riêng tư (private)</option>
-            <option value="unlisted">🔗 Không công khai (unlisted)</option>
-            <option value="public">🌍 Công khai (public)</option>
-          </select>
-        </div>
-        <div class="auto-fg">
-          <label>Nhãn Remix mặc định</label>
-        <!-- Settings JSON export/import -->
-        <div class="auto-fg" style="margin-top:14px">
-          <div style="display:flex;gap:8px">
-            <button onclick="exportSettingsJSON()" style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">📦 Xuất Settings</button>
-            <button onclick="importSettingsJSON()" style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">📥 Import Settings</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div class="auto-fg">
+            <label style="font-size:.58rem">Nhãn Remix</label>
+            <input type="text" id="auto-remix-label" value="VIET LONG REMIX" style="text-transform:uppercase;padding:5px 8px;font-size:.62rem" oninput="this.value=this.value.toUpperCase();saveAutoSettings()">
           </div>
-        </div>
-        <div class="auto-fg">
-          <label>Nhãn Remix mặc định</label>
-          <input type="text" id="auto-remix-label" value="VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();saveAutoSettings()">
+          <div style="display:flex;flex-direction:column;gap:4px;justify-content:flex-end">
+            <button onclick="exportSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📦 Export JSON</button>
+            <button onclick="importSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📥 Import JSON</button>
+          </div>
         </div>
       </div>
 
-      <!-- Image Source Card -->
-      <div class="auto-card" style="margin-top:14px">
-        <div class="auto-card-title">🖼 Ảnh Nghệ Sĩ Tự Động</div>
-
-        <div class="auto-fg">
-          <label>Nguồn ảnh</label>
-          <select id="img-source" onchange="onImgSourceChange();saveAutoSettings()">
-            <option value="pexels">Pexels (miễn phí · có phép thương mại)</option>
-            <option value="unsplash">Unsplash (miễn phí · có phép thương mại)</option>
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🖼 ẢNH NGHỆ SĨ TỰ ĐỘNG</div>
+        <div class="auto-fg" style="margin-bottom:5px">
+          <label style="font-size:.58rem">Nguồn ảnh</label>
+          <select id="img-source" onchange="onImgSourceChange();saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
+            <option value="pexels">Pexels (miễn phí · thương mại)</option>
+            <option value="unsplash">Unsplash (miễn phí · thương mại)</option>
             <option value="none">Không dùng ảnh tự động</option>
           </select>
         </div>
-
         <div id="img-api-pexels">
-          <div class="auto-fg">
-            <label>Pexels API Key</label>
-            <input type="password" id="pexels-api-key" placeholder="Lấy miễn phí tại pexels.com/api" oninput="saveAutoSettings()">
-            <div class="hint2">
-              Đăng ký miễn phí: <a href="https://www.pexels.com/api/" target="_blank" style="color:var(--a2)">pexels.com/api</a> → 200 requests/giờ
-            </div>
+          <div class="auto-fg" style="margin-bottom:5px">
+            <label style="font-size:.58rem">Pexels API Key</label>
+            <input type="password" id="pexels-api-key" placeholder="Lấy miễn phí tại pexels.com/api" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
           </div>
         </div>
-
         <div id="img-api-unsplash" style="display:none">
-          <div class="auto-fg">
-            <label>Unsplash Access Key</label>
-            <input type="password" id="unsplash-api-key" placeholder="Lấy miễn phí tại unsplash.com/developers" oninput="saveAutoSettings()">
-            <div class="hint2">
-              Đăng ký miễn phí: <a href="https://unsplash.com/developers" target="_blank" style="color:var(--a2)">unsplash.com/developers</a> → 50 requests/giờ
-            </div>
+          <div class="auto-fg" style="margin-bottom:5px">
+            <label style="font-size:.58rem">Unsplash Access Key</label>
+            <input type="password" id="unsplash-api-key" placeholder="Access Key từ unsplash.com/developers" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
           </div>
         </div>
-
-        <div id="img-style-row">
-          <div class="auto-fg">
-            <label>Phong cách ảnh</label>
-            <select id="img-style" onchange="saveAutoSettings()">
-              <option value="aesthetic">✨ Aesthetic · Phong cách nghệ thuật</option>
-              <option value="portrait">🌸 Portrait · Chân dung đẹp</option>
-              <option value="fashion">💄 Fashion · Thời trang</option>
-              <option value="lifestyle">🌟 Lifestyle · Cuộc sống</option>
-              <option value="nature">🌿 Nature · Thiên nhiên lãng mạn</option>
-              <option value="random">🎲 Ngẫu nhiên theo thể loại nhạc</option>
-            </select>
-            <div class="hint2">AI tự chọn từ khóa phù hợp thể loại: ballad → soft portrait, EDM → vibrant neon...</div>
-          </div>
-        </div>
-
-        <!-- Preview ảnh -->
-        <div style="margin-top:10px">
-          <button onclick="previewFetchImage()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
-            🔍 Test tìm ảnh ngay
-          </button>
-          <div id="img-preview-strip" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
-        </div>
+        <button onclick="previewFetchImage()" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer;margin-top:4px">🔍 Test tìm ảnh ngay</button>
+        <div id="img-preview-strip" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
       </div>
 
-    </div><!-- end left col -->
-
-    <!-- RIGHT COL -->
-    <div>
-
-      <!-- Schedule -->
-      <div class="auto-card" style="margin-bottom:14px">
-        <div class="auto-card-title">Lịch Chạy Tự Động</div>
-        <div class="auto-fg">
-          <label>Chạy vào các ngày</label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="day-picker">
-            <label class="day-chip" id="dc-0"><input type="checkbox" value="0" onchange="saveAutoSettings()"> CN</label>
-            <label class="day-chip" id="dc-1"><input type="checkbox" value="1" onchange="saveAutoSettings()" checked> T2</label>
-            <label class="day-chip" id="dc-2"><input type="checkbox" value="2" onchange="saveAutoSettings()" checked> T3</label>
-            <label class="day-chip" id="dc-3"><input type="checkbox" value="3" onchange="saveAutoSettings()" checked> T4</label>
-            <label class="day-chip" id="dc-4"><input type="checkbox" value="4" onchange="saveAutoSettings()" checked> T5</label>
-            <label class="day-chip" id="dc-5"><input type="checkbox" value="5" onchange="saveAutoSettings()" checked> T6</label>
-            <label class="day-chip" id="dc-6"><input type="checkbox" value="6" onchange="saveAutoSettings()"> T7</label>
-          </div>
-        </div>
-        <div class="auto-fg">
-          <label>Khung giờ upload</label>
-          <div class="schedule-slots" id="schedule-slots"></div>
-          <div class="add-slot-row">
-            <input type="time" id="new-slot-time" value="08:00">
-            <button class="add-slot-btn" onclick="addTimeSlot()">+ Thêm giờ</button>
-          </div>
-        </div>
-        <div class="auto-fg" style="margin-top:10px">
-          <label>Lịch trong trình duyệt (chỉ khi tab đang mở)</label>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-            <div class="toggle-wrap">
-              <input type="checkbox" id="auto-enabled" onchange="toggleAutoSchedule()" style="width:auto">
-            </div>
-            <span id="schedule-status-txt" style="font-size:.68rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Đã tắt · Để chạy 24/7 → dùng GitHub Actions bên dưới</span>
-          </div>
-        </div>
-        <div style="margin-top:10px;padding:10px;background:var(--ink);border-radius:8px;font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;line-height:1.7" id="next-run-info">
-          ⏰ Chưa có lịch nào được đặt
-        </div>
-      </div>
-
-      <!-- Queue -->
-      <div class="auto-card" style="margin-bottom:14px">
-        <div class="auto-card-title">Hàng Đợi Video</div>
-        <div class="auto-queue" id="auto-queue">
-          <div style="text-align:center;padding:20px;color:var(--tx3);font-size:.72rem">
-            Chưa có video nào trong hàng đợi
-          </div>
-        </div>
-      </div>
-
-      <!-- Log -->
       <div class="auto-card">
-        <div class="auto-card-title" style="justify-content:space-between;display:flex;align-items:center">
-          <span style="display:flex;align-items:center;gap:7px"><span style="width:5px;height:5px;border-radius:50%;background:var(--a2);box-shadow:0 0 5px var(--a2)"></span>NHẬT KÝ HỆ THỐNG</span>
-          <button onclick="clearLog()" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.6rem;font-family:'IBM Plex Mono',monospace">xóa</button>
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🔍 PHÂN TÍCH ĐỐI THỦ</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="competitor-id" placeholder="Channel ID đối thủ (UCxxxxx)..." style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
+          <button onclick="analyzeCompetitor($('competitor-id').value)" style="padding:5px 12px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-size:.62rem;cursor:pointer;font-weight:700">🔍</button>
         </div>
-        <div class="auto-log" id="auto-log">
-          <p class="log-line dim">[system] VietLong Creator Automation Engine v1.0</p>
-          <p class="log-line dim">[system] Sẵn sàng · Chờ cấu hình...</p>
+        <div style="font-size:.54rem;color:var(--tx3);margin-top:4px">Cần YouTube API Key · Phân tích top videos của đối thủ</div>
+      </div>
+
+    </div><!-- /COL 1 -->
+
+    <!-- COL 2: Queue + Analytics -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <div class="auto-card" style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span class="auto-card-title" style="margin-bottom:0;font-size:.63rem">📋 HÀNG ĐỢI VIDEO</span>
+          <button onclick="clearCompletedQueue()" title="Xóa đã xong" style="padding:2px 9px;border-radius:4px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer">🧹 Dọn</button>
+        </div>
+        <div id="auto-queue" style="max-height:420px;overflow-y:auto"></div>
+      </div>
+
+      <div class="auto-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span class="auto-card-title" style="margin-bottom:0;font-size:.63rem">📊 YOUTUBE ANALYTICS</span>
+          <button onclick="fetchYTAnalytics()" style="padding:2px 9px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.55rem;cursor:pointer">↻ Refresh</button>
+        </div>
+        <div id="analytics-dash" style="max-height:280px;overflow-y:auto">
+          <div style="color:var(--tx3);font-size:.62rem;text-align:center;padding:16px">Nhấn Refresh để tải dữ liệu YouTube</div>
         </div>
       </div>
 
-      <!-- Backend Guide -->
-      <div class="backend-guide">
-        <div style="font-size:.65rem;font-weight:700;color:#a5b4fc;font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
-          ⚡ CHẠY TỰ ĐỘNG 24/7 — GITHUB ACTIONS (MIỄN PHÍ)
+    </div><!-- /COL 2 -->
+
+    <!-- COL 3: Schedule + Tools -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🕐 LỊCH CHẠY TỰ ĐỘNG</div>
+        <div id="time-slots" style="margin-bottom:8px;max-height:200px;overflow-y:auto"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:.58rem;color:var(--tx3)">Thêm giờ chạy:</span>
+          <button onclick="showUploadTimeSuggestion()" style="padding:2px 8px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.55rem;cursor:pointer">⏰ Gợi ý</button>
         </div>
-        <div style="font-size:.66rem;color:var(--tx2);line-height:1.8;margin-bottom:10px">
-          GitHub Pages không có server, nhưng <strong style="color:#a5b4fc">GitHub Actions</strong> chạy được cron job miễn phí ngay trên repo của bạn — không cần VPS, không tốn tiền.
-        </div>
-
-        <!-- Steps -->
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-          <div class="ga-step"><span class="ga-step-n">1</span><div>
-            <div class="ga-step-title">Tạo file workflow trong repo</div>
-            <div class="ga-step-desc">Tạo <code>.github/workflows/auto-upload.yml</code> trong repo GitHub của bạn</div>
-          </div></div>
-          <div class="ga-step"><span class="ga-step-n">2</span><div>
-            <div class="ga-step-title">Thêm Secrets vào repo</div>
-            <div class="ga-step-desc">Settings → Secrets → <code>YT_API_KEY</code>, <code>YT_OAUTH_TOKEN</code>, <code>YT_CHANNEL_ID</code></div>
-          </div></div>
-          <div class="ga-step"><span class="ga-step-n">3</span><div>
-            <div class="ga-step-title">Xuất workflow file bên dưới</div>
-            <div class="ga-step-desc">Nhấn nút → tải file → commit vào repo → GitHub tự chạy theo lịch</div>
-          </div></div>
-        </div>
-
-        <pre id="backend-code" style="font-size:.58rem">name: VietLong Auto Upload
-on:
-  schedule:
-    - cron: '0 1,13 * * 1-5'  # 08:00 và 20:00 GMT+7 (T2-T6)
-  workflow_dispatch:            # Chạy thủ công được
-
-jobs:
-  auto-upload:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with: { node-version: '18' }
-      - run: npm install axios form-data
-      - run: node .github/scripts/auto-upload.js
-        env:
-          YT_API_KEY: ${{ secrets.YT_API_KEY }}
-          YT_OAUTH_TOKEN: ${{ secrets.YT_OAUTH_TOKEN }}
-          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
-          SONGS_PER_RUN: "2"
-          KEYWORDS: "nhạc hot việt nam,remix 2025"</pre>
-
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button onclick="exportGHWorkflow()" style="padding:7px 14px;border-radius:7px;border:1px solid #a5b4fc;background:rgba(165,180,252,.1);color:#a5b4fc;cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
-            ↓ Xuất auto-upload.yml
-          </button>
-          <button onclick="exportGHScript()" style="padding:7px 14px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);cursor:pointer;font-size:.63rem;font-family:'IBM Plex Mono',monospace;font-weight:700">
-            ↓ Xuất auto-upload.js
-          </button>
-          <a href="https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule" target="_blank" style="padding:7px 14px;border-radius:7px;border:1px solid var(--line2);color:var(--tx3);font-size:.63rem;font-family:'IBM Plex Mono',monospace;text-decoration:none;display:inline-flex;align-items:center">
-            📖 Docs
-          </a>
+        <div class="add-slot-row" style="display:flex;gap:6px">
+          <select id="new-slot-day" style="flex:1;padding:4px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
+            <option value="mon">Thứ 2</option><option value="tue">Thứ 3</option>
+            <option value="wed">Thứ 4</option><option value="thu">Thứ 5</option>
+            <option value="fri">Thứ 6</option><option value="sat">Thứ 7</option>
+            <option value="sun">Chủ Nhật</option><option value="daily">Hàng ngày</option>
+          </select>
+          <input type="time" id="new-slot-time" value="20:00" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem;width:80px">
+          <button onclick="addTimeSlot()" style="padding:4px 12px;border-radius:5px;border:none;background:var(--a2);color:var(--ink);font-size:.7rem;cursor:pointer;font-weight:700">+</button>
         </div>
       </div>
 
-      <style>
-      .ga-step {
-        display:flex; align-items:flex-start; gap:10px;
-        padding:8px 10px; border-radius:7px;
-        background:rgba(165,180,252,.06); border:1px solid rgba(165,180,252,.15);
-      }
-      .ga-step-n {
-        width:20px; height:20px; border-radius:50%; flex-shrink:0;
-        background:rgba(165,180,252,.2); border:1px solid #a5b4fc;
-        display:grid; place-items:center;
-        font-size:.58rem; font-weight:700; color:#a5b4fc;
-        font-family:'IBM Plex Mono',monospace;
-      }
-      .ga-step-title { font-size:.65rem; font-weight:700; color:var(--tx); }
-      .ga-step-desc  { font-size:.6rem; color:var(--tx3); margin-top:2px; line-height:1.5; }
-      .ga-step-desc code { color:#a5b4fc; background:rgba(165,180,252,.1); padding:1px 4px; border-radius:3px; }
-      </style>
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">⚡ GITHUB ACTIONS</div>
+        <div style="font-size:.6rem;color:var(--tx3);margin-bottom:8px;line-height:1.5">
+          Tự động hóa với GitHub Actions — không cần máy tính luôn bật.
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button onclick="exportGHWorkflow()" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(165,180,252,.4);background:rgba(165,180,252,.08);color:#a5b4fc;font-size:.6rem;cursor:pointer;font-weight:600">📥 Workflow</button>
+          <button onclick="exportGHScript()" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(165,180,252,.4);background:rgba(165,180,252,.08);color:#a5b4fc;font-size:.6rem;cursor:pointer;font-weight:600">📥 Script</button>
+        </div>
+        <div style="background:var(--surface2);border-radius:7px;padding:9px">
+          <div style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:5px;font-weight:700">HƯỚNG DẪN NHANH</div>
+          <div style="font-size:.58rem;color:var(--tx2);line-height:1.7">
+            1. Tải <code style="color:var(--a2)">vlc-auto.yml</code> về<br>
+            2. Đặt vào <code style="color:var(--a2)">.github/workflows/</code><br>
+            3. Thêm API Key vào GitHub Secrets<br>
+            4. Enable Actions trong repo settings
+          </div>
+        </div>
+      </div>
 
-    </div>
+      <div class="auto-card">
+        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">📈 SEO & HASHTAG AI</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="generateHashtags('youtube')" style="padding:7px;border-radius:7px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.62rem;cursor:pointer;font-weight:600">🏷 Hashtag YouTube (AI)</button>
+          <button onclick="generateHashtags('tiktok')" style="padding:7px;border-radius:7px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.62rem;cursor:pointer;font-weight:600">🎵 Hashtag TikTok (AI)</button>
+          <button onclick="optimizeTitles()" style="padding:7px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.62rem;cursor:pointer;font-weight:600">🤖 Tối Ưu Tiêu Đề AI</button>
+          <button onclick="showUploadTimeSuggestion()" style="padding:7px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer">⏰ Giờ Đăng Tốt Nhất</button>
+        </div>
+      </div>
+
+    </div><!-- /COL 3 -->
+
+  </div><!-- /3-col grid -->
+
   </div>
-</div>
 
 <style>
 .day-chip {
@@ -1897,63 +1884,1060 @@ jobs:
   background:rgba(0,229,195,.12); border-color:var(--a2); color:var(--a2);
 }
 
-/* ── Volume control ── */
-#vol-slider { accent-color:var(--a2); }
-#mute-btn { transition:all .15s; }
-#mute-btn:hover { color:var(--a2)!important; }
+[data-theme="light"]{--bg:#f4f4f8;--bg2:#e8e8f0;--surface:#ffffff;--surface2:#f0f0f8;--ink:#e8e8f0;--tx:#0d0d1a;--tx2:#3a3a5c;--tx3:#7070a0;--line:rgba(0,0,0,.12);--line2:rgba(0,0,0,.08);--a1:#d4006a;--a2:#008870;--a3:#6a00d4;--a4:#c45200;}
+[data-theme="light"] header{background:rgba(244,244,248,.95);border-bottom:1px solid rgba(0,0,0,.1);}
+[data-theme="light"] .panel{background:#fff;border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .tcard{background:#f8f8fc;border-color:rgba(0,0,0,.1);}
+[data-theme="light"] .auto-card{background:#f8f8fc;border-color:rgba(0,0,0,.1);}
+.speed-btn{padding:2px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
+#theme-toggle{background:var(--surface2);border:1px solid var(--line2);color:var(--tx2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:.75rem;transition:all .2s;}
+#theme-toggle:hover{border-color:var(--a2);color:var(--a2);}
+.tanim-btn,.pbst-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
+.tanim-btn.active,.pbst-btn.active{border-color:var(--a2);background:rgba(0,229,195,.1);color:var(--a2);}
 
-/* ── Export cancel btn show/hide ── */
-#cancel-export-btn { transition:all .2s; }
-#cancel-export-btn:hover { background:rgba(248,113,113,.2)!important; }
+/* Color filter buttons */
+.cf-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
+/* EQ preset buttons */
+.eq-preset-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
+/* Sticker panel */
+.sticker-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.sticker-item{font-size:1.4rem;cursor:pointer;padding:4px 6px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);transition:all .18s;}
+.sticker-item:hover{transform:scale(1.2);border-color:var(--a2);}
+/* Chapter panel */
+#chapter-list{max-height:150px;overflow-y:auto;margin-top:6px;}
+/* Intro/outro toggle */
+.intro-toggle{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--surface2);margin-bottom:6px;}
 
-/* ── Export history ── */
-.eh-item {
-  display:flex; align-items:center; gap:8px;
-  padding:7px 10px; border-radius:7px;
-  background:var(--surface2); margin-bottom:5px;
-  font-size:.64rem; cursor:pointer; transition:all .18s;
-  border:1px solid transparent;
+/* ── Auto tab 3-column responsive ── */
+@media(max-width:1100px){
+  [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr 1fr!important;
+  }
 }
-.eh-item:hover { border-color:var(--a2); }
-.eh-thumb { width:40px; height:26px; border-radius:4px; object-fit:cover; flex-shrink:0; background:var(--ink); }
-.eh-info { flex:1; min-width:0; }
-.eh-title { font-weight:700; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.eh-meta  { color:var(--tx3); font-size:.58rem; margin-top:1px; }
-
-/* ── Onboarding tooltip ── */
-.onboard-tip {
-  position:absolute; z-index:500;
-  background:var(--a2); color:var(--ink);
-  border-radius:9px; padding:8px 14px;
-  font-size:.68rem; font-weight:700;
-  box-shadow:0 6px 20px rgba(0,229,195,.35);
-  animation:toastIn .4s ease;
-  white-space:nowrap; pointer-events:none;
+@media(max-width:720px){
+  [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
 }
-.onboard-tip::after {
-  content:''; position:absolute; top:100%; left:20px;
-  border:6px solid transparent;
-  border-top-color:var(--a2);
+/* Compact auto-card */
+.auto-card{padding:12px;}
+.auto-fg label{margin-bottom:3px;display:block;}
+.auto-fg{margin-bottom:0;}
+.auto-card-title{font-size:.63rem!important;margin-bottom:8px;}
+.yt-connect-box{cursor:pointer;}
+
+/* ══ FULL SCREEN LAYOUT OVERRIDES ══ */
+
+/* Remove all max-width constraints from step panels */
+.panel { max-width:100% !important; }
+
+/* Step 1: upload area centered, max 600px */
+#p1 .upload-area { max-width:640px; margin:0 auto 16px; }
+#p1 .ameta { max-width:640px; margin:0 auto; }
+
+/* Step 2: template grid - more columns on wide screen */
+.tgrid {
+  display:grid !important;
+  grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)) !important;
+  gap:12px !important;
+}
+.tcard { min-width:0 !important; }
+
+/* Step 3: #cfg content in 2 cols via CSS */
+#cfg > div { max-width:100% !important; }
+
+/* Step 4: 2-col already done via inline style */
+/* Make playbar more compact */
+.playbar { flex-wrap:wrap; gap:6px; padding:8px 12px; }
+
+/* Export card full width in its column */
+.export-card { width:100% !important; }
+
+/* Auto tab: ensure 3-col works */
+#panel-auto [style*="grid-template-columns:1fr 1fr 1fr"] {
+  grid-template-columns:1fr 1fr 1fr !important;
 }
 
-/* ── Lyrics tap-sync ── */
-.lyric-sync-row {
-  display:flex; align-items:center; gap:6px;
-  padding:5px 8px; border-radius:6px;
-  background:var(--surface2); margin-bottom:3px;
-  cursor:pointer; transition:all .15s;
-  border:1px solid var(--line2);
+/* Responsive breakpoints */
+@media(max-width:1200px){
+  #panel-auto [style*="grid-template-columns:1fr 1fr 1fr"] {
+    grid-template-columns:1fr 1fr !important;
+  }
 }
-.lyric-sync-row:hover { border-color:var(--a2); }
-.lyric-sync-row.synced { border-color:rgba(0,229,195,.4); background:rgba(0,229,195,.06); }
-.lyric-sync-ts { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--a2); min-width:42px; }
-.lyric-sync-txt { flex:1; font-size:.68rem; color:var(--tx2); }
+@media(max-width:768px){
+  #panel-auto [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns:minmax(0,1.2fr)"] {
+    grid-template-columns:1fr !important;
+  }
+  .tgrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important; }
+}
 
-/* ── Touch drag support ── */
-.trim-handle { touch-action:none; }
+/* Header full width */
+header { max-width:100% !important; padding:0 32px; }
+
+/* Step bar centered */
+.steps { max-width:900px; margin:0 auto 20px; }
+
+/* Canvas preview responsive */
+.preview-frame { aspect-ratio:16/9; width:100%; }
+.preview-frame canvas { position:absolute; inset:0; width:100%; height:100%; }
 </style>
 
 <script>
+// ── Version Info ──
+const APP_VERSION = 'v5.3.1';
+const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+function showVersionHistory(){
+  let modal=$('ver-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='ver-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(modal);
+  }
+  const rows=VERSION_HISTORY.slice().reverse().map(([v,desc])=>
+    `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2)">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:${v===APP_VERSION?'var(--a2)':'var(--tx3)'};font-weight:${v===APP_VERSION?'800':'400'};min-width:48px">${v}</span>
+      <span style="font-size:.65rem;color:${v===APP_VERSION?'var(--tx)':'var(--tx3)'}">${desc}</span>
+    </div>`
+  ).join('');
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(520px,90vw);max-height:80vh;overflow-y:auto">
+    <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:14px;font-family:'IBM Plex Mono',monospace">📋 CHANGELOG</div>
+    ${rows}
+    <button onclick="$('ver-modal').style.display='none'" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button>
+  </div>`;
+  modal.style.display='flex';
+}
+
+// ── Color Grading & Filters ──
+let _colorFilter='none';
+const COLOR_FILTERS={
+  none:      {brightness:1,contrast:1,saturate:1,hue:0,sepia:0,label:'Original'},
+  cinematic: {brightness:0.92,contrast:1.18,saturate:0.85,hue:0,sepia:0,label:'Cinematic'},
+  vintage:   {brightness:0.95,contrast:1.05,saturate:0.7,hue:15,sepia:0.3,label:'Vintage'},
+  vibrant:   {brightness:1.05,contrast:1.15,saturate:1.5,hue:0,sepia:0,label:'Vibrant'},
+  bw:        {brightness:1,contrast:1.2,saturate:0,hue:0,sepia:0,label:'B&W'},
+  warm:      {brightness:1.02,contrast:1.05,saturate:1.1,hue:-10,sepia:0.15,label:'Warm Sunset'},
+  cold:      {brightness:0.98,contrast:1.08,saturate:0.9,hue:20,sepia:0,label:'Cold Night'},
+  neon:      {brightness:1.1,contrast:1.25,saturate:1.8,hue:0,sepia:0,label:'Neon Pop'},
+  muted:     {brightness:0.9,contrast:0.95,saturate:0.6,hue:0,sepia:0.1,label:'Muted'},
+  dreamy:    {brightness:1.08,contrast:0.92,saturate:1.3,hue:5,sepia:0.05,label:'Dreamy'},
+  noir:      {brightness:0.85,contrast:1.35,saturate:0,hue:0,sepia:0.2,label:'Film Noir'},
+  golden:    {brightness:1.05,contrast:1.1,saturate:1.2,hue:-15,sepia:0.25,label:'Golden Hour'},
+};
+function setColorFilter(name){
+  _colorFilter=name;
+  document.querySelectorAll('.cf-btn').forEach(b=>{
+    const active=b.dataset.filter===name;
+    b.style.borderColor=active?'var(--a2)':'var(--line2)';
+    b.style.background=active?'rgba(0,229,195,.12)':'var(--surface2)';
+    b.style.color=active?'var(--a2)':'var(--tx3)';
+  });
+  if(name!=='none') toast('🎨 Filter: '+COLOR_FILTERS[name].label,'info',1200);
+}
+function applyColorGrading(ctx,W,H){
+  // GPU-accelerated: use CSS filter string — NO getImageData pixel loops
+  // Called on the OUTPUT canvas BEFORE VideoFrame capture
+  const f=COLOR_FILTERS[_colorFilter]||COLOR_FILTERS.none;
+  if(_colorFilter==='none'){ ctx.filter='none'; return; }
+  const sat=f.saturate!=null?f.saturate:1;
+  const bri=f.brightness!=null?f.brightness:1;
+  const con=f.contrast!=null?f.contrast:1;
+  const sep=f.sepia!=null?f.sepia:0;
+  const hue=f.hue!=null?f.hue:0;
+  // Build CSS filter string — applied to the NEXT drawImage call
+  ctx._gradeFilter=`brightness(${bri}) contrast(${con}) saturate(${sat}) sepia(${sep}) hue-rotate(${hue}deg)`;
+}
+
+// ── Audio Equalizer (preview only) ──
+let _eqFilters=[];
+let _eqPreset='flat';
+const EQ_PRESETS={
+  flat:     {label:'Flat',    bands:[0,0,0,0,0]},
+  bass:     {label:'Bass+',   bands:[6,4,2,0,0]},
+  treble:   {label:'Treble+', bands:[0,0,2,4,6]},
+  vocal:    {label:'Vocal',   bands:[-2,0,4,3,1]},
+  club:     {label:'Club',    bands:[4,3,5,3,2]},
+  acoustic: {label:'Acoustic',bands:[3,2,0,2,3]},
+};
+const EQ_FREQS=[60,250,1000,4000,12000];
+
+function setupEqualizer(){
+  if(!actx||!analyser) return;
+  // Remove old filters
+  _eqFilters.forEach(f=>{try{f.disconnect();}catch(_){}});
+  _eqFilters=[];
+  // Build filter chain
+  EQ_FREQS.forEach((freq,i)=>{
+    const f=actx.createBiquadFilter();
+    f.type=i===0?'lowshelf':i===EQ_FREQS.length-1?'highshelf':'peaking';
+    f.frequency.value=freq;
+    f.gain.value=0;
+    f.Q.value=1;
+    _eqFilters.push(f);
+  });
+  // Chain: source -> eq[0] -> eq[1] -> ... -> analyser
+  if(_eqFilters.length>0){
+    for(let i=0;i<_eqFilters.length-1;i++) _eqFilters[i].connect(_eqFilters[i+1]);
+    _eqFilters[_eqFilters.length-1].connect(analyser);
+  }
+}
+
+function setEqPreset(name){
+  _eqPreset=name;
+  const preset=EQ_PRESETS[name];
+  if(!preset) return;
+  _eqFilters.forEach((f,i)=>{ if(preset.bands[i]!==undefined) f.gain.value=preset.bands[i]; });
+  document.querySelectorAll('.eq-preset-btn').forEach(b=>{
+    const active=b.dataset.preset===name;
+    b.style.borderColor=active?'var(--a2)':'var(--line2)';
+    b.style.background=active?'rgba(0,229,195,.1)':'var(--surface2)';
+    b.style.color=active?'var(--a2)':'var(--tx3)';
+  });
+  if(name!=='flat') toast('🎚 EQ: '+preset.label,'info',1200);
+}
+
+// ── Sticker & Emoji Overlay ──
+let _stickers=[];
+let _stickerDragging=null;
+const STICKER_PRESETS=['🔥','⚡','💫','🎵','🎶','💎','👑','🌟','✨','💯','🎤','🎧','💥','🎯','🌈'];
+
+function addSticker(emoji,xRatio,yRatio){
+  _stickers.push({
+    emoji,
+    x:xRatio||0.5+Math.random()*0.2-0.1,
+    y:yRatio||0.3+Math.random()*0.2,
+    scale:1+Math.random()*0.3,
+    rotate:(Math.random()-0.5)*0.4,
+    beatBounce:true,
+    id:Date.now()+Math.random(),
+  });
+  toast('✨ Đã thêm sticker '+emoji,'info',1000);
+}
+function removeLastSticker(){
+  if(_stickers.length) _stickers.pop();
+}
+function clearStickers(){ _stickers=[]; }
+
+function drawStickers(ctx,W,H,bass){
+  if(!_stickers.length) return;
+  ctx.save();
+  _stickers.forEach(s=>{
+    const x=s.x*W, y=s.y*H;
+    const scale=s.scale*(s.beatBounce?1+bass*0.2:1);
+    const sz=Math.max(20,W*.04)*scale;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(s.rotate+(s.beatBounce?bass*0.1:0));
+    ctx.font=sz+'px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.5)';
+    ctx.shadowBlur=4;
+    ctx.fillText(s.emoji,0,0);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// Touch/mouse drag for sticker positioning
+function initStickerDrag(){
+  const cvs=ovCvs; if(!cvs) return;
+  cvs.addEventListener('mousedown',e=>{
+    const rect=cvs.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)/rect.width;
+    const my=(e.clientY-rect.top)/rect.height;
+    _stickerDragging=_stickers.findIndex(s=>Math.abs(s.x-mx)<0.05&&Math.abs(s.y-my)<0.05);
+  });
+  cvs.addEventListener('mousemove',e=>{
+    if(_stickerDragging<0) return;
+    const rect=cvs.getBoundingClientRect();
+    _stickers[_stickerDragging].x=(e.clientX-rect.left)/rect.width;
+    _stickers[_stickerDragging].y=(e.clientY-rect.top)/rect.height;
+  });
+  cvs.addEventListener('mouseup',()=>{ _stickerDragging=-1; });
+}
+
+// ── Countdown Timer Overlay ──
+let _countdownActive=false;
+let _countdownEnd=0;
+let _countdownDuration=5;
+
+function startCountdown(seconds){
+  _countdownDuration=parseInt(seconds)||5;
+  _countdownActive=true;
+  _countdownEnd=Date.now()+_countdownDuration*1000;
+  toast('⏱ Đếm ngược '+_countdownDuration+'s bắt đầu!','info',1500);
+}
+function stopCountdown(){ _countdownActive=false; }
+
+function drawCountdown(ctx,W,H){
+  if(!_countdownActive) return;
+  const remaining=Math.ceil((_countdownEnd-Date.now())/1000);
+  if(remaining<=0){ _countdownActive=false; return; }
+  const progress=remaining/_countdownDuration;
+  const cx=W*.85, cy=H*.15, r=Math.min(W,H)*.065;
+  // Circle background
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fill();
+  // Progress arc
+  ctx.strokeStyle=remaining<=2?'#f87171':'var(--a2,#00e5c3)';
+  ctx.lineWidth=r*.12; ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=8;
+  ctx.beginPath();
+  ctx.arc(cx,cy,r*.82,-Math.PI/2,-Math.PI/2+progress*Math.PI*2);
+  ctx.stroke(); ctx.shadowBlur=0;
+  // Number
+  ctx.font='700 '+(r*.9)+'px Orbitron,"Be Vietnam Pro",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#fff'; ctx.fillText(remaining,cx,cy);
+  ctx.restore();
+}
+
+// ── Custom Watermark / Branding ──
+let _watermarkText='';
+let _watermarkPos='bottom-right';
+let _watermarkOpacity=0.6;
+let _watermarkImg=null;
+
+function setWatermark(text,pos,opacity){
+  _watermarkText=text||'';
+  _watermarkPos=pos||'bottom-right';
+  _watermarkOpacity=parseFloat(opacity)||0.6;
+}
+
+function loadWatermarkImage(file){
+  if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{ const img=new Image(); img.onload=()=>{_watermarkImg=img;}; img.src=e.target.result; };
+  r.readAsDataURL(file);
+}
+
+function drawWatermark(ctx,W,H){
+  if(!_watermarkText&&!_watermarkImg) return;
+  ctx.save();
+  ctx.globalAlpha=_watermarkOpacity;
+  const pad=W*.02;
+  const fsz=Math.max(10,W*.018);
+  if(_watermarkImg){
+    const iw=Math.min(W*.15,120), ih=iw*((_watermarkImg.height||1)/(_watermarkImg.width||1));
+    let ix=pad,iy=pad;
+    if(_watermarkPos==='bottom-right'){ix=W-iw-pad;iy=H-ih-pad;}
+    else if(_watermarkPos==='bottom-left'){ix=pad;iy=H-ih-pad;}
+    else if(_watermarkPos==='top-right'){ix=W-iw-pad;iy=pad;}
+    ctx.drawImage(_watermarkImg,ix,iy,iw,ih);
+  } else if(_watermarkText){
+    ctx.font='600 '+fsz+'px "Be Vietnam Pro",Arial';
+    ctx.textBaseline='bottom'; ctx.textAlign='right';
+    const tw=ctx.measureText(_watermarkText).width;
+    let tx=W-pad, ty=H-pad;
+    if(_watermarkPos==='top-right'){ty=pad+fsz; ctx.textBaseline='top';}
+    else if(_watermarkPos==='top-left'){tx=pad+tw; ty=pad+fsz; ctx.textBaseline='top'; ctx.textAlign='left';}
+    else if(_watermarkPos==='bottom-left'){tx=pad+tw; ctx.textAlign='left';}
+    // Shadow for readability
+    ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=6;
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.fillText(_watermarkText,tx,ty);
+    ctx.shadowBlur=0;
+  }
+  ctx.restore();
+}
+
+// ── Template Quick Compare ──
+let _compareMode=false;
+let _compareTpl=null;
+let _compareCanvas=null;
+
+function toggleCompareMode(tplId){
+  if(_compareMode&&_compareTpl?.id===TMPLS.find(t=>t.id===tplId)?.id){
+    _compareMode=false; _compareTpl=null;
+    toast('So sánh tắt','info',1000); return;
+  }
+  const tpl=TMPLS.find(t=>t.id===tplId);
+  if(!tpl){toast('Template không tìm thấy','warn');return;}
+  _compareMode=true; _compareTpl=tpl;
+  toast('🔀 So sánh: '+tpl.name+' vs '+chosenTpl?.name,'info',2000);
+}
+
+function drawCompareOverlay(mainCtx,W,H,bass,mid,t){
+  if(!_compareMode||!_compareTpl||!chosenTpl) return;
+  // Draw compare template on right half
+  const split=W/2;
+  mainCtx.save();
+  mainCtx.beginPath(); mainCtx.rect(split,0,split,H); mainCtx.clip();
+  // Swap template and draw
+  const orig=chosenTpl;
+  chosenTpl=_compareTpl;
+  drawFrame();
+  chosenTpl=orig;
+  mainCtx.restore();
+  // Divider line
+  mainCtx.save();
+  mainCtx.strokeStyle='rgba(255,255,255,.6)'; mainCtx.lineWidth=2;
+  mainCtx.setLineDash([8,4]); mainCtx.shadowColor='rgba(255,255,255,.5)'; mainCtx.shadowBlur=6;
+  mainCtx.beginPath(); mainCtx.moveTo(split,0); mainCtx.lineTo(split,H); mainCtx.stroke();
+  mainCtx.setLineDash([]); mainCtx.shadowBlur=0;
+  // Labels
+  mainCtx.font='600 '+(W*.015)+'px "Be Vietnam Pro",Arial';
+  mainCtx.textBaseline='top'; mainCtx.fillStyle='rgba(255,255,255,.75)';
+  mainCtx.textAlign='left'; mainCtx.fillText(orig?.name||'Current',W*.02,H*.02);
+  mainCtx.textAlign='right'; mainCtx.fillText(_compareTpl.name,W*.98,H*.02);
+  mainCtx.restore();
+}
+
+// ── Intro / Outro Clip ──
+let _introEnabled=false;
+let _outroEnabled=false;
+let _introDuration=3;
+let _outroDuration=3;
+let _introText='VietLong Creator';
+let _outroText='Like & Subscribe! 🔔';
+let _outroChannel='';
+
+function toggleIntro(v){ _introEnabled=v; toast(v?'✅ Intro bật':'Intro tắt','info',1000); }
+function toggleOutro(v){ _outroEnabled=v; toast(v?'✅ Outro bật':'Outro tắt','info',1000); }
+
+function renderIntroFrame(ctx,W,H,t,pal){
+  const dur=_introDuration;
+  const progress=Math.min(t/dur,1);
+  const fadeIn=Math.min(t/0.5,1);
+  const fadeOut=t>dur-0.5?1-(t-(dur-0.5))/0.5:1;
+  const alpha=fadeIn*fadeOut;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  // Background
+  ctx.fillStyle=pal?.b1||'#05060c'; ctx.fillRect(0,0,W,H);
+  // Animated logo text
+  const scale=0.8+progress*0.2;
+  ctx.translate(W/2,H/2);
+  ctx.scale(scale,scale);
+  const fsz=Math.min(W*.06,52);
+  ctx.font='900 '+fsz+'px Orbitron,"Be Vietnam Pro",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor=pal?.wc||'#00e5c3'; ctx.shadowBlur=20+progress*20;
+  ctx.fillStyle=pal?.wc||'#00e5c3';
+  ctx.fillText(_introText,0,-fsz*0.6,W*0.8);
+  ctx.shadowBlur=0;
+  ctx.font='400 '+(fsz*.4)+'px "Be Vietnam Pro",sans-serif';
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  ctx.fillText('AI Music Video Studio',0,fsz*0.6,W*0.7);
+  ctx.restore();
+}
+
+function renderOutroFrame(ctx,W,H,t,pal){
+  const dur=_outroDuration;
+  const fadeIn=Math.min(t/0.5,1);
+  const alpha=fadeIn;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.fillStyle=pal?.b1||'#05060c'; ctx.fillRect(0,0,W,H);
+  const fsz=Math.min(W*.05,44);
+  ctx.font='900 '+(fsz*1.1)+'px Orbitron,"Be Vietnam Pro",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor=pal?.a1||'#ff2d78'; ctx.shadowBlur=18;
+  ctx.fillStyle=pal?.a1||'#ff2d78';
+  ctx.fillText(_outroText,W/2,H*.42,W*.85);
+  if(_outroChannel){
+    ctx.shadowBlur=0; ctx.font='600 '+(fsz*.55)+'px "Be Vietnam Pro",sans-serif';
+    ctx.fillStyle='rgba(255,255,255,.75)';
+    ctx.fillText(_outroChannel,W/2,H*.58,W*.8);
+  }
+  // Subscribe button mockup
+  const bw=W*.22,bh=H*.065,bx=W/2-bw/2,by=H*.67;
+  ctx.fillStyle='#ff2d78'; ctx.beginPath();
+  const br=bh*.35;
+  ctx.moveTo(bx+br,by); ctx.lineTo(bx+bw-br,by);
+  ctx.quadraticCurveTo(bx+bw,by,bx+bw,by+br);
+  ctx.lineTo(bx+bw,by+bh-br); ctx.quadraticCurveTo(bx+bw,by+bh,bx+bw-br,by+bh);
+  ctx.lineTo(bx+br,by+bh); ctx.quadraticCurveTo(bx,by+bh,bx,by+bh-br);
+  ctx.lineTo(bx,by+br); ctx.quadraticCurveTo(bx,by,bx+br,by); ctx.closePath();
+  ctx.shadowColor='rgba(255,45,120,.6)'; ctx.shadowBlur=12; ctx.fill(); ctx.shadowBlur=0;
+  ctx.font='700 '+(bh*.38)+'px "Be Vietnam Pro",sans-serif';
+  ctx.fillStyle='#fff'; ctx.fillText('SUBSCRIBE',W/2,by+bh/2);
+  ctx.restore();
+}
+
+// ── Competitor Channel Analysis ──
+async function analyzeCompetitor(channelId){
+  const apiKey=autoSettings?.ytApiKey||'';
+  if(!apiKey){toast('Cần YouTube API Key','warn');return;}
+  if(!channelId){toast('Nhập Channel ID','warn');return;}
+  toast('🔍 Phân tích đối thủ...','info',2000);
+  try{
+    const searchRes=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&channelId='+channelId+'&maxResults=20&order=viewCount&type=video&key='+apiKey);
+    const sd=await searchRes.json();
+    if(!searchRes.ok) throw new Error(sd.error?.message||'API error');
+    const vids=(sd.items||[]).map(i=>i.id.videoId).filter(Boolean);
+    const statsRes=await fetch('https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id='+vids.join(',')+'&key='+apiKey);
+    const statsData=await statsRes.json();
+    const videos=(statsData.items||[]).map(v=>({
+      title:v.snippet?.title||'',
+      views:parseInt(v.statistics?.viewCount||0),
+      likes:parseInt(v.statistics?.likeCount||0),
+      date:v.snippet?.publishedAt?.slice(0,10)||'',
+      tags:(v.snippet?.tags||[]).slice(0,10),
+    }));
+    showCompetitorModal(videos,channelId);
+  }catch(e){toast('Lỗi phân tích: '+e.message,'error');}
+}
+
+function showCompetitorModal(videos,channelId){
+  let m=$('competitor-modal');
+  if(!m){m=document.createElement('div');m.id='competitor-modal';m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';document.body.appendChild(m);}
+  const avgViews=videos.length?Math.round(videos.reduce((a,v)=>a+v.views,0)/videos.length):0;
+  const topTags=[...new Set(videos.flatMap(v=>v.tags))].slice(0,15);
+  const topVideo=videos.sort((a,b)=>b.views-a.views)[0];
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(560px,92vw);max-height:85vh;overflow-y:auto">'
+    +'<div style="font-size:.82rem;font-weight:800;color:var(--a2);margin-bottom:12px;font-family:\'IBM Plex Mono\',monospace">🔍 COMPETITOR ANALYSIS</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div style="background:var(--surface2);border-radius:8px;padding:10px"><div style="font-size:.58rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace">AVG VIEWS</div><div style="font-size:1.1rem;font-weight:800;color:var(--a2)">'+avgViews.toLocaleString()+'</div></div>'
+    +'<div style="background:var(--surface2);border-radius:8px;padding:10px"><div style="font-size:.58rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace">VIDEOS ANALYZED</div><div style="font-size:1.1rem;font-weight:800;color:var(--a2)">'+videos.length+'</div></div>'
+    +'</div>'
+    +(topVideo?'<div style="margin-bottom:10px"><div style="font-size:.6rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace;margin-bottom:4px">🏆 VIDEO HAY NHẤT</div><div style="font-size:.7rem;color:var(--tx);font-weight:600">'+sanitizeText(topVideo.title.substring(0,60))+'</div><div style="font-size:.6rem;color:var(--a2)">'+topVideo.views.toLocaleString()+' views</div></div>':'')
+    +(topTags.length?'<div><div style="font-size:.6rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace;margin-bottom:6px">🏷 HASHTAG PHỔ BIẾN</div><div style="display:flex;flex-wrap:wrap;gap:4px">'+topTags.map(t=>'<span style="padding:2px 7px;border-radius:10px;background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--a2);font-size:.58rem;font-family:\'IBM Plex Mono\',monospace">#'+sanitizeText(t)+'</span>').join('')+'</div></div>':'')
+    +'<button onclick="$(\'competitor-modal\').style.display=\'none\'" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button></div>';
+  m.style.display='flex';
+}
+
+// ── Video Chapters / Markers ──
+let _chapters=[];
+
+function addChapter(label,time){
+  const t=time!=null?time:(audEl?.currentTime||0);
+  const lbl=label||('Chapter '+(_chapters.length+1));
+  _chapters.push({time:t,label:lbl,id:Date.now()});
+  _chapters.sort((a,b)=>a.time-b.time);
+  renderChapterList();
+  toast('📍 Marker: '+lbl+' @ '+fmt(t),'success',2000);
+}
+
+function removeChapter(id){
+  _chapters=_chapters.filter(c=>c.id!==id);
+  renderChapterList();
+}
+
+function renderChapterList(){
+  const el=$('chapter-list'); if(!el) return;
+  if(!_chapters.length){el.innerHTML='<div style="color:var(--tx3);font-size:.62rem;text-align:center;padding:8px">Chưa có marker · Nhấn + khi đang phát</div>';return;}
+  el.innerHTML=_chapters.map(c=>'<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;background:var(--surface2);margin-bottom:3px">'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:.58rem;color:var(--a2);min-width:38px">'+fmt(c.time)+'</span>'
+    +'<span style="flex:1;font-size:.65rem;color:var(--tx)">'+sanitizeText(c.label)+'</span>'
+    +'<button onclick="if(audEl)audEl.currentTime='+c.time+'" style="padding:1px 5px;border-radius:4px;border:1px solid var(--a2);background:none;color:var(--a2);font-size:.55rem;cursor:pointer">▶</button>'
+    +'<button onclick="removeChapter('+c.id+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.65rem">✕</button>'
+    +'</div>').join('');
+}
+
+function generateYTChapters(){
+  if(!_chapters.length){toast('Thêm marker trước','warn');return;}
+  const lines=['00:00 Intro',..._chapters.map(c=>fmt(c.time)+' '+c.label)].join('\n');
+  navigator.clipboard?.writeText(lines).then(()=>toast('📋 Đã copy YouTube chapters','success',3000));
+  return lines;
+}
+
+// ── Multi-Language UI ──
+let _lang='vi';
+const I18N={
+  vi:{
+    step1:'Tải Nhạc',step2:'Chọn Mẫu',step3:'Tuỳ Chỉnh',step4:'Xuất Video',
+    play:'▶ Phát',pause:'⏸ Tạm Dừng',restart:'↺ Lại Đầu',
+    export:'⚡ Xuất Video',cancel:'✕ Hủy',
+    title:'Tên Bài Hát',artist:'Tên Ca Sĩ',lyrics:'Lời Bài Hát',
+    template:'Mẫu Video',customize:'Tuỳ Chỉnh',preview:'Xem Trước',
+  },
+  en:{
+    step1:'Upload Music',step2:'Choose Template',step3:'Customize',step4:'Export Video',
+    play:'▶ Play',pause:'⏸ Pause',restart:'↺ Restart',
+    export:'⚡ Export Video',cancel:'✕ Cancel',
+    title:'Song Title',artist:'Artist Name',lyrics:'Lyrics',
+    template:'Video Template',customize:'Customize',preview:'Preview',
+  },
+};
+function setLanguage(lang){
+  _lang=lang;
+  localStorage.setItem('vlc_lang',lang);
+  applyI18N();
+  toast(lang==='en'?'🌐 English mode':'🇻🇳 Tiếng Việt','info',1500);
+}
+function applyI18N(){
+  const t=I18N[_lang]||I18N.vi;
+  // Apply to key elements
+  const map={
+    'pbtn':playing?t.pause:t.play,
+    'expbtn':'⚡ '+((_lang==='en')?'Export Video':'Xuất Video'),
+  };
+  Object.entries(map).forEach(([id,val])=>{ const el=$(id); if(el&&!el.disabled) el.textContent=val; });
+  // Update lang toggle
+  const btn=$('lang-btn'); if(btn) btn.textContent=_lang==='vi'?'🌐 EN':'🇻🇳 VI';
+}
+// Load saved lang on start
+document.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('vlc_lang');
+  if(saved) setLanguage(saved);
+});
+
+// ── Dark/Light Theme ──
+let _currentTheme=localStorage.getItem('vlc_theme')||'dark';
+function applyTheme(t){
+  _currentTheme=t;
+  document.documentElement.setAttribute('data-theme',t==='light'?'light':'');
+  const btn=$('theme-toggle');
+  if(btn) btn.textContent=t==='light'?'☀️':'🌙';
+  localStorage.setItem('vlc_theme',t);
+}
+function toggleTheme(){ applyTheme(_currentTheme==='dark'?'light':'dark'); }
+document.addEventListener('DOMContentLoaded',()=>{ applyTheme(_currentTheme); });
+
+// ── Music Mood Detection ──
+let moodState={mood:'unknown',energy:0,tempo:0,detected:false};
+const MOOD_TEMPLATES={
+  'energetic-fast':['mc-fire','mc-cyber','mc-electric','viz-spectrum'],
+  'energetic-slow':['mc-galaxy','mc-aurora','viz-tunnel'],
+  'calm-happy':['mc-cherry','mc-rose','mc-dream'],
+  'calm-sad':['mc-night','mc-lofi','lyric-dark'],
+  'neutral':['mc-ocean','mc-purple','mc-lofi'],
+};
+async function detectMood(){
+  if(!audFile){toast('Chưa có file nhạc','warn');return;}
+  toast('🎭 Phân tích mood...','info',2000);
+  try{
+    const ab=await audFile.arrayBuffer();
+    const dur=audEl?.duration||60;
+    const sampleSec=Math.min(60,dur);
+    const tmpCtx=new OfflineAudioContext(1,Math.floor(44100*sampleSec),44100);
+    const buf=await tmpCtx.decodeAudioData(ab);
+    const data=buf.getChannelData(0);
+    const sr=buf.sampleRate;
+    let rms=0; for(let i=0;i<data.length;i++) rms+=data[i]*data[i];
+    rms=Math.sqrt(rms/data.length);
+    let centroid=0,totalMag=0;
+    for(let i=0;i<Math.min(data.length,2048);i++){
+      const mag=Math.abs(data[i]);
+      centroid+=mag*(i/2048*sr/2); totalMag+=mag;
+    }
+    centroid=totalMag>0?centroid/totalMag:1000;
+    const bpm=bpmState?.bpm||120;
+    const energy=Math.min(1,rms*20);
+    const brightness=Math.min(1,centroid/4000);
+    let mood='neutral';
+    if(energy>0.6&&bpm>130) mood='energetic-fast';
+    else if(energy>0.5&&bpm>100) mood='energetic-slow';
+    else if(energy<0.35&&brightness>0.4) mood='calm-happy';
+    else if(energy<0.35&&brightness<=0.4) mood='calm-sad';
+    moodState={mood,energy:Math.round(energy*100),tempo:bpm,detected:true};
+    const moodNames={'energetic-fast':'⚡ Energetic','energetic-slow':'🔥 Powerful','calm-happy':'🌸 Chill','calm-sad':'🌙 Emotional','neutral':'🎵 Balanced'};
+    toast('🎭 Mood: '+(moodNames[mood]||mood)+' · Energy '+moodState.energy+'% · '+bpm+' BPM','success',4000);
+    updateMoodBadge();
+  }catch(e){toast('Lỗi mood: '+e.message,'error');}
+}
+function updateMoodBadge(){
+  const el=$('mood-badge'); if(!el) return;
+  if(!moodState.detected){el.style.display='none';return;}
+  const icons={'energetic-fast':'⚡','energetic-slow':'🔥','calm-happy':'🌸','calm-sad':'🌙','neutral':'🎵'};
+  el.style.display='inline-flex';
+  el.textContent=(icons[moodState.mood]||'🎵')+' '+moodState.mood.replace('-',' ')+' · '+moodState.energy+'%';
+}
+
+// ── Auto-Hashtag Generator ──
+let _hashtagCache={};
+async function generateHashtags(platform){
+  platform=platform||'all';
+  const title=($('cc-title')?.value||$('ai-title-inp')?.value||'').trim();
+  const artist=($('cc-artist')?.value||$('ai-artist-inp')?.value||'').trim();
+  if(!title&&!artist){toast('Nhập tên bài hát trước','warn');return;}
+  const cacheKey=title+'|'+artist+'|'+platform;
+  if(_hashtagCache[cacheKey]){showHashtagModal(_hashtagCache[cacheKey]);return;}
+  toast('🏷 Tạo hashtag bằng AI...','info',2000);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:
+        'Generate hashtags for Vietnamese music video. Song: "'+title+'" by "'+artist+'". Return ONLY JSON no markdown: {"youtube":["#tag1"...]30tags,"tiktok":["#tag1"...]20tags,"instagram":["#tag1"...]25tags,"description_vi":"mô tả","description_en":"description"}'
+      }]})
+    });
+    const d=await res.json();
+    const text=d.content?.[0]?.text||'{}';
+    const tags=JSON.parse(text.replace(/```json|```/g,'').trim());
+    _hashtagCache[cacheKey]=tags;
+    showHashtagModal(tags);
+    toast('🏷 Đã tạo '+((tags.youtube||[]).length)+' hashtags!','success',2000);
+  }catch(e){
+    const tags=generateLocalHashtags(title,artist);
+    showHashtagModal(tags);
+  }
+}
+function generateLocalHashtags(title,artist){
+  const t=(title||'').toLowerCase().replace(/\s+/g,'');
+  const a=(artist||'').toLowerCase().replace(/\s+/g,'');
+  const base=['#nhacviet','#nhacremix','#musicvideo','#nhachot','#remix2025','#nhactiktok','#vietlong','#nhacmoi','#top1nhac','#nhactrend'];
+  const sp=['#'+t,'#'+a,'#nhac'+t,'#fyp','#foryou','#viral','#trending','#xuhuong','#nhacvui','#nhacbuon'];
+  return{youtube:[...base,...sp].slice(0,30),tiktok:[...sp,...base].slice(0,20),instagram:[...base,...sp].slice(0,25),description_vi:title+' - '+artist+' | Nhạc Việt Hay Nhất',description_en:title+' - '+artist+' | Vietnamese Music Video'};
+}
+function showHashtagModal(tags){
+  let m=$('hashtag-modal');
+  if(!m){m=document.createElement('div');m.id='hashtag-modal';m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';document.body.appendChild(m);}
+  window._htags=tags;
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(520px,92vw);max-height:85vh;overflow-y:auto"><div style="font-size:.82rem;font-weight:800;color:var(--a2);margin-bottom:12px;font-family:\'IBM Plex Mono\',monospace">🏷 AUTO-HASHTAG</div><div style="display:flex;gap:6px;margin-bottom:10px"><button onclick="renderHtags(\'youtube\')" style="padding:4px 10px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-size:.62rem;cursor:pointer;font-weight:700">▶ YouTube</button><button onclick="renderHtags(\'tiktok\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer">🎵 TikTok</button><button onclick="renderHtags(\'instagram\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer">📸 Instagram</button></div><div id="htag-list"></div><div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:.64rem;color:var(--tx2);margin-top:8px">'+sanitizeText(tags.description_vi||'')+'</div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="copyHtags()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.68rem;cursor:pointer">📋 Copy</button><button onclick="$(\'hashtag-modal\').style.display=\'none\'" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button></div></div>';
+  m.style.display='flex';
+  renderHtags('youtube');
+}
+function renderHtags(p){
+  const cont=$('htag-list');if(!cont)return;
+  const list=window._htags?.[p]||[];
+  cont.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:5px;max-height:180px;overflow-y:auto">'+list.map(t=>'<span onclick="navigator.clipboard?.writeText(\''+t+'\')" style="padding:3px 8px;border-radius:12px;background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:\'IBM Plex Mono\',monospace">'+t+'</span>').join('')+'</div><div style="font-size:.58rem;color:var(--tx3);margin-top:5px">'+list.length+' tags · click để copy từng tag</div>';
+}
+function copyHtags(){
+  const list=window._htags?.youtube||[];
+  navigator.clipboard?.writeText(list.join(' ')).then(()=>toast('📋 Đã copy '+list.length+' hashtags','success',2000)).catch(()=>toast('Copy thất bại','warn'));
+}
+
+// ── Video Speed Control ──
+let _playbackSpeed=1.0;
+function setPlaybackSpeed(s){
+  _playbackSpeed=parseFloat(s);
+  if(typeof audEl!=='undefined'&&audEl) audEl.playbackRate=_playbackSpeed;
+  document.querySelectorAll('.speed-btn').forEach(b=>{
+    const active=parseFloat(b.dataset.speed)===_playbackSpeed;
+    b.style.background=active?'var(--a2)':'var(--surface2)';
+    b.style.color=active?'var(--ink)':'var(--tx3)';
+    b.style.borderColor=active?'var(--a2)':'var(--line2)';
+  });
+  if(s!=='1') toast('⚡ Tốc độ: '+s+'×','info',1000);
+}
+
+// ── Video Thumbnail Generator ──
+function generateThumbnail(){
+  if(!chosenTpl||!bgCvs){toast('Cần ở Bước 4 với template đã chọn','warn');return;}
+  const TW=1280,TH=720;
+  const thumbCvs=document.createElement('canvas');thumbCvs.width=TW;thumbCvs.height=TH;
+  const tCtx=thumbCvs.getContext('2d');
+  const offBgT=document.createElement('canvas');offBgT.width=TW;offBgT.height=TH;
+  const offOvT=document.createElement('canvas');offOvT.width=TW;offOvT.height=TH;
+  const _oBg=bgCvs,_oOv=ovCvs,_oBgX=bgX,_oOvX=ovX;
+  bgCvs=offBgT;ovCvs=offOvT;bgCache=null;
+  bgX=offBgT.getContext('2d');ovX=offOvT.getContext('2d');
+  const savedT=aiT,savedB=_bass,savedM=_mid;
+  aiT=3.14;_bass=0.9;_mid=0.7;
+  drawFrame();
+  tCtx.drawImage(offBgT,0,0);tCtx.drawImage(offOvT,0,0);
+  bgCvs=_oBg;ovCvs=_oOv;bgX=_oBgX;ovX=_oOvX;
+  aiT=savedT;_bass=savedB;_mid=savedM;bgCache=null;
+  const grd=tCtx.createLinearGradient(0,TH*0.6,0,TH);
+  grd.addColorStop(0,'transparent');grd.addColorStop(1,'rgba(0,0,0,.8)');
+  tCtx.fillStyle=grd;tCtx.fillRect(0,0,TW,TH);
+  const title=($('cc-title')?.value||'TITLE').toUpperCase();
+  const artist=$('cc-artist')?.value||'Artist';
+  const tsz=Math.min(TW*.042,52);
+  tCtx.textAlign='left';tCtx.textBaseline='bottom';
+  tCtx.font='900 '+tsz+'px Orbitron,"Be Vietnam Pro",sans-serif';
+  tCtx.fillStyle='#fff';tCtx.shadowColor='rgba(0,0,0,.8)';tCtx.shadowBlur=12;
+  tCtx.fillText(title,TW*.04,TH-.12*TH,TW*.9);
+  tCtx.font='400 '+(tsz*.5)+'px "Be Vietnam Pro",sans-serif';
+  tCtx.fillStyle='rgba(255,255,255,.75)';
+  tCtx.fillText(artist,TW*.04,TH-.04*TH,TW*.9);
+  tCtx.shadowBlur=0;
+  thumbCvs.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;
+    a.download='thumbnail_'+chosenTpl.id+'_1280x720.jpg';
+    a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    toast('🖼 Thumbnail saved!','success',2500);
+  },'image/jpeg',0.95);
+}
+
+// ── Text Animation Styles ──
+let _textAnimStyle='default';
+function setTextAnim(style){_textAnimStyle=style;}
+function drawAnimatedTitle(ctx,text,x,y,maxW,fontSize,color,accentColor,bass,mid,t){
+  ctx.save();
+  let handled=true;
+  switch(_textAnimStyle){
+    case 'typewriter':{
+      const chars=Math.floor((t%8)*text.length/4);
+      const shown=text.slice(0,Math.min(chars,text.length));
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=accentColor;ctx.shadowBlur=12+bass*20;
+      ctx.fillText(shown+'|',x,y,maxW);break;
+    }
+    case 'glitch':{
+      const offset=bass>0.6?Math.random()*8:0;
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      if(offset>0){
+        ctx.globalAlpha=0.7;
+        ctx.fillStyle='rgba(255,0,0,.8)';ctx.fillText(text,x-offset,y,maxW);
+        ctx.fillStyle='rgba(0,255,255,.8)';ctx.fillText(text,x+offset,y,maxW);
+        ctx.globalAlpha=1;
+      }
+      ctx.fillStyle=color;ctx.shadowColor=accentColor;ctx.shadowBlur=8;
+      ctx.fillText(text,x,y,maxW);break;
+    }
+    case 'wave':{
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      const totalW=ctx.measureText(text).width;
+      let cx=x-totalW/2;
+      for(let i=0;i<text.length;i++){
+        const ch=text[i],chW=ctx.measureText(ch).width;
+        const dy=Math.sin(t*3+i*0.5)*fontSize*0.15*(1+bass*0.5);
+        ctx.fillStyle=color;ctx.shadowColor=accentColor;ctx.shadowBlur=6;
+        ctx.fillText(ch,cx,y+dy);cx+=chW;
+      }
+      break;
+    }
+    case 'fade-slide':{
+      const phase=(t%6)/3;
+      const slideY=phase<1?fontSize*(1-phase):0;
+      ctx.globalAlpha=phase<1?phase:1;
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=accentColor;ctx.shadowBlur=14+bass*18;
+      ctx.fillText(text,x,y+slideY,maxW);break;
+    }
+    case 'zoom-pulse':{
+      const scale=1+bass*0.06+mid*0.02;
+      ctx.translate(x,y);ctx.scale(scale,scale);
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=accentColor;ctx.shadowBlur=18+bass*24;
+      ctx.fillText(text,0,0,maxW/scale);break;
+    }
+    case 'neon-flicker':{
+      const flicker=bass>0.5&&Math.random()>0.7?0.4:1;
+      ctx.globalAlpha=flicker;
+      ctx.font='900 '+fontSize+'px Orbitron,"Be Vietnam Pro",sans-serif';
+      ctx.fillStyle=accentColor;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=accentColor;ctx.shadowBlur=32;
+      ctx.fillText(text,x,y,maxW);ctx.globalAlpha=1;
+      ctx.shadowBlur=8;ctx.fillStyle=color;ctx.fillText(text,x,y,maxW);break;
+    }
+    default: handled=false;
+  }
+  ctx.restore();
+  return handled;
+}
+
+// ── Progress Bar Styles ──
+let _pbStyle='default';
+function setPbStyle(s){_pbStyle=s;}
+function drawProgressBar(ctx,cx,cy,cw,ch,W,H,prog,audCur,audDur,wc,p){
+  const pbH=Math.max(3,H*.004);
+  const pbY=cy+ch-pbH-ch*.025;
+  const pbX=cx+cw*.06,pbW=cw*.88;
+  if(_pbStyle==='dots'){
+    const nDots=20,dotR=Math.max(3,pbH*1.5),spacing=pbW/nDots;
+    for(let i=0;i<nDots;i++){
+      const dx=pbX+i*spacing+spacing/2,filled=i/nDots<=prog;
+      ctx.beginPath();ctx.arc(dx,pbY+pbH/2,filled?dotR*1.2:dotR,0,Math.PI*2);
+      ctx.fillStyle=filled?(wc||'#22d3ee'):'rgba(255,255,255,.2)';
+      if(filled){ctx.shadowColor=wc;ctx.shadowBlur=6;}else ctx.shadowBlur=0;
+      ctx.fill();
+    }
+    ctx.shadowBlur=0;
+  } else if(_pbStyle==='circle'){
+    const cr=Math.min(cw,ch)*.38,ccx=cx+cw/2,ccy=cy+ch*.38;
+    ctx.lineWidth=Math.max(3,H*.005);
+    ctx.strokeStyle='rgba(255,255,255,.15)';
+    ctx.beginPath();ctx.arc(ccx,ccy,cr,-Math.PI/2,Math.PI*1.5);ctx.stroke();
+    ctx.strokeStyle=wc||'#22d3ee';ctx.shadowColor=wc;ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(ccx,ccy,cr,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);ctx.stroke();
+    ctx.shadowBlur=0;ctx.lineWidth=1;
+    ctx.font='500 '+Math.max(9,ch*.038)+'px "Be Vietnam Pro",Arial';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,.7)';
+    ctx.fillText(String(Math.floor(audCur/60)).padStart(2,'0')+':'+String(Math.floor(audCur%60)).padStart(2,'0'),ccx,ccy+cr*.65);
+    return;
+  } else if(_pbStyle==='gradient'){
+    ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(pbX,pbY,pbW,pbH);
+    if(prog>0){
+      const grad=ctx.createLinearGradient(pbX,0,pbX+pbW*prog,0);
+      grad.addColorStop(0,wc||'#22d3ee');
+      grad.addColorStop(0.5,p?.ac||wc||'#ff6b9d');
+      grad.addColorStop(1,p?.wc2||wc||'#fbbf24');
+      ctx.fillStyle=grad;ctx.fillRect(pbX,pbY,pbW*prog,pbH);
+    }
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(5,H*.007),0,Math.PI*2);ctx.fill();
+  } else {
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(pbX,pbY,pbW,pbH);
+    if(prog>0){ctx.fillStyle=wc;ctx.shadowColor=wc;ctx.shadowBlur=4;ctx.fillRect(pbX,pbY,pbW*prog,pbH);ctx.shadowBlur=0;}
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(5,H*.007),0,Math.PI*2);ctx.fill();
+  }
+  const tfsz=Math.max(9,ch*.038);
+  ctx.font='500 '+tfsz+'px "Be Vietnam Pro",Arial';
+  ctx.textBaseline='bottom';ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,255,255,.55)';
+  ctx.fillText(String(Math.floor(audCur/60)).padStart(2,'0')+':'+String(Math.floor(audCur%60)).padStart(2,'0'),pbX,pbY-4);
+  ctx.textAlign='right';ctx.fillStyle='rgba(255,255,255,.35)';
+  ctx.fillText(String(Math.floor(audDur/60)).padStart(2,'0')+':'+String(Math.floor(audDur%60)).padStart(2,'0'),pbX+pbW,pbY-4);
+}
+
+// ── Beat Markers Timeline ──
+let _beatMarkers=[];
+function buildBeatTimeline(){
+  if(!bpmState?.bpm||!audEl?.duration){toast('Cần phát nhạc và detect BPM trước','warn');return;}
+  const dur=audEl.duration,bpm=bpmState.bpm,interval=60/bpm;
+  _beatMarkers=[];
+  for(let t=0;t<dur;t+=interval) _beatMarkers.push(t);
+  renderBeatTimeline();
+  toast('🥁 '+_beatMarkers.length+' beat markers · BPM: '+bpm,'success',2000);
+}
+function renderBeatTimeline(){
+  const cvs=$('beat-timeline-cvs');if(!cvs||!audEl?.duration)return;
+  const W=cvs.offsetWidth||600;cvs.width=W;cvs.height=28;
+  const ctx=cvs.getContext('2d'),dur=audEl.duration;
+  ctx.clearRect(0,0,W,28);
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(0,0,W,28);
+  ctx.fillStyle='rgba(0,229,195,.5)';
+  _beatMarkers.forEach(t=>{ctx.fillRect(t/dur*W,6,1.5,16);});
+  const cur=audEl.currentTime||0;
+  ctx.fillStyle='#ff2d78';ctx.fillRect(cur/dur*W-1,0,3,28);
+}
+function seekFromTimeline(e){
+  const cvs=$('beat-timeline-cvs');if(!cvs||!audEl?.duration)return;
+  const rect=cvs.getBoundingClientRect();
+  audEl.currentTime=(e.clientX-rect.left)/rect.width*audEl.duration;
+}
+
+// ── AI Title Optimizer ──
+async function optimizeTitles(){
+  const title=($('cc-title')?.value||'').trim(),artist=($('cc-artist')?.value||'').trim();
+  if(!title){toast('Nhập tên bài hát trước','warn');return;}
+  toast('🤖 AI tạo tiêu đề...','info',2000);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
+        'Create 5 YouTube title variations for Vietnamese music video "'+title+'" by "'+artist+'". Return ONLY JSON: {"titles":[{"style":"...","title":"...","reason":"..."}]}'
+      }]})
+    });
+    const d=await res.json();
+    const text=d.content?.[0]?.text||'{}';
+    const data=JSON.parse(text.replace(/```json|```/g,'').trim());
+    showTitleOptModal(data.titles||[]);
+  }catch(e){
+    showTitleOptModal([
+      {style:'🔥 Trending',title:title+' - '+artist+' | Nhạc Hot '+new Date().getFullYear(),reason:'Xu hướng hiện tại'},
+      {style:'📈 SEO',title:'[FULL] '+title+' - '+artist+' | Official MV',reason:'Tối ưu tìm kiếm'},
+      {style:'💔 Emotional',title:title+' - Bản Nhạc Triệu Người Yêu Thích | '+artist,reason:'Kéo cảm xúc'},
+      {style:'🎵 Simple',title:title+' | '+artist,reason:'Đơn giản, rõ ràng'},
+      {style:'🚀 Clickbait',title:'Nghe '+title+' mà không khóc... | '+artist,reason:'Tăng click rate'},
+    ]);
+  }
+}
+function showTitleOptModal(titles){
+  let m=$('title-opt-modal');
+  if(!m){m=document.createElement('div');m.id='title-opt-modal';m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';document.body.appendChild(m);}
+  const rows=titles.map((t,i)=>'<div onclick="applyOptTitle('+i+')" style="padding:10px;border-radius:8px;background:var(--surface2);border:1px solid var(--line2);margin-bottom:7px;cursor:pointer" onmouseover="this.style.borderColor=\'var(--a2)\'" onmouseout="this.style.borderColor=\'var(--line2)\'"><div style="font-size:.62rem;color:var(--a2);font-weight:700;font-family:\'IBM Plex Mono\',monospace;margin-bottom:3px">'+sanitizeText(t.style||'')+'</div><div style="font-size:.72rem;color:var(--tx);font-weight:600">'+sanitizeText(t.title||'')+'</div><div style="font-size:.6rem;color:var(--tx3);margin-top:3px">'+sanitizeText(t.reason||'')+'</div></div>').join('');
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(520px,92vw);max-height:85vh;overflow-y:auto"><div style="font-size:.82rem;font-weight:800;color:var(--a2);margin-bottom:12px;font-family:\'IBM Plex Mono\',monospace">🤖 AI TITLE OPTIMIZER</div>'+rows+'<button onclick="$(\'title-opt-modal\').style.display=\'none\'" style="margin-top:6px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button></div>';
+  m.style.display='flex';window._optTitles=titles;
+}
+function applyOptTitle(i){
+  const t=window._optTitles?.[i];if(!t)return;
+  if($('yt-title-tpl')) $('yt-title-tpl').value=t.title;
+  $('title-opt-modal').style.display='none';
+  toast('✅ Áp dụng: "'+t.title+'"','success',3000);
+}
+
+// ── YouTube Analytics Dashboard ──
+let _analyticsData=[];
+async function fetchYTAnalytics(){
+  const apiKey=autoSettings?.ytApiKey||'',channelId=autoSettings?.channelId||'';
+  if(!apiKey||!channelId){toast('Cần YouTube API Key và Channel ID','warn');return;}
+  toast('📊 Tải analytics...','info',2000);
+  try{
+    const searchRes=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&channelId='+channelId+'&maxResults=10&order=date&type=video&key='+apiKey);
+    const searchData=await searchRes.json();
+    if(!searchRes.ok) throw new Error(searchData.error?.message||'API error');
+    const videoIds=(searchData.items||[]).map(i=>i.id.videoId).filter(Boolean).join(',');
+    if(!videoIds){toast('Không tìm thấy video','warn');return;}
+    const statsRes=await fetch('https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id='+videoIds+'&key='+apiKey);
+    const statsData=await statsRes.json();
+    _analyticsData=(statsData.items||[]).map(v=>({
+      id:v.id,title:v.snippet?.title||'',thumb:v.snippet?.thumbnails?.default?.url||'',
+      views:parseInt(v.statistics?.viewCount||0),likes:parseInt(v.statistics?.likeCount||0),
+      comments:parseInt(v.statistics?.commentCount||0),date:v.snippet?.publishedAt?.slice(0,10)||'',
+    }));
+    renderAnalyticsDash();
+    toast('📊 Loaded '+_analyticsData.length+' videos','success',2000);
+  }catch(e){toast('Lỗi analytics: '+e.message,'error');}
+}
+function renderAnalyticsDash(){
+  const cont=$('analytics-dash');if(!cont)return;
+  if(!_analyticsData.length){cont.innerHTML='<div style="color:var(--tx3);font-size:.68rem;text-align:center;padding:20px">Nhấn Refresh để tải dữ liệu</div>';return;}
+  const maxV=Math.max(..._analyticsData.map(v=>v.views),1);
+  cont.innerHTML=_analyticsData.map(v=>'<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--surface2);margin-bottom:5px">'+(v.thumb?'<img src="'+v.thumb+'" style="width:48px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">'  :'<div style="width:48px;height:36px;border-radius:4px;background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center">🎵</div>')+'<div style="flex:1;min-width:0"><div style="font-size:.65rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+sanitizeText(v.title.substring(0,50))+'</div><div style="font-size:.58rem;color:var(--tx3);margin-top:2px">'+v.date+'</div><div style="height:3px;background:var(--line);border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;background:var(--a2);width:'+Math.round(v.views/maxV*100)+'%;border-radius:2px"></div></div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:.65rem;font-weight:700;color:var(--a2)">'+v.views.toLocaleString()+'</div><div style="font-size:.55rem;color:var(--tx3)">👍'+v.likes.toLocaleString()+'</div></div></div>').join('');
+}
+
+// ── Export GIF ──
+async function exportGIF(){
+  if(!chosenTpl){toast('Cần ở Bước 4 với template đã chọn','warn');return;}
+  toast('🎞 Tạo GIF 15 giây...','info',3000);
+  if(!window.GIF){
+    try{
+      await loadScript('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js');
+      if(!window.GIF) throw new Error('gif.js not loaded');
+    }catch(e){toast('gif.js CDN không khả dụng','error');return;}
+  }
+  const GW=480,GH=270,GFPS=15,GDUR=15;
+  let startSec=0;
+  if(_beatMarkers.length>4&&audEl?.duration>15)
+    startSec=Math.max(0,_beatMarkers[Math.floor(_beatMarkers.length*0.25)]-2);
+  const gif=new GIF({workers:2,quality:8,width:GW,height:GH,workerScript:'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'});
+  const offBgG=document.createElement('canvas');offBgG.width=GW;offBgG.height=GH;
+  const offOvG=document.createElement('canvas');offOvG.width=GW;offOvG.height=GH;
+  const outC=document.createElement('canvas');outC.width=GW;outC.height=GH;
+  const outCtx=outC.getContext('2d');
+  const _oBg=bgCvs,_oOv=ovCvs,_oBgX=bgX,_oOvX=ovX;
+  bgCvs=offBgG;ovCvs=offOvG;bgX=offBgG.getContext('2d');ovX=offOvG.getContext('2d');bgCache=null;
+  const totalFrames=GFPS*GDUR;
+  for(let f=0;f<totalFrames;f++){
+    const t=startSec+f/GFPS;
+    aiT=t*.4;aiGP=t*.0026;_renderTime=t;_renderDur=audEl?.duration||60;
+    _bass=0.3+Math.abs(Math.sin(t*2))*0.4;_mid=0.2+Math.abs(Math.sin(t*1.5))*0.3;
+    bgCache=null;drawFrame();
+    outCtx.clearRect(0,0,GW,GH);outCtx.drawImage(offBgG,0,0);outCtx.drawImage(offOvG,0,0);
+    gif.addFrame(outCtx,{copy:true,delay:1000/GFPS});
+  }
+  bgCvs=_oBg;ovCvs=_oOv;bgX=_oBgX;ovX=_oOvX;bgCache=null;
+  gif.on('finished',blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='VietLong_'+chosenTpl.id+'_gif.gif';
+    a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+    toast('🎞 GIF '+(blob.size/1024/1024).toFixed(1)+'MB xuất xong!','success',4000);
+  });
+  gif.on('progress',p=>{ if(Math.floor(p*10)%3===0) toast('🎞 GIF: '+Math.round(p*100)+'%','info',600); });
+  gif.render();
+}
+
+// ── Best Upload Time ──
+const UPLOAD_TIMES={
+  'Thứ 2':{slots:['18:00','20:00','21:00'],score:[70,90,85]},
+  'Thứ 3':{slots:['19:00','20:30'],score:[75,88]},
+  'Thứ 4':{slots:['18:30','20:00','22:00'],score:[80,92,78]},
+  'Thứ 5':{slots:['19:00','21:00'],score:[82,88]},
+  'Thứ 6':{slots:['17:00','19:30','21:00'],score:[85,94,90]},
+  'Thứ 7':{slots:['10:00','15:00','20:00','22:00'],score:[78,82,95,88]},
+  'Chủ Nhật':{slots:['09:00','14:00','19:00','21:00'],score:[75,80,91,85]},
+};
+function showUploadTimeSuggestion(){
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
+  const rows=Object.entries(UPLOAD_TIMES).map(([day,data])=>{
+    const bestIdx=data.score.indexOf(Math.max(...data.score));
+    const slots=data.slots.map((s,i)=>'<span onclick="applyUploadTime(\''+day+'\',\''+s+'\',this.closest(\'[data-modal]\'))" style="padding:3px 8px;border-radius:6px;font-size:.6rem;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;background:'+(i===bestIdx?'var(--a2)':'var(--surface2)')+';color:'+(i===bestIdx?'var(--ink)':'var(--tx3)')+';border:1px solid '+(i===bestIdx?'var(--a2)':'var(--line2)')+'" title="Score: '+data.score[i]+'%">'+s+(i===bestIdx?' ⭐':'')+'</span>').join('');
+    return '<div style="margin-bottom:10px"><div style="font-size:.65rem;font-weight:700;color:var(--tx);margin-bottom:5px">'+day+'</div><div style="display:flex;gap:5px;flex-wrap:wrap">'+slots+'</div></div>';
+  }).join('');
+  m.dataset.modal='1';
+  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw);max-height:80vh;overflow-y:auto"><div style="font-size:.82rem;font-weight:800;color:var(--a2);margin-bottom:6px;font-family:\'IBM Plex Mono\',monospace">⏰ KHUNG GIỜ TỐT NHẤT</div><div style="font-size:.62rem;color:var(--tx3);margin-bottom:14px">Peak hour người dùng Việt Nam · ⭐ = tốt nhất ngày đó</div>'+rows+'<button onclick="this.closest(\'[data-modal]\').remove()" style="margin-top:8px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button></div>';
+  document.body.appendChild(m);
+}
+function applyUploadTime(day,time,modal){
+  const input=$('new-slot-time');if(input) input.value=time;
+  if(typeof addTimeSlot==='function') addTimeSlot();
+  toast('✅ Thêm lịch '+day+' '+time,'success',2000);
+  modal?.remove();
+}
+
 /* ====================================================
    VIETLONG CREATOR — Core Engine
 ==================================================== */
@@ -1965,272 +2949,6 @@ const $ = id => document.getElementById(id);
    7.ColorPreset 8.MultiImage 9.BPM 10.Notification 11.GradCache
    12.Security 13.MediaSession 14.WakeLock 15.PWA 16.Analytics
 ═══════════════════════════════════════════════════════════════ */
-
-// ─────────────────────────────────────────
-// VOLUME CONTROL
-// ─────────────────────────────────────────
-let _isMuted=false, _volBeforeMute=1;
-let _gainNode=null; // Web Audio gain node for volume control
-
-function _ensureGainNode(){
-  if(_gainNode||!actx||!analyser) return;
-  // Insert gain node between source and analyser
-  _gainNode=actx.createGain();
-  _gainNode.gain.value=1;
-}
-
-function setVolume(v){
-  const vol=Math.max(0,Math.min(1,parseFloat(v)||0));
-  _isMuted=(vol===0);
-  if(typeof audEl!=='undefined'&&audEl){
-    audEl.volume=vol;
-    audEl.muted=(vol===0);
-  }
-  if(_gainNode) _gainNode.gain.setTargetAtTime(vol, actx?.currentTime||0, 0.01);
-  const btn=$('mute-btn');
-  if(btn) btn.textContent=vol===0?'🔇':vol<0.5?'🔉':'🔊';
-}
-
-function toggleMute(){
-  const sl=$('vol-slider'); if(!sl) return;
-  if(_isMuted){
-    const v=_volBeforeMute||0.8;
-    sl.value=v; setVolume(v);
-  } else {
-    _volBeforeMute=parseFloat(sl.value)||1;
-    sl.value=0; setVolume(0);
-  }
-}
-
-// ─────────────────────────────────────────
-// CANCEL EXPORT
-// ─────────────────────────────────────────
-let _exportAborted=false;
-function cancelExport(){
-  _exportAborted=true;
-  $('cancel-export-btn').style.display='none';
-  $('expbtn').disabled=false;
-  $('progwrap').style.display='none';
-  toast('🛑 Đã hủy export','warn',2000);
-  releaseWakeLock();
-}
-function _showCancelBtn(show){
-  const b=$('cancel-export-btn');
-  if(b) b.style.display=show?'inline-flex':'none';
-}
-
-// ─────────────────────────────────────────
-// EXPORT HISTORY (last 10)
-// ─────────────────────────────────────────
-const HISTORY_KEY='vlc_export_history';
-function addExportHistory(entry){
-  try{
-    let hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
-    hist.unshift({...entry, ts:Date.now()});
-    hist=hist.slice(0,10);
-    localStorage.setItem(HISTORY_KEY,JSON.stringify(hist));
-    renderExportHistory();
-  }catch(_){}
-}
-function renderExportHistory(){
-  const panel=$('export-history-panel');
-  const list=$('export-history-list');
-  if(!panel||!list) return;
-  try{
-    const hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
-    if(!hist.length){ panel.style.display='none'; return; }
-    panel.style.display='block';
-    list.innerHTML='';
-    hist.forEach(h=>{
-      const d=document.createElement('div');
-      d.className='eh-item';
-      d.title=`${h.title} — ${new Date(h.ts).toLocaleString('vi-VN')}`;
-      d.innerHTML=`
-        <div class="eh-thumb" style="${h.thumb?`background-image:url(${sanitizeText(h.thumb)});background-size:cover`:''}">${h.thumb?'':'🎵'}</div>
-        <div class="eh-info">
-          <div class="eh-title">${sanitizeText(h.title||'Không tên')}</div>
-          <div class="eh-meta">${sanitizeText(h.tpl||'')} · ${h.fmt||'MP4'} · ${new Date(h.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})} ${new Date(h.ts).toLocaleDateString('vi-VN')}</div>
-        </div>
-        <span style="font-size:.65rem;color:var(--tx3)">${h.size||''}</span>
-      `;
-      list.appendChild(d);
-    });
-  }catch(_){ panel.style.display='none'; }
-}
-
-// ─────────────────────────────────────────
-// SHARE & COPY after export
-// ─────────────────────────────────────────
-let _lastExportUrl='', _lastExportFile=null;
-async function shareExportedVideo(){
-  if(!_lastExportFile){toast('Chưa có video để chia sẻ','warn');return;}
-  if(navigator.share&&navigator.canShare?.({files:[_lastExportFile]})){
-    try{
-      await navigator.share({title:$('cc-title')?.value||'VietLong Creator',files:[_lastExportFile]});
-      return;
-    }catch(_){}
-  }
-  // Fallback: open in new tab
-  if(_lastExportUrl) window.open(_lastExportUrl,'_blank');
-  else toast('Trình duyệt không hỗ trợ share file','warn');
-}
-function copyExportLink(){
-  if(!_lastExportUrl){toast('Chưa có video','warn');return;}
-  navigator.clipboard?.writeText(_lastExportUrl)
-    .then(()=>toast('📋 Đã copy link video','success',2000))
-    .catch(()=>toast('Không copy được','warn'));
-}
-
-// ─────────────────────────────────────────
-// SETTINGS JSON EXPORT / IMPORT
-// ─────────────────────────────────────────
-function exportSettingsJSON(){
-  const data={
-    autoSettings,
-    exportedAt:new Date().toISOString(),
-    version:'4.0'
-  };
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`VietLongCreator_settings_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast('📦 Đã xuất settings.json','success',2000);
-}
-function importSettingsJSON(){
-  const fi=document.createElement('input');
-  fi.type='file'; fi.accept='.json,application/json';
-  fi.onchange=async e=>{
-    const f=e.target.files[0]; if(!f) return;
-    try{
-      const text=await f.text();
-      const data=JSON.parse(text);
-      if(data.autoSettings){
-        Object.assign(autoSettings,data.autoSettings);
-        saveAutoSettings(); loadAutoSettings();
-        toast('✅ Đã import settings thành công','success',3000);
-      } else throw new Error('File không hợp lệ');
-    }catch(err){ toast('❌ Lỗi import: '+err.message,'error'); }
-  };
-  fi.click();
-}
-
-// ─────────────────────────────────────────
-// LYRICS TAP-TO-SYNC
-// ─────────────────────────────────────────
-let _lyricTimestamps=[]; // [{time, text}]
-let _lyrSyncMode=false;
-
-function openLyricSync(){
-  const raw=$('cc-lyr')?.value||'';
-  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
-  if(!lines.length){toast('Chưa có lời bài hát','warn');return;}
-  if(!audEl||!audFile){toast('Chưa upload nhạc','warn');return;}
-
-  _lyricTimestamps=lines.map(t=>({time:0,text:t,synced:false}));
-  _lyrSyncMode=true;
-
-  // Build modal
-  let modal=$('lyric-sync-modal');
-  if(!modal){
-    modal=document.createElement('div');
-    modal.id='lyric-sync-modal';
-    modal.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
-    document.body.appendChild(modal);
-  }
-  modal.innerHTML=`
-    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw);max-height:80vh;overflow-y:auto">
-      <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:6px;font-family:'IBM Plex Mono',monospace">🎵 TAP-TO-SYNC LYRICS</div>
-      <div style="font-size:.64rem;color:var(--tx3);margin-bottom:12px">Nhấn từng câu đúng lúc nhạc đang chạy để đánh dấu thời gian</div>
-      <div id="lyr-sync-list"></div>
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <button onclick="startLyrSync()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.7rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">▶ Phát & Bắt đầu</button>
-        <button onclick="applyLyrSync()" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--a2);background:none;color:var(--a2);font-weight:700;font-size:.7rem;cursor:pointer">✅ Áp Dụng</button>
-        <button onclick="closeLyrSync()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.7rem">Huỷ</button>
-      </div>
-    </div>
-  `;
-  renderLyrSyncList();
-  modal.style.display='flex';
-}
-function renderLyrSyncList(){
-  const list=$('lyr-sync-list'); if(!list) return;
-  list.innerHTML='';
-  _lyricTimestamps.forEach((row,i)=>{
-    const d=document.createElement('div');
-    d.className='lyric-sync-row'+(row.synced?' synced':'');
-    d.id=`lsr-${i}`;
-    const ts=row.synced?`${String(Math.floor(row.time/60)).padStart(2,'0')}:${String(Math.floor(row.time%60)).padStart(2,'0')}`:'--:--';
-    d.innerHTML=`<span class="lyric-sync-ts">${ts}</span><span class="lyric-sync-txt">${sanitizeText(row.text)}</span><button onclick="tapLyrSync(${i})" style="padding:3px 10px;border-radius:5px;border:1px solid var(--a2);background:none;color:var(--a2);cursor:pointer;font-size:.6rem">⏱ Tap</button>`;
-    list.appendChild(d);
-  });
-}
-function startLyrSync(){
-  if(typeof startPlay==='function') startPlay();
-}
-function tapLyrSync(i){
-  const t=audEl?.currentTime||_renderTime||0;
-  _lyricTimestamps[i]={..._lyricTimestamps[i],time:t,synced:true};
-  renderLyrSyncList();
-}
-function applyLyrSync(){
-  // Build timestamped lyrics as "MM:SS text" format
-  const lines=_lyricTimestamps.filter(r=>r.synced).map(r=>{
-    const mm=String(Math.floor(r.time/60)).padStart(2,'0');
-    const ss=String(Math.floor(r.time%60)).padStart(2,'0');
-    return `[${mm}:${ss}] ${r.text}`;
-  }).join('\n');
-  if($('cc-lyr')) $('cc-lyr').value=lines;
-  closeLyrSync();
-  toast('🎵 Đã đồng bộ lyrics với thời gian thật!','success',3000);
-}
-function closeLyrSync(){
-  const m=$('lyric-sync-modal'); if(m) m.style.display='none';
-  _lyrSyncMode=false;
-}
-
-// ─────────────────────────────────────────
-// ONBOARDING — first time tooltip
-// ─────────────────────────────────────────
-function showOnboarding(){
-  if(localStorage.getItem('vlc_onboarded')) return;
-  const tips=[
-    {sel:'#fi-label',text:'👆 Bắt đầu: Upload file nhạc MP3/WAV'},
-    {sel:'#uz',text:'🎵 Kéo thả file nhạc vào đây'},
-  ];
-  const tip=tips.find(t=>document.querySelector(t.sel));
-  if(!tip) return;
-  const el=document.querySelector(tip.sel);
-  if(!el) return;
-  const rect=el.getBoundingClientRect();
-  const div=document.createElement('div');
-  div.className='onboard-tip';
-  div.textContent=tip.text;
-  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${rect.left}px;z-index:9000`;
-  document.body.appendChild(div);
-  setTimeout(()=>{
-    div.style.opacity='0'; div.style.transition='opacity .4s';
-    setTimeout(()=>div.remove(),400);
-  },4000);
-}
-function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
-
-// Touch events for Trim modal drag handles
-document.addEventListener('touchstart',e=>{
-  if(e.target.id==='trim-start-handle') _trimDragging='start';
-  if(e.target.id==='trim-end-handle')   _trimDragging='end';
-},{passive:true});
-document.addEventListener('touchmove',e=>{
-  if(!_trimDragging) return;
-  const touch=e.touches[0]; if(!touch) return;
-  const wf=$('trim-waveform'); if(!wf) return;
-  const rect=wf.getBoundingClientRect();
-  const ratio=Math.max(0,Math.min(1,(touch.clientX-rect.left)/rect.width));
-  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
-  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
-  drawTrimWaveform(); updateTrimDisplay();
-},{passive:true});
-document.addEventListener('touchend',()=>{ _trimDragging=null; });
 
 // ─────────────────────────────────────────
 // 1. TOAST NOTIFICATION SYSTEM
@@ -2772,6 +3490,83 @@ let autoStats = {total:0, uploaded:0};
 let scheduleTimer = null;
 let autoLog = [];
 
+
+// ── Volume Control ──
+let _isMuted=false, _volBeforeMute=1;
+function setVolume(v){
+  const vol=Math.max(0,Math.min(1,parseFloat(v)||0));
+  _isMuted=(vol===0);
+  if(typeof audEl!=='undefined'&&audEl){ audEl.volume=vol; audEl.muted=(vol===0); }
+  const btn=$('mute-btn');
+  if(btn) btn.textContent=vol===0?'🔇':vol<0.5?'🔉':'🔊';
+}
+function toggleMute(){
+  const sl=$('vol-slider'); if(!sl) return;
+  if(_isMuted){ const v=_volBeforeMute||0.8; sl.value=v; setVolume(v); }
+  else { _volBeforeMute=parseFloat(sl.value)||1; sl.value=0; setVolume(0); }
+}
+
+// ── Settings JSON Export/Import ──
+function exportSettingsJSON(){
+  const blob=new Blob([JSON.stringify({autoSettings,v:'4.0',ts:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`VLC_settings_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('📦 Đã xuất settings','success',2000);
+}
+function importSettingsJSON(){
+  const fi=document.createElement('input'); fi.type='file'; fi.accept='.json';
+  fi.onchange=async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const d=JSON.parse(await f.text());
+      if(d.autoSettings){ Object.assign(autoSettings,d.autoSettings); saveAutoSettings(); loadAutoSettings(); toast('✅ Import thành công','success',3000); }
+      else throw new Error('File không hợp lệ');
+    }catch(err){ toast('❌ Lỗi: '+err.message,'error'); }
+  }; fi.click();
+}
+
+// ── Lyrics Tap-to-Sync ──
+let _lyricTimestamps=[];
+function openLyricSync(){
+  const raw=$('cc-lyr')?.value||'';
+  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
+  if(!lines.length){toast('Chưa có lời bài hát','warn');return;}
+  if(!audEl){toast('Chưa upload nhạc','warn');return;}
+  _lyricTimestamps=lines.map(t=>({time:0,text:t,synced:false}));
+  let modal=$('lyric-sync-modal');
+  if(!modal){ modal=document.createElement('div'); modal.id='lyric-sync-modal'; modal.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center'; document.body.appendChild(modal); }
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw);max-height:80vh;overflow-y:auto">
+    <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:6px;font-family:'IBM Plex Mono',monospace">🎵 TAP-TO-SYNC</div>
+    <div style="font-size:.64rem;color:var(--tx3);margin-bottom:12px">Nhấn ⏱ đúng lúc nhạc hát từng câu</div>
+    <div id="lyr-sync-list"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="if(typeof startPlay==='function')startPlay()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.7rem;cursor:pointer">▶ Phát</button>
+      <button onclick="applyLyrSync()" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--a2);background:none;color:var(--a2);font-weight:700;font-size:.7rem;cursor:pointer">✅ Áp Dụng</button>
+      <button onclick="closeLyrSync()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.7rem">Huỷ</button>
+    </div>
+  </div>`;
+  renderLyrSyncList(); modal.style.display='flex';
+}
+function renderLyrSyncList(){
+  const list=$('lyr-sync-list'); if(!list) return;
+  list.innerHTML='';
+  _lyricTimestamps.forEach((row,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--surface2);margin-bottom:3px;'+(row.synced?'border:1px solid rgba(0,229,195,.4);':'border:1px solid var(--line2);');
+    const ts=row.synced?`${String(Math.floor(row.time/60)).padStart(2,'0')}:${String(Math.floor(row.time%60)).padStart(2,'0')}`:'--:--';
+    d.innerHTML=`<span style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--a2);min-width:42px">${ts}</span><span style="flex:1;font-size:.68rem;color:var(--tx2)">${row.text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button onclick="tapLyrSync(${i})" style="padding:3px 10px;border-radius:5px;border:1px solid var(--a2);background:none;color:var(--a2);cursor:pointer;font-size:.6rem">⏱ Tap</button>`;
+    list.appendChild(d);
+  });
+}
+function tapLyrSync(i){ const t=audEl?.currentTime||_renderTime||0; _lyricTimestamps[i]={..._lyricTimestamps[i],time:t,synced:true}; renderLyrSyncList(); }
+function applyLyrSync(){
+  const txt=_lyricTimestamps.filter(r=>r.synced).map(r=>`[${String(Math.floor(r.time/60)).padStart(2,'0')}:${String(Math.floor(r.time%60)).padStart(2,'0')}] ${r.text}`).join('\n');
+  if($('cc-lyr')) $('cc-lyr').value=txt;
+  closeLyrSync(); toast('🎵 Lyrics đã đồng bộ!','success',3000);
+}
+function closeLyrSync(){ const m=$('lyric-sync-modal'); if(m) m.style.display='none'; }
 // ── Tab switching ──
 function switchMainTab(tab){
   const isAuto = tab==='auto';
@@ -3149,6 +3944,7 @@ function showOAuthGuide(){
 }
 
 // ── Queue UI ──
+function sanitizeText(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 function refreshQueueUI(){
   const el=$('auto-queue'); if(!el)return;
   if(!autoQueue.length){
@@ -3160,34 +3956,26 @@ function refreshQueueUI(){
     const icons={'queued':'⏳','rendering':'🎬','rendered':'✅','uploading':'📤','done':'🎉','failed':'❌'};
     const d=document.createElement('div');
     d.className=`queue-item ${item.status==='done'?'done':item.status==='failed'?'failed':item.status.includes('ing')?'running':''}`;
-
-    // Safe DOM build — no innerHTML with user data (XSS prevention)
-    const safeTitle=sanitizeText(item.title||'Không tên');
-    const safeArtist=sanitizeText(item.artist||'');
-    const safeTpl=sanitizeText(item.tplId||'auto');
-    const safeCredit=sanitizeText(item.imgCredit||'');
+    const sT=sanitizeText(item.title||'Không tên');
+    const sA=sanitizeText(item.artist||'');
+    const sTpl=sanitizeText(item.tplId||'auto');
+    const sCr=sanitizeText(item.imgCredit||'');
+    const sYt=sanitizeText(item.ytId||'');
     const dateStr=new Date(item.createdAt||Date.now()).toLocaleDateString('vi-VN');
-
-    const icon=icons[item.status]||'⏳';
     const actionHtml=item.ytId&&!item.ytId.startsWith('demo')
-      ?`<a href="https://youtu.be/${sanitizeText(item.ytId)}" target="_blank" rel="noopener" style="color:var(--a2);text-decoration:none">▶ Xem</a>`
-      :`<button onclick="removeQueueItem(${idx})" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px" title="Xóa">✕</button>`;
+      ?`<a href="https://youtu.be/${sYt}" target="_blank" rel="noopener" style="color:var(--a2);text-decoration:none">▶ Xem</a>`
+      :`<button onclick="removeQueueItem(${idx})" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.7rem" title="Xóa">✕</button>`;
     const retryBtn=item.status==='failed'
-      ?`<button onclick="retryQueueItem(${idx})" style="background:none;border:1px solid var(--a2);color:var(--a2);cursor:pointer;font-size:.6rem;padding:2px 8px;border-radius:5px;margin-left:4px">↻ Thử lại</button>`
-      :'';
-    const imgHtml=item.imgUrl
-      ?`<img src="${sanitizeText(item.imgUrl)}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="${safeCredit}">`
-      :'';
+      ?`<button onclick="retryQueueItem(${idx})" style="background:none;border:1px solid var(--a2);color:var(--a2);cursor:pointer;font-size:.6rem;padding:2px 8px;border-radius:5px;margin-left:4px">↻</button>`:'';
+    const imgHtml=item.imgUrl?`<img src="${sanitizeText(item.imgUrl)}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="">` :'';
     const progHtml=(item.status==='rendering'||item.status==='uploading')
-      ?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${Math.min(100,item.progress||0)}%"></div></div>`
-      :'';
-
+      ?`<div class="qi-progress"><div class="qi-progress-fill" style="width:${Math.min(100,item.progress||0)}%"></div></div>`:'';
     d.innerHTML=`
-      <div class="qi-status">${icon}</div>
+      <div class="qi-status">${icons[item.status]||'⏳'}</div>
       ${imgHtml}
       <div class="qi-info">
-        <div class="qi-title">${safeTitle}</div>
-        <div class="qi-meta">${safeArtist} · ${safeTpl} · ${dateStr}${safeCredit?' · 📸 '+safeCredit:''}</div>
+        <div class="qi-title">${sT}</div>
+        <div class="qi-meta">${sA} · ${sTpl} · ${dateStr}${sCr?' · 📸 '+sCr:''}</div>
         ${progHtml}
       </div>
       <div class="qi-action" style="display:flex;align-items:center;gap:4px">${actionHtml}${retryBtn}</div>
@@ -3196,25 +3984,9 @@ function refreshQueueUI(){
   });
   refreshStats();
 }
-
-// ── Queue item actions ──
-function removeQueueItem(idx){
-  autoQueue.splice(idx,1);
-  saveQueue(); refreshQueueUI(); refreshStats();
-  toast('🗑 Đã xóa khỏi hàng đợi','info',1500);
-}
-function retryQueueItem(idx){
-  const item=autoQueue[idx]; if(!item)return;
-  item.status='queued'; item.progress=0; item.ytId='';
-  saveQueue(); refreshQueueUI();
-  toast(`↻ Đã đặt lại "${sanitizeText(item.title)}" để thử lại`,'info',2000);
-}
-function clearCompletedQueue(){
-  const before=autoQueue.length;
-  autoQueue=autoQueue.filter(i=>i.status!=='done'&&i.status!=='failed');
-  saveQueue(); refreshQueueUI(); refreshStats();
-  toast(`🧹 Đã xóa ${before-autoQueue.length} mục hoàn thành`,'success',2000);
-}
+function removeQueueItem(idx){autoQueue.splice(idx,1);saveQueue();refreshQueueUI();refreshStats();toast('🗑 Đã xóa','info',1500);}
+function retryQueueItem(idx){const i=autoQueue[idx];if(!i)return;i.status='queued';i.progress=0;i.ytId='';saveQueue();refreshQueueUI();toast('↻ Đặt lại: '+sanitizeText(i.title||''),'info',2000);}
+function clearCompletedQueue(){const b=autoQueue.length;autoQueue=autoQueue.filter(i=>i.status!=='done'&&i.status!=='failed');saveQueue();refreshQueueUI();refreshStats();toast(`🧹 Đã xóa ${b-autoQueue.length} mục`,'success',2000);}
 
 function saveQueue(){
   try{ localStorage.setItem('vlc_auto_queue', JSON.stringify(autoQueue.slice(0,50))); }catch(_){}
@@ -3464,6 +4236,234 @@ jobs:
 function exportGHScript(){
   const s = autoSettings;
   const script = `#!/usr/bin/env node
+/**
+ * VietLong Creator — Auto Upload Script
+ * Đặt file này tại: .github/scripts/auto-upload.js
+ * 
+ * Cách lấy OAuth2 tokens:
+ * 1. console.cloud.google.com → Credentials → OAuth 2.0 Client ID (Desktop app)
+ * 2. Dùng OAuth playground: https://developers.google.com/oauthplayground
+ *    - Scope: https://www.googleapis.com/auth/youtube.upload
+ *    - Lấy refresh_token, lưu vào GitHub Secret: YT_REFRESH_TOKEN
+ */
+
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const ENV = {
+  apiKey:       process.env.YT_API_KEY      || '',
+  oauthToken:   process.env.YT_OAUTH_TOKEN  || '',
+  refreshToken: process.env.YT_REFRESH_TOKEN|| '',
+  clientId:     process.env.YT_CLIENT_ID    || '',
+  clientSecret: process.env.YT_CLIENT_SECRET|| '',
+  channelId:    process.env.YT_CHANNEL_ID   || '',
+  songsPerRun:  parseInt(process.env.SONGS_PER_RUN||'2'),
+  keywords:     process.env.KEYWORDS        || 'nhạc hot việt nam',
+  privacy:      process.env.YT_PRIVACY      || 'private',
+  titleTpl:     process.env.YT_TITLE_TPL    || '{title} - {artist} | Nhạc Remix Tiktok 2026',
+  tags:         process.env.YT_TAGS         || 'nhạc việt,music video,remix',
+  remixLabel:   process.env.REMIX_LABEL     || 'VIET LONG REMIX',
+  templateChoice:process.env.TEMPLATE_CHOICE|| 'ai',
+};
+
+function log(msg){ console.log('[' + new Date().toISOString() + '] ' + msg); }
+
+// ── Refresh OAuth2 access token ──
+async function refreshAccessToken(){
+  if(!ENV.refreshToken || !ENV.clientId) return ENV.oauthToken;
+  const body = JSON.stringify({
+    client_id: ENV.clientId, client_secret: ENV.clientSecret,
+    refresh_token: ENV.refreshToken, grant_type: 'refresh_token'
+  });
+  return new Promise((resolve,reject)=>{
+    const req = https.request({
+      hostname:'oauth2.googleapis.com', path:'/token', method:'POST',
+      headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+    },res=>{
+      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
+        try{ resolve(JSON.parse(d).access_token||ENV.oauthToken); }catch{ resolve(ENV.oauthToken); }
+      });
+    });
+    req.on('error',reject); req.write(body); req.end();
+  });
+}
+
+// ── Fetch trending music from YouTube ──
+async function fetchTrendingSongs(){
+  const n = ENV.songsPerRun;
+  const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics' +
+    '&chart=mostPopular&videoCategoryId=10&regionCode=VN' +
+    '&maxResults=' + (n*3) + '&key=' + ENV.apiKey;
+  log('Tìm nhạc trending VN...');
+  return new Promise((resolve,reject)=>{
+    https.get(url, res=>{
+      let d=''; res.on('data',c=>d+=c); res.on('end',()=>{
+        try{
+          const data=JSON.parse(d);
+          if(data.error) throw new Error(data.error.message);
+          const songs=(data.items||[]).slice(0,n).map(v=>({
+            title: v.snippet.title.split(/[-–|]/)[0].trim().toUpperCase(),
+            artist: v.snippet.channelTitle.replace(/official|vevo/gi,'').trim(),
+            videoId: v.id,
+            viewCount: v.statistics?.viewCount||0,
+            genre: detectGenre(v.snippet.title+' '+v.snippet.description),
+          }));
+          resolve(songs);
+        }catch(e){ reject(e); }
+      });
+    }).on('error',reject);
+  });
+}
+
+function detectGenre(text){
+  const t=text.toLowerCase();
+  if(/remix|edm|dance|trap/.test(t)) return 'edm';
+  if(/lofi|lo-fi|chill/.test(t)) return 'lofi';
+  if(/ballad|tình|yêu|nhớ|buồn/.test(t)) return 'ballad';
+  if(/rap|hiphop|hip hop/.test(t)) return 'rap';
+  return 'pop';
+}
+
+function aiPickTemplate(genre, title){
+  if(ENV.templateChoice !== 'ai') return ENV.templateChoice;
+  if(/edm|remix/.test(genre)) return 'mc-fire';
+  if(/lofi|chill/.test(genre)) return 'mc-lofi';
+  if(/ballad/.test(genre)||/tình|yêu|nhớ/.test(title.toLowerCase())) return 'mc-rose';
+  if(/rap/.test(genre)) return 'mc-cyber';
+  const pool=['mc-ocean','mc-galaxy','mc-aurora','mc-purple','mc-dream'];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function buildTitle(song){
+  const d=new Date();
+  return ENV.titleTpl
+    .replace(/{title}/g,  song.title)
+    .replace(/{artist}/g, song.artist)
+    .replace(/{date}/g,   d.toLocaleDateString('vi-VN'))
+    .replace(/{year}/g,   d.getFullYear())
+    .replace(/{genre}/g,  song.genre||'pop');
+}
+
+// ── Upload video to YouTube ──
+async function uploadVideo(song, videoBuffer, accessToken){
+  const title = buildTitle(song);
+  const tags = ENV.tags.split(',').map(t=>t.trim()).filter(Boolean);
+  tags.push(song.artist.replace(/\\s+/g,''), song.genre||'nhacviet');
+  
+  const meta = JSON.stringify({
+    snippet:{
+      title, description: ENV.titleTpl.replace(/{title}/g,song.title).replace(/{artist}/g,song.artist),
+      tags, categoryId:'10',
+    },
+    status:{ privacyStatus: ENV.privacy, selfDeclaredMadeForKids: false },
+  });
+
+  log('Upload: "' + title + '" → YouTube (' + ENV.privacy + ')');
+  
+  // Resumable upload
+  return new Promise((resolve,reject)=>{
+    const metaBuf = Buffer.from(meta);
+    const initReq = https.request({
+      hostname:'www.googleapis.com',
+      path:'/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+accessToken,
+        'Content-Type':'application/json',
+        'Content-Length':metaBuf.length,
+        'X-Upload-Content-Type':'video/webm',
+        'X-Upload-Content-Length':videoBuffer.length,
+      }
+    },res=>{
+      const uploadUrl=res.headers.location;
+      if(!uploadUrl){reject(new Error('No upload URL: '+JSON.stringify(res.headers)));return;}
+      log('Upload URL nhận được, đang upload video...');
+      // Upload binary
+      const u=new URL(uploadUrl);
+      const uploadReq = https.request({
+        hostname:u.hostname, path:u.pathname+u.search, method:'PUT',
+        headers:{'Content-Type':'video/webm','Content-Length':videoBuffer.length}
+      },r=>{
+        let d=''; r.on('data',c=>d+=c); r.on('end',()=>{
+          try{ resolve(JSON.parse(d)); }catch{ resolve({id:'unknown'}); }
+        });
+      });
+      uploadReq.on('error',reject);
+      uploadReq.write(videoBuffer);
+      uploadReq.end();
+    });
+    initReq.on('error',reject);
+    initReq.write(metaBuf);
+    initReq.end();
+  });
+}
+
+// ── Main ──
+async function main(){
+  log('=== VietLong Auto Upload bắt đầu ===');
+  
+  if(!ENV.apiKey){ log('LỖI: Thiếu YT_API_KEY'); process.exit(1); }
+  
+  // Refresh access token
+  const accessToken = await refreshAccessToken();
+  log('Access token: ' + (accessToken?'OK':'THIẾU'));
+  
+  // Fetch trending songs
+  const songs = await fetchTrendingSongs();
+  log('Tìm được ' + songs.length + ' bài: ' + songs.map(s=>s.title).join(', '));
+  
+  const results = [];
+  for(const song of songs){
+    log('--- Xử lý: "' + song.title + '" by ' + song.artist + ' ---');
+    const tpl = aiPickTemplate(song.genre, song.title);
+    log('Template AI chọn: ' + tpl);
+    
+    // NOTE: Render video cần headless browser (Puppeteer)
+    // Uncomment để dùng Puppeteer:
+    // const videoBuffer = await renderWithPuppeteer(song, tpl);
+    
+    // Placeholder: tạo video giả để test pipeline
+    const videoBuffer = Buffer.alloc(1024, 0); // thay bằng Puppeteer render thực
+    log('Render xong (placeholder): ' + videoBuffer.length + ' bytes');
+    
+    if(accessToken && accessToken!==ENV.oauthToken){
+      try{
+        const res = await uploadVideo(song, videoBuffer, accessToken);
+        log('Upload OK: https://youtu.be/' + (res.id||'?'));
+        results.push({...song, tpl, ytId:res.id, status:'ok'});
+      }catch(e){
+        log('Upload lỗi: ' + e.message);
+        results.push({...song, tpl, status:'error', error:e.message});
+      }
+    } else {
+      log('Bỏ qua upload (thiếu OAuth token)');
+      results.push({...song, tpl, status:'skip'});
+    }
+  }
+  
+  // Lưu log kết quả
+  const logPath = 'auto-results-' + new Date().toISOString().slice(0,10) + '.json';
+  fs.writeFileSync(logPath, JSON.stringify(results, null, 2));
+  log('Lưu kết quả: ' + logPath);
+  log('=== Hoàn tất ===');
+}
+
+main().catch(e=>{ console.error('FATAL:', e); process.exit(1); });
+
+/* 
+ * === ĐỂ RENDER VIDEO THẬT VỚI PUPPETEER ===
+ * npm install puppeteer
+ * 
+ * );
+ *   const page = await browser.newPage();
+ *   await page.goto('https://letranvietlong.github.io/VietLongCreator.html');
+ *   // ... điều khiển UI để render video
+ *   // ... capture MediaRecorder output
+ *   await browser.close();
+ * }
+ */
 `;
   downloadFile('auto-upload.js', script, 'text/javascript');
   alog('ok','Đã xuất auto-upload.js → đặt vào .github/scripts/ trong repo');
@@ -3618,19 +4618,18 @@ function goStep(n){
     if(aiTitle&&!$('cc-title')?.value) $('cc-title').value=aiTitle;
     if(aiArtist&&!$('cc-artist')?.value) $('cc-artist').value=aiArtist;
   }
+  if(n===1){ setTimeout(()=>{ if(typeof showOnboarding==='function') showOnboarding(); },800); }
   if(n===4){
     // Dừng TẤT CẢ mini preview animations để giải phóng CPU
     Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
     for(const k in miniAnim)miniAnim[k]=null;
-    bgCache=null;    // ⚠️ Panel phải visible TRƯỚC khi đọc clientWidth — dùng requestAnimationFrame để chờ layout
+    bgCache=null;     // ⚠️ Panel phải visible TRƯỚC khi đọc clientWidth — dùng requestAnimationFrame để chờ layout
     requestAnimationFrame(()=>{
       requestAnimationFrame(()=>{
         initCanvas();
         setupAudio();
         // Bắt đầu idle animation ngay
         startIdleLoop();
-        updateExportBadge();
-        renderExportHistory();
       });
     });
   }
@@ -3653,7 +4652,7 @@ uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
 uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');if(e.dataTransfer.files[0])handleAud(e.dataTransfer.files[0]);});
 function handleAud(f){
   if(!f||!f.type.startsWith('audio/'))return;
-  markOnboarded();
+  if(typeof markOnboarded==='function') markOnboarded();
   audFile=f;
   $('aname').textContent=f.name;
   $('ameta').textContent=`${(f.size/1024/1024).toFixed(2)} MB · ${(f.type.split('/')[1]||'audio').toUpperCase()}`;
@@ -3778,7 +4777,6 @@ function guessFromFilename(name){
     const parts=n.split(sep[0]);
     const a=parts[0].trim(), b=parts[1]?.trim()||'';
     // Format chuẩn: "Ca Sĩ - Tên Bài Hát"
-    // → phần TRƯỚC dấu gạch = ca sĩ, phần SAU = tên bài
     return{artist:a, title:b.toUpperCase()};
   }
   return{title:n.toUpperCase()||'',artist:''};
@@ -4109,6 +5107,83 @@ function buildCfg(force=false){
           <option value="none">Ẩn</option></select></div>`:''}
     </div>
 
+    <!-- Color Grading Filters -->
+    <div style="margin-top:12px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">🎨 BỘ LỌC MÀU SẮC (Color Grading)</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap" id="cf-grid">
+        <button class="cf-btn" data-filter="none" onclick="setColorFilter('none');document.querySelectorAll('.cf-btn').forEach(b=>b.style.cssText='');this.style.borderColor='var(--a2)';this.style.color='var(--a2)'">🎥 Original</button>
+        <button class="cf-btn" data-filter="cinematic" onclick="setColorFilter('cinematic')">🎬 Cinematic</button>
+        <button class="cf-btn" data-filter="vintage" onclick="setColorFilter('vintage')">📷 Vintage</button>
+        <button class="cf-btn" data-filter="vibrant" onclick="setColorFilter('vibrant')">✨ Vibrant</button>
+        <button class="cf-btn" data-filter="bw" onclick="setColorFilter('bw')">⚫ B&W</button>
+        <button class="cf-btn" data-filter="warm" onclick="setColorFilter('warm')">🌅 Warm</button>
+        <button class="cf-btn" data-filter="cold" onclick="setColorFilter('cold')">❄ Cold</button>
+        <button class="cf-btn" data-filter="neon" onclick="setColorFilter('neon')">💜 Neon</button>
+        <button class="cf-btn" data-filter="dreamy" onclick="setColorFilter('dreamy')">🌸 Dreamy</button>
+        <button class="cf-btn" data-filter="noir" onclick="setColorFilter('noir')">🕵 Noir</button>
+        <button class="cf-btn" data-filter="golden" onclick="setColorFilter('golden')">🌟 Golden</button>
+      </div>
+    </div>
+    <!-- Text Animation -->
+    <div style="margin-top:12px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">✨ HIỆU ỨNG CHỮ</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap" id="text-anim-grid">
+        <button class="tanim-btn active" onclick="setTextAnim('default');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Default</button>
+        <button class="tanim-btn" onclick="setTextAnim('typewriter');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">⌨ Typewriter</button>
+        <button class="tanim-btn" onclick="setTextAnim('glitch');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">💥 Glitch</button>
+        <button class="tanim-btn" onclick="setTextAnim('wave');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">〰 Wave</button>
+        <button class="tanim-btn" onclick="setTextAnim('fade-slide');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">↑ Fade</button>
+        <button class="tanim-btn" onclick="setTextAnim('zoom-pulse');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">🔴 Zoom</button>
+        <button class="tanim-btn" onclick="setTextAnim('neon-flicker');this.closest('#text-anim-grid').querySelectorAll('.tanim-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">⚡ Neon</button>
+      </div>
+    </div>
+    <!-- Equalizer Presets -->
+    <div style="margin-top:10px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">🎚 EQUALIZER (Preview)</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap" id="eq-grid">
+        <button class="eq-preset-btn" data-preset="flat" onclick="setEqPreset('flat')">Flat</button>
+        <button class="eq-preset-btn" data-preset="bass" onclick="setEqPreset('bass')">🔊 Bass+</button>
+        <button class="eq-preset-btn" data-preset="treble" onclick="setEqPreset('treble')">🎵 Treble+</button>
+        <button class="eq-preset-btn" data-preset="vocal" onclick="setEqPreset('vocal')">🎤 Vocal</button>
+        <button class="eq-preset-btn" data-preset="club" onclick="setEqPreset('club')">🎧 Club</button>
+        <button class="eq-preset-btn" data-preset="acoustic" onclick="setEqPreset('acoustic')">🎸 Acoustic</button>
+      </div>
+    </div>
+    <!-- Progress Bar Style -->
+    <div style="margin-top:10px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">📊 KIỂU PROGRESS BAR</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap" id="pb-style-grid">
+        <button class="pbst-btn active" onclick="setPbStyle('default');this.closest('#pb-style-grid').querySelectorAll('.pbst-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">▬ Default</button>
+        <button class="pbst-btn" onclick="setPbStyle('dots');this.closest('#pb-style-grid').querySelectorAll('.pbst-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">• Dots</button>
+        <button class="pbst-btn" onclick="setPbStyle('circle');this.closest('#pb-style-grid').querySelectorAll('.pbst-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">○ Circle</button>
+        <button class="pbst-btn" onclick="setPbStyle('gradient');this.closest('#pb-style-grid').querySelectorAll('.pbst-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">🌈 Gradient</button>
+      </div>
+    </div>
+    <!-- Sticker Overlay -->
+    <div style="margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">🎭 STICKER / EMOJI</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="removeLastSticker()" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer">↩ Xóa</button>
+          <button onclick="clearStickers()" style="padding:2px 8px;border-radius:5px;border:1px solid #f87171;background:none;color:#f87171;font-size:.58rem;cursor:pointer">✕ Xóa hết</button>
+        </div>
+      </div>
+      <div class="sticker-grid">${STICKER_PRESETS.map((e,i)=>`<span class="sticker-item" onclick="addSticker('${e}')" title="Thêm ${e}">${e}</span>`).join('')}</div>
+      <div style="font-size:.58rem;color:var(--tx3);margin-top:5px">Click để thêm · Kéo trên canvas để di chuyển</div>
+    </div>
+    <!-- Watermark -->
+    <div style="margin-top:10px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">🔖 WATERMARK / LOGO</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="wm-text" placeholder="VietLong Remix" oninput="setWatermark(this.value,$('wm-pos').value)" style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.65rem">
+        <select id="wm-pos" onchange="setWatermark($('wm-text')?.value,this.value)" style="padding:5px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
+          <option value="bottom-right">↘ Dưới phải</option>
+          <option value="bottom-left">↙ Dưới trái</option>
+          <option value="top-right">↗ Trên phải</option>
+          <option value="top-left">↖ Trên trái</option>
+        </select>
+      </div>
+    </div>
     <!-- Color Presets -->
     <div style="margin-top:12px">
       <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:4px">🎨 MÀU SẮC PRESET — 1 click đổi toàn bộ palette</div>
@@ -4119,7 +5194,7 @@ function buildCfg(force=false){
       <label>${isLV?'Lời Bài Hát (Hiển thị trung tâm video)':'Lời Bài Hát (Tùy Chọn)'}</label>
       <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...':'Nhập lời bài hát...'}" rows="${isLV?8:4}" oninput="scheduleDraftSave()"></textarea>
       <div class="hint">${isLV?'💡 Mỗi dòng hiển thị tuần tự đồng bộ nhịp nhạc':'💡 Để trống nếu không cần lời nhạc'}</div>
-      <button onclick="openLyricSync()" style="margin-top:6px;padding:5px 12px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🎵 Tap-to-Sync Lyrics</button>
+      <button onclick="generateHashtags('all')" style="margin-top:6px;padding:5px 12px;border-radius:7px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-right:6px">🏷 Hashtag</button><button onclick="openLyricSync()" style="margin-top:6px;padding:5px 12px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🎵 Tap-to-Sync</button>
     </div>
     <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả với nhạc của bạn.</div>
   `;
@@ -4196,7 +5271,7 @@ let idleRaf=null;
 function startIdleLoop(){
   stopIdleLoop();
   function idleTick(ts){
-    if(playing){ idleRaf=null; return; } // stop if playback started
+    if(playing){ idleRaf=null; return; }
     if(!chosenTpl||step!==4){ idleRaf=null; return; }
     if(ts-lastFrameTime<FRAME_MS){ idleRaf=requestAnimationFrame(idleTick); return; }
     lastFrameTime=ts;
@@ -4226,6 +5301,8 @@ function setupAudio(){
     analyser=actx.createAnalyser();analyser.fftSize=2048;
     const s=actx.createMediaElementSource(audEl);
     s.connect(analyser);analyser.connect(actx.destination);
+    // Setup EQ after analyser is ready
+    setTimeout(()=>{ if(typeof setupEqualizer==='function') setupEqualizer(); },200);
   }
 }
 
@@ -4239,6 +5316,7 @@ async function startPlay(){
   if(typeof trimState!=='undefined'&&trimState.applied&&trimState.start>0)
     audEl.currentTime=(audEl.duration||0)*trimState.start;
   else audEl.currentTime=0;
+  audEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
   audEl.play();
   playing=true;aiT=0;aiGP=0;
   // Media Session
@@ -4249,24 +5327,24 @@ async function startPlay(){
   if(typeof startSlideshowIfMulti==='function') startSlideshowIfMulti();
   // Auto BPM on first play
   if(typeof bpmState!=='undefined'&&!bpmState.detected&&audFile)
-    setTimeout(()=>{ if(typeof detectBPM==='function')detectBPM(); },800);
+    setTimeout(async()=>{ if(typeof detectBPM==='function') await detectBPM(); if(typeof detectMood==='function') detectMood(); },800);
   if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
   $('pbtn').textContent='⏸ Tạm Dừng';
   renderLoop();
 }
 function stopPlay(){
-  playing=false; // set FIRST to stop renderLoop from continuing
+  playing=false;
   if(raf){ cancelAnimationFrame(raf); raf=null; }
   if(audEl){ audEl.pause(); }
-  const btn=$('pbtn'); if(btn) btn.textContent='▶ Phát';
+  const _pb=$('pbtn'); if(_pb) _pb.textContent='▶ Phát';
   if(typeof releaseWakeLock==='function') releaseWakeLock();
   if(typeof artImgTimer!=='undefined'&&artImgTimer){ clearInterval(artImgTimer); artImgTimer=null; }
-  if(step===4) setTimeout(startIdleLoop, 50); // small delay to avoid race with renderLoop
+  if(step===4) setTimeout(startIdleLoop, 50);
 }
 function doRestart(){stopPlay();setTimeout(startPlay,80);}
 
 function renderLoop(ts=0){
-  if(!playing){ raf=null; return; } // guard: stop if playing was set false
+  if(!playing){ raf=null; return; }
   if(ts-lastFrameTime<FRAME_MS){ raf=requestAnimationFrame(renderLoop); return; }
   lastFrameTime=ts;
   _renderTime = audEl?.currentTime||0;
@@ -4274,7 +5352,8 @@ function renderLoop(ts=0){
   readAudioOnce();
   drawFrame(); drawSpec();
   if(audEl) $('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
-  if(playing) raf=requestAnimationFrame(renderLoop); // only continue if still playing
+  if(typeof _beatMarkers!=='undefined'&&_beatMarkers.length>0) renderBeatTimeline();
+  if(playing) raf=requestAnimationFrame(renderLoop);
   else raf=null;
 }
 
@@ -4296,6 +5375,12 @@ function drawFrame(){
   else if(s==='lv')   fullLV(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='tunnel')fullTunnel(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='wv')   fullWV(W,H,aiT,bass,eng,p,title,artist);
+  // Post-processing: color grading computed here for preview only
+  // During export, color grading is applied at composite step via CSS filter
+  if(typeof _applyPostProcessing==='function'&&!_isExporting){
+    const W2=bgCvs.width,H2=bgCvs.height;
+    _applyPostProcessing(W2,H2);
+  }
 }
 
 /* ── FULL MUSIC CARD — Performance optimized ── */
@@ -5074,7 +6159,8 @@ function bgDream(c,W,H,t,bass,p){
   c.fillStyle=vg;c.fillRect(0,0,W,H);
 }
 
-function fullMC(W,H,t,bass,mid,eng,p,title,artist){  const bgType = chosenTpl?.bg || 'ocean';
+function fullMC(W,H,t,bass,mid,eng,p,title,artist){
+    const bgType = chosenTpl?.bg || 'ocean';
 
   // ── BACKGROUND — vẽ mỗi frame để animation mượt ──
   drawMCBackground(bgX,W,H,t,bass,p,bgType);
@@ -5165,48 +6251,31 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){  const bgType = chosenTpl?.b
   });
   bgX.shadowBlur=0;bgX.restore();
 
-  // ── Progress bar — theo thời lượng thực của nhạc ──
-  const pbH=Math.max(3,H*.004);
-  const pbY=cy+ch-pbH-ch*.025; // sát đáy card
-  const pbX=cx+cw*.06,pbW=cw*.88;
-
-  // Tính progress theo _renderTime (đúng khi cả preview lẫn export)
+  // ── Progress bar ──
   const audDur=_renderDur||audEl?.duration||1;
   const audCur=_renderTime||0;
   const prog=Math.min(audCur/audDur,1);
-
-  // Track nền mờ
-  bgX.fillStyle='rgba(255,255,255,.18)';bgX.fillRect(pbX,pbY,pbW,pbH);
-  // Fill đã chạy
-  if(prog>0){
-    bgX.fillStyle=p.wc||'#22d3ee';
-    bgX.shadowColor=p.wc||'#22d3ee';bgX.shadowBlur=4;
-    bgX.fillRect(pbX,pbY,pbW*prog,pbH);
-    bgX.shadowBlur=0;
+  if(typeof drawProgressBar==='function'&&typeof _pbStyle!=='undefined'&&_pbStyle!=='default'){
+    drawProgressBar(bgX,cx,cy,cw,ch,W,H,prog,audCur,audDur,p.wc||'#22d3ee',p);
+  } else {
+    const pbH=Math.max(3,H*.004),pbY=cy+ch-pbH-ch*.025,pbX=cx+cw*.06,pbW=cw*.88;
+    bgX.fillStyle='rgba(255,255,255,.18)';bgX.fillRect(pbX,pbY,pbW,pbH);
+    if(prog>0){bgX.fillStyle=p.wc||'#22d3ee';bgX.shadowColor=p.wc||'#22d3ee';bgX.shadowBlur=4;bgX.fillRect(pbX,pbY,pbW*prog,pbH);bgX.shadowBlur=0;}
+    bgX.fillStyle='#fff';bgX.beginPath();bgX.arc(pbX+pbW*prog,pbY+pbH/2,Math.max(5,H*.007),0,Math.PI*2);bgX.fill();
+    const tfsz=Math.max(9,ch*.038);
+    bgX.font='500 '+tfsz+'px "Be Vietnam Pro",Arial';
+    bgX.textBaseline='bottom';bgX.textAlign='left';bgX.fillStyle='rgba(255,255,255,.55)';bgX.fillText(fmt(audCur),pbX,pbY-4);
+    bgX.textAlign='right';bgX.fillStyle='rgba(255,255,255,.35)';bgX.fillText(fmt(audDur),pbX+pbW,pbY-4);
   }
-  // Dot chạy
-  const dotX=pbX+pbW*prog;
-  bgX.fillStyle='#ffffff';bgX.beginPath();bgX.arc(dotX,pbY+pbH/2,Math.max(5,H*.007),0,Math.PI*2);bgX.fill();
 
-  // Text thời lượng: "01:23 / 04:24"
-  const tfsz=Math.max(9,ch*.038);
-  bgX.font=`500 ${tfsz}px Be Vietnam Pro,Arial`;
-  bgX.textBaseline='bottom';bgX.textAlign='left';
-  bgX.fillStyle='rgba(255,255,255,.55)';
-  bgX.fillText(fmt(audCur),pbX,pbY-4);
-  bgX.textAlign='right';
-  bgX.fillStyle='rgba(255,255,255,.35)';
-  bgX.fillText(fmt(audDur),pbX+pbW,pbY-4);
-
-  // Remix label — góc TRÊN bên phải của card (không che progress bar)
+  // Remix label — góc TRÊN bên phải của card
   const remixLabel=($('cc-remix')?.value||'REMIX').toUpperCase();
   const rlH=ch*.052;
   bgX.font=`600 ${rlH*.5}px Be Vietnam Pro,Arial`;
   const rlW=bgX.measureText(remixLabel).width+cw*.06;
-  const rlX=cx+cw-rlW-cw*.018;   // sát mép phải card
-  const rlY=cy+ch*.018;           // sát mép trên card
-  // Pill background
-  const rlR=rlH*.35; // bo góc
+  const rlX=cx+cw-rlW-cw*.018;
+  const rlY=cy+ch*.018;
+  const rlR=rlH*.35;
   bgX.fillStyle='rgba(0,0,0,.62)';
   bgX.beginPath();
   bgX.moveTo(rlX+rlR,rlY);
@@ -5418,7 +6487,7 @@ function fullLV(W,H,t,bass,mid,eng,p,title,artist){
   ovX.clearRect(0,0,W,H);
   // Lyrics — center stage, large
   const raw=$('cc-lyr')?.value||'';
-  const lines=raw.trim()?raw.split(/\r?\n/).filter(l=>l.trim()):[];
+  const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
   const dur=(_renderDur||audEl?.duration)||60,cur=_renderTime||0;
   const idx=lines.length?Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1):-1;
   const line=lines[idx]||title||'TÊN BÀI HÁT';
@@ -5589,6 +6658,22 @@ function drawLyrics(c,W,H){
   c.fillStyle='rgba(0,0,0,.68)';rrF(c,x-bw/2,y-bh/2,bw,bh,8);
   c.shadowColor='rgba(0,0,0,.85)';c.shadowBlur=8;c.fillStyle='#fff';c.fillText(line,x,y,W-50);c.shadowBlur=0;c.restore();
 }
+// Apply color grading after all drawing
+function _applyPostProcessing(W,H){
+  if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'){
+    applyColorGrading(bgX,W,H);
+  }
+  if(typeof _stickers!=='undefined'&&_stickers.length){
+    const bass=nrg('bass');
+    drawStickers(ovX,W,H,bass);
+  }
+  if(typeof _countdownActive!=='undefined'&&_countdownActive){
+    drawCountdown(ovX,W,H);
+  }
+  if(typeof _watermarkText!=='undefined'||typeof _watermarkImg!=='undefined'){
+    drawWatermark(ovX,W,H);
+  }
+}
 function drawSpec(){
   const W=spCvs.width,H=spCvs.height;
   spX.fillStyle='rgba(10,12,20,.94)';spX.fillRect(0,0,W,H);
@@ -5643,9 +6728,81 @@ function updateExportBadge(){
   }
 }
 
+// ── Cancel Export ──
+let _exportAborted=false;
+let _lastExportUrl='', _lastExportFile=null;
+function cancelExport(){
+  _exportAborted=true;
+  _isExporting=false;
+  const cb=$('cancel-export-btn'); if(cb) cb.style.display='none';
+  const btn=$('expbtn'); if(btn) btn.disabled=false;
+  const pw=$('progwrap'); if(pw) pw.style.display='none';
+  toast('🛑 Đã hủy export','warn',2000);
+  if(typeof releaseWakeLock==='function') releaseWakeLock();
+}
+function _showCancelBtn(show){
+  const b=$('cancel-export-btn'); if(b) b.style.display=show?'inline-flex':'none';
+}
+
+// ── Export History ──
+const HISTORY_KEY='vlc_export_history';
+function addExportHistory(entry){
+  try{
+    let h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    h.unshift({...entry,ts:Date.now()}); h=h.slice(0,10);
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(h));
+    renderExportHistory();
+  }catch(_){}
+}
+function renderExportHistory(){
+  const panel=$('export-history-panel'), list=$('export-history-list');
+  if(!panel||!list) return;
+  try{
+    const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    if(!h.length){panel.style.display='none';return;}
+    panel.style.display='block'; list.innerHTML='';
+    h.forEach(e=>{
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;background:var(--surface2);margin-bottom:5px;font-size:.64rem;cursor:pointer;border:1px solid transparent;transition:all .18s';
+      d.onmouseover=()=>d.style.borderColor='var(--a2)';
+      d.onmouseout=()=>d.style.borderColor='transparent';
+      d.innerHTML=`
+        <div style="width:40px;height:26px;border-radius:4px;background:var(--ink);flex-shrink:0;overflow:hidden">${e.thumb?`<img src="${sanitizeText(e.thumb)}" style="width:100%;height:100%;object-fit:cover">`:'🎵'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sanitizeText(e.title||'')}</div>
+          <div style="color:var(--tx3);font-size:.58rem">${sanitizeText(e.tpl||'')} · ${e.fmt||'MP4'} · ${e.size||''} · ${new Date(e.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`;
+      list.appendChild(d);
+    });
+  }catch(_){panel.style.display='none';}
+}
+
+// ── Share after export ──
+async function shareExportedVideo(){
+  if(!_lastExportFile){toast('Chưa có video','warn');return;}
+  if(navigator.share&&navigator.canShare?.({files:[_lastExportFile]})){
+    try{await navigator.share({title:$('cc-title')?.value||'VietLong Creator',files:[_lastExportFile]});return;}catch(_){}
+  }
+  if(_lastExportUrl) window.open(_lastExportUrl,'_blank');
+  else toast('Trình duyệt không hỗ trợ share','warn');
+}
+function copyExportLink(){
+  if(!_lastExportUrl){toast('Chưa có video','warn');return;}
+  navigator.clipboard?.writeText(_lastExportUrl)
+    .then(()=>toast('📋 Đã copy link','success',2000))
+    .catch(()=>toast('Không copy được','warn'));
+}
+
+let _isExporting=false;
 async function startExport(){
+  _exportAborted=false;
+  _isExporting=true;
+  // Stop preview + idle before export
+  if(typeof stopPlay==='function') stopPlay();
+  if(typeof stopIdleLoop==='function') stopIdleLoop();
   updateExportBadge();
   const btn=$('expbtn'); btn.disabled=true;
+  _showCancelBtn(true);
   $('progwrap').style.display='block';
   $('dlbox').style.display='none';
   await acquireWakeLock();
@@ -5687,10 +6844,10 @@ async function exportWithWebCodecs(q){
     // Dedicated render canvases — NO resize hack needed
     const renderBg=document.createElement('canvas'); renderBg.width=EW; renderBg.height=EH;
     const renderOv=document.createElement('canvas'); renderOv.width=EW; renderOv.height=EH;
-    const outCvs  =document.createElement('canvas'); outCvs.width=EW;   outCvs.height=EH;
-    const outCtx  =outCvs.getContext('2d');
+    // outCvs declared in render setup block below
 
-    // Save preview canvas sizes
+    // Save + override global canvas refs
+    const _oBgCvs=bgCvs,_oOvCvs=ovCvs;
     const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
     const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
 
@@ -5701,13 +6858,16 @@ async function exportWithWebCodecs(q){
     if(exportActx.state==='suspended') await exportActx.resume();
     const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
     const exportAudEl=new Audio();
+    exportAudEl.muted=true;          // MUST mute before src set to prevent any speaker output
+    exportAudEl.volume=0;
     exportAudEl.src=URL.createObjectURL(audFile);
     exportAudEl.crossOrigin='anonymous';
     await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
     const exportSrc=exportActx.createMediaElementSource(exportAudEl);
-    // Connect to analyser for frequency data + destination for playback
+    // Silent gain — belt AND suspenders approach with muted+gain=0
+    const silentGain=exportActx.createGain(); silentGain.gain.value=0;
     exportSrc.connect(exportAn);
-    exportSrc.connect(exportActx.destination);
+    exportSrc.connect(silentGain); silentGain.connect(exportActx.destination);
 
     // mp4-muxer setup (audio sampleRate set after decode)
     const {Muxer,ArrayBufferTarget}=window.Mp4Muxer;
@@ -5757,65 +6917,60 @@ async function exportWithWebCodecs(q){
     let audioBuf=null;
     try{
       const ab=await audFile.arrayBuffer();
-      // Round sample count to integer to avoid OfflineAudioContext errors
-      const sampleCount=Math.floor(44100*dur);
-      const decCtx=new OfflineAudioContext(2, sampleCount, 44100);
+      const decCtx=new OfflineAudioContext(2,Math.floor(44100*dur),44100);
       audioBuf=await decCtx.decodeAudioData(ab);
-    }catch(e){ audioBuf=null; console.warn('Audio decode failed:',e); }
+    }catch(_){ audioBuf=null; }
 
-    // Encode audio — 4096-sample chunks, NO flush inside loop (causes EncodingError)
+    // Encode audio — 4096-sample chunks, NO flush inside loop
     if(audioBuf){
       upProg(18,'Encode audio...');
       const sr=audioBuf.sampleRate;
       const nCh=Math.min(audioBuf.numberOfChannels,2);
-      const chunkSz=4096; // larger chunks = more stable, still satisfies 8192-byte min for stereo f32
-
-      const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)
-        ? q.audioBps : 128000;
-
+      const chunkSz=4096;
+      const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)?q.audioBps:128000;
       try{
         audioEncoder.configure({
-          codec:'mp4a.40.2',
-          sampleRate:sr,
-          numberOfChannels:nCh,
-          bitrate:safeBitrate,
+          codec:'mp4a.40.2', sampleRate:sr,
+          numberOfChannels:nCh, bitrate:safeBitrate,
         });
-
         for(let i=0;i<audioBuf.length;i+=chunkSz){
           const len=Math.min(chunkSz,audioBuf.length-i);
-          // f32-planar: [ch0_samples..., ch1_samples...]
           const aData=new Float32Array(len*nCh);
-          for(let c=0;c<nCh;c++){
+          for(let c=0;c<nCh;c++)
             aData.set(audioBuf.getChannelData(c).subarray(i,i+len), c*len);
-          }
           const aFrame=new AudioData({
-            format:'f32-planar',
-            sampleRate:sr,
-            numberOfFrames:len,
-            numberOfChannels:nCh,
-            timestamp:Math.round(i/sr*1_000_000),
-            data:aData,
+            format:'f32-planar', sampleRate:sr,
+            numberOfFrames:len, numberOfChannels:nCh,
+            timestamp:Math.round(i/sr*1_000_000), data:aData,
           });
           audioEncoder.encode(aFrame);
           aFrame.close();
-          // Yield to browser every 0.5s worth of audio — no flush here (causes EncodingError)
           if(i%(sr*2)===0) await new Promise(r=>setTimeout(r,0));
         }
-        // Single flush at the end only
         await audioEncoder.flush();
         upProg(20,'Audio encode xong ✅');
       }catch(e){
-        console.warn('AudioEncoder failed, skipping audio:',e);
-        toast('⚠ Audio encode lỗi — video sẽ không có âm thanh','warn',4000);
+        console.warn('AudioEncoder failed:',e);
+        toast('⚠ Audio encode lỗi — thử lại hoặc dùng MediaRecorder','warn',4000);
       }
     }
 
+    // Offscreen canvases — redirect ALL canvas refs ONCE, restore at end
+    const offBg=document.createElement('canvas'); offBg.width=EW; offBg.height=EH;
+    const offOv=document.createElement('canvas'); offOv.width=EW; offOv.height=EH;
+    const outCvs=document.createElement('canvas'); outCvs.width=EW; outCvs.height=EH;
+    const outCtx=outCvs.getContext('2d');
+    // Save ALL global canvas refs
+    const _savedBgCvs=bgCvs, _savedOvCvs=ovCvs;
+    const _savedBgX=bgX, _savedOvX=ovX;
+    // Point globals to offscreen — do this ONCE, not per-frame
+    bgCvs=offBg; ovCvs=offOv;
+    bgX=offBg.getContext('2d'); ovX=offOv.getContext('2d');
+    bgCache=null;
+
     // Render + encode video frames
     async function renderNextFrame(){
-      if(_exportAborted){
-        bgCvs.width=_oPW; bgCvs.height=_oPH;
-        releaseWakeLock(); return;
-      }
+      if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; releaseWakeLock(); return; }
       if(frameIdx>=totalFrames){
         // Done — flush + finalize
         upProg(94,'Đóng gói MP4...');
@@ -5824,8 +6979,6 @@ async function exportWithWebCodecs(q){
         const {buffer}=target;
         const blob=new Blob([buffer],{type:'video/mp4'});
         const url=URL.createObjectURL(blob);
-        // Auto-revoke after 10 min to free memory
-        setTimeout(()=>URL.revokeObjectURL(url), 600_000);
         const songTitle=$('cc-title')?.value||'Video';
         const fname=`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`;
         $('dllink').href=url; $('dllink').download=fname;
@@ -5837,7 +6990,12 @@ async function exportWithWebCodecs(q){
         sendNotif('✅ Export xong!',`"${songTitle}" — MP4 ${EW}×${EH}`);
         toast(`🎉 MP4 xuất xong! "${songTitle}" — ${(blob.size/1024/1024).toFixed(1)}MB`,'success',6000);
         // Restore canvas
-        bgCvs.width=_oPW; bgCvs.height=_oPH;
+        // Restore all global refs
+        // Restore ALL canvas refs to preview canvases
+        bgCvs=_savedBgCvs; ovCvs=_savedOvCvs;
+        bgX=_savedBgX; ovX=_savedOvX;
+        bgCache=null;
+        _isExporting=false;
         exportAudEl.pause(); exportActx.close();
         return;
       }
@@ -5845,7 +7003,7 @@ async function exportWithWebCodecs(q){
       const el=frameIdx/FPS;
       const ts_us=Math.round(el*1_000_000);
 
-      // Audio analysis — read current frequency data (no seek needed)
+      // Audio analysis — read realtime frequency (no seek needed)
       exportAn.getByteFrequencyData(expFreqBuf);
       _freqBuf=expFreqBuf;
       const len2=expFreqBuf.length;
@@ -5854,38 +7012,46 @@ async function exportWithWebCodecs(q){
       for(let i=0;i<len2;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms2+=v;}
       _bass=bs/(be*255); _mid=ms2/((me-be)*255); _eng=all/(len2*255);
 
-      // Render to HD canvas
-      bgCvs.width=EW; bgCvs.height=EH; bgCache=null;
+      // Canvas already points to offBg/offOv — just draw
+      bgCache=null;
       aiT=el*.4; aiGP=el*.0026;
-      _renderTime=el;      // ← thời gian chính xác cho progress bar
+      _renderTime=el;
       _renderDur=dur;
       drawFrame();
       outCtx.clearRect(0,0,EW,EH);
-      outCtx.drawImage(bgCvs,0,0);
-      outCtx.drawImage(ovCvs,0,0);
+      // Apply color grading via CSS filter on composite (GPU accelerated)
+      if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&outCtx._gradeFilter){
+        outCtx.filter=outCtx._gradeFilter;
+      }
+      outCtx.drawImage(offBg,0,0);
+      outCtx.filter='none';
+      outCtx.drawImage(offOv,0,0);
 
-      // Restore preview
-      bgCvs.width=_oPW; bgCvs.height=_oPH; bgCache=null;
-
-      // Create VideoFrame + encode
-      const vf=new VideoFrame(outCvs,{timestamp:ts_us});
-      const isKey=frameIdx%60===0; // keyframe every 2s
+      // Create VideoFrame + encode with backpressure
+      const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
+      const isKey=frameIdx%60===0;
       videoEncoder.encode(vf,{keyFrame:isKey});
       vf.close();
 
       frameIdx++;
+      // Yield if encoder queue is getting too deep (backpressure)
+      if(videoEncoder.encodeQueueSize>10){
+        await new Promise(r=>setTimeout(r,0));
+      }
       const pct=20+Math.round(frameIdx/totalFrames*72);
       const remain=Math.max(0,dur-el);
       upProg(pct,`WebCodecs frame ${frameIdx}/${totalFrames}`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
 
-      // Yield to browser to prevent UI freeze, then continue
-      if(frameIdx%30===0){
-        await new Promise(r=>setTimeout(r,0));
+      // Batch: render up to 8 frames per event loop tick for speed
+      // but yield every 8 frames to keep UI responsive and avoid timeout
+      if(frameIdx%8===0){
+        setTimeout(renderNextFrame, 0);
+      } else {
+        renderNextFrame();
       }
-      requestAnimationFrame(renderNextFrame);
     }
 
-    requestAnimationFrame(renderNextFrame);
+    setTimeout(renderNextFrame, 0);
 
   }catch(e){
     console.error('WebCodecs export failed:',e);
@@ -5902,7 +7068,7 @@ async function exportWithMediaRecorder(q){
   const btn=$('expbtn');
   const EW=q.w||1280, EH=q.h||720;
   upProg(0,'Khởi tạo MediaRecorder...');
-  stopPlay(); aiT=0; aiGP=0; bgCache=null;  await new Promise(r=>setTimeout(r,80));
+  stopPlay(); aiT=0; aiGP=0; bgCache=null;   await new Promise(r=>setTimeout(r,80));
 
   if(!actx) actx=new(window.AudioContext||window.webkitAudioContext)();
   if(actx.state==='suspended') await actx.resume();
@@ -5913,11 +7079,15 @@ async function exportWithMediaRecorder(q){
   if(exportActx.state==='suspended') await exportActx.resume();
   const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
   const exportAudEl=new Audio();
+  exportAudEl.muted=true;           // NO speaker output during export
+  exportAudEl.volume=0;
   exportAudEl.src=URL.createObjectURL(audFile);
   exportAudEl.crossOrigin='anonymous';
   await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
   const exportSrc=exportActx.createMediaElementSource(exportAudEl);
+  const mrSilentGain=exportActx.createGain(); mrSilentGain.gain.value=0;
   exportSrc.connect(exportAn);
+  exportSrc.connect(mrSilentGain); mrSilentGain.connect(exportActx.destination);
 
   const ec=document.createElement('canvas'); ec.width=EW; ec.height=EH;
   const ectx=ec.getContext('2d');
@@ -5948,13 +7118,16 @@ async function exportWithMediaRecorder(q){
       btn.disabled=false; upProg(100,'Hoàn tất!','');
       releaseWakeLock();
       _showCancelBtn(false);
+      _lastExportUrl=url;
+      try{ _lastExportFile=new File([blob],fname,{type:'video/webm'}); }catch(_){}
+      addExportHistory({title:$('cc-title')?.value||'',tpl:chosenTpl?.id||'',fmt:'WebM',size:(blob.size/1024/1024).toFixed(1)+'MB',thumb:typeof artImg!=='undefined'&&artImg?.src?artImg.src:''});
       const songTitle=$('cc-title')?.value||'Video';
       sendNotif('✅ Export xong!',`"${songTitle}" — WebM ${EW}×${EH}`);
       toast(`🎉 WebM xuất xong! "${songTitle}"`, 'success', 5000);
-      _lastExportUrl=url;
-      try{ _lastExportFile=new File([blob],fname,{type:'video/webm'}); }catch(_){}
-      addExportHistory({title:songTitle,tpl:chosenTpl?.id||'',fmt:'WebM',size:(blob.size/1024/1024).toFixed(1)+'MB',thumb:typeof artImg!=='undefined'&&artImg?.src?artImg.src:''});
-      renderExportHistory();
+      _isExporting=false;
+      bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs;
+      bgX=_mrSaveBgX; ovX=_mrSaveOvX;
+      bgCache=null;
       exportAudEl.pause(); exportActx.close();
     },400);
   };
@@ -5965,6 +7138,15 @@ async function exportWithMediaRecorder(q){
   const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
   const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
 
+  // Offscreen canvases — redirect ALL canvas globals ONCE
+  const mrOffBg=document.createElement('canvas'); mrOffBg.width=EW; mrOffBg.height=EH;
+  const mrOffOv=document.createElement('canvas'); mrOffOv.width=EW; mrOffOv.height=EH;
+  const _mrSaveBgCvs=bgCvs, _mrSaveOvCvs=ovCvs;
+  const _mrSaveBgX=bgX, _mrSaveOvX=ovX;
+  bgCvs=mrOffBg; ovCvs=mrOffOv;
+  bgX=mrOffBg.getContext('2d'); ovX=mrOffOv.getContext('2d');
+  bgCache=null;
+
   exportAudEl.currentTime=0;
   if(exportActx.state==='suspended') await exportActx.resume();
   exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
@@ -5972,11 +7154,11 @@ async function exportWithMediaRecorder(q){
   upProg(20,`Render WebM ${EW}×${EH}...`);
 
   function fr(){
-    if(_exportAborted){ bgCvs.width=_oPW; bgCvs.height=_oPH; return; }
+    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; return; }
     const el=(performance.now()-t0)/1000;
     if(el>=dur+0.1){
       upProg(94,'Đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
-      bgCvs.width=_oPW; bgCvs.height=_oPH;
+      bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null;
       mr.stop(); return;
     }
     exportAn.getByteFrequencyData(expFreqBuf);
@@ -5986,15 +7168,18 @@ async function exportWithMediaRecorder(q){
     let bs=0,ms=0,all=0;
     for(let i=0;i<len;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms+=v;}
     _bass=bs/(be*255);_mid=ms/((me-be)*255);_eng=all/(len*255);
-    bgCvs.width=EW; bgCvs.height=EH; bgCache=null;
+    bgCache=null;
     aiT=el*.4; aiGP=el*.0026;
-    _renderTime=el;    // ← thời gian chính xác cho progress bar
+    _renderTime=el;
     _renderDur=dur;
     drawFrame();
     ectx.clearRect(0,0,EW,EH);
-    ectx.drawImage(bgCvs,0,0);
-    ectx.drawImage(ovCvs,0,0);
-    bgCvs.width=_oPW; bgCvs.height=_oPH; bgCache=null;
+    if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&ectx._gradeFilter){
+      ectx.filter=ectx._gradeFilter;
+    }
+    ectx.drawImage(mrOffBg,0,0);
+    ectx.filter='none';
+    ectx.drawImage(mrOffOv,0,0);
     const pct=20+Math.round(el/dur*72);
     upProg(pct,`Render WebM ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`);
     setTimeout(fr,1000/30);
@@ -6047,6 +7232,36 @@ function upProg(p, lbl, timeStr=''){
     else s.className='prog-seg';
   }
 }
+
+// ── Touch events for Trim modal ──
+document.addEventListener('touchstart',e=>{
+  if(e.target.id==='trim-start-handle') _trimDragging='start';
+  if(e.target.id==='trim-end-handle')   _trimDragging='end';
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!_trimDragging) return;
+  const t=e.touches[0]; if(!t) return;
+  const wf=$('trim-waveform'); if(!wf) return;
+  const rect=wf.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(t.clientX-rect.left)/rect.width));
+  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
+  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
+  if(typeof drawTrimWaveform==='function'){drawTrimWaveform();updateTrimDisplay();}
+},{passive:true});
+document.addEventListener('touchend',()=>{ _trimDragging=null; });
+
+// ── Onboarding ──
+function showOnboarding(){
+  if(localStorage.getItem('vlc_onboarded')) return;
+  const uz=$('uz'); if(!uz) return;
+  const rect=uz.getBoundingClientRect();
+  const div=document.createElement('div');
+  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${Math.max(10,rect.left)}px;z-index:9000;background:var(--a2);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.68rem;font-weight:700;box-shadow:0 6px 20px rgba(0,229,195,.35);animation:toastIn .4s ease;pointer-events:none`;
+  div.textContent='👆 Bắt đầu: kéo thả hoặc click để upload file nhạc MP3/WAV';
+  document.body.appendChild(div);
+  setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
+}
+function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
 </script>
 </body>
 </html>
