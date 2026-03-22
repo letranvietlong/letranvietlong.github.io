@@ -942,33 +942,124 @@ main {
 
 /* ── AUTOMATION PANEL ── */
 #panel-auto {
-  display:none; max-width:900px; margin:0 auto;
-  padding:24px 20px 40px;
+  display:none;
+  width:100%; max-width:100%;
+  padding:0 0 40px;
+  box-sizing:border-box;
 }
 #panel-auto.show { display:block; }
 
+/* ── Auto Header Bar ── */
 .auto-header {
-  display:flex; align-items:flex-start; justify-content:space-between;
-  gap:16px; margin-bottom:24px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:18px 28px 14px;
+  background:linear-gradient(135deg,rgba(0,229,195,.06) 0%,rgba(124,111,255,.06) 100%);
+  border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:10;
+  backdrop-filter:blur(12px);
 }
+.auto-header-left { display:flex; align-items:center; gap:20px; min-width:0; }
 .auto-title {
-  font-size:1.1rem; font-weight:800; color:var(--tx);
-  font-family:'Be Vietnam Pro',sans-serif;
+  font-size:1.15rem; font-weight:800; color:var(--tx);
+  font-family:'Be Vietnam Pro',sans-serif; white-space:nowrap;
 }
 .auto-title span { color:#00e5c3; }
 .auto-subtitle {
-  font-size:.72rem; color:var(--tx3); margin-top:4px; line-height:1.6;
+  font-size:.7rem; color:var(--tx3); line-height:1.5; white-space:nowrap;
 }
+.auto-header-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+
+/* Stats bar */
+.auto-stats-bar {
+  display:flex; gap:1px;
+  background:var(--line);
+  border-bottom:1px solid var(--line);
+}
+.auto-stat-item {
+  flex:1; display:flex; align-items:center; gap:12px;
+  padding:12px 20px;
+  background:var(--bg);
+  transition:background .2s;
+}
+.auto-stat-item:hover { background:var(--surface); }
+.auto-stat-icon { font-size:1.1rem; }
+.auto-stat-val {
+  font-size:1.3rem; font-weight:800;
+  font-family:'IBM Plex Mono',monospace; color:var(--a2); line-height:1;
+}
+.auto-stat-lbl { font-size:.6rem; color:var(--tx3); margin-top:2px; }
+
+/* Main workspace grid */
+.auto-workspace {
+  display:grid;
+  grid-template-columns: 320px 1fr 300px;
+  grid-template-rows: auto;
+  gap:0;
+  min-height:calc(100vh - 160px);
+}
+.auto-col {
+  border-right:1px solid var(--line);
+  display:flex; flex-direction:column; gap:0;
+  overflow-y:auto;
+}
+.auto-col:last-child { border-right:none; }
+
+/* Col header */
+.auto-col-header {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 16px; font-size:.62rem; font-weight:700;
+  color:var(--tx3); letter-spacing:.1em;
+  font-family:'IBM Plex Mono',monospace;
+  background:var(--surface2); border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:5;
+  text-transform:uppercase;
+}
+.auto-col-header-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--a2); box-shadow:0 0 6px var(--a2);
+}
+
+/* Cards */
+.auto-card {
+  padding:16px; border-bottom:1px solid var(--line);
+}
+.auto-card:last-child { border-bottom:none; }
+.auto-card-title {
+  display:flex; align-items:center; gap:7px;
+  font-size:.62rem; font-weight:700; color:var(--tx2);
+  letter-spacing:.08em; margin-bottom:12px;
+  font-family:'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+}
+.auto-card-title::before {
+  content:''; width:4px; height:4px; border-radius:50%;
+  background:var(--a2); box-shadow:0 0 5px var(--a2);
+}
+
+/* Card actions row */
+.auto-card-actions {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+
+/* Run button */
 .auto-run-btn {
-  padding:10px 22px; border-radius:10px; border:none; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  padding:10px 24px; border-radius:10px; border:none; cursor:pointer;
   background:linear-gradient(135deg,#00e5c3,#7c6fff);
-  color:#000; font-weight:800; font-size:.75rem;
-  font-family:'IBM Plex Mono',monospace; letter-spacing:.05em;
-  white-space:nowrap; transition:opacity .2s;
+  color:#000; font-weight:800; font-size:.76rem;
+  font-family:'IBM Plex Mono',monospace; letter-spacing:.06em;
+  white-space:nowrap; transition:all .2s;
   box-shadow:0 4px 20px rgba(0,229,195,.3);
 }
-.auto-run-btn:hover{opacity:.85;}
-.auto-run-btn:disabled{opacity:.4;cursor:not-allowed;}
+.auto-run-btn:hover { transform:translateY(-1px); box-shadow:0 6px 28px rgba(0,229,195,.4); }
+.auto-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+/* Queue */
+.auto-queue { max-height:none; overflow-y:visible; }
+
+/* Analytics */
+#analytics-dash { max-height:none; overflow-y:visible; }
 
 /* Grid layout */
 }
@@ -1089,22 +1180,12 @@ main {
 .yt-connect-btn.connected{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.1);}
 
 /* Stats row */
-.auto-stats {
-  display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
-  margin-bottom:18px;
-}
+.auto-stats { display:none; /* replaced by .auto-stats-bar */ }
 @media(max-width:480px){.auto-stats{grid-template-columns:repeat(2,1fr);}}
-.stat-box {
-  background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--r); padding:12px; text-align:center;
-}
-.stat-val { font-size:1.3rem; font-weight:800; color:var(--a2); font-family:'IBM Plex Mono',monospace; }
-.stat-lbl { font-size:.58rem; color:var(--tx3); margin-top:2px; }
-
-/* Backend guide */
-.backend-guide {
-  background:rgba(124,111,255,.06); border:1px solid rgba(124,111,255,.2);
-  border-radius:var(--r); padding:16px; margin-top:16px;
+.stat-box { display:none; /* replaced */ }
+.stat-val {
+  font-size:1.3rem; font-weight:800; color:var(--a2);
+  font-family:'IBM Plex Mono',monospace; line-height:1;
 }
 .backend-guide pre {
   background:#020408; border-radius:6px; padding:10px;
@@ -1624,33 +1705,61 @@ header { padding:0 32px; }
 <div id="panel-auto">
 
   <div class="auto-header">
-    <div>
-      <div class="auto-title">🤖 Tự Động Hóa <span>AI</span></div>
-      <div class="auto-subtitle">Tự tìm nhạc hot → tạo video → upload YouTube theo lịch</div>
-      <div class="auto-warn" id="auto-warn-api" style="margin-top:4px">
-        ⚠ Cần kết nối YouTube API để upload tự động ·
-        <span onclick="scrollToGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
+    <div class="auto-header-left">
+      <div>
+        <div class="auto-title">🤖 Tự Động Hóa <span>AI</span></div>
+        <div class="auto-warn" id="auto-warn-api" style="font-size:.64rem;color:#fbbf24;margin-top:2px">
+          ⚠ Cần kết nối YouTube API để upload tự động ·
+          <span onclick="scrollToGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
+        </div>
       </div>
     </div>
-    <button class="auto-run-btn" onclick="runAutomationNow()">▶ CHẠY NGAY</button>
+    <div class="auto-header-actions">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <span style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">TRẠNG THÁI</span>
+        <span id="auto-status-badge" style="font-size:.62rem;color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">● STANDBY</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="run-spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(0,229,195,.3);border-top-color:var(--a2);border-radius:50%;animation:spin .7s linear infinite"></div>
+        <button class="auto-run-btn" id="auto-run-main-btn" onclick="runAutomationNow()">▶ CHẠY NGAY</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Stats Row -->
-  <div class="auto-stats">
-    <div class="stat-box"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Video đã tạo</div></div>
-    <div class="stat-box"><div class="stat-val" id="stat-uploaded">0</div><div class="stat-lbl">Đã upload</div></div>
-    <div class="stat-box"><div class="stat-val" id="stat-queued">0</div><div class="stat-lbl">Đang chờ</div></div>
-    <div class="stat-box"><div class="stat-val" id="stat-next" style="font-size:.85rem">--:--</div><div class="stat-lbl">Lần tiếp theo</div></div>
+  <!-- Stats Bar -->
+  <div class="auto-stats-bar">
+    <div class="auto-stat-item">
+      <div class="auto-stat-icon">🎬</div>
+      <div><div class="auto-stat-val" id="stat-total">0</div><div class="auto-stat-lbl">Video đã tạo</div></div>
+    </div>
+    <div class="auto-stat-item">
+      <div class="auto-stat-icon">☁️</div>
+      <div><div class="auto-stat-val" id="stat-uploaded">0</div><div class="auto-stat-lbl">Đã upload</div></div>
+    </div>
+    <div class="auto-stat-item">
+      <div class="auto-stat-icon">⏳</div>
+      <div><div class="auto-stat-val" id="stat-queued">0</div><div class="auto-stat-lbl">Đang chờ</div></div>
+    </div>
+    <div class="auto-stat-item">
+      <div class="auto-stat-icon">⏰</div>
+      <div><div class="auto-stat-val" id="stat-next" style="font-size:.9rem">--:--</div><div class="auto-stat-lbl">Lần tiếp theo</div></div>
+    </div>
+    <div class="auto-stat-item" style="flex:2;background:linear-gradient(90deg,rgba(0,229,195,.04),transparent)">
+      <div style="font-size:.62rem;color:var(--tx3);line-height:1.6">
+        <span style="color:var(--a2);font-weight:700;font-family:'IBM Plex Mono',monospace">AUTO MODE</span>
+        · Tự tìm nhạc hot → tạo video → upload YouTube theo lịch
+      </div>
+    </div>
   </div>
 
-  <!-- 3-column layout -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">
+<!-- Full-width workspace -->
+  <div class="auto-workspace">
 
-    <!-- COL 1: Config -->
-    <div style="display:flex;flex-direction:column;gap:10px">
-
+    <!-- COL LEFT: Config & Setup -->
+    <div class="auto-col">
+      <div class="auto-col-header"><div class="auto-col-header-dot"></div>⚙ CẤU HÌNH</div>
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">📺 KẾT NỐI YOUTUBE</div>
+        <div class="auto-card-title">📺 KẾT NỐI YOUTUBE</div>
         <div class="yt-connect-box" id="yt-box" onclick="connectYouTube()" style="padding:8px;margin-bottom:8px">
           <div class="yt-icon" style="font-size:1.1rem">📺</div>
           <div class="yt-info" style="flex:1;min-width:0">
@@ -1671,7 +1780,7 @@ header { padding:0 32px; }
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🎵 NGUỒN NHẠC</div>
+        <div class="auto-card-title">🎵 NGUỒN NHẠC</div>
         <div class="auto-fg" style="margin-bottom:5px">
           <label style="font-size:.58rem">Tìm nhạc từ</label>
           <select id="music-source" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
@@ -1719,7 +1828,7 @@ header { padding:0 32px; }
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">⚙ CÀI ĐẶT VIDEO</div>
+        <div class="auto-card-title">⚙ CÀI ĐẶT VIDEO</div>
         <div class="auto-fg" style="margin-bottom:5px">
           <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
             <label style="flex:1;font-size:.58rem">Tiêu đề</label>
@@ -1752,7 +1861,7 @@ Tạo bởi VietLong Creator · Auto Music Video
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🖼 ẢNH NGHỆ SĨ TỰ ĐỘNG</div>
+        <div class="auto-card-title">🖼 ẢNH NGHỆ SĨ TỰ ĐỘNG</div>
         <div class="auto-fg" style="margin-bottom:5px">
           <label style="font-size:.58rem">Nguồn ảnh</label>
           <select id="img-source" onchange="onImgSourceChange();saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
@@ -1778,44 +1887,48 @@ Tạo bởi VietLong Creator · Auto Music Video
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🔍 PHÂN TÍCH ĐỐI THỦ</div>
+        <div class="auto-card-title">🔍 PHÂN TÍCH ĐỐI THỦ</div>
         <div style="display:flex;gap:6px">
           <input type="text" id="competitor-id" placeholder="Channel ID đối thủ (UCxxxxx)..." style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
           <button onclick="analyzeCompetitor($('competitor-id').value)" style="padding:5px 12px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-size:.62rem;cursor:pointer;font-weight:700">🔍</button>
         </div>
         <div style="font-size:.54rem;color:var(--tx3);margin-top:4px">Cần YouTube API Key · Phân tích top videos của đối thủ</div>
       </div>
+    </div>
 
-    </div><!-- /COL 1 -->
-
-    <!-- COL 2: Queue + Analytics -->
-    <div style="display:flex;flex-direction:column;gap:10px">
-
+    <!-- COL CENTER: Queue & Analytics -->
+    <div class="auto-col">
+      <div class="auto-col-header"><div class="auto-col-header-dot" style="background:#7c6fff;box-shadow:0 0 6px #7c6fff"></div>📋 HÀNG ĐỢI & ANALYTICS</div>
       <div class="auto-card" style="flex:1">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span class="auto-card-title" style="margin-bottom:0;font-size:.63rem">📋 HÀNG ĐỢI VIDEO</span>
+          <span class="auto-card-title" style="margin-bottom:0">📋 HÀNG ĐỢI VIDEO</span>
           <button onclick="clearCompletedQueue()" title="Xóa đã xong" style="padding:2px 9px;border-radius:4px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer">🧹 Dọn</button>
         </div>
-        <div id="auto-queue" style="max-height:420px;overflow-y:auto"></div>
+        <div id="auto-queue" style="overflow-y:auto">
+          <div class="queue-empty" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:40px 16px;color:var(--tx3);text-align:center">
+            <div style="font-size:2rem;opacity:.35">📭</div>
+            <div style="font-size:.7rem;font-weight:600">Chưa có video nào</div>
+            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>CHẠY NGAY</strong> để bắt đầu</div>
+          </div>
+        </div>
       </div>
 
       <div class="auto-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span class="auto-card-title" style="margin-bottom:0;font-size:.63rem">📊 YOUTUBE ANALYTICS</span>
+          <span class="auto-card-title" style="margin-bottom:0">📊 YOUTUBE ANALYTICS</span>
           <button onclick="fetchYTAnalytics()" style="padding:2px 9px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.55rem;cursor:pointer">↻ Refresh</button>
         </div>
-        <div id="analytics-dash" style="max-height:280px;overflow-y:auto">
+        <div id="analytics-dash" style="overflow-y:auto;max-height:360px">
           <div style="color:var(--tx3);font-size:.62rem;text-align:center;padding:16px">Nhấn Refresh để tải dữ liệu YouTube</div>
         </div>
       </div>
+    </div>
 
-    </div><!-- /COL 2 -->
-
-    <!-- COL 3: Schedule + Tools -->
-    <div style="display:flex;flex-direction:column;gap:10px">
-
+    <!-- COL RIGHT: Schedule & Tools -->
+    <div class="auto-col" style="border-right:none">
+      <div class="auto-col-header"><div class="auto-col-header-dot" style="background:#ff6b9d;box-shadow:0 0 6px #ff6b9d"></div>🚀 CÔNG CỤ & LỊCH</div>
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">🕐 LỊCH CHẠY TỰ ĐỘNG</div>
+        <div class="auto-card-title">🕐 LỊCH CHẠY TỰ ĐỘNG</div>
         <div id="time-slots" style="margin-bottom:8px;max-height:200px;overflow-y:auto"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
           <span style="font-size:.58rem;color:var(--tx3)">Thêm giờ chạy:</span>
@@ -1834,19 +1947,20 @@ Tạo bởi VietLong Creator · Auto Music Video
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">⚡ GITHUB ACTIONS</div>
-        <div style="font-size:.6rem;color:var(--tx3);margin-bottom:8px;line-height:1.5">
-          Tự động hóa với GitHub Actions — không cần máy tính luôn bật.
+        <div class="auto-card-title">⚡ GITHUB ACTIONS</div>
+        <div style="font-size:.63rem;color:var(--tx3);margin-bottom:10px;line-height:1.6;padding:7px 10px;background:rgba(124,111,255,.06);border-radius:7px;border-left:2px solid rgba(124,111,255,.4)">
+          ⚡ Tự động hóa với GitHub Actions — không cần máy tính luôn bật.
         </div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button onclick="exportGHWorkflow()" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(165,180,252,.4);background:rgba(165,180,252,.08);color:#a5b4fc;font-size:.6rem;cursor:pointer;font-weight:600">📥 Workflow</button>
+          <button onclick="exportGHWorkflow()" class="seo-btn" style="border-color:rgba(124,111,255,.35);background:rgba(124,111,255,.08);color:#a5b4fc">📥 Workflow</button>
           <button onclick="exportGHScript()" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(165,180,252,.4);background:rgba(165,180,252,.08);color:#a5b4fc;font-size:.6rem;cursor:pointer;font-weight:600">📥 Script</button>
         </div>
         <div style="background:var(--surface2);border-radius:7px;padding:9px">
-          <div style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:5px;font-weight:700">HƯỚNG DẪN NHANH</div>
-          <div style="font-size:.58rem;color:var(--tx2);line-height:1.7">
-            1. Tải <code style="color:var(--a2)">vlc-auto.yml</code> về<br>
-            2. Đặt vào <code style="color:var(--a2)">.github/workflows/</code><br>
+          <div class="gh-guide">
+          <div class="gh-guide-title">Hướng dẫn nhanh</div>
+          <div class="gh-guide-steps">
+            1. Tải <code>vlc-auto.yml</code> về<br>
+            2. Đặt vào <code>.github/workflows/</code><br>
             3. Thêm API Key vào GitHub Secrets<br>
             4. Enable Actions trong repo settings
           </div>
@@ -1854,18 +1968,17 @@ Tạo bởi VietLong Creator · Auto Music Video
       </div>
 
       <div class="auto-card">
-        <div class="auto-card-title" style="font-size:.63rem;margin-bottom:8px">📈 SEO & HASHTAG AI</div>
+        <div class="auto-card-title">📈 SEO & HASHTAG AI</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <button onclick="generateHashtags('youtube')" style="padding:7px;border-radius:7px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.62rem;cursor:pointer;font-weight:600">🏷 Hashtag YouTube (AI)</button>
-          <button onclick="generateHashtags('tiktok')" style="padding:7px;border-radius:7px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.62rem;cursor:pointer;font-weight:600">🎵 Hashtag TikTok (AI)</button>
-          <button onclick="optimizeTitles()" style="padding:7px;border-radius:7px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.62rem;cursor:pointer;font-weight:600">🤖 Tối Ưu Tiêu Đề AI</button>
-          <button onclick="showUploadTimeSuggestion()" style="padding:7px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer">⏰ Giờ Đăng Tốt Nhất</button>
+          <button onclick="generateHashtags('youtube')" class="seo-btn" style="border-color:rgba(255,50,50,.3);background:rgba(255,50,50,.07);color:#ff4444">🏷 Hashtag YouTube (AI)</button>
+          class="seo-btn" style="border-color:rgba(255,45,120,.3);background:rgba(255,45,120,.07);color:#ff2d78" onclick="generateHashtags('tiktok')">🎵 Hashtag TikTok (AI)</button>
+          <button onclick="optimizeTitles()" class="seo-btn" style="border-color:rgba(0,229,195,.35);background:rgba(0,229,195,.08);color:var(--a2)">🤖 Tối Ưu Tiêu Đề AI</button>
+          <button onclick="showUploadTimeSuggestion()" class="seo-btn" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.07);color:#fbbf24">⏰ Giờ Đăng Tốt Nhất</button>
         </div>
       </div>
+    </div>
 
-    </div><!-- /COL 3 -->
-
-  </div><!-- /3-col grid -->
+  </div>
 
   </div>
 
@@ -1978,6 +2091,314 @@ header { max-width:100% !important; padding:0 32px; }
 /* Canvas preview responsive */
 .preview-frame { aspect-ratio:16/9; width:100%; }
 .preview-frame canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+/* Auto panel full-width override */
+#panel-auto.show {
+  display:block;
+  margin-left:calc(-50vw + 50%);
+  margin-right:calc(-50vw + 50%);
+  width:100vw;
+}
+.auto-workspace {
+  display:grid;
+  grid-template-columns: 320px 1fr 300px;
+  min-height:calc(100vh - 180px);
+}
+@media(max-width:1200px){
+  .auto-workspace { grid-template-columns: 280px 1fr 260px; }
+}
+@media(max-width:900px){
+  .auto-workspace { grid-template-columns: 1fr; }
+  .auto-col { border-right:none; border-bottom:1px solid var(--line); }
+}
+.auto-stats-bar {
+  display:flex; gap:1px;
+  background:var(--line);
+  border-bottom:1px solid var(--line);
+  overflow-x:auto;
+}
+.auto-stat-item { min-width:120px; }
+
+/* Full-width reset for auto panel */
+body:has(#panel-auto.show) main {
+  max-width:100% !important;
+  padding:0 !important;
+}
+body:has(#panel-auto.show) .step-bar {
+  max-width:960px; margin:0 auto;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   AUTO PANEL — FULL-WIDTH PROFESSIONAL REDESIGN
+═══════════════════════════════════════════════════════════ */
+
+/* ── Header ── */
+.auto-header {
+  background: linear-gradient(135deg,
+    rgba(0,229,195,.07) 0%, rgba(124,111,255,.05) 50%, rgba(255,45,120,.04) 100%);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.auto-title { font-size: 1.15rem; font-weight: 800; }
+.auto-title span {
+  background: linear-gradient(90deg,#00e5c3,#7c6fff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Stats Bar ── */
+.auto-stats-bar { overflow-x: auto; scrollbar-width: none; }
+.auto-stats-bar::-webkit-scrollbar { display:none; }
+.auto-stat-item {
+  cursor: default; position: relative; overflow: hidden;
+}
+.auto-stat-item::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(0,229,195,.0) 0%, rgba(0,229,195,.04) 100%);
+  opacity: 0; transition: opacity .25s;
+}
+.auto-stat-item:hover::after { opacity: 1; }
+.auto-stat-val {
+  font-size: 1.45rem; font-weight: 800; line-height: 1;
+  font-family: 'IBM Plex Mono', monospace;
+  background: linear-gradient(135deg,var(--a2),#7c6fff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.auto-stat-icon { font-size: 1.2rem; filter: drop-shadow(0 0 4px rgba(0,229,195,.4)); }
+
+/* ── Workspace ── */
+.auto-workspace {
+  grid-template-columns: 300px 1fr 290px;
+}
+@media (max-width:1400px) { .auto-workspace { grid-template-columns: 280px 1fr 270px; } }
+@media (max-width:1100px) { .auto-workspace { grid-template-columns: 250px 1fr 240px; } }
+@media (max-width:860px)  { .auto-workspace { grid-template-columns: 1fr; } }
+
+/* ── Column Headers ── */
+.auto-col-header {
+  font-size: .6rem; font-weight: 800; letter-spacing: .12em;
+  padding: 8px 16px; text-transform: uppercase;
+  color: var(--tx3); background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 8px;
+  position: sticky; top: 57px; z-index: 5;
+}
+.auto-col-header-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+
+/* ── Cards ── */
+.auto-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  position: relative; transition: background .18s;
+}
+.auto-card:last-child { border-bottom: none; }
+.auto-card:hover { background: rgba(255,255,255,.012); }
+.auto-card-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .6rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .1em; margin-bottom: 10px;
+  color: var(--tx3); font-family: 'IBM Plex Mono', monospace;
+}
+.auto-card-title::before {
+  content: ''; width: 3px; height: 12px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--a2), #7c6fff);
+  flex-shrink: 0;
+}
+.auto-card-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* ── Form fields ── */
+.auto-fg { margin-bottom: 10px; }
+.auto-fg label {
+  display: block; font-size: .58rem; color: var(--tx3);
+  font-family: 'IBM Plex Mono', monospace; margin-bottom: 4px;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.auto-fg input, .auto-fg select, .auto-fg textarea {
+  width: 100%; background: var(--ink); border: 1px solid var(--line2);
+  color: var(--tx); border-radius: 7px; padding: 7px 10px;
+  font-family: var(--fb); font-size: .76rem; outline: none;
+  box-sizing: border-box; transition: border-color .18s, box-shadow .18s;
+}
+.auto-fg input:focus,
+.auto-fg select:focus,
+.auto-fg textarea:focus {
+  border-color: var(--a2);
+  box-shadow: 0 0 0 2px rgba(0,229,195,.12);
+}
+.auto-fg .hint2 { font-size: .57rem; color: var(--tx3); margin-top: 3px; line-height: 1.4; }
+
+/* ── Run button ── */
+.auto-run-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: 9px; border: none; cursor: pointer;
+  background: linear-gradient(135deg,#00e5c3,#7c6fff);
+  color: #000; font-weight: 800; font-size: .73rem;
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: .05em;
+  white-space: nowrap; transition: all .2s;
+  box-shadow: 0 3px 16px rgba(0,229,195,.28);
+}
+.auto-run-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0,229,195,.42);
+}
+.auto-run-btn:active { transform: translateY(0); }
+.auto-run-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+/* ── YT Connect box ── */
+.yt-connect-box {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--line2);
+  border-radius: 9px; padding: 10px 12px; cursor: pointer;
+  transition: border-color .18s, background .18s; margin-bottom: 10px;
+}
+.yt-connect-box:hover { border-color: rgba(255,0,0,.4); background: rgba(255,0,0,.04); }
+.yt-connect-box.connected { border-color: rgba(0,229,195,.4); }
+
+/* ── Queue items ── */
+.queue-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px; margin-bottom: 6px;
+  background: var(--surface2); border: 1px solid var(--line);
+  transition: all .2s; animation: qi-in .25s ease-out;
+}
+@keyframes qi-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.queue-item:hover { border-color: var(--line2); background: var(--surface); }
+.queue-item.running { border-color: #fbbf24; background: rgba(251,191,36,.05); }
+.queue-item.done    { border-color: #22c55e; background: rgba(34,197,94,.05); }
+.queue-item.failed  { border-color: #ef4444; background: rgba(239,68,68,.05); }
+
+/* ── Queue empty state ── */
+#auto-queue:empty::before,
+.queue-empty {
+  content: '';
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 32px 16px;
+  color: var(--tx3); font-size: .68rem; text-align: center;
+  gap: 8px;
+}
+
+/* ── Analytics dash ── */
+#analytics-dash {
+  font-size: .7rem;
+}
+
+/* ── SEO buttons ── */
+.seo-btn {
+  width: 100%; padding: 8px 12px; border-radius: 8px;
+  font-size: .7rem; font-weight: 700; cursor: pointer;
+  transition: all .18s; display: flex; align-items: center;
+  justify-content: center; gap: 6px; border: 1px solid transparent;
+}
+.seo-btn:hover { transform: translateX(2px); }
+
+/* ── Schedule slots ── */
+.schedule-slots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.slot-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(0,229,195,.08); border: 1px solid rgba(0,229,195,.2);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: .6rem; color: var(--a2);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: background .15s;
+}
+.slot-chip:hover { background: rgba(0,229,195,.15); }
+.slot-chip button {
+  background: none; border: none; color: var(--tx3);
+  cursor: pointer; font-size: .68rem; padding: 0; line-height: 1;
+  transition: color .15s;
+}
+.slot-chip button:hover { color: #ff2d78; }
+
+/* ── Add slot row ── */
+.add-slot-row {
+  display: flex; gap: 7px; margin-top: 8px;
+}
+.add-slot-row input[type=time] {
+  background: var(--ink); border: 1px solid var(--line2);
+  color: var(--tx); border-radius: 7px; padding: 6px 9px;
+  font-family: 'IBM Plex Mono', monospace; font-size: .72rem;
+  outline: none; transition: border-color .18s;
+}
+.add-slot-row input[type=time]:focus { border-color: var(--a2); }
+.add-slot-btn {
+  padding: 6px 14px; border-radius: 7px;
+  border: 1px solid var(--a2); background: transparent;
+  color: var(--a2); cursor: pointer;
+  font-size: .62rem; font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700; transition: all .18s;
+}
+.add-slot-btn:hover { background: rgba(0,229,195,.1); }
+
+/* ── GitHub card ── */
+.gh-guide {
+  background: var(--surface2); border: 1px solid var(--line2);
+  border-radius: 8px; padding: 10px 13px; margin-top: 6px;
+}
+.gh-guide-title {
+  font-size: .57rem; color: var(--tx3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .1em; text-transform: uppercase;
+  margin-bottom: 7px; font-weight: 700;
+}
+.gh-guide-steps {
+  font-size: .6rem; color: var(--tx2); line-height: 1.8;
+}
+.gh-guide-steps code {
+  color: var(--a2); background: rgba(0,229,195,.08);
+  border-radius: 3px; padding: 1px 4px;
+  font-family: 'IBM Plex Mono', monospace; font-size: .57rem;
+}
+
+/* ── Hashtag list ── */
+#htag-list {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-top: 8px; max-height: 120px; overflow-y: auto;
+}
+#htag-list:empty::before {
+  content: 'Nhấn nút trên để tạo hashtag AI';
+  color: var(--tx3); font-size: .62rem;
+}
+
+/* ── Image preview strip ── */
+#img-preview-strip {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+}
+#img-preview-strip img {
+  width: 52px; height: 52px; object-fit: cover;
+  border-radius: 6px; border: 1px solid var(--line2);
+  transition: transform .2s;
+}
+#img-preview-strip img:hover { transform: scale(1.08); }
+
+/* ── Warn banner ── */
+.auto-warn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .62rem; color: #fbbf24; line-height: 1.4;
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] .auto-card:hover { background: rgba(0,0,0,.015); }
+[data-theme="light"] .auto-col-header { background: #f8f8fb; }
+[data-theme="light"] .auto-workspace { background: #f4f4f8; }
+
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 
 <script>
@@ -3773,6 +4194,9 @@ function refreshStats(){
 // ── Main automation run ──
 async function runAutomationNow(){
   const btn=$('auto-run-btn'); if(btn)btn.disabled=true;
+  const mainBtn=$('auto-run-main-btn'); if(mainBtn){mainBtn.disabled=true;mainBtn.innerHTML='⏳ ĐANG CHẠY...';}
+  const spinner=$('run-spinner'); if(spinner)spinner.style.display='block';
+  const badge=$('auto-status-badge'); if(badge){badge.style.color='#fbbf24';badge.textContent='● RUNNING';}
   alog('info','🚀 Bắt đầu automation cycle...');
   try{
     // 1. Tìm nhạc hot
@@ -3817,6 +4241,9 @@ async function runAutomationNow(){
     alog('error','Lỗi: '+e.message);
   }finally{
     if(btn)btn.disabled=false;
+  if(mainBtn){mainBtn.disabled=false;mainBtn.innerHTML='▶ CHẠY NGAY';}
+  if(spinner)spinner.style.display='none';
+  if(badge){badge.style.color='var(--a2)';badge.textContent='● STANDBY';}
     try{localStorage.setItem('vlc_auto_stats',JSON.stringify(autoStats));}catch(_){}
   }
 }
