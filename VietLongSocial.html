@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOLLOWER.EXE — Realtime Social Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00f5ff;
+    --pink: #ff006e;
+    --yellow: #ffff00;
+    --green: #39ff14;
+    --purple: #bf00ff;
+    --dark: #020408;
+    --dark2: #040c14;
+    --dark3: #081828;
+    --border: rgba(0,245,255,0.25);
+    --glow-cyan: 0 0 8px #00f5ff, 0 0 20px rgba(0,245,255,0.3);
+    --glow-pink: 0 0 8px #ff006e, 0 0 20px rgba(255,0,110,0.3);
+    --glow-green: 0 0 8px #39ff14, 0 0 20px rgba(57,255,20,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: #c0e8ff;
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scan line effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Animated glitch overlay */
+  .glitch-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 998;
+    animation: scanMove 8s linear infinite;
+  }
+
+  .glitch-overlay::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: rgba(0,245,255,0.15);
+    box-shadow: 0 0 20px rgba(0,245,255,0.3);
+    animation: scanLine 4s linear infinite;
+  }
+
+  @keyframes scanLine {
+    0% { top: -2px; }
+    100% { top: 100%; }
+  }
+
+  /* Layout */
+  .container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,245,255,0.04) 0%, transparent 100%);
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    border: 2px solid var(--cyan);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: var(--glow-cyan), inset 0 0 15px rgba(0,245,255,0.1);
+    clip-path: polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px);
+    animation: logoPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes logoPulse {
+    0%, 100% { box-shadow: var(--glow-cyan), inset 0 0 15px rgba(0,245,255,0.1); }
+    50% { box-shadow: 0 0 20px #00f5ff, 0 0 50px rgba(0,245,255,0.4), inset 0 0 25px rgba(0,245,255,0.2); }
+  }
+
+  .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    text-shadow: var(--glow-cyan);
+  }
+
+  .logo-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,245,255,0.5);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .status-dot {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    text-shadow: var(--glow-green);
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: var(--glow-green);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .sys-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: rgba(0,245,255,0.6);
+    letter-spacing: 2px;
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* Hero title */
+  .hero-title {
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .hero-title h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(28px, 5vw, 56px);
+    font-weight: 900;
+    letter-spacing: 8px;
+    line-height: 1.1;
+    color: var(--cyan);
+    text-shadow: var(--glow-cyan);
+    animation: textFlicker 6s ease-in-out infinite;
+  }
+
+  .hero-title h1 span {
+    color: var(--pink);
+    text-shadow: var(--glow-pink);
+  }
+
+  @keyframes textFlicker {
+    0%, 96%, 100% { opacity: 1; }
+    97% { opacity: 0.8; }
+    98% { opacity: 1; }
+    99% { opacity: 0.6; }
+  }
+
+  .hero-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: rgba(0,245,255,0.45);
+    letter-spacing: 5px;
+    margin-top: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Input zone */
+  .input-zone {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .input-panel {
+    background: rgba(0,245,255,0.03);
+    border: 1px solid var(--border);
+    clip-path: polygon(16px 0%, 100% 0%, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0% 100%, 0% 16px);
+    padding: 32px;
+    position: relative;
+  }
+
+  .input-panel::before {
+    content: 'INPUT_MODULE';
+    position: absolute;
+    top: -10px; left: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    background: var(--dark);
+    padding: 0 8px;
+    letter-spacing: 3px;
+  }
+
+  .corner-tl, .corner-br {
+    position: absolute;
+    width: 16px; height: 16px;
+  }
+
+  .corner-tl {
+    top: 0; left: 0;
+    border-top: 2px solid var(--cyan);
+    border-left: 2px solid var(--cyan);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .corner-br {
+    bottom: 0; right: 0;
+    border-bottom: 2px solid var(--cyan);
+    border-right: 2px solid var(--cyan);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .platform-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid rgba(0,245,255,0.2);
+    color: rgba(0,245,255,0.5);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    text-transform: uppercase;
+    position: relative;
+  }
+
+  .tab-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,245,255,0.05);
+  }
+
+  .tab-btn.active {
+    border-color: var(--cyan);
+    color: var(--dark);
+    background: var(--cyan);
+    box-shadow: var(--glow-cyan);
+    text-shadow: none;
+  }
+
+  .tab-btn.yt.active { background: #ff0000; border-color: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+  .tab-btn.tt.active { background: #00f2ea; border-color: #00f2ea; box-shadow: 0 0 15px rgba(0,242,234,0.5); }
+  .tab-btn.ig.active { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); border-color: #e1306c; box-shadow: 0 0 15px rgba(225,48,108,0.5); }
+
+  .platform-icon { font-size: 18px; }
+
+  .url-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .url-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .url-input-wrap::before {
+    content: '▸';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--cyan);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .url-input {
+    width: 100%;
+    background: rgba(0,245,255,0.04);
+    border: 1px solid rgba(0,245,255,0.3);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 14px 16px 14px 36px;
+    outline: none;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+
+  .url-input:focus {
+    border-color: var(--cyan);
+    box-shadow: var(--glow-cyan), inset 0 0 20px rgba(0,245,255,0.05);
+    background: rgba(0,245,255,0.06);
+  }
+
+  .url-input::placeholder {
+    color: rgba(0,245,255,0.25);
+    letter-spacing: 1px;
+  }
+
+  .scan-btn {
+    padding: 14px 32px;
+    background: transparent;
+    border: 2px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.3s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    white-space: nowrap;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,245,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .scan-btn:hover::before { left: 100%; }
+
+  .scan-btn:hover {
+    background: var(--cyan);
+    color: var(--dark);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .scan-btn:active { transform: scale(0.97); }
+  .scan-btn.loading { opacity: 0.7; pointer-events: none; }
+
+  /* Cards Grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Profile Card */
+  .profile-card {
+    background: rgba(2,8,20,0.9);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    clip-path: polygon(16px 0%, 100% 0%, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0% 100%, 0% 16px);
+    animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top center;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .card-stripe {
+    height: 3px;
+    width: 100%;
+  }
+
+  .card-stripe.yt { background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000); box-shadow: 0 0 12px rgba(255,0,0,0.5); }
+  .card-stripe.tt { background: linear-gradient(90deg, #00f2ea, #ff0050, #00f2ea); box-shadow: 0 0 12px rgba(0,242,234,0.5); }
+  .card-stripe.ig { background: linear-gradient(90deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); box-shadow: 0 0 12px rgba(225,48,108,0.5); }
+
+  .card-inner {
+    padding: 24px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .profile-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--dark3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .profile-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e0f8ff;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .profile-handle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(0,245,255,0.45);
+    letter-spacing: 2px;
+  }
+
+  .platform-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+    flex-shrink: 0;
+  }
+
+  .platform-badge.yt { border-color: #ff000060; color: #ff4444; background: rgba(255,0,0,0.08); }
+  .platform-badge.tt { border-color: #00f2ea60; color: #00f2ea; background: rgba(0,242,234,0.08); }
+  .platform-badge.ig { border-color: #e1306c60; color: #e1306c; background: rgba(225,48,108,0.08); }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: rgba(0,245,255,0.03);
+    border: 1px solid rgba(0,245,255,0.1);
+    padding: 14px;
+    position: relative;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+
+  .stat-box.primary {
+    grid-column: 1 / -1;
+    border-color: rgba(0,245,255,0.2);
+    background: rgba(0,245,255,0.05);
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: rgba(0,245,255,0.4);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--cyan);
+    text-shadow: var(--glow-cyan);
+    line-height: 1;
+    letter-spacing: 2px;
+  }
+
+  .stat-box.primary .stat-value {
+    font-size: 36px;
+    animation: countGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes countGlow {
+    0%, 100% { text-shadow: var(--glow-cyan); }
+    50% { text-shadow: 0 0 20px #00f5ff, 0 0 60px rgba(0,245,255,0.5); }
+  }
+
+  .stat-value.yt { color: #ff4444; text-shadow: 0 0 8px #ff0000, 0 0 20px rgba(255,0,0,0.3); }
+  .stat-value.tt { color: #00f2ea; text-shadow: 0 0 8px #00f2ea, 0 0 20px rgba(0,242,234,0.3); }
+  .stat-value.ig { color: #e1306c; text-shadow: 0 0 8px #e1306c, 0 0 20px rgba(225,48,108,0.3); }
+
+  .stat-change {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .stat-change.up { color: var(--green); text-shadow: var(--glow-green); }
+  .stat-change.down { color: var(--pink); text-shadow: var(--glow-pink); }
+
+  /* Live badge */
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: var(--glow-green);
+    animation: blink 1s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .live-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 3px;
+  }
+
+  .last-updated {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,245,255,0.3);
+    letter-spacing: 2px;
+    margin-left: auto;
+  }
+
+  /* Progress bar */
+  .progress-section {
+    margin-bottom: 16px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,245,255,0.4);
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: rgba(0,245,255,0.1);
+    border-radius: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0;
+    width: 20px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6));
+  }
+
+  .progress-fill.yt { background: linear-gradient(90deg, #ff0000, #ff4444); box-shadow: 0 0 10px rgba(255,0,0,0.5); }
+  .progress-fill.tt { background: linear-gradient(90deg, #00f2ea, #ff0050); box-shadow: 0 0 10px rgba(0,242,234,0.5); }
+  .progress-fill.ig { background: linear-gradient(90deg, #f09433, #dc2743, #bc1888); box-shadow: 0 0 10px rgba(225,48,108,0.5); }
+  .progress-fill.cyan { background: linear-gradient(90deg, var(--cyan), #0099ff); box-shadow: var(--glow-cyan); }
+
+  /* Card actions */
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid rgba(0,245,255,0.1);
+    padding-top: 16px;
+    margin-top: 4px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid rgba(0,245,255,0.15);
+    color: rgba(0,245,255,0.4);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+
+  .action-btn:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,245,255,0.05);
+  }
+
+  .action-btn.remove:hover {
+    border-color: var(--pink);
+    color: var(--pink);
+    background: rgba(255,0,110,0.05);
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    text-align: center;
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+    opacity: 0.3;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .empty-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    color: rgba(0,245,255,0.4);
+    letter-spacing: 4px;
+  }
+
+  .empty-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: rgba(0,245,255,0.2);
+    letter-spacing: 2px;
+    line-height: 2;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .toast {
+    padding: 12px 20px;
+    background: var(--dark3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    box-shadow: var(--glow-cyan);
+    animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    clip-path: polygon(0% 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%);
+  }
+
+  .toast.error { border-left-color: var(--pink); color: var(--pink); box-shadow: var(--glow-pink); }
+  .toast.success { border-left-color: var(--green); color: var(--green); box-shadow: var(--glow-green); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,245,255,0.2);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Decorative corner elements */
+  .deco-corner {
+    position: fixed;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .deco-tl { top: 0; left: 0; }
+  .deco-tr { top: 0; right: 0; transform: scaleX(-1); }
+  .deco-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+  .deco-br { bottom: 0; right: 0; transform: scale(-1); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    header { padding: 16px 20px; }
+    main { padding: 20px; }
+    .logo-text { font-size: 16px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .url-row { flex-direction: column; }
+    .scan-btn { width: 100%; }
+  }
+
+  /* Counter animation */
+  .count-updating {
+    animation: countFlash 0.5s ease;
+  }
+
+  @keyframes countFlash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; color: var(--yellow); }
+  }
+
+  /* Numeric counter */
+  .ticker {
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<div class="glitch-overlay"></div>
+
+<!-- Decorative SVG corners -->
+<svg class="deco-corner deco-tl" width="80" height="80" viewBox="0 0 80 80">
+  <path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="#00f5ff" opacity="0.4"/>
+  <path d="M0,0 L20,0 L20,2 L2,2 L2,20 L0,20 Z" fill="#00f5ff" opacity="0.8"/>
+</svg>
+<svg class="deco-corner deco-tr" width="80" height="80" viewBox="0 0 80 80">
+  <path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="#00f5ff" opacity="0.4"/>
+  <path d="M0,0 L20,0 L20,2 L2,2 L2,20 L0,20 Z" fill="#00f5ff" opacity="0.8"/>
+</svg>
+<svg class="deco-corner deco-bl" width="80" height="80" viewBox="0 0 80 80">
+  <path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="#00f5ff" opacity="0.4"/>
+  <path d="M0,0 L20,0 L20,2 L2,2 L2,20 L0,20 Z" fill="#00f5ff" opacity="0.8"/>
+</svg>
+<svg class="deco-corner deco-br" width="80" height="80" viewBox="0 0 80 80">
+  <path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="#00f5ff" opacity="0.4"/>
+  <path d="M0,0 L20,0 L20,2 L2,2 L2,20 L0,20 Z" fill="#00f5ff" opacity="0.8"/>
+</svg>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📡</div>
+      <div>
+        <div class="logo-text">FOLLOWER.EXE</div>
+        <div class="logo-sub">Social Intelligence System</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot">
+        <span class="dot"></span>
+        SYSTEM ONLINE
+      </div>
+      <div class="sys-time" id="sysTime">--:--:--</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-title">
+      <h1>REALTIME <span>FOLLOWER</span> TRACKER</h1>
+      <div class="hero-sub">// Monitor · Analyze · Dominate //</div>
+    </div>
+
+    <!-- Input zone -->
+    <div class="input-zone">
+      <div class="input-panel">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+
+        <div class="platform-tabs">
+          <button class="tab-btn yt active" data-platform="youtube" onclick="selectPlatform(this, 'youtube')">
+            <span class="platform-icon">▶</span> YouTube
+          </button>
+          <button class="tab-btn tt" data-platform="tiktok" onclick="selectPlatform(this, 'tiktok')">
+            <span class="platform-icon">♪</span> TikTok
+          </button>
+          <button class="tab-btn ig" data-platform="instagram" onclick="selectPlatform(this, 'instagram')">
+            <span class="platform-icon">◈</span> Instagram
+          </button>
+        </div>
+
+        <div class="url-row">
+          <div class="url-input-wrap">
+            <input
+              class="url-input"
+              id="urlInput"
+              type="text"
+              placeholder="https://www.youtube.com/@channelname"
+              onkeydown="if(event.key==='Enter') addTracker()"
+            />
+          </div>
+          <button class="scan-btn" id="scanBtn" onclick="addTracker()">
+            ⬡ SCAN
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">AWAITING TARGET INPUT</div>
+      <div class="empty-sub">
+        Nhập URL kênh YouTube, TikTok hoặc Instagram<br>
+        Hệ thống sẽ tự động quét và cập nhật dữ liệu realtime<br>
+        <br>
+        YOUTUBE: youtube.com/@channel hoặc youtube.com/c/channel<br>
+        TIKTOK: tiktok.com/@username<br>
+        INSTAGRAM: instagram.com/username
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// State
+let selectedPlatform = 'youtube';
+let trackers = {};
+let updateIntervals = {};
+
+// Platform configs
+const PLATFORMS = {
+  youtube: {
+    name: 'YOUTUBE',
+    icon: '▶',
+    cls: 'yt',
+    color: '#ff4444',
+    placeholder: 'https://www.youtube.com/@channelname',
+    parseUsername: (url) => {
+      const m = url.match(/youtube\.com\/@([^\/\?&]+)/) ||
+                url.match(/youtube\.com\/c\/([^\/\?&]+)/) ||
+                url.match(/youtube\.com\/channel\/([^\/\?&]+)/) ||
+                url.match(/youtube\.com\/user\/([^\/\?&]+)/);
+      if (m) return m[1];
+      if (/^[@\w]/.test(url)) return url.replace(/^@/, '');
+      return null;
+    },
+    stats: ['followers', 'videos', 'views', 'engagement'],
+    statLabels: { followers: 'SUBSCRIBERS', videos: 'VIDEOS', views: 'TOTAL_VIEWS', engagement: 'ENG_RATE' },
+    statKeys: ['followers', 'videos', 'views', 'engagement'],
+    primaryStat: 'followers',
+  },
+  tiktok: {
+    name: 'TIKTOK',
+    icon: '♪',
+    cls: 'tt',
+    color: '#00f2ea',
+    placeholder: 'https://www.tiktok.com/@username',
+    parseUsername: (url) => {
+      const m = url.match(/tiktok\.com\/@([^\/\?&]+)/);
+      if (m) return m[1];
+      if (/^[@\w]/.test(url)) return url.replace(/^@/, '');
+      return null;
+    },
+    statLabels: { followers: 'FOLLOWERS', likes: 'TOTAL_LIKES', videos: 'VIDEOS', engagement: 'ENG_RATE' },
+    statKeys: ['followers', 'likes', 'videos', 'engagement'],
+    primaryStat: 'followers',
+  },
+  instagram: {
+    name: 'INSTAGRAM',
+    icon: '◈',
+    cls: 'ig',
+    color: '#e1306c',
+    placeholder: 'https://www.instagram.com/username',
+    parseUsername: (url) => {
+      const m = url.match(/instagram\.com\/([^\/\?&]+)/);
+      if (m && m[1] !== 'p' && m[1] !== 'reel') return m[1];
+      if (/^[@\w]/.test(url)) return url.replace(/^@/, '');
+      return null;
+    },
+    statLabels: { followers: 'FOLLOWERS', following: 'FOLLOWING', posts: 'POSTS', engagement: 'ENG_RATE' },
+    statKeys: ['followers', 'following', 'posts', 'engagement'],
+    primaryStat: 'followers',
+  }
+};
+
+// Generate realistic mock data
+function generateData(platform, username, existing) {
+  const seed = username.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rng = (min, max, s = seed) => Math.floor(min + ((s * 9301 + 49297) % 233280) / 233280 * (max - min));
+
+  const base = {
+    youtube: {
+      followers: rng(1000, 50000000, seed),
+      videos: rng(10, 2000, seed + 1),
+      views: rng(10000, 5000000000, seed + 2),
+      engagement: (rng(1, 80, seed + 3) / 10).toFixed(1) + '%',
+    },
+    tiktok: {
+      followers: rng(500, 100000000, seed),
+      likes: rng(1000, 2000000000, seed + 1),
+      videos: rng(5, 3000, seed + 2),
+      engagement: (rng(2, 150, seed + 3) / 10).toFixed(1) + '%',
+    },
+    instagram: {
+      followers: rng(100, 500000000, seed),
+      following: rng(10, 5000, seed + 1),
+      posts: rng(1, 10000, seed + 2),
+      engagement: (rng(1, 60, seed + 3) / 10).toFixed(1) + '%',
+    }
+  };
+
+  const data = existing ? { ...existing } : base[platform];
+
+  // Simulate realtime changes
+  if (existing) {
+    const primaryKey = PLATFORMS[platform].primaryStat;
+    const delta = rng(-3, 8, Date.now() % 10000);
+    if (delta > 0) {
+      data[primaryKey] = Math.max(0, data[primaryKey] + delta);
+      data._lastDelta = delta;
+    } else {
+      data._lastDelta = delta;
+    }
+  }
+
+  return data;
+}
+
+// Format numbers
+function fmtNum(n) {
+  if (typeof n === 'string') return n;
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+
+// Platform selection
+function selectPlatform(btn, platform) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedPlatform = platform;
+  document.getElementById('urlInput').placeholder = PLATFORMS[platform].placeholder;
+}
+
+// Add tracker
+async function addTracker() {
+  const input = document.getElementById('urlInput');
+  const url = input.value.trim();
+  if (!url) { showToast('⚠ Nhập URL hoặc username', 'error'); return; }
+
+  const platform = PLATFORMS[selectedPlatform];
+  const username = platform.parseUsername(url) || url.replace(/^@/, '');
+  if (!username) { showToast('⚠ URL không hợp lệ', 'error'); return; }
+
+  const id = `${selectedPlatform}_${username.toLowerCase()}`;
+  if (trackers[id]) { showToast('⚡ Đang theo dõi kênh này rồi', 'error'); return; }
+
+  // Loading state
+  const btn = document.getElementById('scanBtn');
+  btn.innerHTML = '<span class="spinner"></span>SCANNING...';
+  btn.classList.add('loading');
+
+  await new Promise(r => setTimeout(r, 1200)); // Simulate scan delay
+
+  const data = generateData(selectedPlatform, username);
+  trackers[id] = {
+    id, platform: selectedPlatform, username,
+    data, addedAt: Date.now(), updateCount: 0
+  };
+
+  renderCard(id);
+  startUpdating(id);
+
+  input.value = '';
+  btn.innerHTML = '⬡ SCAN';
+  btn.classList.remove('loading');
+
+  document.getElementById('emptyState').style.display = 'none';
+  showToast(`✓ CONNECTED: @${username}`, 'success');
+}
+
+// Render card
+function renderCard(id) {
+  const tracker = trackers[id];
+  const { platform, username, data } = tracker;
+  const cfg = PLATFORMS[platform];
+  const grid = document.getElementById('cardsGrid');
+
+  // Remove existing if present
+  const existing = document.getElementById(`card_${id}`);
+  if (existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.className = 'profile-card';
+  card.id = `card_${id}`;
+
+  const primaryStat = data[cfg.primaryStat];
+  const statKeys = cfg.statKeys;
+
+  const statsHTML = statKeys.map((key, i) => {
+    const val = data[key];
+    const label = cfg.statLabels[key];
+    const isPrimary = key === cfg.primaryStat;
+    if (isPrimary) return `
+      <div class="stat-box primary">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value ${cfg.cls}" id="stat_${id}_${key}">${fmtNum(val)}</div>
+        <div class="stat-change ${data._lastDelta > 0 ? 'up' : 'down'}" id="delta_${id}">
+          ${data._lastDelta ? (data._lastDelta > 0 ? '▲ +' + data._lastDelta + ' / update' : '▼ ' + data._lastDelta + ' / update') : '— BASELINE'}
+        </div>
+      </div>`;
+    return `
+      <div class="stat-box">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value" id="stat_${id}_${key}" style="font-size:20px;color:#c0e8ff">${fmtNum(val)}</div>
+      </div>`;
+  }).join('');
+
+  // Engagement progress
+  const engPercent = parseFloat(data.engagement || '0') / 20 * 100;
+
+  card.innerHTML = `
+    <div class="card-stripe ${cfg.cls}"></div>
+    <div class="card-inner">
+      <div class="card-header">
+        <div class="profile-info">
+          <div class="avatar">${cfg.icon}</div>
+          <div>
+            <div class="profile-name">@${username}</div>
+            <div class="profile-handle">${cfg.name}_CHANNEL</div>
+          </div>
+        </div>
+        <div class="platform-badge ${cfg.cls}">${cfg.icon} ${cfg.name}</div>
+      </div>
+
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <div class="live-text">LIVE_TRACKING</div>
+        <div class="last-updated" id="updated_${id}">—</div>
+      </div>
+
+      <div class="stats-grid">${statsHTML}</div>
+
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>ENGAGEMENT_RATE</span>
+          <span>${data.engagement || '0%'}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${cfg.cls}" id="prog_${id}" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="action-btn" onclick="refreshCard('${id}')">⟳ REFRESH</button>
+        <button class="action-btn remove" onclick="removeTracker('${id}')">✕ REMOVE</button>
+      </div>
+    </div>
+  `;
+
+  grid.appendChild(card);
+
+  // Animate progress bar
+  setTimeout(() => {
+    const prog = document.getElementById(`prog_${id}`);
+    if (prog) prog.style.width = Math.min(engPercent, 100) + '%';
+  }, 300);
+}
+
+// Start auto-updating
+function startUpdating(id) {
+  if (updateIntervals[id]) clearInterval(updateIntervals[id]);
+
+  updateIntervals[id] = setInterval(() => {
+    updateCard(id);
+  }, 3000 + Math.random() * 2000);
+}
+
+// Update card data
+function updateCard(id) {
+  const tracker = trackers[id];
+  if (!tracker) return;
+
+  const oldFollowers = tracker.data[PLATFORMS[tracker.platform].primaryStat];
+  tracker.data = generateData(tracker.platform, tracker.username, tracker.data);
+  tracker.updateCount++;
+
+  const cfg = PLATFORMS[tracker.platform];
+
+  // Update stats
+  cfg.statKeys.forEach(key => {
+    const el = document.getElementById(`stat_${id}_${key}`);
+    if (el) {
+      const newVal = fmtNum(tracker.data[key]);
+      if (el.textContent !== newVal) {
+        el.textContent = newVal;
+        el.classList.add('count-updating');
+        setTimeout(() => el.classList.remove('count-updating'), 500);
+      }
+    }
+  });
+
+  // Update delta
+  const deltaEl = document.getElementById(`delta_${id}`);
+  if (deltaEl && tracker.data._lastDelta !== undefined) {
+    const d = tracker.data._lastDelta;
+    deltaEl.textContent = d > 0 ? `▲ +${d} / update` : `▼ ${d} / update`;
+    deltaEl.className = `stat-change ${d > 0 ? 'up' : 'down'}`;
+  }
+
+  // Update timestamp
+  const updEl = document.getElementById(`updated_${id}`);
+  if (updEl) {
+    updEl.textContent = 'UPD: ' + new Date().toLocaleTimeString('vi-VN');
+  }
+}
+
+// Refresh single card
+function refreshCard(id) {
+  updateCard(id);
+  showToast('⟳ DATA REFRESHED', 'success');
+}
+
+// Remove tracker
+function removeTracker(id) {
+  if (updateIntervals[id]) clearInterval(updateIntervals[id]);
+  delete trackers[id];
+  delete updateIntervals[id];
+
+  const card = document.getElementById(`card_${id}`);
+  if (card) {
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    card.style.transition = 'all 0.3s';
+    setTimeout(() => card.remove(), 300);
+  }
+
+  if (Object.keys(trackers).length === 0) {
+    document.getElementById('emptyState').style.display = 'flex';
+  }
+
+  showToast('✕ TRACKER REMOVED', 'error');
+}
+
+// Toast
+function showToast(msg, type = '') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
+    toast.style.transition = 'all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// System clock
+function updateClock() {
+  const el = document.getElementById('sysTime');
+  if (el) el.textContent = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Initial placeholder
+document.getElementById('urlInput').placeholder = PLATFORMS['youtube'].placeholder;
+
+// Demo: pre-load a sample
+setTimeout(() => {
+  document.getElementById('urlInput').value = 'https://www.youtube.com/@MrBeast';
+  selectPlatform(document.querySelector('.tab-btn.yt'), 'youtube');
+}, 800);
+</script>
+</body>
+</html>
