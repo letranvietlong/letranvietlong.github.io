@@ -1412,7 +1412,7 @@ header { padding:0 32px; }
     <span class="ua-icon">🎶</span>
     <div class="ua-title">Kéo thả hoặc chọn file nhạc</div>
     <div class="ua-sub">MP3 · WAV · OGG · M4A · FLAC<br>Miễn phí hoàn toàn · Không cần tài khoản · Xử lý ngay trên trình duyệt</div>
-    <button class="ua-btn" type="button">📂 Chọn File Nhạc</button>
+    <button class="ua-btn" type="button" onclick="document.getElementById('fi').click()">📂 Chọn File Nhạc</button>
   </div>
   <input type="file" id="fi" accept="audio/*">
 
@@ -1981,9 +1981,6 @@ header { max-width:100% !important; padding:0 32px; }
 </style>
 
 <script>
-// ── Version Info ──
-const APP_VERSION = 'v6.6';
-const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen 
 // ── Version Info ──
 const APP_VERSION = 'v6.6';
 const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
@@ -4711,7 +4708,10 @@ function clickStep(n){
 }
 
 /* ── UPLOAD ── */
-$('fi').onchange=e=>handleAud(e.target.files[0]);
+(function(){
+  function _bindFi(){var fi=document.getElementById('fi');if(fi)fi.onchange=function(e){handleAud(e.target.files[0]);};}
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_bindFi);}else{_bindFi();}
+})();
 const uz=$('uz');
 uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag');});
 uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
@@ -9863,3 +9863,5 @@ function showOnboarding(){
   setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
 }
 function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
+
+</script>
