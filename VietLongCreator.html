@@ -1387,7 +1387,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.3 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.4 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -6233,12 +6233,12 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   drawMCBackground(bgX,W,H,t,bass,p,bgType);
 
   // ── CARD — Multi-axis beat animation ──
-  // Detect 9:16 portrait mode and scale accordingly
-  const is916 = H > W * 1.4;
+  const is916 = H > W * 1.4; // detect portrait 9:16
   const maxCardH = H * 0.60;
+  // 9:16: card width = 68% of W so it fills portrait frame properly
   const baseCardW = is916
-    ? Math.min(W * 0.72, H * 0.45)   // 9:16: larger card fills width
-    : Math.min(W * 0.34, maxCardH / 1.18); // 16:9: original sizing
+    ? Math.min(W * 0.68, H * 0.42)
+    : Math.min(W * 0.34, maxCardH / 1.18);
 
   // Breathing + beat pulse trên nhiều trục
   const breathe = 1 + Math.sin(aiT * 1.2) * 0.006;
@@ -6251,8 +6251,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   const shakeX = bass > 0.62 ? Math.sin(aiT * 26) * W * 0.0045 * bass : 0;
   const shakeY = bass > 0.62 ? Math.cos(aiT * 20) * H * 0.0022 * bass : 0;
   const cx = (W - cw) / 2 + shakeX;
-  // 9:16: card starts higher (more room below for title/wave)
-  const cy = (is916 ? H * 0.04 : H * 0.04) + shakeY;
+  const cy = H * 0.03 + shakeY;
   const cardCX = cx + cw/2, cardCY = cy + ch/2;
 
   // ── Outer glow aura khi beat mạnh ──
@@ -6368,7 +6367,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
   const wc=p.wc||'#22d3ee';
-  const waveY=cy+ch+(is916 ? H*.04 : H*.018);
+  const waveY=cy+ch+(is916?H*.03:H*.018);
   // Tính chiều cao sóng sao cho title luôn nằm trong frame
   const remainH = H - waveY;
   const titleSz = Math.min(W*.056, 42);
@@ -6396,8 +6395,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   }
 
   // ── TITLE + ARTIST — Premium Typography ──
-  const tyY = waveY + waveH + (is916 ? H*.08 : H*.052);
-  const tsz = Math.min(is916 ? W*.072 : W*.056, 44) * (1 + bass * 0.018);
+  const tyY = waveY + waveH + (is916?H*.045:H*.052);
+  const tsz = Math.min(is916?W*.065:W*.056, 44) * (1 + bass * 0.018);
   ovX.save();
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
