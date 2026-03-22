@@ -1012,7 +1012,7 @@ main {
   color:var(--tx3); letter-spacing:.1em;
   font-family:'IBM Plex Mono',monospace;
   background:var(--surface2); border-bottom:1px solid var(--line);
-  position:sticky; top:0; z-index:5;
+  position:sticky; top:0; z-index:15;
   text-transform:uppercase;
 }
 .auto-col-header-dot {
@@ -1063,7 +1063,6 @@ main {
 #analytics-dash { max-height:none; overflow-y:visible; }
 
 /* Grid layout */
-
 
 .auto-card-title::before {
   content:''; width:5px; height:5px; border-radius:50%;
@@ -1372,30 +1371,14 @@ header { padding:0 32px; }
 .aff-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 
 /* Workspace */
-.aff-workspace {
-  display:grid;
-  grid-template-columns:300px 1fr 290px;
-  min-height:calc(100vh - 180px);
-}
-@media(max-width:1100px) { .aff-workspace { grid-template-columns:260px 1fr 250px; } }
-@media(max-width:860px)  { .aff-workspace { grid-template-columns:1fr; padding:0 20px; } }
+
+@media(max-width:1100px) { 
+ }
+@media(max-width:860px)  { 
+ }
 
 /* Columns */
-.aff-col {
-  border-right:1px solid var(--line);
-  display:flex; flex-direction:column;
-  overflow-y:auto;
-}
-.aff-col:last-child { border-right:none; }
-.aff-col-header {
-  display:flex; align-items:center; gap:8px;
-  padding:8px 16px; font-size:.6rem; font-weight:800;
-  letter-spacing:.12em; text-transform:uppercase;
-  color:var(--tx3); background:var(--bg);
-  border-bottom:1px solid var(--line);
-  position:sticky; top:57px; z-index:5;
-  font-family:'IBM Plex Mono',monospace;
-}
+
 .aff-col-dot {
   width:5px; height:5px; border-radius:50%;
   background:var(--a2); box-shadow:0 0 6px var(--a2);
@@ -1403,18 +1386,7 @@ header { padding:0 32px; }
 }
 
 /* Cards */
-.aff-card {
-  padding:14px 16px; border-bottom:1px solid var(--line);
-  transition:background .18s;
-}
-.aff-card:last-child { border-bottom:none; }
-.aff-card:hover { background:rgba(255,255,255,.012); }
-.aff-card-title {
-  display:flex; align-items:center; gap:7px;
-  font-size:.6rem; font-weight:800; text-transform:uppercase;
-  letter-spacing:.1em; margin-bottom:10px;
-  color:var(--tx3); font-family:'IBM Plex Mono',monospace;
-}
+
 .aff-card-title::before {
   content:''; width:3px; height:12px; border-radius:2px;
   background:linear-gradient(180deg,#ff2d78,#ff6b9d);
@@ -1426,21 +1398,7 @@ header { padding:0 32px; }
 }
 
 /* Form fields */
-.aff-fg { margin-bottom:10px; }
-.aff-fg label {
-  display:block; font-size:.58rem; color:var(--tx3);
-  font-family:'IBM Plex Mono',monospace; margin-bottom:4px;
-  letter-spacing:.06em; text-transform:uppercase;
-}
-.aff-fg input, .aff-fg select, .aff-fg textarea {
-  width:100%; background:var(--ink); border:1px solid var(--line2);
-  color:var(--tx); border-radius:7px; padding:7px 10px;
-  font-family:var(--fb); font-size:.76rem; outline:none;
-  box-sizing:border-box; transition:border-color .18s,box-shadow .18s;
-}
-.aff-fg input:focus,.aff-fg select:focus,.aff-fg textarea:focus {
-  border-color:#ff2d78; box-shadow:0 0 0 2px rgba(255,45,120,.12);
-}
+
 .aff-hint { font-size:.57rem; color:var(--tx3); margin-top:3px; line-height:1.4; }
 
 /* Connect box */
@@ -1550,9 +1508,280 @@ body:has(#panel-affiliate.show) main {
   max-width:100% !important; padding:0 !important;
 }
 
-/* Column alignment with Tạo Video tab (32px margin) */
-.auto-col:first-child, .aff-col:first-child { padding-left:32px; }
-.auto-col:last-child,  .aff-col:last-child  { padding-right:32px; }
+.auto-col:first-child, 
+.auto-col:last-child,  
+
+/* ── Affiliate col layout fixes ── */
+
+#aff-tt-login-area { min-width:0; }
+
+/* Ensure aff-col doesn't overflow grid */
+
+/* aff-col-header always on top */
+
+/* Workspace: proper grid, no overflow */
+
+@media(max-width:1200px){ 
+ }
+@media(max-width:900px)  { 
+ }
+
+/* Column: contain content, no overflow-x */
+
+/* Col header: sticky, always on top */
+
+/* Card: proper padding, no overflow */
+
+/* Form fields */
+
+/* Login button: fits column */
+
+/* Proxy status text */
+
+
+/* ══════════════════════════════════════════
+   AFFILIATE PANEL — DEFINITIVE CSS
+══════════════════════════════════════════ */
+.aff-workspace {
+  display:grid;
+  grid-template-columns:270px 1fr 270px;
+  min-height:calc(100vh - 180px);
+  overflow:hidden;
+}
+@media(max-width:1200px){ .aff-workspace { grid-template-columns:220px 1fr 220px; } }
+@media(max-width:900px)  { .aff-workspace { grid-template-columns:1fr; } }
+
+.aff-col {
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+  overflow-y:auto;
+  min-width:0;
+  box-sizing:border-box;
+}
+.aff-col:last-child { border-right:none; }
+
+.aff-col-header {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 14px;
+  font-size:.57rem;
+  font-weight:800;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--tx3);
+  background:var(--bg);
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:57px;
+  z-index:20;
+  font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.aff-col-dot {
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:var(--a2);
+  box-shadow:0 0 6px var(--a2);
+  flex-shrink:0;
+}
+
+.aff-card {
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  min-width:0;
+  overflow:hidden;
+  box-sizing:border-box;
+  width:100%;
+}
+.aff-card:last-child { border-bottom:none; }
+.aff-card:hover { background:rgba(255,255,255,.012); }
+
+.aff-card-title {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:.57rem;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  margin-bottom:10px;
+  color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.aff-card-title::before {
+  content:'';
+  width:3px;
+  height:11px;
+  border-radius:2px;
+  background:linear-gradient(180deg,#ff2d78,#ff6b9d);
+  flex-shrink:0;
+}
+.aff-card-actions {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.aff-fg { margin-bottom:9px; }
+.aff-fg label {
+  display:block;
+  font-size:.57rem;
+  color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  margin-bottom:3px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.aff-fg input,
+.aff-fg select,
+.aff-fg textarea {
+  width:100%;
+  background:var(--ink);
+  border:1px solid var(--line2);
+  color:var(--tx);
+  border-radius:7px;
+  padding:6px 8px;
+  font-family:var(--fb);
+  font-size:.72rem;
+  outline:none;
+  box-sizing:border-box;
+  transition:border-color .18s;
+}
+.aff-fg input:focus,
+.aff-fg select:focus { border-color:#ff2d78; box-shadow:0 0 0 2px rgba(255,45,120,.1); }
+.aff-hint { font-size:.56rem; color:var(--tx3); margin-top:3px; line-height:1.4; }
+
+.aff-connect-box {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--surface2);
+  border:1px solid var(--line2);
+  border-radius:9px;
+  padding:8px 10px;
+  cursor:pointer;
+  transition:all .18s;
+  margin-bottom:10px;
+  min-width:0;
+  overflow:hidden;
+}
+.aff-connect-box:hover { border-color:rgba(255,45,120,.4); }
+.aff-connect-box.connected { border-color:rgba(255,45,120,.5); }
+
+.aff-mini-btn {
+  padding:4px 8px;
+  border-radius:6px;
+  border:none;
+  color:#fff;
+  font-size:.58rem;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+#aff-login-btn {
+  width:100%;
+  box-sizing:border-box;
+  padding:9px 12px;
+  font-size:.72rem;
+  font-weight:800;
+  overflow:hidden;
+  max-width:100%;
+}
+
+#aff-proxy-status {
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.57rem;
+  margin-top:5px;
+}
+
+.aff-product-card {
+  display:flex;
+  gap:8px;
+  padding:9px;
+  background:var(--surface2);
+  border:1px solid var(--line);
+  border-radius:8px;
+  margin-bottom:7px;
+  cursor:pointer;
+  min-width:0;
+  overflow:hidden;
+}
+.aff-product-card:hover { border-color:rgba(255,45,120,.4); }
+.aff-product-img {
+  width:44px;
+  height:44px;
+  border-radius:6px;
+  flex-shrink:0;
+  background:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.2rem;
+}
+.aff-product-info { flex:1; min-width:0; }
+.aff-product-name { font-size:.67rem; font-weight:700; color:var(--tx); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.aff-product-price { font-size:.65rem; color:#ff2d78; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.aff-product-commission { font-size:.57rem; color:#22c55e; margin-top:1px; }
+.aff-product-actions { display:flex; gap:3px; margin-top:5px; flex-wrap:wrap; }
+.aff-product-btn { padding:3px 7px; border-radius:4px; border:1px solid var(--line2); background:var(--surface); color:var(--tx3); font-size:.57rem; cursor:pointer; white-space:nowrap; }
+.aff-product-btn:hover { border-color:#ff2d78; color:#ff2d78; }
+.aff-product-btn.primary { background:linear-gradient(135deg,#ff2d78,#ff6b9d); border-color:transparent; color:#fff; }
+
+.aff-qi { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:7px; margin-bottom:5px; background:var(--surface2); border:1px solid var(--line); min-width:0; overflow:hidden; }
+.aff-qi.running { border-color:#fbbf24; }
+.aff-qi.done    { border-color:#22c55e; }
+.aff-qi.failed  { border-color:#ef4444; }
+.aff-qi-title   { font-size:.67rem; font-weight:600; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.aff-qi-meta    { font-size:.57rem; color:var(--tx3); margin-top:1px; }
+.aff-qi-prog    { height:2px; background:var(--line); border-radius:2px; margin-top:4px; overflow:hidden; }
+.aff-qi-prog-fill { height:100%; background:linear-gradient(90deg,#ff2d78,#ff6b9d); transition:width .4s; }
+
+.aff-empty-state { display:flex; flex-direction:column; align-items:center; gap:6px; padding:28px 12px; color:var(--tx3); text-align:center; }
+
+.aff-run-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 16px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  color:#fff;
+  font-weight:800;
+  font-size:.68rem;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  box-shadow:0 3px 12px rgba(255,45,120,.3);
+  transition:all .2s;
+}
+.aff-run-btn:hover { transform:translateY(-1px); box-shadow:0 5px 18px rgba(255,45,120,.45); }
+.aff-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+.aff-stat-item { flex:1; display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--bg); min-width:100px; transition:background .2s; }
+.aff-stat-item:hover { background:var(--surface); }
+.aff-stat-val { font-size:1.2rem; font-weight:800; line-height:1; font-family:'IBM Plex Mono',monospace; background:linear-gradient(135deg,#ff2d78,#ff6b9d); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.aff-stat-lbl { font-size:.57rem; color:var(--tx3); margin-top:2px; }
+.aff-stats-bar { display:flex; gap:1px; background:var(--line); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+.aff-stats-bar::-webkit-scrollbar { display:none; }
+
+.aff-slot-chip { display:flex; align-items:center; gap:5px; background:rgba(255,45,120,.08); border:1px solid rgba(255,45,120,.2); border-radius:20px; padding:3px 9px; margin-bottom:4px; font-size:.58rem; color:#ff6b9d; font-family:'IBM Plex Mono',monospace; }
+.aff-slot-chip button { background:none; border:none; color:var(--tx3); cursor:pointer; font-size:.65rem; padding:0; }
+.aff-slot-chip button:hover { color:#ef4444; }
 </style>
 </head>
 <body>
@@ -1699,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v7.7 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.0 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2863,13 +3092,14 @@ body:has(#panel-affiliate.show) main {
         <!-- Login button (shown before login) -->
         <div id="aff-tt-login-area">
           <button onclick="startTikTokOAuth()" id="aff-login-btn"
-            style="width:100%;padding:13px;border-radius:10px;border:none;
+            style="width:100%;padding:10px 14px;border-radius:9px;border:none;
                    background:linear-gradient(135deg,#ff2d78,#ff6b9d);
-                   color:#fff;font-size:.85rem;font-weight:800;cursor:pointer;
-                   display:flex;align-items:center;justify-content:center;gap:10px;
-                   box-shadow:0 4px 16px rgba(255,45,120,.35);transition:all .2s">
-            <span style="font-size:1.1rem">🎵</span>
-            <span id="aff-login-btn-text">Đăng nhập TikTok</span>
+                   color:#fff;font-size:.75rem;font-weight:800;cursor:pointer;
+                   display:flex;align-items:center;justify-content:center;gap:8px;
+                   box-shadow:0 3px 12px rgba(255,45,120,.3);transition:all .2s;
+                   white-space:nowrap;overflow:hidden">
+            <span style="font-size:.95rem;flex-shrink:0">🎵</span>
+            <span id="aff-login-btn-text" style="overflow:hidden;text-overflow:ellipsis">Đăng nhập TikTok</span>
           </button>
           <div style="font-size:.6rem;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.6">
             Đăng nhập 1 lần · Tự động lấy token &amp; thông tin tài khoản<br>
@@ -2879,19 +3109,17 @@ body:has(#panel-affiliate.show) main {
 
         <!-- Proxy URL config -->
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace">Vercel Proxy URL</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;font-family:'IBM Plex Mono',monospace">Vercel Proxy URL</span>
             <a href="https://github.com/letranvietlong/tiktok-proxy" target="_blank"
-               style="font-size:.56rem;color:var(--a2);text-decoration:none">📖 Hướng dẫn deploy</a>
+               style="font-size:.57rem;color:var(--a2);text-decoration:none">📖 Hướng dẫn</a>
           </div>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="aff-proxy-url"
-              placeholder="https://your-proxy.vercel.app"
-              oninput="saveAffSettings();checkProxyStatus()"
-              style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:.68rem">
-            <button onclick="checkProxyStatus(true)"
-              style="padding:6px 10px;border-radius:7px;border:1px solid rgba(0,229,195,.3);background:rgba(0,229,195,.08);color:var(--a2);font-size:.62rem;font-weight:700;cursor:pointer;white-space:nowrap">Kiểm tra</button>
-          </div>
+          <input type="text" id="aff-proxy-url"
+            placeholder="https://your-proxy.vercel.app"
+            oninput="saveAffSettings();checkProxyStatus()"
+            style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:.65rem;margin-bottom:5px;box-sizing:border-box">
+          <button onclick="checkProxyStatus(true)"
+            style="width:100%;padding:5px;border-radius:6px;border:1px solid rgba(0,229,195,.3);background:rgba(0,229,195,.08);color:var(--a2);font-size:.62rem;font-weight:700;cursor:pointer">✓ Kiểm tra kết nối</button>
         </div>
 
         <!-- Hidden fields auto-filled after login -->
@@ -3153,8 +3381,8 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v7.7';
-const VERSION_HISTORY = [("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+const APP_VERSION = 'v8.0';
+const VERSION_HISTORY = [("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
   if(!modal){
