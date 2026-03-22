@@ -712,9 +712,21 @@ main {
   position:relative; background:#000;
   border-radius:var(--r2); overflow:hidden;
   aspect-ratio:16/9;
+  display:flex; align-items:center; justify-content:center;
+  transition:aspect-ratio .3s;
 }
-#bgcvs { width:100%; height:100%; display:block; }
-#ovcvs { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.preview-frame.ratio-916 {
+  aspect-ratio:9/16;
+  max-height:70vh;
+  width:auto;
+  margin:0 auto;
+}
+#bgcvs { display:block; max-width:100%; max-height:100%; }
+#ovcvs {
+  position:absolute;
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  pointer-events:none;
+}
 
 .playbar {
   display:flex; align-items:center; gap:10px;
@@ -2015,8 +2027,14 @@ function setRatio(ratio){
   currentRatio=ratio;
   $('ratio-169')?.classList.toggle('active', ratio==='16:9');
   $('ratio-916')?.classList.toggle('active', ratio==='9:16');
-  if(typeof initCanvas==='function') initCanvas();
-  toast(`📐 Đã chuyển sang ${ratio}${ratio==='9:16'?' (TikTok/Shorts)':'(YouTube)'}`, 'info', 2000);
+  // Toggle CSS class on pvframe to change aspect-ratio
+  $('pvframe')?.classList.toggle('ratio-916', ratio==='9:16');
+  if(typeof initCanvas==='function'){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      initCanvas();
+    }));
+  }
+  toast(`📐 Đã chuyển sang ${ratio}${ratio==='9:16'?' (TikTok/Shorts)':' (YouTube)'}`, 'info', 2000);
 }
 // Override initCanvas to support 9:16
 const _origInitCanvas_ratio = null; // handled inside initCanvas override below
@@ -3379,6 +3397,9 @@ function rrF(c,x,y,w,h,r){if(w<=0||h<=0)return;c.beginPath();c.moveTo(x+r,y);c.l
 /* ── AUDIO DATA CACHE — đọc 1 lần/frame thay vì 3 lần ── */
 let _freqBuf=null,_freqDirty=true;
 let _bass=.3,_mid=.3,_eng=.3;
+// ── Thời gian render hiện tại — dùng thay vì audEl.currentTime để đúng khi export ──
+let _renderTime=0;   // giây hiện tại (set mỗi frame, kể cả khi export)
+let _renderDur=0;    // tổng thời lượng
 function readAudioOnce(){
   if(!analyser)return;
   if(!_freqBuf||_freqBuf.length!==analyser.frequencyBinCount)
@@ -3972,33 +3993,33 @@ function loadArtImg(inp){
 function initCanvas(){
   const w=$('pvframe');
   const W=w.clientWidth||w.parentElement?.clientWidth||Math.round(window.innerWidth*.72)||1280;
-  let H;
-  // Support 9:16 mode
+  let cW, cH;
+
   if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
-    H=Math.round(W*(16/9)); // full 9:16
-    // Cap height to viewport
-    const maxH=window.innerHeight*.7;
-    const scaledW=Math.round(maxH*(9/16));
-    bgCvs.width=scaledW; bgCvs.height=Math.round(maxH);
-    ovCvs.width=scaledW; ovCvs.height=Math.round(maxH);
-    bgCvs.style.width=scaledW+'px'; bgCvs.style.height=Math.round(maxH)+'px';
-    ovCvs.style.width=scaledW+'px'; ovCvs.style.height=Math.round(maxH)+'px';
-    bgCvs.setAttribute('data-pw',scaledW);
-    bgCvs.setAttribute('data-ph',Math.round(maxH));
-    spCvs.width=W; spCvs.height=44;
+    // 9:16: height drives the sizing, cap to 70vh
+    const maxH=Math.round(window.innerHeight*.7);
+    cW=Math.round(maxH*(9/16));
+    cH=maxH;
   } else {
-    H=Math.round(W*9/16);
-    bgCvs.width=W; bgCvs.height=H;
-    ovCvs.width=W; ovCvs.height=H;
-    bgCvs.style.width=''; bgCvs.style.height='';
-    ovCvs.style.width=''; ovCvs.style.height='';
-    bgCvs.setAttribute('data-pw',W);
-    bgCvs.setAttribute('data-ph',H);
-    spCvs.width=W; spCvs.height=44;
+    // 16:9 default
+    cW=W;
+    cH=Math.round(W*9/16);
   }
+
+  bgCvs.width=cW;  bgCvs.height=cH;
+  ovCvs.width=cW;  ovCvs.height=cH;
+
+  // Sync ovcvs pixel dimensions to bgcvs so they overlap perfectly
+  ovCvs.style.width  = bgCvs.offsetWidth  ? bgCvs.offsetWidth+'px'  : '';
+  ovCvs.style.height = bgCvs.offsetHeight ? bgCvs.offsetHeight+'px' : '';
+
+  bgCvs.setAttribute('data-pw',cW);
+  bgCvs.setAttribute('data-ph',cH);
+  spCvs.width=W; spCvs.height=44;
+
   if(typeof clearGradCache==='function') clearGradCache();
   aiT=0; aiGP=0; ptArr=[];
-  if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+  if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
 }
 
 // ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
@@ -4006,14 +4027,17 @@ let idleRaf=null;
 function startIdleLoop(){
   stopIdleLoop();
   function idleTick(ts){
-    if(playing){idleRaf=null;return;} // nhường cho renderLoop khi đang phát
+    if(playing){idleRaf=null;return;}
     if(!chosenTpl||step!==4){idleRaf=null;return;}
     if(ts-lastFrameTime<FRAME_MS){idleRaf=requestAnimationFrame(idleTick);return;}
     lastFrameTime=ts;
-    aiT+=.008; // chuyển động chậm khi idle
+    aiT+=.008;
     _bass=.25+Math.abs(Math.sin(aiT*1.2))*.15;
     _mid=.2+Math.abs(Math.sin(aiT*.8))*.1;
     _eng=.22;
+    // Đồng bộ thời gian từ audEl khi idle
+    _renderTime=audEl?.currentTime||0;
+    _renderDur =audEl?.duration||0;
     drawFrame();
     idleRaf=requestAnimationFrame(idleTick);
   }
@@ -4073,10 +4097,12 @@ function doRestart(){stopPlay();setTimeout(startPlay,80);}
 
 function renderLoop(ts=0){
   if(!playing)return;
-  // Throttle to 30fps
   if(ts-lastFrameTime<FRAME_MS){raf=requestAnimationFrame(renderLoop);return;}
   lastFrameTime=ts;
-  readAudioOnce(); // đọc audio data 1 lần duy nhất mỗi frame
+  // Cập nhật thời gian render từ audio thật
+  _renderTime = audEl?.currentTime||0;
+  _renderDur  = audEl?.duration||0;
+  readAudioOnce();
   drawFrame();drawSpec();
   if(audEl)$('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
   raf=requestAnimationFrame(renderLoop);
@@ -4976,9 +5002,9 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   const pbY=cy+ch-pbH-ch*.025; // sát đáy card
   const pbX=cx+cw*.06,pbW=cw*.88;
 
-  // Tính progress theo currentTime / duration thực tế
-  const audDur=audEl?.duration||1;
-  const audCur=audEl?.currentTime||0;
+  // Tính progress theo _renderTime (đúng khi cả preview lẫn export)
+  const audDur=_renderDur||audEl?.duration||1;
+  const audCur=_renderTime||0;
   const prog=Math.min(audCur/audDur,1);
 
   // Track nền mờ
@@ -5211,7 +5237,7 @@ function fullLV(W,H,t,bass,mid,eng,p,title,artist){
   // Lyrics — center stage, large
   const raw=$('cc-lyr')?.value||'';
   const lines=raw.trim()?raw.split('\n').filter(l=>l.trim()):[];
-  const dur=audEl?.duration||60,cur=audEl?.currentTime||0;
+  const dur=(_renderDur||audEl?.duration)||60,cur=_renderTime||0;
   const idx=lines.length?Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1):-1;
   const line=lines[idx]||title||'TÊN BÀI HÁT';
   // Background text shadow strip
@@ -5373,7 +5399,7 @@ function drawTitleOv(W,Y,title,artist){
 function drawLyrics(c,W,H){
   const raw=$('cc-lyr')?.value||'';if(!raw.trim()||!audEl)return;
   const lines=raw.split('\n').filter(l=>l.trim());if(!lines.length)return;
-  const dur=audEl.duration||60,cur=audEl.currentTime||0;
+  const dur=(_renderDur||audEl?.duration)||60,cur=_renderTime||0;
   const idx=Math.min(Math.floor(cur/(dur/lines.length)),lines.length-1);
   const line=lines[idx];const fs=Math.min(W*.036,26);
   c.save();c.font=`600 ${fs}px Be Vietnam Pro,Arial,sans-serif`;c.textAlign='center';c.textBaseline='middle';
@@ -5407,7 +5433,7 @@ function drawSpec(){
 const EXPORT_QUALITY = {
   fast:   {videoBps:4_000_000,  audioBps:128_000, label:'Fast · 4Mbps · 720p',  w:1280,h:720,  fps:30, ext:'mp4'},
   good:   {videoBps:8_000_000,  audioBps:192_000, label:'Good · 8Mbps · 720p',  w:1280,h:720,  fps:30, ext:'mp4'},
-  best:   {videoBps:16_000_000, audioBps:320_000, label:'Best · 16Mbps · 1080p',w:1920,h:1080, fps:30, ext:'mp4'},
+  best:   {videoBps:16_000_000, audioBps:192_000, label:'Best · 16Mbps · 1080p',w:1920,h:1080, fps:30, ext:'mp4'},
   tiktok: {videoBps:6_000_000,  audioBps:192_000, label:'TikTok · 9:16 · 1080p',w:1080,h:1920, fps:30, ext:'mp4'},
 };
 let currentQuality='good';
@@ -5490,17 +5516,19 @@ async function exportWithWebCodecs(q){
     // Setup audio decode for analysis
     upProg(8,'Decode audio...');
     const exportActx=new AudioContext();
+    // Resume AudioContext immediately (required after user gesture)
+    if(exportActx.state==='suspended') await exportActx.resume();
     const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
     const exportAudEl=new Audio();
     exportAudEl.src=URL.createObjectURL(audFile);
     exportAudEl.crossOrigin='anonymous';
     await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
     const exportSrc=exportActx.createMediaElementSource(exportAudEl);
+    // Connect to analyser for frequency data + destination for playback
     exportSrc.connect(exportAn);
-    // Also connect to destination so audio plays (needed for getByteFrequencyData)
     exportSrc.connect(exportActx.destination);
 
-    // mp4-muxer setup
+    // mp4-muxer setup (audio sampleRate set after decode)
     const {Muxer,ArrayBufferTarget}=window.Mp4Muxer;
     const target=new ArrayBufferTarget();
     const muxer=new Muxer({
@@ -5527,16 +5555,10 @@ async function exportWithWebCodecs(q){
       latencyMode:'quality',
     });
 
-    // AudioEncoder
+    // AudioEncoder — configured later with safe bitrate inside audio encode block
     const audioEncoder=new AudioEncoder({
       output:(chunk,meta)=>{ muxer.addAudioChunk(chunk,meta); },
       error:e=>console.error('AudioEncoder:',e),
-    });
-    audioEncoder.configure({
-      codec:'mp4a.40.2',  // AAC-LC
-      sampleRate:44100,
-      numberOfChannels:2,
-      bitrate:q.audioBps,
     });
 
     const dur=exportAudEl.duration||30;
@@ -5545,7 +5567,8 @@ async function exportWithWebCodecs(q){
 
     upProg(15,'Bắt đầu render + encode...');
     exportAudEl.currentTime=0;
-    exportAudEl.play();
+    if(exportActx.state==='suspended') await exportActx.resume();
+    exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
 
     let frameIdx=0;
     const t0=performance.now();
@@ -5559,27 +5582,42 @@ async function exportWithWebCodecs(q){
       audioBuf=await decCtx.decodeAudioData(ab);
     }catch(_){ audioBuf=null; }
 
-    // Encode audio in 1024-sample chunks upfront (fast)
+    // Encode audio in 2048-sample chunks (AAC requires minimum 2048 frames = 8192 bytes for f32)
     if(audioBuf){
       upProg(18,'Encode audio...');
       const sr=audioBuf.sampleRate;
-      const ch=audioBuf.numberOfChannels;
-      const chunkSz=1024;
+      const nCh=Math.min(audioBuf.numberOfChannels,2); // stereo max
+      const chunkSz=2048; // AAC frame size — must be ≥2048 to satisfy 8192 byte minimum
+
+      // Ensure bitrate is one of the supported values
+      const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)
+        ? q.audioBps : 128000;
+      audioEncoder.configure({
+        codec:'mp4a.40.2',
+        sampleRate:sr,
+        numberOfChannels:nCh,
+        bitrate:safeBitrate,
+      });
+
       for(let i=0;i<audioBuf.length;i+=chunkSz){
         const len=Math.min(chunkSz,audioBuf.length-i);
-        const aData=new Float32Array(len);
-        audioBuf.getChannelData(0).slice(i,i+len).forEach((v,j)=>aData[j]=v);
+        // f32-planar: all channel 0 samples then all channel 1 samples
+        const aData=new Float32Array(len*nCh);
+        for(let c=0;c<nCh;c++){
+          const chData=audioBuf.getChannelData(c);
+          aData.set(chData.slice(i,i+len), c*len);
+        }
         const aFrame=new AudioData({
           format:'f32-planar',
           sampleRate:sr,
           numberOfFrames:len,
-          numberOfChannels:ch,
+          numberOfChannels:nCh,
           timestamp:Math.round(i/sr*1_000_000),
           data:aData,
         });
         audioEncoder.encode(aFrame);
         aFrame.close();
-        if(i%44100===0) await audioEncoder.flush(); // periodic flush
+        if(i%88200===0) await audioEncoder.flush(); // flush every ~2s
       }
       await audioEncoder.flush();
       upProg(20,'Audio encode xong ✅');
@@ -5627,6 +5665,8 @@ async function exportWithWebCodecs(q){
       // Render to HD canvas
       bgCvs.width=EW; bgCvs.height=EH; bgCache=null;
       aiT=el*.4; aiGP=el*.0026;
+      _renderTime=el;      // ← thời gian chính xác cho progress bar
+      _renderDur=dur;
       drawFrame();
       outCtx.clearRect(0,0,EW,EH);
       outCtx.drawImage(bgCvs,0,0);
@@ -5679,6 +5719,7 @@ async function exportWithMediaRecorder(q){
 
   upProg(10,'Cấu hình audio...');
   const exportActx=new(window.AudioContext||window.webkitAudioContext)();
+  if(exportActx.state==='suspended') await exportActx.resume();
   const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
   const exportAudEl=new Audio();
   exportAudEl.src=URL.createObjectURL(audFile);
@@ -5729,7 +5770,8 @@ async function exportWithMediaRecorder(q){
   const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
 
   exportAudEl.currentTime=0;
-  exportAudEl.play();
+  if(exportActx.state==='suspended') await exportActx.resume();
+  exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
   mr.start(100);
   upProg(20,`Render WebM ${EW}×${EH}...`);
 
@@ -5749,6 +5791,8 @@ async function exportWithMediaRecorder(q){
     _bass=bs/(be*255);_mid=ms/((me-be)*255);_eng=all/(len*255);
     bgCvs.width=EW; bgCvs.height=EH; bgCache=null;
     aiT=el*.4; aiGP=el*.0026;
+    _renderTime=el;    // ← thời gian chính xác cho progress bar
+    _renderDur=dur;
     drawFrame();
     ectx.clearRect(0,0,EW,EH);
     ectx.drawImage(bgCvs,0,0);
