@@ -381,8 +381,8 @@ main {
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:var(--r2);
-  padding:22px 28px;
-  margin-bottom:14px;
+  padding:16px 22px;
+  margin-bottom:10px;
 }
 .panel.hidden { display:none; }
 .panel-title {
@@ -711,7 +711,7 @@ main {
 .preview-frame {
   position:relative; background:#000;
   border-radius:var(--r2); overflow:hidden;
-  aspect-ratio:16/9;
+  aspect-ratio:16/9; width:100%;
   display:flex; align-items:center; justify-content:center;
   transition:aspect-ratio .3s;
 }
@@ -721,10 +721,10 @@ main {
   width:auto;
   margin:0 auto;
 }
-#bgcvs { display:block; max-width:100%; max-height:100%; }
+#bgcvs { display:block; width:100%; height:100%; object-fit:contain; }
 #ovcvs {
   position:absolute;
-  top:50%; left:50%; transform:translate(-50%,-50%);
+  top:0; left:0; width:100%; height:100%;
   pointer-events:none;
 }
 
@@ -970,19 +970,9 @@ main {
 .auto-run-btn:disabled{opacity:.4;cursor:not-allowed;}
 
 /* Grid layout */
-.auto-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-@media(max-width:620px){.auto-grid{grid-template-columns:1fr;}}
+}
 
-.auto-card {
-  background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--r); padding:18px;
-}
-.auto-card-title {
-  font-size:.6rem; font-weight:700; color:var(--a2);
-  font-family:'IBM Plex Mono',monospace; letter-spacing:.1em;
-  text-transform:uppercase; margin-bottom:14px;
-  display:flex; align-items:center; gap:7px;
-}
+
 .auto-card-title::before {
   content:''; width:5px; height:5px; border-radius:50%;
   background:var(--a2); box-shadow:0 0 5px var(--a2);
@@ -1157,7 +1147,20 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .kb-desc{font-size:.66rem;color:var(--tx2);}
 /* ── FULLSCREEN ── */
 #pvframe:-webkit-full-screen{width:100vw!important;height:100vh!important;}
-#pvframe:fullscreen{width:100vw!important;height:100vh!important;background:#000;}
+#pvframe:fullscreen,#pvframe:-webkit-full-screen{
+  width:100vw!important;height:100vh!important;background:#000;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  aspect-ratio:unset!important;border-radius:0!important;
+}
+#pvframe:fullscreen #bgcvs,#pvframe:-webkit-full-screen #bgcvs{
+  width:auto!important;height:100vh!important;
+  max-width:100vw!important;max-height:100vh!important;
+}
+#pvframe:fullscreen #ovcvs,#pvframe:-webkit-full-screen #ovcvs{
+  width:auto!important;height:100vh!important;
+  max-width:100vw!important;max-height:100vh!important;
+  top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;
+}
 .preview-frame{position:relative;}
 .fullscreen-btn{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.7rem;backdrop-filter:blur(8px);transition:all .2s;}
 .fullscreen-btn:hover{background:rgba(255,255,255,.15);}
@@ -1217,12 +1220,7 @@ header { padding:0 32px; }
 }
 
 /* Auto tab: 3 columns */
-.auto-grid {
-  display:grid !important;
-  grid-template-columns:1fr 1fr 1fr !important;
-  gap:14px;
-}
-@media(max-width:1100px){ .auto-grid { grid-template-columns:1fr 1fr !important; } }
+ }
 @media(max-width:680px)  { .auto-grid { grid-template-columns:1fr !important; } }
 
 /* Auto card compact */
@@ -1239,6 +1237,35 @@ header { padding:0 32px; }
 /* Canvas preview takes more space */
 #prev-wrap { width:100%; }
 #bgcvs, #ovcvs { width:100% !important; height:auto !important; max-height:60vh; }
+
+/* ── Fullscreen mode ── */
+#pvframe:fullscreen,
+#pvframe:-webkit-full-screen,
+#pvframe:-moz-full-screen {
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100vw !important;
+  height:100vh !important;
+  border-radius:0;
+  aspect-ratio:unset;
+}
+#pvframe:fullscreen #bgcvs,
+#pvframe:-webkit-full-screen #bgcvs {
+  width:auto !important;
+  height:100vh !important;
+  max-width:100vw !important;
+  max-height:100vh !important;
+  object-fit:contain;
+}
+#pvframe:fullscreen #ovcvs,
+#pvframe:-webkit-full-screen #ovcvs {
+  width:auto !important;
+  height:100vh !important;
+  max-width:100vw !important;
+  max-height:100vh !important;
+}
 </style>
 </head>
 <body>
@@ -1385,7 +1412,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.3.1 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.1 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1486,12 +1513,10 @@ header { padding:0 32px; }
 <!-- ======= STEP 4: PREVIEW & EXPORT ======= -->
 <div class="panel hidden" id="p4">
   <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
-  <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,480px);gap:20px;align-items:start">
+  <div style="display:grid;grid-template-columns:1fr minmax(320px,400px);gap:20px;align-items:start">
 
     <!-- LEFT: Preview -->
     <div>
-
-  <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
 
   <div class="spec-strip"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
@@ -1985,7 +2010,7 @@ header { max-width:100% !important; padding:0 32px; }
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v5.3.1';
+const APP_VERSION = 'v5.4';
 const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -2122,6 +2147,8 @@ function clearStickers(){ _stickers=[]; }
 function drawStickers(ctx,W,H,bass){
   if(!_stickers.length) return;
   ctx.save();
+  // Clip stickers to canvas bounds
+  ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip();
   _stickers.forEach(s=>{
     const x=s.x*W, y=s.y*H;
     const scale=s.scale*(s.beatBounce?1+bass*0.2:1);
@@ -2526,6 +2553,17 @@ async function detectMood(){
     moodState={mood,energy:Math.round(energy*100),tempo:bpm,detected:true};
     const moodNames={'energetic-fast':'⚡ Energetic','energetic-slow':'🔥 Powerful','calm-happy':'🌸 Chill','calm-sad':'🌙 Emotional','neutral':'🎵 Balanced'};
     toast('🎭 Mood: '+(moodNames[mood]||mood)+' · Energy '+moodState.energy+'% · '+bpm+' BPM','success',4000);
+    // Auto-suggest template based on mood (only if no template chosen yet)
+    if(!chosenTpl&&typeof MOOD_TEMPLATES!=='undefined'){
+      const suggested=MOOD_TEMPLATES[mood]||MOOD_TEMPLATES['neutral'];
+      const tpl=typeof TMPLS!=='undefined'?TMPLS.find(t=>t.id===suggested[0]):null;
+      if(tpl){
+        toast('💡 Gợi ý template: '+tpl.name+' (dựa trên mood)','info',3000);
+        // Highlight the suggested template card
+        const card=document.querySelector('[data-tpl-id="'+tpl.id+'"]');
+        if(card){card.style.boxShadow='0 0 0 2px var(--a2)';setTimeout(()=>card.style.boxShadow='',4000);}
+      }
+    }
     updateMoodBadge();
   }catch(e){toast('Lỗi mood: '+e.message,'error');}
 }
@@ -2546,6 +2584,8 @@ async function generateHashtags(platform){
   if(!title&&!artist){toast('Nhập tên bài hát trước','warn');return;}
   const cacheKey=title+'|'+artist+'|'+platform;
   if(_hashtagCache[cacheKey]){showHashtagModal(_hashtagCache[cacheKey]);return;}
+  const _hashBtn=document.querySelector('[onclick*="generateHashtags"]');
+  if(_hashBtn){_hashBtn.disabled=true;_hashBtn.textContent='⏳ Đang tạo...';}
   toast('🏷 Tạo hashtag bằng AI...','info',2000);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
@@ -2782,8 +2822,11 @@ function buildBeatTimeline(){
   toast('🥁 '+_beatMarkers.length+' beat markers · BPM: '+bpm,'success',2000);
 }
 function renderBeatTimeline(){
-  const cvs=$('beat-timeline-cvs');if(!cvs||!audEl?.duration)return;
-  const W=cvs.offsetWidth||600;cvs.width=W;cvs.height=28;
+  const cvs=$('beat-timeline-cvs');
+  if(!cvs||!audEl?.duration||!_beatMarkers.length)return;
+  const W=cvs.offsetWidth||600;
+  if(W<10)return; // not visible
+  cvs.width=W;cvs.height=28;
   const ctx=cvs.getContext('2d'),dur=audEl.duration;
   ctx.clearRect(0,0,W,28);
   ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(0,0,W,28);
@@ -2890,6 +2933,7 @@ async function exportGIF(){
   const _oBg=bgCvs,_oOv=ovCvs,_oBgX=bgX,_oOvX=ovX;
   bgCvs=offBgG;ovCvs=offOvG;bgX=offBgG.getContext('2d');ovX=offOvG.getContext('2d');bgCache=null;
   const totalFrames=GFPS*GDUR;
+  try{
   for(let f=0;f<totalFrames;f++){
     const t=startSec+f/GFPS;
     aiT=t*.4;aiGP=t*.0026;_renderTime=t;_renderDur=audEl?.duration||60;
@@ -2898,7 +2942,12 @@ async function exportGIF(){
     outCtx.clearRect(0,0,GW,GH);outCtx.drawImage(offBgG,0,0);outCtx.drawImage(offOvG,0,0);
     gif.addFrame(outCtx,{copy:true,delay:1000/GFPS});
   }
+  // Always restore canvas refs — even if gif fails
   bgCvs=_oBg;ovCvs=_oOv;bgX=_oBgX;ovX=_oOvX;bgCache=null;
+  gif.on('error',e=>{
+    toast('❌ GIF lỗi: '+(e?.message||e),'error');
+    console.error('GIF error:',e);
+  });
   gif.on('finished',blob=>{
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='VietLong_'+chosenTpl.id+'_gif.gif';
@@ -2907,6 +2956,7 @@ async function exportGIF(){
   });
   gif.on('progress',p=>{ if(Math.floor(p*10)%3===0) toast('🎞 GIF: '+Math.round(p*100)+'%','info',600); });
   gif.render();
+  }catch(e){ bgCvs=_oBg;ovCvs=_oOv;bgX=_oBgX;ovX=_oOvX;bgCache=null; toast('❌ GIF lỗi: '+e.message,'error'); }
 }
 
 // ── Best Upload Time ──
@@ -2984,6 +3034,7 @@ document.addEventListener('keydown', e=>{
   if(ctrl&&key==='s'){ e.preventDefault(); saveDraftNow(); toast('💾 Đã lưu draft','success',1500); return; }
   switch(key){
     case ' ':     e.preventDefault(); if(typeof togglePlay==='function')togglePlay(); break;
+    case 'm': case 'M': if(typeof toggleMute==='function')toggleMute(); break;
     case 'r':     if(typeof doRestart==='function')doRestart(); break;
     case 'e':     if(typeof startExport==='function'&&step===4)startExport(); break;
     case 'f':     toggleFullscreen(); break;
@@ -3032,6 +3083,10 @@ function saveDraftNow(){
       trimStart: trimState.start,
       trimEnd:   trimState.end,
       ratio:     currentRatio,
+      stickers:  typeof _stickers!=='undefined'?JSON.parse(JSON.stringify(_stickers)):[],
+      textAnim:  typeof _textAnimStyle!=='undefined'?_textAnimStyle:'default',
+      pbStyle:   typeof _pbStyle!=='undefined'?_pbStyle:'default',
+      colorFilter:typeof _colorFilter!=='undefined'?_colorFilter:'none',
     };
     if($('cc-b1'))  draft.colorB1=$('cc-b1').value;
     if($('cc-wc'))  draft.colorWC=$('cc-wc').value;
@@ -3063,6 +3118,11 @@ function restoreDraft(){
     const t=TMPLS.find(x=>x.id===d.tplId);
     if(t && typeof pickTpl==='function') pickTpl(t);
   }
+  // Restore visual settings
+  if(d.stickers&&Array.isArray(d.stickers)) _stickers=d.stickers;
+  if(d.textAnim&&typeof setTextAnim==='function') setTextAnim(d.textAnim);
+  if(d.pbStyle&&typeof setPbStyle==='function') setPbStyle(d.pbStyle);
+  if(d.colorFilter&&typeof setColorFilter==='function') setColorFilter(d.colorFilter);
 }
 function discardDraft(){
   $('draft-banner')?.classList.remove('show');
@@ -3309,6 +3369,8 @@ function startSlideshowIfMulti(){
 let bpmState={bpm:0,confidence:0,detected:false};
 async function detectBPM(){
   if(typeof audFile==='undefined'||!audFile){ toast('Chưa có file nhạc','warn'); return; }
+  // Timeout guard: if BPM takes >8s, show warning
+  const bpmTimeout=setTimeout(()=>{ toast('⏱ BPM detect timeout — thử lại','warn',2000); },8000);
   toast('🥁 Đang phân tích BPM...','info',2000);
   try{
     const ab=await audFile.arrayBuffer();
@@ -4654,6 +4716,7 @@ function handleAud(f){
   if(!f||!f.type.startsWith('audio/'))return;
   if(typeof markOnboarded==='function') markOnboarded();
   audFile=f;
+  _renderTime=0; _renderDur=0; // Reset timestamp on new song
   $('aname').textContent=f.name;
   $('ameta').textContent=`${(f.size/1024/1024).toFixed(2)} MB · ${(f.type.split('/')[1]||'audio').toUpperCase()}`;
   $('abar').classList.add('show');
@@ -5043,7 +5106,6 @@ function pickTpl(t){
 }
 
 /* ── CONFIG PANEL ── */
-let _lastCfgTplId=null;
 
 function buildCfg(force=false){
   if(!chosenTpl)return;
@@ -5310,7 +5372,9 @@ function setupAudio(){
 function togglePlay(){playing?stopPlay():startPlay();}
 async function startPlay(){
   if(!audEl)return;
+  if(playing)return; // prevent double-start race
   stopIdleLoop();
+  if(raf){cancelAnimationFrame(raf);raf=null;} // cancel any stale rAF
   if(actx?.state==='suspended')await actx.resume();
   // Apply trim
   if(typeof trimState!=='undefined'&&trimState.applied&&trimState.start>0)
@@ -6860,7 +6924,8 @@ async function exportWithWebCodecs(q){
     const exportAudEl=new Audio();
     exportAudEl.muted=true;          // MUST mute before src set to prevent any speaker output
     exportAudEl.volume=0;
-    exportAudEl.src=URL.createObjectURL(audFile);
+    const _audFileUrl=URL.createObjectURL(audFile);
+    exportAudEl.src=_audFileUrl;
     exportAudEl.crossOrigin='anonymous';
     await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
     const exportSrc=exportActx.createMediaElementSource(exportAudEl);
@@ -6907,7 +6972,9 @@ async function exportWithWebCodecs(q){
     upProg(15,'Bắt đầu render + encode...');
     exportAudEl.currentTime=0;
     if(exportActx.state==='suspended') await exportActx.resume();
-    exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
+    exportAudEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
+    exportAudEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
+  exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
 
     let frameIdx=0;
     const t0=performance.now();
@@ -6970,7 +7037,7 @@ async function exportWithWebCodecs(q){
 
     // Render + encode video frames
     async function renderNextFrame(){
-      if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; releaseWakeLock(); return; }
+      if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; try{exportActx?.close();}catch(_){} try{exportAudEl?.pause();}catch(_){} releaseWakeLock(); _isExporting=false; return; }
       if(frameIdx>=totalFrames){
         // Done — flush + finalize
         upProg(94,'Đóng gói MP4...');
@@ -6996,13 +7063,41 @@ async function exportWithWebCodecs(q){
         bgX=_savedBgX; ovX=_savedOvX;
         bgCache=null;
         _isExporting=false;
-        exportAudEl.pause(); exportActx.close();
+        exportAudEl.pause();
+        try{URL.revokeObjectURL(_audFileUrl);}catch(_){}
+        try{exportActx.close();}catch(_){}
         return;
       }
 
-      const el=frameIdx/FPS;
-      const ts_us=Math.round(el*1_000_000);
+      // Intro: first N frames render intro instead of music card
+      const introDur=_introEnabled?_introDuration:0;
+      const outroDur=_outroEnabled?_outroDuration:0;
+      const introFrames=Math.floor(introDur*FPS);
+      const outroFrames=Math.floor(outroDur*FPS);
+      const mainFrames=totalFrames-introFrames-outroFrames;
 
+      let el, ts_us;
+      if(frameIdx<introFrames){
+        // Intro segment
+        el=0; ts_us=Math.round(frameIdx/FPS*1_000_000);
+        bgCache=null;
+        const introT=frameIdx/FPS;
+        outCtx.clearRect(0,0,EW,EH);
+        renderIntroFrame(outCtx,EW,EH,introT,chosenTpl?.pal||{});
+      } else if(frameIdx>=introFrames+mainFrames){
+        // Outro segment
+        el=dur;
+        const outroT=(frameIdx-(introFrames+mainFrames))/FPS;
+        ts_us=Math.round((introFrames/FPS+dur+outroT)*1_000_000);
+        outCtx.clearRect(0,0,EW,EH);
+        renderOutroFrame(outCtx,EW,EH,outroT,chosenTpl?.pal||{});
+      } else {
+        // Main segment
+        el=(frameIdx-introFrames)/FPS;
+        ts_us=Math.round((introFrames/FPS+el)*1_000_000);
+      }
+
+      if(frameIdx>=introFrames&&frameIdx<introFrames+mainFrames){
       // Audio analysis — read realtime frequency (no seek needed)
       exportAn.getByteFrequencyData(expFreqBuf);
       _freqBuf=expFreqBuf;
@@ -7026,6 +7121,11 @@ async function exportWithWebCodecs(q){
       outCtx.drawImage(offBg,0,0);
       outCtx.filter='none';
       outCtx.drawImage(offOv,0,0);
+      // Watermark on export canvas
+      if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
+        drawWatermark(outCtx,EW,EH);
+      }
+      } // end main segment if
 
       // Create VideoFrame + encode with backpressure
       const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
@@ -7081,7 +7181,8 @@ async function exportWithMediaRecorder(q){
   const exportAudEl=new Audio();
   exportAudEl.muted=true;           // NO speaker output during export
   exportAudEl.volume=0;
-  exportAudEl.src=URL.createObjectURL(audFile);
+  const _mrAudFileUrl=URL.createObjectURL(audFile);
+  exportAudEl.src=_mrAudFileUrl;
   exportAudEl.crossOrigin='anonymous';
   await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
   const exportSrc=exportActx.createMediaElementSource(exportAudEl);
@@ -7128,7 +7229,9 @@ async function exportWithMediaRecorder(q){
       bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs;
       bgX=_mrSaveBgX; ovX=_mrSaveOvX;
       bgCache=null;
-      exportAudEl.pause(); exportActx.close();
+      exportAudEl.pause();
+      try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){}
+      try{exportActx.close();}catch(_){}
     },400);
   };
 
@@ -7154,12 +7257,12 @@ async function exportWithMediaRecorder(q){
   upProg(20,`Render WebM ${EW}×${EH}...`);
 
   function fr(){
-    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; return; }
+    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){} try{exportActx?.close();}catch(_){} _isExporting=false; return; }
     const el=(performance.now()-t0)/1000;
     if(el>=dur+0.1){
       upProg(94,'Đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
       bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null;
-      mr.stop(); return;
+      setTimeout(()=>mr.stop(),200); return; // delay 200ms so last frame is captured
     }
     exportAn.getByteFrequencyData(expFreqBuf);
     _freqBuf=expFreqBuf;
@@ -7180,6 +7283,10 @@ async function exportWithMediaRecorder(q){
     ectx.drawImage(mrOffBg,0,0);
     ectx.filter='none';
     ectx.drawImage(mrOffOv,0,0);
+    // Watermark on export canvas
+    if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
+      drawWatermark(ectx,EW,EH);
+    }
     const pct=20+Math.round(el/dur*72);
     upProg(pct,`Render WebM ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`);
     setTimeout(fr,1000/30);
