@@ -717,9 +717,12 @@ main {
 }
 .preview-frame.ratio-916 {
   aspect-ratio:9/16;
-  max-height:70vh;
-  width:auto;
+  height:72vh;
+  width:calc(72vh * 9 / 16);
   margin:0 auto;
+  background:#000;
+  overflow:hidden;
+  display:block;
 }
 #bgcvs { display:block; max-width:100%; max-height:100%; }
 #ovcvs {
@@ -1225,19 +1228,18 @@ header { padding:0 32px; }
 #prev-wrap { width:100%; }
 #bgcvs, #ovcvs { width:100% !important; height:auto !important; max-height:60vh; }
 
-/* ── 9:16 TikTok: fill container, no black bars ── */
-.preview-frame.ratio-916 {
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+/* 9:16 canvas fill pvframe exactly */
+.preview-frame.ratio-916 #bgcvs {
+  display:block;
+  width:100%;
+  height:100%;
 }
-.preview-frame.ratio-916 #bgcvs,
 .preview-frame.ratio-916 #ovcvs {
   position:absolute;
   top:0; left:0;
-  width:100% !important;
-  height:100% !important;
+  width:100%;
+  height:100%;
+  pointer-events:none;
 }
 </style>
 </head>
@@ -1385,7 +1387,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.0 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v6.3 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1490,8 +1492,6 @@ header { padding:0 32px; }
 
     <!-- LEFT: Preview -->
     <div>
-
-  <div class="panel-title">🎬 Bước 4 — Xem Trước &amp; Xuất Video</div>
 
   <div class="spec-strip" id="spec-strip-el" style="display:none"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
@@ -1992,7 +1992,7 @@ header { max-width:100% !important; padding:0 32px; }
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v6.0';
+const APP_VERSION = 'v6.1';
 const VERSION_HISTORY = [("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -5277,37 +5277,53 @@ function loadArtImg(inp){
 
 /* ── CANVAS INIT ── */
 function initCanvas(){
-  const w=$('pvframe');
-  const W=w.clientWidth||w.parentElement?.clientWidth||Math.round(window.innerWidth*.72)||1280;
-  let cW, cH;
+  const pvframe=$('pvframe');
+  if(!pvframe) return;
 
-  if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
-    // 9:16: size to pvframe container
-    const pH=w.clientHeight||Math.round(window.innerHeight*.7);
-    cH=pH||Math.round(window.innerHeight*.7);
-    cW=Math.round(cH*(9/16));
-    // Override: use pvframe width if container is portrait
-    if(W<cW){ cW=W; cH=Math.round(W*(16/9)); }
-  } else {
-    // 16:9 default
-    cW=W;
-    cH=Math.round(W*9/16);
+  const doInit=()=>{
+    const pW=pvframe.clientWidth||pvframe.offsetWidth||800;
+    const pH=pvframe.clientHeight||pvframe.offsetHeight||450;
+    let cW,cH;
+
+    if(currentRatio==='9:16'){
+      // 9:16: use pvframe's ACTUAL rendered dimensions
+      // pvframe has explicit height:72vh and width:calc(72vh*9/16)
+      cH=pvframe.offsetHeight||Math.round(window.innerHeight*.72);
+      cW=pvframe.offsetWidth||Math.round(cH*(9/16));
+      // Validate aspect ratio
+      if(Math.abs(cW/cH - 9/16) > 0.05){
+        cW=Math.round(cH*(9/16));
+      }
+    } else {
+      cW=pW; cH=Math.round(pW*(9/16));
+    }
+
+    bgCvs.width=cW;  bgCvs.height=cH;
+    ovCvs.width=cW;  ovCvs.height=cH;
+    // Remove any explicit CSS size — CSS handles fill via width:100% height:100%
+    bgCvs.style.width='';  bgCvs.style.height='';
+    ovCvs.style.width='';  ovCvs.style.height='';
+
+    bgCvs.setAttribute('data-pw',cW);
+    bgCvs.setAttribute('data-ph',cH);
+    const pW2=pvframe.clientWidth||pW;
+    spCvs.width=pW2; spCvs.height=44;
+
+    if(typeof clearGradCache==='function') clearGradCache();
+    aiT=0; aiGP=0; ptArr=[];
+    if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+  };
+
+  // Run after layout paint (pvframe must have dimensions)
+  requestAnimationFrame(()=>requestAnimationFrame(doInit));
+
+  // ResizeObserver: re-run when container resizes (ratio change, fullscreen, window resize)
+  if(!pvframe._roAttached){
+    pvframe._roAttached=true;
+    if(window.ResizeObserver){
+      new ResizeObserver(()=>requestAnimationFrame(doInit)).observe(pvframe);
+    }
   }
-
-  bgCvs.width=cW;  bgCvs.height=cH;
-  ovCvs.width=cW;  ovCvs.height=cH;
-
-  // Sync ovcvs pixel dimensions to bgcvs so they overlap perfectly
-  ovCvs.style.width  = bgCvs.offsetWidth  ? bgCvs.offsetWidth+'px'  : '';
-  ovCvs.style.height = bgCvs.offsetHeight ? bgCvs.offsetHeight+'px' : '';
-
-  bgCvs.setAttribute('data-pw',cW);
-  bgCvs.setAttribute('data-ph',cH);
-  spCvs.width=W; spCvs.height=44;
-
-  if(typeof clearGradCache==='function') clearGradCache();
-  aiT=0; aiGP=0; ptArr=[];
-  if(chosenTpl?.style==='pt') initParts(cW,cH,chosenTpl.pal.ac,chosenTpl.pal.ac2);
 }
 
 // ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
@@ -6217,8 +6233,12 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   drawMCBackground(bgX,W,H,t,bass,p,bgType);
 
   // ── CARD — Multi-axis beat animation ──
+  // Detect 9:16 portrait mode and scale accordingly
+  const is916 = H > W * 1.4;
   const maxCardH = H * 0.60;
-  const baseCardW = Math.min(W * 0.34, maxCardH / 1.18);
+  const baseCardW = is916
+    ? Math.min(W * 0.72, H * 0.45)   // 9:16: larger card fills width
+    : Math.min(W * 0.34, maxCardH / 1.18); // 16:9: original sizing
 
   // Breathing + beat pulse trên nhiều trục
   const breathe = 1 + Math.sin(aiT * 1.2) * 0.006;
@@ -6231,7 +6251,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   const shakeX = bass > 0.62 ? Math.sin(aiT * 26) * W * 0.0045 * bass : 0;
   const shakeY = bass > 0.62 ? Math.cos(aiT * 20) * H * 0.0022 * bass : 0;
   const cx = (W - cw) / 2 + shakeX;
-  const cy = H * 0.04 + shakeY;
+  // 9:16: card starts higher (more room below for title/wave)
+  const cy = (is916 ? H * 0.04 : H * 0.04) + shakeY;
   const cardCX = cx + cw/2, cardCY = cy + ch/2;
 
   // ── Outer glow aura khi beat mạnh ──
@@ -6347,7 +6368,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
   const wc=p.wc||'#22d3ee';
-  const waveY=cy+ch+H*.018;
+  const waveY=cy+ch+(is916 ? H*.04 : H*.018);
   // Tính chiều cao sóng sao cho title luôn nằm trong frame
   const remainH = H - waveY;
   const titleSz = Math.min(W*.056, 42);
@@ -6375,8 +6396,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   }
 
   // ── TITLE + ARTIST — Premium Typography ──
-  const tyY = waveY + waveH + H*.052;
-  const tsz = Math.min(W*.056, 44) * (1 + bass * 0.018);
+  const tyY = waveY + waveH + (is916 ? H*.08 : H*.052);
+  const tsz = Math.min(is916 ? W*.072 : W*.056, 44) * (1 + bass * 0.018);
   ovX.save();
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
