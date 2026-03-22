@@ -1970,17 +1970,36 @@ const $ = id => document.getElementById(id);
 // VOLUME CONTROL
 // ─────────────────────────────────────────
 let _isMuted=false, _volBeforeMute=1;
-function setVolume(v){
-  const vol=parseFloat(v);
-  if(typeof audEl!=='undefined'&&audEl) audEl.volume=vol;
-  _isMuted=(vol===0);
-  const btn=$('mute-btn');
-  if(btn) btn.textContent=vol===0?'🔇':vol<0.4?'🔉':'🔊';
+let _gainNode=null; // Web Audio gain node for volume control
+
+function _ensureGainNode(){
+  if(_gainNode||!actx||!analyser) return;
+  // Insert gain node between source and analyser
+  _gainNode=actx.createGain();
+  _gainNode.gain.value=1;
 }
+
+function setVolume(v){
+  const vol=Math.max(0,Math.min(1,parseFloat(v)||0));
+  _isMuted=(vol===0);
+  if(typeof audEl!=='undefined'&&audEl){
+    audEl.volume=vol;
+    audEl.muted=(vol===0);
+  }
+  if(_gainNode) _gainNode.gain.setTargetAtTime(vol, actx?.currentTime||0, 0.01);
+  const btn=$('mute-btn');
+  if(btn) btn.textContent=vol===0?'🔇':vol<0.5?'🔉':'🔊';
+}
+
 function toggleMute(){
   const sl=$('vol-slider'); if(!sl) return;
-  if(_isMuted){ sl.value=_volBeforeMute||0.8; setVolume(_volBeforeMute||0.8); }
-  else { _volBeforeMute=parseFloat(sl.value); sl.value=0; setVolume(0); }
+  if(_isMuted){
+    const v=_volBeforeMute||0.8;
+    sl.value=v; setVolume(v);
+  } else {
+    _volBeforeMute=parseFloat(sl.value)||1;
+    sl.value=0; setVolume(0);
+  }
 }
 
 // ─────────────────────────────────────────
@@ -4177,19 +4196,19 @@ let idleRaf=null;
 function startIdleLoop(){
   stopIdleLoop();
   function idleTick(ts){
-    if(playing){idleRaf=null;return;}
-    if(!chosenTpl||step!==4){idleRaf=null;return;}
-    if(ts-lastFrameTime<FRAME_MS){idleRaf=requestAnimationFrame(idleTick);return;}
+    if(playing){ idleRaf=null; return; } // stop if playback started
+    if(!chosenTpl||step!==4){ idleRaf=null; return; }
+    if(ts-lastFrameTime<FRAME_MS){ idleRaf=requestAnimationFrame(idleTick); return; }
     lastFrameTime=ts;
     aiT+=.008;
     _bass=.25+Math.abs(Math.sin(aiT*1.2))*.15;
-    _mid=.2+Math.abs(Math.sin(aiT*.8))*.1;
-    _eng=.22;
-    // Đồng bộ thời gian từ audEl khi idle
+    _mid =.2 +Math.abs(Math.sin(aiT*.8))*.1;
+    _eng =.22;
     _renderTime=audEl?.currentTime||0;
     _renderDur =audEl?.duration||0;
     drawFrame();
-    idleRaf=requestAnimationFrame(idleTick);
+    if(!playing && step===4) idleRaf=requestAnimationFrame(idleTick);
+    else idleRaf=null;
   }
   idleRaf=requestAnimationFrame(idleTick);
 }
@@ -4236,26 +4255,27 @@ async function startPlay(){
   renderLoop();
 }
 function stopPlay(){
-  if(audEl)audEl.pause();
-  playing=false;$('pbtn').textContent='▶ Phát';
-  if(raf)cancelAnimationFrame(raf);
+  playing=false; // set FIRST to stop renderLoop from continuing
+  if(raf){ cancelAnimationFrame(raf); raf=null; }
+  if(audEl){ audEl.pause(); }
+  const btn=$('pbtn'); if(btn) btn.textContent='▶ Phát';
   if(typeof releaseWakeLock==='function') releaseWakeLock();
-  if(typeof artImgTimer!=='undefined') clearInterval(artImgTimer);
-  if(step===4)startIdleLoop();
+  if(typeof artImgTimer!=='undefined'&&artImgTimer){ clearInterval(artImgTimer); artImgTimer=null; }
+  if(step===4) setTimeout(startIdleLoop, 50); // small delay to avoid race with renderLoop
 }
 function doRestart(){stopPlay();setTimeout(startPlay,80);}
 
 function renderLoop(ts=0){
-  if(!playing)return;
-  if(ts-lastFrameTime<FRAME_MS){raf=requestAnimationFrame(renderLoop);return;}
+  if(!playing){ raf=null; return; } // guard: stop if playing was set false
+  if(ts-lastFrameTime<FRAME_MS){ raf=requestAnimationFrame(renderLoop); return; }
   lastFrameTime=ts;
-  // Cập nhật thời gian render từ audio thật
   _renderTime = audEl?.currentTime||0;
   _renderDur  = audEl?.duration||0;
   readAudioOnce();
-  drawFrame();drawSpec();
-  if(audEl)$('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
-  raf=requestAnimationFrame(renderLoop);
+  drawFrame(); drawSpec();
+  if(audEl) $('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
+  if(playing) raf=requestAnimationFrame(renderLoop); // only continue if still playing
+  else raf=null;
 }
 
 /* ── MAIN DRAW ── */
@@ -5737,49 +5757,57 @@ async function exportWithWebCodecs(q){
     let audioBuf=null;
     try{
       const ab=await audFile.arrayBuffer();
-      const decCtx=new OfflineAudioContext(2,44100*dur,44100);
+      // Round sample count to integer to avoid OfflineAudioContext errors
+      const sampleCount=Math.floor(44100*dur);
+      const decCtx=new OfflineAudioContext(2, sampleCount, 44100);
       audioBuf=await decCtx.decodeAudioData(ab);
-    }catch(_){ audioBuf=null; }
+    }catch(e){ audioBuf=null; console.warn('Audio decode failed:',e); }
 
-    // Encode audio in 2048-sample chunks (AAC requires minimum 2048 frames = 8192 bytes for f32)
+    // Encode audio — 4096-sample chunks, NO flush inside loop (causes EncodingError)
     if(audioBuf){
       upProg(18,'Encode audio...');
       const sr=audioBuf.sampleRate;
-      const nCh=Math.min(audioBuf.numberOfChannels,2); // stereo max
-      const chunkSz=2048; // AAC frame size — must be ≥2048 to satisfy 8192 byte minimum
+      const nCh=Math.min(audioBuf.numberOfChannels,2);
+      const chunkSz=4096; // larger chunks = more stable, still satisfies 8192-byte min for stereo f32
 
-      // Ensure bitrate is one of the supported values
       const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)
         ? q.audioBps : 128000;
-      audioEncoder.configure({
-        codec:'mp4a.40.2',
-        sampleRate:sr,
-        numberOfChannels:nCh,
-        bitrate:safeBitrate,
-      });
 
-      for(let i=0;i<audioBuf.length;i+=chunkSz){
-        const len=Math.min(chunkSz,audioBuf.length-i);
-        // f32-planar: all channel 0 samples then all channel 1 samples
-        const aData=new Float32Array(len*nCh);
-        for(let c=0;c<nCh;c++){
-          const chData=audioBuf.getChannelData(c);
-          aData.set(chData.slice(i,i+len), c*len);
-        }
-        const aFrame=new AudioData({
-          format:'f32-planar',
+      try{
+        audioEncoder.configure({
+          codec:'mp4a.40.2',
           sampleRate:sr,
-          numberOfFrames:len,
           numberOfChannels:nCh,
-          timestamp:Math.round(i/sr*1_000_000),
-          data:aData,
+          bitrate:safeBitrate,
         });
-        audioEncoder.encode(aFrame);
-        aFrame.close();
-        if(i%88200===0) await audioEncoder.flush(); // flush every ~2s
+
+        for(let i=0;i<audioBuf.length;i+=chunkSz){
+          const len=Math.min(chunkSz,audioBuf.length-i);
+          // f32-planar: [ch0_samples..., ch1_samples...]
+          const aData=new Float32Array(len*nCh);
+          for(let c=0;c<nCh;c++){
+            aData.set(audioBuf.getChannelData(c).subarray(i,i+len), c*len);
+          }
+          const aFrame=new AudioData({
+            format:'f32-planar',
+            sampleRate:sr,
+            numberOfFrames:len,
+            numberOfChannels:nCh,
+            timestamp:Math.round(i/sr*1_000_000),
+            data:aData,
+          });
+          audioEncoder.encode(aFrame);
+          aFrame.close();
+          // Yield to browser every 0.5s worth of audio — no flush here (causes EncodingError)
+          if(i%(sr*2)===0) await new Promise(r=>setTimeout(r,0));
+        }
+        // Single flush at the end only
+        await audioEncoder.flush();
+        upProg(20,'Audio encode xong ✅');
+      }catch(e){
+        console.warn('AudioEncoder failed, skipping audio:',e);
+        toast('⚠ Audio encode lỗi — video sẽ không có âm thanh','warn',4000);
       }
-      await audioEncoder.flush();
-      upProg(20,'Audio encode xong ✅');
     }
 
     // Render + encode video frames
