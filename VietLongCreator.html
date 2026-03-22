@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.0 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.1 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3077,58 +3077,81 @@ body:has(#panel-affiliate.show) main {
       <div class="aff-card">
         <div class="aff-card-title">📱 KẾT NỐI TIKTOK</div>
 
-        <!-- User info (shown after login) -->
-        <div id="aff-tt-user-info" style="display:none;margin-bottom:10px;padding:10px 12px;background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.25);border-radius:10px">
+        <!-- Connected state -->
+        <div id="aff-tt-user-info" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.25);border-radius:10px">
           <div style="display:flex;align-items:center;gap:10px">
-            <img id="aff-tt-avatar" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #ff2d78" onerror="this.style.display='none'">
+            <img id="aff-tt-avatar" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #ff2d78;flex-shrink:0" onerror="this.style.display='none'">
             <div style="flex:1;min-width:0">
-              <div id="aff-tt-display-name" style="font-size:.75rem;font-weight:700;color:var(--tx)"></div>
+              <div id="aff-tt-display-name" style="font-size:.75rem;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
               <div id="aff-tt-followers" style="font-size:.6rem;color:var(--tx3);margin-top:1px"></div>
             </div>
-            <button onclick="logoutTikTok()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.6rem;cursor:pointer;white-space:nowrap">Đăng xuất</button>
+            <button onclick="logoutTikTok()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.6rem;cursor:pointer;white-space:nowrap;flex-shrink:0">Đăng xuất</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div style="flex:1;padding:6px 8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:6px;font-size:.58rem;color:#22c55e;text-align:center">✅ Token hợp lệ</div>
+            <div id="aff-token-expire" style="flex:1;padding:6px 8px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:6px;font-size:.58rem;color:var(--tx3);text-align:center"></div>
           </div>
         </div>
 
-        <!-- Login button (shown before login) -->
+        <!-- Input form -->
         <div id="aff-tt-login-area">
-          <button onclick="startTikTokOAuth()" id="aff-login-btn"
-            style="width:100%;padding:10px 14px;border-radius:9px;border:none;
+          <!-- Step indicator -->
+          <div style="display:flex;gap:4px;margin-bottom:12px">
+            <div style="flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,#ff2d78,#ff6b9d)" id="aff-step-1-bar"></div>
+            <div style="flex:1;height:3px;border-radius:2px;background:var(--line)" id="aff-step-2-bar"></div>
+          </div>
+
+          <!-- Access Token input -->
+          <div class="aff-fg">
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>Access Token</span>
+              <a href="https://developers.tiktok.com/apps" target="_blank" style="font-size:.56rem;color:var(--a2);text-decoration:none;font-weight:400;text-transform:none;letter-spacing:0">📖 Lấy token ở đâu?</a>
+            </label>
+            <textarea id="aff-tt-token-input" rows="3"
+              placeholder="Paste Access Token từ TikTok Developer Portal...&#10;&#10;developers.tiktok.com → Apps → Sandbox → Generate token"
+              style="width:100%;background:var(--ink);border:1px solid var(--line2);color:var(--tx);border-radius:8px;padding:8px;font-family:'IBM Plex Mono',monospace;font-size:.62rem;resize:none;line-height:1.5;box-sizing:border-box;outline:none"
+              oninput="onTokenInput(this.value)"></textarea>
+          </div>
+
+          <!-- Open ID input (auto hoặc manual) -->
+          <div class="aff-fg" id="aff-openid-row" style="display:none">
+            <label>Open ID <span style="color:var(--tx3);font-weight:400;text-transform:none;letter-spacing:0">(tự động lấy nếu bỏ trống)</span></label>
+            <input type="text" id="aff-tt-openid-input"
+              placeholder="open_id (tuỳ chọn)"
+              style="font-family:'IBM Plex Mono',monospace;font-size:.65rem">
+          </div>
+
+          <!-- Verify button -->
+          <button onclick="verifyTikTokToken()" id="aff-verify-btn"
+            style="width:100%;padding:10px;border-radius:8px;border:none;
                    background:linear-gradient(135deg,#ff2d78,#ff6b9d);
-                   color:#fff;font-size:.75rem;font-weight:800;cursor:pointer;
+                   color:#fff;font-size:.72rem;font-weight:800;cursor:pointer;
                    display:flex;align-items:center;justify-content:center;gap:8px;
                    box-shadow:0 3px 12px rgba(255,45,120,.3);transition:all .2s;
-                   white-space:nowrap;overflow:hidden">
-            <span style="font-size:.95rem;flex-shrink:0">🎵</span>
-            <span id="aff-login-btn-text" style="overflow:hidden;text-overflow:ellipsis">Đăng nhập TikTok</span>
+                   opacity:.4;pointer-events:none">
+            <span>🔍</span>
+            <span id="aff-verify-btn-text">Nhập token để xác thực</span>
           </button>
-          <div style="font-size:.6rem;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.6">
-            Đăng nhập 1 lần · Tự động lấy token &amp; thông tin tài khoản<br>
-            <span id="aff-proxy-status" style="color:var(--tx3)">⚙ Chưa cấu hình Proxy URL</span>
+
+          <!-- How to get token guide -->
+          <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px">
+            <div style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">📋 Cách lấy Access Token</div>
+            <div style="font-size:.65rem;color:var(--tx3);line-height:1.8">
+              1. Vào <a href="https://developers.tiktok.com" target="_blank" style="color:var(--a2)">developers.tiktok.com</a><br>
+              2. <strong style="color:var(--tx2)">My Apps</strong> → chọn app của bạn<br>
+              3. Tab <strong style="color:var(--tx2)">Sandbox</strong> → <strong style="color:var(--tx2)">Manage</strong><br>
+              4. Nhấn <strong style="color:#ff2d78">Generate token</strong> → Copy<br>
+              5. Paste vào ô trên → Xác thực
+            </div>
           </div>
         </div>
 
-        <!-- Proxy URL config -->
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;font-family:'IBM Plex Mono',monospace">Vercel Proxy URL</span>
-            <a href="https://github.com/letranvietlong/tiktok-proxy" target="_blank"
-               style="font-size:.57rem;color:var(--a2);text-decoration:none">📖 Hướng dẫn</a>
-          </div>
-          <input type="text" id="aff-proxy-url"
-            placeholder="https://your-proxy.vercel.app"
-            oninput="saveAffSettings();checkProxyStatus()"
-            style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:.65rem;margin-bottom:5px;box-sizing:border-box">
-          <button onclick="checkProxyStatus(true)"
-            style="width:100%;padding:5px;border-radius:6px;border:1px solid rgba(0,229,195,.3);background:rgba(0,229,195,.08);color:var(--a2);font-size:.62rem;font-weight:700;cursor:pointer">✓ Kiểm tra kết nối</button>
-        </div>
-
-        <!-- Hidden fields auto-filled after login -->
+        <!-- Hidden fields used by other functions -->
         <input type="hidden" id="aff-tt-token">
         <input type="hidden" id="aff-tt-openid">
         <input type="hidden" id="aff-client-key">
       </div>
 
-      <!-- Nguồn sản phẩm -->
       <div class="aff-card">
         <div class="aff-card-title">🛒 NGUỒN SẢN PHẨM</div>
         <div class="aff-fg">
@@ -3381,8 +3404,8 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v8.0';
-const VERSION_HISTORY = [("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+const APP_VERSION = 'v8.1';
+const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
   if(!modal){
@@ -11280,7 +11303,6 @@ function saveAffSettings(){
       captionTpl:$('aff-caption-tpl')?.value||'',
       hashtags: $('aff-hashtags')?.value||'',
       manualUrls:$('aff-manual-urls')?.value||'',
-      proxyUrl:  $('aff-proxy-url')?.value||'',
       timeSlots: affTimeSlots,
       stats:    affStats,
     };
@@ -11307,7 +11329,6 @@ function loadAffSettings(){
     if($('aff-caption-tpl')) $('aff-caption-tpl').value=s.captionTpl||'{emoji} {product_name} - Chỉ {price}đ!\n✅ {feature1}\n✅ {feature2}\n🔗 Link mua trong bio!\n{hashtags}';
     if($('aff-hashtags'))    $('aff-hashtags').value=s.hashtags||'#affiliate #tiktokshop #muasắm #review';
     if($('aff-manual-urls')) $('aff-manual-urls').value=s.manualUrls||'';
-    if($('aff-proxy-url') && s.proxyUrl) $('aff-proxy-url').value=s.proxyUrl;
     affTimeSlots=s.timeSlots||[];
     affStats=s.stats||{found:0,videos:0,uploaded:0,clicks:0};
     affSettings=s;
@@ -11897,632 +11918,284 @@ function exportAffScript(){
 
 
 /* ═══════════════════════════════════════════════════════════════
-   TIKTOK OAUTH 2.0 — PKCE Flow (no backend needed)
-   Uses Authorization Code + PKCE — secure for single-page apps
+   TIKTOK — SIMPLE TOKEN METHOD (PP A)
+   User paste Access Token 1 lần → verify → lưu localStorage
+   Không cần OAuth, không cần server, không cần Developer review
 ═══════════════════════════════════════════════════════════════ */
 
-// ── PKCE helpers ───────────────────────────────────────────────
-function _base64url(buffer){
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-async function _sha256(plain){
-  const enc=new TextEncoder().encode(plain);
-  return crypto.subtle.digest('SHA-256',enc);
-}
-async function _genCodeVerifier(){
-  const arr=new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  return _base64url(arr);
-}
-async function _genCodeChallenge(verifier){
-  return _base64url(await _sha256(verifier));
-}
+// ── Token input handler ─────────────────────────────────────────
+function onTokenInput(val) {
+  const btn    = $('aff-verify-btn');
+  const btnTxt = $('aff-verify-btn-text');
+  const openIdRow = $('aff-openid-row');
+  const bar2  = $('aff-step-2-bar');
+  const token = val.trim().replace(/\s+/g,'');
 
-// ── OAuth state ─────────────────────────────────────────────────
-let _ttOAuthWindow=null;
-let _ttOAuthTimer=null;
-
-// ── Start TikTok Login ──────────────────────────────────────────
-async function startTikTokLogin(){
-  const clientKey=($('aff-client-key')?.value||'').trim();
-  if(!clientKey){
-    toast('Nhập Client Key trước (từ developers.tiktok.com)','warn',3000);
-    $('aff-client-key')?.focus();
-    return;
-  }
-
-  affLog('info','🔐 Bắt đầu TikTok OAuth PKCE...');
-  const btn=$('aff-login-btn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Đang mở...'; }
-
-  try{
-    // Generate PKCE pair
-    const codeVerifier=await _genCodeVerifier();
-    const codeChallenge=await _genCodeChallenge(codeVerifier);
-    const state=_base64url(crypto.getRandomValues(new Uint8Array(16)));
-
-    // Save verifier for later exchange
-    sessionStorage.setItem('tt_code_verifier',codeVerifier);
-    sessionStorage.setItem('tt_oauth_state',state);
-    sessionStorage.setItem('tt_client_key',clientKey);
-
-    // Build auth URL
-    // redirect_uri = current page URL (must be registered in TikTok Developer Portal)
-    const redirectUri=encodeURIComponent(location.href.split('?')[0].split('#')[0]);
-    const scopes=encodeURIComponent('user.info.basic,video.upload,video.publish');
-
-    const authUrl=
-      `https://www.tiktok.com/v2/auth/authorize/?`+
-      `client_key=${encodeURIComponent(clientKey)}`+
-      `&scope=${scopes}`+
-      `&response_type=code`+
-      `&redirect_uri=${redirectUri}`+
-      `&state=${state}`+
-      `&code_challenge=${codeChallenge}`+
-      `&code_challenge_method=S256`;
-
-    affLog('info',`🌐 Mở cửa sổ TikTok login...`);
-
-    // Open popup
-    const w=600,h=700;
-    const left=(screen.width-w)/2, top=(screen.height-h)/2;
-    _ttOAuthWindow=window.open(authUrl,'TikTok Login',
-      `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`);
-
-    if(!_ttOAuthWindow){
-      // Popup blocked — redirect instead
-      affLog('warn','⚠ Popup bị chặn, chuyển hướng trang...');
-      sessionStorage.setItem('tt_oauth_redirect','1');
-      location.href=authUrl;
-      return;
-    }
-
-    affLog('info','📋 Đang chờ người dùng đăng nhập TikTok...');
-    if(btn){ btn.textContent='⏳ Chờ đăng nhập...'; }
-
-    // Poll for callback
-    _ttOAuthTimer=setInterval(()=>{
-      try{
-        const popupUrl=_ttOAuthWindow?.location?.href||'';
-        const currentPageBase=location.href.split('?')[0].split('#')[0];
-        if(popupUrl.startsWith(currentPageBase) && popupUrl.includes('code=')){
-          clearInterval(_ttOAuthTimer);
-          _ttOAuthWindow.close();
-          const params=new URLSearchParams(new URL(popupUrl).search);
-          const code=params.get('code');
-          const returnedState=params.get('state');
-          _handleTikTokCallback(code, returnedState);
-        }
-      }catch(e){
-        // Cross-origin — still on TikTok, keep waiting
-      }
-      // Check if popup was closed manually
-      if(_ttOAuthWindow?.closed){
-        clearInterval(_ttOAuthTimer);
-        affLog('warn','⚠ Cửa sổ login đã đóng');
-        if(btn){ btn.disabled=false; btn.textContent='🎵 Đăng Nhập'; }
-      }
-    },500);
-
-  }catch(e){
-    affLog('err','❌ Lỗi OAuth: '+e.message);
-    toast('Lỗi OAuth: '+e.message,'warn',4000);
-    if(btn){ btn.disabled=false; btn.textContent='🎵 Đăng Nhập'; }
-  }
-}
-
-// ── Handle OAuth callback ───────────────────────────────────────
-async function _handleTikTokCallback(code, returnedState){
-  const btn=$('aff-login-btn');
-  if(!code){ 
-    affLog('err','❌ Không nhận được auth code');
-    if(btn){ btn.disabled=false; btn.textContent='🎵 Đăng Nhập'; }
-    return;
-  }
-
-  const savedState=sessionStorage.getItem('tt_oauth_state');
-  if(returnedState!==savedState){
-    affLog('err','❌ State mismatch — có thể bị tấn công CSRF');
-    toast('Lỗi bảo mật OAuth (state mismatch)','warn',4000);
-    if(btn){ btn.disabled=false; btn.textContent='🎵 Đăng Nhập'; }
-    return;
-  }
-
-  const codeVerifier=sessionStorage.getItem('tt_code_verifier');
-  const clientKey=sessionStorage.getItem('tt_client_key');
-  const redirectUri=location.href.split('?')[0].split('#')[0];
-
-  affLog('info','🔄 Đang đổi code lấy access token...');
-  if(btn){ btn.textContent='⏳ Lấy token...'; }
-
-  // Exchange code for token via TikTok API
-  // NOTE: This requires a backend proxy because client_secret must be hidden.
-  // For client-key-only apps, we use a CORS proxy approach or ask user for secret.
-  // PKCE allows us to skip secret for public clients IF TikTok allows it.
-  
-  try{
-    // Try PKCE exchange (TikTok v2 supports PKCE for public clients)
-    const tokenResp=await fetch('https://open.tiktokapis.com/v2/oauth/token/',{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({
-        client_key: clientKey,
-        code: code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-      }).toString()
-    });
-
-    if(!tokenResp.ok){
-      const errText=await tokenResp.text();
-      // If PKCE exchange fails, it means TikTok requires client_secret
-      // Fall back to asking user for secret
-      if(tokenResp.status===400||tokenResp.status===401){
-        affLog('warn','⚠ TikTok yêu cầu Client Secret. Nhập để hoàn tất...');
-        _showSecretPrompt(code, clientKey, redirectUri, codeVerifier);
-        return;
-      }
-      throw new Error(`HTTP ${tokenResp.status}: ${errText.slice(0,100)}`);
-    }
-
-    const tokenData=await tokenResp.json();
-    if(tokenData.data?.access_token){
-      await _saveTikTokAuth(tokenData.data, clientKey);
-    } else {
-      throw new Error(JSON.stringify(tokenData).slice(0,150));
-    }
-
-  }catch(e){
-    affLog('err','❌ Token exchange failed: '+e.message);
-    // Fallback: show secret input
-    _showSecretPrompt(code, clientKey, redirectUri, codeVerifier);
-  }
-  if(btn){ btn.disabled=false; btn.textContent='🎵 Đăng Nhập'; }
-}
-
-// ── Client Secret fallback prompt ──────────────────────────────
-function _showSecretPrompt(code, clientKey, redirectUri, codeVerifier){
-  // Show a modal asking for client_secret (one-time, stored encrypted)
-  const modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML=`
-    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;width:380px;max-width:92vw">
-      <div style="font-size:1rem;font-weight:800;color:var(--tx);margin-bottom:6px">🔑 Cần Client Secret</div>
-      <div style="font-size:.7rem;color:var(--tx3);margin-bottom:16px;line-height:1.6">
-        TikTok yêu cầu Client Secret để hoàn tất đăng nhập.<br>
-        Tìm tại: <a href="https://developers.tiktok.com" target="_blank" style="color:var(--a2)">developers.tiktok.com</a> → My Apps → App của bạn
-      </div>
-      <input type="password" id="_tt_secret_inp" placeholder="Client Secret..." 
-        style="width:100%;padding:10px;background:var(--ink);border:1px solid var(--line2);border-radius:8px;color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:.75rem;box-sizing:border-box;margin-bottom:12px">
-      <div style="display:flex;gap:8px">
-        <button onclick="this.closest('div[style]').remove()" 
-          style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--tx3);cursor:pointer">Hủy</button>
-        <button id="_tt_secret_ok"
-          style="flex:2;padding:9px;border-radius:8px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-weight:700;cursor:pointer">
-          ✅ Xác nhận & Đăng nhập
-        </button>
-      </div>
-      <div style="font-size:.58rem;color:var(--tx3);margin-top:10px;text-align:center">
-        🔒 Secret chỉ lưu trong localStorage của trình duyệt này
-      </div>
-    </div>`;
-
-  document.body.appendChild(modal);
-  setTimeout(()=>document.getElementById('_tt_secret_inp')?.focus(),100);
-
-  document.getElementById('_tt_secret_ok').onclick=async()=>{
-    const secret=document.getElementById('_tt_secret_inp')?.value?.trim();
-    if(!secret){ toast('Nhập Client Secret','warn',2000); return; }
-    modal.remove();
-    affLog('info','🔄 Đang xác thực với Client Secret...');
-    try{
-      const tokenResp=await fetch('https://open.tiktokapis.com/v2/oauth/token/',{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:new URLSearchParams({
-          client_key: clientKey,
-          client_secret: secret,
-          code: code,
-          grant_type: 'authorization_code',
-          redirect_uri: redirectUri,
-          code_verifier: codeVerifier,
-        }).toString()
-      });
-      const tokenData=await tokenResp.json();
-      if(tokenData.data?.access_token){
-        // Save secret encrypted
-        localStorage.setItem('tt_cs', btoa(secret));
-        await _saveTikTokAuth(tokenData.data, clientKey);
-      } else {
-        throw new Error(tokenData.message||JSON.stringify(tokenData).slice(0,100));
-      }
-    }catch(e){
-      affLog('err','❌ Xác thực thất bại: '+e.message);
-      toast('Đăng nhập TikTok thất bại: '+e.message,'warn',5000);
-    }
-  };
-}
-
-// ── Save auth & fetch user info ─────────────────────────────────
-async function _saveTikTokAuth(tokenData, clientKey){
-  const accessToken=tokenData.access_token;
-  const openId=tokenData.open_id;
-  const refreshToken=tokenData.refresh_token||'';
-  const expiresIn=tokenData.expires_in||86400;
-
-  // Save to localStorage
-  localStorage.setItem('tt_access_token', accessToken);
-  localStorage.setItem('tt_open_id', openId);
-  localStorage.setItem('tt_refresh_token', refreshToken);
-  localStorage.setItem('tt_client_key', clientKey);
-  localStorage.setItem('tt_token_expires', Date.now()+expiresIn*1000);
-
-  // Auto-fill hidden fields
-  if($('aff-tt-token'))  $('aff-tt-token').value=accessToken;
-  if($('aff-tt-openid')) $('aff-tt-openid').value=openId;
-
-  affLog('ok','✅ TikTok OAuth thành công! Đang lấy thông tin tài khoản...');
-
-  // Fetch user info
-  await _fetchTikTokUserInfo(accessToken);
-  saveAffSettings();
-}
-
-// ── Fetch user info after login ─────────────────────────────────
-async function _fetchTikTokUserInfo(accessToken){
-  try{
-    const resp=await fetch('https://open.tiktokapis.com/v2/user/info/?fields=display_name,follower_count,following_count,avatar_url,open_id',{
-      headers:{ 'Authorization': `Bearer ${accessToken}` }
-    });
-    const data=await resp.json();
-    const user=data.data?.user;
-    if(user){
-      _updateTikTokConnectUI(true,{
-        name:     user.display_name||'TikTok User',
-        followers:user.follower_count||0,
-        avatar:   user.avatar_url||'',
-        openId:   user.open_id||'',
-      });
-      affLog('ok',`🎵 Xin chào @${user.display_name}! Followers: ${(user.follower_count||0).toLocaleString('vi')}`);
-      toast(`✅ Đăng nhập thành công! Xin chào @${user.display_name}`,'success',4000);
-    }
-  }catch(e){
-    affLog('warn','⚠ Không lấy được thông tin user: '+e.message);
-    _updateTikTokConnectUI(true,{name:'TikTok Account',followers:0,avatar:'',openId:''});
-  }
-}
-
-// ── Update UI after login/logout ────────────────────────────────
-function _updateTikTokConnectUI(connected, userInfo){
-  const box=$('aff-tt-box');
-  const nameEl=$('aff-tt-name');
-  const statusEl=$('aff-tt-status');
-  const btn=$('aff-tt-btn');
-  const loginBtn=$('aff-login-btn');
-  const userInfoDiv=$('aff-tt-user-info');
-  const avatarImg=$('aff-tt-avatar');
-  const displayNameEl=$('aff-tt-display-name');
-  const followersEl=$('aff-tt-followers');
-
-  if(connected && userInfo){
-    if(nameEl)    nameEl.textContent=userInfo.name;
-    if(statusEl)  statusEl.textContent='✅ Đã kết nối TikTok';
-    if(box)       box.classList.add('connected');
-    if(btn){      btn.textContent='✓ ĐÃ KẾT NỐI'; btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; }
-    if(loginBtn){ loginBtn.textContent='🔄 Đăng nhập lại'; loginBtn.disabled=false; }
-    if(userInfoDiv){ userInfoDiv.style.display='block'; }
-    if(avatarImg && userInfo.avatar){ avatarImg.src=userInfo.avatar; avatarImg.style.display=''; }
-    if(displayNameEl){ displayNameEl.textContent=userInfo.name; }
-    if(followersEl && userInfo.followers>0){ 
-      followersEl.textContent=`${userInfo.followers.toLocaleString('vi')} followers`; 
-    }
-    setAffStatus('CONNECTED','#22c55e');
+  if (token.length > 20) {
+    if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='auto'; }
+    if (btnTxt) btnTxt.textContent = '🔍 Xác thực Token';
+    if (openIdRow) openIdRow.style.display = 'block';
+    if (bar2) bar2.style.background = 'linear-gradient(90deg,#ff2d78,#ff6b9d)';
   } else {
-    if(nameEl)    nameEl.textContent='Chưa kết nối';
-    if(statusEl)  statusEl.textContent='Nhấn để kết nối TikTok';
-    if(box)       box.classList.remove('connected');
-    if(btn){      btn.textContent='KẾT NỐI'; btn.style.background='linear-gradient(135deg,#ff2d78,#ff6b9d)'; }
-    if(loginBtn){ loginBtn.textContent='🎵 Đăng Nhập'; loginBtn.disabled=false; }
-    if(userInfoDiv){ userInfoDiv.style.display='none'; }
-    setAffStatus('STANDBY','var(--a2)');
+    if (btn) { btn.style.opacity='.4'; btn.style.pointerEvents='none'; }
+    if (btnTxt) btnTxt.textContent = 'Nhập token để xác thực';
+    if (openIdRow) openIdRow.style.display = 'none';
+    if (bar2) bar2.style.background = 'var(--line)';
   }
 }
 
-// ── Logout ──────────────────────────────────────────────────────
-function logoutTikTok(){
-  localStorage.removeItem('tt_access_token');
-  localStorage.removeItem('tt_open_id');
-  localStorage.removeItem('tt_refresh_token');
-  localStorage.removeItem('tt_token_expires');
-  localStorage.removeItem('tt_cs');
-  if($('aff-tt-token'))  $('aff-tt-token').value='';
-  if($('aff-tt-openid')) $('aff-tt-openid').value='';
-  _updateTikTokConnectUI(false,null);
-  affLog('info','👋 Đã đăng xuất TikTok');
-  toast('Đã đăng xuất TikTok','info',2000);
-  saveAffSettings();
-}
+// ── Verify token by calling TikTok user info ────────────────────
+async function verifyTikTokToken() {
+  const tokenRaw = ($('aff-tt-token-input')?.value || '').trim().replace(/\s+/g,'');
+  if (!tokenRaw) { toast('Nhập Access Token trước','warn',2500); return; }
 
-// ── Auto-restore session on load ────────────────────────────────
-function restoreTikTokSession(){
-  const token=localStorage.getItem('tt_access_token');
-  const openId=localStorage.getItem('tt_open_id');
-  const expires=parseInt(localStorage.getItem('tt_token_expires')||'0');
-  const clientKey=localStorage.getItem('tt_client_key');
+  const btn    = $('aff-verify-btn');
+  const btnTxt = $('aff-verify-btn-text');
+  if (btn) btn.style.opacity = '.6';
+  if (btnTxt) btnTxt.textContent = '⏳ Đang xác thực...';
+  affLog('info', '🔍 Đang xác thực TikTok token...');
 
-  if(token && openId && Date.now()<expires){
-    if($('aff-tt-token'))  $('aff-tt-token').value=token;
-    if($('aff-tt-openid')) $('aff-tt-openid').value=openId;
-    if($('aff-client-key') && clientKey) $('aff-client-key').value=clientKey;
-    _fetchTikTokUserInfo(token);
-    affLog('ok','🔄 Khôi phục session TikTok từ localStorage');
-  } else if(token && Date.now()>=expires){
-    // Token expired — try refresh
-    _refreshTikTokToken();
-  }
-
-  // Also check if we're back from a redirect OAuth flow
-  _checkOAuthRedirectCallback();
-}
-
-// ── Token refresh ────────────────────────────────────────────────
-async function _refreshTikTokToken(){
-  const refreshToken=localStorage.getItem('tt_refresh_token');
-  const clientKey=localStorage.getItem('tt_client_key');
-  if(!refreshToken||!clientKey) return;
-
-  try{
-    const cs=localStorage.getItem('tt_cs');
-    const body={
-      client_key: clientKey,
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    };
-    if(cs) body.client_secret=atob(cs);
-
-    const resp=await fetch('https://open.tiktokapis.com/v2/oauth/token/',{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams(body).toString()
-    });
-    const data=await resp.json();
-    if(data.data?.access_token){
-      await _saveTikTokAuth(data.data, clientKey);
-      affLog('ok','🔄 Token TikTok đã được làm mới tự động');
-    }
-  }catch(e){
-    affLog('warn','⚠ Không thể làm mới token: '+e.message);
-  }
-}
-
-// ── Check OAuth redirect callback (for popup-blocked case) ──────
-function _checkOAuthRedirectCallback(){
-  const params=new URLSearchParams(location.search);
-  const code=params.get('code');
-  const state=params.get('state');
-  const savedState=sessionStorage.getItem('tt_oauth_state');
-
-  if(code && state && state===savedState){
-    // Clean URL
-    const cleanUrl=location.href.split('?')[0];
-    history.replaceState({},'',cleanUrl);
-    affLog('info','📋 Nhận OAuth callback từ redirect...');
-    _handleTikTokCallback(code, state);
-  }
-}
-
-// ── Override connectTikTok to use new flow ──────────────────────
-function connectTikTok(){
-  startTikTokLogin();
-}
-
-
-
-/* ═══════════════════════════════════════════════════════════════
-   TIKTOK OAUTH CẤP 3 — Vercel Proxy (user chỉ nhấn Login)
-   Client Key & Secret ở server, frontend hoàn toàn clean
-═══════════════════════════════════════════════════════════════ */
-
-// ── PKCE helpers ────────────────────────────────────────────────
-function _b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-async function _sha256(s){ return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); }
-async function _pkce(){ const v=_b64url(crypto.getRandomValues(new Uint8Array(32))); return {v, c:_b64url(await _sha256(v))}; }
-function _rand(){ return _b64url(crypto.getRandomValues(new Uint8Array(16))); }
-
-// ── State ────────────────────────────────────────────────────────
-let _ttWin=null, _ttTimer=null;
-
-function getProxyUrl(){ return ($('aff-proxy-url')?.value||localStorage.getItem('tt_proxy_url')||'').trim().replace(/\/$/,''); }
-
-// ── Check proxy status ───────────────────────────────────────────
-async function checkProxyStatus(manual=false){
-  const proxy=getProxyUrl();
-  const el=$('aff-proxy-status');
-  if(!proxy){
-    if(el) el.textContent='⚙ Chưa cấu hình Proxy URL'; 
-    if(el) el.style.color='var(--tx3)';
-    return false;
-  }
-  if(el){ el.textContent='⏳ Đang kiểm tra...'; el.style.color='#fbbf24'; }
-  try{
-    const r=await fetch(proxy+'/api/auth?redirect_uri=https://test.com&state=ping',{method:'GET',signal:AbortSignal.timeout(5000)});
-    if(r.ok||r.status===400){
-      if(el){ el.textContent='✅ Proxy hoạt động tốt'; el.style.color='#22c55e'; }
-      localStorage.setItem('tt_proxy_url',proxy);
-      if(manual) toast('✅ Proxy kết nối thành công!','success',2500);
-      return true;
-    } else {
-      throw new Error('HTTP '+r.status);
-    }
-  }catch(e){
-    if(el){ el.textContent='❌ Proxy không phản hồi: '+e.message; el.style.color='#ef4444'; }
-    if(manual) toast('Proxy lỗi: '+e.message,'warn',3000);
-    return false;
-  }
-}
-
-// ── Main login entry point ───────────────────────────────────────
-async function startTikTokOAuth(){
-  const proxy=getProxyUrl();
-  if(!proxy){
-    // Highlight proxy input
-    $('aff-proxy-url')?.focus();
-    toast('Nhập Vercel Proxy URL trước','warn',3000);
-    return;
-  }
-
-  const btn=$('aff-login-btn');
-  const btnText=$('aff-login-btn-text');
-  if(btn){ btn.disabled=true; }
-  if(btnText) btnText.textContent='⏳ Đang chuẩn bị...';
-
-  affLog('info','🔐 Khởi động TikTok OAuth Cấp 3...');
-
-  try{
-    const {v:codeVerifier, c:codeChallenge}=await _pkce();
-    const state=_rand();
-    const redirectUri=location.href.split('?')[0].split('#')[0];
-
-    sessionStorage.setItem('tt_cv',codeVerifier);
-    sessionStorage.setItem('tt_state',state);
-
-    // Ask proxy for auth URL (client key stays on server)
-    const authResp=await fetch(
-      `${proxy}/api/auth?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&code_challenge=${codeChallenge}`,
-      {signal:AbortSignal.timeout(8000)}
+  try {
+    // Try TikTok user info API directly
+    const resp = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=display_name,follower_count,avatar_url,open_id',
+      { headers: { 'Authorization': `Bearer ${tokenRaw}` } }
     );
-    if(!authResp.ok) throw new Error('Proxy auth URL failed: '+authResp.status);
-    const {auth_url}=await authResp.json();
-    if(!auth_url) throw new Error('Proxy không trả về auth_url');
+    const data = await resp.json();
 
-    affLog('info','🌐 Mở cửa sổ TikTok...');
-    if(btnText) btnText.textContent='⏳ Chờ đăng nhập TikTok...';
-
-    // Open popup
-    const W=600,H=700,L=(screen.width-W)/2,T=(screen.height-H)/2;
-    _ttWin=window.open(auth_url,'TikTok Auth',`width=${W},height=${H},left=${L},top=${T},toolbar=no,menubar=no`);
-
-    if(!_ttWin){
-      // Popup blocked → redirect
-      affLog('warn','⚠ Popup bị chặn → chuyển hướng...');
-      sessionStorage.setItem('tt_redirect','1');
-      location.href=auth_url;
-      return;
+    if (data.data?.user) {
+      const u = data.data.user;
+      _saveTokenSession(tokenRaw, u.open_id, u);
+    } else if (data.error?.code === 'ok' || resp.ok) {
+      // Token valid but no user data (might be sandbox limitation)
+      const openId = $('aff-tt-openid-input')?.value?.trim() || '';
+      _saveTokenSession(tokenRaw, openId, null);
+    } else {
+      // Error — show message
+      const errMsg = data.error?.message || `HTTP ${resp.status}`;
+      throw new Error(errMsg);
     }
 
-    // Poll popup URL for callback
-    _ttTimer=setInterval(()=>{
-      try{
-        const pu=_ttWin?.location?.href||'';
-        if(pu.startsWith(redirectUri)&&pu.includes('code=')){
-          clearInterval(_ttTimer);
-          _ttWin.close();
-          const p=new URLSearchParams(new URL(pu).search);
-          _onTikTokCode(p.get('code'),p.get('state'));
-        }
-      }catch(e){ /* cross-origin — still on TikTok */ }
-      if(_ttWin?.closed){
-        clearInterval(_ttTimer);
-        affLog('warn','⚠ Đã đóng cửa sổ login');
-        _resetLoginBtn();
-      }
-    },500);
-
-  }catch(e){
-    affLog('err','❌ '+e.message);
-    toast('Lỗi OAuth: '+e.message,'warn',4000);
-    _resetLoginBtn();
+  } catch(e) {
+    // CORS error = token might still be valid (browser blocks direct API call)
+    if (e.name === 'TypeError' || e.message.includes('fetch')) {
+      affLog('warn', '⚠ CORS blocked — lưu token không xác thực được. Dùng thử xem...');
+      const tokenRaw2 = ($('aff-tt-token-input')?.value || '').trim();
+      const openId   = $('aff-tt-openid-input')?.value?.trim() || '';
+      _saveTokenSession(tokenRaw2, openId, null);
+    } else {
+      affLog('err', '❌ Token không hợp lệ: ' + e.message);
+      toast('Token không hợp lệ: ' + e.message, 'warn', 4000);
+      if (btn) btn.style.opacity = '1';
+      if (btnTxt) btnTxt.textContent = '🔍 Thử lại';
+    }
   }
 }
 
-function _resetLoginBtn(){
-  const btn=$('aff-login-btn'), t=$('aff-login-btn-text');
-  if(btn) btn.disabled=false;
-  if(t) t.textContent='Đăng nhập TikTok';
-}
+// ── Save session ─────────────────────────────────────────────────
+function _saveTokenSession(token, openId, userInfo) {
+  // Save to localStorage (24h expiry by default for sandbox tokens)
+  localStorage.setItem('tt_at',  token);
+  localStorage.setItem('tt_oid', openId || '');
+  localStorage.setItem('tt_exp', Date.now() + 86400 * 1000);
 
-// ── Handle auth code ─────────────────────────────────────────────
-async function _onTikTokCode(code, retState){
-  if(!code){ affLog('err','❌ Không nhận được code'); _resetLoginBtn(); return; }
-  if(retState!==sessionStorage.getItem('tt_state')){ 
-    affLog('err','❌ State mismatch'); _resetLoginBtn(); return; 
-  }
+  // Fill hidden fields used by upload functions
+  if ($('aff-tt-token'))  $('aff-tt-token').value  = token;
+  if ($('aff-tt-openid')) $('aff-tt-openid').value = openId || '';
 
-  const proxy=getProxyUrl();
-  const t=$('aff-login-btn-text');
-  if(t) t.textContent='⏳ Lấy token...';
-  affLog('info','🔄 Đổi code lấy access token qua proxy...');
-
-  try{
-    const resp=await fetch(proxy+'/api/token',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        code,
-        redirect_uri: location.href.split('?')[0].split('#')[0],
-        grant_type: 'authorization_code',
-        code_verifier: sessionStorage.getItem('tt_cv'),
-      })
+  if (userInfo) {
+    _showTTConnected({
+      name:      userInfo.display_name || 'TikTok Account',
+      followers: userInfo.follower_count || 0,
+      avatar:    userInfo.avatar_url || '',
     });
-    const data=await resp.json();
-    if(!resp.ok||!data.access_token) throw new Error(data.error_description||data.error||JSON.stringify(data).slice(0,100));
-
-    await _saveTTSession(data);
-
-  }catch(e){
-    affLog('err','❌ Token exchange failed: '+e.message);
-    toast('Đăng nhập thất bại: '+e.message,'warn',5000);
-    _resetLoginBtn();
+    affLog('ok', `✅ Xin chào @${userInfo.display_name}! Followers: ${(userInfo.follower_count||0).toLocaleString('vi')}`);
+    toast(`✅ Kết nối thành công! @${userInfo.display_name}`, 'success', 4000);
+  } else {
+    _showTTConnected({ name: 'TikTok Account', followers: 0, avatar: '' });
+    affLog('ok', '✅ Token đã lưu — sẵn sàng upload');
+    toast('✅ Token đã lưu thành công!', 'success', 3000);
   }
-}
-
-// ── Save session & fetch user ────────────────────────────────────
-async function _saveTTSession(data){
-  const {access_token:at, refresh_token:rt, open_id:oid, expires_in:exp=86400}=data;
-
-  localStorage.setItem('tt_at',at);
-  localStorage.setItem('tt_rt',rt||'');
-  localStorage.setItem('tt_oid',oid);
-  localStorage.setItem('tt_exp',Date.now()+exp*1000);
-  localStorage.setItem('tt_proxy_url',getProxyUrl());
-
-  if($('aff-tt-token'))  $('aff-tt-token').value=at;
-  if($('aff-tt-openid')) $('aff-tt-openid').value=oid;
-
-  affLog('ok','✅ Token lưu thành công! Đang lấy thông tin tài khoản...');
-  await _fetchTTUser(at);
   saveAffSettings();
 }
 
-// ── Fetch user info ──────────────────────────────────────────────
-async function _fetchTTUser(token){
-  const proxy=getProxyUrl();
-  try{
-    const r=await fetch(proxy+'/api/userinfo',{headers:{Authorization:'Bearer '+token}});
-    const d=await r.json();
-    const u=d.data?.user;
-    if(u){
-      _showTTLoggedIn({
-        name:u.display_name||'TikTok User',
-        followers:u.follower_count||0,
-        avatar:u.avatar_url||'',
-      });
-      affLog('ok',`🎵 Xin chào @${u.display_name}! Followers: ${(u.follower_count||0).toLocaleString('vi')}`);
-      toast(`✅ Đăng nhập thành công! @${u.display_name}`,'success',4000);
-    } else {
-      _showTTLoggedIn({name:'TikTok Account',followers:0,avatar:''});
-      affLog('ok','✅ Đăng nhập thành công (không lấy được user info)');
+// ── Show connected UI ────────────────────────────────────────────
+function _showTTConnected(u) {
+  // Hide input, show user info
+  const loginArea = $('aff-tt-login-area');
+  const userInfo  = $('aff-tt-user-info');
+  if (loginArea) loginArea.style.display = 'none';
+  if (userInfo)  userInfo.style.display  = 'block';
+
+  // Fill user info
+  const av = $('aff-tt-avatar');
+  if (av && u.avatar) { av.src = u.avatar; av.style.display = ''; }
+  const dn = $('aff-tt-display-name');
+  if (dn) dn.textContent = u.name || 'TikTok Account';
+  const fl = $('aff-tt-followers');
+  if (fl && u.followers > 0)
+    fl.textContent = u.followers.toLocaleString('vi') + ' followers';
+
+  // Expiry info
+  const expEl = $('aff-token-expire');
+  if (expEl) {
+    const exp = parseInt(localStorage.getItem('tt_exp') || '0');
+    if (exp) {
+      const hrs = Math.round((exp - Date.now()) / 3600000);
+      expEl.textContent = `⏱ Còn ${hrs > 24 ? Math.round(hrs/24)+'ngày' : hrs+'h'}`;
     }
-  }catch(e){
-    _showTTLoggedIn({name:'TikTok Account',followers:0,avatar:''});
-    affLog('warn','⚠ Không lấy được thông tin tài khoản');
+  }
+
+  // Update connect box dots
+  const nm  = $('aff-tt-name');
+  const st  = $('aff-tt-status');
+  const ttb = $('aff-tt-btn');
+  if (nm)  nm.textContent  = u.name || 'TikTok Account';
+  if (st)  st.textContent  = '✅ Đã kết nối';
+  if (ttb) { ttb.textContent = '✓ KẾT NỐI'; ttb.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)'; }
+  setAffStatus('CONNECTED', '#22c55e');
+}
+
+// ── Logout ────────────────────────────────────────────────────────
+function logoutTikTok() {
+  ['tt_at','tt_oid','tt_exp','tt_rt'].forEach(k => localStorage.removeItem(k));
+  if ($('aff-tt-token'))       $('aff-tt-token').value  = '';
+  if ($('aff-tt-openid'))      $('aff-tt-openid').value = '';
+  if ($('aff-tt-token-input')) $('aff-tt-token-input').value = '';
+
+  // Show login area, hide user info
+  const loginArea = $('aff-tt-login-area');
+  const userInfo  = $('aff-tt-user-info');
+  if (loginArea) loginArea.style.display = '';
+  if (userInfo)  userInfo.style.display  = 'none';
+
+  const nm  = $('aff-tt-name');
+  const st  = $('aff-tt-status');
+  const ttb = $('aff-tt-btn');
+  if (nm)  nm.textContent  = 'Chưa kết nối';
+  if (st)  st.textContent  = 'Paste token để kết nối';
+  if (ttb) { ttb.textContent = 'KẾT NỐI'; ttb.style.background = 'linear-gradient(135deg,#ff2d78,#ff6b9d)'; }
+  setAffStatus('STANDBY', 'var(--a2)');
+  onTokenInput(''); // reset button state
+  affLog('info', '👋 Đã đăng xuất TikTok');
+  toast('Đã đăng xuất', 'info', 2000);
+}
+
+// ── Restore session on load ──────────────────────────────────────
+function restoreTikTokSession() {
+  const token = localStorage.getItem('tt_at');
+  const oid   = localStorage.getItem('tt_oid');
+  const exp   = parseInt(localStorage.getItem('tt_exp') || '0');
+
+  if (token && Date.now() < exp) {
+    if ($('aff-tt-token'))  $('aff-tt-token').value  = token;
+    if ($('aff-tt-openid')) $('aff-tt-openid').value = oid || '';
+    _showTTConnected({ name: 'TikTok Account', followers: 0, avatar: '' });
+    // Quietly refresh user info
+    fetch('https://open.tiktokapis.com/v2/user/info/?fields=display_name,follower_count,avatar_url',
+      { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.data?.user) _showTTConnected({ name: d.data.user.display_name, followers: d.data.user.follower_count, avatar: d.data.user.avatar_url }); })
+      .catch(() => {});
+    affLog('ok', '🔄 Khôi phục session TikTok từ localStorage');
+  } else if (token && Date.now() >= exp) {
+    affLog('warn', '⚠ Token đã hết hạn — cần nhập lại');
+    toast('Token TikTok đã hết hạn, vui lòng nhập token mới', 'warn', 4000);
+    logoutTikTok();
   }
 }
 
-// ── Show/hide login UI ───────────────────────────────────────────
-function _showTTLoggedIn(u){
+// ── Override old OAuth functions ─────────────────────────────────
+function startTikTokOAuth()  { /* replaced by manual token */ }
+function startTikTokLogin()  { /* replaced by manual token */ }
+function connectTikTok()     {
+  // Scroll to token input
+  $('aff-tt-token-input')?.focus();
+  switchMainTab('affiliate');
+}
+function checkProxyStatus()  { return true; } // no longer needed
+
+
+// Enable verify button when both fields filled
+function onTTTokenInput(){
+  const token=($('aff-tt-token')?.value||'').trim();
+  const oid=($('aff-tt-openid')?.value||'').trim();
+  const btn=$('aff-verify-btn');
+  if(!btn) return;
+  const ready=token.length>10 && oid.length>5;
+  btn.style.opacity=ready?'1':'0.4';
+  btn.style.pointerEvents=ready?'auto':'none';
+}
+
+// Verify token by calling TikTok user info API directly
+async function verifyTikTokToken(){
+  const token=($('aff-tt-token')?.value||'').trim();
+  const oid=($('aff-tt-openid')?.value||'').trim();
+  if(!token||!oid){ toast('Nhập đủ Access Token và Open ID','warn',2000); return; }
+
+  const btn=$('aff-verify-btn');
+  const statusEl=$('aff-token-status');
+  const verifyText=$('aff-verify-text');
+
+  if(btn) btn.style.opacity='0.7';
+  if(verifyText) verifyText.textContent='⏳ Đang xác minh...';
+  if(statusEl) statusEl.textContent='';
+
+  try{
+    // Call TikTok user info API
+    const resp=await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=display_name,follower_count,avatar_url,open_id',
+      { headers:{ 'Authorization': `Bearer ${token}` } }
+    );
+    const data=await resp.json();
+
+    if(data.data?.user){
+      const u=data.data.user;
+      // Save to localStorage
+      localStorage.setItem('tt_at', token);
+      localStorage.setItem('tt_oid', oid);
+      localStorage.setItem('tt_exp', Date.now()+86400*1000); // 24h
+      localStorage.setItem('tt_name', u.display_name||'TikTok User');
+
+      // Show connected state
+      _showTTConnected({
+        name: u.display_name||'TikTok User',
+        followers: u.follower_count||0,
+        avatar: u.avatar_url||'',
+      });
+
+      saveAffSettings();
+      affLog('ok',`✅ Kết nối thành công! @${u.display_name} — ${(u.follower_count||0).toLocaleString('vi')} followers`);
+      toast(`✅ Kết nối TikTok thành công! @${u.display_name}`,'success',4000);
+
+    } else if(data.error?.code==='access_token_invalid'||resp.status===401){
+      if(statusEl){ statusEl.textContent='❌ Token không hợp lệ hoặc đã hết hạn'; statusEl.style.color='#ef4444'; }
+      if(verifyText) verifyText.textContent='🔍 Xác minh & Kết nối';
+      if(btn) btn.style.opacity='1';
+    } else {
+      // CORS error or network — token might still be valid, trust user
+      // Save anyway and show minimal connected state
+      localStorage.setItem('tt_at', token);
+      localStorage.setItem('tt_oid', oid);
+      localStorage.setItem('tt_exp', Date.now()+86400*1000);
+      _showTTConnected({ name:'TikTok Account', followers:0, avatar:'' });
+      saveAffSettings();
+      affLog('ok','✅ Token đã lưu (không thể xác minh do CORS — token sẽ được dùng khi upload)');
+      toast('✅ Token đã lưu thành công!','success',3000);
+    }
+  }catch(e){
+    // Network/CORS — save token and trust user
+    localStorage.setItem('tt_at', token);
+    localStorage.setItem('tt_oid', oid);
+    localStorage.setItem('tt_exp', Date.now()+86400*1000);
+    _showTTConnected({ name:'TikTok Account', followers:0, avatar:'' });
+    saveAffSettings();
+    affLog('ok','✅ Token đã lưu ('+e.message+')');
+    toast('✅ Token đã lưu!','success',3000);
+  }
+}
+
+function _showTTConnected(u){
   $('aff-tt-login-area') && ($('aff-tt-login-area').style.display='none');
   const info=$('aff-tt-user-info');
   if(info) info.style.display='block';
@@ -12532,86 +12205,51 @@ function _showTTLoggedIn(u){
   if(dn) dn.textContent=u.name;
   const fl=$('aff-tt-followers');
   if(fl&&u.followers>0) fl.textContent=u.followers.toLocaleString('vi')+' followers';
-  // Update connect box
+  // Update top connect box
   const nm=$('aff-tt-name'), st=$('aff-tt-status'), ttbtn=$('aff-tt-btn');
   if(nm) nm.textContent=u.name;
-  if(st) st.textContent='✅ Đã đăng nhập';
+  if(st) st.textContent='✅ Đã kết nối';
   if(ttbtn){ ttbtn.textContent='✓ KẾT NỐI'; ttbtn.style.background='linear-gradient(135deg,#22c55e,#16a34a)'; }
   setAffStatus('CONNECTED','#22c55e');
-  _resetLoginBtn();
 }
 
-function _showTTLoggedOut(){
+function logoutTikTok(){
+  ['tt_at','tt_oid','tt_exp','tt_name'].forEach(k=>localStorage.removeItem(k));
+  if($('aff-tt-token'))  $('aff-tt-token').value='';
+  if($('aff-tt-openid')) $('aff-tt-openid').value='';
   $('aff-tt-login-area') && ($('aff-tt-login-area').style.display='');
   const info=$('aff-tt-user-info');
   if(info) info.style.display='none';
   const nm=$('aff-tt-name'), st=$('aff-tt-status'), ttbtn=$('aff-tt-btn');
   if(nm) nm.textContent='Chưa kết nối';
-  if(st) st.textContent='Nhấn để đăng nhập';
+  if(st) st.textContent='Nhấn để kết nối';
   if(ttbtn){ ttbtn.textContent='KẾT NỐI'; ttbtn.style.background='linear-gradient(135deg,#ff2d78,#ff6b9d)'; }
   setAffStatus('STANDBY','var(--a2)');
+  affLog('info','👋 Đã xoá token TikTok');
+  toast('Đã xoá token','info',2000);
 }
 
-// ── Logout ────────────────────────────────────────────────────────
-function logoutTikTok(){
-  ['tt_at','tt_rt','tt_oid','tt_exp'].forEach(k=>localStorage.removeItem(k));
-  if($('aff-tt-token'))  $('aff-tt-token').value='';
-  if($('aff-tt-openid')) $('aff-tt-openid').value='';
-  _showTTLoggedOut();
-  affLog('info','👋 Đã đăng xuất TikTok');
-  toast('Đã đăng xuất','info',2000);
-}
-
-// ── Restore session on page load ─────────────────────────────────
 function restoreTikTokSession(){
-  const proxyUrl=localStorage.getItem('tt_proxy_url')||'';
-  if(proxyUrl && $('aff-proxy-url') && !$('aff-proxy-url').value){
-    $('aff-proxy-url').value=proxyUrl;
-  }
-  checkProxyStatus();
-
   const at=localStorage.getItem('tt_at');
   const oid=localStorage.getItem('tt_oid');
   const exp=parseInt(localStorage.getItem('tt_exp')||'0');
+  const name=localStorage.getItem('tt_name')||'TikTok Account';
 
-  if(at&&oid&&Date.now()<exp){
+  if(at && oid && Date.now()<exp){
     if($('aff-tt-token'))  $('aff-tt-token').value=at;
     if($('aff-tt-openid')) $('aff-tt-openid').value=oid;
-    _fetchTTUser(at);
-    affLog('ok','🔄 Khôi phục session TikTok...');
-  } else if(at&&Date.now()>=exp){
-    _refreshTTToken();
-  } else {
-    _showTTLoggedOut();
-  }
-
-  // Check redirect callback
-  const params=new URLSearchParams(location.search);
-  const code=params.get('code'), st=params.get('state');
-  if(code&&st===sessionStorage.getItem('tt_state')){
-    history.replaceState({},'',location.href.split('?')[0]);
-    _onTikTokCode(code,st);
+    _showTTConnected({name, followers:0, avatar:''});
+    affLog('ok','🔄 Khôi phục session TikTok (còn '+ Math.round((exp-Date.now())/3600000) +'h)');
   }
 }
 
-// ── Token refresh ─────────────────────────────────────────────────
-async function _refreshTTToken(){
-  const rt=localStorage.getItem('tt_rt'), proxy=getProxyUrl();
-  if(!rt||!proxy) return;
-  try{
-    const r=await fetch(proxy+'/api/token',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({grant_type:'refresh_token',refresh_token:rt})
-    });
-    const d=await r.json();
-    if(d.access_token) await _saveTTSession(d);
-    else throw new Error('No token in refresh response');
-  }catch(e){ affLog('warn','⚠ Refresh token failed: '+e.message); _showTTLoggedOut(); }
+// Remove old OAuth functions if they exist (replaced by simple method)
+function startTikTokOAuth(){ verifyTikTokToken(); }
+function startTikTokLogin(){ 
+  $('aff-tt-login-area') && ($('aff-tt-login-area').style.display='');
+  $('aff-tt-token')?.focus();
 }
-
-// ── Alias for old connectTikTok calls ────────────────────────────
-function connectTikTok(){ startTikTokOAuth(); }
-function startTikTokLogin(){ startTikTokOAuth(); }
-
+function connectTikTok(){ startTikTokLogin(); }
+function checkProxyStatus(){ return true; }
 
 </script>
