@@ -3,7 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VietLong Creator</title>
+<title>VietLong Creator — AI Music Video Studio</title>
+<meta name="description" content="Tạo video âm nhạc chuyên nghiệp chuẩn YouTube/TikTok miễn phí. 18 template đẹp, hiệu ứng beat sync, tự động hóa upload YouTube.">
+<meta name="keywords" content="tạo video âm nhạc, music video, nhạc việt, youtube, tiktok, remix, vietlong creator">
+<meta name="author" content="Lê Trần Việt Long">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://letranvietlong.github.io/VietLongCreator.html">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="VietLong Creator — AI Music Video Studio">
+<meta property="og:description" content="Tạo video âm nhạc chuyên nghiệp chuẩn YouTube/TikTok miễn phí. 18 template đẹp, hiệu ứng beat sync tự động.">
+<meta property="og:url" content="https://letranvietlong.github.io/VietLongCreator.html">
+<meta property="og:image" content="https://letranvietlong.github.io/og-image.jpg">
+<meta property="og:site_name" content="VietLong Creator">
+<meta property="og:locale" content="vi_VN">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VietLong Creator — AI Music Video Studio">
+<meta name="twitter:description" content="Tạo video âm nhạc chuyên nghiệp miễn phí. Beat sync tự động, 18 template đẹp.">
+<meta name="twitter:image" content="https://letranvietlong.github.io/og-image.jpg">
+<!-- PWA manifest inline -->
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;VietLong Creator&quot;,&quot;short_name&quot;:&quot;VLC&quot;,&quot;start_url&quot;:&quot;/VietLongCreator.html&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2305060c&quot;,&quot;theme_color&quot;:&quot;%2305060c&quot;,&quot;description&quot;:&quot;AI Music Video Studio&quot;}">
+<meta name="theme-color" content="#05060c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VietLong Creator">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2305060c'/><text y='22' x='4' font-size='20'>🎵</text></svg>">
+<!-- Structured Data -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"VietLong Creator","url":"https://letranvietlong.github.io/VietLongCreator.html","description":"Tạo video âm nhạc chuyên nghiệp chuẩn YouTube và TikTok miễn phí","applicationCategory":"MultimediaApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"VND"},"author":{"@type":"Person","name":"Lê Trần Việt Long"}}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1070,11 +1100,143 @@ main {
   margin:8px 0 0; font-family:'IBM Plex Mono',monospace;
   line-height:1.6; white-space:pre-wrap;
 }
+
+/* ── TOAST NOTIFICATIONS ── */
+#toast-container {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+.toast {
+  display:flex; align-items:center; gap:10px; padding:12px 16px;
+  border-radius:10px; max-width:320px;
+  background:rgba(15,17,28,.96); border:1px solid var(--line);
+  backdrop-filter:blur(16px); font-size:.72rem; color:var(--tx);
+  box-shadow:0 8px 32px rgba(0,0,0,.5); animation:toastIn .3s ease;
+  pointer-events:auto; font-family:'Be Vietnam Pro',sans-serif;
+}
+.toast.success{border-color:rgba(74,222,128,.4);}
+.toast.error{border-color:rgba(248,113,113,.4);}
+.toast.info{border-color:rgba(96,165,250,.4);}
+.toast.warn{border-color:rgba(251,191,36,.4);}
+.toast-icon{font-size:1.1rem;flex-shrink:0;}
+.toast-msg{flex:1;line-height:1.4;}
+.toast-close{cursor:pointer;opacity:.5;font-size:.8rem;background:none;border:none;color:var(--tx);padding:0;}
+.toast-close:hover{opacity:1;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastOut{from{opacity:1;}to{opacity:0;transform:translateX(20px);}}
+/* ── KEYBOARD MODAL ── */
+#kb-modal{display:none;position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+#kb-modal.show{display:flex;}
+#kb-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;}
+.kb-title{font-size:.85rem;font-weight:800;color:var(--a2);margin-bottom:18px;font-family:'IBM Plex Mono',monospace;}
+.kb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.kb-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:7px;background:var(--surface2);}
+.kb-key{display:flex;gap:4px;flex-shrink:0;}
+kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;padding:2px 7px;font-size:.62rem;font-family:'IBM Plex Mono',monospace;color:var(--tx2);box-shadow:0 2px 0 var(--line2);}
+.kb-desc{font-size:.66rem;color:var(--tx2);}
+/* ── FULLSCREEN ── */
+#pvframe:-webkit-full-screen{width:100vw!important;height:100vh!important;}
+#pvframe:fullscreen{width:100vw!important;height:100vh!important;background:#000;}
+.preview-frame{position:relative;}
+.fullscreen-btn{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.7rem;backdrop-filter:blur(8px);transition:all .2s;}
+.fullscreen-btn:hover{background:rgba(255,255,255,.15);}
+/* ── COLOR PRESETS ── */
+.preset-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.preset-swatch{width:30px;height:30px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:all .18s;position:relative;}
+.preset-swatch:hover{transform:scale(1.15);border-color:#fff;}
+.preset-swatch.active{border-color:var(--a2);box-shadow:0 0 8px var(--a2);}
+/* ── DRAFT BANNER ── */
+#draft-banner{display:none;position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:7777;background:rgba(15,17,28,.97);border:1px solid var(--a2);border-radius:10px;padding:12px 18px;gap:12px;align-items:center;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,229,195,.2);font-size:.72rem;animation:toastIn .3s ease;white-space:nowrap;}
+#draft-banner.show{display:flex;}
+/* ── TRIM MODAL ── */
+#trim-modal{display:none;position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+#trim-modal.show{display:flex;}
+#trim-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(560px,92vw);}
+.trim-waveform{width:100%;height:70px;background:var(--ink);border-radius:8px;position:relative;overflow:hidden;cursor:pointer;margin:12px 0;}
+.trim-canvas{width:100%;height:100%;}
+.trim-handle{position:absolute;top:0;bottom:0;width:4px;background:var(--a2);cursor:ew-resize;box-shadow:0 0 8px var(--a2);}
+.trim-range{position:absolute;top:0;bottom:0;background:rgba(0,229,195,.15);pointer-events:none;}
+.trim-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.trim-preset{padding:4px 10px;border-radius:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--line2);font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;transition:all .18s;}
+.trim-preset:hover{border-color:var(--a2);color:var(--a2);}
+/* ── RATIO TOGGLE ── */
+.ratio-toggle{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:3px;}
+.ratio-btn{padding:4px 10px;border-radius:5px;cursor:pointer;font-size:.6rem;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--tx3);border:none;background:none;transition:all .18s;}
+.ratio-btn.active{background:var(--a1);color:var(--ink);box-shadow:0 0 8px rgba(255,45,120,.3);}
+/* ── MULTI-IMAGE ── */
+.artimg-slot{width:56px;height:72px;border-radius:6px;object-fit:cover;cursor:pointer;border:1.5px dashed var(--line2);transition:all .18s;flex-shrink:0;}
+.artimg-slot:hover,.artimg-slot.has-img{border-color:var(--a2);}
+.artimg-slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+/* ── REDUCED MOTION ── */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
+<div id="toast-container"></div>
+
+<!-- Draft restore banner -->
+<div id="draft-banner">
+  <span>💾</span>
+  <span id="draft-banner-txt">Tìm thấy dự án chưa hoàn thành</span>
+  <button onclick="restoreDraft()" style="padding:5px 12px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">Tiếp tục</button>
+  <button onclick="discardDraft()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--line2);background:none;color:var(--tx3);font-size:.65rem;cursor:pointer">Bỏ qua</button>
+</div>
+
+<!-- Keyboard shortcuts modal -->
+<div id="kb-modal" onclick="if(event.target===this)toggleKbModal()">
+  <div id="kb-box">
+    <div class="kb-title">⌨ PHÍM TẮT — KEYBOARD SHORTCUTS</div>
+    <div class="kb-grid">
+      <div class="kb-row"><div class="kb-key"><kbd>Space</kbd></div><div class="kb-desc">Play / Pause</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>R</kbd></div><div class="kb-desc">Restart từ đầu</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>E</kbd></div><div class="kb-desc">Xuất video</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>F</kbd></div><div class="kb-desc">Fullscreen preview</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>←</kbd></div><div class="kb-desc">Seek -5 giây</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>→</kbd></div><div class="kb-desc">Seek +5 giây</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>1</kbd></div><div class="kb-desc">Bước 1: Tải nhạc</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>2</kbd></div><div class="kb-desc">Bước 2: Chọn mẫu</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>3</kbd></div><div class="kb-desc">Bước 3: Tuỳ chỉnh</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>4</kbd></div><div class="kb-desc">Bước 4: Xem & Xuất</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>Ctrl</kbd><kbd>S</kbd></div><div class="kb-desc">Lưu draft ngay</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>?</kbd></div><div class="kb-desc">Bảng phím tắt này</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>Esc</kbd></div><div class="kb-desc">Đóng modal</div></div>
+      <div class="kb-row"><div class="kb-key"><kbd>N</kbd></div><div class="kb-desc">Bật thông báo</div></div>
+    </div>
+    <button onclick="toggleKbModal()" style="margin-top:16px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:.65rem;">Đóng (Esc)</button>
+  </div>
+</div>
+
+<!-- Audio Trim Modal -->
+<div id="trim-modal" onclick="if(event.target===this)closeTrimModal()">
+  <div id="trim-box">
+    <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:14px;font-family:'IBM Plex Mono',monospace">✂ CẮT ĐOẠN NHẠC</div>
+    <div style="font-size:.68rem;color:var(--tx3);margin-bottom:6px">Kéo các điểm để chọn đoạn muốn dùng</div>
+    <div class="trim-waveform" id="trim-waveform">
+      <canvas id="trim-canvas" class="trim-canvas"></canvas>
+      <div class="trim-range" id="trim-range"></div>
+      <div class="trim-handle" id="trim-start-handle" style="left:0"></div>
+      <div class="trim-handle" id="trim-end-handle" style="right:0;background:#ff2d78;box-shadow:0 0 8px #ff2d78"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
+      <span>Bắt đầu: <strong id="trim-start-display" style="color:var(--a2)">00:00</strong></span>
+      <span>Kết thúc: <strong id="trim-end-display" style="color:#ff2d78">00:00</strong></span>
+      <span>Độ dài: <strong id="trim-dur-display" style="color:#fbbf24">00:00</strong></span>
+    </div>
+    <div class="trim-presets">
+      <div class="trim-preset" onclick="applyTrimPreset(15)">TikTok 15s</div>
+      <div class="trim-preset" onclick="applyTrimPreset(30)">Reels 30s</div>
+      <div class="trim-preset" onclick="applyTrimPreset(60)">Shorts 60s</div>
+      <div class="trim-preset" onclick="applyTrimPreset(0)">Toàn bài</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="applyTrim()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.72rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">✅ Áp Dụng</button>
+      <button onclick="closeTrimModal()" style="padding:9px 16px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.72rem">Huỷ</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <!-- LOGO -->
   <div class="logo">
@@ -1153,7 +1315,7 @@ main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver">v4.0</div>
+    <div class="hpill ver" onclick="toggleKbModal()" title="Phím tắt (?)" style="cursor:pointer">v4.0 ⌨</div>
   </div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1259,6 +1421,16 @@ main {
   <div class="preview-frame" id="pvframe">
     <canvas id="bgcvs"></canvas>
     <canvas id="ovcvs"></canvas>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">⛶</button>
+  </div>
+  <!-- Ratio toggle -->
+  <div style="display:flex;align-items:center;gap:10px;margin:8px 0 4px">
+    <span style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Tỉ lệ:</span>
+    <div class="ratio-toggle">
+      <button class="ratio-btn active" id="ratio-169" onclick="setRatio('16:9')">16:9 YouTube</button>
+      <button class="ratio-btn" id="ratio-916" onclick="setRatio('9:16')">9:16 TikTok</button>
+    </div>
+    <button onclick="openTrimModal()" style="margin-left:auto;padding:5px 12px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .18s" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--line2)';this.style.color='var(--tx3)'">✂ Cắt nhạc</button>
   </div>
   <div class="playbar">
     <button class="pbtn active" id="pbtn" onclick="togglePlay()">▶ Phát</button>
@@ -1671,6 +1843,522 @@ jobs:
    VIETLONG CREATOR — Core Engine
 ==================================================== */
 const $ = id => document.getElementById(id);
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE ENGINE v2.0 — All 16 features
+   1.Toast 2.Keyboard 3.Draft 4.Fullscreen 5.Ratio 6.Trim
+   7.ColorPreset 8.MultiImage 9.BPM 10.Notification 11.GradCache
+   12.Security 13.MediaSession 14.WakeLock 15.PWA 16.Analytics
+═══════════════════════════════════════════════════════════════ */
+
+// ─────────────────────────────────────────
+// 1. TOAST NOTIFICATION SYSTEM
+// ─────────────────────────────────────────
+function toast(msg, type='info', duration=3500){
+  const icons={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  const c=$('toast-container')||document.body;
+  c.appendChild(el);
+  setTimeout(()=>{
+    el.style.animation='toastOut .3s ease forwards';
+    setTimeout(()=>el.remove(),320);
+  },duration);
+  return el;
+}
+
+// ─────────────────────────────────────────
+// 2. KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────
+let kbEnabled=true;
+function toggleKbModal(){
+  const m=$('kb-modal');
+  if(m) m.classList.toggle('show');
+}
+document.addEventListener('keydown', e=>{
+  if(!kbEnabled) return;
+  const tag=document.activeElement?.tagName;
+  if(['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+  const key=e.key.toLowerCase();
+  const ctrl=e.ctrlKey||e.metaKey;
+  if(ctrl&&key==='s'){ e.preventDefault(); saveDraftNow(); toast('💾 Đã lưu draft','success',1500); return; }
+  switch(key){
+    case ' ':     e.preventDefault(); if(typeof togglePlay==='function')togglePlay(); break;
+    case 'r':     if(typeof doRestart==='function')doRestart(); break;
+    case 'e':     if(typeof startExport==='function'&&step===4)startExport(); break;
+    case 'f':     toggleFullscreen(); break;
+    case 'arrowleft':  e.preventDefault(); seekAudio(-5); break;
+    case 'arrowright': e.preventDefault(); seekAudio(5);  break;
+    case '1':     if(typeof goStep==='function')goStep(1); break;
+    case '2':     if(typeof goStep==='function')goStep(2); break;
+    case '3':     if(typeof goStep==='function')goStep(3); break;
+    case '4':     if(typeof goStep==='function')goStep(4); break;
+    case '?':     toggleKbModal(); break;
+    case 'n':     requestNotifPermission(); break;
+    case 'escape':
+      $('kb-modal')?.classList.remove('show');
+      $('trim-modal')?.classList.remove('show');
+      if(document.fullscreenElement) document.exitFullscreen();
+      break;
+  }
+});
+function seekAudio(sec){
+  if(typeof audEl!=='undefined'&&audEl){
+    audEl.currentTime=Math.max(0,Math.min(audEl.duration||0, (audEl.currentTime||0)+sec));
+  }
+}
+
+// ─────────────────────────────────────────
+// 3. AUTO-SAVE DRAFT SYSTEM
+// ─────────────────────────────────────────
+let draftTimer=null;
+const DRAFT_KEY='vlc_draft_v2';
+
+function scheduleDraftSave(){
+  clearTimeout(draftTimer);
+  draftTimer=setTimeout(saveDraftNow, 3000);
+}
+function saveDraftNow(){
+  try{
+    const draft={
+      ts: Date.now(),
+      title:   $('cc-title')?.value||'',
+      artist:  $('cc-artist')?.value||'',
+      remix:   $('cc-remix')?.value||'',
+      lyr:     $('cc-lyr')?.value||'',
+      tplId:   typeof chosenTpl!=='undefined'?chosenTpl?.id:'',
+      step:    typeof step!=='undefined'?step:1,
+      artImgSrc: (typeof artImg!=='undefined'&&artImg?.src&&!artImg.src.startsWith('http'))?artImg.src:'',
+      trimStart: trimState.start,
+      trimEnd:   trimState.end,
+      ratio:     currentRatio,
+    };
+    if($('cc-b1'))  draft.colorB1=$('cc-b1').value;
+    if($('cc-wc'))  draft.colorWC=$('cc-wc').value;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }catch(_){}
+}
+function checkDraftOnLoad(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+    if(!saved) return;
+    const age=(Date.now()-saved.ts)/1000/60; // minutes
+    if(age>2880) return; // 48 hours expired
+    const b=$('draft-banner');
+    const t=$('draft-banner-txt');
+    if(!b) return;
+    const timeStr=new Date(saved.ts).toLocaleString('vi-VN',{hour12:false,hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+    if(t) t.textContent=`💾 Dự án "${saved.title||'chưa đặt tên'}" lúc ${timeStr} — Tiếp tục?`;
+    b.classList.add('show');
+    window._pendingDraft=saved;
+  }catch(_){}
+}
+function restoreDraft(){
+  const d=window._pendingDraft; if(!d) return;
+  $('draft-banner')?.classList.remove('show');
+  // Restore fields (will be applied when buildCfg runs)
+  window._draftRestore=d;
+  toast(`✅ Đã khôi phục dự án "${d.title||''}"`, 'success');
+  if(d.tplId && typeof TMPLS!=='undefined'){
+    const t=TMPLS.find(x=>x.id===d.tplId);
+    if(t && typeof pickTpl==='function') pickTpl(t);
+  }
+}
+function discardDraft(){
+  $('draft-banner')?.classList.remove('show');
+  localStorage.removeItem(DRAFT_KEY);
+  window._pendingDraft=null;
+}
+// Hook vào input events
+document.addEventListener('input', e=>{
+  if(e.target.id?.startsWith('cc-')||e.target.id==='cc-lyr') scheduleDraftSave();
+});
+
+// ─────────────────────────────────────────
+// 4. FULLSCREEN PREVIEW
+// ─────────────────────────────────────────
+function toggleFullscreen(){
+  const el=$('pvframe');
+  if(!el) return;
+  if(!document.fullscreenElement){
+    el.requestFullscreen?.()
+      .then(()=>toast('⛶ Fullscreen · Nhấn Esc để thoát','info',2000))
+      .catch(()=>toast('Fullscreen không khả dụng trên trình duyệt này','warn'));
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+document.addEventListener('fullscreenchange',()=>{
+  const btn=document.querySelector('.fullscreen-btn');
+  if(btn) btn.textContent=document.fullscreenElement?'✕':'⛶';
+});
+
+// ─────────────────────────────────────────
+// 5. ASPECT RATIO TOGGLE 16:9 / 9:16
+// ─────────────────────────────────────────
+let currentRatio='16:9';
+function setRatio(ratio){
+  currentRatio=ratio;
+  $('ratio-169')?.classList.toggle('active', ratio==='16:9');
+  $('ratio-916')?.classList.toggle('active', ratio==='9:16');
+  if(typeof initCanvas==='function') initCanvas();
+  toast(`📐 Đã chuyển sang ${ratio}${ratio==='9:16'?' (TikTok/Shorts)':'(YouTube)'}`, 'info', 2000);
+}
+// Override initCanvas to support 9:16
+const _origInitCanvas_ratio = null; // handled inside initCanvas override below
+
+// ─────────────────────────────────────────
+// 6. AUDIO TRIM WITH WAVEFORM
+// ─────────────────────────────────────────
+let trimState={start:0, end:1, applied:false};
+let _trimWaveformData=null;
+
+function openTrimModal(){
+  if(typeof audEl==='undefined'||!audEl||!audEl.src){ toast('Chưa có file nhạc','warn'); return; }
+  $('trim-modal')?.classList.add('show');
+  drawTrimWaveform();
+  updateTrimDisplay();
+}
+function closeTrimModal(){ $('trim-modal')?.classList.remove('show'); }
+
+async function drawTrimWaveform(){
+  const cvs=$('trim-canvas'); if(!cvs) return;
+  cvs.width=cvs.offsetWidth||500; cvs.height=70;
+  const ctx=cvs.getContext('2d');
+  const dur=audEl?.duration||1;
+
+  // Decode audio for waveform
+  if(!_trimWaveformData&&typeof audFile!=='undefined'&&audFile){
+    try{
+      const ab=await audFile.arrayBuffer();
+      const tmpCtx=new OfflineAudioContext(1,44100*Math.min(dur,30),44100);
+      const buf=await tmpCtx.decodeAudioData(ab);
+      const data=buf.getChannelData(0);
+      const bins=cvs.width;
+      const step=Math.floor(data.length/bins);
+      _trimWaveformData=Array.from({length:bins},(_,i)=>{
+        let max=0;
+        for(let j=0;j<step;j++) max=Math.max(max,Math.abs(data[i*step+j]));
+        return max;
+      });
+    }catch(_){ _trimWaveformData=Array.from({length:cvs.width},()=>Math.random()*.5+.1); }
+  }
+
+  const W=cvs.width, H=cvs.height, data=_trimWaveformData||[];
+  ctx.clearRect(0,0,W,H);
+  // Background
+  ctx.fillStyle='#0a0c14'; ctx.fillRect(0,0,W,H);
+  // Waveform bars
+  const barW=W/data.length;
+  data.forEach((v,i)=>{
+    const x=i*barW, bH=v*H*.85, y=(H-bH)/2;
+    const prog=i/data.length;
+    const inRange=prog>=trimState.start&&prog<=trimState.end;
+    ctx.fillStyle=inRange?'#00e5c3':'#1e3a4a';
+    ctx.fillRect(x,y,Math.max(1,barW-.5),bH);
+  });
+  // Update handles
+  const wf=$('trim-waveform'); if(!wf) return;
+  const sw=wf.offsetWidth||500;
+  const sh=$('trim-start-handle'); if(sh) sh.style.left=(trimState.start*sw)+'px';
+  const eh=$('trim-end-handle');   if(eh) eh.style.right=((1-trimState.end)*sw)+'px';
+  const range=$('trim-range');
+  if(range){ range.style.left=(trimState.start*100)+'%'; range.style.right=((1-trimState.end)*100)+'%'; }
+}
+function updateTrimDisplay(){
+  const dur=audEl?.duration||1;
+  const s=trimState.start*dur, e=trimState.end*dur;
+  const fmt2=v=>`${String(Math.floor(v/60)).padStart(2,'0')}:${String(Math.floor(v%60)).padStart(2,'0')}`;
+  if($('trim-start-display')) $('trim-start-display').textContent=fmt2(s);
+  if($('trim-end-display'))   $('trim-end-display').textContent=fmt2(e);
+  if($('trim-dur-display'))   $('trim-dur-display').textContent=fmt2(e-s);
+}
+function applyTrimPreset(sec){
+  const dur=audEl?.duration||1;
+  if(sec===0){ trimState={start:0,end:1}; }
+  else { trimState={start:0, end:Math.min(1,sec/dur)}; }
+  drawTrimWaveform(); updateTrimDisplay();
+}
+function applyTrim(){
+  trimState.applied=true;
+  const dur=audEl?.duration||1;
+  const s=trimState.start*dur, e=trimState.end*dur;
+  if(audEl){ audEl.currentTime=s; }
+  closeTrimModal();
+  toast(`✂ Áp dụng cắt: ${Math.round(e-s)}s`, 'success');
+}
+// Drag handles
+let _trimDragging=null;
+document.addEventListener('mousedown', e=>{
+  if(e.target.id==='trim-start-handle') _trimDragging='start';
+  if(e.target.id==='trim-end-handle')   _trimDragging='end';
+});
+document.addEventListener('mousemove', e=>{
+  if(!_trimDragging) return;
+  const wf=$('trim-waveform'); if(!wf) return;
+  const rect=wf.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
+  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
+  drawTrimWaveform(); updateTrimDisplay();
+});
+document.addEventListener('mouseup', ()=>{ _trimDragging=null; });
+
+// ─────────────────────────────────────────
+// 7. COLOR PRESETS
+// ─────────────────────────────────────────
+const COLOR_PRESETS=[
+  {name:'Hoa Hồng',    b1:'#1a0005',wc:'#ff6b9d'},
+  {name:'Đại Dương',   b1:'#021520',wc:'#22d3ee'},
+  {name:'Hoàng Hôn',   b1:'#0d021a',wc:'#d946ef'},
+  {name:'Lửa Rực',     b1:'#1a0200',wc:'#fb923c'},
+  {name:'Đêm Bạc',     b1:'#060606',wc:'#e2e8f0'},
+  {name:'Galaxy',      b1:'#02041a',wc:'#60a5fa'},
+  {name:'Cyber Neon',  b1:'#000510',wc:'#00e5ff'},
+  {name:'Giấc Mơ',     b1:'#0a0515',wc:'#a78bfa'},
+  {name:'Cực Quang',   b1:'#000d0a',wc:'#34d399'},
+  {name:'Lo-Fi Cafe',  b1:'#0d0800',wc:'#fbbf24'},
+  {name:'Cherry',      b1:'#1a0510',wc:'#f9a8d4'},
+  {name:'Điện Năng',   b1:'#05050a',wc:'#fbbf24'},
+  {name:'Midnight',    b1:'#020408',wc:'#818cf8'},
+  {name:'Crimson',     b1:'#120002',wc:'#ef4444'},
+  {name:'Forest',      b1:'#010a04',wc:'#4ade80'},
+  {name:'Sunset',      b1:'#120800',wc:'#f97316'},
+  {name:'Ice',         b1:'#010d14',wc:'#bae6fd'},
+  {name:'Gold',        b1:'#0a0800',wc:'#fbbf24'},
+  {name:'Coral',       b1:'#110404',wc:'#fb7185'},
+  {name:'Mint',        b1:'#010a06',wc:'#6ee7b7'},
+];
+function renderColorPresets(){
+  const cont=$('color-presets-cont'); if(!cont) return;
+  cont.innerHTML='';
+  COLOR_PRESETS.forEach((p,i)=>{
+    const sw=document.createElement('div');
+    sw.className='preset-swatch';
+    sw.title=p.name;
+    sw.style.background=`linear-gradient(135deg,${p.b1},${p.wc})`;
+    sw.onclick=()=>applyColorPreset(p,sw);
+    cont.appendChild(sw);
+  });
+}
+function applyColorPreset(p,el){
+  document.querySelectorAll('.preset-swatch').forEach(s=>s.classList.remove('active'));
+  el?.classList.add('active');
+  if($('cc-b1')){ $('cc-b1').value=p.b1; $('cc-b1').dispatchEvent(new Event('input')); }
+  if($('cc-wc')){ $('cc-wc').value=p.wc; $('cc-wc').dispatchEvent(new Event('input')); }
+  toast(`🎨 Preset "${p.name}" đã áp dụng`, 'success', 1500);
+}
+
+// ─────────────────────────────────────────
+// 8. MULTI-IMAGE SLIDESHOW
+// ─────────────────────────────────────────
+let artImgArr=[], artImgIdx=0, artImgTimer=null;
+function addArtImg(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image(); img.src=e.target.result;
+    img.onload=()=>{
+      artImgArr.push(img);
+      if(artImgArr.length===1&&typeof artImg!=='undefined') artImg=img; // set first as default
+      renderArtImgSlots();
+      toast(`🖼 Đã thêm ảnh ${artImgArr.length}/5`, 'success', 1500);
+    };
+  };
+  reader.readAsDataURL(file);
+}
+function renderArtImgSlots(){
+  const cont=$('artimg-slots'); if(!cont) return;
+  cont.innerHTML='';
+  for(let i=0;i<5;i++){
+    const slot=document.createElement('div');
+    slot.style.cssText='width:56px;height:72px;border-radius:6px;border:1.5px dashed;border-color:'+(i<artImgArr.length?'var(--a2)':'var(--line2)')+';cursor:pointer;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;';
+    if(i<artImgArr.length){
+      const img=document.createElement('img');
+      img.src=artImgArr[i].src; img.style.cssText='width:100%;height:100%;object-fit:cover;';
+      slot.appendChild(img);
+      slot.onclick=()=>{ artImgArr.splice(i,1); if(artImgIdx>=artImgArr.length)artImgIdx=0; renderArtImgSlots(); };
+    } else {
+      slot.innerHTML='<span style="font-size:1.2rem;opacity:.4">+</span>';
+      slot.onclick=()=>{ const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.onchange=e=>addArtImg(e.target.files[0]);fi.click(); };
+    }
+    cont.appendChild(slot);
+  }
+}
+function startSlideshowIfMulti(){
+  if(artImgArr.length<2){ clearInterval(artImgTimer); return; }
+  // Slideshow tempo based on BPM or 4 seconds default
+  const interval=bpmState.bpm>0?(60000/bpmState.bpm*4):4000;
+  clearInterval(artImgTimer);
+  artImgTimer=setInterval(()=>{
+    if(typeof playing!=='undefined'&&!playing) return;
+    artImgIdx=(artImgIdx+1)%artImgArr.length;
+    if(typeof artImg!=='undefined') artImg=artImgArr[artImgIdx];
+  }, interval);
+}
+
+// ─────────────────────────────────────────
+// 9. BPM DETECTION
+// ─────────────────────────────────────────
+let bpmState={bpm:0,confidence:0,detected:false};
+async function detectBPM(){
+  if(typeof audFile==='undefined'||!audFile){ toast('Chưa có file nhạc','warn'); return; }
+  toast('🥁 Đang phân tích BPM...','info',2000);
+  try{
+    const ab=await audFile.arrayBuffer();
+    const tmpCtx=new OfflineAudioContext(1,44100*60,44100);
+    const buf=await tmpCtx.decodeAudioData(ab);
+    const data=buf.getChannelData(0);
+    const sr=buf.sampleRate;
+    // Energy-based onset detection
+    const frameSize=512, hopSize=256;
+    const energies=[];
+    for(let i=0;i+frameSize<data.length;i+=hopSize){
+      let e=0;
+      for(let j=0;j<frameSize;j++) e+=data[i+j]*data[i+j];
+      energies.push(e/frameSize);
+    }
+    // Peak picking
+    const threshold=energies.reduce((a,b)=>a+b)/energies.length*2.5;
+    const peaks=[];
+    for(let i=1;i<energies.length-1;i++){
+      if(energies[i]>threshold&&energies[i]>energies[i-1]&&energies[i]>energies[i+1]){
+        const t=i*hopSize/sr;
+        if(!peaks.length||t-peaks[peaks.length-1]>0.3) peaks.push(t);
+      }
+    }
+    // Calculate BPM from inter-onset intervals
+    if(peaks.length<4){ toast('Không đủ dữ liệu phân tích BPM','warn'); return; }
+    const iois=[];
+    for(let i=1;i<Math.min(peaks.length,50);i++) iois.push(peaks[i]-peaks[i-1]);
+    const avgIoi=iois.reduce((a,b)=>a+b)/iois.length;
+    let bpm=Math.round(60/avgIoi);
+    // Normalize to 60-180 range
+    while(bpm>180)bpm=Math.round(bpm/2);
+    while(bpm<60) bpm=bpm*2;
+    bpmState={bpm,confidence:Math.min(95,peaks.length*2),detected:true};
+    toast(`🥁 BPM: ${bpm} (${bpmState.confidence}% confidence)`, 'success', 4000);
+    // Update slideshow interval
+    startSlideshowIfMulti();
+    return bpm;
+  }catch(e){
+    toast('Lỗi phân tích BPM: '+e.message,'error');
+  }
+}
+
+// ─────────────────────────────────────────
+// 10. WEB NOTIFICATIONS
+// ─────────────────────────────────────────
+let notifPermission='default';
+async function requestNotifPermission(){
+  if(!('Notification' in window)){ toast('Trình duyệt không hỗ trợ thông báo','warn'); return; }
+  const perm=await Notification.requestPermission();
+  notifPermission=perm;
+  if(perm==='granted') toast('🔔 Thông báo đã bật! Bạn sẽ được nhắc khi export xong','success');
+  else toast('Thông báo bị từ chối','warn');
+}
+function sendNotif(title, body, icon=''){
+  if(notifPermission!=='granted') return;
+  try{
+    const n=new Notification(title,{body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">🎵</text></svg>'});
+    setTimeout(()=>n.close(),8000);
+  }catch(_){}
+}
+
+// ─────────────────────────────────────────
+// 11. GRADIENT CACHE (performance)
+// ─────────────────────────────────────────
+const _gradCache={};
+let _gradCacheHits=0;
+function cachedRadialGradient(ctx,x1,y1,r1,x2,y2,r2,stops,cacheKey){
+  // Round to avoid cache explosion
+  const key=cacheKey||`${Math.round(x1)},${Math.round(y1)},${Math.round(r2)},${stops[0][1]}`;
+  // Check if same ctx (canvas resize invalidates cache)
+  if(_gradCache[key]&&_gradCache[key].ctx===ctx){ _gradCacheHits++; return _gradCache[key].grad; }
+  const grad=ctx.createRadialGradient(x1,y1,r1,x2,y2,r2);
+  stops.forEach(([pos,col])=>grad.addColorStop(pos,col));
+  _gradCache[key]={grad,ctx};
+  return grad;
+}
+// Clear cache when canvas resizes
+function clearGradCache(){ for(const k in _gradCache) delete _gradCache[k]; }
+
+// ─────────────────────────────────────────
+// 12. SECURITY: Safe DOM updates
+// ─────────────────────────────────────────
+function sanitizeText(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ─────────────────────────────────────────
+// 13. MEDIA SESSION API
+// ─────────────────────────────────────────
+function setupMediaSession(title, artist){
+  if(!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: title||'Bài Hát',
+    artist: artist||'Ca Sĩ',
+    album: 'VietLong Creator',
+    artwork:[{src:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="%2305060c"/><text y="68" x="14" font-size="60">🎵</text></svg>',sizes:'96x96',type:'image/svg+xml'}]
+  });
+  navigator.mediaSession.setActionHandler('play',  ()=>{ if(typeof startPlay!=='undefined')startPlay(); });
+  navigator.mediaSession.setActionHandler('pause', ()=>{ if(typeof stopPlay!=='undefined')stopPlay(); });
+  navigator.mediaSession.setActionHandler('seekbackward', ()=>seekAudio(-10));
+  navigator.mediaSession.setActionHandler('seekforward',  ()=>seekAudio(10));
+}
+
+// ─────────────────────────────────────────
+// 14. SCREEN WAKE LOCK
+// ─────────────────────────────────────────
+let wakeLock=null;
+async function acquireWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>wakeLock=null);
+  }catch(_){}
+}
+async function releaseWakeLock(){
+  if(wakeLock){ await wakeLock.release(); wakeLock=null; }
+}
+// Acquire during export, release after
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState==='visible'&&typeof playing!=='undefined'&&playing) acquireWakeLock();
+});
+
+// ─────────────────────────────────────────
+// 15. OFFLINE DETECTION
+// ─────────────────────────────────────────
+window.addEventListener('online',  ()=>toast('🌐 Đã kết nối internet','success',2000));
+window.addEventListener('offline', ()=>toast('📵 Mất kết nối internet — app vẫn hoạt động offline','warn',4000));
+
+// ─────────────────────────────────────────
+// 16. ERROR BOUNDARY
+// ─────────────────────────────────────────
+window.onerror=(msg,src,line,col,err)=>{
+  console.error('[VLC Error]',msg,src,line);
+  // Don't show toast for minor errors
+  if(msg&&msg.includes('ResizeObserver')) return true;
+  return false;
+};
+window.addEventListener('unhandledrejection',e=>{
+  console.error('[VLC Promise]',e.reason);
+});
+
+// ─────────────────────────────────────────
+// INIT — run on DOMContentLoaded
+// ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  checkDraftOnLoad();
+  // Request notification permission hint after 30s
+  setTimeout(()=>{
+    if(Notification?.permission==='default'){
+      toast('🔔 Bật thông báo để nhận alert khi export xong · Nhấn N','info',5000);
+    }
+  },30000);
+});
+
 
 /* ══════════════════════════════════════════════════════
    AUTOMATION ENGINE — VietLong Creator Auto v1.0
@@ -2734,10 +3422,18 @@ function goStep(n){
     // Dừng TẤT CẢ mini preview animations để giải phóng CPU
     Object.values(miniAnim).forEach(f=>{if(f)cancelAnimationFrame(f);});
     for(const k in miniAnim)miniAnim[k]=null;
-    bgCache=null; // reset bg cache cho canvas mới
-    bgFrameCount=0;
-    initCanvas();setupAudio();
+    bgCache=null; bgFrameCount=0;
+    // ⚠️ Panel phải visible TRƯỚC khi đọc clientWidth — dùng requestAnimationFrame để chờ layout
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        initCanvas();
+        setupAudio();
+        // Bắt đầu idle animation ngay
+        startIdleLoop();
+      });
+    });
   }
+  if(n!==4) stopIdleLoop();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -3181,25 +3877,27 @@ function buildCfg(force=false){
   $('cfg').innerHTML=`
     ${isMC?`
     <div style="margin-bottom:18px">
-      <div class="panel-title" style="font-size:.6rem;margin-bottom:12px">🖼 Ảnh Nghệ Sĩ</div>
+      <div class="panel-title" style="font-size:.6rem;margin-bottom:8px">🖼 Ảnh Nghệ Sĩ</div>
       <div class="art-img-zone" onclick="$('artfi').click()" id="artzone">
         <div class="art-img-bg" id="artbg"></div>
         <span style="font-size:1.6rem;position:relative;z-index:1">📷</span>
-        <div class="art-img-txt">Nhấn để upload ảnh nghệ sĩ<br><small style="opacity:.55">JPG · PNG · Ảnh dọc tỉ lệ 3:4 cho kết quả đẹp nhất</small></div>
+        <div class="art-img-txt">Nhấn để upload ảnh chính<br><small style="opacity:.55">JPG · PNG · Tỉ lệ 3:4 tốt nhất</small></div>
       </div>
       <input type="file" id="artfi" accept="image/*" onchange="loadArtImg(this)">
+      <div style="font-size:.6rem;color:var(--tx3);margin-top:8px;font-family:'IBM Plex Mono',monospace">🎞 SLIDESHOW — Thêm tối đa 5 ảnh, tự chuyển theo beat</div>
+      <div class="artimg-slots" id="artimg-slots"></div>
     </div>`:``}
     <div class="cfg-layout">
       <div class="fg"><label>Tên Bài Hát</label>
-        <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase()"></div>
+        <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase();scheduleDraftSave()"></div>
       <div class="fg"><label>Tên Ca Sĩ / Nghệ Sĩ</label>
-        <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH"></div>
+        <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH" oninput="scheduleDraftSave()"></div>
       ${isMC?`<div class="fg"><label>Nhãn Trong Thẻ Ảnh</label>
         <input type="text" id="cc-remix" placeholder="VD: VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>`:``}
       <div class="fg"><label>Màu Nền Chính</label>
-        <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value"></div>
+        <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value;scheduleDraftSave()"></div>
       <div class="fg"><label>Màu Hiệu Ứng Chính</label>
-        <input type="color" id="cc-wc" value="${wc}" oninput="chosenTpl.pal.wc=this.value;chosenTpl.pal.ac=this.value"></div>
+        <input type="color" id="cc-wc" value="${wc}" oninput="chosenTpl.pal.wc=this.value;chosenTpl.pal.ac=this.value;scheduleDraftSave()"></div>
       ${s==='sp'||s==='wv'?`<div class="fg"><label>Màu Hiệu Ứng Phụ</label>
         <input type="color" id="cc-ac2" value="${ac2}" oninput="chosenTpl.pal.ac2=this.value"></div>`:''}
       ${s==='pt'||s==='wv'?`<div class="fg"><label>Kiểu Sóng Âm</label>
@@ -3208,50 +3906,108 @@ function buildCfg(force=false){
           <option value="glow">Phát Sáng</option><option value="circle">Vòng Tròn</option>
           <option value="none">Ẩn</option></select></div>`:''}
     </div>
+
+    <!-- Color Presets -->
+    <div style="margin-top:12px">
+      <div style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:4px">🎨 MÀU SẮC PRESET — 1 click đổi toàn bộ palette</div>
+      <div class="preset-grid" id="color-presets-cont"></div>
+    </div>
+
     <div class="fg" style="margin-top:14px">
       <label>${isLV?'Lời Bài Hát (Hiển thị trung tâm video)':'Lời Bài Hát (Tùy Chọn)'}</label>
-      <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...':'Nhập lời bài hát...'}" rows="${isLV?8:4}"></textarea>
+      <textarea id="cc-lyr" placeholder="${isLV?'Nhập từng câu lyrics...':'Nhập lời bài hát...'}" rows="${isLV?8:4}" oninput="scheduleDraftSave()"></textarea>
       <div class="hint">${isLV?'💡 Mỗi dòng hiển thị tuần tự đồng bộ nhịp nhạc':'💡 Để trống nếu không cần lời nhạc'}</div>
     </div>
     <div class="info-box">ℹ Nhấn <strong>"Xem Trước &amp; Xuất"</strong> để xem kết quả với nhạc của bạn.</div>
   `;
 
   // Điền lại giá trị đã lưu
-  if($('cc-title'))  $('cc-title').value  = sv.title;
-  if($('cc-artist')) $('cc-artist').value = sv.artist;
+  const dr = window._draftRestore;
+  if($('cc-title'))  $('cc-title').value  = dr?.title  || sv.title;
+  if($('cc-artist')) $('cc-artist').value = dr?.artist || sv.artist;
   if($('cc-remix'))  $('cc-remix').value  = sv.remix;
   if($('cc-lyr'))    $('cc-lyr').value    = sv.lyr;
   if($('cc-wt'))     $('cc-wt').value     = sv.wt;
+  if(dr){ window._draftRestore=null; } // consumed
 
-  // Khôi phục preview ảnh nghệ sĩ
+  // Khôi phục preview ảnh
   if(artImg&&artImg.src){
     const bg=$('artbg');
     if(bg){bg.style.backgroundImage=`url(${artImg.src})`;bg.classList.add('show');}
   }
 
+  // Render color presets
+  if(typeof renderColorPresets==='function') renderColorPresets();
+
+  // Render multi-image slots
+  if(isMC&&typeof renderArtImgSlots==='function') renderArtImgSlots();
+
   _lastCfgTplId=chosenTpl.id;
+  scheduleDraftSave();
 }
 function loadArtImg(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();r.onload=e=>{
     artImg=new Image();artImg.src=e.target.result;
     const bg=$('artbg');if(bg){bg.style.backgroundImage=`url(${e.target.result})`;bg.classList.add('show');}
+    // Add to slideshow array
+    if(typeof addArtImg==='function') addArtImg(f);
   };r.readAsDataURL(f);
 }
 
 /* ── CANVAS INIT ── */
 function initCanvas(){
   const w=$('pvframe');
-  const W=w.clientWidth||Math.round(window.innerWidth*.85);
-  const H=Math.round(W*9/16);
-  bgCvs.width=W; bgCvs.height=H;
-  ovCvs.width=W; ovCvs.height=H;
-  // Lưu kích thước preview để restore sau export
-  bgCvs.setAttribute('data-pw',W);
-  bgCvs.setAttribute('data-ph',H);
-  spCvs.width=w.clientWidth||W; spCvs.height=44;
+  const W=w.clientWidth||w.parentElement?.clientWidth||Math.round(window.innerWidth*.72)||1280;
+  let H;
+  // Support 9:16 mode
+  if(typeof currentRatio!=='undefined'&&currentRatio==='9:16'){
+    H=Math.round(W*(16/9)); // full 9:16
+    // Cap height to viewport
+    const maxH=window.innerHeight*.7;
+    const scaledW=Math.round(maxH*(9/16));
+    bgCvs.width=scaledW; bgCvs.height=Math.round(maxH);
+    ovCvs.width=scaledW; ovCvs.height=Math.round(maxH);
+    bgCvs.style.width=scaledW+'px'; bgCvs.style.height=Math.round(maxH)+'px';
+    ovCvs.style.width=scaledW+'px'; ovCvs.style.height=Math.round(maxH)+'px';
+    bgCvs.setAttribute('data-pw',scaledW);
+    bgCvs.setAttribute('data-ph',Math.round(maxH));
+    spCvs.width=W; spCvs.height=44;
+  } else {
+    H=Math.round(W*9/16);
+    bgCvs.width=W; bgCvs.height=H;
+    ovCvs.width=W; ovCvs.height=H;
+    bgCvs.style.width=''; bgCvs.style.height='';
+    ovCvs.style.width=''; ovCvs.style.height='';
+    bgCvs.setAttribute('data-pw',W);
+    bgCvs.setAttribute('data-ph',H);
+    spCvs.width=W; spCvs.height=44;
+  }
+  if(typeof clearGradCache==='function') clearGradCache();
   aiT=0; aiGP=0; ptArr=[];
-  if(chosenTpl?.style==='pt') initParts(W,H,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+  if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
+}
+
+// ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
+let idleRaf=null;
+function startIdleLoop(){
+  stopIdleLoop();
+  function idleTick(ts){
+    if(playing){idleRaf=null;return;} // nhường cho renderLoop khi đang phát
+    if(!chosenTpl||step!==4){idleRaf=null;return;}
+    if(ts-lastFrameTime<FRAME_MS){idleRaf=requestAnimationFrame(idleTick);return;}
+    lastFrameTime=ts;
+    aiT+=.008; // chuyển động chậm khi idle
+    _bass=.25+Math.abs(Math.sin(aiT*1.2))*.15;
+    _mid=.2+Math.abs(Math.sin(aiT*.8))*.1;
+    _eng=.22;
+    drawFrame();
+    idleRaf=requestAnimationFrame(idleTick);
+  }
+  idleRaf=requestAnimationFrame(idleTick);
+}
+function stopIdleLoop(){
+  if(idleRaf){cancelAnimationFrame(idleRaf);idleRaf=null;}
 }
 // Kích thước cố định cho export — luôn HD 1280x720
 const EXPORT_W=1280, EXPORT_H=720;
@@ -3271,9 +4027,23 @@ function setupAudio(){
 function togglePlay(){playing?stopPlay():startPlay();}
 async function startPlay(){
   if(!audEl)return;
+  stopIdleLoop();
   if(actx?.state==='suspended')await actx.resume();
-  audEl.currentTime=0;audEl.play();
+  // Apply trim
+  if(typeof trimState!=='undefined'&&trimState.applied&&trimState.start>0)
+    audEl.currentTime=(audEl.duration||0)*trimState.start;
+  else audEl.currentTime=0;
+  audEl.play();
   playing=true;aiT=0;aiGP=0;
+  // Media Session
+  const title=$('cc-title')?.value||'Bài Hát';
+  const artist=$('cc-artist')?.value||'Ca Sĩ';
+  if(typeof setupMediaSession==='function') setupMediaSession(title,artist);
+  if(typeof acquireWakeLock==='function') acquireWakeLock();
+  if(typeof startSlideshowIfMulti==='function') startSlideshowIfMulti();
+  // Auto BPM on first play
+  if(typeof bpmState!=='undefined'&&!bpmState.detected&&audFile)
+    setTimeout(()=>{ if(typeof detectBPM==='function')detectBPM(); },800);
   if(chosenTpl?.style==='pt') initParts(bgCvs.width,bgCvs.height,chosenTpl.pal.ac,chosenTpl.pal.ac2);
   $('pbtn').textContent='⏸ Tạm Dừng';
   renderLoop();
@@ -3282,6 +4052,9 @@ function stopPlay(){
   if(audEl)audEl.pause();
   playing=false;$('pbtn').textContent='▶ Phát';
   if(raf)cancelAnimationFrame(raf);
+  if(typeof releaseWakeLock==='function') releaseWakeLock();
+  if(typeof artImgTimer!=='undefined') clearInterval(artImgTimer);
+  if(step===4)startIdleLoop();
 }
 function doRestart(){stopPlay();setTimeout(startPlay,80);}
 
@@ -4612,6 +5385,8 @@ function drawSpec(){
 async function startExport(){
   const btn=$('expbtn');btn.disabled=true;
   $('progwrap').style.display='block';$('dlbox').style.display='none';
+  await acquireWakeLock();
+  toast('🎬 Bắt đầu xuất video HD 1280×720...','info',3000);
 
   upProg(0,'Khởi tạo...');
   stopPlay(); aiT=0; aiGP=0; bgCache=null; bgFrameCount=0;
@@ -4679,6 +5454,11 @@ async function startExport(){
       $('dlbox').style.display='block';
       btn.disabled=false;
       upProg(100,'Hoàn tất!','');
+      // ── Hook: Notification + Wake Lock + Toast ──
+      releaseWakeLock();
+      const songTitle=$('cc-title')?.value||'Video';
+      sendNotif('✅ VietLong Creator — Export xong!', `"${songTitle}" — 1280×720 đã sẵn sàng tải về`);
+      toast(`🎉 Xuất xong! Video "${songTitle}" đã sẵn sàng`, 'success', 5000);
       // Dọn dẹp
       exportAudEl.pause(); exportActx.close();
     },400);
