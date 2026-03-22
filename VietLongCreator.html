@@ -5178,15 +5178,29 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){  const bgType = chosenTpl?.b
   bgX.fillStyle='rgba(255,255,255,.35)';
   bgX.fillText(fmt(audDur),pbX+pbW,pbY-4);
 
-  // Remix label — góc dưới phải bên trên progress bar
+  // Remix label — góc TRÊN bên phải của card (không che progress bar)
   const remixLabel=($('cc-remix')?.value||'REMIX').toUpperCase();
-  const rlH=ch*.055;
+  const rlH=ch*.052;
   bgX.font=`600 ${rlH*.5}px Be Vietnam Pro,Arial`;
-  const rlW=bgX.measureText(remixLabel).width+cw*.07;
-  const rlX=cx+cw-rlW-cw*.025;
-  const rlY=pbY-rlH-ch*.018; // ngay trên progress bar
-  bgX.fillStyle='rgba(0,0,0,.65)';bgX.fillRect(rlX,rlY,rlW,rlH);
-  bgX.fillStyle='rgba(255,255,255,.85)';
+  const rlW=bgX.measureText(remixLabel).width+cw*.06;
+  const rlX=cx+cw-rlW-cw*.018;   // sát mép phải card
+  const rlY=cy+ch*.018;           // sát mép trên card
+  // Pill background
+  const rlR=rlH*.35; // bo góc
+  bgX.fillStyle='rgba(0,0,0,.62)';
+  bgX.beginPath();
+  bgX.moveTo(rlX+rlR,rlY);
+  bgX.lineTo(rlX+rlW-rlR,rlY);
+  bgX.quadraticCurveTo(rlX+rlW,rlY,rlX+rlW,rlY+rlR);
+  bgX.lineTo(rlX+rlW,rlY+rlH-rlR);
+  bgX.quadraticCurveTo(rlX+rlW,rlY+rlH,rlX+rlW-rlR,rlY+rlH);
+  bgX.lineTo(rlX+rlR,rlY+rlH);
+  bgX.quadraticCurveTo(rlX,rlY+rlH,rlX,rlY+rlH-rlR);
+  bgX.lineTo(rlX,rlY+rlR);
+  bgX.quadraticCurveTo(rlX,rlY,rlX+rlR,rlY);
+  bgX.closePath();
+  bgX.fill();
+  bgX.fillStyle='rgba(255,255,255,.9)';
   bgX.textAlign='center';bgX.textBaseline='middle';
   bgX.fillText(remixLabel,rlX+rlW/2,rlY+rlH/2);
 
