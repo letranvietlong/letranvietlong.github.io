@@ -551,11 +551,12 @@ main {
 }
 .gallery {
   display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:14px;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
 }
-@media(max-width:720px){ .gallery{grid-template-columns:1fr 1fr;} }
-@media(max-width:440px){ .gallery{grid-template-columns:1fr;} }
+@media(max-width:900px){ .gallery{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:620px){ .gallery{grid-template-columns:1fr 1fr;} }
+@media(max-width:400px){ .gallery{grid-template-columns:1fr;} }
 
 .tcard {
   border:1.5px solid var(--line);
@@ -625,7 +626,7 @@ main {
   transition:all .22s;
 }
 .tcard:hover .tc-play-ring { opacity:1; transform:scale(1); }
-.tc-body { padding:13px 14px 15px; }
+.tc-body { padding:9px 11px 11px; }
 .tc-name {
   font-family:'Be Vietnam Pro',sans-serif; font-weight:700;
   font-size:.8rem; margin-bottom:4px; color:var(--tx);
@@ -1596,41 +1597,9 @@ header { padding:0 32px; }
     <button onclick="buildBeatTimeline()" style="position:absolute;right:4px;top:4px;padding:2px 7px;border-radius:4px;border:none;background:rgba(0,0,0,.5);color:var(--a2);font-size:.55rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">🥁 Beats</button>
   </div>
   <!-- Intro/Outro settings -->
-  <details style="margin-bottom:10px">
-    <summary style="cursor:pointer;font-size:.65rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;padding:6px 0">⚙ Intro / Outro / Countdown</summary>
-    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:6px">
-      <div class="intro-toggle">
-        <input type="checkbox" id="intro-chk" onchange="toggleIntro(this.checked)">
-        <label for="intro-chk" style="font-size:.65rem;color:var(--tx)">Intro (3s)</label>
-        <input type="text" id="intro-text" placeholder="VietLong Creator" value="VietLong Creator" oninput="_introText=this.value" style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
-      </div>
-      <div class="intro-toggle">
-        <input type="checkbox" id="outro-chk" onchange="toggleOutro(this.checked)">
-        <label for="outro-chk" style="font-size:.65rem;color:var(--tx)">Outro (3s)</label>
-        <input type="text" id="outro-channel" placeholder="Tên kênh YouTube" oninput="_outroChannel=this.value" style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
-      </div>
-      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
-        <span style="font-size:.62rem;color:var(--tx3)">⏱ Countdown:</span>
-        <select id="cd-dur" style="padding:3px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
-          <option value="3">3s</option><option value="5">5s</option><option value="10">10s</option>
-        </select>
-        <button onclick="startCountdown($('cd-dur').value)" style="padding:4px 10px;border-radius:5px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer">▶ Bắt đầu</button>
-        <button onclick="stopCountdown()" style="padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:none;color:var(--tx3);font-size:.6rem;cursor:pointer">✕ Stop</button>
-      </div>
-    </div>
-  </details>
+  
   <!-- Chapters -->
-  <details style="margin-bottom:10px">
-    <summary style="cursor:pointer;font-size:.65rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;padding:6px 0">📍 Video Chapters / Markers</summary>
-    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:6px">
-      <div style="display:flex;gap:6px;margin-bottom:6px">
-        <input type="text" id="chapter-label" placeholder="Tên đoạn..." style="flex:1;padding:4px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface);color:var(--tx);font-size:.62rem">
-        <button onclick="addChapter($('chapter-label').value);$('chapter-label').value=''" style="padding:4px 10px;border-radius:5px;border:none;background:var(--a2);color:var(--ink);font-size:.6rem;cursor:pointer;font-weight:700">+ Add</button>
-        <button onclick="generateYTChapters()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.6rem;cursor:pointer">📋 Copy YT</button>
-      </div>
-      <div id="chapter-list"></div>
-    </div>
-  </details>
+  
 
     </div>
   </div><!-- /left -->
@@ -1683,9 +1652,27 @@ header { padding:0 32px; }
         <div class="prog-lbl" id="proglbl">Khởi tạo...</div>
         <div class="prog-time" id="progtime"></div>
       </div>
+      <!-- Export timer row -->
+      <div class="export-timer-row" id="export-timer-row" style="display:none">
+        <div class="export-timer-item">
+          <span class="export-timer-label">⏱ Thời gian thực</span>
+          <span class="export-timer-val" id="export-wall-time">0:00</span>
+        </div>
+        <div class="export-timer-sep">·</div>
+        <div class="export-timer-item">
+          <span class="export-timer-label">⏳ Ước tính còn</span>
+          <span class="export-timer-val" id="export-eta">–</span>
+        </div>
+        <div class="export-timer-sep">·</div>
+        <div class="export-timer-item">
+          <span class="export-timer-label">🚀 Tốc độ</span>
+          <span class="export-timer-val" id="export-speed">–</span>
+        </div>
+      </div>
     </div>
     <div class="dl-success" id="dlbox">
       <p id="dl-success-msg">✅ Xuất thành công! Video đã sẵn sàng.</p>
+      <div id="export-summary" style="font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin:4px 0 10px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
       <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
     </div>
   </div>
@@ -2504,6 +2491,36 @@ body:has(#panel-auto.show) .step-bar {
     width:calc(60vw * 9 / 16) !important;
   }
 }
+
+/* ── Export Timer Row ── */
+.export-timer-row {
+  display:flex; align-items:center; gap:0;
+  margin-top:10px; padding:9px 14px;
+  background:var(--surface2); border:1px solid var(--line2);
+  border-radius:9px; flex-wrap:wrap; gap:6px;
+}
+.export-timer-item {
+  display:flex; flex-direction:column; align-items:center;
+  gap:2px; flex:1; min-width:80px;
+}
+.export-timer-label {
+  font-size:.54rem; color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.04em; white-space:nowrap;
+}
+.export-timer-val {
+  font-size:.82rem; font-weight:800; color:var(--a2);
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.04em;
+}
+.export-timer-sep {
+  color:var(--line2); font-size:.9rem; padding:0 2px;
+  align-self:center;
+}
+@media(max-width:480px){
+  .export-timer-sep { display:none; }
+  .export-timer-row { justify-content:space-around; }
+}
 </style>
 
 <script>
@@ -2681,41 +2698,6 @@ function initStickerDrag(){
   cvs.addEventListener('mouseup',()=>{ _stickerDragging=-1; });
 }
 
-// ── Countdown Timer Overlay ──
-let _countdownActive=false;
-let _countdownEnd=0;
-let _countdownDuration=5;
-
-function startCountdown(seconds){
-  _countdownDuration=parseInt(seconds)||5;
-  _countdownActive=true;
-  _countdownEnd=Date.now()+_countdownDuration*1000;
-  toast('⏱ Đếm ngược '+_countdownDuration+'s bắt đầu!','info',1500);
-}
-function stopCountdown(){ _countdownActive=false; }
-
-function drawCountdown(ctx,W,H){
-  if(!_countdownActive) return;
-  const remaining=Math.ceil((_countdownEnd-Date.now())/1000);
-  if(remaining<=0){ _countdownActive=false; return; }
-  const progress=remaining/_countdownDuration;
-  const cx=W*.85, cy=H*.15, r=Math.min(W,H)*.065;
-  // Circle background
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fill();
-  // Progress arc
-  ctx.strokeStyle=remaining<=2?'#f87171':'var(--a2,#00e5c3)';
-  ctx.lineWidth=r*.12; ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=8;
-  ctx.beginPath();
-  ctx.arc(cx,cy,r*.82,-Math.PI/2,-Math.PI/2+progress*Math.PI*2);
-  ctx.stroke(); ctx.shadowBlur=0;
-  // Number
-  ctx.font='700 '+(r*.9)+'px Orbitron,"Be Vietnam Pro",sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='#fff'; ctx.fillText(remaining,cx,cy);
-  ctx.restore();
-}
 
 // ── Custom Watermark / Branding ──
 let _watermarkText='';
@@ -2808,77 +2790,6 @@ function drawCompareOverlay(mainCtx,W,H,bass,mid,t){
   mainCtx.restore();
 }
 
-// ── Intro / Outro Clip ──
-let _introEnabled=false;
-let _outroEnabled=false;
-let _introDuration=3;
-let _outroDuration=3;
-let _introText='VietLong Creator';
-let _outroText='Like & Subscribe! 🔔';
-let _outroChannel='';
-
-function toggleIntro(v){ _introEnabled=v; toast(v?'✅ Intro bật':'Intro tắt','info',1000); }
-function toggleOutro(v){ _outroEnabled=v; toast(v?'✅ Outro bật':'Outro tắt','info',1000); }
-
-function renderIntroFrame(ctx,W,H,t,pal){
-  const dur=_introDuration;
-  const progress=Math.min(t/dur,1);
-  const fadeIn=Math.min(t/0.5,1);
-  const fadeOut=t>dur-0.5?1-(t-(dur-0.5))/0.5:1;
-  const alpha=fadeIn*fadeOut;
-  ctx.save();
-  ctx.globalAlpha=alpha;
-  // Background
-  ctx.fillStyle=pal?.b1||'#05060c'; ctx.fillRect(0,0,W,H);
-  // Animated logo text
-  const scale=0.8+progress*0.2;
-  ctx.translate(W/2,H/2);
-  ctx.scale(scale,scale);
-  const fsz=Math.min(W*.06,52);
-  ctx.font='900 '+fsz+'px Orbitron,"Be Vietnam Pro",sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.shadowColor=pal?.wc||'#00e5c3'; ctx.shadowBlur=20+progress*20;
-  ctx.fillStyle=pal?.wc||'#00e5c3';
-  ctx.fillText(_introText,0,-fsz*0.6,W*0.8);
-  ctx.shadowBlur=0;
-  ctx.font='400 '+(fsz*.4)+'px "Be Vietnam Pro",sans-serif';
-  ctx.fillStyle='rgba(255,255,255,.6)';
-  ctx.fillText('AI Music Video Studio',0,fsz*0.6,W*0.7);
-  ctx.restore();
-}
-
-function renderOutroFrame(ctx,W,H,t,pal){
-  const dur=_outroDuration;
-  const fadeIn=Math.min(t/0.5,1);
-  const alpha=fadeIn;
-  ctx.save();
-  ctx.globalAlpha=alpha;
-  ctx.fillStyle=pal?.b1||'#05060c'; ctx.fillRect(0,0,W,H);
-  const fsz=Math.min(W*.05,44);
-  ctx.font='900 '+(fsz*1.1)+'px Orbitron,"Be Vietnam Pro",sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.shadowColor=pal?.a1||'#ff2d78'; ctx.shadowBlur=18;
-  ctx.fillStyle=pal?.a1||'#ff2d78';
-  ctx.fillText(_outroText,W/2,H*.42,W*.85);
-  if(_outroChannel){
-    ctx.shadowBlur=0; ctx.font='600 '+(fsz*.55)+'px "Be Vietnam Pro",sans-serif';
-    ctx.fillStyle='rgba(255,255,255,.75)';
-    ctx.fillText(_outroChannel,W/2,H*.58,W*.8);
-  }
-  // Subscribe button mockup
-  const bw=W*.22,bh=H*.065,bx=W/2-bw/2,by=H*.67;
-  ctx.fillStyle='#ff2d78'; ctx.beginPath();
-  const br=bh*.35;
-  ctx.moveTo(bx+br,by); ctx.lineTo(bx+bw-br,by);
-  ctx.quadraticCurveTo(bx+bw,by,bx+bw,by+br);
-  ctx.lineTo(bx+bw,by+bh-br); ctx.quadraticCurveTo(bx+bw,by+bh,bx+bw-br,by+bh);
-  ctx.lineTo(bx+br,by+bh); ctx.quadraticCurveTo(bx,by+bh,bx,by+bh-br);
-  ctx.lineTo(bx,by+br); ctx.quadraticCurveTo(bx,by,bx+br,by); ctx.closePath();
-  ctx.shadowColor='rgba(255,45,120,.6)'; ctx.shadowBlur=12; ctx.fill(); ctx.shadowBlur=0;
-  ctx.font='700 '+(bh*.38)+'px "Be Vietnam Pro",sans-serif';
-  ctx.fillStyle='#fff'; ctx.fillText('SUBSCRIBE',W/2,by+bh/2);
-  ctx.restore();
-}
 
 // ── Competitor Channel Analysis ──
 async function analyzeCompetitor(channelId){
@@ -2922,40 +2833,6 @@ function showCompetitorModal(videos,channelId){
   m.style.display='flex';
 }
 
-// ── Video Chapters / Markers ──
-let _chapters=[];
-
-function addChapter(label,time){
-  const t=time!=null?time:(audEl?.currentTime||0);
-  const lbl=label||('Chapter '+(_chapters.length+1));
-  _chapters.push({time:t,label:lbl,id:Date.now()});
-  _chapters.sort((a,b)=>a.time-b.time);
-  renderChapterList();
-  toast('📍 Marker: '+lbl+' @ '+fmt(t),'success',2000);
-}
-
-function removeChapter(id){
-  _chapters=_chapters.filter(c=>c.id!==id);
-  renderChapterList();
-}
-
-function renderChapterList(){
-  const el=$('chapter-list'); if(!el) return;
-  if(!_chapters.length){el.innerHTML='<div style="color:var(--tx3);font-size:.62rem;text-align:center;padding:8px">Chưa có marker · Nhấn + khi đang phát</div>';return;}
-  el.innerHTML=_chapters.map(c=>'<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;background:var(--surface2);margin-bottom:3px">'
-    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:.58rem;color:var(--a2);min-width:38px">'+fmt(c.time)+'</span>'
-    +'<span style="flex:1;font-size:.65rem;color:var(--tx)">'+sanitizeText(c.label)+'</span>'
-    +'<button onclick="if(audEl)audEl.currentTime='+c.time+'" style="padding:1px 5px;border-radius:4px;border:1px solid var(--a2);background:none;color:var(--a2);font-size:.55rem;cursor:pointer">▶</button>'
-    +'<button onclick="removeChapter('+c.id+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.65rem">✕</button>'
-    +'</div>').join('');
-}
-
-function generateYTChapters(){
-  if(!_chapters.length){toast('Thêm marker trước','warn');return;}
-  const lines=['00:00 Intro',..._chapters.map(c=>fmt(c.time)+' '+c.label)].join('\n');
-  navigator.clipboard?.writeText(lines).then(()=>toast('📋 Đã copy YouTube chapters','success',3000));
-  return lines;
-}
 
 // ── Multi-Language UI ──
 let _lang='vi';
@@ -3488,6 +3365,11 @@ function applyUploadTime(day,time,modal){
    VIETLONG CREATOR — Core Engine
 ==================================================== */
 const $ = id => document.getElementById(id);
+
+// Removed features — stubs to prevent errors
+const _introEnabled=false,_outroEnabled=false,_introDuration=0,_outroDuration=0;
+let _countdownActive=false;
+function drawCountdown(){}
 
 /* ═══════════════════════════════════════════════════════════════
    FEATURE ENGINE v2.0 — All 16 features
@@ -4072,7 +3954,7 @@ function exportSettingsJSON(){
   a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   toast('📦 Đã xuất settings','success',2000);
 }
-function importSettingsJSON(){
+async function importSettingsJSON(){
   const fi=document.createElement('input'); fi.type='file'; fi.accept='.json';
   fi.onchange=async e=>{
     const f=e.target.files[0]; if(!f) return;
@@ -4797,7 +4679,7 @@ jobs:
 }
 
 // ── Export Node.js script cho GitHub Actions ──
-function exportGHScript(){
+async function exportGHScript(){
   const s = autoSettings;
   const script = `#!/usr/bin/env node
 /**
@@ -5054,8 +4936,8 @@ let actx=null, analyser=null, playing=false, raf=null;
 let aiT=0, aiGP=0, beatLock=false, artImg=null, ptArr=[];
 
 
-const bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
-const bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
+let bgCvs=$('bgcvs'), ovCvs=$('ovcvs');
+let bgX=bgCvs.getContext('2d'), ovX=ovCvs.getContext('2d');
 const spCvs=$('spec-cvs'), spX=spCvs.getContext('2d');
 
 /* ── TEMPLATE DEFINITIONS — 18 Professional Templates ── */
@@ -9813,9 +9695,7 @@ function _applyPostProcessing(W,H){
     const bass=nrg('bass');
     drawStickers(ovX,W,H,bass);
   }
-  if(typeof _countdownActive!=='undefined'&&_countdownActive){
-    drawCountdown(ovX,W,H);
-  }
+
   if(typeof _watermarkText!=='undefined'||typeof _watermarkImg!=='undefined'){
     drawWatermark(ovX,W,H);
   }
@@ -9899,6 +9779,7 @@ let _exportAborted=false;
 let _lastExportUrl='', _lastExportFile=null;
 function cancelExport(){
   _exportAborted=true;
+  if(typeof stopExportTimer==='function') stopExportTimer();
   _isExporting=false;
   const cb=$('cancel-export-btn'); if(cb) cb.style.display='none';
   const btn=$('expbtn'); if(btn) btn.disabled=false;
@@ -9960,6 +9841,80 @@ function copyExportLink(){
 }
 
 let _isExporting=false;
+
+/* ── Export Wall-Clock Timer ── */
+let _exportWallStart=0;
+let _exportWallTimer=null;
+let _exportTotalSecs=0;
+
+function startExportTimer(){
+  _exportWallStart=Date.now();
+  _exportTotalSecs=0;
+  const row=document.getElementById('export-timer-row');
+  if(row) row.style.display='flex';
+  const summ=document.getElementById('export-summary');
+  if(summ) summ.innerHTML='';
+  const eta=document.getElementById('export-eta');
+  const spd=document.getElementById('export-speed');
+  const wt=document.getElementById('export-wall-time');
+  if(eta) eta.textContent='–';
+  if(spd) spd.textContent='–';
+  if(wt) wt.textContent='0s';
+  if(_exportWallTimer) clearInterval(_exportWallTimer);
+  _exportWallTimer=setInterval(()=>{
+    const wall=Math.floor((Date.now()-_exportWallStart)/1000);
+    _exportTotalSecs=wall;
+    const wEl=document.getElementById('export-wall-time');
+    if(wEl) wEl.textContent=fmtSec(wall);
+  },500);
+}
+
+function stopExportTimer(){
+  if(_exportWallTimer){ clearInterval(_exportWallTimer); _exportWallTimer=null; }
+  const wall=Math.floor((Date.now()-_exportWallStart)/1000);
+  _exportTotalSecs=wall;
+  const wEl=document.getElementById('export-wall-time');
+  if(wEl) wEl.textContent=fmtSec(wall);
+}
+
+function updateExportETA(pct){
+  if(pct<5||!_exportWallStart) return;
+  const wall=(Date.now()-_exportWallStart)/1000;
+  const total=wall/Math.max(pct,0.01)*100;
+  const eta=Math.max(0,Math.round(total-wall));
+  const speedPct=(wall>0?(pct/wall).toFixed(1):'–');
+  const etaEl=document.getElementById('export-eta');
+  const speedEl=document.getElementById('export-speed');
+  if(etaEl) etaEl.textContent=pct>=98?'Hoàn tất':fmtSec(eta);
+  if(speedEl) speedEl.textContent=speedPct+'%/s';
+}
+
+function showExportSummary(label,size){
+  stopExportTimer();
+  const wall=_exportTotalSecs;
+  const row=document.getElementById('export-timer-row');
+  if(row) row.style.display='none';
+  const summ=document.getElementById('export-summary');
+  if(!summ) return;
+  const items=[
+    {icon:'⏱',label:'Thời gian xuất',val:fmtSec(wall)},
+    {icon:'📦',label:'Chất lượng',val:label||(EXPORT_QUALITY[currentQuality]?.label)||currentQuality},
+    size?{icon:'💾',label:'Dung lượng',val:size}:null,
+  ].filter(Boolean);
+  summ.innerHTML=items.map(it=>
+    `<span style="display:flex;flex-direction:column;align-items:center;gap:1px">
+      <span style="font-size:.58rem;color:var(--tx3)">${it.icon} ${it.label}</span>
+      <span style="font-size:.76rem;font-weight:800;color:var(--a2)">${it.val}</span>
+    </span>`
+  ).join('<span style="color:var(--line2);padding:0 4px;align-self:center">·</span>');
+}
+
+function fmtSec(s){
+  s=Math.round(s);
+  const m=Math.floor(s/60),sec=s%60;
+  return m>0?`${m}m ${String(sec).padStart(2,'0')}s`:`${sec}s`;
+}
+
 async function startExport(){
   _exportAborted=false;
   _isExporting=true;
@@ -9971,6 +9926,7 @@ async function startExport(){
   _showCancelBtn(true);
   $('progwrap').style.display='block';
   $('dlbox').style.display='none';
+  startExportTimer();
   await acquireWakeLock();
   const q=EXPORT_QUALITY[currentQuality]||EXPORT_QUALITY.good;
   toast(`🎬 Xuất video ${q.label}...`,'info',3000);
@@ -10053,7 +10009,10 @@ async function exportWithWebCodecs(q){
       error:e=>console.error('VideoEncoder:',e),
     });
     videoEncoder.configure({
-      codec:'avc1.4d0028',  // H.264 High Profile Level 4.0
+      // avc1.640033 = H.264 High Profile Level 5.1 (supports up to 4096×2304)
+      // Level 4.0 (0x28) max = 2097152px → fails at 2560×1440 (3686400px)
+      // Level 5.1 (0x33) max = 9437184px → supports 2K/4K safely
+      codec: EW*EH > 2_097_152 ? 'avc1.640033' : 'avc1.4d0028',
       width:EW, height:EH,
       bitrate:q.videoBps,
       framerate:FPS,
@@ -10074,7 +10033,6 @@ async function exportWithWebCodecs(q){
     upProg(15,'Bắt đầu render + encode...');
     exportAudEl.currentTime=0;
     if(exportActx.state==='suspended') await exportActx.resume();
-    exportAudEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
     exportAudEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
   exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
 
@@ -10172,8 +10130,8 @@ async function exportWithWebCodecs(q){
       }
 
       // Intro: first N frames render intro instead of music card
-      const introDur=_introEnabled?_introDuration:0;
-      const outroDur=_outroEnabled?_outroDuration:0;
+      const introDur=0;
+      const outroDur=0;
       const introFrames=Math.floor(introDur*FPS);
       const outroFrames=Math.floor(outroDur*FPS);
       const mainFrames=totalFrames-introFrames-outroFrames;
@@ -10319,6 +10277,7 @@ async function exportWithMediaRecorder(q){
       $('dllink').textContent=`⬇ Tải WebM về máy (${(blob.size/1024/1024).toFixed(1)}MB)`;
       $('dlbox').style.display='block';
       btn.disabled=false; upProg(100,'Hoàn tất!','');
+      if(typeof showExportSummary==='function') showExportSummary(EXPORT_QUALITY[currentQuality]?.label, `${(blob.size/1024/1024).toFixed(1)}MB`);
       releaseWakeLock();
       _showCancelBtn(false);
       _lastExportUrl=url;
@@ -10334,6 +10293,148 @@ async function exportWithMediaRecorder(q){
       exportAudEl.pause();
       try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){}
       try{exportActx.close();}catch(_){}
+    },400);
+  };
+
+  const dur=exportAudEl.duration||30;
+  const t0=performance.now();
+  const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
+  const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
+  const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
+
+  // Offscreen canvases — redirect ALL canvas globals ONCE
+  const mrOffBg=document.createElement('canvas'); mrOffBg.width=EW; mrOffBg.height=EH;
+  const mrOffOv=document.createElement('canvas'); mrOffOv.width=EW; mrOffOv.height=EH;
+  const _mrSaveBgCvs=bgCvs, _mrSaveOvCvs=ovCvs;
+  const _mrSaveBgX=bgX, _mrSaveOvX=ovX;
+  bgCvs=mrOffBg; ovCvs=mrOffOv;
+  bgX=mrOffBg.getContext('2d'); ovX=mrOffOv.getContext('2d');
+  bgCache=null;
+
+  exportAudEl.currentTime=0;
+  if(exportActx.state==='suspended') await exportActx.resume();
+  exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
+  mr.start(100);
+  upProg(20,`Render WebM ${EW}×${EH}...`);
+
+  function fr(){
+    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){} try{exportActx?.close();}catch(_){} _isExporting=false; return; }
+    const el=(performance.now()-t0)/1000;
+    if(el>=dur+0.1){
+      upProg(94,'Đóng gói...',`${fmt(dur)} / ${fmt(dur)}`);
+      bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null;
+      setTimeout(()=>mr.stop(),200); return; // delay 200ms so last frame is captured
+    }
+    exportAn.getByteFrequencyData(expFreqBuf);
+    _freqBuf=expFreqBuf;
+    const len=expFreqBuf.length;
+    const be=Math.floor(len*.12),me=Math.floor(len*.5);
+    let bs=0,ms=0,all=0;
+    for(let i=0;i<len;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms+=v;}
+    _bass=bs/(be*255);_mid=ms/((me-be)*255);_eng=all/(len*255);
+    bgCache=null;
+    aiT=el*.4; aiGP=el*.0026;
+    _renderTime=el;
+    _renderDur=dur;
+    drawFrame();
+    ectx.clearRect(0,0,EW,EH);
+    if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&ectx._gradeFilter){
+      ectx.filter=ectx._gradeFilter;
+    }
+    ectx.drawImage(mrOffBg,0,0);
+    ectx.filter='none';
+    ectx.drawImage(mrOffOv,0,0);
+    // Watermark on export canvas
+    if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
+      drawWatermark(ectx,EW,EH);
+    }
+    const pct=20+Math.round(el/dur*72);
+    upProg(pct,`Render WebM ${EW}×${EH}...`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`);
+    setTimeout(fr,1000/30);
+  }
+  fr();
+}
+
+// Helper: dynamic script loader
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+const EXPORT_STAGES=[
+  {from:0,  to:8,  seg:0, lbl:'Khởi tạo hệ thống...'},
+  {from:8,  to:15, seg:1, lbl:'Cấu hình audio stream...'},
+  {from:15, to:20, seg:2, lbl:'Bắt đầu ghi hình...'},
+  {from:20, to:92, seg:3, lbl:'Đang render & ghi hình...'},
+  {from:92, to:100,seg:4, lbl:'Hoàn tất & đóng gói...'},
+];
+
+function upProg(p, lbl, timeStr=''){
+  const pct=Math.round(p);
+  // Percentage
+  const pctEl=$('progpct');
+  if(pctEl){ pctEl.textContent=pct+'%'; pctEl.classList.toggle('done',pct>=100); }
+  // Fill bar
+  const fill=$('progfill');
+  if(fill){ fill.style.width=pct+'%'; fill.classList.toggle('done',pct>=100); }
+  // Label
+  if(lbl) { const l=$('proglbl'); if(l)l.textContent=lbl; }
+  // Time
+  const te=$('progtime'); if(te)te.textContent=timeStr;
+  // Status text (top)
+  const st=$('progtxt');
+  if(st){
+    if(pct>=100) st.textContent='✅ Xuất thành công!';
+    else if(pct>=20) st.textContent=`Đang xuất video — ${timeStr||''}`;
+    else st.textContent='Đang khởi động...';
+  }
+  // Update ETA
+  if(typeof updateExportETA==='function') updateExportETA(pct);
+  // Segments
+  const stage=EXPORT_STAGES.findIndex(s=>pct<=s.to);
+  const activeSeg=stage===-1?4:EXPORT_STAGES[stage].seg;
+  for(let i=0;i<=4;i++){
+    const s=$(`seg${i}`);if(!s)continue;
+    if(i<activeSeg) s.className='prog-seg done';
+    else if(i===activeSeg) s.className='prog-seg active';
+    else s.className='prog-seg';
+  }
+}
+
+// ── Touch events for Trim modal ──
+document.addEventListener('touchstart',e=>{
+  if(e.target.id==='trim-start-handle') _trimDragging='start';
+  if(e.target.id==='trim-end-handle')   _trimDragging='end';
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!_trimDragging) return;
+  const t=e.touches[0]; if(!t) return;
+  const wf=$('trim-waveform'); if(!wf) return;
+  const rect=wf.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(t.clientX-rect.left)/rect.width));
+  if(_trimDragging==='start') trimState.start=Math.min(ratio,trimState.end-.05);
+  if(_trimDragging==='end')   trimState.end=Math.max(ratio,trimState.start+.05);
+  if(typeof drawTrimWaveform==='function'){drawTrimWaveform();updateTrimDisplay();}
+},{passive:true});
+document.addEventListener('touchend',()=>{ _trimDragging=null; });
+
+// ── Onboarding ──
+function showOnboarding(){
+  if(localStorage.getItem('vlc_onboarded')) return;
+  const uz=$('uz'); if(!uz) return;
+  const rect=uz.getBoundingClientRect();
+  const div=document.createElement('div');
+  div.style.cssText=`position:fixed;top:${rect.bottom+10}px;left:${Math.max(10,rect.left)}px;z-index:9000;background:var(--a2);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.68rem;font-weight:700;box-shadow:0 6px 20px rgba(0,229,195,.35);animation:toastIn .4s ease;pointer-events:none`;
+  div.textContent='👆 Bắt đầu: kéo thả hoặc click để upload file nhạc MP3/WAV';
+  document.body.appendChild(div);
+  setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
+}
+function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
+
+</script>
+atch(_){}
     },400);
   };
 
