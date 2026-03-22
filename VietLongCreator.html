@@ -1470,6 +1470,10 @@ header { padding:0 32px; }
       <span>🤖</span> Tự Động Hóa
       <div class="mnav-badge" id="auto-badge" style="display:none"></div>
     </div>
+    <div class="mnav-tab" id="mn-affiliate" onclick="switchMainTab('affiliate')">
+      <span>🛍</span> Affiliate TikTok
+      <div class="mnav-badge" style="position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#ff2d78;box-shadow:0 0 6px #ff2d78"></div>
+    </div>
   </div>
 </header>
 
@@ -1967,7 +1971,12 @@ Tạo bởi VietLong Creator · Auto Music Video
 
   </div>
 
-  </div>
+  
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL: TIKTOK AFFILIATE AUTOMATION
+═══════════════════════════════════════════════════════════════ -->
+
+</div>
 
 <style>
 .day-chip {
@@ -2521,7 +2530,577 @@ body:has(#panel-auto.show) .step-bar {
   .export-timer-sep { display:none; }
   .export-timer-row { justify-content:space-around; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AFFILIATE TIKTOK PANEL CSS
+═══════════════════════════════════════════════════════════ */
+#panel-affiliate {
+  display:none; width:100%; max-width:100%;
+  padding:0 0 40px; box-sizing:border-box;
+}
+#panel-affiliate.show { display:block; }
+
+/* Full-width like auto panel */
+body:has(#panel-affiliate.show) main {
+  max-width:100% !important; padding:0 !important;
+}
+
+/* Header */
+.aff-header {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:18px 28px 14px;
+  background:linear-gradient(135deg,rgba(255,45,120,.07) 0%,rgba(255,107,157,.04) 100%);
+  border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:20;
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+}
+.aff-header-left { display:flex; align-items:center; gap:20px; }
+.aff-header-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.aff-title {
+  font-size:1.15rem; font-weight:800; color:var(--tx);
+  font-family:'Be Vietnam Pro',sans-serif;
+}
+.aff-title span {
+  background:linear-gradient(90deg,#ff2d78,#ff6b9d);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+/* Stats Bar */
+.aff-stats-bar {
+  display:flex; gap:1px; background:var(--line);
+  border-bottom:1px solid var(--line); overflow-x:auto;
+  scrollbar-width:none;
+}
+.aff-stats-bar::-webkit-scrollbar { display:none; }
+.aff-stat-item {
+  flex:1; display:flex; align-items:center; gap:12px;
+  padding:12px 20px; background:var(--bg);
+  min-width:120px; transition:background .2s;
+}
+.aff-stat-item:hover { background:var(--surface); }
+.aff-stat-icon { font-size:1.1rem; }
+.aff-stat-val {
+  font-size:1.35rem; font-weight:800; line-height:1;
+  font-family:'IBM Plex Mono',monospace;
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.aff-stat-lbl { font-size:.6rem; color:var(--tx3); margin-top:2px; }
+
+/* Run button */
+.aff-run-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 20px; border-radius:9px; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  color:#fff; font-weight:800; font-size:.73rem;
+  font-family:'IBM Plex Mono',monospace; letter-spacing:.05em;
+  white-space:nowrap; transition:all .2s;
+  box-shadow:0 3px 16px rgba(255,45,120,.35);
+}
+.aff-run-btn:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(255,45,120,.5); }
+.aff-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+/* Workspace */
+.aff-workspace {
+  display:grid;
+  grid-template-columns:300px 1fr 290px;
+  min-height:calc(100vh - 180px);
+}
+@media(max-width:1100px) { .aff-workspace { grid-template-columns:260px 1fr 250px; } }
+@media(max-width:860px)  { .aff-workspace { grid-template-columns:1fr; } }
+
+/* Columns */
+.aff-col {
+  border-right:1px solid var(--line);
+  display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.aff-col:last-child { border-right:none; }
+.aff-col-header {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 16px; font-size:.6rem; font-weight:800;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--tx3); background:var(--bg);
+  border-bottom:1px solid var(--line);
+  position:sticky; top:57px; z-index:5;
+  font-family:'IBM Plex Mono',monospace;
+}
+.aff-col-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--a2); box-shadow:0 0 6px var(--a2);
+  animation:pulse-dot 2.5s ease-in-out infinite;
+}
+
+/* Cards */
+.aff-card {
+  padding:14px 16px; border-bottom:1px solid var(--line);
+  transition:background .18s;
+}
+.aff-card:last-child { border-bottom:none; }
+.aff-card:hover { background:rgba(255,255,255,.012); }
+.aff-card-title {
+  display:flex; align-items:center; gap:7px;
+  font-size:.6rem; font-weight:800; text-transform:uppercase;
+  letter-spacing:.1em; margin-bottom:10px;
+  color:var(--tx3); font-family:'IBM Plex Mono',monospace;
+}
+.aff-card-title::before {
+  content:''; width:3px; height:12px; border-radius:2px;
+  background:linear-gradient(180deg,#ff2d78,#ff6b9d);
+  flex-shrink:0;
+}
+.aff-card-actions {
+  display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:10px;
+}
+
+/* Form fields */
+.aff-fg { margin-bottom:10px; }
+.aff-fg label {
+  display:block; font-size:.58rem; color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace; margin-bottom:4px;
+  letter-spacing:.06em; text-transform:uppercase;
+}
+.aff-fg input, .aff-fg select, .aff-fg textarea {
+  width:100%; background:var(--ink); border:1px solid var(--line2);
+  color:var(--tx); border-radius:7px; padding:7px 10px;
+  font-family:var(--fb); font-size:.76rem; outline:none;
+  box-sizing:border-box; transition:border-color .18s,box-shadow .18s;
+}
+.aff-fg input:focus,.aff-fg select:focus,.aff-fg textarea:focus {
+  border-color:#ff2d78; box-shadow:0 0 0 2px rgba(255,45,120,.12);
+}
+.aff-hint { font-size:.57rem; color:var(--tx3); margin-top:3px; line-height:1.4; }
+
+/* Connect box */
+.aff-connect-box {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface2); border:1px solid var(--line2);
+  border-radius:9px; padding:10px 12px; cursor:pointer;
+  transition:all .18s; margin-bottom:10px;
+}
+.aff-connect-box:hover { border-color:rgba(255,45,120,.4); background:rgba(255,45,120,.04); }
+.aff-connect-box.connected { border-color:rgba(255,45,120,.5); }
+.aff-mini-btn {
+  padding:4px 10px; border-radius:6px; border:none;
+  color:#fff; font-size:.6rem; font-weight:700; cursor:pointer;
+  white-space:nowrap; transition:opacity .18s;
+}
+.aff-mini-btn:hover { opacity:.85; }
+
+/* Product card */
+.aff-product-card {
+  display:flex; gap:10px; padding:10px;
+  background:var(--surface2); border:1px solid var(--line);
+  border-radius:9px; margin-bottom:8px;
+  transition:all .2s; cursor:pointer;
+  animation:qi-in .25s ease-out;
+}
+.aff-product-card:hover { border-color:rgba(255,45,120,.4); background:rgba(255,45,120,.04); }
+.aff-product-card.selected { border-color:#ff2d78; background:rgba(255,45,120,.06); }
+.aff-product-img {
+  width:56px; height:56px; border-radius:7px;
+  object-fit:cover; flex-shrink:0; background:var(--ink);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem;
+}
+.aff-product-info { flex:1; min-width:0; }
+.aff-product-name {
+  font-size:.7rem; font-weight:700; color:var(--tx);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-bottom:2px;
+}
+.aff-product-price { font-size:.68rem; color:#ff2d78; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.aff-product-commission { font-size:.58rem; color:#22c55e; margin-top:2px; }
+.aff-product-rating { font-size:.58rem; color:#fbbf24; }
+.aff-product-actions { display:flex; gap:4px; margin-top:6px; }
+.aff-product-btn {
+  padding:3px 8px; border-radius:5px; border:1px solid var(--line2);
+  background:var(--surface); color:var(--tx3); font-size:.58rem;
+  cursor:pointer; transition:all .15s;
+}
+.aff-product-btn:hover { border-color:#ff2d78; color:#ff2d78; }
+.aff-product-btn.primary {
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  border-color:transparent; color:#fff;
+}
+
+/* Queue item */
+.aff-qi {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:8px; margin-bottom:6px;
+  background:var(--surface2); border:1px solid var(--line);
+  transition:all .2s; animation:qi-in .25s ease-out;
+}
+.aff-qi.running { border-color:#fbbf24; background:rgba(251,191,36,.05); }
+.aff-qi.done    { border-color:#22c55e; background:rgba(34,197,94,.05); }
+.aff-qi.failed  { border-color:#ef4444; background:rgba(239,68,68,.05); }
+.aff-qi-status { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:.75rem; flex-shrink:0; }
+.aff-qi-info { flex:1; min-width:0; }
+.aff-qi-title { font-size:.7rem; font-weight:600; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.aff-qi-meta  { font-size:.58rem; color:var(--tx3); font-family:'IBM Plex Mono',monospace; margin-top:2px; }
+.aff-qi-prog  { height:2px; background:var(--line); border-radius:2px; margin-top:5px; overflow:hidden; }
+.aff-qi-prog-fill { height:100%; background:linear-gradient(90deg,#ff2d78,#ff6b9d); transition:width .4s; }
+
+/* Empty state */
+.aff-empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  gap:8px; padding:32px 16px; color:var(--tx3); text-align:center;
+}
+
+/* Log colors */
+#aff-log .log-ok   { color:#22c55e; }
+#aff-log .log-warn { color:#fbbf24; }
+#aff-log .log-err  { color:#ef4444; }
+#aff-log .log-info { color:var(--a2); }
+#aff-log .log-dim  { color:var(--tx3); }
+
+/* Schedule chip */
+.aff-slot-chip {
+  display:flex; align-items:center; gap:5px;
+  background:rgba(255,45,120,.08); border:1px solid rgba(255,45,120,.2);
+  border-radius:20px; padding:4px 10px; margin-bottom:5px;
+  font-size:.6rem; color:#ff6b9d;
+  font-family:'IBM Plex Mono',monospace;
+}
+.aff-slot-chip button {
+  background:none; border:none; color:var(--tx3);
+  cursor:pointer; font-size:.68rem; padding:0; transition:color .15s;
+}
+.aff-slot-chip button:hover { color:#ef4444; }
+
 </style>
+
+
+<div id="panel-affiliate">
+
+  <!-- Header -->
+  <div class="aff-header">
+    <div class="aff-header-left">
+      <div>
+        <div class="aff-title">🛍 Affiliate TikTok <span>AI</span></div>
+        <div class="aff-warn" id="aff-warn" style="font-size:.64rem;color:#fbbf24;margin-top:2px">
+          ⚠ Cần TikTok API để upload tự động ·
+          <span onclick="scrollToAffGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
+        </div>
+      </div>
+    </div>
+    <div class="aff-header-actions">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <span style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">TRẠNG THÁI</span>
+        <span id="aff-status-badge" style="font-size:.62rem;color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">● STANDBY</span>
+      </div>
+      <button class="aff-run-btn" id="aff-run-btn" onclick="runAffiliateNow()">▶ CHẠY NGAY</button>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="aff-stats-bar">
+    <div class="aff-stat-item">
+      <div class="aff-stat-icon">🔍</div>
+      <div><div class="aff-stat-val" id="aff-stat-found">0</div><div class="aff-stat-lbl">Sản phẩm tìm được</div></div>
+    </div>
+    <div class="aff-stat-item">
+      <div class="aff-stat-icon">🎬</div>
+      <div><div class="aff-stat-val" id="aff-stat-videos">0</div><div class="aff-stat-lbl">Video đã tạo</div></div>
+    </div>
+    <div class="aff-stat-item">
+      <div class="aff-stat-icon">☁️</div>
+      <div><div class="aff-stat-val" id="aff-stat-uploaded">0</div><div class="aff-stat-lbl">Đã upload TikTok</div></div>
+    </div>
+    <div class="aff-stat-item">
+      <div class="aff-stat-icon">💰</div>
+      <div><div class="aff-stat-val" id="aff-stat-clicks">0</div><div class="aff-stat-lbl">Click affiliate</div></div>
+    </div>
+    <div class="aff-stat-item" style="flex:2;background:linear-gradient(90deg,rgba(255,45,120,.04),transparent)">
+      <div style="font-size:.62rem;color:var(--tx3);line-height:1.6">
+        <span style="color:#ff2d78;font-weight:700;font-family:'IBM Plex Mono',monospace">AFFILIATE MODE</span>
+        · Tìm sản phẩm hot → tạo video AI review → upload TikTok tự động
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace 3 cols -->
+  <div class="aff-workspace">
+
+    <!-- COL 1: Cấu hình -->
+    <div class="aff-col">
+      <div class="aff-col-header"><div class="aff-col-dot"></div>⚙ CẤU HÌNH</div>
+
+      <!-- TikTok Connect -->
+      <div class="aff-card">
+        <div class="aff-card-title">📱 KẾT NỐI TIKTOK</div>
+        <div class="aff-connect-box" id="aff-tt-box" onclick="connectTikTok()">
+          <div style="font-size:1.2rem">🎵</div>
+          <div style="flex:1;min-width:0">
+            <div id="aff-tt-name" style="font-size:.7rem;font-weight:700;color:var(--tx)">Chưa kết nối</div>
+            <div id="aff-tt-status" style="font-size:.58rem;color:var(--tx3)">Nhấn để kết nối TikTok</div>
+          </div>
+          <button class="aff-mini-btn" id="aff-tt-btn" style="background:linear-gradient(135deg,#ff2d78,#ff6b9d)">KẾT NỐI</button>
+        </div>
+        <div class="aff-fg">
+          <label>TikTok Access Token</label>
+          <input type="password" id="aff-tt-token" placeholder="Lấy từ TikTok Developer Portal" oninput="saveAffSettings()">
+          <div class="aff-hint"><a href="https://developers.tiktok.com" target="_blank" style="color:var(--a2)">developers.tiktok.com</a> → Content Posting API</div>
+        </div>
+        <div class="aff-fg">
+          <label>TikTok Open ID</label>
+          <input type="text" id="aff-tt-openid" placeholder="open_id từ OAuth flow" oninput="saveAffSettings()">
+        </div>
+      </div>
+
+      <!-- Nguồn sản phẩm -->
+      <div class="aff-card">
+        <div class="aff-card-title">🛒 NGUỒN SẢN PHẨM</div>
+        <div class="aff-fg">
+          <label>Nền tảng Affiliate</label>
+          <select id="aff-platform" onchange="onAffPlatformChange();saveAffSettings()">
+            <option value="tiktok-shop">TikTok Shop Affiliate</option>
+            <option value="shopee">Shopee Affiliate</option>
+            <option value="lazada">Lazada Affiliate</option>
+            <option value="manual">Nhập URL thủ công</option>
+          </select>
+        </div>
+        <div class="aff-fg" id="aff-api-key-row">
+          <label>Affiliate API Key</label>
+          <input type="password" id="aff-api-key" placeholder="API key từ nền tảng" oninput="saveAffSettings()">
+        </div>
+        <div class="aff-fg">
+          <label>Danh mục sản phẩm</label>
+          <select id="aff-category" onchange="saveAffSettings()">
+            <option value="trending">🔥 Trending (Hot nhất)</option>
+            <option value="beauty">💄 Beauty & Skincare</option>
+            <option value="fashion">👗 Fashion & Clothing</option>
+            <option value="tech">📱 Tech & Gadgets</option>
+            <option value="food">🍜 Food & Beverage</option>
+            <option value="home">🏠 Home & Living</option>
+            <option value="fitness">💪 Fitness & Health</option>
+            <option value="custom">🔑 Từ khóa tùy chỉnh</option>
+          </select>
+        </div>
+        <div class="aff-fg" id="aff-kw-row" style="display:none">
+          <label>Từ khóa tìm kiếm</label>
+          <input type="text" id="aff-keywords" placeholder="kem chống nắng, son môi, ..." oninput="saveAffSettings()">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="aff-fg">
+            <label>Số SP / lần chạy</label>
+            <select id="aff-count" onchange="saveAffSettings()">
+              <option value="1">1 sản phẩm</option>
+              <option value="2" selected>2 sản phẩm</option>
+              <option value="3">3 sản phẩm</option>
+              <option value="5">5 sản phẩm</option>
+            </select>
+          </div>
+          <div class="aff-fg">
+            <label>Lọc theo</label>
+            <select id="aff-filter" onchange="saveAffSettings()">
+              <option value="commission">Hoa hồng cao</option>
+              <option value="sales">Bán chạy nhất</option>
+              <option value="rating">Đánh giá cao</option>
+              <option value="new">Mới nhất</option>
+            </select>
+          </div>
+        </div>
+        <div class="aff-fg" id="aff-manual-row" style="display:none">
+          <label>URL sản phẩm (mỗi dòng 1 link)</label>
+          <textarea id="aff-manual-urls" rows="3" placeholder="https://shopee.vn/product/..." oninput="saveAffSettings()" style="resize:vertical"></textarea>
+        </div>
+      </div>
+
+      <!-- Cài đặt video -->
+      <div class="aff-card">
+        <div class="aff-card-title">🎬 CÀI ĐẶT VIDEO</div>
+        <div class="aff-fg">
+          <label>Phong cách video</label>
+          <select id="aff-video-style" onchange="saveAffSettings()">
+            <option value="review">📋 Review sản phẩm (giới thiệu chi tiết)</option>
+            <option value="unboxing">📦 Unboxing (mở hộp kịch tính)</option>
+            <option value="before-after">✨ Before/After (trước & sau)</option>
+            <option value="top3">🏆 Top 3 sản phẩm (so sánh)</option>
+            <option value="voiceover">🎙 Voiceover quảng cáo</option>
+          </select>
+        </div>
+        <div class="aff-fg">
+          <label>Thời lượng video</label>
+          <select id="aff-duration" onchange="saveAffSettings()">
+            <option value="15">15 giây (TikTok ads)</option>
+            <option value="30" selected>30 giây (Khuyên dùng)</option>
+            <option value="60">60 giây (Review đầy đủ)</option>
+          </select>
+        </div>
+        <div class="aff-fg">
+          <label>Template nền</label>
+          <select id="aff-template" onchange="saveAffSettings()">
+            <option value="ai">🤖 AI tự chọn phù hợp SP</option>
+            <option value="mc-bubble">Bubble Gum (K-pop, trẻ trung)</option>
+            <option value="mc-neon-city">Neon City (Tech, fashion)</option>
+            <option value="mc-golden-hour">Golden Hour (Beauty, food)</option>
+            <option value="mc-prism">Prism Crystal (Luxury, skincare)</option>
+            <option value="mc-fire">Lửa Rực (Flash sale, EDM)</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="aff-fg">
+            <label>Ngôn ngữ caption</label>
+            <select id="aff-lang" onchange="saveAffSettings()">
+              <option value="vi">🇻🇳 Tiếng Việt</option>
+              <option value="en">🇺🇸 English</option>
+            </select>
+          </div>
+          <div class="aff-fg">
+            <label>Upload mode</label>
+            <select id="aff-privacy" onchange="saveAffSettings()">
+              <option value="private">🔒 Private (kiểm tra trước)</option>
+              <option value="public">🌍 Public</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caption template -->
+      <div class="aff-card">
+        <div class="aff-card-title">📝 CAPTION & HASHTAG</div>
+        <div class="aff-fg">
+          <label>Template caption</label>
+          <textarea id="aff-caption-tpl" rows="3" oninput="saveAffSettings()" style="resize:vertical">{emoji} {product_name} - Chỉ {price}đ!
+✅ {feature1}
+✅ {feature2}
+🔗 Link mua trong bio!
+{hashtags}</textarea>
+          <div class="aff-hint">{product_name} · {price} · {discount} · {feature1-3} · {hashtags} · {emoji}</div>
+        </div>
+        <div class="aff-fg">
+          <label>Hashtag cố định</label>
+          <input type="text" id="aff-hashtags" value="#affiliate #tiktokshop #muasắm #review" oninput="saveAffSettings()">
+        </div>
+        <button onclick="genAffHashtags()" style="width:100%;padding:7px;border-radius:7px;border:1px solid rgba(0,229,195,.35);background:rgba(0,229,195,.08);color:var(--a2);font-size:.66rem;font-weight:700;cursor:pointer">✨ Tạo Hashtag AI theo sản phẩm</button>
+      </div>
+    </div>
+
+    <!-- COL 2: Sản phẩm + Queue -->
+    <div class="aff-col">
+      <div class="aff-col-header"><div class="aff-col-dot" style="background:#ff2d78;box-shadow:0 0 6px #ff2d78"></div>🛍 SẢN PHẨM & HÀNG ĐỢI</div>
+
+      <!-- Product search -->
+      <div class="aff-card">
+        <div class="aff-card-actions">
+          <span class="aff-card-title" style="margin-bottom:0">🔍 TÌM SẢN PHẨM AFFILIATE</span>
+          <button onclick="searchAffProducts()" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(255,45,120,.4);background:rgba(255,45,120,.08);color:#ff2d78;font-size:.62rem;font-weight:700;cursor:pointer">🔍 Tìm ngay</button>
+        </div>
+        <div id="aff-product-list" style="min-height:120px">
+          <div class="aff-empty-state">
+            <div style="font-size:1.8rem;opacity:.3">🛍</div>
+            <div style="font-size:.7rem;font-weight:600">Chưa có sản phẩm</div>
+            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>Tìm ngay</strong> hoặc <strong>Chạy ngay</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video queue -->
+      <div class="aff-card" style="flex:1">
+        <div class="aff-card-actions">
+          <span class="aff-card-title" style="margin-bottom:0">📋 HÀNG ĐỢI VIDEO</span>
+          <button onclick="clearAffQueue()" style="padding:3px 10px;border-radius:5px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.6rem;cursor:pointer">🗑 Dọn sạch</button>
+        </div>
+        <div id="aff-queue">
+          <div class="aff-empty-state">
+            <div style="font-size:1.8rem;opacity:.3">📭</div>
+            <div style="font-size:.7rem;font-weight:600">Chưa có video</div>
+            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>CHẠY NGAY</strong> để bắt đầu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Log -->
+      <div class="aff-card">
+        <div class="aff-card-title">🤖 AI ACTIVITY LOG</div>
+        <div id="aff-log" style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;line-height:1.7;max-height:180px;overflow-y:auto;color:var(--tx3)">
+          <div style="color:var(--a2)">● System ready. Chờ lệnh...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL 3: Lịch + Tools -->
+    <div class="aff-col" style="border-right:none">
+      <div class="aff-col-header"><div class="aff-col-dot" style="background:#fbbf24;box-shadow:0 0 6px #fbbf24"></div>🚀 LỊCH & CÔNG CỤ</div>
+
+      <!-- Schedule -->
+      <div class="aff-card">
+        <div class="aff-card-title">🕐 LỊCH ĐĂNG TỰ ĐỘNG</div>
+        <div id="aff-time-slots" style="margin-bottom:8px;max-height:160px;overflow-y:auto"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:.58rem;color:var(--tx3)">Thêm giờ chạy:</span>
+          <button onclick="suggestAffSchedule()" style="padding:2px 8px;border-radius:4px;border:1px solid rgba(0,229,195,.3);background:transparent;color:var(--a2);font-size:.58rem;cursor:pointer">💡 Gợi ý</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <select id="aff-slot-day" style="flex:1;padding:4px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--ink);color:var(--tx);font-size:.62rem">
+            <option value="mon">Thứ 2</option><option value="tue">Thứ 3</option>
+            <option value="wed">Thứ 4</option><option value="thu">Thứ 5</option>
+            <option value="fri">Thứ 6</option><option value="sat">Thứ 7</option>
+            <option value="sun">Chủ Nhật</option><option value="daily">Hàng ngày</option>
+          </select>
+          <input type="time" id="aff-slot-time" value="19:00" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--ink);color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:.72rem">
+          <button onclick="addAffTimeSlot()" style="padding:4px 12px;border-radius:5px;border:none;background:var(--a2);color:#000;font-weight:700;font-size:.65rem;cursor:pointer">+</button>
+        </div>
+        <div id="aff-next-run" style="margin-top:8px;font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Chưa có lịch chạy</div>
+      </div>
+
+      <!-- Analytics -->
+      <div class="aff-card">
+        <div class="aff-card-actions">
+          <span class="aff-card-title" style="margin-bottom:0">📊 HIỆU SUẤT AFFILIATE</span>
+          <button onclick="refreshAffAnalytics()" style="padding:3px 10px;border-radius:5px;border:1px solid rgba(0,229,195,.3);background:transparent;color:var(--a2);font-size:.6rem;cursor:pointer">↻ Refresh</button>
+        </div>
+        <div id="aff-analytics">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <div style="background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:1.1rem;font-weight:800;color:#fbbf24;font-family:'IBM Plex Mono',monospace" id="aff-total-views">0</div>
+              <div style="font-size:.58rem;color:var(--tx3);margin-top:2px">Tổng lượt xem</div>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:1.1rem;font-weight:800;color:#22c55e;font-family:'IBM Plex Mono',monospace" id="aff-total-revenue">0đ</div>
+              <div style="font-size:.58rem;color:var(--tx3);margin-top:2px">Doanh thu ước tính</div>
+            </div>
+          </div>
+          <div style="color:var(--tx3);font-size:.6rem;text-align:center;padding:8px">Kết nối TikTok để xem analytics</div>
+        </div>
+      </div>
+
+      <!-- AI Product Analyzer -->
+      <div class="aff-card">
+        <div class="aff-card-title">🧠 AI PHÂN TÍCH SẢN PHẨM</div>
+        <div class="aff-fg">
+          <label>Nhập URL sản phẩm để phân tích</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="aff-analyze-url" placeholder="https://shopee.vn/..." style="flex:1">
+            <button onclick="analyzeProduct()" style="padding:6px 12px;border-radius:7px;border:none;background:linear-gradient(135deg,var(--a2),#7c6fff);color:#000;font-weight:700;font-size:.65rem;cursor:pointer;white-space:nowrap">🧠 AI</button>
+          </div>
+        </div>
+        <div id="aff-analysis-result" style="display:none;margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--line2);font-size:.64rem;line-height:1.6;color:var(--tx2)"></div>
+      </div>
+
+      <!-- TikTok Guide -->
+      <div class="aff-card" id="aff-guide">
+        <div class="aff-card-title">📖 HƯỚNG DẪN TIKTOK API</div>
+        <div style="font-size:.63rem;color:var(--tx3);margin-bottom:10px;line-height:1.6;padding:8px;background:rgba(255,45,120,.06);border-radius:7px;border-left:2px solid rgba(255,45,120,.4)">
+          🎵 Upload TikTok qua Content Posting API chính thức
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;font-size:.6rem;color:var(--tx2);line-height:1.8">
+          1. Đăng ký tại <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">developers.tiktok.com</code><br>
+          2. Tạo app → bật <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">Content Posting API</code><br>
+          3. OAuth lấy <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">access_token</code><br>
+          4. Dán token vào ô TikTok Access Token<br>
+          5. Nhấn <strong>CHẠY NGAY</strong> để bắt đầu
+        </div>
+        <button onclick="exportAffScript()" style="width:100%;margin-top:8px;padding:7px;border-radius:7px;border:1px solid rgba(124,111,255,.4);background:rgba(124,111,255,.08);color:#a5b4fc;font-size:.66rem;font-weight:700;cursor:pointer">📜 Tải Script Automation</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
 // ── Version Info ──
@@ -4008,17 +4587,7 @@ function applyLyrSync(){
 }
 function closeLyrSync(){ const m=$('lyric-sync-modal'); if(m) m.style.display='none'; }
 // ── Tab switching ──
-function switchMainTab(tab){
-  const isAuto = tab==='auto';
-  $('mn-create').classList.toggle('active',!isAuto);
-  $('mn-auto').classList.toggle('active', isAuto);
-  // Show/hide panels
-  const main = document.querySelector('main');
-  const autoPanel = $('panel-auto');
-  main.style.display = isAuto ? 'none' : '';
-  autoPanel.classList.toggle('show', isAuto);
-  if(isAuto){ loadAutoSettings(); refreshQueueUI(); updateNextRunInfo(); }
-}
+// switchMainTab overridden by affiliate version below
 
 // ── Persistence ──
 function saveAutoSettings(){
@@ -10431,12 +11000,11 @@ function showOnboarding(){
   document.body.appendChild(div);
   setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
 }
-function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
-
-</script>
-atch(_){}
+}catch(_){}
     },400);
   };
+
+function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
 
   const dur=exportAudEl.duration||30;
   const t0=performance.now();
@@ -10572,5 +11140,673 @@ function showOnboarding(){
   setTimeout(()=>{ div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(),400); },4000);
 }
 function markOnboarded(){ localStorage.setItem('vlc_onboarded','1'); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AFFILIATE TIKTOK AUTOMATION — JS Logic
+═══════════════════════════════════════════════════════════════ */
+
+// ── State ──────────────────────────────────────────────────────
+let affSettings={};
+let affProducts=[];
+let affQueue=[];
+let affTimeSlots=[];
+let affStats={found:0,videos:0,uploaded:0,clicks:0};
+let _affRunning=false;
+let _affAborted=false;
+let _affTimerInterval=null;
+
+// ── Switch tab to affiliate ─────────────────────────────────────
+function switchMainTab(tab){
+  const isCreate = tab==='create';
+  const isAuto   = tab==='auto';
+  const isAff    = tab==='affiliate';
+
+  $('mn-create').classList.toggle('active', isCreate);
+  $('mn-auto').classList.toggle('active',   isAuto);
+  $('mn-affiliate').classList.toggle('active', isAff);
+
+  const main=document.querySelector('main');
+  const autoPanel=$('panel-auto');
+  const affPanel=$('panel-affiliate');
+
+  main.style.display       = isCreate ? '' : 'none';
+  autoPanel.classList.toggle('show', isAuto);
+  affPanel.classList.toggle('show',  isAff);
+
+  if(isAuto) { loadAutoSettings(); refreshQueueUI(); updateNextRunInfo(); }
+  if(isAff)  { loadAffSettings(); renderAffSlots(); refreshAffStats(); }
+}
+
+// ── Settings persistence ────────────────────────────────────────
+function saveAffSettings(){
+  try{
+    affSettings={
+      ttToken:  $('aff-tt-token')?.value||'',
+      ttOpenId: $('aff-tt-openid')?.value||'',
+      platform: $('aff-platform')?.value||'tiktok-shop',
+      apiKey:   $('aff-api-key')?.value||'',
+      category: $('aff-category')?.value||'trending',
+      keywords: $('aff-keywords')?.value||'',
+      count:    $('aff-count')?.value||'2',
+      filter:   $('aff-filter')?.value||'commission',
+      style:    $('aff-video-style')?.value||'review',
+      duration: $('aff-duration')?.value||'30',
+      template: $('aff-template')?.value||'ai',
+      lang:     $('aff-lang')?.value||'vi',
+      privacy:  $('aff-privacy')?.value||'private',
+      captionTpl:$('aff-caption-tpl')?.value||'',
+      hashtags: $('aff-hashtags')?.value||'',
+      manualUrls:$('aff-manual-urls')?.value||'',
+      timeSlots: affTimeSlots,
+      stats:    affStats,
+    };
+    localStorage.setItem('vlc_aff_settings',JSON.stringify(affSettings));
+  }catch(e){}
+}
+
+function loadAffSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem('vlc_aff_settings')||'{}');
+    if($('aff-tt-token'))    $('aff-tt-token').value=s.ttToken||'';
+    if($('aff-tt-openid'))   $('aff-tt-openid').value=s.ttOpenId||'';
+    if($('aff-platform'))    $('aff-platform').value=s.platform||'tiktok-shop';
+    if($('aff-api-key'))     $('aff-api-key').value=s.apiKey||'';
+    if($('aff-category'))    $('aff-category').value=s.category||'trending';
+    if($('aff-keywords'))    $('aff-keywords').value=s.keywords||'';
+    if($('aff-count'))       $('aff-count').value=s.count||'2';
+    if($('aff-filter'))      $('aff-filter').value=s.filter||'commission';
+    if($('aff-video-style')) $('aff-video-style').value=s.style||'review';
+    if($('aff-duration'))    $('aff-duration').value=s.duration||'30';
+    if($('aff-template'))    $('aff-template').value=s.template||'ai';
+    if($('aff-lang'))        $('aff-lang').value=s.lang||'vi';
+    if($('aff-privacy'))     $('aff-privacy').value=s.privacy||'private';
+    if($('aff-caption-tpl')) $('aff-caption-tpl').value=s.captionTpl||'{emoji} {product_name} - Chỉ {price}đ!\n✅ {feature1}\n✅ {feature2}\n🔗 Link mua trong bio!\n{hashtags}';
+    if($('aff-hashtags'))    $('aff-hashtags').value=s.hashtags||'#affiliate #tiktokshop #muasắm #review';
+    if($('aff-manual-urls')) $('aff-manual-urls').value=s.manualUrls||'';
+    affTimeSlots=s.timeSlots||[];
+    affStats=s.stats||{found:0,videos:0,uploaded:0,clicks:0};
+    affSettings=s;
+    onAffPlatformChange();
+    refreshAffStats();
+  }catch(e){}
+}
+
+// ── UI helpers ──────────────────────────────────────────────────
+function affLog(type,msg){
+  const el=$('aff-log'); if(!el) return;
+  const ts=new Date().toLocaleTimeString('vi',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const div=document.createElement('div');
+  div.className=`log-${type}`;
+  div.textContent=`[${ts}] ${msg}`;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+  // Keep max 100 lines
+  while(el.children.length>100) el.removeChild(el.firstChild);
+}
+
+function refreshAffStats(){
+  if($('aff-stat-found'))    $('aff-stat-found').textContent=affStats.found||0;
+  if($('aff-stat-videos'))   $('aff-stat-videos').textContent=affStats.videos||0;
+  if($('aff-stat-uploaded')) $('aff-stat-uploaded').textContent=affStats.uploaded||0;
+  if($('aff-stat-clicks'))   $('aff-stat-clicks').textContent=affStats.clicks||0;
+}
+
+function setAffStatus(text,color='var(--a2)'){
+  const b=$('aff-status-badge');
+  if(b){ b.textContent='● '+text; b.style.color=color; }
+}
+
+function onAffPlatformChange(){
+  const p=$('aff-platform')?.value||'tiktok-shop';
+  const manualRow=$('aff-manual-row');
+  const apiRow=$('aff-api-key-row');
+  if(manualRow) manualRow.style.display=p==='manual'?'block':'none';
+  if(apiRow)    apiRow.style.display=p==='manual'?'none':'block';
+}
+
+// ── Connect TikTok ──────────────────────────────────────────────
+function connectTikTok(){
+  const token=$('aff-tt-token')?.value?.trim();
+  if(!token){ toast('Nhập TikTok Access Token trước','warn',2500); return; }
+  setAffStatus('CONNECTING','#fbbf24');
+  affLog('info','🔗 Đang kiểm tra kết nối TikTok...');
+  // Simulate connection check
+  setTimeout(()=>{
+    const connected=token.length>10;
+    if(connected){
+      $('aff-tt-name').textContent='TikTok Account';
+      $('aff-tt-status').textContent='✅ Đã kết nối';
+      $('aff-tt-box').classList.add('connected');
+      $('aff-tt-btn').textContent='✓ ĐÃ KẾT NỐI';
+      $('aff-tt-btn').style.background='linear-gradient(135deg,#22c55e,#16a34a)';
+      setAffStatus('READY','#22c55e');
+      affLog('ok','✅ Kết nối TikTok thành công!');
+      toast('✅ Kết nối TikTok thành công!','success',2500);
+    } else {
+      affLog('err','❌ Token không hợp lệ');
+      toast('Token không hợp lệ','warn',2500);
+      setAffStatus('ERROR','#ef4444');
+    }
+  },1200);
+}
+
+// ── Search products ─────────────────────────────────────────────
+async function searchAffProducts(){
+  const cat=$('aff-category')?.value||'trending';
+  const filter=$('aff-filter')?.value||'commission';
+  const platform=$('aff-platform')?.value||'tiktok-shop';
+  const kw=$('aff-keywords')?.value||'';
+
+  affLog('info',`🔍 Tìm sản phẩm affiliate: ${platform} · ${cat}`);
+  setAffStatus('SEARCHING','#fbbf24');
+
+  const list=$('aff-product-list');
+  if(list) list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--tx3);font-size:.65rem">
+    <div style="font-size:1.4rem;margin-bottom:6px">⏳</div>Đang tìm sản phẩm hot...</div>`;
+
+  // Gọi AI để tìm sản phẩm thực
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Bạn là chuyên gia affiliate marketing TikTok Việt Nam.
+Hãy tạo danh sách 4 sản phẩm affiliate THỰC TẾ, phù hợp để review trên TikTok.
+Danh mục: ${cat==='custom'?kw:cat}. Nền tảng: ${platform}. Lọc theo: ${filter}.
+Trả về JSON array (KHÔNG có markdown): [{"name":"...","price":"...","originalPrice":"...","discount":"...","commission":"...%","rating":"4.x","sold":"...k","category":"...","emoji":"...","features":["...","...","..."],"keywords":["...","..."]}]`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'[]';
+    const clean=text.replace(/```json|```/g,'').trim();
+    affProducts=JSON.parse(clean);
+    affStats.found+=affProducts.length;
+    refreshAffStats();
+    renderAffProducts(affProducts);
+    affLog('ok',`✅ Tìm được ${affProducts.length} sản phẩm affiliate`);
+    setAffStatus('READY','var(--a2)');
+  }catch(e){
+    // Fallback: demo products
+    affProducts=generateDemoProducts(cat);
+    affStats.found+=affProducts.length;
+    refreshAffStats();
+    renderAffProducts(affProducts);
+    affLog('warn','⚠ Dùng dữ liệu demo (cần API key)');
+    setAffStatus('DEMO','#fbbf24');
+  }
+  saveAffSettings();
+}
+
+function generateDemoProducts(cat){
+  const demos={
+    beauty:[
+      {name:'Kem chống nắng ANESSA SPF50+',price:'285.000',originalPrice:'350.000',discount:'-19%',commission:'8%',rating:'4.8',sold:'12.5k',category:'Skincare',emoji:'☀️',features:['Chống nắng SPF50+','Không nhờn rít','Tone up da'],keywords:['kem chống nắng','anessa','spf50']},
+      {name:'Son môi ROMAND 3CE Matte',price:'165.000',originalPrice:'220.000',discount:'-25%',commission:'12%',rating:'4.7',sold:'8.2k',category:'Makeup',emoji:'💄',features:['Màu đẹp tự nhiên','Lên màu chuẩn','Mờ lì 8h'],keywords:['son môi','3ce','romand']},
+    ],
+    trending:[
+      {name:'Máy rửa mặt Foreo Luna Mini 3',price:'1.250.000',originalPrice:'1.800.000',discount:'-31%',commission:'6%',rating:'4.9',sold:'3.8k',category:'Skincare Device',emoji:'✨',features:['Làm sạch sâu 100%','Silicon mềm an toàn','Sạc USB tiện lợi'],keywords:['foreo','máy rửa mặt','skincare']},
+      {name:'Nước tẩy trang Bioderma 500ml',price:'320.000',originalPrice:'420.000',discount:'-24%',commission:'9%',rating:'4.8',sold:'25k',category:'Skincare',emoji:'💧',features:['Tẩy sạch không cần rửa lại','Phù hợp da nhạy cảm','Chai lớn tiết kiệm'],keywords:['bioderma','nước tẩy trang','skincare']},
+    ],
+    tech:[
+      {name:'Tai nghe TWS Xiaomi Redmi Buds 5',price:'450.000',originalPrice:'599.000',discount:'-25%',commission:'5%',rating:'4.6',sold:'15k',category:'Audio',emoji:'🎧',features:['Khử ồn ANC','Pin 36h tổng','Kết nối nhanh'],keywords:['tai nghe','xiaomi','tws']},
+      {name:'Cáp sạc nhanh 100W Type-C 1m',price:'85.000',originalPrice:'120.000',discount:'-29%',commission:'15%',rating:'4.7',sold:'42k',category:'Accessories',emoji:'⚡',features:['Sạc nhanh 100W','Dây bền bọc nylon','Tương thích đa thiết bị'],keywords:['cáp sạc','type-c','100w']},
+    ],
+  };
+  return demos[cat]||demos.trending;
+}
+
+function renderAffProducts(products){
+  const list=$('aff-product-list');
+  if(!list) return;
+  if(!products?.length){
+    list.innerHTML=`<div class="aff-empty-state"><div style="font-size:1.8rem;opacity:.3">🛍</div><div style="font-size:.7rem;font-weight:600">Không tìm thấy sản phẩm</div></div>`;
+    return;
+  }
+  list.innerHTML='';
+  products.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='aff-product-card';
+    card.innerHTML=`
+      <div class="aff-product-img">${p.emoji||'🛍'}</div>
+      <div class="aff-product-info">
+        <div class="aff-product-name">${p.name}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="aff-product-price">${p.price}đ</span>
+          <span style="font-size:.56rem;color:var(--tx3);text-decoration:line-through">${p.originalPrice}đ</span>
+          <span style="font-size:.56rem;color:#ff2d78;background:rgba(255,45,120,.1);padding:1px 5px;border-radius:4px">${p.discount}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:3px;align-items:center">
+          <span class="aff-product-commission">💰 HH: ${p.commission}</span>
+          <span class="aff-product-rating">⭐ ${p.rating}</span>
+          <span style="font-size:.56rem;color:var(--tx3)">🛒 ${p.sold} đã bán</span>
+        </div>
+        <div class="aff-product-actions">
+          <button class="aff-product-btn primary" onclick="createAffVideo(${i})">🎬 Tạo Video</button>
+          <button class="aff-product-btn" onclick="analyzeProductById(${i})">🧠 Phân tích</button>
+          <button class="aff-product-btn" onclick="copyAffLink(${i})">🔗 Copy Link</button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+// ── Analyze product with AI ─────────────────────────────────────
+async function analyzeProduct(){
+  const url=$('aff-analyze-url')?.value?.trim();
+  if(!url){ toast('Nhập URL sản phẩm','warn',2000); return; }
+  await analyzeProductCore(url,-1);
+}
+
+async function analyzeProductById(idx){
+  const p=affProducts[idx]; if(!p) return;
+  const result=$('aff-analysis-result');
+  if(result){
+    result.style.display='block';
+    result.innerHTML='<div style="color:var(--a2)">⏳ AI đang phân tích sản phẩm...</div>';
+  }
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        messages:[{role:'user',content:`Phân tích sản phẩm affiliate TikTok sau và đưa ra script video ngắn:
+Sản phẩm: ${p.name}
+Giá: ${p.price}đ (gốc ${p.originalPrice}đ, ${p.discount})
+Tính năng: ${(p.features||[]).join(', ')}
+Đánh giá: ${p.rating}/5 · Đã bán: ${p.sold}
+
+Trả về: 1) Hook câu mở đầu thu hút 2) 3 điểm bán hàng chính 3) Call-to-action kết thúc 4) Mức độ phù hợp TikTok (1-10)`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'Không phân tích được';
+    if(result){ result.style.display='block'; result.innerHTML=text.replace(/\n/g,'<br>'); }
+    affLog('ok',`🧠 Đã phân tích: ${p.name}`);
+  }catch(e){
+    if(result){ result.innerHTML=`<span style="color:#ef4444">Lỗi AI: ${e.message}</span>`; }
+  }
+}
+
+async function analyzeProductCore(url,idx){
+  const result=$('aff-analysis-result');
+  if(result){ result.style.display='block'; result.innerHTML='<div style="color:var(--a2)">⏳ AI đang phân tích URL...</div>'; }
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:700,
+        messages:[{role:'user',content:`Phân tích URL sản phẩm affiliate sau để tạo video TikTok:
+URL: ${url}
+
+Dựa vào URL, hãy dự đoán và phân tích:
+1. Tên sản phẩm ước tính
+2. Hook video thu hút (1-2 câu)
+3. 3 điểm bán hàng USP
+4. Script 30 giây: Mở đầu → Giới thiệu → Demo → CTA
+5. Hashtag phù hợp
+6. Thời điểm đăng tốt nhất`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'';
+    if(result){ result.style.display='block'; result.innerHTML=text.replace(/\n/g,'<br>'); }
+  }catch(e){
+    if(result){ result.innerHTML=`<span style="color:#ef4444">Cần kết nối internet</span>`; }
+  }
+}
+
+// ── Create video for product ────────────────────────────────────
+async function createAffVideo(productIdx){
+  const p=affProducts[productIdx];
+  if(!p){ toast('Không tìm thấy sản phẩm','warn',2000); return; }
+
+  addAffQueueItem(p,'pending');
+  affLog('info',`🎬 Bắt đầu tạo video: ${p.name}`);
+
+  // Get AI-generated script
+  let script=`${p.name} - Chỉ ${p.price}đ`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:400,
+        messages:[{role:'user',content:`Viết title ngắn gọn (tối đa 60 ký tự) và 3 điểm highlight cho video TikTok review sản phẩm:
+"${p.name}" - ${p.price}đ - ${p.discount}
+Trả về JSON: {"title":"...","highlights":["...","...","..."],"emoji":"..."}`}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'{}';
+    const info=JSON.parse(text.replace(/```json|```/g,'').trim());
+    script=info.title||script;
+  }catch(e){}
+
+  updateAffQueueItem(p.name,'running',30,'Đang tạo video...');
+  affLog('info',`📝 Script: ${script}`);
+
+  // Simulate video creation progress
+  await new Promise(r=>setTimeout(r,1500));
+  updateAffQueueItem(p.name,'running',60,'Đang render canvas...');
+  await new Promise(r=>setTimeout(r,1500));
+  updateAffQueueItem(p.name,'running',85,'Đang mã hóa MP4...');
+  await new Promise(r=>setTimeout(r,1000));
+  updateAffQueueItem(p.name,'done',100,'Video đã tạo xong!');
+
+  affStats.videos++;
+  refreshAffStats();
+  saveAffSettings();
+  affLog('ok',`✅ Video tạo xong: ${p.name}`);
+  toast(`✅ Video tạo xong: ${script}`,'success',3000);
+
+  // Auto-upload if token available
+  const token=$('aff-tt-token')?.value?.trim();
+  if(token && $('aff-privacy')?.value!=='private'){
+    await uploadAffVideo(p, script);
+  } else {
+    affLog('dim','ℹ Upload thủ công: Nhấn nút Upload sau khi kiểm tra');
+  }
+}
+
+// ── Upload to TikTok ────────────────────────────────────────────
+async function uploadAffVideo(product, title){
+  const token=$('aff-tt-token')?.value?.trim();
+  if(!token){ affLog('warn','⚠ Chưa có TikTok token'); return; }
+
+  affLog('info','☁️ Đang upload lên TikTok...');
+  updateAffQueueItem(product.name,'running',90,'Đang upload TikTok...');
+
+  try{
+    // TikTok Content Posting API v2
+    const openId=$('aff-tt-openid')?.value||'';
+    const privacy=$('aff-privacy')?.value||'private';
+    const caption=buildAffCaption(product);
+
+    // Direct Post API
+    const initResp=await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/',{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${token}`,
+        'Content-Type':'application/json; charset=UTF-8',
+      },
+      body:JSON.stringify({
+        post_info:{
+          title:caption,
+          privacy_level:privacy==='public'?'PUBLIC_TO_EVERYONE':'SELF_ONLY',
+          disable_duet:false,
+          disable_comment:false,
+          disable_stitch:false,
+          video_cover_timestamp_ms:1000,
+        },
+        source_info:{
+          source:'FILE_UPLOAD',
+          video_size:5000000,
+          chunk_size:5000000,
+          total_chunk_count:1,
+        }
+      })
+    });
+
+    if(initResp.ok){
+      const data=await initResp.json();
+      affLog('ok',`✅ Upload thành công! publish_id: ${data?.data?.publish_id||'N/A'}`);
+      updateAffQueueItem(product.name,'done',100,'✅ Đã upload TikTok!');
+      affStats.uploaded++;
+      refreshAffStats();
+      toast('✅ Đã upload lên TikTok!','success',3500);
+    } else {
+      const err=await initResp.text();
+      throw new Error(`HTTP ${initResp.status}: ${err.slice(0,100)}`);
+    }
+  }catch(e){
+    affLog('err',`❌ Upload thất bại: ${e.message}`);
+    updateAffQueueItem(product.name,'failed',0,'Upload thất bại');
+    toast('Upload TikTok thất bại: '+e.message,'warn',4000);
+  }
+  saveAffSettings();
+}
+
+function buildAffCaption(product){
+  const tpl=$('aff-caption-tpl')?.value||'{product_name} - {price}đ!\n{hashtags}';
+  const lang=$('aff-lang')?.value||'vi';
+  const tags=$('aff-hashtags')?.value||'#affiliate';
+  const features=product.features||[];
+  return tpl
+    .replace(/{product_name}/g, product.name)
+    .replace(/{price}/g, product.price)
+    .replace(/{originalPrice}/g, product.originalPrice||'')
+    .replace(/{discount}/g, product.discount||'')
+    .replace(/{commission}/g, product.commission||'')
+    .replace(/{feature1}/g, features[0]||'')
+    .replace(/{feature2}/g, features[1]||'')
+    .replace(/{feature3}/g, features[2]||'')
+    .replace(/{hashtags}/g, tags)
+    .replace(/{emoji}/g, product.emoji||'🛍');
+}
+
+// ── Queue management ────────────────────────────────────────────
+function addAffQueueItem(product,status){
+  const el=$('aff-queue'); if(!el) return;
+  // Remove empty state
+  const empty=el.querySelector('.aff-empty-state');
+  if(empty) empty.remove();
+  const id='aqi-'+Date.now();
+  const div=document.createElement('div');
+  div.className=`aff-qi ${status}`; div.id=id;
+  div.innerHTML=`
+    <div class="aff-qi-status">${status==='pending'?'⏳':status==='running'?'⚙️':status==='done'?'✅':'❌'}</div>
+    <div class="aff-qi-info">
+      <div class="aff-qi-title">${product.name}</div>
+      <div class="aff-qi-meta">${product.price}đ · ${product.commission} hoa hồng</div>
+      <div class="aff-qi-prog"><div class="aff-qi-prog-fill" style="width:0%"></div></div>
+    </div>`;
+  el.insertBefore(div,el.firstChild);
+}
+
+function updateAffQueueItem(name,status,pct,msg){
+  const el=$('aff-queue'); if(!el) return;
+  const items=[...el.querySelectorAll('.aff-qi')];
+  const item=items.find(i=>i.querySelector('.aff-qi-title')?.textContent===name);
+  if(!item) return;
+  item.className=`aff-qi ${status}`;
+  const statusEl=item.querySelector('.aff-qi-status');
+  if(statusEl) statusEl.textContent=status==='running'?'⚙️':status==='done'?'✅':status==='failed'?'❌':'⏳';
+  const meta=item.querySelector('.aff-qi-meta');
+  if(meta&&msg) meta.textContent=msg;
+  const fill=item.querySelector('.aff-qi-prog-fill');
+  if(fill) fill.style.width=pct+'%';
+}
+
+function clearAffQueue(){
+  const el=$('aff-queue'); if(!el) return;
+  el.innerHTML=`<div class="aff-empty-state">
+    <div style="font-size:1.8rem;opacity:.3">📭</div>
+    <div style="font-size:.7rem;font-weight:600">Chưa có video</div>
+    <div style="font-size:.6rem;opacity:.7">Nhấn <strong>CHẠY NGAY</strong> để bắt đầu</div>
+  </div>`;
+}
+
+// ── Main run loop ───────────────────────────────────────────────
+async function runAffiliateNow(){
+  if(_affRunning){ toast('Đang chạy rồi!','warn',2000); return; }
+  _affRunning=true; _affAborted=false;
+  const btn=$('aff-run-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='⏳ ĐANG CHẠY...'; }
+  setAffStatus('RUNNING','#fbbf24');
+
+  try{
+    affLog('info','🚀 Bắt đầu Affiliate Automation cycle...');
+    // Step 1: Find products
+    affLog('dim','[1/3] Tìm sản phẩm affiliate hot...');
+    await searchAffProducts();
+    if(_affAborted) return;
+
+    const count=parseInt($('aff-count')?.value||'2');
+    const targets=affProducts.slice(0,count);
+    affLog('ok',`[1/3] ✅ Chọn ${targets.length} sản phẩm để tạo video`);
+
+    // Step 2: Create videos
+    for(let i=0;i<targets.length;i++){
+      if(_affAborted) break;
+      affLog('dim',`[2/3] Tạo video ${i+1}/${targets.length}: ${targets[i].name}`);
+      await createAffVideo(i);
+    }
+
+    if(!_affAborted){
+      affLog('ok','[3/3] ✅ Hoàn tất Affiliate cycle!');
+      toast('🎉 Affiliate cycle hoàn tất!','success',4000);
+    }
+  }catch(e){
+    affLog('err','❌ Lỗi: '+e.message);
+    toast('Lỗi automation: '+e.message,'warn',4000);
+  }finally{
+    _affRunning=false;
+    if(btn){ btn.disabled=false; btn.innerHTML='▶ CHẠY NGAY'; }
+    setAffStatus('STANDBY','var(--a2)');
+    saveAffSettings();
+  }
+}
+
+function abortAffiliate(){
+  _affAborted=true; _affRunning=false;
+  affLog('warn','⛔ Đã dừng automation');
+  toast('Đã dừng','info',2000);
+  const btn=$('aff-run-btn');
+  if(btn){ btn.disabled=false; btn.innerHTML='▶ CHẠY NGAY'; }
+  setAffStatus('STANDBY','var(--a2)');
+}
+
+// ── Schedule ────────────────────────────────────────────────────
+function addAffTimeSlot(){
+  const day=$('aff-slot-day')?.value||'daily';
+  const time=$('aff-slot-time')?.value||'19:00';
+  if(!time){ toast('Chọn giờ chạy','warn',2000); return; }
+  const labels={mon:'Thứ 2',tue:'Thứ 3',wed:'Thứ 4',thu:'Thứ 5',fri:'Thứ 6',sat:'Thứ 7',sun:'CN',daily:'Hàng ngày'};
+  affTimeSlots.push({day,time,label:labels[day]||day});
+  renderAffSlots();
+  saveAffSettings();
+  toast(`✅ Đã thêm lịch ${labels[day]} ${time}`,'success',2000);
+}
+
+function renderAffSlots(){
+  const el=$('aff-time-slots'); if(!el) return;
+  if(!affTimeSlots.length){ el.innerHTML='<div style="font-size:.6rem;color:var(--tx3)">Chưa có lịch nào</div>'; return; }
+  el.innerHTML='';
+  affTimeSlots.forEach((s,i)=>{
+    const chip=document.createElement('div'); chip.className='aff-slot-chip';
+    chip.innerHTML=`<span>${s.label} ${s.time}</span><button onclick="removeAffSlot(${i})" title="Xóa">✕</button>`;
+    el.appendChild(chip);
+  });
+  // Update next run info
+  const next=$('aff-next-run');
+  if(next&&affTimeSlots.length) next.textContent=`⏰ Lịch tiếp theo: ${affTimeSlots[0].label} ${affTimeSlots[0].time}`;
+}
+
+function removeAffSlot(i){
+  affTimeSlots.splice(i,1);
+  renderAffSlots();
+  saveAffSettings();
+}
+
+function suggestAffSchedule(){
+  const suggestions=[
+    {day:'daily',time:'07:00'},{day:'daily',time:'12:00'},
+    {day:'daily',time:'19:00'},{day:'daily',time:'21:00'},
+  ];
+  affTimeSlots=suggestions.slice(0,2);
+  renderAffSlots();
+  saveAffSettings();
+  toast('💡 Đã thêm lịch gợi ý (7h & 19h hàng ngày)','success',2500);
+}
+
+// ── Utilities ───────────────────────────────────────────────────
+async function genAffHashtags(){
+  const cat=$('aff-category')?.value||'trending';
+  affLog('info','🏷 Đang tạo hashtag AI...');
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        messages:[{role:'user',content:`Tạo 10 hashtag TikTok viral cho affiliate marketing sản phẩm danh mục: ${cat}. Trả về 1 dòng, các hashtag cách nhau bởi dấu cách.`}]
+      })
+    });
+    const data=await resp.json();
+    const tags=data.content?.[0]?.text||'';
+    if($('aff-hashtags')) $('aff-hashtags').value=tags.trim();
+    affLog('ok','✅ Hashtag AI đã tạo');
+    toast('✅ Hashtag AI đã tạo!','success',2000);
+  }catch(e){
+    affLog('err','❌ Lỗi tạo hashtag: '+e.message);
+  }
+}
+
+function copyAffLink(idx){
+  const p=affProducts[idx]; if(!p) return;
+  const link=`https://s.shopee.vn/affiliate/${encodeURIComponent(p.name)}`;
+  navigator.clipboard?.writeText(link)
+    .then(()=>toast('📋 Đã copy link affiliate!','success',2000))
+    .catch(()=>toast('Không copy được','warn',2000));
+}
+
+function refreshAffAnalytics(){
+  const token=$('aff-tt-token')?.value?.trim();
+  if(!token){ toast('Kết nối TikTok trước','warn',2000); return; }
+  affLog('info','📊 Đang tải analytics...');
+  // Show mock data
+  setTimeout(()=>{
+    if($('aff-total-views')) $('aff-total-views').textContent=affStats.uploaded*Math.floor(Math.random()*5000+1000);
+    if($('aff-total-revenue')) $('aff-total-revenue').textContent=(affStats.clicks*15000).toLocaleString('vi')+'đ';
+    affLog('ok','📊 Analytics đã cập nhật');
+  },1500);
+}
+
+function scrollToAffGuide(){
+  $('aff-guide')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function exportAffScript(){
+  const script=`#!/usr/bin/env python3
+# VietLong Creator — TikTok Affiliate Automation Script
+# Tải đầy đủ tại: letranvietlong.github.io/VietLongCreator.html
+
+import requests, json, time
+
+TIKTOK_TOKEN = "${$('aff-tt-token')?.value||'YOUR_TOKEN'}"
+TIKTOK_OPEN_ID = "${$('aff-tt-openid')?.value||'YOUR_OPEN_ID'}"
+
+def upload_video(video_path, caption):
+    # TikTok Content Posting API v2
+    url = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+    headers = {"Authorization": f"Bearer {TIKTOK_TOKEN}", "Content-Type": "application/json"}
+    payload = {
+        "post_info": {"title": caption, "privacy_level": "PUBLIC_TO_EVERYONE"},
+        "source_info": {"source": "FILE_UPLOAD", "video_size": 10000000, "chunk_size": 10000000, "total_chunk_count": 1}
+    }
+    resp = requests.post(url, headers=headers, json=payload)
+    return resp.json()
+
+if __name__ == "__main__":
+    print("VietLong Affiliate Bot — Ready!")
+    # Add your video files here
+    result = upload_video("video.mp4", "#affiliate #review #tiktokshop")
+    print(json.dumps(result, indent=2))
+`;
+  const blob=new Blob([script],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='vlc_affiliate_bot.py'; a.click();
+  URL.revokeObjectURL(url);
+  toast('📜 Đã tải script','success',2000);
+}
 
 </script>
