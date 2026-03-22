@@ -627,84 +627,178 @@ const PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
   u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
 
+// livecounts endpoints - username appended as path segment
 const EP = {
-  youtube:   { search: u => `https://api.livecounts.io/youtube-live-subscriber-counter/search/${encodeURIComponent(u)}`,   stats: id => `https://api.livecounts.io/youtube-live-subscriber-counter/stats/${encodeURIComponent(id)}` },
-  tiktok:    { search: u => `https://tiktok.livecounts.io/user/search/${encodeURIComponent(u)}`,                           stats: id => `https://tiktok.livecounts.io/user/stats/${encodeURIComponent(id)}` },
-  instagram: { search: u => `https://api.livecounts.io/instagram-live-follower-counter/search/${encodeURIComponent(u)}`,   stats: id => `https://api.livecounts.io/instagram-live-follower-counter/stats/${encodeURIComponent(id)}` },
+  youtube: {
+    search: u => `https://api.livecounts.io/youtube-live-subscriber-counter/search/${encodeURIComponent(u)}`,
+    stats:  id => `https://api.livecounts.io/youtube-live-subscriber-counter/stats/${encodeURIComponent(id)}`,
+  },
+  tiktok: {
+    search: u => `https://tiktok.livecounts.io/user/search/${encodeURIComponent(u)}`,
+    stats:  id => `https://tiktok.livecounts.io/user/stats/${encodeURIComponent(id)}`,
+  },
+  instagram: {
+    search: u => `https://api.livecounts.io/instagram-live-follower-counter/search/${encodeURIComponent(u)}`,
+    stats:  id => `https://api.livecounts.io/instagram-live-follower-counter/stats/${encodeURIComponent(id)}`,
+  },
 };
 
 async function proxyFetch(targetUrl) {
+  const errors = [];
   for (const mk of PROXIES) {
     try {
-      const r = await fetch(mk(targetUrl), { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
+      const proxyUrl = mk(targetUrl);
+      const r = await fetch(proxyUrl, {
+        signal: AbortSignal.timeout(9000),
+        headers: { 'Accept': 'application/json, text/plain, */*' }
+      });
+      if (!r.ok) { errors.push(`HTTP ${r.status} from ${proxyUrl.split('?')[0]}`); continue; }
       const t = await r.text();
-      if (t && t.trim().length > 2) return t;
-    } catch {}
+      if (t && t.trim().length > 2 && !t.includes('Error') && !t.includes('error":"')) {
+        return t;
+      }
+      errors.push(`Empty/error response from proxy`);
+    } catch(e) { errors.push(e.message); }
   }
-  throw new Error('All proxies failed');
+  throw new Error('All proxies failed: ' + errors.join(' | '));
 }
 
-function parseData(platform, username, raw) {
-  if (!raw || raw.trim().length < 3) return null;
-  let j = null;
-  try { j = JSON.parse(raw.trim()); }
-  catch { const m = raw.match(/(\[[\s\S]*\]|\{[\s\S]*\})/); if(m) try{j=JSON.parse(m[0])}catch{} }
-  if (!j) return null;
-  if (j && j.contents) try { j = JSON.parse(j.contents); } catch {}
-  if (Array.isArray(j)) { if (!j.length) return null; j = j[0]; }
-
-  if (platform === 'youtube') {
-    const subs  = j.subscriberCount ?? j.subscriber_count ?? j.followers ?? j.Subscribers ?? j.sub_count ?? j.subs;
-    const vids  = j.videoCount  ?? j.video_count  ?? j.videos;
-    const views = j.viewCount   ?? j.view_count   ?? j.views;
-    const name  = j.channelName ?? j.title ?? j.name ?? j.channel_name ?? username;
-    if (subs !== undefined) return { name, handle:username, followers:Math.abs(+subs)||0, videos:+vids||0, views:+views||0 };
-  }
-  if (platform === 'tiktok') {
-    const followers = j.followerCount ?? j.followers ?? j.fans       ?? j.fan_count ?? j.follower_count;
-    const likes     = j.heartCount    ?? j.likeCount ?? j.likes      ?? j.hearts    ?? j.heart_count ?? j.digg_count;
-    const videos    = j.videoCount    ?? j.videos    ?? j.aweme_count ?? j.video_count;
-    const name      = j.nickname      ?? j.name      ?? j.displayName ?? j.unique_id ?? j.uniqueId ?? username;
-    if (followers !== undefined) return { name, handle:username, followers:+followers||0, likes:+likes||0, videos:+videos||0 };
-  }
-  if (platform === 'instagram') {
-    const followers = j.followerCount ?? j.followers ?? j.edge_followed_by?.count ?? j.follower_count;
-    const following = j.followingCount ?? j.following ?? j.edge_follow?.count     ?? j.following_count;
-    const posts     = j.mediaCount     ?? j.posts     ?? j.edge_owner_to_timeline_media?.count ?? j.media_count;
-    const name      = j.fullName ?? j.full_name ?? j.username ?? j.name ?? username;
-    if (followers !== undefined) return { name, handle:username, followers:+followers||0, following:+following||0, posts:+posts||0 };
+function deepParse(raw) {
+  // Try to extract JSON from any string
+  if (!raw || raw.trim().length < 2) return null;
+  raw = raw.trim();
+  // Direct parse
+  try { return JSON.parse(raw); } catch {}
+  // Extract JSON array or object
+  const patterns = [/(\[[\s\S]*\])/, /(\{[\s\S]*\})/];
+  for (const p of patterns) {
+    const m = raw.match(p);
+    if (m) { try { return JSON.parse(m[1]); } catch {} }
   }
   return null;
 }
 
+function parseData(platform, username, raw) {
+  if (!raw || raw.trim().length < 3) return null;
+  let j = deepParse(raw);
+  if (!j) return null;
+  // Unwrap allorigins envelope {contents, status}
+  if (j && typeof j === 'object' && j.contents && typeof j.contents === 'string') {
+    j = deepParse(j.contents) ?? j;
+  }
+  // Flatten array
+  if (Array.isArray(j)) {
+    if (!j.length) return null;
+    // If array of numbers [fans, hearts, videos] — livecounts stats format
+    if (j.every(x => typeof x === 'number' || x === null)) {
+      if (platform === 'tiktok')    return { name:username, handle:username, followers:+j[0]||0, likes:+j[1]||0, videos:+j[2]||0 };
+      if (platform === 'youtube')   return { name:username, handle:username, followers:+j[0]||0, videos:+j[1]||0, views:+j[2]||0 };
+      if (platform === 'instagram') return { name:username, handle:username, followers:+j[0]||0, following:+j[1]||0, posts:+j[2]||0 };
+    }
+    j = j[0];
+  }
+  if (!j || typeof j !== 'object') return null;
+
+  if (platform === 'youtube') {
+    const subs  = j.subscriberCount ?? j.subscriber_count ?? j.followers
+               ?? j.Subscribers     ?? j.sub_count         ?? j.subs
+               ?? j[0] ?? j.stats?.[0];
+    const vids  = j.videoCount  ?? j.video_count  ?? j.videos ?? j[1] ?? j.stats?.[1];
+    const views = j.viewCount   ?? j.view_count   ?? j.views  ?? j[2] ?? j.stats?.[2];
+    const name  = j.channelName ?? j.title ?? j.name ?? j.channel_name ?? j.snippet?.title ?? username;
+    if (subs !== undefined && subs !== null)
+      return { name, handle:username, followers:Math.abs(+subs)||0, videos:+vids||0, views:+views||0 };
+  }
+
+  if (platform === 'tiktok') {
+    const followers = j.followerCount ?? j.followers ?? j.fans  ?? j.fan_count
+                   ?? j.follower_count ?? j[0]        ?? j.stats?.[0];
+    const likes     = j.heartCount ?? j.likeCount ?? j.likes  ?? j.hearts
+                   ?? j.heart_count ?? j.digg_count ?? j[1]   ?? j.stats?.[1];
+    const videos    = j.videoCount ?? j.videos   ?? j.aweme_count ?? j.video_count
+                   ?? j[2] ?? j.stats?.[2];
+    const name      = j.nickname ?? j.name ?? j.displayName ?? j.unique_id ?? j.uniqueId ?? username;
+    if (followers !== undefined && followers !== null)
+      return { name, handle:username, followers:+followers||0, likes:+likes||0, videos:+videos||0 };
+  }
+
+  if (platform === 'instagram') {
+    const followers = j.followerCount ?? j.followers ?? j.edge_followed_by?.count
+                   ?? j.follower_count ?? j[0]        ?? j.stats?.[0];
+    const following = j.followingCount ?? j.following ?? j.edge_follow?.count
+                   ?? j.following_count ?? j[1]        ?? j.stats?.[1];
+    const posts     = j.mediaCount     ?? j.posts     ?? j.edge_owner_to_timeline_media?.count
+                   ?? j.media_count    ?? j[2]         ?? j.stats?.[2];
+    const name      = j.fullName ?? j.full_name ?? j.username ?? j.name ?? username;
+    if (followers !== undefined && followers !== null)
+      return { name, handle:username, followers:+followers||0, following:+following||0, posts:+posts||0 };
+  }
+  return null;
+}
+
+/* ── DEBUG PANEL ── */
+function showDebug(title, data) {
+  let panel = document.getElementById('dbgPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'dbgPanel';
+    panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:220px;overflow:auto;background:#020509;border-top:2px solid #00f5ff;font-family:monospace;font-size:11px;color:#39ff14;padding:8px 12px;z-index:99999;white-space:pre-wrap;word-break:break-all';
+    panel.innerHTML = '<button onclick="this.parentElement.remove()" style="float:right;background:#ff006e;color:#fff;border:none;padding:2px 8px;cursor:pointer;font-size:10px">✕ CLOSE</button>';
+    document.body.appendChild(panel);
+  }
+  const line = document.createElement('div');
+  line.style.borderBottom = '1px solid rgba(0,245,255,.15)';
+  line.style.paddingBottom = '4px';
+  line.style.marginBottom = '4px';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${title}: ${typeof data === 'string' ? data.substring(0,400) : JSON.stringify(data).substring(0,400)}`;
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+}
+
 async function fetchData(platform, username, prev=null) {
   const ep = EP[platform];
-  let searchRaw, targetId = username;
+  let searchRaw = null, statsRaw = null, targetId = username;
+
+  // STEP 1: Search for user ID
   try {
+    showDebug('SEARCH URL', ep.search(username));
     searchRaw = await proxyFetch(ep.search(username));
+    showDebug('SEARCH RAW', searchRaw);
     const sj = JSON.parse(searchRaw);
     const first = Array.isArray(sj) ? sj[0] : sj;
-    if (first) targetId = first.id ?? first.channelId ?? first.userId ?? first.uniqueId ?? username;
-  } catch {}
+    if (first) {
+      targetId = first.id ?? first.channelId ?? first.userId ?? first.uniqueId ?? first.tiktokId ?? first.youtubeId ?? username;
+      showDebug('TARGET ID', targetId);
+    }
+  } catch(e) { showDebug('SEARCH ERR', e.message); }
+
+  // STEP 2: Get stats
   try {
-    const statsRaw = await proxyFetch(ep.stats(targetId));
+    showDebug('STATS URL', ep.stats(targetId));
+    statsRaw = await proxyFetch(ep.stats(targetId));
+    showDebug('STATS RAW', statsRaw);
     const parsed = parseData(platform, username, statsRaw);
     if (parsed) {
+      showDebug('PARSED OK', parsed);
       if (prev) { const pk=PLAT[platform].primary; parsed._delta = parsed[pk]-(prev[pk]||0); }
       return { ok:true, data:parsed };
-    }
-  } catch {}
-  // Try search result as fallback
+    } else { showDebug('PARSE FAIL', 'parseData returned null'); }
+  } catch(e) { showDebug('STATS ERR', e.message); }
+
+  // STEP 3: Fallback - parse from search result
   if (searchRaw) {
     const parsed = parseData(platform, username, searchRaw);
     if (parsed) {
+      showDebug('FALLBACK OK', parsed);
       if (prev) { const pk=PLAT[platform].primary; parsed._delta = parsed[pk]-(prev[pk]||0); }
       return { ok:true, data:parsed };
     }
   }
+
+  showDebug('ALL FAILED', {searchRaw: searchRaw?.substring(0,100), statsRaw: statsRaw?.substring(0,100)});
   return { ok:false };
 }
 
