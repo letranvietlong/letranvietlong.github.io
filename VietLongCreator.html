@@ -3758,9 +3758,9 @@ function guessFromFilename(name){
   if(sep){
     const parts=n.split(sep[0]);
     const a=parts[0].trim(), b=parts[1]?.trim()||'';
-    // Heuristic: phần ngắn hơn thường là ca sĩ
-    if(a.length<=b.length) return{artist:a,title:b.toUpperCase()};
-    return{title:a.toUpperCase(),artist:b};
+    // Format chuẩn: "Ca Sĩ - Tên Bài Hát"
+    // → phần TRƯỚC dấu gạch = ca sĩ, phần SAU = tên bài
+    return{artist:a, title:b.toUpperCase()};
   }
   return{title:n.toUpperCase()||'',artist:''};
 }
