@@ -1477,9 +1477,9 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 
     <!-- Quality presets -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-      <button class="eq-btn active" id="eq-good"    onclick="setExportQuality('good')"  >✅ Good · 8Mbps</button>
+      <button class="eq-btn"        id="eq-good"    onclick="setExportQuality('good')"  >✅ Good · 8Mbps</button>
       <button class="eq-btn"        id="eq-fast"    onclick="setExportQuality('fast')"  >⚡ Fast · 4Mbps</button>
-      <button class="eq-btn"        id="eq-best"    onclick="setExportQuality('best')"  >🏆 Best · 16Mbps</button>
+      <button class="eq-btn active" id="eq-best"    onclick="setExportQuality('best')"  >🏆 Best · 16Mbps</button>
       <button class="eq-btn"        id="eq-tiktok"  onclick="setExportQuality('tiktok')">📱 TikTok · 9:16</button>
     </div>
 
@@ -5618,7 +5618,7 @@ const EXPORT_QUALITY = {
   best:   {videoBps:16_000_000, audioBps:192_000, label:'Best · 16Mbps · 1080p',w:1920,h:1080, fps:30, ext:'mp4'},
   tiktok: {videoBps:6_000_000,  audioBps:192_000, label:'TikTok · 9:16 · 1080p',w:1080,h:1920, fps:30, ext:'mp4'},
 };
-let currentQuality='good';
+let currentQuality='best';
 
 function setExportQuality(q){
   currentQuality=q;
