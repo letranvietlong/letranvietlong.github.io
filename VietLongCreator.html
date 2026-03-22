@@ -703,11 +703,8 @@ main {
 }
 
 /* ── STEP 4: PREVIEW ── */
-.spec-strip {
-  background:var(--ink2);
-  border-radius:9px; overflow:hidden;
-  margin-bottom:10px; height:44px;
-}
+.spec-strip { background:var(--ink2); border-radius:9px; overflow:hidden; height:44px; }
+.spec-strip.hidden-strip { display:none; }
 #spec-cvs { width:100%; height:44px; display:block; }
 .preview-frame {
   position:relative; background:#000;
@@ -1413,7 +1410,7 @@ header { padding:0 32px; }
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.4 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v5.4.6 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1519,7 +1516,7 @@ header { padding:0 32px; }
     <!-- LEFT: Preview -->
     <div>
 
-  <div class="spec-strip"><canvas id="spec-cvs"></canvas></div>
+  <div class="spec-strip hidden-strip" id="spec-strip-el"><canvas id="spec-cvs"></canvas></div>
   <div class="preview-frame" id="pvframe">
     <canvas id="bgcvs"></canvas>
     <canvas id="ovcvs"></canvas>
@@ -5345,7 +5342,10 @@ function initCanvas(){
     }
   }
 }
-window._syncOvCvs=()=>{}; // no-op, handled by ResizeObserver now
+window._syncOvCvs=()=>{}; // no-op
+
+
+// handled by ResizeObserver now
 
 
 // ── Idle animation — vẽ liên tục ngay cả khi chưa nhấn Phát ──
