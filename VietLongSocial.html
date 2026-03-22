@@ -548,7 +548,7 @@ main { flex: 1; padding: 20px 28px; display: flex; flex-direction: column; gap: 
 
         <div class="ainfo">
           <span style="color:#39ff14;font-size:13px;">◉</span>
-          <span>Dữ liệu thật · allorigins.win → livecounts.io API · Tự động cập nhật mỗi 15 giây</span>
+          <span>Scrape trực tiếp YouTube · TikTok · Instagram qua CORS Proxy · Auto-update mỗi 20 giây</span>
         </div>
       </div>
     </div>
@@ -567,39 +567,42 @@ main { flex: 1; padding: 20px 28px; display: flex; flex-direction: column; gap: 
 <div class="toasts" id="toasts"></div>
 
 <script>
-/* ══════════════════════════════════════════════
-   VietLongSocial — PLATFORM CONFIG
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   VietLongSocial — Platform Config
+══════════════════════════════════════════════════ */
 const PLAT = {
   youtube: {
-    name:'YOUTUBE', ico:'▶', cls:'yt', ph:'https://www.youtube.com/@MrBeast',
+    name:'YOUTUBE', ico:'▶', cls:'yt',
+    ph:'https://www.youtube.com/@MrBeast',
     parse(u){
       const m = u.match(/youtube\.com\/@([^\/\?&\s]+)/)
              || u.match(/youtube\.com\/c\/([^\/\?&\s]+)/)
              || u.match(/youtube\.com\/channel\/(UC[^\/\?&\s]+)/)
              || u.match(/youtube\.com\/user\/([^\/\?&\s]+)/);
-      return m ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
+      return m ? m[1] : u.replace(/^@/,'').trim() || null;
     },
     keys:['followers','videos','views'],
-    labels:{followers:'SUBSCRIBERS',videos:'TOTAL VIDEOS',views:'TOTAL VIEWS'},
+    labels:{followers:'SUBSCRIBERS',videos:'VIDEOS',views:'TOTAL VIEWS'},
     primary:'followers'
   },
   tiktok:{
-    name:'TIKTOK', ico:'♪', cls:'tt', ph:'https://www.tiktok.com/@thubee26',
+    name:'TIKTOK', ico:'♪', cls:'tt',
+    ph:'https://www.tiktok.com/@thubee26',
     parse(u){
       const m = u.match(/tiktok\.com\/@([^\/\?&\s]+)/);
-      return m ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
+      return m ? m[1] : u.replace(/^@/,'').trim() || null;
     },
     keys:['followers','likes','videos'],
     labels:{followers:'FOLLOWERS',likes:'TOTAL LIKES',videos:'VIDEOS'},
     primary:'followers'
   },
   instagram:{
-    name:'INSTAGRAM', ico:'◈', cls:'ig', ph:'https://www.instagram.com/cristiano',
+    name:'INSTAGRAM', ico:'◈', cls:'ig',
+    ph:'https://www.instagram.com/cristiano',
     parse(u){
       const m = u.match(/instagram\.com\/([^\/\?&\s]+)/);
-      return (m && !['p','reel','explore','accounts'].includes(m[1]))
-        ? m[1] : u.replace(/^@/,'').replace(/\s/g,'') || null;
+      return (m && !['p','reel','explore','accounts','stories'].includes(m[1]))
+        ? m[1] : u.replace(/^@/,'').trim() || null;
     },
     keys:['followers','following','posts'],
     labels:{followers:'FOLLOWERS',following:'FOLLOWING',posts:'POSTS'},
@@ -610,277 +613,294 @@ const PLAT = {
 let cur = 'youtube';
 let trackers = {};
 
-/* ── FORMAT NUMBERS ── */
-function fmt(n) {
-  if (typeof n !== 'number') return n || '—';
-  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
-  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
-  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+/* ── UTILS ── */
+function fmt(n){
+  if(typeof n!=='number') return n||'—';
+  if(n>=1e9) return (n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
   return n.toLocaleString('vi-VN');
 }
-
-/* ── TOAST ── */
-function toast(msg, type='') {
-  const c = document.getElementById('toasts');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(12px)'; setTimeout(()=>t.remove(),300); }, 3500);
+function toast(msg,type=''){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`; t.textContent=msg; c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(12px)';setTimeout(()=>t.remove(),300);},3500);
 }
-
-/* ── SELECT PLATFORM ── */
-function selTab(btn, p) {
+function selTab(btn,p){
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('ac'));
   btn.classList.add('ac'); cur=p;
-  document.getElementById('ui').placeholder = PLAT[p].ph;
+  document.getElementById('ui').placeholder=PLAT[p].ph;
 }
 
-/* ══════════════════════════════════════════════
-   DATA FETCHING — platform specific
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   CORS PROXY HELPER — tries multiple proxies
+══════════════════════════════════════════════════ */
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+];
 
-/* CORS Proxy helper */
-const CORS = u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`;
-const CORS2 = u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`;
-
-async function getText(url, useProxy=true) {
-  const targets = useProxy
-    ? [CORS(url), CORS2(url), url]
-    : [url];
-  for (const target of targets) {
-    try {
-      const r = await fetch(target, { signal: AbortSignal.timeout(10000) });
-      if (!r.ok) continue;
-      const t = await r.text();
-      if (t && t.length > 10) return t;
-    } catch {}
+async function proxyGet(targetUrl, timeout=10000){
+  for(const mk of PROXIES){
+    try{
+      const r = await fetch(mk(targetUrl),{signal:AbortSignal.timeout(timeout)});
+      if(!r.ok) continue;
+      const text = await r.text();
+      if(text && text.trim().length>5) return text;
+    }catch{}
   }
   return null;
 }
 
-/* ─── YOUTUBE ─── */
-async function fetchYouTube(username) {
-  // Step 1: resolve handle → channelId via YouTube oEmbed (free, no key)
-  const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/@${encodeURIComponent(username)}&format=json`;
-  let channelName = username;
+/* ══════════════════════════════════════════════════
+   YOUTUBE — uses official YouTube oEmbed (free, no key)
+   + page scrape for subscriber count
+══════════════════════════════════════════════════ */
+async function fetchYouTube(username){
+  let name=username, subs=0, vids=0, views=0, channelId='';
 
-  try {
-    const oe = await getText(oembedUrl, false);
-    if (oe) {
-      const j = JSON.parse(oe);
-      channelName = j.author_name || username;
+  // Step 1: oEmbed to get channel name (direct fetch — CORS allowed by Google)
+  try{
+    const oe = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/@${encodeURIComponent(username)}&format=json`,
+      {signal:AbortSignal.timeout(8000)}
+    );
+    if(oe.ok){
+      const j = await oe.json();
+      name = j.author_name || username;
     }
-  } catch {}
+  }catch{}
 
-  // Step 2: Try YouTube channel page scrape via proxy to get subscriber count
-  // YouTube embeds stats in initial data JSON on channel page
-  const channelUrl = `https://www.youtube.com/@${encodeURIComponent(username)}`;
-  const html = await getText(channelUrl);
-  if (html) {
-    // Try to extract subscriberCountText from ytInitialData
-    const patterns = [
-      /"subscriberCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/,
-      /"subscriberCountText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/,
-      /"metadataParts".*?"text"\s*:\s*"([0-9,.KMBtỷ triệu nghìn]+\s*(?:subscribers?|người đăng ký)?)"/.source,
-      /(\d[\d,.]+[KMB]?)\s*subscribers/i,
-      /"videosCountText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/,
+  // Step 2: Scrape channel page via proxy for subscriber count
+  const html = await proxyGet(`https://www.youtube.com/@${encodeURIComponent(username)}`);
+  if(html){
+    // YouTube bakes stats inside ytInitialData JSON
+    // subscriber count pattern in page HTML
+    const patterns_sub = [
+      /"subscriberCountText":"([^"]+)"/,
+      /"subscriberCountText":\{"simpleText":"([^"]+)"\}/,
+      /"subscriberCountText":\{"runs":\[\{"text":"([^"]+)"\}/,
+      /(\d[\d,.]+[KMBtỷ triệu]+)\s*(?:subscriber|người đăng ký)/i,
     ];
+    for(const p of patterns_sub){
+      const m = html.match(p);
+      if(m && m[1]){
+        subs = parseShortNum(m[1]);
+        break;
+      }
+    }
 
-    let subRaw = null, videoRaw = null, viewRaw = null;
+    // video count
+    const mVid = html.match(/"videosCountText":\{"runs":\[\{"text":"([^"]+)"\}/)
+              || html.match(/(\d+(?:[.,]\d+)*)\s*(?:videos?|video)/i);
+    if(mVid) vids = parseShortNum(mVid[1]);
 
-    // Extract subscriber count
-    const subMatch = html.match(/"subscriberCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/)
-                  || html.match(/"subscriberCountText"\s*:\s*\{"runs":\[{"text":"([^"]+)"/)
-                  || html.match(/(\d+(?:[.,]\d+)*[KMBtỷ triệu]*)\s*(?:subscribers?|người đăng ký)/i);
-    if (subMatch) subRaw = subMatch[1];
+    // view count (exact number buried in JSON)
+    const mView = html.match(/"viewCount":"(\d+)"/);
+    if(mView) views = parseInt(mView[1])||0;
 
-    // Extract video count
-    const vidMatch = html.match(/"videosCountText"\s*:\s*\{"runs":\[{"text":"([^"]+)"/)
-                  || html.match(/(\d+(?:[.,]\d+)*)\s*(?:videos?|video)/i);
-    if (vidMatch) videoRaw = vidMatch[1];
+    // Try channelId for further use
+    const mId = html.match(/"channelId":"(UC[^"]+)"/);
+    if(mId) channelId = mId[1];
+  }
 
-    // Extract view count from viewCount property
-    const viewMatch = html.match(/"viewCount"\s*:\s*"(\d+)"/);
-    if (viewMatch) viewRaw = viewMatch[1];
-
-    const parseShort = (s) => {
-      if (!s) return 0;
-      s = s.toString().trim().replace(/,/g,'.');
-      if (/[Tt]ỷ/.test(s)) return parseFloat(s) * 1e9;
-      if (/triệu/.test(s)) return parseFloat(s) * 1e6;
-      if (/nghìn/.test(s)) return parseFloat(s) * 1e3;
-      if (/B$/i.test(s)) return parseFloat(s) * 1e9;
-      if (/M$/i.test(s)) return parseFloat(s) * 1e6;
-      if (/K$/i.test(s)) return parseFloat(s) * 1e3;
-      return parseFloat(s.replace(/[^0-9.]/g,'')) || 0;
-    };
-
-    if (subRaw) {
-      return {
-        name: channelName,
-        handle: username,
-        followers: parseShort(subRaw),
-        videos: parseShort(videoRaw),
-        views: viewRaw ? parseInt(viewRaw) : 0,
-      };
+  // Step 3: If subs still 0, try alternate YouTube API endpoint (no key needed for basic data)
+  if(!subs){
+    // YouTube channel RSS feed has subscriber hint via yt:channelId
+    // But more reliably — try the channel about page
+    const aboutHtml = await proxyGet(`https://www.youtube.com/@${encodeURIComponent(username)}/about`);
+    if(aboutHtml){
+      const m = aboutHtml.match(/"subscriberCountText":"([^"]+)"/)
+             || aboutHtml.match(/(\d[\d,.]+[KMB]+)\s*subscribers?/i);
+      if(m) subs = parseShortNum(m[1]);
     }
   }
 
-  // Fallback — show channel name only with 0 counts (at least something)
-  return null;
+  return { name, handle:username, followers:subs, videos:vids, views };
 }
 
-/* ─── TIKTOK ─── */
-async function fetchTikTok(username) {
-  // Scrape TikTok page to extract stats from embedded JSON
-  const url = `https://www.tiktok.com/@${encodeURIComponent(username)}`;
-  const html = await getText(url);
-  if (!html) return null;
+/* ══════════════════════════════════════════════════
+   TIKTOK — scrape page JSON + noembed fallback
+══════════════════════════════════════════════════ */
+async function fetchTikTok(username){
+  let followers=0, likes=0, videos=0, name=username;
 
-  // TikTok embeds user data in __UNIVERSAL_DATA_FOR_REHYDRATION__ or window.__INITIAL_STATE__
-  let followers = 0, likes = 0, videos = 0, name = username;
+  // Try noembed first (no CORS issues, gives author name at least)
+  try{
+    const ne = await fetch(
+      `https://www.tiktok.com/oembed?url=https://www.tiktok.com/@${encodeURIComponent(username)}`,
+      {signal:AbortSignal.timeout(7000)}
+    );
+    if(ne.ok){
+      const j = await ne.json();
+      name = j.author_name || username;
+    }
+  }catch{}
 
-  // Pattern 1: stats object in page JSON
-  const statsMatch = html.match(/"followerCount"\s*:\s*(\d+)/);
-  const likesMatch = html.match(/"heartCount"\s*:\s*(\d+)/);
-  const videoMatch = html.match(/"videoCount"\s*:\s*(\d+)/);
-  const nameMatch  = html.match(/"nickname"\s*:\s*"([^"]+)"/);
+  // Scrape TikTok profile page via proxy
+  const html = await proxyGet(`https://www.tiktok.com/@${encodeURIComponent(username)}`);
+  if(html){
+    // TikTok stores stats in SIGI_STATE or __UNIVERSAL_DATA_FOR_REHYDRATION__
+    const mF = html.match(/"followerCount"\s*:\s*(\d+)/);
+    const mL = html.match(/"heartCount"\s*:\s*(\d+)/);
+    const mV = html.match(/"videoCount"\s*:\s*(\d+)/);
+    const mN = html.match(/"nickname"\s*:\s*"([^"]+)"/);
 
-  if (statsMatch) followers = parseInt(statsMatch[1]);
-  if (likesMatch) likes     = parseInt(likesMatch[1]);
-  if (videoMatch) videos    = parseInt(videoMatch[1]);
-  if (nameMatch)  name      = nameMatch[1];
-
-  if (followers > 0) return { name, handle: username, followers, likes, videos };
-
-  // Pattern 2: itemInfo.authorStats
-  const authStats = html.match(/"authorStats"\s*:\s*\{[^}]+\}/);
-  if (authStats) {
-    const f2 = authStats[0].match(/"followerCount"\s*:\s*(\d+)/);
-    const l2 = authStats[0].match(/"heartCount"\s*:\s*(\d+)/);
-    const v2 = authStats[0].match(/"videoCount"\s*:\s*(\d+)/);
-    if (f2) return {
-      name, handle: username,
-      followers: parseInt(f2[1])||0,
-      likes:     parseInt(l2?.[1])||0,
-      videos:    parseInt(v2?.[1])||0,
-    };
+    if(mF) followers = parseInt(mF[1])||0;
+    if(mL) likes     = parseInt(mL[1])||0;
+    if(mV) videos    = parseInt(mV[1])||0;
+    if(mN) name      = mN[1];
   }
 
-  return null;
+  return { name, handle:username, followers, likes, videos };
 }
 
-/* ─── INSTAGRAM ─── */
-async function fetchInstagram(username) {
-  // Instagram graph endpoint (public, no auth for basic info)
-  const urls = [
-    `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
-    `https://www.instagram.com/${username}/?__a=1&__d=dis`,
-  ];
+/* ══════════════════════════════════════════════════
+   INSTAGRAM — scrape page meta + JSON
+══════════════════════════════════════════════════ */
+async function fetchInstagram(username){
+  let followers=0, following=0, posts=0, name=username;
 
-  for (const url of urls) {
-    const raw = await getText(url);
-    if (!raw) continue;
-    try {
-      const j = JSON.parse(raw);
-      // Format 1: web_profile_info
-      const u = j?.data?.user || j?.graphql?.user;
-      if (u) {
-        return {
-          name:      u.full_name || username,
-          handle:    username,
-          followers: u.edge_followed_by?.count || u.follower_count || 0,
-          following: u.edge_follow?.count      || u.following_count || 0,
-          posts:     u.edge_owner_to_timeline_media?.count || u.media_count || 0,
-        };
-      }
-    } catch {}
+  // Instagram now requires login for most endpoints.
+  // Best bet: scrape the page via proxy and extract from:
+  // 1. window._sharedData JSON (older pages)
+  // 2. Inline JSON in <script type="application/ld+json">
+  // 3. meta tags like "X Followers, X Following, X Posts"
+  // 4. og:description which has "X Followers, X Following, X Posts"
+
+  const html = await proxyGet(`https://www.instagram.com/${encodeURIComponent(username)}/`);
+  if(html){
+    // Try pattern: og:description "123K Followers, 456 Following, 789 Posts"
+    const ogDesc = html.match(/content="([^"]*\d+[KMB]?\s*Followers[^"]*)"/) 
+                || html.match(/content="([^"]*\d+\s*người theo dõi[^"]*)"/) ;
+    if(ogDesc){
+      const desc = ogDesc[1];
+      const fM = desc.match(/([\d,.]+[KMB]?)\s*Followers?/i);
+      const foM = desc.match(/([\d,.]+[KMB]?)\s*Following/i);
+      const pM  = desc.match(/([\d,.]+[KMB]?)\s*Posts?/i);
+      if(fM) followers = parseShortNum(fM[1]);
+      if(foM) following= parseShortNum(foM[1]);
+      if(pM)  posts    = parseShortNum(pM[1]);
+    }
+
+    // Try JSON-LD
+    const ldMatch = html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
+    if(ldMatch && !followers){
+      try{
+        const ld = JSON.parse(ldMatch[1]);
+        const inter = ld.interactionStatistic;
+        if(Array.isArray(inter)){
+          inter.forEach(i=>{
+            if(i.interactionType?.includes('FollowAction')) followers = i.userInteractionCount||0;
+          });
+        }
+      }catch{}
+    }
+
+    // Try graph data patterns in page source
+    if(!followers){
+      const mF = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
+      const mFo = html.match(/"edge_follow":\{"count":(\d+)\}/);
+      const mP  = html.match(/"edge_owner_to_timeline_media":\{"count":(\d+)\}/);
+      const mN  = html.match(/"full_name":"([^"]+)"/);
+      if(mF)  followers = parseInt(mF[1])||0;
+      if(mFo) following = parseInt(mFo[1])||0;
+      if(mP)  posts     = parseInt(mP[1])||0;
+      if(mN)  name      = mN[1];
+    }
+
+    // Extract name from title tag
+    const titleM = html.match(/<title>([^<]+)<\/title>/);
+    if(titleM && name===username){
+      // Title format: "username (@handle) • Instagram"
+      const tn = titleM[1].match(/^([^(@]+)/);
+      if(tn) name = tn[1].trim() || username;
+    }
   }
 
-  // Fallback: scrape Instagram page HTML
-  const html = await getText(`https://www.instagram.com/${username}/`);
-  if (html) {
-    const fMatch = html.match(/"edge_followed_by"\s*:\s*\{"count"\s*:\s*(\d+)\}/);
-    const pMatch = html.match(/"edge_owner_to_timeline_media"\s*:\s*\{"count"\s*:\s*(\d+)\}/);
-    const nMatch = html.match(/"full_name"\s*:\s*"([^"]+)"/);
-    if (fMatch) return {
-      name:      nMatch ? nMatch[1] : username,
-      handle:    username,
-      followers: parseInt(fMatch[1])||0,
-      following: 0,
-      posts:     pMatch ? parseInt(pMatch[1]) : 0,
-    };
-  }
-  return null;
+  return { name, handle:username, followers, following, posts };
 }
 
-/* ── MAIN FETCH ── */
-async function fetchData(platform, username, prev=null) {
-  try {
+/* ── NUMBER PARSER (handles 15M, 1.5K, 75.5M, etc.) ── */
+function parseShortNum(s){
+  if(!s) return 0;
+  s = s.toString().trim().replace(/,/g,'').replace(/\s/g,'');
+  if(/tỷ/i.test(s))      return Math.round(parseFloat(s)*1e9);
+  if(/triệu/i.test(s))   return Math.round(parseFloat(s)*1e6);
+  if(/nghìn/i.test(s))   return Math.round(parseFloat(s)*1e3);
+  if(/B$/i.test(s))       return Math.round(parseFloat(s)*1e9);
+  if(/M$/i.test(s))       return Math.round(parseFloat(s)*1e6);
+  if(/K$/i.test(s))       return Math.round(parseFloat(s)*1e3);
+  return parseInt(s.replace(/[^\d]/g,''))||0;
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN FETCH DISPATCHER
+══════════════════════════════════════════════════ */
+async function fetchData(platform, username, prev=null){
+  try{
     let data = null;
-    if      (platform === 'youtube')   data = await fetchYouTube(username);
-    else if (platform === 'tiktok')    data = await fetchTikTok(username);
-    else if (platform === 'instagram') data = await fetchInstagram(username);
-
-    if (data) {
-      if (prev) {
-        const pk = PLAT[platform].primary;
-        data._delta = data[pk] - (prev[pk]||0);
+    if(platform==='youtube')   data = await fetchYouTube(username);
+    else if(platform==='tiktok')    data = await fetchTikTok(username);
+    else if(platform==='instagram') data = await fetchInstagram(username);
+    if(data){
+      if(prev){
+        const pk=PLAT[platform].primary;
+        data._delta=data[pk]-(prev[pk]||0);
       }
-      return { ok:true, data };
+      return {ok:true, data};
     }
-  } catch(e) { console.warn('[VLS] fetchData error:', e.message); }
-  return { ok:false };
+  }catch(e){ console.warn('[VLS]',e.message); }
+  return {ok:false};
 }
 
-/* ── ADD TRACKER ── */
-async function add() {
-  const raw = document.getElementById('ui').value.trim();
-  if (!raw) { toast('⚠ Nhập URL hoặc username', 'err'); return; }
-  const cfg = PLAT[cur];
-  const username = cfg.parse(raw);
-  if (!username) { toast('⚠ URL không hợp lệ', 'err'); return; }
-  const id = `${cur}__${username.toLowerCase()}`;
-  if (trackers[id]) { toast('⚡ Đang theo dõi rồi', 'err'); return; }
+/* ══════════════════════════════════════════════════
+   UI — ADD / RENDER / UPDATE / AUTO
+══════════════════════════════════════════════════ */
+async function add(){
+  const raw=document.getElementById('ui').value.trim();
+  if(!raw){toast('⚠ Nhập URL hoặc username','err');return;}
+  const cfg=PLAT[cur];
+  const username=cfg.parse(raw);
+  if(!username){toast('⚠ URL không hợp lệ','err');return;}
+  const id=`${cur}__${username.toLowerCase()}`;
+  if(trackers[id]){toast('⚡ Đang theo dõi rồi','err');return;}
 
-  const btn = document.getElementById('sbtn');
-  btn.innerHTML = '<span class="spn"></span>SCANNING...'; btn.disabled = true;
+  const btn=document.getElementById('sbtn');
+  btn.innerHTML='<span class="spn"></span>SCANNING...'; btn.disabled=true;
   toast(`📡 Đang quét @${username}...`);
 
-  const result = await fetchData(cur, username);
-  btn.innerHTML = '⬡ SCAN'; btn.disabled = false;
+  const result=await fetchData(cur,username);
+  btn.innerHTML='⬡ SCAN'; btn.disabled=false;
 
-  if (!result.ok) {
-    toast('⚠ Không lấy được dữ liệu. Kiểm tra username hoặc thử lại.', 'err');
-    return;
-  }
-
-  trackers[id] = { id, platform:cur, username, data:result.data };
-  document.getElementById('ui').value = '';
-  document.getElementById('empty').style.display = 'none';
-  render(id);
-  startAuto(id);
-  toast(`✓ CONNECTED · @${username}`, 'ok');
+  if(!result.ok){toast('⚠ Không lấy được dữ liệu. Thử lại.','err');return;}
+  trackers[id]={id,platform:cur,username,data:result.data};
+  document.getElementById('ui').value='';
+  document.getElementById('empty').style.display='none';
+  render(id); startAuto(id);
+  toast(`✓ CONNECTED · @${username}`,'ok');
 }
 
-/* ── RENDER CARD ── */
-function render(id) {
-  const t = trackers[id]; const cfg = PLAT[t.platform]; const d = t.data; const cls = cfg.cls;
+function render(id){
+  const t=trackers[id]; const cfg=PLAT[t.platform]; const d=t.data; const cls=cfg.cls;
   document.getElementById('c_'+id)?.remove();
-  const pv  = d[cfg.primary]||0;
-  const sec = cfg.keys.filter(k=>k!==cfg.primary);
-  const secH = sec.map(k=>`
+  const pv=d[cfg.primary]||0;
+  const sec=cfg.keys.filter(k=>k!==cfg.primary);
+  const secH=sec.map(k=>`
     <div class="sb">
       <div class="sl">${cfg.labels[k]}</div>
       <div class="sv" id="sv_${id}_${k}" style="font-size:18px;color:#b0d8ff">${fmt(d[k]||0)}</div>
     </div>`).join('');
-  const delta = d._delta??0;
-  const dH = delta>0 ? `<div class="sdelta du">▲ +${fmt(delta)} so lần trước</div>`
-           : delta<0 ? `<div class="sdelta dd">▼ ${fmt(Math.abs(delta))} so lần trước</div>`
-           :            `<div class="sdelta dn">— Đang theo dõi realtime...</div>`;
+  const delta=d._delta??0;
+  const dH=delta>0?`<div class="sdelta du">▲ +${fmt(delta)}</div>`
+          :delta<0?`<div class="sdelta dd">▼ ${fmt(Math.abs(delta))}</div>`
+          :`<div class="sdelta dn">— Đang theo dõi...</div>`;
 
-  const card = document.createElement('div');
+  const card=document.createElement('div');
   card.className='card'; card.id='c_'+id;
-  card.innerHTML = `
+  card.innerHTML=`
     <div class="cstripe ${cls}"></div>
     <div class="cbody">
       <div class="chead">
@@ -916,47 +936,46 @@ function render(id) {
       </div>
     </div>`;
   document.getElementById('grid').appendChild(card);
-  setTimeout(()=>{ const p=document.getElementById('pf_'+id); if(p)p.style.width=Math.min((pv/1e8)*100,100)+'%'; }, 400);
+  setTimeout(()=>{const p=document.getElementById('pf_'+id);if(p)p.style.width=Math.min((pv/1e8)*100,100)+'%';},400);
 }
 
-/* ── UPDATE DOM ── */
-function updateDOM(id) {
+function updateDOM(id){
   const t=trackers[id]; if(!t) return;
   const cfg=PLAT[t.platform]; const d=t.data;
   cfg.keys.forEach(k=>{
     const el=document.getElementById(`sv_${id}_${k}`); if(!el) return;
     const nv=fmt(d[k]||0);
-    if(el.textContent!==nv){ el.textContent=nv; el.classList.remove('fl'); void el.offsetWidth; el.classList.add('fl'); }
+    if(el.textContent!==nv){el.textContent=nv;el.classList.remove('fl');void el.offsetWidth;el.classList.add('fl');}
   });
-  const primBox=document.getElementById(`sv_${id}_${cfg.primary}`)?.closest('.sb');
-  if(primBox){
-    let dd=primBox.querySelector('.sdelta');
-    if(!dd){dd=document.createElement('div');primBox.appendChild(dd);}
+  const pBox=document.getElementById(`sv_${id}_${cfg.primary}`)?.closest('.sb');
+  if(pBox){
+    let dd=pBox.querySelector('.sdelta');
+    if(!dd){dd=document.createElement('div');pBox.appendChild(dd);}
     const delta=d._delta??0;
     dd.className=`sdelta ${delta>0?'du':delta<0?'dd':'dn'}`;
-    dd.textContent=delta>0?`▲ +${fmt(delta)} so lần trước`:delta<0?`▼ ${fmt(Math.abs(delta))} so lần trước`:'— Đang theo dõi realtime...';
+    dd.textContent=delta>0?`▲ +${fmt(delta)}`:delta<0?`▼ ${fmt(Math.abs(delta))}`:'— Đang theo dõi...';
   }
   const ut=document.getElementById('ut_'+id); if(ut) ut.textContent=new Date().toLocaleTimeString('vi-VN');
-  const pf=document.getElementById('pf_'+id); if(pf) pf.style.width=Math.min(((d[PLAT[t.platform].primary]||0)/1e8)*100,100)+'%';
+  const pv=d[cfg.primary]||0;
+  const pf=document.getElementById('pf_'+id); if(pf) pf.style.width=Math.min((pv/1e8)*100,100)+'%';
 }
 
-/* ── AUTO REFRESH ── */
-async function doRefresh(id, silent=false) {
+async function doRefresh(id,silent=false){
   const t=trackers[id]; if(!t) return;
   if(!silent) toast(`⟳ Refreshing @${t.username}...`);
-  const r=await fetchData(t.platform, t.username, t.data);
-  if(!r.ok){ if(!silent) toast('⚠ Refresh thất bại','err'); return; }
+  const r=await fetchData(t.platform,t.username,t.data);
+  if(!r.ok){if(!silent)toast('⚠ Refresh thất bại','err');return;}
   t.data=r.data; updateDOM(id);
   if(!silent) toast(`✓ Updated @${t.username}`,'ok');
 }
 
-function startAuto(id) {
+function startAuto(id){
   if(trackers[id]?.iv) clearInterval(trackers[id].iv);
   const iv=setInterval(()=>doRefresh(id,true),20000);
   if(trackers[id]) trackers[id].iv=iv;
 }
 
-function doRemove(id) {
+function doRemove(id){
   const t=trackers[id]; if(!t) return;
   clearInterval(t.iv); delete trackers[id];
   const el=document.getElementById('c_'+id);
@@ -966,7 +985,7 @@ function doRemove(id) {
 }
 
 /* ── CLOCK ── */
-setInterval(()=>{ document.getElementById('clk').textContent=new Date().toLocaleTimeString('vi-VN',{hour12:false}); },1000);
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('vi-VN',{hour12:false});},1000);
 document.getElementById('clk').textContent=new Date().toLocaleTimeString('vi-VN',{hour12:false});
 document.getElementById('ui').placeholder=PLAT['youtube'].ph;
 </script>
