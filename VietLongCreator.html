@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.8 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.0 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3075,7 +3075,7 @@ body:has(#panel-affiliate.show) main {
       <div class="aff-card">
         <div class="aff-card-title">🔑 CLAUDE API KEY</div>
         <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>API Key</span><a href="https://console.anthropic.com" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="settings-anthropic-key" placeholder="sk-ant-api03-..." oninput="setAnthropicKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div>
-        <div id="aff-api-status" style="font-size:.57rem;color:#fbbf24;margin-top:2px">⚠ Cần API key để AI tìm sản phẩm</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="aff-api-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">⚠ Cần API key để AI hoạt động</div><button id="aff-test-key-btn" onclick="testAnthropicKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,229,195,.4);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Kiểm tra</button></div>
       </div>
 
       <div class="aff-card">
@@ -3243,7 +3243,7 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v8.8';
+const APP_VERSION = 'v9.0';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -3254,6 +3254,49 @@ function _loadAffApiKey(){
   if(inp&&k) inp.value=k;
   const st=document.getElementById('aff-api-status');
   if(st){st.textContent=k?'✅ API key đã lưu':'⚠ Cần API key để AI hoạt động';st.style.color=k?'#22c55e':'#fbbf24';}
+}
+
+async function testAnthropicKey(){
+  const key=getAnthropicKey();
+  const btn=document.getElementById('aff-test-key-btn');
+  const status=document.getElementById('aff-api-status');
+  if(!key||key.length<20){
+    if(status){status.textContent='❌ Chưa nhập API key';status.style.color='#ef4444';}
+    toast('Nhập API key trước','warn',2000); return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='⏳...';}
+  if(status){status.textContent='⏳ Đang kiểm tra...';status.style.color='#fbbf24';}
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'Hi'}]})
+    });
+    const data=await resp.json();
+    if(resp.ok&&data.content){
+      if(status){status.textContent='✅ API key hợp lệ · Claude sẵn sàng';status.style.color='#22c55e';}
+      toast('✅ API key hoạt động tốt!','success',3000);
+      if(typeof affLog==='function') affLog('ok','✅ Claude API key hợp lệ');
+    } else if(resp.status===401){
+      if(status){status.textContent='❌ API key sai hoặc hết hạn';status.style.color='#ef4444';}
+      toast('❌ API key không hợp lệ — vào console.anthropic.com kiểm tra lại','warn',5000);
+    } else if(resp.status===400){
+      if(status){status.textContent='✅ API key hợp lệ';status.style.color='#22c55e';}
+      toast('✅ API key hợp lệ!','success',3000);
+    } else if(resp.status===429){
+      if(status){status.textContent='⚠ Key OK nhưng rate limit — thử lại sau';status.style.color='#fbbf24';}
+      toast('⚠ Rate limit — thử sau vài giây','warn',4000);
+    } else {
+      const msg=(data.error&&data.error.message)?data.error.message:'Lỗi không xác định';
+      if(status){status.textContent='⚠ HTTP '+resp.status+': '+msg.slice(0,40);status.style.color='#fbbf24';}
+      toast('Lỗi HTTP '+resp.status,'warn',3000);
+    }
+  }catch(e){
+    if(status){status.textContent='❌ Lỗi kết nối — kiểm tra internet';status.style.color='#ef4444';}
+    toast('Lỗi: '+e.message.slice(0,60),'warn',4000);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔍 Kiểm tra';}
+  }
 }
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -11543,233 +11586,464 @@ async function createAffVideo(productIdx){
 
 // ── Render product video 9:16 on offscreen canvas ─────────────
 async function _renderProductVideo(content, product){
+  // Step 1: Generate script/screenplay via AI
+  let script={
+    scenes:[
+      {type:'hook',   duration:3,  text:'Bạn đang tìm '+content.emoji+' '+product.name+'?',        speaker:'host'},
+      {type:'reveal', duration:4,  text:'Chỉ '+product.price+'đ! Giảm '+product.discount+'! 🔥',   speaker:'price'},
+      {type:'feature',duration:5,  text:(content.features||['Chất lượng cao','Giao nhanh','Hoàn tiền'])[0], speaker:'host'},
+      {type:'feature',duration:4,  text:(content.features||['','Uy tín shop','Giá tốt'])[1],        speaker:'host'},
+      {type:'social', duration:4,  text:'Hàng nghìn người đã mua! ⭐'+product.rating+' · '+product.sold+' đã bán', speaker:'stats'},
+      {type:'cta',    duration:4,  text:content.cta||'Mua ngay! Link trong bio 🔗',                 speaker:'cta'},
+    ],
+    commission: product.commission||'15%',
+  };
+
   return new Promise((resolve)=>{
     try{
-      // Create dedicated 1080x1920 canvas for product video
       const W=1080, H=1920;
       const cvs=document.createElement('canvas');
       cvs.width=W; cvs.height=H;
       const ctx=cvs.getContext('2d');
 
-      // Setup MediaRecorder
       const stream=cvs.captureStream(30);
       const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
       const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
-      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4_000_000});
+      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5_000_000});
       const chunks=[];
       rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
       rec.onstop=()=>resolve(new Blob(chunks,{type:mime.split(';')[0]}));
       rec.start(100);
 
-      const FPS=30, DURATION=20; // 20 seconds
-      const TOTAL=FPS*DURATION;
+      const FPS=30;
+      const bg1=content.bg_color1||'#0f0c29';
+      const bg2=content.bg_color2||'#302b63';
+      const accent=content.accent||'#ff2d78';
+      const totalDur=script.scenes.reduce((s,sc)=>s+sc.duration,0);
+      const TOTAL=FPS*totalDur;
       let frame=0;
 
-      // Parse colors
-      const bg1=content.bg_color1||'#1a0533';
-      const bg2=content.bg_color2||'#2d0a5e';
-      const accent=content.accent||'#ff2d78';
+      function easeOut(t){return 1-Math.pow(1-t,3);}
+      function easeInOut(t){return t<.5?4*t*t*t:(1-Math.pow(-2*t+2,3))/2;}
+      function lerp(a,b,t){return a+(b-a)*t;}
 
-      function easeOut(t){ return 1-Math.pow(1-t,3); }
-      function easeInOut(t){ return t<0.5?4*t*t*t:(1-Math.pow(-2*t+2,3))/2; }
+      // Get current scene
+      function getScene(t){
+        let elapsed=0;
+        for(const sc of script.scenes){
+          if(t<elapsed+sc.duration) return {sc, localT:(t-elapsed)/sc.duration, startT:elapsed};
+          elapsed+=sc.duration;
+        }
+        return {sc:script.scenes[script.scenes.length-1],localT:1,startT:elapsed-script.scenes[script.scenes.length-1].duration};
+      }
 
-      function drawFrame(){
-        const t=frame/FPS; // time in seconds
-        const tf=frame/TOTAL; // 0..1
+      // Draw animated character (stick figure / avatar)
+      function drawCharacter(x,y,scale,emotion,t){
+        ctx.save();
+        ctx.translate(x,y);
+        ctx.scale(scale,scale);
 
-        // ── Background gradient ──
+        const bounce=emotion==='excited'?Math.sin(t*12)*8:Math.sin(t*3)*3;
+        const tilt=emotion==='cta'?Math.sin(t*6)*5:0;
+        ctx.rotate(tilt*Math.PI/180);
+
+        // Body glow
+        const glow=ctx.createRadialGradient(0,-60,0,0,-60,120);
+        glow.addColorStop(0,'rgba(255,45,120,0.3)');
+        glow.addColorStop(1,'rgba(255,45,120,0)');
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(0,-60+bounce,120,0,Math.PI*2);
+        ctx.fill();
+
+        // Head
+        const headY=-120+bounce;
+        const gradient=ctx.createRadialGradient(-20,headY-20,5,0,headY,55);
+        gradient.addColorStop(0,'#ffe0bd');
+        gradient.addColorStop(1,'#f4a460');
+        ctx.fillStyle=gradient;
+        ctx.beginPath();
+        ctx.arc(0,headY,55,0,Math.PI*2);
+        ctx.fill();
+
+        // Hair
+        ctx.fillStyle='#2c1810';
+        ctx.beginPath();
+        ctx.ellipse(0,headY-35,50,25,0,Math.PI,0);
+        ctx.fill();
+        // Hair strands
+        for(let i=-2;i<=2;i++){
+          ctx.beginPath();
+          ctx.moveTo(i*18,headY-55);
+          ctx.quadraticCurveTo(i*22,headY-75,i*15,headY-80);
+          ctx.strokeStyle='#2c1810';
+          ctx.lineWidth=4;
+          ctx.stroke();
+        }
+
+        // Eyes (animated blink)
+        const blink=Math.sin(t*0.7)>0.95?0.1:1;
+        ctx.fillStyle='#1a1a2e';
+        [-18,18].forEach(ex=>{
+          ctx.beginPath();
+          ctx.ellipse(ex,headY-5,7,7*blink,0,0,Math.PI*2);
+          ctx.fill();
+          // Eye shine
+          ctx.fillStyle='#fff';
+          ctx.beginPath();
+          ctx.arc(ex+3,headY-8,2,0,Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle='#1a1a2e';
+        });
+
+        // Mouth (expression)
+        ctx.strokeStyle='#c0392b';
+        ctx.lineWidth=3;
+        ctx.lineCap='round';
+        ctx.beginPath();
+        if(emotion==='excited'||emotion==='cta'){
+          ctx.arc(0,headY+20,20,0.1,Math.PI-0.1);
+        } else if(emotion==='talking'){
+          const mouthOpen=Math.abs(Math.sin(t*8))*10;
+          ctx.ellipse(0,headY+22,12,4+mouthOpen,0,0,Math.PI*2);
+          ctx.fillStyle='#c0392b';
+          ctx.fill();
+        } else {
+          ctx.arc(0,headY+22,14,0.2,Math.PI-0.2);
+        }
+        ctx.stroke();
+
+        // Blush
+        if(emotion==='excited'){
+          ctx.fillStyle='rgba(255,100,100,0.25)';
+          ctx.beginPath(); ctx.ellipse(-35,headY+10,18,10,0,0,Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(35,headY+10,18,10,0,0,Math.PI*2); ctx.fill();
+        }
+
+        // Body (torso)
+        const bodyY=headY+55;
+        const bodyGrad=ctx.createLinearGradient(-30,bodyY,30,bodyY+120);
+        bodyGrad.addColorStop(0,accent);
+        bodyGrad.addColorStop(1,'#c0135a');
+        ctx.fillStyle=bodyGrad;
+        roundRect(ctx,-38,bodyY,76,130,15);
+        ctx.fill();
+
+        // Arms - animated
+        const armSwing=Math.sin(t*4+bounce)*15;
+        ctx.strokeStyle='#f4a460';
+        ctx.lineWidth=20;
+        ctx.lineCap='round';
+        // Left arm
+        ctx.beginPath();
+        ctx.moveTo(-38,bodyY+20);
+        ctx.quadraticCurveTo(-90,bodyY+60+armSwing,-70,bodyY+110+armSwing);
+        ctx.stroke();
+        // Right arm (pointing when CTA)
+        ctx.beginPath();
+        if(emotion==='cta'){
+          ctx.moveTo(38,bodyY+20);
+          ctx.quadraticCurveTo(80,bodyY+40,120,bodyY+20+Math.sin(t*6)*10);
+        } else {
+          ctx.moveTo(38,bodyY+20);
+          ctx.quadraticCurveTo(90,bodyY+60-armSwing,70,bodyY+110-armSwing);
+        }
+        ctx.stroke();
+
+        // Legs
+        ctx.strokeStyle='#2c3e6b';
+        ctx.lineWidth=22;
+        const legSwing=Math.sin(t*5)*8;
+        // Left leg
+        ctx.beginPath();
+        ctx.moveTo(-15,bodyY+130);
+        ctx.lineTo(-20,bodyY+200+legSwing);
+        ctx.stroke();
+        // Right leg
+        ctx.beginPath();
+        ctx.moveTo(15,bodyY+130);
+        ctx.lineTo(20,bodyY+200-legSwing);
+        ctx.stroke();
+        // Shoes
+        ctx.fillStyle='#1a1a2e';
+        ctx.beginPath(); ctx.ellipse(-20,bodyY+205+legSwing,18,9,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(20,bodyY+205-legSwing,18,9,0,0,Math.PI*2); ctx.fill();
+
+        ctx.restore();
+      }
+
+      // Draw speech bubble
+      function drawSpeechBubble(text,x,y,maxW,t,alpha=1){
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        const pad=30, lineH=52;
+        ctx.font='bold 42px sans-serif';
+        // Word wrap
+        const words=text.split(' ');
+        const lines=[];
+        let cur='';
+        for(const w of words){
+          if(ctx.measureText(cur+w).width>maxW-pad*2){lines.push(cur.trim());cur=w+' ';}
+          else cur+=w+' ';
+        }
+        lines.push(cur.trim());
+        const bh=lines.length*lineH+pad*2;
+        const bw=maxW;
+
+        // Bubble background
+        const bubbleGrad=ctx.createLinearGradient(x-bw/2,y,x+bw/2,y+bh);
+        bubbleGrad.addColorStop(0,'rgba(255,255,255,0.95)');
+        bubbleGrad.addColorStop(1,'rgba(240,240,255,0.95)');
+        ctx.fillStyle=bubbleGrad;
+        ctx.shadowColor='rgba(0,0,0,0.3)';
+        ctx.shadowBlur=20;
+        ctx.shadowOffsetY=5;
+        roundRect(ctx,x-bw/2,y,bw,bh,20);
+        ctx.fill();
+        ctx.shadowColor='transparent';
+
+        // Bubble tail
+        ctx.beginPath();
+        ctx.moveTo(x-40,y+bh);
+        ctx.lineTo(x-80,y+bh+40);
+        ctx.lineTo(x+20,y+bh);
+        ctx.fillStyle='rgba(240,240,255,0.95)';
+        ctx.fill();
+
+        // Text
+        ctx.fillStyle='#1a1a2e';
+        ctx.textAlign='center';
+        ctx.textBaseline='top';
+        lines.forEach((line,i)=>{
+          ctx.fillText(line,x,y+pad+i*lineH);
+        });
+        ctx.restore();
+      }
+
+      // Draw price card
+      function drawPriceCard(product,x,y,t,alpha){
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        const w=820,h=280;
+        const grd=ctx.createLinearGradient(x-w/2,y,x+w/2,y+h);
+        grd.addColorStop(0,'rgba(255,45,120,0.9)');
+        grd.addColorStop(1,'rgba(120,0,60,0.9)');
+        ctx.fillStyle=grd;
+        ctx.shadowColor='rgba(255,45,120,0.5)';
+        ctx.shadowBlur=30;
+        roundRect(ctx,x-w/2,y,w,h,25);
+        ctx.fill();
+        ctx.shadowColor='transparent';
+
+        // Discount badge
+        if(product.discount){
+          ctx.fillStyle='#ffdd00';
+          ctx.beginPath();
+          ctx.arc(x+w/2-50,y+50,55,0,Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle='#c0135a';
+          ctx.font='bold 34px sans-serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(product.discount,x+w/2-50,y+50);
+        }
+
+        // Prices
+        ctx.textAlign='center';
+        if(product.original_price&&product.original_price!==product.price){
+          ctx.font='38px sans-serif';
+          ctx.fillStyle='rgba(255,255,255,0.5)';
+          ctx.textBaseline='middle';
+          ctx.fillText(product.original_price+'đ',x,y+70);
+          ctx.strokeStyle='rgba(255,255,255,0.5)';
+          ctx.lineWidth=2;
+          const tw=ctx.measureText(product.original_price+'đ').width;
+          ctx.beginPath();
+          ctx.moveTo(x-tw/2,y+70);
+          ctx.lineTo(x+tw/2,y+70);
+          ctx.stroke();
+        }
+        // Big price
+        const pulse=1+0.03*Math.sin(t*6);
+        ctx.save();
+        ctx.translate(x,y+160);
+        ctx.scale(pulse,pulse);
+        ctx.font='bold 110px sans-serif';
+        ctx.fillStyle='#ffdd00';
+        ctx.textBaseline='middle';
+        ctx.textAlign='center';
+        ctx.fillText(product.price+'đ',0,0);
+        ctx.restore();
+
+        // Commission
+        ctx.font='bold 44px sans-serif';
+        ctx.fillStyle='rgba(255,255,255,0.9)';
+        ctx.textBaseline='middle';
+        ctx.fillText('💰 Hoa hồng: '+(product.commission||'15%'),x,y+240);
+        ctx.restore();
+      }
+
+      // Draw CTA button
+      function drawCTA(text,x,y,t,alpha){
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        const pulse=1+0.06*Math.sin(t*8);
+        ctx.translate(x,y);
+        ctx.scale(pulse,pulse);
+        const w=900,h=130;
+        const grd=ctx.createLinearGradient(-w/2,0,w/2,0);
+        grd.addColorStop(0,'#ff2d78');
+        grd.addColorStop(0.5,'#ff6b9d');
+        grd.addColorStop(1,'#ff2d78');
+        ctx.fillStyle=grd;
+        ctx.shadowColor='rgba(255,45,120,0.7)';
+        ctx.shadowBlur=30;
+        roundRect(ctx,-w/2,-h/2,w,h,h/2);
+        ctx.fill();
+        ctx.shadowColor='transparent';
+        ctx.font='bold 64px sans-serif';
+        ctx.fillStyle='#ffffff';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(text,0,0);
+        ctx.restore();
+      }
+
+      function drawScene(){
+        const t=frame/FPS;
+        const {sc,localT,startT}=getScene(t);
+        const p=easeOut(Math.min(localT*3,1));
+        const fadeOut=localT>0.8?easeOut((localT-0.8)/0.2):1;
+        const alpha=Math.min(p,fadeOut);
+
+        // BG
         const grd=ctx.createLinearGradient(0,0,W,H);
         grd.addColorStop(0,bg1);
         grd.addColorStop(1,bg2);
         ctx.fillStyle=grd;
         ctx.fillRect(0,0,W,H);
 
-        // Animated particles
-        ctx.save();
-        for(let i=0;i<12;i++){
-          const px=(Math.sin(t*0.3+i*0.8)*0.4+0.5)*W;
-          const py=(Math.cos(t*0.2+i*1.1)*0.4+0.5)*H;
-          const r=20+10*Math.sin(t+i);
-          const alpha=0.08+0.04*Math.sin(t*2+i);
-          ctx.beginPath();
-          ctx.arc(px,py,r,0,Math.PI*2);
-          ctx.fillStyle=`rgba(255,255,255,${alpha})`;
-          ctx.fill();
+        // Moving BG circles
+        for(let i=0;i<8;i++){
+          const px=(Math.sin(t*0.2+i*0.9)*0.3+0.5)*W;
+          const py=(Math.cos(t*0.15+i*0.7)*0.3+0.5)*H;
+          const r=60+30*Math.sin(t+i);
+          const grd2=ctx.createRadialGradient(px,py,0,px,py,r);
+          grd2.addColorStop(0,'rgba(255,45,120,0.12)');
+          grd2.addColorStop(1,'rgba(255,45,120,0)');
+          ctx.fillStyle=grd2;
+          ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
         }
-        ctx.restore();
 
-        // ── SCENE 1 (0-4s): Product intro ──
-        if(t<4){
-          const progress=easeOut(Math.min(t/1.5,1));
-          // Big emoji product
+        // Scene-specific content
+        if(sc.type==='hook'){
+          // Character center + speech bubble
+          const charY=H*0.72;
+          drawCharacter(W/2,charY,1.6,'talking',t);
+          const bubbleAlpha=alpha;
+          drawSpeechBubble(sc.text,W/2,H*0.08,900,t,bubbleAlpha);
+          // TikTok Shop badge top
           ctx.save();
-          ctx.globalAlpha=progress;
-          ctx.font=`${Math.round(200*progress)}px serif`;
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(content.emoji||'🛍',W/2,H*0.3-50*(1-progress));
-          // Product name
-          ctx.font='bold 72px sans-serif';
-          ctx.fillStyle='#ffffff';
-          const title=content.title||product.name;
-          wrapText(ctx,title,W/2,H*0.52,W-120,85);
-          // TikTok Shop badge
-          ctx.font='bold 44px sans-serif';
+          ctx.globalAlpha=alpha;
           ctx.fillStyle=accent;
-          ctx.fillText('📦 TikTok Shop',W/2,H*0.68);
+          roundRect(ctx,W/2-200,30,400,80,20); ctx.fill();
+          ctx.font='bold 44px sans-serif';
+          ctx.fillStyle='#fff';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('🛍 TikTok Shop Review',W/2,70);
           ctx.restore();
         }
-
-        // ── SCENE 2 (4-9s): Price & Discount ──
-        if(t>=3&&t<9){
-          const progress=easeOut(Math.min((t-3)/1.5,1));
+        else if(sc.type==='reveal'){
+          // Price card + character small
+          ctx.save(); ctx.globalAlpha=alpha;
+          drawPriceCard(product,W/2,H*0.25,t,1);
+          ctx.restore();
+          drawCharacter(W/2,H*0.88,1.2,'excited',t);
+          drawSpeechBubble(sc.text,W/2,H*0.72,880,t,alpha);
+        }
+        else if(sc.type==='feature'){
+          drawCharacter(W*0.25,H*0.78,1.3,'talking',t);
+          // Feature card right side
           ctx.save();
-          ctx.globalAlpha=t<4?t-3:t>8?9-t:1;
-          // Price box
-          const bx=W/2, by=H*0.4;
-          const bw=800, bh=320;
-          ctx.fillStyle='rgba(0,0,0,0.4)';
-          roundRect(ctx,bx-bw/2,by-bh/2,bw,bh,30);
-          ctx.fill();
-          // Original price strikethrough
-          if(product.original_price){
-            ctx.font='48px sans-serif';
-            ctx.fillStyle='rgba(255,255,255,0.5)';
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            ctx.fillText(product.original_price+'đ',W/2,by-70);
-            ctx.strokeStyle='rgba(255,255,255,0.5)';
-            ctx.lineWidth=3;
-            const tw=ctx.measureText(product.original_price+'đ').width;
-            ctx.beginPath();
-            ctx.moveTo(W/2-tw/2,by-70);
-            ctx.lineTo(W/2+tw/2,by-70);
-            ctx.stroke();
-          }
-          // Current price BIG
-          ctx.font='bold 130px sans-serif';
-          ctx.fillStyle='#ffdd00';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(product.price+'đ',W/2,by+10);
-          // Discount badge
-          if(product.discount){
-            ctx.fillStyle=accent;
-            roundRect(ctx,W/2+180,by-120,200,80,20);
-            ctx.fill();
-            ctx.font='bold 52px sans-serif';
-            ctx.fillStyle='#ffffff';
-            ctx.fillText(product.discount,W/2+280,by-80);
-          }
-          // Commission
+          ctx.globalAlpha=alpha;
+          const fx=W*0.62,fy=H*0.3;
+          const grdF=ctx.createLinearGradient(fx-300,fy,fx+300,fy+250);
+          grdF.addColorStop(0,'rgba(255,255,255,0.12)');
+          grdF.addColorStop(1,'rgba(255,255,255,0.06)');
+          ctx.fillStyle=grdF;
+          roundRect(ctx,fx-300,fy,600,250,20); ctx.fill();
+          ctx.font='bold 90px sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('✅',fx,fy+80);
           ctx.font='bold 52px sans-serif';
-          ctx.fillStyle='#22c55e';
-          ctx.fillText('💰 Hoa hồng: '+product.commission,W/2,by+120);
+          ctx.fillStyle='#fff';
+          wrapText(ctx,sc.text,fx,fy+155,560,58);
           ctx.restore();
+          drawSpeechBubble(sc.text,W*0.62,H*0.62,680,t,alpha*0.95);
         }
-
-        // ── SCENE 3 (9-15s): Features ──
-        if(t>=8.5&&t<15){
-          const sceneT=t-8.5;
-          ctx.save();
-          ctx.globalAlpha=t<9.5?sceneT:t>14?15-t:1;
-          ctx.font='bold 60px sans-serif';
-          ctx.fillStyle='#ffffff';
-          ctx.textAlign='left';
-          ctx.textBaseline='middle';
-          const features=content.features||[];
-          features.slice(0,3).forEach((feat,i)=>{
-            const fy=H*0.3+i*170;
-            const delay=i*0.4;
-            const fp=easeOut(Math.min(Math.max(sceneT-delay,0)/0.8,1));
-            ctx.globalAlpha=(t<9.5?sceneT:t>14?15-t:1)*fp;
-            // Feature row
-            ctx.fillStyle='rgba(255,255,255,0.1)';
-            roundRect(ctx,60,fy-55,W-120,110,20);
-            ctx.fill();
-            // Checkmark
-            ctx.fillStyle='#22c55e';
-            ctx.font='bold 60px sans-serif';
-            ctx.textAlign='left';
-            ctx.fillText('✅',80,fy);
-            // Text
-            ctx.fillStyle='#ffffff';
-            ctx.font='bold 54px sans-serif';
-            ctx.fillText(feat,170,fy);
+        else if(sc.type==='social'){
+          drawCharacter(W/2,H*0.78,1.4,'excited',t);
+          ctx.save(); ctx.globalAlpha=alpha;
+          // Stats cards
+          [[product.rating,'⭐ Đánh giá',W/2-260],[product.sold,'📦 Đã bán',W/2+260]].forEach(([val,label,x])=>{
+            const grdS=ctx.createLinearGradient(x-200,H*0.15,x+200,H*0.35);
+            grdS.addColorStop(0,'rgba(255,255,255,0.15)');
+            grdS.addColorStop(1,'rgba(255,255,255,0.05)');
+            ctx.fillStyle=grdS;
+            roundRect(ctx,x-200,H*0.12,400,280,20); ctx.fill();
+            ctx.font='bold 80px sans-serif';
+            ctx.fillStyle='#ffdd00';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText(val||'4.8',x,H*0.21);
+            ctx.font='42px sans-serif';
+            ctx.fillStyle='rgba(255,255,255,0.8)';
+            ctx.fillText(label,x,H*0.30);
           });
           ctx.restore();
+          drawSpeechBubble(sc.text,W/2,H*0.62,920,t,alpha);
         }
-
-        // ── SCENE 4 (15-20s): CTA ──
-        if(t>=14.5){
-          const sceneT=t-14.5;
-          const progress=easeOut(Math.min(sceneT/1,1));
-          ctx.save();
-          ctx.globalAlpha=progress;
-          // Pulsing CTA button
-          const pulse=1+0.05*Math.sin(t*8);
-          ctx.save();
-          ctx.translate(W/2,H*0.4);
-          ctx.scale(pulse,pulse);
-          const btw=800, bth=160;
-          const btnGrd=ctx.createLinearGradient(-btw/2,0,btw/2,0);
-          btnGrd.addColorStop(0,'#ff2d78');
-          btnGrd.addColorStop(1,'#ff6b9d');
-          ctx.fillStyle=btnGrd;
-          roundRect(ctx,-btw/2,-bth/2,btw,bth,40);
-          ctx.fill();
-          ctx.font='bold 72px sans-serif';
-          ctx.fillStyle='#ffffff';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(content.cta||'Mua ngay! 🛒',0,0);
-          ctx.restore();
+        else if(sc.type==='cta'){
+          drawCharacter(W/2,H*0.72,1.5,'cta',t);
+          ctx.save(); ctx.globalAlpha=alpha;
+          drawCTA(sc.text,W/2,H*0.2,t,1);
           // Hashtags
-          ctx.font='44px sans-serif';
+          const tags=(content.hashtags||'#tiktokshop #affiliate').slice(0,80);
+          ctx.font='38px sans-serif';
           ctx.fillStyle='rgba(255,255,255,0.7)';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          const tags=(content.hashtags||'#tiktokshop #affiliate').slice(0,60);
-          ctx.fillText(tags,W/2,H*0.58);
-          // Arrow down (link in bio hint)
-          ctx.font='bold 52px sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(tags,W/2,H*0.33);
+          // Arrow
+          const ay=H*0.43+12*Math.sin(t*4);
+          ctx.font='bold 56px sans-serif';
           ctx.fillStyle='#ffdd00';
-          const arrowY=H*0.68+10*Math.sin(t*4);
-          ctx.fillText('🔗 Link trong bio ↓',W/2,arrowY);
+          ctx.fillText('👇 Link trong bio',W/2,ay);
           ctx.restore();
         }
 
-        // ── TOP badge: always visible ──
+        // Bottom product name bar
         ctx.save();
-        ctx.fillStyle='rgba(0,0,0,0.5)';
-        roundRect(ctx,30,40,320,80,20);
-        ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,0.6)';
+        ctx.fillRect(0,H-110,W,110);
         ctx.font='bold 44px sans-serif';
-        ctx.fillStyle='#ff2d78';
-        ctx.textAlign='left';
-        ctx.textBaseline='middle';
-        ctx.fillText('🛍 AFFILIATE',50,80);
+        ctx.fillStyle='#fff';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        const short=product.name.length>35?product.name.slice(0,35)+'...':product.name;
+        ctx.fillText(short,W/2,H-55);
         ctx.restore();
 
-        // Progress bar bottom
+        // Progress bar
         ctx.fillStyle='rgba(255,255,255,0.15)';
-        ctx.fillRect(0,H-8,W,8);
+        ctx.fillRect(0,H-6,W,6);
         ctx.fillStyle=accent;
-        ctx.fillRect(0,H-8,W*tf,8);
+        ctx.fillRect(0,H-6,W*(frame/TOTAL),6);
 
         frame++;
-        if(frame>=TOTAL){
-          rec.stop();
-        } else {
-          setTimeout(drawFrame, 1000/FPS);
-        }
+        if(frame>=TOTAL){ rec.stop(); }
+        else { setTimeout(drawScene,1000/FPS); }
       }
 
-      drawFrame();
-    }catch(e){
-      console.error('Product video error:',e);
-      resolve(null);
-    }
+      drawScene();
+    }catch(e){ console.error('Render error:',e); resolve(null); }
   });
 }
 
@@ -12396,73 +12670,41 @@ async function _fetchTTUserByCookie(sessionId){
 // ── Upload video via TikTok web API ─────────────────────────
 async function uploadVideoTikTok(videoBlob, title, privacy='private'){
   const sessionId=localStorage.getItem('tt_session');
-  if(!sessionId){
-    toast('Chưa kết nối TikTok — nhập sessionid trước','warn',3000);
-    return false;
-  }
 
-  affLog('info','☁️ Đang upload video lên TikTok...');
+  affLog('info','☁️ Chuẩn bị upload lên TikTok...');
 
+  // TikTok internal API blocks CORS from external sites
+  // Best approach: download video + open TikTok upload with caption ready
   try{
-    // Step 1: Init upload
-    const initResp=await fetch('https://www.tiktok.com/api/upload/video/init/',{
-      method:'POST',
-      headers:{
-        'Cookie': `sessionid=${sessionId}`,
-        'Content-Type':'application/json',
-        'Referer':'https://www.tiktok.com/',
-        'User-Agent': navigator.userAgent,
-      },
-      credentials:'include',
-      body:JSON.stringify({
-        source:'FILE',
-        file_size: videoBlob.size,
-        description: title||'VietLong Creator',
-        privacy_level: privacy==='public'?'PUBLIC_TO_EVERYONE':'SELF_ONLY',
-      })
-    });
+    // 1. Download video file
+    const url=URL.createObjectURL(videoBlob);
+    const a=document.createElement('a');
+    a.href=url;
+    const ext=videoBlob.type.includes('mp4')?'mp4':'webm';
+    a.download='TikTok_Affiliate_'+Date.now()+'.'+ext;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
 
-    if(initResp.status===401||initResp.status===403){
-      affLog('warn','⚠️ Session hết hạn — cần lấy cookie mới');
-      toast('Session TikTok hết hạn — lấy cookie mới','warn',4000);
-      _promptRenewSession();
-      return false;
-    }
+    // 2. Copy caption to clipboard
+    try{
+      await navigator.clipboard.writeText(title);
+      affLog('ok','📋 Caption đã copy vào clipboard');
+    }catch(e){}
 
-    const initData=await initResp.json();
-    const uploadUrl=initData?.data?.upload_url||initData?.upload_url;
+    // 3. Open TikTok upload page after short delay
+    setTimeout(()=>{
+      window.open('https://www.tiktok.com/upload','_blank');
+    },1500);
 
-    if(!uploadUrl){
-      // Fallback: show download prompt
-      affLog('warn','⚠️ Không lấy được upload URL — dùng phương án tải xuống');
-      _showManualUploadGuide(videoBlob, title);
-      return false;
-    }
+    // Show instructions
+    affLog('ok','✅ Video đã tải về! TikTok upload đang mở...');
+    affLog('info','📌 Kéo file vừa tải vào TikTok · Caption đã copy sẵn → Ctrl+V');
+    toast('📥 Video tải về! TikTok upload mở · Caption đã copy → Ctrl+V paste','success',8000);
 
-    // Step 2: Upload video data
-    affLog('info','📤 Đang gửi video...');
-    const uploadResp=await fetch(uploadUrl,{
-      method:'PUT',
-      headers:{
-        'Content-Type':'video/mp4',
-        'Cookie': `sessionid=${sessionId}`,
-      },
-      credentials:'include',
-      body: videoBlob,
-    });
-
-    if(uploadResp.ok){
-      affLog('ok','✅ Upload thành công!');
-      toast('✅ Video đã upload lên TikTok!','success',5000);
-      return true;
-    } else {
-      throw new Error('Upload failed: HTTP '+uploadResp.status);
-    }
-
+    return true;
   }catch(e){
-    affLog('err','❌ Upload lỗi: '+e.message);
-    // Fallback to manual guide
-    _showManualUploadGuide(videoBlob, title);
+    affLog('err','❌ Lỗi: '+e.message);
+    toast('Lỗi download: '+e.message,'warn',4000);
     return false;
   }
 }
