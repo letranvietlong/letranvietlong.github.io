@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.0 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.1 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3243,7 +3243,7 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v9.0';
+const APP_VERSION = 'v9.1';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -3734,7 +3734,7 @@ async function generateHashtags(platform){
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content:
         'Generate hashtags for Vietnamese music video. Song: "'+title+'" by "'+artist+'". Return ONLY JSON no markdown: {"youtube":["#tag1"...]30tags,"tiktok":["#tag1"...]20tags,"instagram":["#tag1"...]25tags,"description_vi":"mô tả","description_en":"description"}'
       }]})
     });
@@ -3993,7 +3993,7 @@ async function optimizeTitles(){
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:
         'Create 5 YouTube title variations for Vietnamese music video "'+title+'" by "'+artist+'". Return ONLY JSON: {"titles":[{"style":"...","title":"...","reason":"..."}]}'
       }]})
     });
@@ -11322,7 +11322,7 @@ async function searchAffProducts(){
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
     const d=await r.json();
     const txt=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
@@ -11448,7 +11448,7 @@ async function analyzeProductById(idx){
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:600,
         messages:[{role:'user',content:`Phân tích sản phẩm affiliate TikTok sau và đưa ra script video ngắn:
 Sản phẩm: ${p.name}
@@ -11476,7 +11476,7 @@ async function analyzeProductCore(url,idx){
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:700,
         messages:[{role:'user',content:`Phân tích URL sản phẩm affiliate sau để tạo video TikTok:
 URL: ${url}
@@ -11535,7 +11535,7 @@ async function createAffVideo(productIdx){
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:prompt}]})
     });
     const d=await r.json();
     const info=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
@@ -12297,7 +12297,7 @@ async function genAffHashtags(){
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:200,
         messages:[{role:'user',content:`Tạo 10 hashtag TikTok viral cho affiliate marketing sản phẩm danh mục: ${cat}. Trả về 1 dòng, các hashtag cách nhau bởi dấu cách.`}]
       })
