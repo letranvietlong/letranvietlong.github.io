@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.5 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.6 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3020,336 +3020,215 @@ body:has(#panel-affiliate.show) main {
 
 <div id="panel-affiliate">
 
-  <!-- Header -->
-  <div class="aff-header">
-    <div class="aff-header-left">
-      <div>
-        <div class="aff-title">🛍 Affiliate TikTok <span>AI</span></div>
-        <div class="aff-warn" id="aff-warn" style="font-size:.64rem;color:#fbbf24;margin-top:2px">
-          ⚠ Cần TikTok API để upload tự động ·
-          <span onclick="scrollToAffGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
-        </div>
-      </div>
-    </div>
-    <div class="aff-header-actions">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-        <span style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">TRẠNG THÁI</span>
-        <span id="aff-status-badge" style="font-size:.62rem;color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">● STANDBY</span>
-      </div>
-      <button class="aff-run-btn" id="aff-run-btn" onclick="runAffiliateNow()">▶ CHẠY NGAY</button>
-    </div>
-  </div>
-
-  <!-- Stats Bar -->
   <div class="aff-stats-bar">
-    <div class="aff-stat-item">
-      <div class="aff-stat-icon">🔍</div>
-      <div><div class="aff-stat-val" id="aff-stat-found">0</div><div class="aff-stat-lbl">Sản phẩm tìm được</div></div>
+    <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-found">0</div><div class="aff-stat-lbl">Sản phẩm</div></div></div>
+    <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-videos">0</div><div class="aff-stat-lbl">Video đã tạo</div></div></div>
+    <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-uploaded">0</div><div class="aff-stat-lbl">Đã upload</div></div></div>
+    <div class="aff-stat-item" style="margin-left:auto;flex-direction:column;align-items:flex-end;justify-content:center;padding-right:20px">
+      <div id="aff-status-badge" style="font-size:.58rem;font-family:'IBM Plex Mono',monospace;color:var(--tx3)">⏸ STANDBY</div>
+      <div id="aff-session-chip" style="font-size:.56rem;color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 6px;margin-top:2px">⚠ Chưa kết nối TikTok</div>
     </div>
-    <div class="aff-stat-item">
-      <div class="aff-stat-icon">🎬</div>
-      <div><div class="aff-stat-val" id="aff-stat-videos">0</div><div class="aff-stat-lbl">Video đã tạo</div></div>
-    </div>
-    <div class="aff-stat-item">
-      <div class="aff-stat-icon">☁️</div>
-      <div><div class="aff-stat-val" id="aff-stat-uploaded">0</div><div class="aff-stat-lbl">Đã upload TikTok</div></div>
-    </div>
-    <div class="aff-stat-item">
-      <div class="aff-stat-icon">💰</div>
-      <div><div class="aff-stat-val" id="aff-stat-clicks">0</div><div class="aff-stat-lbl">Click affiliate</div></div>
-    </div>
-    <div class="aff-stat-item" style="flex:2;background:linear-gradient(90deg,rgba(255,45,120,.04),transparent)">
-      <div style="font-size:.62rem;color:var(--tx3);line-height:1.6">
-        <span style="color:#ff2d78;font-weight:700;font-family:'IBM Plex Mono',monospace">AFFILIATE MODE</span>
-        · Tìm sản phẩm hot → tạo video AI review → upload TikTok tự động
-      </div>
+    <div style="display:flex;align-items:center;padding:0 20px">
+      <button id="aff-run-btn" onclick="runAffiliateNow()" class="aff-run-btn">▶ Chạy ngay</button>
     </div>
   </div>
 
-  <!-- Workspace 3 cols -->
   <div class="aff-workspace">
 
-    <!-- COL 1: Cấu hình -->
+    <!-- COL 1 -->
     <div class="aff-col">
       <div class="aff-col-header"><div class="aff-col-dot"></div>⚙ CẤU HÌNH</div>
 
-      <!-- TikTok Connect -->
       <div class="aff-card">
         <div class="aff-card-title">📱 KẾT NỐI TIKTOK</div>
-        <div id="aff-tt-user-info" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.25);border-radius:10px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <img id="aff-tt-avatar" src="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #ff2d78;flex-shrink:0" onerror="this.style.display='none'">
+        <div id="aff-tt-user-info" style="display:none;margin-bottom:10px;padding:9px;background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.2);border-radius:9px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <img id="aff-tt-avatar" src="" style="width:30px;height:30px;border-radius:50%;border:2px solid #ff2d78;flex-shrink:0" onerror="this.style.display='none'">
             <div style="flex:1;min-width:0">
-              <div id="aff-tt-display-name" style="font-size:.75rem;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-              <div id="aff-tt-followers" style="font-size:.6rem;color:var(--tx3);margin-top:1px"></div>
+              <div id="aff-tt-display-name" style="font-size:.7rem;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+              <div id="aff-tt-followers" style="font-size:.57rem;color:var(--tx3)"></div>
             </div>
-            <button onclick="logoutTikTok()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.58rem;cursor:pointer;flex-shrink:0">Xoá</button>
+            <button onclick="logoutTikTok()" style="padding:3px 7px;border-radius:5px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.56rem;cursor:pointer">Xoá</button>
           </div>
         </div>
         <div id="aff-tt-login-area">
-          <div style="background:rgba(255,45,120,.04);border:1px solid rgba(255,45,120,.12);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.63rem;color:var(--tx3);line-height:1.8">
-            <div style="font-size:.58rem;font-weight:800;color:#ff2d78;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace">Cách lấy sessionid cookie</div>
-            <b>1.</b> Mở <b>tiktok.com</b> → đăng nhập tài khoản của bạn<br>
-            <b>2.</b> Nhấn <kbd style="background:var(--surface2);border:1px solid var(--line);border-radius:3px;padding:0 4px">F12</kbd> → <b>Application</b> → <b>Cookies</b> → tiktok.com<br>
-            <b>3.</b> Tìm dòng <b style="color:#ff2d78;font-family:'IBM Plex Mono',monospace">sessionid</b> → copy cột <b>Value</b>
+          <div style="background:rgba(255,45,120,.04);border:1px solid rgba(255,45,120,.1);border-radius:7px;padding:8px;margin-bottom:8px;font-size:.6rem;color:var(--tx3);line-height:1.7">
+            <b style="color:#ff2d78;display:block;margin-bottom:3px;font-size:.56rem;letter-spacing:.05em;text-transform:uppercase">Cách lấy sessionid</b>
+            <b>1.</b> Mở <b>tiktok.com</b> → đăng nhập<br>
+            <b>2.</b> F12 → Application → Cookies → tiktok.com<br>
+            <b>3.</b> Dòng <b style="color:#ff2d78;font-family:'IBM Plex Mono',monospace">sessionid</b> → copy Value
           </div>
           <div class="aff-fg">
             <label>sessionid</label>
-            <input type="password" id="aff-tt-session" placeholder="xxxxxxxxxxxxxxxxxxxx..." oninput="onSessionInput()" style="font-family:'IBM Plex Mono',monospace;font-size:.63rem">
+            <input type="password" id="aff-tt-session" placeholder="xxxx..." oninput="onSessionInput()" style="font-family:'IBM Plex Mono',monospace;font-size:.6rem">
           </div>
-          <button onclick="connectWithSession()" id="aff-verify-btn" style="width:100%;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.73rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;opacity:.4;transition:all .2s;pointer-events:none">
+          <button onclick="connectWithSession()" id="aff-verify-btn" style="width:100%;padding:8px;border-radius:8px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.7rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;opacity:.4;transition:all .2s;pointer-events:none">
             <span>🔗</span><span id="aff-verify-text">Kết nối TikTok</span>
           </button>
-          <div id="aff-token-status" style="font-size:.6rem;text-align:center;margin-top:6px;color:var(--tx3);min-height:16px"></div>
+          <div id="aff-token-status" style="font-size:.56rem;text-align:center;margin-top:4px;color:var(--tx3);min-height:14px"></div>
         </div>
         <input type="hidden" id="aff-tt-token">
         <input type="hidden" id="aff-tt-openid">
         <input type="hidden" id="aff-client-key">
       </div>
+
       <div class="aff-card">
-        <div class="aff-card-title">🛒 NGUỒN SẢN PHẨM</div>
-        <div class="aff-fg">
-          <label>Nền tảng Affiliate</label>
-          <select id="aff-platform" onchange="onAffPlatformChange();saveAffSettings()">
-            <option value="tiktok-shop">TikTok Shop Affiliate</option>
-            <option value="shopee">Shopee Affiliate</option>
-            <option value="lazada">Lazada Affiliate</option>
-            <option value="manual">Nhập URL thủ công</option>
-          </select>
-        </div>
-        <div class="aff-fg" id="aff-api-key-row">
-          <label>Affiliate API Key</label>
-          <input type="password" id="aff-api-key" placeholder="API key từ nền tảng" oninput="saveAffSettings()">
-        </div>
-        <div class="aff-fg">
-          <label>Danh mục sản phẩm</label>
+        <div class="aff-card-title">🛒 TIKTOK SHOP</div>
+        <div class="aff-fg"><label>Danh mục</label>
           <select id="aff-category" onchange="saveAffSettings()">
-            <option value="trending">🔥 Trending (Hot nhất)</option>
-            <option value="beauty">💄 Beauty & Skincare</option>
-            <option value="fashion">👗 Fashion & Clothing</option>
-            <option value="tech">📱 Tech & Gadgets</option>
-            <option value="food">🍜 Food & Beverage</option>
-            <option value="home">🏠 Home & Living</option>
-            <option value="fitness">💪 Fitness & Health</option>
-            <option value="custom">🔑 Từ khóa tùy chỉnh</option>
+            <option value="trending">🔥 Trending</option>
+            <option value="beauty">💄 Beauty</option>
+            <option value="fashion">👗 Thời trang</option>
+            <option value="food">🍜 Thực phẩm</option>
+            <option value="tech">📱 Công nghệ</option>
+            <option value="home">🏠 Gia dụng</option>
+            <option value="health">💊 Sức khoẻ</option>
           </select>
         </div>
-        <div class="aff-fg" id="aff-kw-row" style="display:none">
-          <label>Từ khóa tìm kiếm</label>
-          <input type="text" id="aff-keywords" placeholder="kem chống nắng, son môi, ..." oninput="saveAffSettings()">
+        <div class="aff-fg"><label>Từ khoá</label>
+          <input type="text" id="aff-keywords" placeholder="VD: kem chống nắng..." oninput="saveAffSettings()">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="aff-fg">
-            <label>Số SP / lần chạy</label>
-            <select id="aff-count" onchange="saveAffSettings()">
-              <option value="1">1 sản phẩm</option>
-              <option value="2" selected>2 sản phẩm</option>
-              <option value="3">3 sản phẩm</option>
-              <option value="5">5 sản phẩm</option>
-            </select>
-          </div>
-          <div class="aff-fg">
-            <label>Lọc theo</label>
-            <select id="aff-filter" onchange="saveAffSettings()">
-              <option value="commission">Hoa hồng cao</option>
-              <option value="sales">Bán chạy nhất</option>
-              <option value="rating">Đánh giá cao</option>
-              <option value="new">Mới nhất</option>
-            </select>
-          </div>
+        <div class="aff-fg"><label>Số sản phẩm</label>
+          <select id="aff-count" onchange="saveAffSettings()">
+            <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option>
+          </select>
         </div>
-        <div class="aff-fg" id="aff-manual-row" style="display:none">
-          <label>URL sản phẩm (mỗi dòng 1 link)</label>
-          <textarea id="aff-manual-urls" rows="3" placeholder="https://shopee.vn/product/..." oninput="saveAffSettings()" style="resize:vertical"></textarea>
+        <div class="aff-fg"><label>Sắp xếp</label>
+          <select id="aff-filter" onchange="saveAffSettings()">
+            <option value="commission">💰 Hoa hồng cao</option>
+            <option value="sales">📈 Bán chạy</option>
+            <option value="rating">⭐ Đánh giá cao</option>
+          </select>
         </div>
       </div>
 
-      <!-- Cài đặt video -->
       <div class="aff-card">
-        <div class="aff-card-title">🎬 CÀI ĐẶT VIDEO</div>
-        <div class="aff-fg">
-          <label>Phong cách video</label>
-          <select id="aff-video-style" onchange="saveAffSettings()">
-            <option value="review">📋 Review sản phẩm (giới thiệu chi tiết)</option>
-            <option value="unboxing">📦 Unboxing (mở hộp kịch tính)</option>
-            <option value="before-after">✨ Before/After (trước & sau)</option>
-            <option value="top3">🏆 Top 3 sản phẩm (so sánh)</option>
-            <option value="voiceover">🎙 Voiceover quảng cáo</option>
+        <div class="aff-card-title">🎬 VIDEO</div>
+        <div class="aff-fg"><label>Chế độ đăng</label>
+          <select id="aff-privacy" onchange="saveAffSettings()">
+            <option value="private">🔒 Private</option>
+            <option value="public">🌐 Public</option>
           </select>
         </div>
-        <div class="aff-fg">
-          <label>Thời lượng video</label>
-          <select id="aff-duration" onchange="saveAffSettings()">
-            <option value="15">15 giây (TikTok ads)</option>
-            <option value="30" selected>30 giây (Khuyên dùng)</option>
-            <option value="60">60 giây (Review đầy đủ)</option>
+        <div class="aff-fg"><label>Ngôn ngữ</label>
+          <select id="aff-lang" onchange="saveAffSettings()">
+            <option value="vi">🇻🇳 Tiếng Việt</option>
+            <option value="en">🇬🇧 English</option>
           </select>
-        </div>
-        <div class="aff-fg">
-          <label>Template nền</label>
-          <select id="aff-template" onchange="saveAffSettings()">
-            <option value="ai">🤖 AI tự chọn phù hợp SP</option>
-            <option value="mc-bubble">Bubble Gum (K-pop, trẻ trung)</option>
-            <option value="mc-neon-city">Neon City (Tech, fashion)</option>
-            <option value="mc-golden-hour">Golden Hour (Beauty, food)</option>
-            <option value="mc-prism">Prism Crystal (Luxury, skincare)</option>
-            <option value="mc-fire">Lửa Rực (Flash sale, EDM)</option>
-          </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="aff-fg">
-            <label>Ngôn ngữ caption</label>
-            <select id="aff-lang" onchange="saveAffSettings()">
-              <option value="vi">🇻🇳 Tiếng Việt</option>
-              <option value="en">🇺🇸 English</option>
-            </select>
-          </div>
-          <div class="aff-fg">
-            <label>Upload mode</label>
-            <select id="aff-privacy" onchange="saveAffSettings()">
-              <option value="private">🔒 Private (kiểm tra trước)</option>
-              <option value="public">🌍 Public</option>
-            </select>
-          </div>
         </div>
       </div>
 
-      <!-- Caption template -->
       <div class="aff-card">
-        <div class="aff-card-title">📝 CAPTION & HASHTAG</div>
-        <div class="aff-fg">
-          <label>Template caption</label>
-          <textarea id="aff-caption-tpl" rows="3" oninput="saveAffSettings()" style="resize:vertical">{emoji} {product_name} - Chỉ {price}đ!
+        <div class="aff-card-title">📝 CAPTION</div>
+        <div class="aff-fg"><label>Mẫu</label>
+          <textarea id="aff-caption-tpl" rows="4" oninput="saveAffSettings()" style="resize:vertical;font-size:.63rem;line-height:1.5">{emoji} {product_name} - Chỉ {price}đ!
 ✅ {feature1}
 ✅ {feature2}
 🔗 Link mua trong bio!
 {hashtags}</textarea>
-          <div class="aff-hint">{product_name} · {price} · {discount} · {feature1-3} · {hashtags} · {emoji}</div>
         </div>
-        <div class="aff-fg">
-          <label>Hashtag cố định</label>
+        <div class="aff-fg"><label>Hashtag</label>
           <input type="text" id="aff-hashtags" value="#affiliate #tiktokshop #muasắm #review" oninput="saveAffSettings()">
         </div>
-        <button onclick="genAffHashtags()" style="width:100%;padding:7px;border-radius:7px;border:1px solid rgba(0,229,195,.35);background:rgba(0,229,195,.08);color:var(--a2);font-size:.66rem;font-weight:700;cursor:pointer">✨ Tạo Hashtag AI theo sản phẩm</button>
+        <button onclick="genAffHashtags()" style="width:100%;padding:6px;border-radius:7px;border:1px solid rgba(0,229,195,.3);background:rgba(0,229,195,.08);color:var(--a2);font-size:.64rem;font-weight:700;cursor:pointer">✨ AI tạo Hashtag</button>
       </div>
-    </div>
 
-    <!-- COL 2: Sản phẩm + Queue -->
-    <div class="aff-col">
-      <div class="aff-col-header"><div class="aff-col-dot" style="background:#ff2d78;box-shadow:0 0 6px #ff2d78"></div>🛍 SẢN PHẨM & HÀNG ĐỢI</div>
-
-      <!-- Product search -->
       <div class="aff-card">
-        <div class="aff-card-actions">
-          <span class="aff-card-title" style="margin-bottom:0">🔍 TÌM SẢN PHẨM AFFILIATE</span>
-          <button onclick="searchAffProducts()" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(255,45,120,.4);background:rgba(255,45,120,.08);color:#ff2d78;font-size:.62rem;font-weight:700;cursor:pointer">🔍 Tìm ngay</button>
-        </div>
-        <div id="aff-product-list" style="min-height:120px">
-          <div class="aff-empty-state">
-            <div style="font-size:1.8rem;opacity:.3">🛍</div>
-            <div style="font-size:.7rem;font-weight:600">Chưa có sản phẩm</div>
-            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>Tìm ngay</strong> hoặc <strong>Chạy ngay</strong></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video queue -->
-      <div class="aff-card" style="flex:1">
-        <div class="aff-card-actions">
-          <span class="aff-card-title" style="margin-bottom:0">📋 HÀNG ĐỢI VIDEO</span>
-          <button onclick="clearAffQueue()" style="padding:3px 10px;border-radius:5px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.6rem;cursor:pointer">🗑 Dọn sạch</button>
-        </div>
-        <div id="aff-queue">
-          <div class="aff-empty-state">
-            <div style="font-size:1.8rem;opacity:.3">📭</div>
-            <div style="font-size:.7rem;font-weight:600">Chưa có video</div>
-            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>CHẠY NGAY</strong> để bắt đầu</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- AI Log -->
-      <div class="aff-card">
-        <div class="aff-card-title">🤖 AI ACTIVITY LOG</div>
-        <div id="aff-log" style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;line-height:1.7;max-height:180px;overflow-y:auto;color:var(--tx3)">
-          <div style="color:var(--a2)">● System ready. Chờ lệnh...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COL 3: Lịch + Tools -->
-    <div class="aff-col" style="border-right:none">
-      <div class="aff-col-header"><div class="aff-col-dot" style="background:#fbbf24;box-shadow:0 0 6px #fbbf24"></div>🚀 LỊCH & CÔNG CỤ</div>
-
-      <!-- Schedule -->
-      <div class="aff-card">
-        <div class="aff-card-title">🕐 LỊCH ĐĂNG TỰ ĐỘNG</div>
-        <div id="aff-time-slots" style="margin-bottom:8px;max-height:160px;overflow-y:auto"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:.58rem;color:var(--tx3)">Thêm giờ chạy:</span>
-          <button onclick="suggestAffSchedule()" style="padding:2px 8px;border-radius:4px;border:1px solid rgba(0,229,195,.3);background:transparent;color:var(--a2);font-size:.58rem;cursor:pointer">💡 Gợi ý</button>
-        </div>
-        <div style="display:flex;gap:6px">
-          <select id="aff-slot-day" style="flex:1;padding:4px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--ink);color:var(--tx);font-size:.62rem">
-            <option value="mon">Thứ 2</option><option value="tue">Thứ 3</option>
-            <option value="wed">Thứ 4</option><option value="thu">Thứ 5</option>
-            <option value="fri">Thứ 6</option><option value="sat">Thứ 7</option>
-            <option value="sun">Chủ Nhật</option><option value="daily">Hàng ngày</option>
+        <div class="aff-card-title">🕐 LỊCH TỰ ĐỘNG</div>
+        <div style="display:flex;gap:5px;margin-bottom:7px">
+          <select id="aff-slot-day" style="flex:1;font-size:.63rem">
+            <option value="Daily">Hàng ngày</option>
+            <option value="Mon">T2</option><option value="Tue">T3</option>
+            <option value="Wed">T4</option><option value="Thu">T5</option>
+            <option value="Fri">T6</option><option value="Sat">T7</option><option value="Sun">CN</option>
           </select>
-          <input type="time" id="aff-slot-time" value="19:00" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--ink);color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:.72rem">
-          <button onclick="addAffTimeSlot()" style="padding:4px 12px;border-radius:5px;border:none;background:var(--a2);color:#000;font-weight:700;font-size:.65rem;cursor:pointer">+</button>
+          <input type="time" id="aff-slot-time" value="07:00" style="flex:1;font-size:.63rem">
+          <button onclick="addAffTimeSlot()" style="padding:5px 9px;border-radius:6px;border:none;background:var(--a2);color:#080810;font-weight:800;font-size:.72rem;cursor:pointer">+</button>
         </div>
-        <div id="aff-next-run" style="margin-top:8px;font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">Chưa có lịch chạy</div>
+        <div id="aff-time-slots"><div style="font-size:.58rem;color:var(--tx3)">Chưa có lịch</div></div>
+        <div id="aff-next-run" style="font-size:.56rem;color:var(--tx3);margin-top:5px"></div>
       </div>
+    </div>
 
-      <!-- Analytics -->
-      <div class="aff-card">
-        <div class="aff-card-actions">
-          <span class="aff-card-title" style="margin-bottom:0">📊 HIỆU SUẤT AFFILIATE</span>
-          <button onclick="refreshAffAnalytics()" style="padding:3px 10px;border-radius:5px;border:1px solid rgba(0,229,195,.3);background:transparent;color:var(--a2);font-size:.6rem;cursor:pointer">↻ Refresh</button>
-        </div>
-        <div id="aff-analytics">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-            <div style="background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center">
-              <div style="font-size:1.1rem;font-weight:800;color:#fbbf24;font-family:'IBM Plex Mono',monospace" id="aff-total-views">0</div>
-              <div style="font-size:.58rem;color:var(--tx3);margin-top:2px">Tổng lượt xem</div>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center">
-              <div style="font-size:1.1rem;font-weight:800;color:#22c55e;font-family:'IBM Plex Mono',monospace" id="aff-total-revenue">0đ</div>
-              <div style="font-size:.58rem;color:var(--tx3);margin-top:2px">Doanh thu ước tính</div>
-            </div>
-          </div>
-          <div style="color:var(--tx3);font-size:.6rem;text-align:center;padding:8px">Kết nối TikTok để xem analytics</div>
-        </div>
+    <!-- COL 2 -->
+    <div class="aff-col">
+      <div class="aff-col-header">
+        <div class="aff-col-dot"></div>🔍 SẢN PHẨM TIKTOK SHOP
+        <button onclick="searchAffProducts()" style="margin-left:auto;padding:4px 10px;border-radius:6px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.58rem;font-weight:700;cursor:pointer">🔍 Tìm ngay</button>
       </div>
-
-      <!-- AI Product Analyzer -->
-      <div class="aff-card">
-        <div class="aff-card-title">🧠 AI PHÂN TÍCH SẢN PHẨM</div>
-        <div class="aff-fg">
-          <label>Nhập URL sản phẩm để phân tích</label>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="aff-analyze-url" placeholder="https://shopee.vn/..." style="flex:1">
-            <button onclick="analyzeProduct()" style="padding:6px 12px;border-radius:7px;border:none;background:linear-gradient(135deg,var(--a2),#7c6fff);color:#000;font-weight:700;font-size:.65rem;cursor:pointer;white-space:nowrap">🧠 AI</button>
+      <div class="aff-card" style="padding:8px 12px">
+        <div id="aff-product-list">
+          <div class="aff-empty-state">
+            <div style="font-size:2rem">🛍</div>
+            <div style="font-size:.68rem;font-weight:600;color:var(--tx2)">Chưa có sản phẩm</div>
+            <div style="font-size:.6rem">Nhấn <b>Tìm ngay</b> hoặc <b>Chạy ngay</b></div>
           </div>
         </div>
-        <div id="aff-analysis-result" style="display:none;margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--line2);font-size:.64rem;line-height:1.6;color:var(--tx2)"></div>
       </div>
 
-      <!-- TikTok Guide -->
-      <div class="aff-card" id="aff-guide">
-        <div class="aff-card-title">📖 HƯỚNG DẪN TIKTOK API</div>
-        <div style="font-size:.63rem;color:var(--tx3);margin-bottom:10px;line-height:1.6;padding:8px;background:rgba(255,45,120,.06);border-radius:7px;border-left:2px solid rgba(255,45,120,.4)">
-          🎵 Upload TikTok qua Content Posting API chính thức
+      <div class="aff-col-header" style="position:relative;top:auto">
+        <div class="aff-col-dot" style="background:#fbbf24;box-shadow:0 0 6px #fbbf24"></div>
+        📹 HÀNG ĐỢI VIDEO
+        <button onclick="clearAffQueue()" style="margin-left:auto;font-size:.55rem;color:var(--tx3);background:none;border:none;cursor:pointer">Dọn sạch</button>
+      </div>
+      <div class="aff-card" style="padding:8px 12px">
+        <div id="aff-queue">
+          <div class="aff-empty-state" style="padding:10px"><div style="font-size:.6rem;color:var(--tx3)">Chưa có video</div></div>
         </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;font-size:.6rem;color:var(--tx2);line-height:1.8">
-          1. Đăng ký tại <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">developers.tiktok.com</code><br>
-          2. Tạo app → bật <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">Content Posting API</code><br>
-          3. OAuth lấy <code style="color:var(--a2);background:rgba(0,229,195,.08);padding:1px 4px;border-radius:3px">access_token</code><br>
-          4. Dán token vào ô TikTok Access Token<br>
-          5. Nhấn <strong>CHẠY NGAY</strong> để bắt đầu
+      </div>
+
+      <div class="aff-col-header" style="position:relative;top:auto">
+        <div class="aff-col-dot" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></div>🤖 AI LOG
+      </div>
+      <div class="aff-card" style="padding:8px 12px">
+        <div id="aff-log" style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--tx3);max-height:160px;overflow-y:auto;line-height:1.7">
+          <div style="color:var(--a2)">▸ Sẵn sàng. Nhấn Chạy ngay để bắt đầu.</div>
         </div>
-        <button onclick="exportAffScript()" style="width:100%;margin-top:8px;padding:7px;border-radius:7px;border:1px solid rgba(124,111,255,.4);background:rgba(124,111,255,.08);color:#a5b4fc;font-size:.66rem;font-weight:700;cursor:pointer">📜 Tải Script Automation</button>
+      </div>
+    </div>
+
+    <!-- COL 3 -->
+    <div class="aff-col">
+      <div class="aff-col-header"><div class="aff-col-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></div>📊 HIỆU SUẤT</div>
+
+      <div class="aff-card">
+        <div class="aff-card-title">💰 CÁCH NHẬN HOA HỒNG</div>
+        <div style="font-size:.62rem;color:var(--tx3);line-height:1.8">
+          <div style="display:flex;gap:7px;margin-bottom:4px"><span style="color:#ff2d78;font-weight:800">1.</span><span>Đăng ký <a href="https://seller-vn.tiktok.com" target="_blank" style="color:var(--a2);font-weight:700">TikTok Shop Creator</a> miễn phí</span></div>
+          <div style="display:flex;gap:7px;margin-bottom:4px"><span style="color:#ff2d78;font-weight:800">2.</span><span><b>TikTok Studio</b> → Affiliate → Lấy link SP</span></div>
+          <div style="display:flex;gap:7px;margin-bottom:4px"><span style="color:#ff2d78;font-weight:800">3.</span><span>App tạo video → gắn link → đăng TikTok</span></div>
+          <div style="display:flex;gap:7px;margin-bottom:10px"><span style="color:#22c55e;font-weight:800">✓</span><span><b style="color:#22c55e">Hoa hồng tự vào</b> TikTok Shop → rút ngân hàng</span></div>
+          <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:8px 10px">
+            <div style="font-size:.56rem;color:#22c55e;font-weight:700;margin-bottom:2px">💡 Hoa hồng TikTok Shop VN</div>
+            <div style="font-size:.6rem;color:var(--tx3)">Beauty: <b style="color:var(--tx)">10-30%</b> · Fashion: <b style="color:var(--tx)">5-20%</b> · Tech: <b style="color:var(--tx)">2-8%</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="aff-card">
+        <div class="aff-card-title">📹 LỊCH SỬ VIDEO</div>
+        <div id="aff-video-history" style="max-height:180px;overflow-y:auto">
+          <div style="font-size:.6rem;color:var(--tx3)">Chưa có video nào</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
+          <div style="text-align:center;padding:7px;background:var(--surface2);border-radius:7px">
+            <div id="aff-total-videos" style="font-size:1.1rem;font-weight:800;color:#ff2d78;font-family:'IBM Plex Mono',monospace">0</div>
+            <div style="font-size:.53rem;color:var(--tx3)">Video tạo</div>
+          </div>
+          <div style="text-align:center;padding:7px;background:var(--surface2);border-radius:7px">
+            <div id="aff-total-uploaded" style="font-size:1.1rem;font-weight:800;color:#22c55e;font-family:'IBM Plex Mono',monospace">0</div>
+            <div style="font-size:.53rem;color:var(--tx3)">Đã upload</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="aff-card">
+        <div class="aff-card-title">🧠 AI PHÂN TÍCH SP</div>
+        <div class="aff-fg"><label>URL TikTok Shop</label>
+          <input type="text" id="aff-analyze-url" placeholder="https://vt.tiktok.com/..." style="font-size:.64rem">
+        </div>
+        <button onclick="analyzeProduct()" style="width:100%;padding:7px;border-radius:7px;border:none;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;font-size:.65rem;font-weight:700;cursor:pointer;margin-bottom:7px">✨ Phân tích AI</button>
+        <div id="aff-analysis-result" style="font-size:.61rem;color:var(--tx3);line-height:1.6;min-height:14px"></div>
       </div>
     </div>
 
@@ -3358,7 +3237,7 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v8.5';
+const APP_VERSION = 'v8.6';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 function showVersionHistory(){
   let modal=$('ver-modal');
@@ -11370,50 +11249,72 @@ function connectTikTok(){
 // ── Search products ─────────────────────────────────────────────
 async function searchAffProducts(){
   const cat=$('aff-category')?.value||'trending';
-  const filter=$('aff-filter')?.value||'commission';
-  const platform=$('aff-platform')?.value||'tiktok-shop';
-  const kw=$('aff-keywords')?.value||'';
+  const kw=($('aff-keywords')?.value||'').trim();
+  const count=parseInt($('aff-count')?.value||'2');
+  const sortBy=$('aff-filter')?.value||'commission';
+  const sortLabel={'commission':'hoa hồng cao nhất','sales':'bán chạy nhất','rating':'đánh giá cao nhất'}[sortBy]||sortBy;
 
-  affLog('info',`🔍 Tìm sản phẩm affiliate: ${platform} · ${cat}`);
-  setAffStatus('SEARCHING','#fbbf24');
+  affLog('info','🔍 Tìm sản phẩm TikTok Shop: '+cat+(kw?' · "'+kw+'"':''));
+  if($('aff-product-list')) $('aff-product-list').innerHTML='<div style="text-align:center;padding:20px;font-size:.66rem;color:var(--tx3)">⏳ AI đang tìm sản phẩm...</div>';
 
-  const list=$('aff-product-list');
-  if(list) list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--tx3);font-size:.65rem">
-    <div style="font-size:1.4rem;margin-bottom:6px">⏳</div>Đang tìm sản phẩm hot...</div>`;
+  const prompt='Bạn là chuyên gia TikTok Shop Affiliate tại Việt Nam.\nTìm '+count+' sản phẩm HOT trên TikTok Shop VN.\nDanh mục: '+cat+(kw?', từ khoá: '+kw:'')+'\nSắp xếp: '+sortLabel+'\n\nCHỈ trả về JSON array, không giải thích:\n[{"name":"Tên SP","price":"150.000","original_price":"300.000","discount":"-50%","commission":"15%","commission_amount":"22.500","rating":"4.8","sold":"1.2k","shop":"Tên shop","category":"'+cat+'","why_hot":"Lý do trending ngắn"}]';
 
-  // Gọi AI để tìm sản phẩm thực
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:`Bạn là chuyên gia affiliate marketing TikTok Việt Nam.
-Hãy tạo danh sách 4 sản phẩm affiliate THỰC TẾ, phù hợp để review trên TikTok.
-Danh mục: ${cat==='custom'?kw:cat}. Nền tảng: ${platform}. Lọc theo: ${filter}.
-Trả về JSON array (KHÔNG có markdown): [{"name":"...","price":"...","originalPrice":"...","discount":"...","commission":"...%","rating":"4.x","sold":"...k","category":"...","emoji":"...","features":["...","...","..."],"keywords":["...","..."]}]`}]
-      })
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
-    const data=await resp.json();
-    const text=data.content?.[0]?.text||'[]';
-    const clean=text.replace(/```json|```/g,'').trim();
-    affProducts=JSON.parse(clean);
-    affStats.found+=affProducts.length;
+    const d=await r.json();
+    const txt=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
+    const products=JSON.parse(txt);
+    if(!Array.isArray(products)||!products.length) throw new Error('Không có kết quả');
+    affProducts=[...affProducts,...products];
+    affStats.found+=products.length;
     refreshAffStats();
-    renderAffProducts(affProducts);
-    affLog('ok',`✅ Tìm được ${affProducts.length} sản phẩm affiliate`);
-    setAffStatus('READY','var(--a2)');
+    renderAffProducts(products);
+    affLog('ok','✅ Tìm thấy '+products.length+' sản phẩm TikTok Shop');
   }catch(e){
-    // Fallback: demo products
-    affProducts=generateDemoProducts(cat);
-    affStats.found+=affProducts.length;
+    affLog('warn','⚠ '+e.message+' — dùng dữ liệu demo');
+    const demo=[
+      {name:'Kem chống nắng ANESSA SPF50+',price:'285.000',original_price:'420.000',discount:'-32%',commission:'18%',commission_amount:'51.300',rating:'4.9',sold:'5.2k',shop:'ANESSA Official',category:cat,why_hot:'Best seller beauty TikTok tuần này'},
+      {name:'Áo polo nam basic 4 chiều',price:'159.000',original_price:'280.000',discount:'-43%',commission:'12%',commission_amount:'19.080',rating:'4.7',sold:'3.1k',shop:'Fashion Store VN',category:cat,why_hot:'Trending fashion item hè 2026'},
+    ].slice(0,count);
+    affProducts=[...affProducts,...demo];
+    affStats.found+=demo.length;
     refreshAffStats();
-    renderAffProducts(affProducts);
-    affLog('warn','⚠ Dùng dữ liệu demo (cần API key)');
-    setAffStatus('DEMO','#fbbf24');
+    renderAffProducts(demo);
   }
-  saveAffSettings();
+}
+
+function renderAffProducts(products){
+  const el=$('aff-product-list'); if(!el) return;
+  if(!products||!products.length){
+    el.innerHTML='<div class="aff-empty-state"><div style="font-size:2rem">🛍</div><div>Chưa có sản phẩm</div></div>';
+    return;
+  }
+  const em={beauty:'💄',fashion:'👗',tech:'📱',food:'🍜',health:'💊',sport:'🏃',home:'🏠',trending:'🔥'};
+  const base=affProducts.length-products.length;
+  el.innerHTML=products.map((p,i)=>{
+    const gi=base+i;
+    return '<div class="aff-product-card">'+
+      '<div class="aff-product-img">'+(em[p.category]||'🛍')+'</div>'+
+      '<div class="aff-product-info">'+
+        '<div class="aff-product-name" title="'+p.name+'">'+p.name+'</div>'+
+        '<div style="display:flex;align-items:center;gap:5px;margin-top:2px">'+
+          '<span class="aff-product-price">'+p.price+'đ</span>'+
+          '<span style="font-size:.54rem;color:var(--tx3);text-decoration:line-through">'+p.original_price+'đ</span>'+
+          '<span style="font-size:.53rem;background:rgba(255,45,120,.12);color:#ff6b9d;padding:1px 4px;border-radius:3px">'+p.discount+'</span>'+
+        '</div>'+
+        '<div class="aff-product-commission">💰 '+p.commission+' (~'+p.commission_amount+'đ/đơn)</div>'+
+        '<div style="font-size:.54rem;color:var(--tx3)">⭐'+p.rating+' · '+p.sold+' · '+p.shop+'</div>'+
+        '<div style="font-size:.55rem;color:#fbbf24;margin-top:1px">🔥 '+p.why_hot+'</div>'+
+        '<div class="aff-product-actions">'+
+          '<button class="aff-product-btn primary" onclick="createAffVideo('+gi+')">🎬 Tạo video</button>'+
+          '<button class="aff-product-btn" onclick="analyzeProductById('+gi+')">🧠 AI</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
 }
 
 function generateDemoProducts(cat){
