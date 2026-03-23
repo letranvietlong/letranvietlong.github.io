@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.1 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.2 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3243,7 +3243,7 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v9.1';
+const APP_VERSION = 'v9.2';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -11586,19 +11586,6 @@ async function createAffVideo(productIdx){
 
 // ── Render product video 9:16 on offscreen canvas ─────────────
 async function _renderProductVideo(content, product){
-  // Step 1: Generate script/screenplay via AI
-  let script={
-    scenes:[
-      {type:'hook',   duration:3,  text:'Bạn đang tìm '+content.emoji+' '+product.name+'?',        speaker:'host'},
-      {type:'reveal', duration:4,  text:'Chỉ '+product.price+'đ! Giảm '+product.discount+'! 🔥',   speaker:'price'},
-      {type:'feature',duration:5,  text:(content.features||['Chất lượng cao','Giao nhanh','Hoàn tiền'])[0], speaker:'host'},
-      {type:'feature',duration:4,  text:(content.features||['','Uy tín shop','Giá tốt'])[1],        speaker:'host'},
-      {type:'social', duration:4,  text:'Hàng nghìn người đã mua! ⭐'+product.rating+' · '+product.sold+' đã bán', speaker:'stats'},
-      {type:'cta',    duration:4,  text:content.cta||'Mua ngay! Link trong bio 🔗',                 speaker:'cta'},
-    ],
-    commission: product.commission||'15%',
-  };
-
   return new Promise((resolve)=>{
     try{
       const W=1080, H=1920;
@@ -11609,440 +11596,572 @@ async function _renderProductVideo(content, product){
       const stream=cvs.captureStream(30);
       const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
       const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
-      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5_000_000});
+      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:6_000_000});
       const chunks=[];
       rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
       rec.onstop=()=>resolve(new Blob(chunks,{type:mime.split(';')[0]}));
       rec.start(100);
 
-      const FPS=30;
-      const bg1=content.bg_color1||'#0f0c29';
-      const bg2=content.bg_color2||'#302b63';
-      const accent=content.accent||'#ff2d78';
-      const totalDur=script.scenes.reduce((s,sc)=>s+sc.duration,0);
-      const TOTAL=FPS*totalDur;
+      const FPS=30, DURATION=22;
+      const TOTAL=FPS*DURATION;
       let frame=0;
+
+      const accent=content.accent||'#ff2d78';
 
       function easeOut(t){return 1-Math.pow(1-t,3);}
       function easeInOut(t){return t<.5?4*t*t*t:(1-Math.pow(-2*t+2,3))/2;}
-      function lerp(a,b,t){return a+(b-a)*t;}
 
-      // Get current scene
-      function getScene(t){
-        let elapsed=0;
-        for(const sc of script.scenes){
-          if(t<elapsed+sc.duration) return {sc, localT:(t-elapsed)/sc.duration, startT:elapsed};
-          elapsed+=sc.duration;
+      // ── DRAW BACKGROUND: Cozy Korean bedroom ────────────────
+      function drawBackground(t){
+        // Room gradient - soft warm tones
+        const bg=ctx.createLinearGradient(0,0,0,H);
+        bg.addColorStop(0,'#fef0f5');
+        bg.addColorStop(0.6,'#fde8f0');
+        bg.addColorStop(1,'#f9d5e5');
+        ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+        // Wall / ceiling line
+        ctx.fillStyle='#f5c6d8';
+        ctx.fillRect(0,0,W,H*0.55);
+
+        // Subtle wallpaper pattern (small hearts)
+        ctx.fillStyle='rgba(255,150,180,0.12)';
+        for(let r=0;r<8;r++){
+          for(let c=0;c<7;c++){
+            const hx=c*160+80+Math.sin(r)*10;
+            const hy=r*120+60;
+            if(hy>H*0.55) break;
+            // Small heart
+            ctx.font='28px serif';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('♡',hx,hy);
+          }
         }
-        return {sc:script.scenes[script.scenes.length-1],localT:1,startT:elapsed-script.scenes[script.scenes.length-1].duration};
+
+        // Floor
+        const floor=ctx.createLinearGradient(0,H*0.55,0,H);
+        floor.addColorStop(0,'#f0d0e0');
+        floor.addColorStop(1,'#e8c0d4');
+        ctx.fillStyle=floor;
+        ctx.fillRect(0,H*0.55,W,H*0.45);
+
+        // Floor reflection line
+        ctx.strokeStyle='rgba(255,255,255,0.5)';
+        ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(0,H*0.55); ctx.lineTo(W,H*0.55); ctx.stroke();
+
+        // Wardrobe (right side, partial) - like in the photo
+        ctx.fillStyle='#f8f0f4';
+        ctx.fillRect(W*0.62,H*0.05,W*0.42,H*0.52);
+        ctx.strokeStyle='rgba(200,150,170,0.4)';
+        ctx.lineWidth=2;
+        // Wardrobe doors
+        ctx.beginPath();
+        ctx.rect(W*0.62,H*0.05,W*0.42,H*0.52);
+        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W*0.83,H*0.05); ctx.lineTo(W*0.83,H*0.57); ctx.stroke();
+        // Wardrobe handles
+        ctx.fillStyle='rgba(180,120,150,0.6)';
+        ctx.beginPath(); ctx.arc(W*0.80,H*0.31,8,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(W*0.85,H*0.31,8,0,Math.PI*2); ctx.fill();
+
+        // Shelf with cute items (left side)
+        ctx.fillStyle='#e8c8d8';
+        ctx.fillRect(W*0.0,H*0.12,W*0.35,H*0.025);
+        // Items on shelf: small plushie, bottle
+        ctx.font='52px serif';
+        ctx.textAlign='center'; ctx.textBaseline='bottom';
+        ctx.fillText('🧸',W*0.1,H*0.12+2);
+        ctx.fillText('🌸',W*0.22,H*0.12+2);
+        ctx.fillText('✨',W*0.32,H*0.12+2);
+
+        // TV / mirror on wall (left)
+        ctx.fillStyle='rgba(230,180,210,0.5)';
+        roundRect(ctx,W*0.02,H*0.22,W*0.28,H*0.18,10);
+        ctx.fill();
+        ctx.strokeStyle='rgba(200,130,170,0.6)';
+        ctx.lineWidth=3;
+        ctx.stroke();
+
+        // Sparkle ambient particles
+        ctx.fillStyle='rgba(255,200,220,0.5)';
+        for(let i=0;i<6;i++){
+          const px=(Math.sin(t*0.3+i*1.2)*0.15+0.15+i*0.14)*W;
+          const py=(Math.cos(t*0.2+i*0.9)*0.05+0.1+i*0.05)*H;
+          const ps=3+2*Math.sin(t*2+i);
+          ctx.beginPath(); ctx.arc(px,py,ps,0,Math.PI*2); ctx.fill();
+        }
+
+        // Small floating sparkles ✨
+        ['✨','⭐','💫'].forEach((em,i)=>{
+          ctx.font='36px serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.globalAlpha=0.4+0.3*Math.sin(t*1.5+i*2);
+          ctx.fillText(em, (0.08+i*0.08)*W, (0.18+Math.sin(t+i)*0.04)*H);
+        });
+        ctx.globalAlpha=1;
       }
 
-      // Draw animated character (stick figure / avatar)
-      function drawCharacter(x,y,scale,emotion,t){
+      // ── DRAW ANIME CHARACTER ─────────────────────────────────
+      function drawAnimeCharacter(cx,cy,scale,emotion,t){
         ctx.save();
-        ctx.translate(x,y);
+        ctx.translate(cx,cy);
         ctx.scale(scale,scale);
 
-        const bounce=emotion==='excited'?Math.sin(t*12)*8:Math.sin(t*3)*3;
-        const tilt=emotion==='cta'?Math.sin(t*6)*5:0;
-        ctx.rotate(tilt*Math.PI/180);
+        const bounce=Math.sin(t*2.5)*(emotion==='excited'?6:3);
+        const tiltAngle=emotion==='cta'?Math.sin(t*3)*4:Math.sin(t*1.5)*1.5;
+        ctx.rotate(tiltAngle*Math.PI/180);
 
-        // Body glow
-        const glow=ctx.createRadialGradient(0,-60,0,0,-60,120);
-        glow.addColorStop(0,'rgba(255,45,120,0.3)');
-        glow.addColorStop(1,'rgba(255,45,120,0)');
-        ctx.fillStyle=glow;
+        // ── Legs & Body shadow ──
+        ctx.fillStyle='rgba(0,0,0,0.08)';
         ctx.beginPath();
-        ctx.arc(0,-60+bounce,120,0,Math.PI*2);
+        ctx.ellipse(0,290,80,20,0,0,Math.PI*2);
         ctx.fill();
 
-        // Head
-        const headY=-120+bounce;
-        const gradient=ctx.createRadialGradient(-20,headY-20,5,0,headY,55);
-        gradient.addColorStop(0,'#ffe0bd');
-        gradient.addColorStop(1,'#f4a460');
-        ctx.fillStyle=gradient;
+        // ── PAJAMA OUTFIT (like in photo - cream with pink trim) ──
+        // Body/torso
+        const outfitGrad=ctx.createLinearGradient(-70,50,70,200);
+        outfitGrad.addColorStop(0,'#fefaf6');
+        outfitGrad.addColorStop(1,'#f5ede5');
+        ctx.fillStyle=outfitGrad;
+        roundRect(ctx,-72,40+bounce,144,175,20);
+        ctx.fill();
+        // Pink trim on collar
+        ctx.strokeStyle='#ffb6c8';
+        ctx.lineWidth=5;
         ctx.beginPath();
-        ctx.arc(0,headY,55,0,Math.PI*2);
+        ctx.moveTo(-30,40+bounce); ctx.lineTo(-30,70+bounce);
+        ctx.moveTo(30,40+bounce); ctx.lineTo(30,70+bounce);
+        ctx.stroke();
+        // Button
+        ctx.fillStyle='#ff90a8';
+        ctx.beginPath(); ctx.arc(0,90+bounce,6,0,Math.PI*2); ctx.fill();
+        // Rabbit embroidery (chest)
+        ctx.font='28px serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🐰',25,115+bounce);
+
+        // Arms
+        const armL=ctx.createLinearGradient(-100,60,-80,160);
+        armL.addColorStop(0,'#fefaf6'); armL.addColorStop(1,'#f5ede5');
+        // Left arm
+        ctx.fillStyle=armL;
+        ctx.save(); ctx.translate(-72,80+bounce);
+        ctx.rotate((-15+Math.sin(t*2.5)*8)*Math.PI/180);
+        roundRect(ctx,-22,0,44,120,15); ctx.fill();
+        ctx.strokeStyle='#ffb6c8'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(-10,120); ctx.stroke();
+        // Hand
+        ctx.fillStyle='#ffe4d0';
+        ctx.beginPath(); ctx.ellipse(0,130,20,16,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+        // Right arm
+        ctx.save(); ctx.translate(72,80+bounce);
+        const rightRot=emotion==='cta'?-35+Math.sin(t*4)*5:15+Math.sin(t*2.5+1)*8;
+        ctx.rotate(rightRot*Math.PI/180);
+        ctx.fillStyle=armL;
+        roundRect(ctx,-22,0,44,120,15); ctx.fill();
+        ctx.strokeStyle='#ffb6c8'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(10,120); ctx.stroke();
+        ctx.fillStyle='#ffe4d0';
+        ctx.beginPath(); ctx.ellipse(0,130,20,16,0,0,Math.PI*2); ctx.fill();
+        if(emotion==='cta'){
+          ctx.font='32px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('👆',0,155);
+        }
+        ctx.restore();
+
+        // ── NECK ──
+        ctx.fillStyle='#ffe4d0';
+        ctx.fillRect(-18,20+bounce,36,28);
+
+        // ── HEAD ──
+        const headY=-90+bounce;
+        // Head base (face)
+        const faceGrad=ctx.createRadialGradient(-15,headY-20,10,0,headY,75);
+        faceGrad.addColorStop(0,'#fff0e8');
+        faceGrad.addColorStop(0.7,'#ffe4d0');
+        faceGrad.addColorStop(1,'#ffd0b8');
+        ctx.fillStyle=faceGrad;
+        ctx.beginPath();
+        ctx.ellipse(0,headY,72,80,0,0,Math.PI*2);
         ctx.fill();
 
-        // Hair
-        ctx.fillStyle='#2c1810';
+        // ── HAIR — long black wavy ──
+        ctx.fillStyle='#1a0a08';
+        // Back hair (behind face)
+        ctx.save();
+        ctx.globalCompositeOperation='destination-over';
+        // Long flowing hair sides
         ctx.beginPath();
-        ctx.ellipse(0,headY-35,50,25,0,Math.PI,0);
+        ctx.moveTo(-72,headY-40);
+        ctx.bezierCurveTo(-110,headY+20,-130,headY+100,-120,headY+240);
+        ctx.bezierCurveTo(-115,headY+260,-100,headY+270,-80,headY+260);
+        ctx.bezierCurveTo(-70,headY+200,-60,headY+140,-72,headY+40);
         ctx.fill();
-        // Hair strands
-        for(let i=-2;i<=2;i++){
+        ctx.beginPath();
+        ctx.moveTo(72,headY-40);
+        ctx.bezierCurveTo(110,headY+20,130,headY+100,120,headY+240);
+        ctx.bezierCurveTo(115,headY+260,100,headY+270,80,headY+260);
+        ctx.bezierCurveTo(70,headY+200,60,headY+140,72,headY+40);
+        ctx.fill();
+        ctx.restore();
+        // Front top hair
+        ctx.fillStyle='#1a0a08';
+        ctx.beginPath();
+        ctx.ellipse(0,headY-55,65,38,0,Math.PI,0);
+        ctx.fill();
+        // Hair bangs
+        ctx.beginPath();
+        ctx.moveTo(-65,headY-45);
+        ctx.bezierCurveTo(-60,headY-10,-40,headY-5,-20,headY-8);
+        ctx.bezierCurveTo(-5,headY-6,0,headY-15,0,headY-15);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(65,headY-45);
+        ctx.bezierCurveTo(60,headY-10,40,headY-5,20,headY-8);
+        ctx.bezierCurveTo(5,headY-6,0,headY-15,0,headY-15);
+        ctx.fill();
+
+        // ── BUNNY HEADBAND (like in photo!) ──
+        // Headband base
+        const hbGrad=ctx.createLinearGradient(-80,headY-75,80,headY-65);
+        hbGrad.addColorStop(0,'#b8c8e8');
+        hbGrad.addColorStop(0.5,'#c8d8f0');
+        hbGrad.addColorStop(1,'#b8c8e8');
+        ctx.fillStyle=hbGrad;
+        roundRect(ctx,-80,headY-78,160,18,9);
+        ctx.fill();
+        // Blue/navy band accent
+        ctx.fillStyle='rgba(40,80,180,0.3)';
+        roundRect(ctx,-80,headY-68,160,8,4); ctx.fill();
+
+        // Left bunny ear
+        ctx.save(); ctx.translate(-25,headY-78);
+        // Outer ear (light gray)
+        ctx.fillStyle='#c8cfe0';
+        ctx.beginPath();
+        ctx.ellipse(0,-28,14,32,Math.PI*0.08,0,Math.PI*2);
+        ctx.fill();
+        // Inner ear (pink)
+        ctx.fillStyle='#ffb6c8';
+        ctx.beginPath();
+        ctx.ellipse(0,-26,7,18,Math.PI*0.08,0,Math.PI*2);
+        ctx.fill();
+        // Bunny eye on headpiece
+        ctx.fillStyle='#4488ff';
+        ctx.beginPath(); ctx.arc(-4,-36,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff';
+        ctx.beginPath(); ctx.arc(-2,-38,2.5,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        // Right bunny ear
+        ctx.save(); ctx.translate(25,headY-78);
+        ctx.fillStyle='#c8cfe0';
+        ctx.beginPath();
+        ctx.ellipse(0,-28,14,32,-Math.PI*0.08,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#ffb6c8';
+        ctx.beginPath();
+        ctx.ellipse(0,-26,7,18,-Math.PI*0.08,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#4488ff';
+        ctx.beginPath(); ctx.arc(4,-36,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff';
+        ctx.beginPath(); ctx.arc(6,-38,2.5,0,Math.PI*2); ctx.fill();
+        // Nose on headpiece bunny
+        ctx.fillStyle='#ffb6c8';
+        ctx.beginPath(); ctx.arc(0,-30,3,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        // ── FACE FEATURES ──
+        // Blush cheeks
+        const blushAlpha=emotion==='excited'?0.35:0.2;
+        ctx.fillStyle=`rgba(255,150,160,${blushAlpha})`;
+        ctx.beginPath(); ctx.ellipse(-42,headY+12,22,12,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(42,headY+12,22,12,0,0,Math.PI*2); ctx.fill();
+
+        // Eyes (large anime style)
+        const blink=Math.sin(t*0.7+0.5)>0.92?0.08:1;
+        [-26,26].forEach((ex,ei)=>{
+          // Eye white
+          ctx.fillStyle='#ffffff';
+          ctx.beginPath(); ctx.ellipse(ex,headY,14,16*blink,0,0,Math.PI*2); ctx.fill();
+          // Iris
+          ctx.fillStyle=ei===0?'#5a3a2a':'#5a3a2a';
+          ctx.beginPath(); ctx.ellipse(ex,headY+1,9,11*blink,0,0,Math.PI*2); ctx.fill();
+          // Pupil
+          ctx.fillStyle='#1a0808';
+          ctx.beginPath(); ctx.ellipse(ex,headY+2,5,6*blink,0,0,Math.PI*2); ctx.fill();
+          // Eye highlight (large)
+          ctx.fillStyle='rgba(255,255,255,0.9)';
+          ctx.beginPath(); ctx.ellipse(ex-4,headY-3,4,5*blink,0,0,Math.PI*2); ctx.fill();
+          // Small highlight
+          ctx.beginPath(); ctx.arc(ex+5,headY+3,2,0,Math.PI*2); ctx.fill();
+          // Eyelash top
+          ctx.strokeStyle='#1a0808'; ctx.lineWidth=2.5; ctx.lineCap='round';
+          ctx.beginPath(); ctx.moveTo(ex-12,headY-14*blink);
+          ctx.bezierCurveTo(ex-5,headY-18*blink,ex+5,headY-18*blink,ex+12,headY-14*blink);
+          ctx.stroke();
+        });
+
+        // Nose (small cute)
+        ctx.fillStyle='#e8a0a0';
+        ctx.beginPath(); ctx.ellipse(0,headY+18,5,3,0,0,Math.PI*2); ctx.fill();
+
+        // Mouth
+        ctx.strokeStyle='#d06070';
+        ctx.lineWidth=2.5; ctx.lineCap='round';
+        if(emotion==='excited'||emotion==='cta'){
           ctx.beginPath();
-          ctx.moveTo(i*18,headY-55);
-          ctx.quadraticCurveTo(i*22,headY-75,i*15,headY-80);
-          ctx.strokeStyle='#2c1810';
-          ctx.lineWidth=4;
+          ctx.arc(0,headY+30,14,0.1,Math.PI-0.1);
+          ctx.stroke();
+          // Teeth
+          ctx.fillStyle='#fff';
+          ctx.beginPath(); ctx.ellipse(0,headY+32,8,5,0,0,Math.PI); ctx.fill();
+        } else if(emotion==='talking'){
+          const mO=3+4*Math.abs(Math.sin(t*7));
+          ctx.beginPath(); ctx.ellipse(0,headY+30,8,mO,0,0,Math.PI*2);
+          ctx.fillStyle='#c06070'; ctx.fill();
+        } else {
+          // Cute smile
+          ctx.beginPath();
+          ctx.moveTo(-10,headY+28);
+          ctx.quadraticCurveTo(0,headY+38,10,headY+28);
           ctx.stroke();
         }
 
-        // Eyes (animated blink)
-        const blink=Math.sin(t*0.7)>0.95?0.1:1;
-        ctx.fillStyle='#1a1a2e';
-        [-18,18].forEach(ex=>{
-          ctx.beginPath();
-          ctx.ellipse(ex,headY-5,7,7*blink,0,0,Math.PI*2);
-          ctx.fill();
-          // Eye shine
-          ctx.fillStyle='#fff';
-          ctx.beginPath();
-          ctx.arc(ex+3,headY-8,2,0,Math.PI*2);
-          ctx.fill();
-          ctx.fillStyle='#1a1a2e';
-        });
-
-        // Mouth (expression)
-        ctx.strokeStyle='#c0392b';
-        ctx.lineWidth=3;
-        ctx.lineCap='round';
+        // Necklace (like in photo)
+        ctx.strokeStyle='#d4a820'; ctx.lineWidth=2.5;
         ctx.beginPath();
-        if(emotion==='excited'||emotion==='cta'){
-          ctx.arc(0,headY+20,20,0.1,Math.PI-0.1);
-        } else if(emotion==='talking'){
-          const mouthOpen=Math.abs(Math.sin(t*8))*10;
-          ctx.ellipse(0,headY+22,12,4+mouthOpen,0,0,Math.PI*2);
-          ctx.fillStyle='#c0392b';
-          ctx.fill();
-        } else {
-          ctx.arc(0,headY+22,14,0.2,Math.PI-0.2);
-        }
+        ctx.arc(0,headY+80+bounce,28,Math.PI*0.15,Math.PI*0.85);
         ctx.stroke();
-
-        // Blush
-        if(emotion==='excited'){
-          ctx.fillStyle='rgba(255,100,100,0.25)';
-          ctx.beginPath(); ctx.ellipse(-35,headY+10,18,10,0,0,Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(35,headY+10,18,10,0,0,Math.PI*2); ctx.fill();
-        }
-
-        // Body (torso)
-        const bodyY=headY+55;
-        const bodyGrad=ctx.createLinearGradient(-30,bodyY,30,bodyY+120);
-        bodyGrad.addColorStop(0,accent);
-        bodyGrad.addColorStop(1,'#c0135a');
-        ctx.fillStyle=bodyGrad;
-        roundRect(ctx,-38,bodyY,76,130,15);
-        ctx.fill();
-
-        // Arms - animated
-        const armSwing=Math.sin(t*4+bounce)*15;
-        ctx.strokeStyle='#f4a460';
-        ctx.lineWidth=20;
-        ctx.lineCap='round';
-        // Left arm
-        ctx.beginPath();
-        ctx.moveTo(-38,bodyY+20);
-        ctx.quadraticCurveTo(-90,bodyY+60+armSwing,-70,bodyY+110+armSwing);
-        ctx.stroke();
-        // Right arm (pointing when CTA)
-        ctx.beginPath();
-        if(emotion==='cta'){
-          ctx.moveTo(38,bodyY+20);
-          ctx.quadraticCurveTo(80,bodyY+40,120,bodyY+20+Math.sin(t*6)*10);
-        } else {
-          ctx.moveTo(38,bodyY+20);
-          ctx.quadraticCurveTo(90,bodyY+60-armSwing,70,bodyY+110-armSwing);
-        }
-        ctx.stroke();
-
-        // Legs
-        ctx.strokeStyle='#2c3e6b';
-        ctx.lineWidth=22;
-        const legSwing=Math.sin(t*5)*8;
-        // Left leg
-        ctx.beginPath();
-        ctx.moveTo(-15,bodyY+130);
-        ctx.lineTo(-20,bodyY+200+legSwing);
-        ctx.stroke();
-        // Right leg
-        ctx.beginPath();
-        ctx.moveTo(15,bodyY+130);
-        ctx.lineTo(20,bodyY+200-legSwing);
-        ctx.stroke();
-        // Shoes
-        ctx.fillStyle='#1a1a2e';
-        ctx.beginPath(); ctx.ellipse(-20,bodyY+205+legSwing,18,9,0,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(20,bodyY+205-legSwing,18,9,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#f0c830';
+        ctx.beginPath(); ctx.arc(0,headY+108+bounce,5,0,Math.PI*2); ctx.fill();
 
         ctx.restore();
       }
 
-      // Draw speech bubble
-      function drawSpeechBubble(text,x,y,maxW,t,alpha=1){
-        ctx.save();
-        ctx.globalAlpha=alpha;
-        const pad=30, lineH=52;
-        ctx.font='bold 42px sans-serif';
-        // Word wrap
+      // ── SPEECH BUBBLE ────────────────────────────────────────
+      function drawSpeechBubble(text,bx,by,maxW,alpha){
+        ctx.save(); ctx.globalAlpha=alpha;
+        ctx.font='bold 44px sans-serif';
         const words=text.split(' ');
-        const lines=[];
-        let cur='';
+        const lines=[]; let cur='';
         for(const w of words){
-          if(ctx.measureText(cur+w).width>maxW-pad*2){lines.push(cur.trim());cur=w+' ';}
+          if(ctx.measureText(cur+w+' ').width>maxW-50&&cur){lines.push(cur.trim());cur=w+' ';}
           else cur+=w+' ';
         }
         lines.push(cur.trim());
-        const bh=lines.length*lineH+pad*2;
-        const bw=maxW;
-
-        // Bubble background
-        const bubbleGrad=ctx.createLinearGradient(x-bw/2,y,x+bw/2,y+bh);
-        bubbleGrad.addColorStop(0,'rgba(255,255,255,0.95)');
-        bubbleGrad.addColorStop(1,'rgba(240,240,255,0.95)');
-        ctx.fillStyle=bubbleGrad;
-        ctx.shadowColor='rgba(0,0,0,0.3)';
-        ctx.shadowBlur=20;
-        ctx.shadowOffsetY=5;
-        roundRect(ctx,x-bw/2,y,bw,bh,20);
-        ctx.fill();
+        const lh=56, pad=28, bh=lines.length*lh+pad*2, bw=maxW;
+        // Shadow
+        ctx.shadowColor='rgba(200,100,130,0.3)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+        // Bubble bg
+        const bGrad=ctx.createLinearGradient(bx-bw/2,by,bx+bw/2,by+bh);
+        bGrad.addColorStop(0,'rgba(255,255,255,0.97)');
+        bGrad.addColorStop(1,'rgba(255,240,248,0.97)');
+        ctx.fillStyle=bGrad;
+        roundRect(ctx,bx-bw/2,by,bw,bh,24); ctx.fill();
+        // Pink border
         ctx.shadowColor='transparent';
-
-        // Bubble tail
+        ctx.strokeStyle='rgba(255,150,180,0.6)'; ctx.lineWidth=3;
+        roundRect(ctx,bx-bw/2,by,bw,bh,24); ctx.stroke();
+        // Tail
+        ctx.fillStyle='rgba(255,255,255,0.97)';
         ctx.beginPath();
-        ctx.moveTo(x-40,y+bh);
-        ctx.lineTo(x-80,y+bh+40);
-        ctx.lineTo(x+20,y+bh);
-        ctx.fillStyle='rgba(240,240,255,0.95)';
+        ctx.moveTo(bx-30,by+bh);
+        ctx.lineTo(bx-70,by+bh+50);
+        ctx.lineTo(bx+30,by+bh);
         ctx.fill();
-
+        ctx.strokeStyle='rgba(255,150,180,0.4)'; ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(bx-30,by+bh); ctx.lineTo(bx-70,by+bh+50);
+        ctx.stroke();
         // Text
-        ctx.fillStyle='#1a1a2e';
-        ctx.textAlign='center';
-        ctx.textBaseline='top';
-        lines.forEach((line,i)=>{
-          ctx.fillText(line,x,y+pad+i*lineH);
-        });
+        ctx.shadowColor='transparent';
+        ctx.fillStyle='#3a2030'; ctx.textAlign='center'; ctx.textBaseline='top';
+        lines.forEach((l,i)=>ctx.fillText(l,bx,by+pad+i*lh));
         ctx.restore();
       }
 
-      // Draw price card
-      function drawPriceCard(product,x,y,t,alpha){
-        ctx.save();
-        ctx.globalAlpha=alpha;
-        const w=820,h=280;
-        const grd=ctx.createLinearGradient(x-w/2,y,x+w/2,y+h);
-        grd.addColorStop(0,'rgba(255,45,120,0.9)');
-        grd.addColorStop(1,'rgba(120,0,60,0.9)');
-        ctx.fillStyle=grd;
-        ctx.shadowColor='rgba(255,45,120,0.5)';
-        ctx.shadowBlur=30;
-        roundRect(ctx,x-w/2,y,w,h,25);
-        ctx.fill();
+      // ── PRICE CARD ───────────────────────────────────────────
+      function drawPriceCard(t,alpha){
+        ctx.save(); ctx.globalAlpha=alpha;
+        const W2=900, H2=310, px=W/2, py=H*0.68;
+        const pulse=1+0.025*Math.sin(t*5);
+        ctx.translate(px,py); ctx.scale(pulse,pulse); ctx.translate(-px,-py);
+        // Card shadow
+        ctx.shadowColor='rgba(255,45,120,0.25)'; ctx.shadowBlur=30; ctx.shadowOffsetY=10;
+        const cGrad=ctx.createLinearGradient(px-W2/2,py,px+W2/2,py+H2);
+        cGrad.addColorStop(0,'rgba(255,45,120,0.92)');
+        cGrad.addColorStop(1,'rgba(180,0,80,0.92)');
+        ctx.fillStyle=cGrad;
+        roundRect(ctx,px-W2/2,py,W2,H2,28); ctx.fill();
         ctx.shadowColor='transparent';
-
         // Discount badge
         if(product.discount){
           ctx.fillStyle='#ffdd00';
-          ctx.beginPath();
-          ctx.arc(x+w/2-50,y+50,55,0,Math.PI*2);
-          ctx.fill();
-          ctx.fillStyle='#c0135a';
-          ctx.font='bold 34px sans-serif';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(product.discount,x+w/2-50,y+50);
+          ctx.beginPath(); ctx.arc(px+W2/2-55,py+55,52,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle='#c00050';
+          ctx.font='bold 32px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(product.discount,px+W2/2-55,py+55);
         }
-
-        // Prices
-        ctx.textAlign='center';
-        if(product.original_price&&product.original_price!==product.price){
-          ctx.font='38px sans-serif';
-          ctx.fillStyle='rgba(255,255,255,0.5)';
-          ctx.textBaseline='middle';
-          ctx.fillText(product.original_price+'đ',x,y+70);
-          ctx.strokeStyle='rgba(255,255,255,0.5)';
-          ctx.lineWidth=2;
+        // Strike price
+        if(product.original_price){
+          ctx.font='42px sans-serif'; ctx.fillStyle='rgba(255,255,255,0.55)';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(product.original_price+'đ',px,py+70);
           const tw=ctx.measureText(product.original_price+'đ').width;
-          ctx.beginPath();
-          ctx.moveTo(x-tw/2,y+70);
-          ctx.lineTo(x+tw/2,y+70);
-          ctx.stroke();
+          ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.moveTo(px-tw/2,py+70); ctx.lineTo(px+tw/2,py+70); ctx.stroke();
         }
         // Big price
-        const pulse=1+0.03*Math.sin(t*6);
-        ctx.save();
-        ctx.translate(x,y+160);
-        ctx.scale(pulse,pulse);
-        ctx.font='bold 110px sans-serif';
-        ctx.fillStyle='#ffdd00';
-        ctx.textBaseline='middle';
-        ctx.textAlign='center';
-        ctx.fillText(product.price+'đ',0,0);
-        ctx.restore();
-
+        ctx.font='bold 120px sans-serif'; ctx.fillStyle='#ffee55';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(product.price+'đ',px,py+170);
         // Commission
-        ctx.font='bold 44px sans-serif';
-        ctx.fillStyle='rgba(255,255,255,0.9)';
-        ctx.textBaseline='middle';
-        ctx.fillText('💰 Hoa hồng: '+(product.commission||'15%'),x,y+240);
+        ctx.font='bold 46px sans-serif'; ctx.fillStyle='#ccffcc';
+        ctx.fillText('💰 HH: '+(product.commission||'15%'),px,py+265);
         ctx.restore();
       }
 
-      // Draw CTA button
-      function drawCTA(text,x,y,t,alpha){
-        ctx.save();
-        ctx.globalAlpha=alpha;
-        const pulse=1+0.06*Math.sin(t*8);
-        ctx.translate(x,y);
-        ctx.scale(pulse,pulse);
-        const w=900,h=130;
-        const grd=ctx.createLinearGradient(-w/2,0,w/2,0);
-        grd.addColorStop(0,'#ff2d78');
-        grd.addColorStop(0.5,'#ff6b9d');
-        grd.addColorStop(1,'#ff2d78');
-        ctx.fillStyle=grd;
-        ctx.shadowColor='rgba(255,45,120,0.7)';
-        ctx.shadowBlur=30;
-        roundRect(ctx,-w/2,-h/2,w,h,h/2);
-        ctx.fill();
-        ctx.shadowColor='transparent';
-        ctx.font='bold 64px sans-serif';
-        ctx.fillStyle='#ffffff';
-        ctx.textAlign='center';
-        ctx.textBaseline='middle';
-        ctx.fillText(text,0,0);
-        ctx.restore();
+      // ── SCENES ───────────────────────────────────────────────
+      const scenes=[
+        {start:0,  dur:4,  type:'hook'},
+        {start:4,  dur:5,  type:'price'},
+        {start:9,  dur:4,  type:'feature1'},
+        {start:13, dur:4,  type:'feature2'},
+        {start:17, dur:3,  type:'social'},
+        {start:20, dur:2,  type:'cta'},
+      ];
+
+      function getScene(t){
+        for(const s of scenes) if(t>=s.start&&t<s.start+s.dur) return s;
+        return scenes[scenes.length-1];
       }
 
-      function drawScene(){
+      function drawFrame(){
         const t=frame/FPS;
-        const {sc,localT,startT}=getScene(t);
-        const p=easeOut(Math.min(localT*3,1));
+        const sc=getScene(t);
+        const localT=(t-sc.start)/sc.dur;
+        const fadeIn=easeOut(Math.min(localT*4,1));
         const fadeOut=localT>0.8?easeOut((localT-0.8)/0.2):1;
-        const alpha=Math.min(p,fadeOut);
+        const alpha=Math.min(fadeIn,fadeOut);
 
-        // BG
-        const grd=ctx.createLinearGradient(0,0,W,H);
-        grd.addColorStop(0,bg1);
-        grd.addColorStop(1,bg2);
-        ctx.fillStyle=grd;
-        ctx.fillRect(0,0,W,H);
+        // Draw background
+        drawBackground(t);
 
-        // Moving BG circles
-        for(let i=0;i<8;i++){
-          const px=(Math.sin(t*0.2+i*0.9)*0.3+0.5)*W;
-          const py=(Math.cos(t*0.15+i*0.7)*0.3+0.5)*H;
-          const r=60+30*Math.sin(t+i);
-          const grd2=ctx.createRadialGradient(px,py,0,px,py,r);
-          grd2.addColorStop(0,'rgba(255,45,120,0.12)');
-          grd2.addColorStop(1,'rgba(255,45,120,0)');
-          ctx.fillStyle=grd2;
-          ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
-        }
+        // Character position (lower half of screen, 9:16)
+        const charX=W/2+60;
+        const charY=H*0.95;
+        const charScale=2.8;
 
-        // Scene-specific content
         if(sc.type==='hook'){
-          // Character center + speech bubble
-          const charY=H*0.72;
-          drawCharacter(W/2,charY,1.6,'talking',t);
-          const bubbleAlpha=alpha;
-          drawSpeechBubble(sc.text,W/2,H*0.08,900,t,bubbleAlpha);
-          // TikTok Shop badge top
-          ctx.save();
-          ctx.globalAlpha=alpha;
-          ctx.fillStyle=accent;
-          roundRect(ctx,W/2-200,30,400,80,20); ctx.fill();
-          ctx.font='bold 44px sans-serif';
-          ctx.fillStyle='#fff';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('🛍 TikTok Shop Review',W/2,70);
-          ctx.restore();
-        }
-        else if(sc.type==='reveal'){
-          // Price card + character small
+          drawAnimeCharacter(charX,charY,charScale,'talking',t);
+          const txt='Xin chào! Hôm nay mình review '+content.emoji+' '+product.name+'!';
+          drawSpeechBubble(txt,W*0.45,H*0.08,860,alpha);
+          // Name tag
           ctx.save(); ctx.globalAlpha=alpha;
-          drawPriceCard(product,W/2,H*0.25,t,1);
-          ctx.restore();
-          drawCharacter(W/2,H*0.88,1.2,'excited',t);
-          drawSpeechBubble(sc.text,W/2,H*0.72,880,t,alpha);
-        }
-        else if(sc.type==='feature'){
-          drawCharacter(W*0.25,H*0.78,1.3,'talking',t);
-          // Feature card right side
-          ctx.save();
-          ctx.globalAlpha=alpha;
-          const fx=W*0.62,fy=H*0.3;
-          const grdF=ctx.createLinearGradient(fx-300,fy,fx+300,fy+250);
-          grdF.addColorStop(0,'rgba(255,255,255,0.12)');
-          grdF.addColorStop(1,'rgba(255,255,255,0.06)');
-          ctx.fillStyle=grdF;
-          roundRect(ctx,fx-300,fy,600,250,20); ctx.fill();
-          ctx.font='bold 90px sans-serif';
+          const ngGrad=ctx.createLinearGradient(0,H*0.56,W,H*0.61);
+          ngGrad.addColorStop(0,'rgba(255,45,120,0.85)'); ngGrad.addColorStop(1,'rgba(255,80,140,0.85)');
+          ctx.fillStyle=ngGrad;
+          roundRect(ctx,0,H*0.56,W,H*0.05,0); ctx.fill();
+          ctx.font='bold 46px sans-serif'; ctx.fillStyle='#fff';
           ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('✅',fx,fy+80);
-          ctx.font='bold 52px sans-serif';
-          ctx.fillStyle='#fff';
-          wrapText(ctx,sc.text,fx,fy+155,560,58);
+          ctx.fillText('🛍 REVIEW SẢN PHẨM · TIKTOK SHOP',W/2,H*0.585);
           ctx.restore();
-          drawSpeechBubble(sc.text,W*0.62,H*0.62,680,t,alpha*0.95);
+        }
+        else if(sc.type==='price'){
+          drawAnimeCharacter(charX,charY,charScale,'excited',t);
+          const txt='Giá siêu ưu đãi chỉ '+product.price+'đ thôi! Giảm '+product.discount+' luôn! 🔥';
+          drawSpeechBubble(txt,W*0.45,H*0.05,880,alpha);
+          drawPriceCard(t,alpha);
+        }
+        else if(sc.type==='feature1'){
+          drawAnimeCharacter(charX,charY,charScale*0.9,'talking',t);
+          const feat=(content.features&&content.features[0])||'Chất lượng cao cấp, đáng tiền!';
+          drawSpeechBubble(feat,W*0.42,H*0.06,820,alpha);
+          // Feature icon card
+          ctx.save(); ctx.globalAlpha=alpha;
+          roundRect(ctx,W*0.05,H*0.55,W*0.9,H*0.12,20);
+          ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill();
+          ctx.font='bold 54px sans-serif'; ctx.fillStyle='#fff';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('✅ '+feat,W/2,H*0.61);
+          ctx.restore();
+        }
+        else if(sc.type==='feature2'){
+          drawAnimeCharacter(charX,charY,charScale*0.9,'talking',t);
+          const feat=(content.features&&content.features[1])||'Giao hàng siêu nhanh!';
+          drawSpeechBubble(feat,W*0.42,H*0.06,820,alpha);
+          ctx.save(); ctx.globalAlpha=alpha;
+          roundRect(ctx,W*0.05,H*0.55,W*0.9,H*0.12,20);
+          ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill();
+          ctx.font='bold 54px sans-serif'; ctx.fillStyle='#fff';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('✅ '+feat,W/2,H*0.61);
+          ctx.restore();
         }
         else if(sc.type==='social'){
-          drawCharacter(W/2,H*0.78,1.4,'excited',t);
+          drawAnimeCharacter(charX,charY,charScale,'excited',t);
+          const txt='Đã có '+product.sold+' người mua! Rating '+product.rating+'⭐ cực kỳ tin tưởng nha!';
+          drawSpeechBubble(txt,W*0.45,H*0.05,880,alpha);
+          // Stats row
           ctx.save(); ctx.globalAlpha=alpha;
-          // Stats cards
-          [[product.rating,'⭐ Đánh giá',W/2-260],[product.sold,'📦 Đã bán',W/2+260]].forEach(([val,label,x])=>{
-            const grdS=ctx.createLinearGradient(x-200,H*0.15,x+200,H*0.35);
-            grdS.addColorStop(0,'rgba(255,255,255,0.15)');
-            grdS.addColorStop(1,'rgba(255,255,255,0.05)');
-            ctx.fillStyle=grdS;
-            roundRect(ctx,x-200,H*0.12,400,280,20); ctx.fill();
-            ctx.font='bold 80px sans-serif';
-            ctx.fillStyle='#ffdd00';
+          [[product.rating+'⭐','Đánh giá',W*0.25],[product.sold,'Đã bán',W*0.75]].forEach(([val,lbl,x])=>{
+            roundRect(ctx,x-160,H*0.57,320,H*0.11,18);
+            ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.fill();
+            ctx.font='bold 64px sans-serif'; ctx.fillStyle='#ffee55';
             ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText(val||'4.8',x,H*0.21);
-            ctx.font='42px sans-serif';
-            ctx.fillStyle='rgba(255,255,255,0.8)';
-            ctx.fillText(label,x,H*0.30);
+            ctx.fillText(val,x,H*0.6);
+            ctx.font='38px sans-serif'; ctx.fillStyle='rgba(255,255,255,0.85)';
+            ctx.fillText(lbl,x,H*0.645);
           });
           ctx.restore();
-          drawSpeechBubble(sc.text,W/2,H*0.62,920,t,alpha);
         }
         else if(sc.type==='cta'){
-          drawCharacter(W/2,H*0.72,1.5,'cta',t);
+          drawAnimeCharacter(charX,charY,charScale,'cta',t);
+          // Big CTA
           ctx.save(); ctx.globalAlpha=alpha;
-          drawCTA(sc.text,W/2,H*0.2,t,1);
-          // Hashtags
-          const tags=(content.hashtags||'#tiktokshop #affiliate').slice(0,80);
-          ctx.font='38px sans-serif';
-          ctx.fillStyle='rgba(255,255,255,0.7)';
+          const pulse=1+0.06*Math.sin(t*8);
+          ctx.translate(W/2,H*0.22); ctx.scale(pulse,pulse); ctx.translate(-W/2,-H*0.22);
+          const ctaGrad=ctx.createLinearGradient(W*0.05,H*0.17,W*0.95,H*0.27);
+          ctaGrad.addColorStop(0,'#ff2d78'); ctaGrad.addColorStop(0.5,'#ff6b9d'); ctaGrad.addColorStop(1,'#ff2d78');
+          ctx.fillStyle=ctaGrad;
+          ctx.shadowColor='rgba(255,45,120,0.6)'; ctx.shadowBlur=40;
+          roundRect(ctx,W*0.06,H*0.17,W*0.88,H*0.1,H*0.05); ctx.fill();
+          ctx.shadowColor='transparent';
+          ctx.font='bold 72px sans-serif'; ctx.fillStyle='#fff';
           ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(tags,W/2,H*0.33);
-          // Arrow
-          const ay=H*0.43+12*Math.sin(t*4);
-          ctx.font='bold 56px sans-serif';
-          ctx.fillStyle='#ffdd00';
-          ctx.fillText('👇 Link trong bio',W/2,ay);
+          ctx.fillText(content.cta||'🛒 Mua ngay! Link trong bio 👇',W/2,H*0.22);
+          // Hashtags
+          ctx.font='42px sans-serif'; ctx.fillStyle='rgba(255,255,255,0.75)';
+          const tags=(content.hashtags||'#tiktokshop #affiliate').slice(0,70);
+          ctx.fillText(tags,W/2,H*0.305);
           ctx.restore();
+          drawSpeechBubble('Click link trong bio để mua ngay bạn ơi! 💕',W*0.42,H*0.38,820,alpha);
         }
 
-        // Bottom product name bar
+        // ── Bottom product name bar ──
         ctx.save();
-        ctx.fillStyle='rgba(0,0,0,0.6)';
-        ctx.fillRect(0,H-110,W,110);
-        ctx.font='bold 44px sans-serif';
-        ctx.fillStyle='#fff';
+        ctx.fillStyle='rgba(30,0,20,0.7)';
+        ctx.fillRect(0,H-120,W,120);
+        const short=product.name.length>38?product.name.slice(0,38)+'…':product.name;
+        ctx.font='bold 46px sans-serif'; ctx.fillStyle='#fff';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        const short=product.name.length>35?product.name.slice(0,35)+'...':product.name;
-        ctx.fillText(short,W/2,H-55);
+        ctx.fillText(short,W/2,H-60);
         ctx.restore();
 
         // Progress bar
-        ctx.fillStyle='rgba(255,255,255,0.15)';
-        ctx.fillRect(0,H-6,W,6);
-        ctx.fillStyle=accent;
-        ctx.fillRect(0,H-6,W*(frame/TOTAL),6);
+        ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(0,H-4,W,4);
+        ctx.fillStyle=accent; ctx.fillRect(0,H-4,W*(frame/TOTAL),4);
 
         frame++;
-        if(frame>=TOTAL){ rec.stop(); }
-        else { setTimeout(drawScene,1000/FPS); }
+        if(frame>=TOTAL) rec.stop();
+        else setTimeout(drawFrame,1000/FPS);
       }
 
-      drawScene();
+      drawFrame();
     }catch(e){ console.error('Render error:',e); resolve(null); }
   });
 }
