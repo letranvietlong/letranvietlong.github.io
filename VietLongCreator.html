@@ -1928,7 +1928,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.6 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v8.8 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3073,6 +3073,12 @@ body:has(#panel-affiliate.show) main {
       </div>
 
       <div class="aff-card">
+        <div class="aff-card-title">🔑 CLAUDE API KEY</div>
+        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>API Key</span><a href="https://console.anthropic.com" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="settings-anthropic-key" placeholder="sk-ant-api03-..." oninput="setAnthropicKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div>
+        <div id="aff-api-status" style="font-size:.57rem;color:#fbbf24;margin-top:2px">⚠ Cần API key để AI tìm sản phẩm</div>
+      </div>
+
+      <div class="aff-card">
         <div class="aff-card-title">🛒 TIKTOK SHOP</div>
         <div class="aff-fg"><label>Danh mục</label>
           <select id="aff-category" onchange="saveAffSettings()">
@@ -3237,8 +3243,18 @@ body:has(#panel-affiliate.show) main {
 
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v8.6';
+const APP_VERSION = 'v8.8';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+
+function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
+function setAnthropicKey(k){ localStorage.setItem('vlc_anthropic_key',k.trim()); }
+function _loadAffApiKey(){
+  const k=localStorage.getItem('vlc_anthropic_key')||'';
+  const inp=document.getElementById('settings-anthropic-key');
+  if(inp&&k) inp.value=k;
+  const st=document.getElementById('aff-api-status');
+  if(st){st.textContent=k?'✅ API key đã lưu':'⚠ Cần API key để AI hoạt động';st.style.color=k?'#22c55e':'#fbbf24';}
+}
 function showVersionHistory(){
   let modal=$('ver-modal');
   if(!modal){
@@ -3674,7 +3690,7 @@ async function generateHashtags(platform){
   toast('🏷 Tạo hashtag bằng AI...','info',2000);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST',headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:
         'Generate hashtags for Vietnamese music video. Song: "'+title+'" by "'+artist+'". Return ONLY JSON no markdown: {"youtube":["#tag1"...]30tags,"tiktok":["#tag1"...]20tags,"instagram":["#tag1"...]25tags,"description_vi":"mô tả","description_en":"description"}'
       }]})
@@ -3933,7 +3949,7 @@ async function optimizeTitles(){
   toast('🤖 AI tạo tiêu đề...','info',2000);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST',headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
         'Create 5 YouTube title variations for Vietnamese music video "'+title+'" by "'+artist+'". Return ONLY JSON: {"titles":[{"style":"...","title":"...","reason":"..."}]}'
       }]})
@@ -11113,7 +11129,7 @@ function switchMainTab(tab){
   affPanel.classList.toggle('show',  isAff);
 
   if(isAuto) { loadAutoSettings(); refreshQueueUI(); updateNextRunInfo(); }
-  if(isAff)  { loadAffSettings(); renderAffSlots(); refreshAffStats(); restoreTikTokSession(); }
+  if(isAff)  { loadAffSettings(); renderAffSlots(); refreshAffStats(); restoreTikTokSession(); _loadAffApiKey(); }
 }
 
 // ── Settings persistence ────────────────────────────────────────
@@ -11262,7 +11278,7 @@ async function searchAffProducts(){
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
     const d=await r.json();
@@ -11387,7 +11403,7 @@ async function analyzeProductById(idx){
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:600,
@@ -11415,7 +11431,7 @@ async function analyzeProductCore(url,idx){
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:700,
@@ -11445,55 +11461,66 @@ async function createAffVideo(productIdx){
   if(!p){ toast('Không tìm thấy sản phẩm','warn',2000); return null; }
 
   addAffQueueItem(p,'pending');
-  affLog('info',`🎬 Bắt đầu tạo video: ${p.name}`);
+  affLog('info','🎬 Bắt đầu tạo video sản phẩm: '+p.name);
+  updateAffQueueItem(p.name,'running',10,'AI phân tích sản phẩm...');
 
-  // Step 1: AI tạo title
-  let videoTitle=`${p.name} - Chỉ ${p.price}đ`;
+  // Step 1: AI tạo nội dung video
+  let content={
+    title: p.name,
+    price: p.price,
+    original_price: p.original_price||'',
+    discount: p.discount||'',
+    commission: p.commission||'',
+    features: ['Chất lượng cao','Giao hàng nhanh','Giá tốt nhất'],
+    cta: 'Mua ngay! Link trong bio 🔗',
+    hashtags: ($('aff-hashtags')?.value||'#affiliate #tiktokshop'),
+    emoji: '🛍',
+    bg_color1: '#1a0533',
+    bg_color2: '#2d0a5e',
+    accent: '#ff2d78',
+  };
+
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const prompt='Phân tích sản phẩm TikTok Shop và tạo nội dung video 20 giây:\n'
+      +'Sản phẩm: "'+p.name+'"\nGiá: '+p.price+'đ (gốc: '+p.original_price+'đ, giảm: '+p.discount+')\n'
+      +'Hoa hồng: '+p.commission+'\nDanh mục: '+p.category+'\n'
+      +'Trả về JSON (CHỈ JSON):\n'
+      +'{"title":"Tiêu đề ngắn gọn max 30 ký tự","features":["Điểm hay 1","Điểm hay 2","Điểm hay 3"],'
+      +'"cta":"Call-to-action hấp dẫn","emoji":"emoji phù hợp danh mục",'
+      +'"bg_color1":"màu hex gradient start","bg_color2":"màu hex gradient end","accent":"màu hex nhấn"}';
+
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:300,
-        messages:[{role:'user',content:'Viết title TikTok (tối đa 60 ký tự) cho sản phẩm affiliate: "'+p.name+'" - '+p.price+'đ. Trả về JSON: {"title":"..."}'}]
-      })
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
     });
-    const d=await resp.json();
-    const txt=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
-    const info=JSON.parse(txt);
-    if(info.title) videoTitle=info.title;
-  }catch(e){ affLog('dim','AI title: dùng mặc định'); }
-
-  updateAffQueueItem(p.name,'running',20,'AI tạo script...');
-  affLog('info','📝 Title: '+videoTitle);
-
-  // Step 2: Chọn template ngẫu nhiên nếu chưa có
-  if(!chosenTpl && TMPLS && TMPLS.length){
-    const mcT=TMPLS.filter(t=>t.style==="mc"||t.s==="mc");
-    chosenTpl=(mcT.length?mcT:TMPLS)[Math.floor(Math.random()*((mcT.length?mcT:TMPLS).length))];
+    const d=await r.json();
+    const info=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    if(info.title) content={...content,...info};
+    affLog('ok','✅ AI tạo nội dung: '+content.title);
+  }catch(e){
+    affLog('dim','AI content: dùng mặc định ('+e.message+')');
   }
-  if($('cc-title')) $('cc-title').value=videoTitle;
-  if($('cc-artist')) $('cc-artist').value=p.name||'';
 
-  updateAffQueueItem(p.name,'running',40,'Đang render canvas...');
+  updateAffQueueItem(p.name,'running',30,'Đang render video sản phẩm...');
+  affLog('info','🎥 Render video 9:16 cho TikTok...');
 
-  // Step 3: Record canvas 15 giây
-  const blob=await _recordCanvasBlob(15);
+  // Step 2: Render product video on dedicated canvas
+  const blob=await _renderProductVideo(content, p);
 
   if(!blob||blob.size<1000){
-    affLog('warn','⚠ Canvas record thất bại — tải file trống');
+    affLog('err','❌ Render video thất bại');
     updateAffQueueItem(p.name,'failed',0,'Render thất bại');
     return null;
   }
 
   const mb=(blob.size/1024/1024).toFixed(1);
-  affLog('ok','✅ Video render xong ('+mb+'MB)');
-  updateAffQueueItem(p.name,'running',85,'Upload TikTok...');
+  affLog('ok','✅ Video sản phẩm xong ('+mb+'MB)');
+  updateAffQueueItem(p.name,'running',85,'Chuẩn bị upload...');
   affStats.videos++;
   refreshAffStats();
 
-  // Step 4: Upload hoặc tải xuống
+  // Step 3: Upload hoặc tải xuống
   const sid=localStorage.getItem('tt_session');
   if(sid){
     await uploadAffVideo(p, blob);
@@ -11501,54 +11528,285 @@ async function createAffVideo(productIdx){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download='VLC_'+p.name.slice(0,20).replace(/\s+/g,'_')+'.webm';
-    a.click();
+    a.download='AFF_'+p.name.slice(0,20).replace(/[\s/\\:*?"<>|]/g,'_')+'.webm';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),5000);
     updateAffQueueItem(p.name,'done',100,'✅ Đã tải xuống!');
-    affLog('ok','📥 Video tải xuống: '+videoTitle);
-    toast('📥 Video tải về máy!','success',4000);
+    affLog('ok','📥 Video tải xuống: '+content.title);
+    toast('📥 Video sản phẩm đã tải về máy!','success',4000);
   }
 
-  // Track history
-  _trackVideoPerformance(p, videoTitle, blob.size);
+  _trackVideoPerformance(p, content.title, blob.size);
   saveAffSettings();
   return blob;
 }
 
-async function _recordCanvasBlob(durationSec){
+// ── Render product video 9:16 on offscreen canvas ─────────────
+async function _renderProductVideo(content, product){
   return new Promise((resolve)=>{
     try{
-      const canvas=$('bgcvs')||document.querySelector('canvas');
-      if(!canvas){ resolve(null); return; }
-      const stream=canvas.captureStream(30);
-      const types=['video/webm;codecs=vp9','video/webm','video/mp4'];
-      const mime=types.find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
-      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:2_000_000});
+      // Create dedicated 1080x1920 canvas for product video
+      const W=1080, H=1920;
+      const cvs=document.createElement('canvas');
+      cvs.width=W; cvs.height=H;
+      const ctx=cvs.getContext('2d');
+
+      // Setup MediaRecorder
+      const stream=cvs.captureStream(30);
+      const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+      const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
+      const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4_000_000});
       const chunks=[];
       rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
       rec.onstop=()=>resolve(new Blob(chunks,{type:mime.split(';')[0]}));
-      rec.start(200);
+      rec.start(100);
+
+      const FPS=30, DURATION=20; // 20 seconds
+      const TOTAL=FPS*DURATION;
       let frame=0;
-      const total=durationSec*30;
-      const tick=()=>{
-        if(frame>=total){ rec.stop(); return; }
-        _renderTime=frame/30; _renderDur=durationSec;
-        aiT=frame/30*.4; aiGP=frame/30*.003;
-        try{ drawFrame(); }catch(e){}
+
+      // Parse colors
+      const bg1=content.bg_color1||'#1a0533';
+      const bg2=content.bg_color2||'#2d0a5e';
+      const accent=content.accent||'#ff2d78';
+
+      function easeOut(t){ return 1-Math.pow(1-t,3); }
+      function easeInOut(t){ return t<0.5?4*t*t*t:(1-Math.pow(-2*t+2,3))/2; }
+
+      function drawFrame(){
+        const t=frame/FPS; // time in seconds
+        const tf=frame/TOTAL; // 0..1
+
+        // ── Background gradient ──
+        const grd=ctx.createLinearGradient(0,0,W,H);
+        grd.addColorStop(0,bg1);
+        grd.addColorStop(1,bg2);
+        ctx.fillStyle=grd;
+        ctx.fillRect(0,0,W,H);
+
+        // Animated particles
+        ctx.save();
+        for(let i=0;i<12;i++){
+          const px=(Math.sin(t*0.3+i*0.8)*0.4+0.5)*W;
+          const py=(Math.cos(t*0.2+i*1.1)*0.4+0.5)*H;
+          const r=20+10*Math.sin(t+i);
+          const alpha=0.08+0.04*Math.sin(t*2+i);
+          ctx.beginPath();
+          ctx.arc(px,py,r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // ── SCENE 1 (0-4s): Product intro ──
+        if(t<4){
+          const progress=easeOut(Math.min(t/1.5,1));
+          // Big emoji product
+          ctx.save();
+          ctx.globalAlpha=progress;
+          ctx.font=`${Math.round(200*progress)}px serif`;
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(content.emoji||'🛍',W/2,H*0.3-50*(1-progress));
+          // Product name
+          ctx.font='bold 72px sans-serif';
+          ctx.fillStyle='#ffffff';
+          const title=content.title||product.name;
+          wrapText(ctx,title,W/2,H*0.52,W-120,85);
+          // TikTok Shop badge
+          ctx.font='bold 44px sans-serif';
+          ctx.fillStyle=accent;
+          ctx.fillText('📦 TikTok Shop',W/2,H*0.68);
+          ctx.restore();
+        }
+
+        // ── SCENE 2 (4-9s): Price & Discount ──
+        if(t>=3&&t<9){
+          const progress=easeOut(Math.min((t-3)/1.5,1));
+          ctx.save();
+          ctx.globalAlpha=t<4?t-3:t>8?9-t:1;
+          // Price box
+          const bx=W/2, by=H*0.4;
+          const bw=800, bh=320;
+          ctx.fillStyle='rgba(0,0,0,0.4)';
+          roundRect(ctx,bx-bw/2,by-bh/2,bw,bh,30);
+          ctx.fill();
+          // Original price strikethrough
+          if(product.original_price){
+            ctx.font='48px sans-serif';
+            ctx.fillStyle='rgba(255,255,255,0.5)';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(product.original_price+'đ',W/2,by-70);
+            ctx.strokeStyle='rgba(255,255,255,0.5)';
+            ctx.lineWidth=3;
+            const tw=ctx.measureText(product.original_price+'đ').width;
+            ctx.beginPath();
+            ctx.moveTo(W/2-tw/2,by-70);
+            ctx.lineTo(W/2+tw/2,by-70);
+            ctx.stroke();
+          }
+          // Current price BIG
+          ctx.font='bold 130px sans-serif';
+          ctx.fillStyle='#ffdd00';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(product.price+'đ',W/2,by+10);
+          // Discount badge
+          if(product.discount){
+            ctx.fillStyle=accent;
+            roundRect(ctx,W/2+180,by-120,200,80,20);
+            ctx.fill();
+            ctx.font='bold 52px sans-serif';
+            ctx.fillStyle='#ffffff';
+            ctx.fillText(product.discount,W/2+280,by-80);
+          }
+          // Commission
+          ctx.font='bold 52px sans-serif';
+          ctx.fillStyle='#22c55e';
+          ctx.fillText('💰 Hoa hồng: '+product.commission,W/2,by+120);
+          ctx.restore();
+        }
+
+        // ── SCENE 3 (9-15s): Features ──
+        if(t>=8.5&&t<15){
+          const sceneT=t-8.5;
+          ctx.save();
+          ctx.globalAlpha=t<9.5?sceneT:t>14?15-t:1;
+          ctx.font='bold 60px sans-serif';
+          ctx.fillStyle='#ffffff';
+          ctx.textAlign='left';
+          ctx.textBaseline='middle';
+          const features=content.features||[];
+          features.slice(0,3).forEach((feat,i)=>{
+            const fy=H*0.3+i*170;
+            const delay=i*0.4;
+            const fp=easeOut(Math.min(Math.max(sceneT-delay,0)/0.8,1));
+            ctx.globalAlpha=(t<9.5?sceneT:t>14?15-t:1)*fp;
+            // Feature row
+            ctx.fillStyle='rgba(255,255,255,0.1)';
+            roundRect(ctx,60,fy-55,W-120,110,20);
+            ctx.fill();
+            // Checkmark
+            ctx.fillStyle='#22c55e';
+            ctx.font='bold 60px sans-serif';
+            ctx.textAlign='left';
+            ctx.fillText('✅',80,fy);
+            // Text
+            ctx.fillStyle='#ffffff';
+            ctx.font='bold 54px sans-serif';
+            ctx.fillText(feat,170,fy);
+          });
+          ctx.restore();
+        }
+
+        // ── SCENE 4 (15-20s): CTA ──
+        if(t>=14.5){
+          const sceneT=t-14.5;
+          const progress=easeOut(Math.min(sceneT/1,1));
+          ctx.save();
+          ctx.globalAlpha=progress;
+          // Pulsing CTA button
+          const pulse=1+0.05*Math.sin(t*8);
+          ctx.save();
+          ctx.translate(W/2,H*0.4);
+          ctx.scale(pulse,pulse);
+          const btw=800, bth=160;
+          const btnGrd=ctx.createLinearGradient(-btw/2,0,btw/2,0);
+          btnGrd.addColorStop(0,'#ff2d78');
+          btnGrd.addColorStop(1,'#ff6b9d');
+          ctx.fillStyle=btnGrd;
+          roundRect(ctx,-btw/2,-bth/2,btw,bth,40);
+          ctx.fill();
+          ctx.font='bold 72px sans-serif';
+          ctx.fillStyle='#ffffff';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(content.cta||'Mua ngay! 🛒',0,0);
+          ctx.restore();
+          // Hashtags
+          ctx.font='44px sans-serif';
+          ctx.fillStyle='rgba(255,255,255,0.7)';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          const tags=(content.hashtags||'#tiktokshop #affiliate').slice(0,60);
+          ctx.fillText(tags,W/2,H*0.58);
+          // Arrow down (link in bio hint)
+          ctx.font='bold 52px sans-serif';
+          ctx.fillStyle='#ffdd00';
+          const arrowY=H*0.68+10*Math.sin(t*4);
+          ctx.fillText('🔗 Link trong bio ↓',W/2,arrowY);
+          ctx.restore();
+        }
+
+        // ── TOP badge: always visible ──
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        roundRect(ctx,30,40,320,80,20);
+        ctx.fill();
+        ctx.font='bold 44px sans-serif';
+        ctx.fillStyle='#ff2d78';
+        ctx.textAlign='left';
+        ctx.textBaseline='middle';
+        ctx.fillText('🛍 AFFILIATE',50,80);
+        ctx.restore();
+
+        // Progress bar bottom
+        ctx.fillStyle='rgba(255,255,255,0.15)';
+        ctx.fillRect(0,H-8,W,8);
+        ctx.fillStyle=accent;
+        ctx.fillRect(0,H-8,W*tf,8);
+
         frame++;
-        setTimeout(tick,33);
-      };
-      tick();
-    }catch(e){ console.warn('Record error:',e); resolve(null); }
+        if(frame>=TOTAL){
+          rec.stop();
+        } else {
+          setTimeout(drawFrame, 1000/FPS);
+        }
+      }
+
+      drawFrame();
+    }catch(e){
+      console.error('Product video error:',e);
+      resolve(null);
+    }
   });
 }
 
+// Helper: wrap text
+function wrapText(ctx,text,x,y,maxW,lineH){
+  const words=text.split(' ');
+  let line='';
+  let ly=y;
+  for(let i=0;i<words.length;i++){
+    const test=line+words[i]+' ';
+    if(ctx.measureText(test).width>maxW&&i>0){
+      ctx.fillText(line,x,ly);
+      line=words[i]+' ';
+      ly+=lineH;
+    } else { line=test; }
+  }
+  ctx.fillText(line,x,ly);
+}
+
+// Helper: rounded rect
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
 function _trackVideoPerformance(product, title, size){
-  const rec={
-    id:Date.now(), product:product.name, title,
-    size:Math.round(size/1024), time:new Date().toLocaleString('vi-VN'),
-    status:'done', views:0, likes:0,
-  };
+  const rec={id:Date.now(),product:product.name,title,size:Math.round(size/1024),
+    time:new Date().toLocaleString('vi-VN'),status:'done',views:0,likes:0};
   const hist=JSON.parse(localStorage.getItem('vlc_video_history')||'[]');
   hist.unshift(rec);
   localStorage.setItem('vlc_video_history',JSON.stringify(hist.slice(0,50)));
@@ -11558,8 +11816,17 @@ function _trackVideoPerformance(product, title, size){
 function _refreshVideoHistory(){
   const el=$('aff-video-history'); if(!el) return;
   const hist=JSON.parse(localStorage.getItem('vlc_video_history')||'[]');
-  if(!hist.length){ el.innerHTML='<div style="font-size:.6rem;color:var(--tx3)">Chưa có video nào</div>'; return; }
-  el.innerHTML=hist.slice(0,8).map(v=>'<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.6rem"><div style="flex:1;min-width:0"><div style="color:var(--tx);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+v.title+'</div><div style="color:var(--tx3);font-size:.56rem">'+v.time+'</div></div><span style="color:#22c55e;font-size:.56rem;white-space:nowrap">✓</span></div>').join('');
+  if(!hist.length){
+    el.innerHTML='<div style="font-size:.6rem;color:var(--tx3)">Chưa có video nào</div>';
+    return;
+  }
+  el.innerHTML=hist.slice(0,8).map(v=>
+    '<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--line)">'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:.63rem;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+v.title+'</div>'
+    +'<div style="font-size:.56rem;color:var(--tx3)">'+v.time+' · '+(v.size/1024).toFixed(1)+'MB</div>'
+    +'</div><span style="color:#22c55e;font-size:.6rem;flex-shrink:0">✓ Xong</span></div>'
+  ).join('');
 }
 
 // ── Upload to TikTok ────────────────────────────────────────────
@@ -11754,7 +12021,7 @@ async function genAffHashtags(){
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:200,
