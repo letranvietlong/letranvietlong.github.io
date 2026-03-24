@@ -1782,6 +1782,353 @@ body:has(#panel-affiliate.show) main {
 .aff-slot-chip { display:flex; align-items:center; gap:5px; background:rgba(255,45,120,.08); border:1px solid rgba(255,45,120,.2); border-radius:20px; padding:3px 9px; margin-bottom:4px; font-size:.58rem; color:#ff6b9d; font-family:'IBM Plex Mono',monospace; }
 .aff-slot-chip button { background:none; border:none; color:var(--tx3); cursor:pointer; font-size:.65rem; padding:0; }
 .aff-slot-chip button:hover { color:#ef4444; }
+
+/* ══════════════════════════════════════════
+   AFFILIATE TAB — LAYOUT FIX v9.4
+   Fixes: text overlap, cramped stats bar,
+   inconsistent fonts, card padding
+══════════════════════════════════════════ */
+
+/* Stats bar — wrap on small screens, consistent height */
+.aff-stats-bar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:1px;
+  background:var(--line);
+  border-bottom:2px solid var(--line);
+  min-height:64px;
+  align-items:stretch;
+}
+.aff-stat-item {
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 16px;
+  background:var(--bg);
+  min-width:100px;
+  transition:background .2s;
+}
+.aff-stat-item:hover { background:var(--surface); }
+.aff-stat-val {
+  font-size:1.3rem !important;
+  font-weight:800;
+  line-height:1;
+  font-family:'IBM Plex Mono',monospace;
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.aff-stat-lbl {
+  font-size:.57rem !important;
+  color:var(--tx3);
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Workspace: proper 3-col grid */
+.aff-workspace {
+  display:grid !important;
+  grid-template-columns:260px 1fr 260px !important;
+  min-height:calc(100vh - 200px);
+  overflow:hidden;
+}
+@media(max-width:1300px){ .aff-workspace { grid-template-columns:230px 1fr 230px !important; } }
+@media(max-width:1000px){ .aff-workspace { grid-template-columns:1fr !important; } }
+
+/* Column */
+.aff-col {
+  border-right:1px solid var(--line);
+  display:flex !important;
+  flex-direction:column !important;
+  overflow-x:hidden !important;
+  overflow-y:auto;
+  min-width:0 !important;
+  box-sizing:border-box;
+}
+.aff-col:last-child { border-right:none; }
+
+/* Col header — always sticky, always on top */
+.aff-col-header {
+  display:flex !important;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  font-size:.56rem !important;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--tx3);
+  background:var(--bg);
+  border-bottom:1px solid var(--line);
+  position:sticky !important;
+  top:0 !important;
+  z-index:20 !important;
+  font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
+  overflow:hidden;
+  min-height:34px;
+  flex-shrink:0;
+}
+.aff-col-header > button {
+  flex-shrink:0;
+  margin-left:auto;
+}
+
+/* Card */
+.aff-card {
+  padding:10px 12px !important;
+  border-bottom:1px solid var(--line);
+  min-width:0 !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  flex-shrink:0;
+}
+.aff-card:last-child { border-bottom:none; }
+
+/* Card title */
+.aff-card-title {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  font-size:.56rem !important;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin-bottom:9px !important;
+  color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.aff-card-title::before {
+  content:'';
+  width:3px; height:10px;
+  border-radius:2px;
+  background:linear-gradient(180deg,#ff2d78,#ff6b9d);
+  flex-shrink:0;
+}
+
+/* Form fields */
+.aff-fg { margin-bottom:8px !important; }
+.aff-fg label {
+  display:block;
+  font-size:.55rem !important;
+  color:var(--tx3);
+  font-family:'IBM Plex Mono',monospace;
+  margin-bottom:3px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.aff-fg input,
+.aff-fg select,
+.aff-fg textarea {
+  width:100% !important;
+  background:var(--ink);
+  border:1px solid var(--line2);
+  color:var(--tx);
+  border-radius:7px;
+  padding:6px 8px;
+  font-family:var(--fb);
+  font-size:.7rem !important;
+  outline:none;
+  box-sizing:border-box !important;
+  transition:border-color .18s;
+  min-width:0 !important;
+}
+.aff-fg input:focus,
+.aff-fg select:focus { border-color:#ff2d78; }
+.aff-hint {
+  font-size:.55rem !important;
+  color:var(--tx3);
+  margin-top:3px;
+  line-height:1.4;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Connect box */
+.aff-connect-box {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--surface2);
+  border:1px solid var(--line2);
+  border-radius:8px;
+  padding:8px 10px;
+  cursor:pointer;
+  transition:all .18s;
+  margin-bottom:8px;
+  min-width:0;
+  overflow:hidden;
+}
+
+/* Product card */
+.aff-product-card {
+  display:flex;
+  gap:8px;
+  padding:8px 10px;
+  background:var(--surface2);
+  border:1px solid var(--line);
+  border-radius:8px;
+  margin-bottom:6px;
+  min-width:0;
+  overflow:hidden;
+  cursor:pointer;
+  transition:border-color .18s;
+}
+.aff-product-card:hover { border-color:rgba(255,45,120,.4); }
+.aff-product-img {
+  width:40px; height:40px;
+  border-radius:6px;
+  flex-shrink:0;
+  background:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.1rem;
+}
+.aff-product-info { flex:1; min-width:0; }
+.aff-product-name {
+  font-size:.65rem !important;
+  font-weight:700;
+  color:var(--tx);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  line-height:1.3;
+}
+.aff-product-price {
+  font-size:.65rem !important;
+  color:#ff2d78;
+  font-weight:700;
+  font-family:'IBM Plex Mono',monospace;
+}
+.aff-product-commission {
+  font-size:.57rem !important;
+  color:#22c55e;
+  margin-top:1px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.aff-product-actions {
+  display:flex;
+  gap:4px;
+  margin-top:5px;
+  flex-wrap:wrap;
+}
+.aff-product-btn {
+  padding:3px 8px;
+  border-radius:4px;
+  border:1px solid var(--line2);
+  background:var(--surface);
+  color:var(--tx3);
+  font-size:.56rem !important;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s;
+}
+.aff-product-btn:hover { border-color:#ff2d78; color:#ff2d78; }
+.aff-product-btn.primary {
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  border-color:transparent;
+  color:#fff;
+}
+
+/* Queue item */
+.aff-qi {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 9px; border-radius:7px;
+  margin-bottom:5px;
+  background:var(--surface2); border:1px solid var(--line);
+  min-width:0; overflow:hidden;
+}
+.aff-qi-title {
+  font-size:.64rem !important;
+  font-weight:600; color:var(--tx);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.aff-qi-meta { font-size:.56rem !important; color:var(--tx3); margin-top:1px; }
+
+/* Run button */
+.aff-run-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 14px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff2d78,#ff6b9d);
+  color:#fff;
+  font-weight:800;
+  font-size:.66rem !important;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.03em;
+  white-space:nowrap;
+  box-shadow:0 3px 10px rgba(255,45,120,.3);
+  transition:all .2s;
+  flex-shrink:0;
+}
+.aff-run-btn:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(255,45,120,.45); }
+.aff-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+/* Empty state */
+.aff-empty-state {
+  display:flex; flex-direction:column;
+  align-items:center; gap:5px;
+  padding:20px 10px;
+  color:var(--tx3); text-align:center;
+}
+
+/* Log */
+#aff-log {
+  font-family:'IBM Plex Mono',monospace !important;
+  font-size:.58rem !important;
+  color:var(--tx3);
+  line-height:1.6;
+  max-height:180px;
+  overflow-y:auto;
+}
+#aff-log > div { padding:1px 0; }
+
+/* Slot chips */
+.aff-slot-chip {
+  display:flex; align-items:center; gap:5px;
+  background:rgba(255,45,120,.08);
+  border:1px solid rgba(255,45,120,.2);
+  border-radius:20px;
+  padding:3px 9px;
+  margin-bottom:4px;
+  font-size:.57rem !important;
+  color:#ff6b9d;
+  font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+/* Session chip */
+#aff-session-chip {
+  font-size:.55rem !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  max-width:160px;
+}
+#aff-status-badge {
+  font-size:.56rem !important;
+  white-space:nowrap !important;
+}
+.aff-qi.reviewing{border-color:rgba(251,191,36,.45)!important;background:rgba(251,191,36,.03)!important}.aff-qi.uploaded{border-color:rgba(34,197,94,.5)!important;background:rgba(34,197,94,.03)!important}.aff-qi-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end}
 </style>
 </head>
 <body>
@@ -1928,7 +2275,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.2 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.5 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3028,8 +3375,9 @@ body:has(#panel-affiliate.show) main {
       <div id="aff-status-badge" style="font-size:.58rem;font-family:'IBM Plex Mono',monospace;color:var(--tx3)">⏸ STANDBY</div>
       <div id="aff-session-chip" style="font-size:.56rem;color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 6px;margin-top:2px">⚠ Chưa kết nối TikTok</div>
     </div>
-    <div style="display:flex;align-items:center;padding:0 20px">
+    <div style="display:flex;align-items:center;gap:8px;padding:0 16px;flex-shrink:0">
       <button id="aff-run-btn" onclick="runAffiliateNow()" class="aff-run-btn">▶ Chạy ngay</button>
+      <button onclick="stopAffiliate()" id="aff-stop-btn" style="display:none;padding:7px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.64rem;font-weight:700;cursor:pointer;white-space:nowrap">■ Dừng</button>
     </div>
   </div>
 
@@ -3172,7 +3520,7 @@ body:has(#panel-affiliate.show) main {
         </div>
       </div>
 
-      <div class="aff-col-header" style="position:relative;top:auto">
+      <div class="aff-col-header" style="position:sticky;top:0;">
         <div class="aff-col-dot" style="background:#fbbf24;box-shadow:0 0 6px #fbbf24"></div>
         📹 HÀNG ĐỢI VIDEO
         <button onclick="clearAffQueue()" style="margin-left:auto;font-size:.55rem;color:var(--tx3);background:none;border:none;cursor:pointer">Dọn sạch</button>
@@ -3183,7 +3531,7 @@ body:has(#panel-affiliate.show) main {
         </div>
       </div>
 
-      <div class="aff-col-header" style="position:relative;top:auto">
+      <div class="aff-col-header" style="position:sticky;top:0;">
         <div class="aff-col-dot" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></div>🤖 AI LOG
       </div>
       <div class="aff-card" style="padding:8px 12px">
@@ -3196,6 +3544,94 @@ body:has(#panel-affiliate.show) main {
     <!-- COL 3 -->
     <div class="aff-col">
       <div class="aff-col-header"><div class="aff-col-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></div>📊 HIỆU SUẤT</div>
+
+            <!-- Workflow guide -->
+      <div class="aff-card">
+        <div class="aff-card-title">📋 WORKFLOW CHI TIẾT</div>
+
+        <!-- Step by step flow -->
+        <div style="display:flex;flex-direction:column;gap:0">
+
+          <!-- Step 1 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+              <div style="width:2px;flex:1;background:linear-gradient(to bottom,rgba(255,45,120,.4),rgba(255,45,120,.1));margin:3px 0;min-height:20px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 14px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">🔗 Kết nối TikTok</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Mở <b>tiktok.com</b> → F12 → Application → Cookies → copy <b style="color:#ff2d78;font-family:'IBM Plex Mono',monospace">sessionid</b> → paste vào ô bên trái</div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+              <div style="width:2px;flex:1;background:linear-gradient(to bottom,rgba(139,92,246,.4),rgba(139,92,246,.1));margin:3px 0;min-height:20px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 14px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">🔑 Nhập Claude API Key</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Vào <a href="https://console.anthropic.com" target="_blank" style="color:var(--a2)">console.anthropic.com</a> → lấy API key → paste vào ô <b>Claude API Key</b> → nhấn <b>🔍 Kiểm tra</b></div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#080810;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+              <div style="width:2px;flex:1;background:linear-gradient(to bottom,rgba(245,158,11,.4),rgba(245,158,11,.1));margin:3px 0;min-height:20px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 14px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">⚙ Cấu hình TikTok Shop</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Chọn <b>danh mục</b> sản phẩm · nhập <b>từ khoá</b> (tuỳ chọn) · chọn số SP · chọn sắp xếp theo <b>hoa hồng cao</b></div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+              <div style="width:2px;flex:1;background:linear-gradient(to bottom,rgba(34,197,94,.4),rgba(34,197,94,.1));margin:3px 0;min-height:20px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 14px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">🔍 Tìm sản phẩm</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Nhấn <b>Tìm ngay</b> hoặc <b>▶ Chạy ngay</b> → AI tự động tìm sản phẩm hot trên TikTok Shop theo danh mục đã chọn</div>
+            </div>
+          </div>
+
+          <!-- Step 5 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+              <div style="width:2px;flex:1;background:linear-gradient(to bottom,rgba(6,182,212,.4),rgba(6,182,212,.1));margin:3px 0;min-height:20px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 14px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">🎬 AI tạo video</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Nhấn <b>🎬 Tạo video</b> trên sản phẩm → AI phân tích → tạo kịch bản → render video anime 9:16 (22 giây) với nhân vật giới thiệu sản phẩm</div>
+            </div>
+          </div>
+
+          <!-- Step 6 -->
+          <div style="display:flex;gap:0">
+            <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
+              <div style="width:2px;flex:1;background:none;margin:3px 0;min-height:10px"></div>
+            </div>
+            <div style="flex:1;padding:0 0 8px 10px">
+              <div style="font-size:.62rem;font-weight:700;color:var(--tx);margin-bottom:2px">☁ Upload TikTok</div>
+              <div style="font-size:.58rem;color:var(--tx3);line-height:1.6">Video tải về máy tự động + TikTok upload mở sẵn · Caption đã copy → <kbd style="background:var(--surface2);border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:.55rem">Ctrl+V</kbd> paste · Gắn link sản phẩm → Đăng!</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Auto mode note -->
+        <div style="margin-top:8px;padding:8px 10px;background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.15);border-radius:8px">
+          <div style="font-size:.58rem;color:#ff6b9d;font-weight:700;margin-bottom:3px">⚡ CHẾ ĐỘ TỰ ĐỘNG</div>
+          <div style="font-size:.57rem;color:var(--tx3);line-height:1.6">Nhấn <b style="color:var(--tx)">▶ Chạy ngay</b> để thực hiện toàn bộ bước 4→6 tự động. Hoặc đặt <b style="color:var(--tx)">Lịch tự động</b> để chạy theo giờ mỗi ngày.</div>
+        </div>
+      </div>
 
       <div class="aff-card">
         <div class="aff-card-title">💰 CÁCH NHẬN HOA HỒNG</div>
@@ -3233,17 +3669,10 @@ body:has(#panel-affiliate.show) main {
         <div class="aff-fg"><label>URL TikTok Shop</label>
           <input type="text" id="aff-analyze-url" placeholder="https://vt.tiktok.com/..." style="font-size:.64rem">
         </div>
-        <button onclick="analyzeProduct()" style="width:100%;padding:7px;border-radius:7px;border:none;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;font-size:.65rem;font-weight:700;cursor:pointer;margin-bottom:7px">✨ Phân tích AI</button>
-        <div id="aff-analysis-result" style="font-size:.61rem;color:var(--tx3);line-height:1.6;min-height:14px"></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
+        <button onclick="analyzeProduct()" style="width:100%;padding:7px;border-radius:7px;border:none;background:linear-gradi
 <script>
 // ── Version Info ──
-const APP_VERSION = 'v9.2';
+const APP_VERSION = 'v9.5';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -11563,22 +11992,9 @@ async function createAffVideo(productIdx){
   affStats.videos++;
   refreshAffStats();
 
-  // Step 3: Upload hoặc tải xuống
-  const sid=localStorage.getItem('tt_session');
-  if(sid){
-    await uploadAffVideo(p, blob);
-  } else {
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download='AFF_'+p.name.slice(0,20).replace(/[\s/\\:*?"<>|]/g,'_')+'.webm';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    updateAffQueueItem(p.name,'done',100,'✅ Đã tải xuống!');
-    affLog('ok','📥 Video tải xuống: '+content.title);
-    toast('📥 Video sản phẩm đã tải về máy!','success',4000);
-  }
-
+  showQueueItemReview(p.name,blob,p);
+  affLog('ok','👁 Video sẵn sàng · nhấn ✅ Duyệt & Upload');
+  toast('🎬 Xong! Nhấn ✅ Duyệt & Upload để đăng TikTok','success',5000);
   _trackVideoPerformance(p, content.title, blob.size);
   saveAffSettings();
   return blob;
@@ -12275,34 +12691,112 @@ function buildAffCaption(product){
 // ── Queue management ────────────────────────────────────────────
 function addAffQueueItem(product,status){
   const el=$('aff-queue'); if(!el) return;
-  // Remove empty state
-  const empty=el.querySelector('.aff-empty-state');
-  if(empty) empty.remove();
-  const id='aqi-'+Date.now();
+  const empty=el.querySelector('.aff-empty-state'); if(empty) empty.remove();
+  product._queueId='aqi-'+Date.now();
   const div=document.createElement('div');
-  div.className=`aff-qi ${status}`; div.id=id;
-  div.innerHTML=`
-    <div class="aff-qi-status">${status==='pending'?'⏳':status==='running'?'⚙️':status==='done'?'✅':'❌'}</div>
-    <div class="aff-qi-info">
-      <div class="aff-qi-title">${product.name}</div>
-      <div class="aff-qi-meta">${product.price}đ · ${product.commission} hoa hồng</div>
-      <div class="aff-qi-prog"><div class="aff-qi-prog-fill" style="width:0%"></div></div>
-    </div>`;
+  div.className='aff-qi '+status; div.id=product._queueId;
+  div.innerHTML='<div class="aff-qi-status">'+(status==='pending'?'⏳':'⚙️')+'</div>'+
+    '<div class="aff-qi-info" style="flex:1;min-width:0">'+
+    '<div class="aff-qi-title">'+product.name+'</div>'+
+    '<div class="aff-qi-meta">'+product.price+'đ · '+product.commission+' hoa hồng</div>'+
+    '<div class="aff-qi-prog"><div class="aff-qi-prog-fill" style="width:0%"></div></div>'+
+    '</div><div class="aff-qi-actions"></div>';
   el.insertBefore(div,el.firstChild);
+  return product._queueId;
 }
 
 function updateAffQueueItem(name,status,pct,msg){
   const el=$('aff-queue'); if(!el) return;
-  const items=[...el.querySelectorAll('.aff-qi')];
-  const item=items.find(i=>i.querySelector('.aff-qi-title')?.textContent===name);
+  const item=[...el.querySelectorAll('.aff-qi')].find(x=>x.querySelector('.aff-qi-title')?.textContent===name);
   if(!item) return;
-  item.className=`aff-qi ${status}`;
-  const statusEl=item.querySelector('.aff-qi-status');
-  if(statusEl) statusEl.textContent=status==='running'?'⚙️':status==='done'?'✅':status==='failed'?'❌':'⏳';
-  const meta=item.querySelector('.aff-qi-meta');
-  if(meta&&msg) meta.textContent=msg;
-  const fill=item.querySelector('.aff-qi-prog-fill');
-  if(fill) fill.style.width=pct+'%';
+  item.className='aff-qi '+status;
+  const bc={done:'rgba(34,197,94,.35)',failed:'rgba(239,68,68,.3)',reviewing:'rgba(251,191,36,.45)',uploaded:'rgba(34,197,94,.45)'};
+  item.style.borderColor=bc[status]||'var(--line)';
+  const s=item.querySelector('.aff-qi-status');
+  if(s) s.textContent=status==='running'?'⚙️':status==='done'?'✅':status==='failed'?'❌':status==='reviewing'?'👁':status==='uploaded'?'☁️':'⏳';
+  const m2=item.querySelector('.aff-qi-meta'); if(m2&&msg) m2.textContent=msg;
+  const f=item.querySelector('.aff-qi-prog-fill'); if(f) f.style.width=pct+'%';
+}
+
+function showQueueItemReview(name,blob,product){
+  const el=$('aff-queue'); if(!el) return;
+  const item=[...el.querySelectorAll('.aff-qi')].find(x=>x.querySelector('.aff-qi-title')?.textContent===name);
+  if(!item) return;
+  item.className='aff-qi reviewing';
+  item.style.borderColor='rgba(251,191,36,.45)';
+  item.style.background='rgba(251,191,36,.03)';
+  const s=item.querySelector('.aff-qi-status'); if(s) s.textContent='👁';
+  const m2=item.querySelector('.aff-qi-meta'); if(m2) m2.textContent='✅ Xong · Chờ duyệt để upload';
+  const f=item.querySelector('.aff-qi-prog-fill'); if(f){f.style.width='100%';f.style.background='#fbbf24';}
+  item._blob=blob; item._prod=product;
+  const pu=URL.createObjectURL(blob); item._pu=pu;
+  const ac=item.querySelector('.aff-qi-actions'); if(!ac) return;
+  ac.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end;margin-left:8px';
+  const s1='padding:4px 10px;border-radius:6px;border:1px solid rgba(0,229,195,.4);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap';
+  const s2='padding:4px 10px;border-radius:6px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap';
+  const s3='padding:3px 8px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.6rem;cursor:pointer';
+  ac.innerHTML=
+    '<button onclick="previewAffVideo(this)" data-url="'+pu+'" style="'+s1+'">▶ Preview</button>'+
+    '<button onclick="approveAffVideo(this)" style="'+s2+'">✅ Duyệt & Upload</button>'+
+    '<button onclick="rejectAffVideo(this)" style="'+s3+'">✕ Xoá</button>';
+}
+
+function previewAffVideo(btn){
+  const url=btn.dataset.url; if(!url) return;
+  document.getElementById('aff-pvm')?.remove();
+  const modal=document.createElement('div');
+  modal.id='aff-pvm';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px';
+  const vEl=document.createElement('video');
+  vEl.src=url; vEl.controls=true; vEl.autoplay=true; vEl.loop=true; vEl.playsInline=true;
+  vEl.style.cssText='height:75vh;border-radius:14px;box-shadow:0 0 50px rgba(255,45,120,.2);aspect-ratio:9/16';
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='✕ Đóng';
+  closeBtn.style.cssText='padding:9px 24px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:.75rem;cursor:pointer';
+  closeBtn.onclick=()=>modal.remove();
+  modal.appendChild(vEl); modal.appendChild(closeBtn);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  document.body.appendChild(modal);
+}
+
+async function approveAffVideo(btn){
+  const item=btn.closest('.aff-qi');
+  if(!item||!item._blob){toast('Không tìm thấy video','warn',2000);return;}
+  const blob=item._blob;
+  const product=item._prod||{name:item.querySelector('.aff-qi-title')?.textContent||'Video'};
+  document.getElementById('aff-pvm')?.remove();
+  const ac=item.querySelector('.aff-qi-actions');
+  if(ac) ac.innerHTML='<span style="font-size:.58rem;color:var(--tx3);white-space:nowrap">☁️ Uploading...</span>';
+  item.className='aff-qi running'; item.style.borderColor='var(--line)'; item.style.background='';
+  const m2=item.querySelector('.aff-qi-meta'); if(m2) m2.textContent='☁️ Đang upload TikTok...';
+  affLog('info','☁️ Duyệt → upload: '+product.name);
+  const caption=buildAffCaption(product);
+  const privacy=$('aff-privacy')?.value||'private';
+  const result=await uploadVideoTikTok(blob,caption,privacy);
+  if(result){
+    item.className='aff-qi uploaded'; item.style.borderColor='rgba(34,197,94,.5)'; item.style.background='rgba(34,197,94,.03)';
+    const s=item.querySelector('.aff-qi-status'); if(s) s.textContent='☁️';
+    if(m2) m2.textContent='✅ Đã upload TikTok!';
+    if(ac) ac.innerHTML='<span style="font-size:.58rem;color:#22c55e;white-space:nowrap">✅ Xong</span>';
+    affStats.uploaded++; refreshAffStats();
+    affLog('ok','✅ Upload: '+product.name);
+  } else {
+    item.className='aff-qi reviewing'; item.style.borderColor='rgba(251,191,36,.45)';
+    item._blob=blob; item._prod=product;
+    if(m2) m2.textContent='❌ Thất bại · Nhấn Thử lại';
+    const s2b='padding:4px 10px;border-radius:6px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap';
+    if(ac) ac.innerHTML='<button onclick="approveAffVideo(this)" style="'+s2b+'">🔄 Thử lại</button>';
+  }
+  saveAffSettings();
+}
+
+function rejectAffVideo(btn){
+  const item=btn.closest('.aff-qi'); if(!item) return;
+  if(item._pu) URL.revokeObjectURL(item._pu);
+  item._blob=null;
+  affLog('info','🗑 Xoá: '+(item.querySelector('.aff-qi-title')?.textContent||''));
+  item.style.transition='opacity .3s,transform .3s'; item.style.opacity='0'; item.style.transform='translateX(16px)';
+  setTimeout(()=>item.remove(),350);
 }
 
 function clearAffQueue(){
@@ -12912,6 +13406,13 @@ function restoreTikTokSession(){
 }
 
 // ── Aliases ───────────────────────────────────────────────────
+function verifyTikTokToken(){ connectWithSession(); }
+function startTikTokLogin(){ $('aff-tt-login-area') && ($('aff-tt-login-area').style.display=''); }
+function connectTikTok(){ startTikTokLogin(); }
+function startTikTokOAuth(){ startTikTokLogin(); }
+function checkProxyStatus(){ return true; }
+
+
 function verifyTikTokToken(){ connectWithSession(); }
 function startTikTokLogin(){ $('aff-tt-login-area') && ($('aff-tt-login-area').style.display=''); }
 function connectTikTok(){ startTikTokLogin(); }
