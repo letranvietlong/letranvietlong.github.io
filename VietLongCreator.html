@@ -2275,7 +2275,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v9.5 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.1 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3377,6 +3377,7 @@ body:has(#panel-affiliate.show) main {
     </div>
     <div style="display:flex;align-items:center;gap:8px;padding:0 16px;flex-shrink:0">
       <button id="aff-run-btn" onclick="runAffiliateNow()" class="aff-run-btn">▶ Chạy ngay</button>
+      <button onclick="runDemoAffVideo()" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(0,229,195,.5);background:rgba(0,229,195,.1);color:var(--a2);font-size:.66rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace;transition:all .2s">🎬 Demo Video</button>
       <button onclick="stopAffiliate()" id="aff-stop-btn" style="display:none;padding:7px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.64rem;font-weight:700;cursor:pointer;white-space:nowrap">■ Dừng</button>
     </div>
   </div>
@@ -3425,6 +3426,14 @@ body:has(#panel-affiliate.show) main {
         <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>API Key</span><a href="https://console.anthropic.com" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="settings-anthropic-key" placeholder="sk-ant-api03-..." oninput="setAnthropicKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="aff-api-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">⚠ Cần API key để AI hoạt động</div><button id="aff-test-key-btn" onclick="testAnthropicKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,229,195,.4);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Kiểm tra</button></div>
       </div>
+
+      <div class="aff-card">
+        <div class="aff-card-title">🎬 HEYGEN API</div>
+        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>HeyGen API Key</span><a href="https://app.heygen.com/settings?nav=API" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="heygen-api-key" placeholder="NjY4..." oninput="setHeyGenKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div>
+        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Avatar ID</span><button onclick="listHeyGenAvatars()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">📋 Xem</button></label><input type="text" id="heygen-avatar-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div>
+        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Voice ID</span><button onclick="listHeyGenVoices()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">🔊 Xem</button></label><input type="text" id="heygen-voice-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div>
+        <div class="aff-fg"><label>Chế độ video</label><select id="heygen-mode" onchange="saveAffSettings();updateHeyGenModeUI()"><option value="canvas">🎨 Canvas AI (miễn phí)</option><option value="heygen">🎬 HeyGen Avatar (người thật)</option><option value="hybrid">✨ Hybrid (HeyGen + Canvas)</option></select></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="heygen-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nhập key để kích hoạt HeyGen</div><button onclick="testHeyGenKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,45,120,.4);background:rgba(255,45,120,.08);color:#ff6b9d;font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Test</button></div></div>
 
       <div class="aff-card">
         <div class="aff-card-title">🛒 TIKTOK SHOP</div>
@@ -3669,10 +3678,31 @@ body:has(#panel-affiliate.show) main {
         <div class="aff-fg"><label>URL TikTok Shop</label>
           <input type="text" id="aff-analyze-url" placeholder="https://vt.tiktok.com/..." style="font-size:.64rem">
         </div>
-        <button onclick="analyzeProduct()" style="width:100%;padding:7px;border-radius:7px;border:none;background:linear-gradi
+        <button onclick="analyzeProduct()" style="width:100%;padding:7px;border-radius:7px;border:none;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;font-size:.66rem;font-weight:700;cursor:pointer;margin-bottom:7px">✨ Phân tích AI</button>
+        <div id="aff-analysis-result" style="font-size:.61rem;color:var(--tx3);line-height:1.6;min-height:14px"></div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Demo Preview Modal -->
+<div id="aff-demo-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px">
+  <div style="font-size:.65rem;color:rgba(255,255,255,.5);letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace">🎬 DEMO VIDEO AFFILIATE</div>
+  <div style="position:relative;height:75vh;aspect-ratio:9/16">
+    <canvas id="aff-demo-canvas" style="height:100%;border-radius:14px;box-shadow:0 0 60px rgba(255,45,120,.25);display:block"></canvas>
+    <div id="aff-demo-progress" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;font-size:.6rem;font-family:'IBM Plex Mono',monospace;padding:4px 12px;border-radius:20px;white-space:nowrap">⏳ Đang render...</div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button onclick="closeAffDemo()" style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-size:.75rem;cursor:pointer">✕ Đóng</button>
+    <button id="aff-demo-download" onclick="downloadDemoVideo()" style="display:none;padding:9px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.75rem;font-weight:700;cursor:pointer">⬇ Tải về</button>
+  </div>
+</div>
 <script>
+
 // ── Version Info ──
-const APP_VERSION = 'v9.5';
+const APP_VERSION = 'v10.1';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -3683,7 +3713,124 @@ function _loadAffApiKey(){
   if(inp&&k) inp.value=k;
   const st=document.getElementById('aff-api-status');
   if(st){st.textContent=k?'✅ API key đã lưu':'⚠ Cần API key để AI hoạt động';st.style.color=k?'#22c55e':'#fbbf24';}
+  if(typeof _loadHeyGenSettings!=='undefined')_loadHeyGenSettings();
 }
+function getHeyGenKey(){ return localStorage.getItem('vlc_heygen_key')||(document.getElementById('heygen-api-key')?.value||'').trim(); }
+function setHeyGenKey(k){ localStorage.setItem('vlc_heygen_key',k.trim()); _updateHeyGenStatus(); }
+function getHeyGenMode(){ return document.getElementById('heygen-mode')?.value||localStorage.getItem('vlc_heygen_mode')||'canvas'; }
+function _loadHeyGenSettings(){
+  const k=localStorage.getItem('vlc_heygen_key')||'';
+  const inp=document.getElementById('heygen-api-key'); if(inp&&k) inp.value=k;
+  const aid=localStorage.getItem('vlc_heygen_avatar')||'';
+  const aInp=document.getElementById('heygen-avatar-id'); if(aInp&&aid) aInp.value=aid;
+  const vid=localStorage.getItem('vlc_heygen_voice')||'';
+  const vInp=document.getElementById('heygen-voice-id'); if(vInp&&vid) vInp.value=vid;
+  const md=localStorage.getItem('vlc_heygen_mode')||'canvas';
+  const mSel=document.getElementById('heygen-mode'); if(mSel) mSel.value=md;
+  _updateHeyGenStatus();
+}
+function _updateHeyGenStatus(){
+  const k=getHeyGenKey(), st=document.getElementById('heygen-status'); if(!st) return;
+  if(k&&k.length>10){st.textContent='✅ HeyGen key đã lưu · Sẵn sàng';st.style.color='#22c55e';}
+  else{st.textContent='⚠ Chưa có HeyGen key — đang dùng Canvas AI';st.style.color='#fbbf24';}
+}
+function updateHeyGenModeUI(){
+  const mode=getHeyGenMode(); localStorage.setItem('vlc_heygen_mode',mode);
+  const st=document.getElementById('heygen-status'); if(!st) return;
+  if(mode==='canvas') st.textContent='🎨 Canvas AI — miễn phí';
+  else if(mode==='heygen') st.textContent='🎬 HeyGen mode — cần API key';
+  else st.textContent='✨ Hybrid mode';
+}
+async function testHeyGenKey(){
+  const key=getHeyGenKey(), st=document.getElementById('heygen-status');
+  const btn=document.querySelector('[onclick="testHeyGenKey()"]');
+  if(!key||key.length<10){if(st){st.textContent='❌ Chưa nhập API key';st.style.color='#ef4444';}toast('Nhập HeyGen API key trước','warn',2000);return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳...';}
+  if(st){st.textContent='⏳ Đang kiểm tra...';st.style.color='#fbbf24';}
+  try{
+    const r=await fetch('https://api.heygen.com/v1/avatars',{headers:{'X-Api-Key':key,'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(r.ok&&d.data){const c=d.data.avatars?.length||0;if(st){st.textContent='✅ Key hợp lệ · '+c+' avatars';st.style.color='#22c55e';}toast('✅ HeyGen OK! '+c+' avatars','success',3000);if(typeof affLog==='function')affLog('ok','✅ HeyGen key OK');}
+    else if(r.status===401){if(st){st.textContent='❌ API key không hợp lệ';st.style.color='#ef4444';}toast('❌ HeyGen key sai','warn',4000);}
+    else{if(st){st.textContent='⚠ HTTP '+r.status;st.style.color='#fbbf24';}}
+  }catch(e){if(st){st.textContent='❌ '+e.message.slice(0,50);st.style.color='#ef4444';}}
+  finally{if(btn){btn.disabled=false;btn.textContent='🔍 Test';}}
+}
+async function listHeyGenAvatars(){
+  const key=getHeyGenKey(); if(!key){toast('Nhập HeyGen key trước','warn',2000);return;}
+  try{const r=await fetch('https://api.heygen.com/v1/avatars',{headers:{'X-Api-Key':key}});const d=await r.json();if(!r.ok)throw new Error(d.message||'HTTP '+r.status);_showHeyGenPicker('Chọn Avatar',(d.data?.avatars||[]).slice(0,20).map(a=>({id:a.avatar_id,name:a.avatar_name||a.avatar_id,thumb:a.preview_image_url})),'heygen-avatar-id','vlc_heygen_avatar');}
+  catch(e){toast('Lỗi: '+e.message,'warn',3000);}
+}
+async function listHeyGenVoices(){
+  const key=getHeyGenKey(); if(!key){toast('Nhập HeyGen key trước','warn',2000);return;}
+  try{const r=await fetch('https://api.heygen.com/v1/voice.list',{headers:{'X-Api-Key':key}});const d=await r.json();if(!r.ok)throw new Error(d.message||'HTTP '+r.status);const all=d.data?.voices||[];const viet=all.filter(v=>v.language==='Vietnamese'||v.locale?.startsWith('vi'));_showHeyGenPicker('Chọn Voice',(viet.length?viet:all).slice(0,30).map(v=>({id:v.voice_id,name:(v.display_name||v.voice_id)+' ('+v.language+')',thumb:null})),'heygen-voice-id','vlc_heygen_voice');}
+  catch(e){toast('Lỗi: '+e.message,'warn',3000);}
+}
+function _showHeyGenPicker(title,items,inputId,storageKey){
+  document.getElementById('heygen-picker-modal')?.remove();
+  const modal=document.createElement('div');
+  modal.id='heygen-picker-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  const card=document.createElement('div');card.style.cssText='background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(500px,95vw);max-height:80vh;overflow-y:auto';
+  const hd=document.createElement('div');hd.style.cssText='font-size:.75rem;font-weight:700;color:var(--tx);margin-bottom:14px';hd.textContent=title;card.appendChild(hd);
+  items.forEach(it=>{
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.1);margin-bottom:6px';
+    row.onmouseover=()=>row.style.background='rgba(255,45,120,.15)';row.onmouseout=()=>row.style.background='';
+    row.onclick=()=>{const inp=document.getElementById(inputId);if(inp)inp.value=it.id;localStorage.setItem(storageKey,it.id);modal.remove();toast('Đã chọn: '+it.name.slice(0,30),'success',1500);};
+    if(it.thumb){const img=document.createElement('img');img.src=it.thumb;img.style.cssText='width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0';row.appendChild(img);}
+    else{const ph=document.createElement('div');ph.style.cssText='width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.1);flex-shrink:0';row.appendChild(ph);}
+    const info=document.createElement('div');
+    const nm=document.createElement('div');nm.style.cssText='font-size:.65rem;font-weight:600;color:#fff';nm.textContent=it.name.slice(0,50);
+    const idv=document.createElement('div');idv.style.cssText='font-size:.57rem;color:rgba(255,255,255,.5);font-family:monospace';idv.textContent=it.id.slice(0,36);
+    info.appendChild(nm);info.appendChild(idv);row.appendChild(info);card.appendChild(row);
+  });
+  const cb=document.createElement('button');cb.style.cssText='margin-top:10px;width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--tx3);cursor:pointer;font-size:.65rem';cb.textContent='Đóng';cb.onclick=()=>modal.remove();
+  card.appendChild(cb);modal.appendChild(card);modal.onclick=e=>{if(e.target===modal)modal.remove();};document.body.appendChild(modal);
+}
+async function generateHeyGenVideo(script,product,onProgress){
+  const key=getHeyGenKey(); if(!key) throw new Error('Chưa có HeyGen API key');
+  const avatarId=document.getElementById('heygen-avatar-id')?.value?.trim()||localStorage.getItem('vlc_heygen_avatar')||'';
+  const voiceId=document.getElementById('heygen-voice-id')?.value?.trim()||localStorage.getItem('vlc_heygen_voice')||'';
+  onProgress&&onProgress(10,'Gửi yêu cầu HeyGen...');
+  const charCfg=avatarId?{type:'avatar',avatar_id:avatarId,avatar_style:'normal'}:{type:'avatar',avatar_style:'normal'};
+  const voiceCfg=voiceId?{type:'text',input_text:script,voice_id:voiceId,speed:1.0}:{type:'text',input_text:script,speed:1.0};
+  const payload={video_inputs:[{character:charCfg,voice:voiceCfg,background:{type:'color',value:'#1a0533'}}],aspect_ratio:'9:16',dimension:{width:1080,height:1920},caption:false};
+  const cr=await fetch('https://api.heygen.com/v2/video/generate',{method:'POST',headers:{'X-Api-Key':key,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const cd=await cr.json(); if(!cr.ok||!cd.data?.video_id) throw new Error(cd.message||'HTTP '+cr.status);
+  const videoId=cd.data.video_id; affLog&&affLog('ok','HeyGen ID: '+videoId);
+  onProgress&&onProgress(25,'HeyGen đang render... (30-90s)');
+  const t0=Date.now();
+  while(Date.now()-t0<180000){
+    await new Promise(rs=>setTimeout(rs,5000));
+    const sr=await fetch('https://api.heygen.com/v1/video_status.get?video_id='+videoId,{headers:{'X-Api-Key':key}});
+    const sd=await sr.json(); const status=sd.data?.status, pct=sd.data?.progress||0;
+    onProgress&&onProgress(25+Math.round(pct*.65),'HeyGen '+pct+'% ('+(Math.round((Date.now()-t0)/1000))+'s)');
+    if(status==='completed'){const url=sd.data?.video_url;if(!url)throw new Error('Không có URL');onProgress&&onProgress(95,'Tải video...');const blob=await fetch(url).then(rs=>rs.blob());onProgress&&onProgress(100,'✅ Xong!');return {blob,url,videoId};}
+    if(status==='failed') throw new Error('HeyGen thất bại: '+(sd.data?.error||'Unknown'));
+  }
+  throw new Error('HeyGen timeout 3 phút');
+}
+async function createAffVideoWithHeyGen(productIdx){
+  const p=affProducts[productIdx]; if(!p){toast('Không tìm thấy SP','warn',2000);return null;}
+  const mode=getHeyGenMode(); if(mode==='canvas') return createAffVideo(productIdx);
+  addAffQueueItem(p,'pending'); affLog('info','[HeyGen] Tạo: '+p.name);
+  try{
+    updateAffQueueItem(p.name,'running',8,'AI viết kịch bản...');
+    let script='Ơi bạn ơi! '+p.name+' chỉ '+p.price+' đồng, giảm '+p.discount+'! Rating '+p.rating+', '+p.sold+' người mua. Link trong bio!';
+    const k=getAnthropicKey();
+    if(k){try{const prompt=['Bạn là chuyên gia content TikTok affiliate tại Việt Nam, chuyên tạo video bán hàng viral.','Viết script video 30 giây cho nhân vật AI ĐỌC TO TRƯỚC CAMERA để review sản phẩm affiliate.','','THÔNG TIN SẢN PHẨM:','- Tên: '+p.name,'- Giá sale: '+p.price+'đ (gốc: '+p.original_price+'đ)','- Giảm: '+p.discount,'- Hoa hồng: '+p.commission+' (~'+p.commission_amount+'đ/đơn)','- Đánh giá: '+p.rating+'/5 ⭐ | Đã bán: '+p.sold,'- Danh mục: '+p.category,'','YÊU CẦU SCRIPT:','1. HOOK (3 giây đầu): Câu mở đầu cực kỳ bắt mắt, tạo tò mò, KHÔNG bắt đầu bằng Xin chào','2. VẤN ĐỀ (5 giây): Đặt ra nỗi đau hoặc nhu cầu mà sản phẩm giải quyết','3. GIẢI PHÁP (8 giây): Giới thiệu sản phẩm như giải pháp hoàn hảo','4. PROOF (7 giây): Nhắc rating, số người đã mua, hoa hồng hấp dẫn','5. URGENCY (4 giây): Tạo sự gấp gáp — giới hạn, flash sale, đừng bỏ lỡ','6. CTA (3 giây): Kêu gọi rõ ràng — click link trong bio','','PHONG CÁCH VIẾT:','- Giọng tự nhiên, thân thiện như người bạn đang chia sẻ, KHÔNG đọc như quảng cáo','- Dùng tiếng Việt tự nhiên, có thể xen vài từ tiếng Anh phổ biến','- Ngắn gọn, súc tích — mỗi câu tối đa 10 từ','- Sử dụng nhịp điệu lên xuống để giữ attention','','CHÚ Ý QUAN TRỌNG:','- Script sẽ được đọc bởi AI avatar — viết tự nhiên như nói, KHÔNG dùng dấu đầu dòng','- Thêm [dừng 0.5s] để tạo nhịp điệu tự nhiên khi đọc','- Tổng độ dài khoảng 80-90 từ khi đọc sẽ khoảng 30 giây','','CHỈ TRẢ VỀ SCRIPT THUẦN (không có note, không có tiêu đề, không có dấu ngoặc kép bọc ngoài).'].join('\n');const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});const dd=await rr.json();const ss=dd.content?.[0]?.text||'';if(ss.length>20)script=ss;}catch(e){}}
+    let blob=null;
+    if(mode==='heygen'||mode==='hybrid'){
+      try{const res=await generateHeyGenVideo(script,p,(pct,msg)=>updateAffQueueItem(p.name,'running',pct,msg));blob=res.blob;affLog('ok','HeyGen: '+(blob.size/1024/1024).toFixed(1)+'MB');}
+      catch(e){affLog('warn','HeyGen lỗi: '+e.message+' → Canvas');updateAffQueueItem(p.name,'running',50,'Canvas fallback...');blob=await _renderProductVideo({title:p.name,features:[p.discount,'Rating '+p.rating,'Giao nhanh'],cta:'Mua ngay! Link bio',hashtags:'#tiktokshop #affiliate',emoji:'🛍',bg_color1:'#0f0c29',bg_color2:'#302b63',accent:'#ff2d78'},p);}
+    }
+    if(!blob||blob.size<1000){updateAffQueueItem(p.name,'failed',0,'Thất bại');return null;}
+    affStats.videos++;refreshAffStats();showQueueItemReview(p.name,blob,p);
+    toast('Video xong! Nhấn Duyệt để đăng','success',5000);
+    _trackVideoPerformance(p,p.name,blob.size);saveAffSettings();return blob;
+  }catch(e){affLog('err','Lỗi: '+e.message);updateAffQueueItem(p.name,'failed',0,e.message.slice(0,40));return null;}
+}
+
+
 
 async function testAnthropicKey(){
   const key=getAnthropicKey();
@@ -13420,4 +13567,290 @@ function startTikTokOAuth(){ startTikTokLogin(); }
 function checkProxyStatus(){ return true; }
 
 
+
+// ═══════════════════════════════════════════════════════
+// DEMO VIDEO AFFILIATE — inline preview, no download needed
+// ═══════════════════════════════════════════════════════
+let _demoBlob=null;
+let _demoAnimId=null;
+
+async function runDemoAffVideo(){
+  const btn=document.querySelector('[onclick="runDemoAffVideo()"]');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Đang tạo...';}
+  const modal=document.getElementById('aff-demo-modal');
+  if(modal) modal.style.display='flex';
+  const prog=document.getElementById('aff-demo-progress');
+  if(prog) prog.textContent='⏳ Đang chuẩn bị...';
+  const dlBtn=document.getElementById('aff-demo-download');
+  if(dlBtn) dlBtn.style.display='none';
+
+  const demoProduct={name:'Kem Chống Nắng ANESSA SPF50+',price:'285.000',
+    original_price:'420.000',discount:'-32%',commission:'18%',
+    rating:'4.9',sold:'5.2k',shop:'ANESSA Official',category:'beauty'};
+  let content={title:'Kem chống nắng ANESSA SPF50+',
+    features:['Chống nắng SPF50+ PA++++','Dưỡng ẩm 24h không nhờn','An toàn cho da nhạy cảm'],
+    cta:'Mua ngay! Link trong bio 👇',hashtags:'#anessa #kemchongnang #tiktokshop #beauty',
+    emoji:'💄',bg_color1:'#1a0533',bg_color2:'#2d0a5e',accent:'#ff2d78'};
+
+  const key=getAnthropicKey();
+  if(key){
+    try{
+      if(prog) prog.textContent='🤖 AI đang tạo kịch bản...';
+      const r=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,
+          'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,
+          messages:[{role:'user',content:'Tạo nội dung video TikTok cho: '+demoProduct.name+
+            '. JSON only: {"title":"...max30chars","features":["...","...","..."],"cta":"...","emoji":"..."}'}]})
+      });
+      const d=await r.json();
+      const info=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+      if(info.title) Object.assign(content,info);
+    }catch(e){ affLog&&affLog('dim','Demo dùng nội dung mặc định'); }
+  }
+
+  const canvas=document.getElementById('aff-demo-canvas');
+  if(!canvas){console.error('Demo canvas missing');return;}
+  const container=canvas.parentElement;
+  const H=container.offsetHeight||window.innerHeight*.75;
+  const W=Math.round(H*9/16);
+  canvas.width=W; canvas.height=H;
+
+  if(prog) prog.textContent='🎨 Đang render...';
+
+  // Record for download option
+  const stream=canvas.captureStream(30);
+  const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  const mime=mimes.find(m=>MediaRecorder.isTypeSupported(m))||'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4000000});
+  const chunks=[];
+  rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  rec.onstop=()=>{
+    _demoBlob=new Blob(chunks,{type:mime.split(';')[0]});
+    if(dlBtn) dlBtn.style.display='block';
+    if(prog) prog.textContent='✅ Xong! '+(_demoBlob.size/1024/1024).toFixed(1)+'MB — có thể tải về';
+    if(btn){btn.disabled=false;btn.textContent='🎬 Demo Video';}
+  };
+  rec.start(100);
+
+  _renderOnCanvas(canvas,content,demoProduct,()=>rec.stop(),prog);
+}
+
+function _renderOnCanvas(canvas,content,product,onDone,prog){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const FPS=30,DUR=22,TOTAL=FPS*DUR;
+  const accent=content.accent||'#ff2d78';
+  let frame=0;
+  if(_demoAnimId){cancelAnimationFrame(_demoAnimId);_demoAnimId=null;}
+  function easeOut(t){return 1-Math.pow(1-t,3);}
+  const scenes=[{s:0,d:4,t:'hook'},{s:4,d:5,t:'price'},{s:9,d:4,t:'feat1'},
+    {s:13,d:4,t:'feat2'},{s:17,d:3,t:'social'},{s:20,d:2,t:'cta'}];
+  function getSc(t){for(const s of scenes)if(t>=s.s&&t<s.s+s.d)return s;return scenes[scenes.length-1];}
+  function tick(){
+    const t=frame/FPS,sc=getSc(t),lt=(t-sc.s)/sc.d;
+    const fa=easeOut(Math.min(lt*3,1));
+    // BG
+    const bg=ctx.createLinearGradient(0,0,W,H);
+    bg.addColorStop(0,content.bg_color1||'#0f0c29');bg.addColorStop(1,content.bg_color2||'#302b63');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Particles
+    for(let i=0;i<6;i++){
+      const px=(Math.sin(t*.3+i*.9)*.3+.5)*W,py=(Math.cos(t*.2+i*.7)*.3+.5)*H;
+      const rr=W*.04+W*.02*Math.sin(t+i);
+      const g=ctx.createRadialGradient(px,py,0,px,py,rr);
+      g.addColorStop(0,'rgba(255,45,120,.1)');g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,rr,0,Math.PI*2);ctx.fill();
+    }
+    ctx.save();ctx.globalAlpha=fa;
+    const cx=W*.55,cy=H*.88,sc2=W/400;
+    if(sc.t==='hook'){
+      _drawChar(ctx,cx,cy,sc2,'talking',t,W,H,accent);
+      _drawBubble(ctx,'Xin chào! Mình review '+content.emoji+' '+product.name+'!',W*.45,H*.07,W*.83,t,fa,W);
+      ctx.fillStyle='rgba(255,45,120,.85)';ctx.fillRect(0,H*.54,W,H*.055);
+      ctx.font='bold '+Math.round(W*.041)+'px sans-serif';ctx.fillStyle='#fff';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🛍 TIKTOK SHOP REVIEW',W/2,H*.567);
+    }else if(sc.t==='price'){
+      _drawChar(ctx,cx,cy,sc2,'excited',t,W,H,accent);
+      _drawBubble(ctx,'Chỉ '+product.price+'đ! Giảm '+product.discount+' luôn! 🔥',W*.45,H*.05,W*.84,t,fa,W);
+      const pulse=1+.025*Math.sin(t*5);
+      ctx.save();ctx.translate(W/2,H*.72);ctx.scale(pulse,pulse);ctx.translate(-W/2,-H*.72);
+      const cg=ctx.createLinearGradient(W*.06,H*.65,W*.94,H*.8);
+      cg.addColorStop(0,'rgba(255,45,120,.9)');cg.addColorStop(1,'rgba(140,0,70,.9)');
+      ctx.fillStyle=cg;_rr(ctx,W*.06,H*.645,W*.88,H*.14,W*.025);ctx.fill();
+      if(product.original_price){
+        ctx.font=W*.037+'px sans-serif';ctx.fillStyle='rgba(255,255,255,.5)';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(product.original_price+'đ',W/2,H*.682);
+        const tw=ctx.measureText(product.original_price+'đ').width;
+        ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(W/2-tw/2,H*.682);ctx.lineTo(W/2+tw/2,H*.682);ctx.stroke();
+      }
+      ctx.font='bold '+W*.092+'px sans-serif';ctx.fillStyle='#ffee55';
+      ctx.fillText(product.price+'đ',W/2,H*.735);
+      ctx.font='bold '+W*.037+'px sans-serif';ctx.fillStyle='#ccffcc';
+      ctx.fillText('💰 Hoa hồng: '+product.commission,W/2,H*.773);
+      ctx.restore();
+    }else if(sc.t==='feat1'||sc.t==='feat2'){
+      const feat=content.features[sc.t==='feat1'?0:1]||'Chất lượng cao';
+      _drawChar(ctx,W*.3,cy,sc2*.85,'talking',t,W,H,accent);
+      ctx.fillStyle='rgba(255,255,255,.1)';_rr(ctx,W*.05,H*.545,W*.9,H*.115,W*.02);ctx.fill();
+      ctx.font='bold '+W*.047+'px sans-serif';ctx.fillStyle='#fff';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✅ '+feat,W/2,H*.603);
+      _drawBubble(ctx,feat,W*.62,H*.06,W*.7,t,fa,W);
+    }else if(sc.t==='social'){
+      _drawChar(ctx,cx,cy,sc2,'excited',t,W,H,accent);
+      [[product.rating+'⭐','Đánh giá',W*.28],[product.sold,'Đã bán',W*.72]].forEach(([v,l,x])=>{
+        ctx.fillStyle='rgba(255,255,255,.14)';_rr(ctx,x-W*.19,H*.555,W*.38,H*.1,W*.02);ctx.fill();
+        ctx.font='bold '+W*.053+'px sans-serif';ctx.fillStyle='#ffee55';
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(v,x,H*.59);
+        ctx.font=W*.032+'px sans-serif';ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillText(l,x,H*.628);
+      });
+      _drawBubble(ctx,'Hàng nghìn người đã mua! Rating '+product.rating+'⭐',W*.45,H*.05,W*.84,t,fa,W);
+    }else if(sc.t==='cta'){
+      _drawChar(ctx,cx,cy,sc2,'cta',t,W,H,accent);
+      const p2=1+.06*Math.sin(t*8);
+      ctx.save();ctx.translate(W/2,H*.22);ctx.scale(p2,p2);ctx.translate(-W/2,-H*.22);
+      const cg2=ctx.createLinearGradient(0,0,W,0);
+      cg2.addColorStop(0,'#ff2d78');cg2.addColorStop(.5,'#ff6b9d');cg2.addColorStop(1,'#ff2d78');
+      ctx.fillStyle=cg2;ctx.shadowColor='rgba(255,45,120,.6)';ctx.shadowBlur=W*.025;
+      _rr(ctx,W*.06,H*.17,W*.88,H*.098,H*.049);ctx.fill();ctx.shadowColor='transparent';
+      ctx.font='bold '+W*.055+'px sans-serif';ctx.fillStyle='#fff';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(content.cta||'Mua ngay! Link trong bio 👇',W/2,H*.219);
+      ctx.restore();
+      ctx.font=W*.033+'px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText((content.hashtags||'#tiktokshop').slice(0,60),W/2,H*.302);
+      ctx.font='bold '+W*.043+'px sans-serif';ctx.fillStyle='#ffdd00';
+      ctx.fillText('👇 Link trong bio',W/2,H*.36+H*.01*Math.sin(t*4));
+    }
+    ctx.restore();
+    // Bottom bar
+    ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(0,H-H*.062,W,H*.062);
+    ctx.font='bold '+W*.037+'px sans-serif';ctx.fillStyle='#fff';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const sn=product.name.length>34?product.name.slice(0,34)+'…':product.name;
+    ctx.fillText(sn,W/2,H-H*.031);
+    ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(0,H-3,W,3);
+    ctx.fillStyle=accent;ctx.fillRect(0,H-3,W*(frame/TOTAL),3);
+    if(prog&&frame%FPS===0) prog.textContent='🎨 Rendering '+Math.round(frame/TOTAL*100)+'%...';
+    frame++;
+    if(frame>=TOTAL){onDone();}
+    else{_demoAnimId=requestAnimationFrame(tick);}
+  }
+  tick();
+}
+
+function _drawChar(ctx,cx,cy,scale,emotion,t,W,H,accent){
+  ctx.save();ctx.translate(cx,cy);ctx.scale(scale,scale);
+  const b=Math.sin(t*2.5)*(emotion==='excited'?6:3);
+  ctx.fillStyle='rgba(0,0,0,.1)';ctx.beginPath();ctx.ellipse(0,300,75,16,0,0,Math.PI*2);ctx.fill();
+  const og=ctx.createLinearGradient(-68,42,68,175);og.addColorStop(0,'#fefaf6');og.addColorStop(1,'#f5ede5');
+  ctx.fillStyle=og;_rr(ctx,-70,42+b,140,155,18);ctx.fill();
+  ctx.strokeStyle='#ffb6c8';ctx.lineWidth=4.5;
+  ctx.beginPath();ctx.moveTo(-24,42+b);ctx.lineTo(-24,65+b);ctx.moveTo(24,42+b);ctx.lineTo(24,65+b);ctx.stroke();
+  ctx.fillStyle='#ff90a8';ctx.beginPath();ctx.arc(0,82+b,4.5,0,Math.PI*2);ctx.fill();
+  ctx.font='20px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🐰',21,107+b);
+  const as=Math.sin(t*2.5)*12;
+  ctx.strokeStyle='#f4a460';ctx.lineWidth=17;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-70,73+b);ctx.quadraticCurveTo(-92,118+as,-78,150+as);ctx.stroke();
+  ctx.beginPath();
+  if(emotion==='cta'){ctx.moveTo(70,73+b);ctx.quadraticCurveTo(108,52,128,28+Math.sin(t*6)*8);}
+  else{ctx.moveTo(70,73+b);ctx.quadraticCurveTo(92,118-as,78,150-as);}
+  ctx.stroke();
+  ctx.fillStyle='#ffe4d0';ctx.fillRect(-15,24+b,30,24);
+  const hy=-88+b;
+  const fg=ctx.createRadialGradient(-14,hy-18,7,0,hy,68);
+  fg.addColorStop(0,'#fff0e8');fg.addColorStop(.7,'#ffe4d0');fg.addColorStop(1,'#ffd0b8');
+  ctx.fillStyle=fg;ctx.beginPath();ctx.ellipse(0,hy,66,74,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a0a08';
+  ctx.save();ctx.globalCompositeOperation='destination-over';
+  ctx.beginPath();ctx.moveTo(-66,hy-36);ctx.bezierCurveTo(-102,hy+22,-116,hy+98,-106,hy+226);
+  ctx.bezierCurveTo(-96,hy+246,-82,hy+254,-68,hy+244);ctx.bezierCurveTo(-60,hy+186,-52,hy+126,-66,hy+40);ctx.fill();
+  ctx.beginPath();ctx.moveTo(66,hy-36);ctx.bezierCurveTo(102,hy+22,116,hy+98,106,hy+226);
+  ctx.bezierCurveTo(96,hy+246,82,hy+254,68,hy+244);ctx.bezierCurveTo(60,hy+186,52,hy+126,66,hy+40);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#1a0a08';ctx.beginPath();ctx.ellipse(0,hy-50,58,32,0,Math.PI,0);ctx.fill();
+  ctx.beginPath();ctx.moveTo(-60,hy-40);ctx.bezierCurveTo(-56,hy-6,-36,hy-2,-16,hy-5);
+  ctx.bezierCurveTo(-4,hy-4,0,hy-12,0,hy-12);ctx.fill();
+  ctx.beginPath();ctx.moveTo(60,hy-40);ctx.bezierCurveTo(56,hy-6,36,hy-2,16,hy-5);
+  ctx.bezierCurveTo(4,hy-4,0,hy-12,0,hy-12);ctx.fill();
+  const hbg=ctx.createLinearGradient(-74,hy-72,74,hy-62);
+  hbg.addColorStop(0,'#b8c8e8');hbg.addColorStop(.5,'#c8d8f0');hbg.addColorStop(1,'#b8c8e8');
+  ctx.fillStyle=hbg;_rr(ctx,-74,hy-74,148,16,8);ctx.fill();
+  [[-21,-1],[21,1]].forEach(([ex,tl])=>{
+    ctx.save();ctx.translate(ex,hy-74);
+    ctx.fillStyle='#c8cfe0';ctx.beginPath();ctx.ellipse(0,-24,12,28,tl*.08,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffb6c8';ctx.beginPath();ctx.ellipse(0,-22,5.5,16,tl*.08,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4488ff';ctx.beginPath();ctx.arc(tl<0?-2:2,-32,4.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(tl<0?0:4,-34,1.8,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+  ctx.fillStyle='rgba(255,150,160,'+(emotion==='excited'?.28:.14)+')';
+  ctx.beginPath();ctx.ellipse(-36,hy+10,18,9,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(36,hy+10,18,9,0,0,Math.PI*2);ctx.fill();
+  const blink=Math.sin(t*.7+.5)>.92?.08:1;
+  [-22,22].forEach(ex=>{
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(ex,hy,12,14*blink,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#5a3a2a';ctx.beginPath();ctx.ellipse(ex,hy+1,7.5,9.5*blink,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a0808';ctx.beginPath();ctx.ellipse(ex,hy+2,4,5.5*blink,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.ellipse(ex-3,hy-2,3,3.8*blink,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#1a0808';ctx.lineWidth=2.2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(ex-10,hy-12*blink);ctx.bezierCurveTo(ex-4,hy-16*blink,ex+4,hy-16*blink,ex+10,hy-12*blink);ctx.stroke();
+  });
+  ctx.fillStyle='#e8a0a0';ctx.beginPath();ctx.ellipse(0,hy+16,3.5,2.2,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#d06070';ctx.lineWidth=2.2;ctx.lineCap='round';
+  if(emotion==='excited'||emotion==='cta'){ctx.beginPath();ctx.arc(0,hy+27,12,0.1,Math.PI-.1);ctx.stroke();}
+  else if(emotion==='talking'){
+    const mo=3+3.5*Math.abs(Math.sin(t*7));
+    ctx.beginPath();ctx.ellipse(0,hy+27,6.5,mo,0,0,Math.PI*2);ctx.fillStyle='#c06070';ctx.fill();
+  }else{ctx.beginPath();ctx.moveTo(-8,hy+25);ctx.quadraticCurveTo(0,hy+33,8,hy+25);ctx.stroke();}
+  ctx.strokeStyle='#d4a820';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.arc(0,hy+76+b,24,Math.PI*.15,Math.PI*.85);ctx.stroke();
+  ctx.fillStyle='#f0c830';ctx.beginPath();ctx.arc(0,hy+100+b,3.5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function _drawBubble(ctx,text,bx,by,maxW,t,alpha,W){
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.font='bold '+Math.round(W*.039)+'px sans-serif';
+  const words=text.split(' ');const lines=[];let cur='';
+  for(const w of words){if(ctx.measureText(cur+w+' ').width>maxW-46&&cur){lines.push(cur.trim());cur=w+' ';}else cur+=w+' ';}
+  lines.push(cur.trim());
+  const lh=W*.044,pad=W*.024,bh=lines.length*lh+pad*2,bw=maxW;
+  const bg=ctx.createLinearGradient(bx-bw/2,by,bx+bw/2,by+bh);
+  bg.addColorStop(0,'rgba(255,255,255,.97)');bg.addColorStop(1,'rgba(240,240,255,.97)');
+  ctx.fillStyle=bg;ctx.shadowColor='rgba(200,100,130,.22)';ctx.shadowBlur=14;ctx.shadowOffsetY=4;
+  _rr(ctx,bx-bw/2,by,bw,bh,W*.021);ctx.fill();ctx.shadowColor='transparent';
+  ctx.strokeStyle='rgba(255,150,180,.45)';ctx.lineWidth=1.8;
+  _rr(ctx,bx-bw/2,by,bw,bh,W*.021);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.97)';
+  ctx.beginPath();ctx.moveTo(bx-W*.028,by+bh);ctx.lineTo(bx-W*.065,by+bh+W*.042);ctx.lineTo(bx+W*.018,by+bh);ctx.fill();
+  ctx.fillStyle='#2a1030';ctx.textAlign='center';ctx.textBaseline='top';
+  lines.forEach((l,i)=>ctx.fillText(l,bx,by+pad+i*lh));
+  ctx.restore();
+}
+
+function _rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function closeAffDemo(){
+  if(_demoAnimId){cancelAnimationFrame(_demoAnimId);_demoAnimId=null;}
+  const m=document.getElementById('aff-demo-modal');if(m)m.style.display='none';
+}
+
+function downloadDemoVideo(){
+  if(!_demoBlob){toast('Video chưa sẵn sàng','warn',2000);return;}
+  const url=URL.createObjectURL(_demoBlob);
+  const a=document.createElement('a');a.href=url;
+  a.download='VLC_Demo_Affiliate.webm';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
 </script>
