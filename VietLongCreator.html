@@ -2275,7 +2275,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.4 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.5 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3696,7 +3696,7 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v10.4';
+const APP_VERSION = 'v10.5';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -11218,7 +11218,6 @@ async function exportWithWebCodecs(q){
   const btn=$('expbtn');
   upProg(0,'Khởi tạo WebCodecs...');
 
-  // Load mp4-muxer from CDN (15KB, first use only)
   if(!window.Mp4Muxer){
     try{
       upProg(3,'Tải mp4-muxer...');
@@ -11226,45 +11225,73 @@ async function exportWithWebCodecs(q){
       if(!window.Mp4Muxer) throw new Error('mp4-muxer không tải được');
     }catch(e){
       toast('⚠ Không tải được mp4-muxer — chuyển sang WebM','warn',3000);
-      await exportWithMediaRecorder(q);
-      return;
+      await exportWithMediaRecorder(q); return;
     }
   }
 
+  const EW=q.w, EH=q.h, FPS=q.fps;
+  // ── Segment size: process this many frames per "task" ───────────
+  // Large enough → encoder stays warm (no QuotaExceeded)
+  // Each segment = 0.5s of video at FPS, ~16-33ms of compute on fast GPU
+  const SEG = Math.max(Math.round(FPS/2), 10);
+
+  // ── Off-screen canvases (never attached to DOM → no repaints) ──
+  let offBg, offOv, outCvs, outCtx;
   try{
-    const EW=q.w, EH=q.h, FPS=q.fps;
-    upProg(5,'Tạo canvas HD...');
+    offBg  = new OffscreenCanvas(EW, EH);
+    offOv  = new OffscreenCanvas(EW, EH);
+    outCvs = new OffscreenCanvas(EW, EH);
+  }catch(_){
+    offBg  = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
+    offOv  = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
+    outCvs = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
+  }
+  outCtx = outCvs.getContext('2d');
 
-    // Dedicated render canvases — NO resize hack needed
-    const renderBg=document.createElement('canvas'); renderBg.width=EW; renderBg.height=EH;
-    const renderOv=document.createElement('canvas'); renderOv.width=EW; renderOv.height=EH;
-    // outCvs declared in render setup block below
+  // ── Save + redirect global canvas refs ─────────────────────────
+  const _savedBgCvs=bgCvs, _savedOvCvs=ovCvs;
+  const _savedBgX=bgX,     _savedOvX=ovX;
+  bgCvs=offBg; ovCvs=offOv;
+  bgX=offBg.getContext('2d'); ovX=offOv.getContext('2d');
+  bgCache=null;
 
-    // Save + override global canvas refs
-    const _oBgCvs=bgCvs,_oOvCvs=ovCvs;
-    const _oPW=parseInt(bgCvs.getAttribute('data-pw'))||bgCvs.width;
-    const _oPH=parseInt(bgCvs.getAttribute('data-ph'))||bgCvs.height;
+  const restore=()=>{
+    bgCvs=_savedBgCvs; ovCvs=_savedOvCvs;
+    bgX=_savedBgX; ovX=_savedOvX;
+    bgCache=null; _isExporting=false;
+  };
 
-    // Setup audio decode for analysis
-    upProg(8,'Decode audio...');
-    const exportActx=new AudioContext();
-    // Resume AudioContext immediately (required after user gesture)
+  try{
+    // ── Audio decode ───────────────────────────────────────────────
+    upProg(5,'Decode audio...');
+    const exportActx = new AudioContext();
     if(exportActx.state==='suspended') await exportActx.resume();
-    const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
-    const exportAudEl=new Audio();
-    exportAudEl.muted=true;          // MUST mute before src set to prevent any speaker output
-    exportAudEl.volume=0;
-    const _audFileUrl=URL.createObjectURL(audFile);
-    exportAudEl.src=_audFileUrl;
-    exportAudEl.crossOrigin='anonymous';
+    const exportAn = exportActx.createAnalyser(); exportAn.fftSize=2048;
+
+    // Muted playback element for analyser only
+    const exportAudEl = new Audio();
+    exportAudEl.muted=true; exportAudEl.volume=0;
+    const _audFileUrl = URL.createObjectURL(audFile);
+    exportAudEl.src=_audFileUrl; exportAudEl.crossOrigin='anonymous';
     await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
-    const exportSrc=exportActx.createMediaElementSource(exportAudEl);
-    // Silent gain — belt AND suspenders approach with muted+gain=0
-    const silentGain=exportActx.createGain(); silentGain.gain.value=0;
+    const exportSrc = exportActx.createMediaElementSource(exportAudEl);
+    const silentGain = exportActx.createGain(); silentGain.gain.value=0;
     exportSrc.connect(exportAn);
     exportSrc.connect(silentGain); silentGain.connect(exportActx.destination);
 
-    // mp4-muxer setup (audio sampleRate set after decode)
+    const dur = exportAudEl.duration||30;
+    const totalFrames = Math.ceil(dur*FPS);
+
+    // ── Decode full AudioBuffer for encoding ─────────────────────
+    upProg(8,'Decode audio buffer...');
+    let audioBuf=null;
+    try{
+      const ab=await audFile.arrayBuffer();
+      const decCtx=new OfflineAudioContext(2,Math.floor(44100*dur),44100);
+      audioBuf=await decCtx.decodeAudioData(ab);
+    }catch(_){ audioBuf=null; }
+
+    // ── mp4-muxer ────────────────────────────────────────────────
     const {Muxer,ArrayBufferTarget}=window.Mp4Muxer;
     const target=new ArrayBufferTarget();
     const muxer=new Muxer({
@@ -11274,204 +11301,160 @@ async function exportWithWebCodecs(q){
       fastStart:'in-memory',
     });
 
-    // VideoEncoder
+    // ── VideoEncoder ─────────────────────────────────────────────
     upProg(12,'Khởi tạo VideoEncoder...');
+    let encError=null;
     const videoEncoder=new VideoEncoder({
-      output:(chunk,meta)=>{ muxer.addVideoChunk(chunk,meta); },
-      error:e=>console.error('VideoEncoder:',e),
+      output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),
+      error:e=>{ encError=e; console.error('VideoEncoder:',e); },
     });
     videoEncoder.configure({
-      // avc1.640033 = H.264 High Profile Level 5.1 (supports up to 4096×2304)
-      // Level 4.0 (0x28) max = 2097152px → fails at 2560×1440 (3686400px)
-      // Level 5.1 (0x33) max = 9437184px → supports 2K/4K safely
-      codec: EW*EH > 2_097_152 ? 'avc1.640033' : 'avc1.4d0028',
+      codec: EW*EH>2_097_152 ? 'avc1.640033' : 'avc1.4d0028',
       width:EW, height:EH,
       bitrate:q.videoBps,
       framerate:FPS,
       bitrateMode:'variable',
-      latencyMode:'quality',
+      latencyMode:'realtime',   // ← 'realtime' keeps encoder warm, avoids reclaim
     });
 
-    // AudioEncoder — configured later with safe bitrate inside audio encode block
+    // ── AudioEncoder ─────────────────────────────────────────────
     const audioEncoder=new AudioEncoder({
-      output:(chunk,meta)=>{ muxer.addAudioChunk(chunk,meta); },
-      error:e=>console.error('AudioEncoder:',e),
+      output:(chunk,meta)=>muxer.addAudioChunk(chunk,meta),
+      error:e=>console.warn('AudioEncoder:',e),
     });
-
-    const dur=exportAudEl.duration||30;
-    const totalFrames=Math.ceil(dur*FPS);
-    const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
-
-    upProg(15,'Bắt đầu render + encode...');
-    exportAudEl.currentTime=0;
-    if(exportActx.state==='suspended') await exportActx.resume();
-    exportAudEl.playbackRate=typeof _playbackSpeed!=='undefined'?_playbackSpeed:1;
-  exportAudEl.play().catch(e=>console.warn('exportAudEl.play:',e));
-
-    let frameIdx=0;
-    const t0=performance.now();
-
-    // AudioWorklet alternative: use ScriptProcessor to capture PCM
-    // Simpler: decode full audio to AudioBuffer then encode chunks
-    let audioBuf=null;
-    try{
-      const ab=await audFile.arrayBuffer();
-      const decCtx=new OfflineAudioContext(2,Math.floor(44100*dur),44100);
-      audioBuf=await decCtx.decodeAudioData(ab);
-    }catch(_){ audioBuf=null; }
-
-    // Encode audio — 4096-sample chunks, NO flush inside loop
     if(audioBuf){
-      upProg(18,'Encode audio...');
-      const sr=audioBuf.sampleRate;
-      const nCh=Math.min(audioBuf.numberOfChannels,2);
-      const chunkSz=4096;
+      upProg(15,'Encode audio...');
+      const sr=audioBuf.sampleRate, nCh=Math.min(audioBuf.numberOfChannels,2);
       const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)?q.audioBps:128000;
-      try{
-        audioEncoder.configure({
-          codec:'mp4a.40.2', sampleRate:sr,
-          numberOfChannels:nCh, bitrate:safeBitrate,
+      audioEncoder.configure({codec:'mp4a.40.2',sampleRate:sr,numberOfChannels:nCh,bitrate:safeBitrate});
+      const chunkSz=4096;
+      for(let i=0;i<audioBuf.length;i+=chunkSz){
+        const len2=Math.min(chunkSz,audioBuf.length-i);
+        const aData=new Float32Array(len2*nCh);
+        for(let c=0;c<nCh;c++) aData.set(audioBuf.getChannelData(c).subarray(i,i+len2),c*len2);
+        const aFrame=new AudioData({
+          format:'f32-planar',sampleRate:sr,
+          numberOfFrames:len2,numberOfChannels:nCh,
+          timestamp:Math.round(i/sr*1_000_000),data:aData,
         });
-        for(let i=0;i<audioBuf.length;i+=chunkSz){
-          const len=Math.min(chunkSz,audioBuf.length-i);
-          const aData=new Float32Array(len*nCh);
-          for(let c=0;c<nCh;c++)
-            aData.set(audioBuf.getChannelData(c).subarray(i,i+len), c*len);
-          const aFrame=new AudioData({
-            format:'f32-planar', sampleRate:sr,
-            numberOfFrames:len, numberOfChannels:nCh,
-            timestamp:Math.round(i/sr*1_000_000), data:aData,
-          });
-          audioEncoder.encode(aFrame);
-          aFrame.close();
-          if(i%(sr*2)===0) await new Promise(r=>setTimeout(r,0));
-        }
-        await audioEncoder.flush();
-        upProg(20,'Audio encode xong ✅');
-      }catch(e){
-        console.warn('AudioEncoder failed:',e);
-        toast('⚠ Audio encode lỗi — thử lại hoặc dùng MediaRecorder','warn',4000);
+        audioEncoder.encode(aFrame); aFrame.close();
       }
+      await audioEncoder.flush();
+      upProg(18,'Audio encode xong ✅');
     }
 
-    // Offscreen canvases — redirect ALL canvas refs ONCE, restore at end
-    const offBg=document.createElement('canvas'); offBg.width=EW; offBg.height=EH;
-    const offOv=document.createElement('canvas'); offOv.width=EW; offOv.height=EH;
-    const outCvs=document.createElement('canvas'); outCvs.width=EW; outCvs.height=EH;
-    const outCtx=outCvs.getContext('2d');
-    // Save ALL global canvas refs
-    const _savedBgCvs=bgCvs, _savedOvCvs=ovCvs;
-    const _savedBgX=bgX, _savedOvX=ovX;
-    // Point globals to offscreen — do this ONCE, not per-frame
-    bgCvs=offBg; ovCvs=offOv;
-    bgX=offBg.getContext('2d'); ovX=offOv.getContext('2d');
-    bgCache=null;
+    // ── Video render loop ─────────────────────────────────────────
+    upProg(20,'Render + encode video...');
+    exportAudEl.currentTime=0;
+    exportAudEl.play().catch(()=>{});
 
-    // Render + encode video frames
-    // Export perf constants
-    const _BATCH=4, _BP_QUEUE=6, _PROG_EVERY=15;
-    // True async yield — lets browser handle other tabs/events
-    const _mc=new MessageChannel();
-    const _yieldToMain=()=>new Promise(r=>{_mc.port1.onmessage=r;_mc.port2.postMessage(0);});
-    async function renderNextFrame(){
-      // If tab becomes hidden, wait until visible again (avoids throttling)
-      if(document.hidden){
-        await new Promise(r=>document.addEventListener('visibilitychange',r,{once:true}));
-      }
-      if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; try{exportActx?.close();}catch(_){} try{exportAudEl?.pause();}catch(_){} releaseWakeLock(); _isExporting=false; return; }
-      if(frameIdx>=totalFrames){
-        // Done — flush + finalize
-        upProg(94,'Đóng gói MP4...');
-        await videoEncoder.flush();
-        muxer.finalize();
-        const {buffer}=target;
-        const blob=new Blob([buffer],{type:'video/mp4'});
-        const url=URL.createObjectURL(blob);
-        const songTitle=$('cc-title')?.value||'Video';
-        const fname=`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`;
-        $('dllink').href=url; $('dllink').download=fname;
-        $('dl-success-msg').textContent=`✅ Xuất xong! MP4 ${EW}×${EH} · ${(blob.size/1024/1024).toFixed(1)}MB`;
-        $('dllink').textContent=`⬇ Tải MP4 về máy (${(blob.size/1024/1024).toFixed(1)}MB)`;
-        $('dlbox').style.display='block';
-        btn.disabled=false; upProg(100,'Hoàn tất!','');
+    const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
+    const t0=performance.now();
+    let frameIdx=0;
+
+    // Process frames in SEGMENTS — each segment is one async task
+    // Between segments: one setTimeout(0) yield so browser can breathe
+    // Inside a segment: pure sync loop — encoder stays active, no reclaim
+    while(frameIdx<totalFrames){
+      if(_exportAborted){
+        restore();
+        try{exportActx?.close();}catch(_){}
+        try{exportAudEl?.pause();}catch(_){}
         releaseWakeLock();
-        sendNotif('✅ Export xong!',`"${songTitle}" — MP4 ${EW}×${EH}`);
-        toast(`🎉 MP4 xuất xong! "${songTitle}" — ${(blob.size/1024/1024).toFixed(1)}MB`,'success',6000);
-        bgCvs=_savedBgCvs; ovCvs=_savedOvCvs;
-        bgX=_savedBgX; ovX=_savedOvX;
-        bgCache=null; _isExporting=false;
-        exportAudEl.pause();
-        try{URL.revokeObjectURL(_audFileUrl);}catch(_){}
-        try{exportActx.close();}catch(_){}
         return;
       }
 
-      // All frames are main segment (intro/outro=0)
+      if(encError) throw encError;
+
+      // ── Render one SEGMENT synchronously ────────────────────────
+      const segEnd=Math.min(frameIdx+SEG, totalFrames);
+      while(frameIdx<segEnd){
+        const el=frameIdx/FPS;
+        const ts_us=Math.round(el*1_000_000);
+
+        // Audio analysis from muted playback
+        exportAn.getByteFrequencyData(expFreqBuf);
+        _freqBuf=expFreqBuf;
+        const blen=expFreqBuf.length;
+        const bEnd=Math.floor(blen*.12), mEnd=Math.floor(blen*.5);
+        let bs=0,ms2=0,all=0;
+        for(let ii=0;ii<blen;ii++){
+          const v=expFreqBuf[ii]; all+=v;
+          if(ii<bEnd) bs+=v; else if(ii<mEnd) ms2+=v;
+        }
+        _bass=bs/(bEnd*255); _mid=ms2/((mEnd-bEnd)*255); _eng=all/(blen*255);
+
+        // Render frame
+        aiT=el*.4; aiGP=el*.0026;
+        _renderTime=el; _renderDur=dur;
+        drawFrame();
+
+        // Composite
+        outCtx.clearRect(0,0,EW,EH);
+        if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&outCtx._gradeFilter)
+          outCtx.filter=outCtx._gradeFilter;
+        outCtx.drawImage(offBg,0,0);
+        outCtx.filter='none';
+        outCtx.drawImage(offOv,0,0);
+        if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg))
+          drawWatermark(outCtx,EW,EH);
+
+        // Encode — synchronous within segment
+        const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
+        videoEncoder.encode(vf,{keyFrame:frameIdx%120===0});
+        vf.close();
+
+        frameIdx++;
+      }
+
+      // ── Progress after each segment ──────────────────────────────
       const el=frameIdx/FPS;
-      const ts_us=Math.round(el*1_000_000);
+      const pct=20+Math.round(frameIdx/totalFrames*72);
+      const fps_actual=frameIdx/(performance.now()-t0)*1000;
+      upProg(pct,
+        `WebCodecs ${frameIdx}/${totalFrames} · ${fps_actual.toFixed(0)}fps`,
+        `${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`
+      );
 
-      // Audio analysis
-      exportAn.getByteFrequencyData(expFreqBuf);
-      _freqBuf=expFreqBuf;
-      const len2=expFreqBuf.length;
-      const be=Math.floor(len2*.12),me=Math.floor(len2*.5);
-      let bs=0,ms2=0,all=0;
-      for(let i=0;i<len2;i++){const v=expFreqBuf[i];all+=v;if(i<be)bs+=v;else if(i<me)ms2+=v;}
-      _bass=bs/(be*255); _mid=ms2/((me-be)*255); _eng=all/(len2*255);
-
-      // Render — do NOT reset bgCache per frame (expensive for 2K canvas)
-      // Background animation uses aiT/aiGP for motion — cache still valid
-      aiT=el*.4; aiGP=el*.0026;
-      _renderTime=el; _renderDur=dur;
-      drawFrame();
-
-      // Composite onto output canvas
-      outCtx.clearRect(0,0,EW,EH);
-      if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&outCtx._gradeFilter){
-        outCtx.filter=outCtx._gradeFilter;
-      }
-      outCtx.drawImage(offBg,0,0);
-      outCtx.filter='none';
-      outCtx.drawImage(offOv,0,0);
-      if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)){
-        drawWatermark(outCtx,EW,EH);
-      }
-
-      // Encode
-      const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
-      videoEncoder.encode(vf,{keyFrame:frameIdx%60===0});
-      vf.close();
-
-      frameIdx++;
-
-      // Progress update — only every _PROG_EVERY frames to avoid DOM thrashing
-      if(frameIdx%_PROG_EVERY===0||frameIdx===totalFrames){
-        const pct=20+Math.round(frameIdx/totalFrames*72);
-        const remain=Math.max(0,dur-el);
-        const fps_actual=frameIdx/(performance.now()-t0)*1000;
-        upProg(pct,`WebCodecs ${frameIdx}/${totalFrames} · ${fps_actual.toFixed(1)}fps`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
-      }
-
-      // Backpressure: yield when encoder queue builds up
-      if(videoEncoder.encodeQueueSize>_BP_QUEUE){
-        await _yieldToMain();
-      }
-
-      // Yield every _BATCH frames so browser can handle events/repaints
-      if(frameIdx%_BATCH===0){
-        await _yieldToMain();
-        renderNextFrame();
-      } else {
-        renderNextFrame();
-      }
+      // ── Single yield between segments (not within!) ──────────────
+      // This gives browser ~1 event loop tick to handle input/repaints
+      // without triggering encoder inactivity timeout
+      await new Promise(r=>setTimeout(r,0));
     }
 
-    await _yieldToMain(); renderNextFrame();
+    // ── Finalize ──────────────────────────────────────────────────
+    upProg(94,'Đóng gói MP4...');
+    await videoEncoder.flush();
+    muxer.finalize();
+
+    const {buffer}=target;
+    const blob=new Blob([buffer],{type:'video/mp4'});
+    const url=URL.createObjectURL(blob);
+    const songTitle=$('cc-title')?.value||'Video';
+    const fname=`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`;
+    $('dllink').href=url; $('dllink').download=fname;
+    $('dl-success-msg').textContent=`✅ Xuất xong! MP4 ${EW}×${EH} · ${(blob.size/1024/1024).toFixed(1)}MB`;
+    $('dllink').textContent=`⬇ Tải MP4 về máy (${(blob.size/1024/1024).toFixed(1)}MB)`;
+    $('dlbox').style.display='block';
+    btn.disabled=false; upProg(100,'Hoàn tất!','');
+    releaseWakeLock();
+    sendNotif('✅ Export xong!',`"${songTitle}" — MP4 ${EW}×${EH}`);
+    toast(`🎉 MP4 xuất xong! "${songTitle}" — ${(blob.size/1024/1024).toFixed(1)}MB`,'success',6000);
+
+    restore();
+    exportAudEl.pause();
+    try{URL.revokeObjectURL(_audFileUrl);}catch(_){}
+    try{exportActx.close();}catch(_){}
 
   }catch(e){
+    restore();
     console.error('WebCodecs export failed:',e);
-    toast('WebCodecs thất bại → chuyển sang WebM: '+e.message,'warn',4000);
-    await exportWithMediaRecorder(q);
+    if(e?.name==='QuotaExceededError'||String(e).includes('Codec reclaimed')){
+      toast('⚠ Encoder bị thu hồi — thử lại với chất lượng thấp hơn','warn',5000);
+    } else {
+      toast('WebCodecs thất bại → chuyển WebM: '+e.message,'warn',4000);
+      await exportWithMediaRecorder(q);
+    }
   }
 }
 
