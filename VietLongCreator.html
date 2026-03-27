@@ -2275,7 +2275,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.5 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.6 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -3696,7 +3696,7 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v10.5';
+const APP_VERSION = 'v10.6';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -11230,25 +11230,20 @@ async function exportWithWebCodecs(q){
   }
 
   const EW=q.w, EH=q.h, FPS=q.fps;
-  // ── Segment size: process this many frames per "task" ───────────
-  // Large enough → encoder stays warm (no QuotaExceeded)
-  // Each segment = 0.5s of video at FPS, ~16-33ms of compute on fast GPU
-  const SEG = Math.max(Math.round(FPS/2), 10);
+  // Render FPS frames per segment (~1 giây video/task)
+  // Đủ lớn để encoder không bị "inactivity timeout"
+  // Đủ nhỏ để mỗi task < 200ms (không gây jank UI)
+  const SEG = FPS;
 
-  // ── Off-screen canvases (never attached to DOM → no repaints) ──
-  let offBg, offOv, outCvs, outCtx;
-  try{
-    offBg  = new OffscreenCanvas(EW, EH);
-    offOv  = new OffscreenCanvas(EW, EH);
-    outCvs = new OffscreenCanvas(EW, EH);
-  }catch(_){
-    offBg  = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
-    offOv  = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
-    outCvs = Object.assign(document.createElement('canvas'),{width:EW,height:EH});
-  }
-  outCtx = outCvs.getContext('2d');
+  // HTMLCanvasElement — KHÔNG attach DOM, nhưng tương thích 100%
+  // với VideoFrame + tất cả hàm render (fullMC, fullPT, ...)
+  // Cùng pattern với GIF export (đã hoạt động ổn định)
+  const offBg  = document.createElement('canvas'); offBg.width=EW;  offBg.height=EH;
+  const offOv  = document.createElement('canvas'); offOv.width=EW;  offOv.height=EH;
+  const outCvs = document.createElement('canvas'); outCvs.width=EW; outCvs.height=EH;
+  const outCtx = outCvs.getContext('2d');
 
-  // ── Save + redirect global canvas refs ─────────────────────────
+  // Redirect global canvas refs về offscreen buffers
   const _savedBgCvs=bgCvs, _savedOvCvs=ovCvs;
   const _savedBgX=bgX,     _savedOvX=ovX;
   bgCvs=offBg; ovCvs=offOv;
@@ -11262,36 +11257,36 @@ async function exportWithWebCodecs(q){
   };
 
   try{
-    // ── Audio decode ───────────────────────────────────────────────
+    // ── Audio setup ────────────────────────────────────────────────
     upProg(5,'Decode audio...');
-    const exportActx = new AudioContext();
+    const exportActx=new AudioContext();
     if(exportActx.state==='suspended') await exportActx.resume();
-    const exportAn = exportActx.createAnalyser(); exportAn.fftSize=2048;
+    const exportAn=exportActx.createAnalyser(); exportAn.fftSize=2048;
 
-    // Muted playback element for analyser only
-    const exportAudEl = new Audio();
+    const exportAudEl=new Audio();
     exportAudEl.muted=true; exportAudEl.volume=0;
-    const _audFileUrl = URL.createObjectURL(audFile);
+    const _audFileUrl=URL.createObjectURL(audFile);
     exportAudEl.src=_audFileUrl; exportAudEl.crossOrigin='anonymous';
     await new Promise(r=>{exportAudEl.oncanplaythrough=r; exportAudEl.onerror=r;});
-    const exportSrc = exportActx.createMediaElementSource(exportAudEl);
-    const silentGain = exportActx.createGain(); silentGain.gain.value=0;
+
+    const exportSrc=exportActx.createMediaElementSource(exportAudEl);
+    const silentGain=exportActx.createGain(); silentGain.gain.value=0;
     exportSrc.connect(exportAn);
     exportSrc.connect(silentGain); silentGain.connect(exportActx.destination);
 
-    const dur = exportAudEl.duration||30;
-    const totalFrames = Math.ceil(dur*FPS);
+    const dur=exportAudEl.duration||30;
+    const totalFrames=Math.ceil(dur*FPS);
 
-    // ── Decode full AudioBuffer for encoding ─────────────────────
+    // ── Decode audio buffer ────────────────────────────────────────
     upProg(8,'Decode audio buffer...');
     let audioBuf=null;
     try{
       const ab=await audFile.arrayBuffer();
       const decCtx=new OfflineAudioContext(2,Math.floor(44100*dur),44100);
       audioBuf=await decCtx.decodeAudioData(ab);
-    }catch(_){ audioBuf=null; }
+    }catch(_){}
 
-    // ── mp4-muxer ────────────────────────────────────────────────
+    // ── mp4-muxer ─────────────────────────────────────────────────
     const {Muxer,ArrayBufferTarget}=window.Mp4Muxer;
     const target=new ArrayBufferTarget();
     const muxer=new Muxer({
@@ -11301,12 +11296,11 @@ async function exportWithWebCodecs(q){
       fastStart:'in-memory',
     });
 
-    // ── VideoEncoder ─────────────────────────────────────────────
+    // ── VideoEncoder ───────────────────────────────────────────────
     upProg(12,'Khởi tạo VideoEncoder...');
-    let encError=null;
     const videoEncoder=new VideoEncoder({
       output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),
-      error:e=>{ encError=e; console.error('VideoEncoder:',e); },
+      error:e=>console.error('VideoEncoder:',e),
     });
     videoEncoder.configure({
       codec: EW*EH>2_097_152 ? 'avc1.640033' : 'avc1.4d0028',
@@ -11314,17 +11308,18 @@ async function exportWithWebCodecs(q){
       bitrate:q.videoBps,
       framerate:FPS,
       bitrateMode:'variable',
-      latencyMode:'realtime',   // ← 'realtime' keeps encoder warm, avoids reclaim
+      latencyMode:'realtime',
     });
 
-    // ── AudioEncoder ─────────────────────────────────────────────
+    // ── AudioEncoder ───────────────────────────────────────────────
     const audioEncoder=new AudioEncoder({
       output:(chunk,meta)=>muxer.addAudioChunk(chunk,meta),
       error:e=>console.warn('AudioEncoder:',e),
     });
     if(audioBuf){
       upProg(15,'Encode audio...');
-      const sr=audioBuf.sampleRate, nCh=Math.min(audioBuf.numberOfChannels,2);
+      const sr=audioBuf.sampleRate;
+      const nCh=Math.min(audioBuf.numberOfChannels,2);
       const safeBitrate=[96000,128000,160000,192000].includes(q.audioBps)?q.audioBps:128000;
       audioEncoder.configure({codec:'mp4a.40.2',sampleRate:sr,numberOfChannels:nCh,bitrate:safeBitrate});
       const chunkSz=4096;
@@ -11343,7 +11338,7 @@ async function exportWithWebCodecs(q){
       upProg(18,'Audio encode xong ✅');
     }
 
-    // ── Video render loop ─────────────────────────────────────────
+    // ── Video render + encode ──────────────────────────────────────
     upProg(20,'Render + encode video...');
     exportAudEl.currentTime=0;
     exportAudEl.play().catch(()=>{});
@@ -11352,37 +11347,38 @@ async function exportWithWebCodecs(q){
     const t0=performance.now();
     let frameIdx=0;
 
-    // Process frames in SEGMENTS — each segment is one async task
-    // Between segments: one setTimeout(0) yield so browser can breathe
-    // Inside a segment: pure sync loop — encoder stays active, no reclaim
+    // Segment-based loop: render SEG frames đồng bộ,
+    // sau đó yield 1 lần để browser xử lý events.
+    // Encoder KHÔNG bị idle trong segment → tránh QuotaExceeded.
     while(frameIdx<totalFrames){
       if(_exportAborted){
         restore();
         try{exportActx?.close();}catch(_){}
         try{exportAudEl?.pause();}catch(_){}
-        releaseWakeLock();
-        return;
+        releaseWakeLock(); return;
       }
 
-      if(encError) throw encError;
+      // Kiểm tra encoder còn sống
+      if(videoEncoder.state==='closed'){
+        throw new Error('VideoEncoder đã bị đóng bất ngờ');
+      }
 
-      // ── Render one SEGMENT synchronously ────────────────────────
+      // ── Render 1 segment đồng bộ ────────────────────────────────
       const segEnd=Math.min(frameIdx+SEG, totalFrames);
       while(frameIdx<segEnd){
         const el=frameIdx/FPS;
-        const ts_us=Math.round(el*1_000_000);
 
-        // Audio analysis from muted playback
+        // Audio analysis
         exportAn.getByteFrequencyData(expFreqBuf);
         _freqBuf=expFreqBuf;
         const blen=expFreqBuf.length;
-        const bEnd=Math.floor(blen*.12), mEnd=Math.floor(blen*.5);
+        const bE=Math.floor(blen*.12), mE=Math.floor(blen*.5);
         let bs=0,ms2=0,all=0;
         for(let ii=0;ii<blen;ii++){
           const v=expFreqBuf[ii]; all+=v;
-          if(ii<bEnd) bs+=v; else if(ii<mEnd) ms2+=v;
+          if(ii<bE) bs+=v; else if(ii<mE) ms2+=v;
         }
-        _bass=bs/(bEnd*255); _mid=ms2/((mEnd-bEnd)*255); _eng=all/(blen*255);
+        _bass=bs/(bE*255); _mid=ms2/((mE-bE)*255); _eng=all/(blen*255);
 
         // Render frame
         aiT=el*.4; aiGP=el*.0026;
@@ -11399,30 +11395,34 @@ async function exportWithWebCodecs(q){
         if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg))
           drawWatermark(outCtx,EW,EH);
 
-        // Encode — synchronous within segment
-        const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
+        // Tạo VideoFrame từ HTMLCanvasElement — luôn valid
+        const ts_us=Math.round(el*1_000_000);
+        const vf=new VideoFrame(outCvs,{
+          timestamp:ts_us,
+          duration:Math.round(1_000_000/FPS),
+        });
         videoEncoder.encode(vf,{keyFrame:frameIdx%120===0});
         vf.close();
 
         frameIdx++;
       }
 
-      // ── Progress after each segment ──────────────────────────────
-      const el=frameIdx/FPS;
+      // ── Progress sau mỗi segment ─────────────────────────────────
+      const elNow=frameIdx/FPS;
       const pct=20+Math.round(frameIdx/totalFrames*72);
       const fps_actual=frameIdx/(performance.now()-t0)*1000;
       upProg(pct,
         `WebCodecs ${frameIdx}/${totalFrames} · ${fps_actual.toFixed(0)}fps`,
-        `${fmt(el)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-el))}`
+        `${fmt(elNow)} / ${fmt(dur)} · còn ${fmt(Math.max(0,dur-elNow))}`
       );
 
-      // ── Single yield between segments (not within!) ──────────────
-      // This gives browser ~1 event loop tick to handle input/repaints
-      // without triggering encoder inactivity timeout
+      // ── Yield 1 lần giữa các segment ────────────────────────────
+      // Browser xử lý events/repaints trong khoảng này
+      // setTimeout(0) đủ — không cần MessageChannel
       await new Promise(r=>setTimeout(r,0));
     }
 
-    // ── Finalize ──────────────────────────────────────────────────
+    // ── Finalize ───────────────────────────────────────────────────
     upProg(94,'Đóng gói MP4...');
     await videoEncoder.flush();
     muxer.finalize();
@@ -11449,10 +11449,15 @@ async function exportWithWebCodecs(q){
   }catch(e){
     restore();
     console.error('WebCodecs export failed:',e);
-    if(e?.name==='QuotaExceededError'||String(e).includes('Codec reclaimed')){
-      toast('⚠ Encoder bị thu hồi — thử lại với chất lượng thấp hơn','warn',5000);
+    const msg=String(e?.message||e);
+    if(msg.includes('QuotaExceeded')||msg.includes('Codec reclaimed')){
+      toast('⚠ Encoder bị thu hồi — đang chuyển sang WebM...','warn',4000);
+      await exportWithMediaRecorder(q);
+    } else if(msg.includes('InvalidStateError')||msg.includes('Invalid source')){
+      toast('⚠ VideoFrame lỗi — đang chuyển sang WebM...','warn',4000);
+      await exportWithMediaRecorder(q);
     } else {
-      toast('WebCodecs thất bại → chuyển WebM: '+e.message,'warn',4000);
+      toast('WebCodecs thất bại → chuyển WebM: '+msg.slice(0,80),'warn',4000);
       await exportWithMediaRecorder(q);
     }
   }
