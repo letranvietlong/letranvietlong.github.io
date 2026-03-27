@@ -2275,7 +2275,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.1 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.4 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2656,10 +2656,7 @@ Tạo bởi VietLong Creator · Auto Music Video
           <input type="text" id="yt-tags" value="nhạc việt,music video,remix,nhạc hot" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div class="auto-fg">
-            <label style="font-size:.58rem">Nhãn Remix</label>
-            <input type="text" id="auto-remix-label" value="VIET LONG REMIX" style="text-transform:uppercase;padding:5px 8px;font-size:.62rem" oninput="this.value=this.value.toUpperCase();saveAutoSettings()">
-          </div>
+          
           <div style="display:flex;flex-direction:column;gap:4px;justify-content:flex-end">
             <button onclick="exportSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📦 Export JSON</button>
             <button onclick="importSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📥 Import JSON</button>
@@ -3371,6 +3368,7 @@ body:has(#panel-affiliate.show) main {
     <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-found">0</div><div class="aff-stat-lbl">Sản phẩm</div></div></div>
     <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-videos">0</div><div class="aff-stat-lbl">Video đã tạo</div></div></div>
     <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-uploaded">0</div><div class="aff-stat-lbl">Đã upload</div></div></div>
+    <div class="aff-stat-item"><div><div class="aff-stat-val" id="aff-stat-roi" style="font-size:1.1rem">0K</div><div class="aff-stat-lbl">HH ước tính</div></div></div>
     <div class="aff-stat-item" style="margin-left:auto;flex-direction:column;align-items:flex-end;justify-content:center;padding-right:20px">
       <div id="aff-status-badge" style="font-size:.58rem;font-family:'IBM Plex Mono',monospace;color:var(--tx3)">⏸ STANDBY</div>
       <div id="aff-session-chip" style="font-size:.56rem;color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 6px;margin-top:2px">⚠ Chưa kết nối TikTok</div>
@@ -3427,13 +3425,7 @@ body:has(#panel-affiliate.show) main {
         <div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="aff-api-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">⚠ Cần API key để AI hoạt động</div><button id="aff-test-key-btn" onclick="testAnthropicKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,229,195,.4);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Kiểm tra</button></div>
       </div>
 
-      <div class="aff-card">
-        <div class="aff-card-title">🎬 HEYGEN API</div>
-        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>HeyGen API Key</span><a href="https://app.heygen.com/settings?nav=API" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="heygen-api-key" placeholder="NjY4..." oninput="setHeyGenKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div>
-        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Avatar ID</span><button onclick="listHeyGenAvatars()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">📋 Xem</button></label><input type="text" id="heygen-avatar-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div>
-        <div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Voice ID</span><button onclick="listHeyGenVoices()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">🔊 Xem</button></label><input type="text" id="heygen-voice-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div>
-        <div class="aff-fg"><label>Chế độ video</label><select id="heygen-mode" onchange="saveAffSettings();updateHeyGenModeUI()"><option value="canvas">🎨 Canvas AI (miễn phí)</option><option value="heygen">🎬 HeyGen Avatar (người thật)</option><option value="hybrid">✨ Hybrid (HeyGen + Canvas)</option></select></div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="heygen-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nhập key để kích hoạt HeyGen</div><button onclick="testHeyGenKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,45,120,.4);background:rgba(255,45,120,.08);color:#ff6b9d;font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Test</button></div></div>
+      <div class="aff-card"><div class="aff-card-title">🎬 HEYGEN API</div><div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>HeyGen API Key</span><a href="https://app.heygen.com/settings?nav=API" target="_blank" style="color:var(--a2);font-size:.55rem;font-weight:400;text-transform:none;letter-spacing:0">Lấy key →</a></label><input type="password" id="heygen-api-key" placeholder="NjY4..." oninput="setHeyGenKey(this.value)" style="font-family:'IBM Plex Mono',monospace;font-size:.61rem"></div><div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Avatar ID</span><button onclick="listHeyGenAvatars()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">📋 Xem</button></label><input type="text" id="heygen-avatar-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div><div class="aff-fg"><label style="display:flex;justify-content:space-between"><span>Voice ID</span><button onclick="listHeyGenVoices()" style="font-size:.55rem;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;font-weight:600">🔊 Xem</button></label><input type="text" id="heygen-voice-id" placeholder="Để trống = mặc định" style="font-size:.61rem"></div><div class="aff-fg"><label>Chế độ video</label><select id="heygen-mode" onchange="saveAffSettings();updateHeyGenModeUI()"><option value="canvas">🎨 Canvas AI (miễn phí)</option><option value="heygen">🎬 HeyGen Avatar (người thật)</option><option value="hybrid">✨ Hybrid (HeyGen + Canvas)</option></select></div><div style="display:flex;align-items:center;gap:6px;margin-top:6px"><div id="heygen-status" style="font-size:.57rem;color:#fbbf24;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nhập key để kích hoạt HeyGen</div><button onclick="testHeyGenKey()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,45,120,.4);background:rgba(255,45,120,.08);color:#ff6b9d;font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Test</button></div></div>
 
       <div class="aff-card">
         <div class="aff-card-title">🛒 TIKTOK SHOP</div>
@@ -3517,6 +3509,8 @@ body:has(#panel-affiliate.show) main {
     <div class="aff-col">
       <div class="aff-col-header">
         <div class="aff-col-dot"></div>🔍 SẢN PHẨM TIKTOK SHOP
+        <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+        <button onclick="clearAffProducts()" style="padding:3px 7px;border-radius:5px;border:1px solid var(--line);background:none;color:var(--tx3);font-size:.57rem;cursor:pointer" title="Xóa danh sách">🗑</button>
         <button onclick="searchAffProducts()" style="margin-left:auto;padding:4px 10px;border-radius:6px;border:none;background:linear-gradient(135deg,#ff2d78,#ff6b9d);color:#fff;font-size:.58rem;font-weight:700;cursor:pointer">🔍 Tìm ngay</button>
       </div>
       <div class="aff-card" style="padding:8px 12px">
@@ -3702,7 +3696,7 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v10.1';
+const APP_VERSION = 'v10.4';
 const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -3817,7 +3811,7 @@ async function createAffVideoWithHeyGen(productIdx){
     updateAffQueueItem(p.name,'running',8,'AI viết kịch bản...');
     let script='Ơi bạn ơi! '+p.name+' chỉ '+p.price+' đồng, giảm '+p.discount+'! Rating '+p.rating+', '+p.sold+' người mua. Link trong bio!';
     const k=getAnthropicKey();
-    if(k){try{const prompt=['Bạn là chuyên gia content TikTok affiliate tại Việt Nam, chuyên tạo video bán hàng viral.','Viết script video 30 giây cho nhân vật AI ĐỌC TO TRƯỚC CAMERA để review sản phẩm affiliate.','','THÔNG TIN SẢN PHẨM:','- Tên: '+p.name,'- Giá sale: '+p.price+'đ (gốc: '+p.original_price+'đ)','- Giảm: '+p.discount,'- Hoa hồng: '+p.commission+' (~'+p.commission_amount+'đ/đơn)','- Đánh giá: '+p.rating+'/5 ⭐ | Đã bán: '+p.sold,'- Danh mục: '+p.category,'','YÊU CẦU SCRIPT:','1. HOOK (3 giây đầu): Câu mở đầu cực kỳ bắt mắt, tạo tò mò, KHÔNG bắt đầu bằng Xin chào','2. VẤN ĐỀ (5 giây): Đặt ra nỗi đau hoặc nhu cầu mà sản phẩm giải quyết','3. GIẢI PHÁP (8 giây): Giới thiệu sản phẩm như giải pháp hoàn hảo','4. PROOF (7 giây): Nhắc rating, số người đã mua, hoa hồng hấp dẫn','5. URGENCY (4 giây): Tạo sự gấp gáp — giới hạn, flash sale, đừng bỏ lỡ','6. CTA (3 giây): Kêu gọi rõ ràng — click link trong bio','','PHONG CÁCH VIẾT:','- Giọng tự nhiên, thân thiện như người bạn đang chia sẻ, KHÔNG đọc như quảng cáo','- Dùng tiếng Việt tự nhiên, có thể xen vài từ tiếng Anh phổ biến','- Ngắn gọn, súc tích — mỗi câu tối đa 10 từ','- Sử dụng nhịp điệu lên xuống để giữ attention','','CHÚ Ý QUAN TRỌNG:','- Script sẽ được đọc bởi AI avatar — viết tự nhiên như nói, KHÔNG dùng dấu đầu dòng','- Thêm [dừng 0.5s] để tạo nhịp điệu tự nhiên khi đọc','- Tổng độ dài khoảng 80-90 từ khi đọc sẽ khoảng 30 giây','','CHỈ TRẢ VỀ SCRIPT THUẦN (không có note, không có tiêu đề, không có dấu ngoặc kép bọc ngoài).'].join('\n');const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});const dd=await rr.json();const ss=dd.content?.[0]?.text||'';if(ss.length>20)script=ss;}catch(e){}}
+    if(k){try{const prompt='Viết script TikTok 30 giây tiếng Việt tự nhiên review: '+p.name+' giá '+p.price+'đ giảm '+p.discount+' rating '+p.rating+'. Hook mạnh, CTA rõ. Chỉ trả script.';const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});const dd=await rr.json();const ss=dd.content?.[0]?.text||'';if(ss.length>20)script=ss;}catch(e){}}
     let blob=null;
     if(mode==='heygen'||mode==='hybrid'){
       try{const res=await generateHeyGenVideo(script,p,(pct,msg)=>updateAffQueueItem(p.name,'running',pct,msg));blob=res.blob;affLog('ok','HeyGen: '+(blob.size/1024/1024).toFixed(1)+'MB');}
@@ -4800,8 +4794,7 @@ function saveDraftNow(){
       ts: Date.now(),
       title:   $('cc-title')?.value||'',
       artist:  $('cc-artist')?.value||'',
-      remix:   $('cc-remix')?.value||'',
-      lyr:     $('cc-lyr')?.value||'',
+            lyr:     $('cc-lyr')?.value||'',
       tplId:   typeof chosenTpl!=='undefined'?chosenTpl?.id:'',
       step:    typeof step!=='undefined'?step:1,
       artImgSrc: (typeof artImg!=='undefined'&&artImg?.src&&!artImg.src.startsWith('http'))?artImg.src:'',
@@ -6919,8 +6912,7 @@ function buildCfg(force=false){
   const sv={
     title:  $('cc-title')?.value  || '',
     artist: $('cc-artist')?.value || '',
-    remix:  $('cc-remix')?.value  || 'VIET LONG REMIX',
-    lyr:    $('cc-lyr')?.value    || '',
+        lyr:    $('cc-lyr')?.value    || '',
     wt:     $('cc-wt')?.value     || 'bars',
   };
 
@@ -6949,8 +6941,6 @@ function buildCfg(force=false){
         <input type="text" id="cc-title" placeholder="VD: EM THUA CÔ TA" oninput="this.value=this.value.toUpperCase();scheduleDraftSave()"></div>
       <div class="fg"><label>Tên Ca Sĩ / Nghệ Sĩ</label>
         <input type="text" id="cc-artist" placeholder="VD: MIN QUỲNH ANH" oninput="scheduleDraftSave()"></div>
-      ${isMC?`<div class="fg"><label>Nhãn Trong Thẻ Ảnh</label>
-        <input type="text" id="cc-remix" placeholder="VD: VIET LONG REMIX" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>`:``}
       <div class="fg"><label>Màu Nền Chính</label>
         <input type="color" id="cc-b1" value="${p.b1||'#031d2e'}" oninput="chosenTpl.pal.b1=this.value;scheduleDraftSave()"></div>
       <div class="fg"><label>Màu Hiệu Ứng Chính</label>
@@ -7060,7 +7050,6 @@ function buildCfg(force=false){
   const dr = window._draftRestore;
   if($('cc-title'))  $('cc-title').value  = dr?.title  || sv.title;
   if($('cc-artist')) $('cc-artist').value = dr?.artist || sv.artist;
-  if($('cc-remix'))  $('cc-remix').value  = sv.remix;
   if($('cc-lyr'))    $('cc-lyr').value    = sv.lyr;
   if($('cc-wt'))     $('cc-wt').value     = sv.wt;
   if(dr){ window._draftRestore=null; } // consumed
@@ -10602,31 +10591,6 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
     bgX.textAlign='right';bgX.fillStyle='rgba(255,255,255,.35)';bgX.fillText(fmt(audDur),pbX+pbW,pbY-4);
   }
 
-  // Remix label — góc TRÊN bên phải của card
-  const remixLabel=($('cc-remix')?.value||'REMIX').toUpperCase();
-  const rlH=ch*.052;
-  bgX.font=`600 ${rlH*.5}px Be Vietnam Pro,Arial`;
-  const rlW=bgX.measureText(remixLabel).width+cw*.06;
-  const rlX=cx+cw-rlW-cw*.018;
-  const rlY=cy+ch*.018;
-  const rlR=rlH*.35;
-  bgX.fillStyle='rgba(0,0,0,.62)';
-  bgX.beginPath();
-  bgX.moveTo(rlX+rlR,rlY);
-  bgX.lineTo(rlX+rlW-rlR,rlY);
-  bgX.quadraticCurveTo(rlX+rlW,rlY,rlX+rlW,rlY+rlR);
-  bgX.lineTo(rlX+rlW,rlY+rlH-rlR);
-  bgX.quadraticCurveTo(rlX+rlW,rlY+rlH,rlX+rlW-rlR,rlY+rlH);
-  bgX.lineTo(rlX+rlR,rlY+rlH);
-  bgX.quadraticCurveTo(rlX,rlY+rlH,rlX,rlY+rlH-rlR);
-  bgX.lineTo(rlX,rlY+rlR);
-  bgX.quadraticCurveTo(rlX,rlY,rlX+rlR,rlY);
-  bgX.closePath();
-  bgX.fill();
-  bgX.fillStyle='rgba(255,255,255,.9)';
-  bgX.textAlign='center';bgX.textBaseline='middle';
-  bgX.fillText(remixLabel,rlX+rlW/2,rlY+rlH/2);
-
   // ── OVERLAY LAYER ──
   ovX.clearRect(0,0,W,H);
   const wc=p.wc||'#22d3ee';
@@ -11405,8 +11369,15 @@ async function exportWithWebCodecs(q){
 
     // Render + encode video frames
     // Export perf constants
-    const _BATCH=60, _BP_QUEUE=30, _PROG_EVERY=30;
+    const _BATCH=4, _BP_QUEUE=6, _PROG_EVERY=15;
+    // True async yield — lets browser handle other tabs/events
+    const _mc=new MessageChannel();
+    const _yieldToMain=()=>new Promise(r=>{_mc.port1.onmessage=r;_mc.port2.postMessage(0);});
     async function renderNextFrame(){
+      // If tab becomes hidden, wait until visible again (avoids throttling)
+      if(document.hidden){
+        await new Promise(r=>document.addEventListener('visibilitychange',r,{once:true}));
+      }
       if(_exportAborted){ bgCvs=_savedBgCvs; ovCvs=_savedOvCvs; bgX=_savedBgX; ovX=_savedOvX; bgCache=null; try{exportActx?.close();}catch(_){} try{exportAudEl?.pause();}catch(_){} releaseWakeLock(); _isExporting=false; return; }
       if(frameIdx>=totalFrames){
         // Done — flush + finalize
@@ -11468,7 +11439,7 @@ async function exportWithWebCodecs(q){
 
       // Encode
       const vf=new VideoFrame(outCvs,{timestamp:ts_us,duration:Math.round(1_000_000/FPS)});
-      videoEncoder.encode(vf,{keyFrame:frameIdx%90===0});
+      videoEncoder.encode(vf,{keyFrame:frameIdx%60===0});
       vf.close();
 
       frameIdx++;
@@ -11481,20 +11452,21 @@ async function exportWithWebCodecs(q){
         upProg(pct,`WebCodecs ${frameIdx}/${totalFrames} · ${fps_actual.toFixed(1)}fps`,`${fmt(el)} / ${fmt(dur)} · còn ${fmt(remain)}`);
       }
 
-      // Backpressure: only yield when encoder is backed up
+      // Backpressure: yield when encoder queue builds up
       if(videoEncoder.encodeQueueSize>_BP_QUEUE){
-        await new Promise(r=>setTimeout(r,0));
+        await _yieldToMain();
       }
 
-      // Run _BATCH frames synchronously then yield once to keep browser responsive
+      // Yield every _BATCH frames so browser can handle events/repaints
       if(frameIdx%_BATCH===0){
-        setTimeout(renderNextFrame,0);
+        await _yieldToMain();
+        renderNextFrame();
       } else {
         renderNextFrame();
       }
     }
 
-    setTimeout(renderNextFrame, 0);
+    await _yieldToMain(); renderNextFrame();
 
   }catch(e){
     console.error('WebCodecs export failed:',e);
@@ -11808,38 +11780,29 @@ function loadAffSettings(){
 // ── UI helpers ──────────────────────────────────────────────────
 function affLog(type,msg){
   const el=$('aff-log'); if(!el) return;
-  const ts=new Date().toLocaleTimeString('vi',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const div=document.createElement('div');
-  div.className=`log-${type}`;
-  div.textContent=`[${ts}] ${msg}`;
-  el.appendChild(div);
-  el.scrollTop=el.scrollHeight;
-  // Keep max 100 lines
-  while(el.children.length>100) el.removeChild(el.firstChild);
+  const colors={ok:'#22c55e',warn:'#fbbf24',err:'#ef4444',info:'var(--a2)',dim:'var(--tx3)',script:'#a78bfa',heygen:'#ff6b9d'};
+  const icons={ok:'✅',warn:'⚠',err:'❌',info:'◆',dim:'·',script:'✍',heygen:'🎬'};
+  const t=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:4px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)';
+  row.innerHTML='<span style="color:'+(colors[type||'info']||'var(--a2)')+';flex-shrink:0;font-size:.6rem">'+(icons[type||'info']||'◆')+'</span>'+
+    '<span style="color:var(--tx3);font-size:.54rem;flex-shrink:0">['+t+']</span>'+
+    '<span style="color:'+(colors[type||'info']||'var(--tx2)')+';font-size:.58rem;line-height:1.5;word-break:break-word">'+msg+'</span>';
+  el.insertBefore(row,el.firstChild);
+  if(el.children.length>100) el.lastChild.remove();
 }
 
 function refreshAffStats(){
-  if($('aff-stat-found'))    $('aff-stat-found').textContent=affStats.found||0;
-  if($('aff-stat-videos'))   $('aff-stat-videos').textContent=affStats.videos||0;
-  if($('aff-stat-uploaded')) $('aff-stat-uploaded').textContent=affStats.uploaded||0;
-  if($('aff-stat-clicks'))   $('aff-stat-clicks').textContent=affStats.clicks||0;
-  // Update session status chip
-  const sid=localStorage.getItem('tt_session');
-  const exp=parseInt(localStorage.getItem('tt_session_exp')||'0');
-  const statusChip=$('aff-session-chip');
-  if(statusChip){
-    if(sid&&Date.now()<exp){
-      const d=Math.round((exp-Date.now())/86400000);
-      statusChip.textContent=`✅ TikTok · ${d}d`;
-      statusChip.style.color='#22c55e';
-      statusChip.style.borderColor='rgba(34,197,94,.3)';
-    } else {
-      statusChip.textContent='⚠ TikTok chưa kết nối';
-      statusChip.style.color='#fbbf24';
-      statusChip.style.borderColor='rgba(251,191,36,.3)';
-    }
+  const s=affStats;
+  [['aff-stat-found',s.found],['aff-stat-videos',s.videos],['aff-stat-uploaded',s.uploaded],['aff-stat-clicks',s.clicks]].forEach(([id,v])=>{const el=$(id);if(el)el.textContent=v;});
+  const roi=$('aff-stat-roi');
+  if(roi){
+    const total=affProducts.reduce((sum,p)=>{
+      const raw=(p.commission_amount||'0').replace(/[.,\s]/g,'').replace(/[^0-9]/g,'');
+      return sum+(parseInt(raw)||0);
+    },0);
+    roi.textContent=total>=1000000?(total/1000000).toFixed(1)+'M':total>=1000?(total/1000).toFixed(0)+'K':'0';
   }
-  _refreshVideoHistory();
 }
 
 function setAffStatus(text,color='var(--a2)'){
@@ -11925,31 +11888,53 @@ async function searchAffProducts(){
 function renderAffProducts(products){
   const el=$('aff-product-list'); if(!el) return;
   if(!products||!products.length){
-    el.innerHTML='<div class="aff-empty-state"><div style="font-size:2rem">🛍</div><div>Chưa có sản phẩm</div></div>';
+    el.innerHTML='<div class="aff-empty-state"><div style="font-size:2rem;margin-bottom:8px">🛍</div><div style="font-size:.7rem;color:var(--tx3)">Chưa có sản phẩm — Nhấn Tìm ngay</div></div>';
     return;
   }
   const em={beauty:'💄',fashion:'👗',tech:'📱',food:'🍜',health:'💊',sport:'🏃',home:'🏠',trending:'🔥'};
+  const cc={beauty:'#ff2d78',fashion:'#a78bfa',tech:'#22d3ee',food:'#fb923c',health:'#4ade80',sport:'#facc15',home:'#34d399',trending:'#ff2d78'};
   const base=affProducts.length-products.length;
   el.innerHTML=products.map((p,i)=>{
-    const gi=base+i;
-    return '<div class="aff-product-card">'+
-      '<div class="aff-product-img">'+(em[p.category]||'🛍')+'</div>'+
+    const gi=base+i, ac=cc[p.category]||'#ff2d78';
+    const feats=(p.features||[]).slice(0,3).map(f=>'<span style="font-size:.51rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--tx2);padding:1px 6px;border-radius:10px;white-space:nowrap">'+f+'</span>').join('');
+    const hookTag=p.best_hook?'<div style="font-size:.52rem;color:var(--tx3);margin-top:5px;line-height:1.4;font-style:italic;border-left:2px solid '+ac+';padding-left:5px">'+p.best_hook.slice(0,90)+'</div>':'';
+    const audience=p.target_audience?'<div style="font-size:.52rem;color:var(--tx3);margin-top:2px">👥 '+p.target_audience+'</div>':'';
+    return '<div class="aff-product-card" style="border-left:2px solid '+ac+'33">'+
+      '<div class="aff-product-img" style="background:'+ac+'18;color:'+ac+'">'+(em[p.category]||'🛍')+'</div>'+
       '<div class="aff-product-info">'+
         '<div class="aff-product-name" title="'+p.name+'">'+p.name+'</div>'+
-        '<div style="display:flex;align-items:center;gap:5px;margin-top:2px">'+
-          '<span class="aff-product-price">'+p.price+'đ</span>'+
-          '<span style="font-size:.54rem;color:var(--tx3);text-decoration:line-through">'+p.original_price+'đ</span>'+
-          '<span style="font-size:.53rem;background:rgba(255,45,120,.12);color:#ff6b9d;padding:1px 4px;border-radius:3px">'+p.discount+'</span>'+
+        '<div style="display:flex;align-items:center;gap:5px;margin-top:3px">'+
+          '<span class="aff-product-price" style="color:'+ac+'">'+p.price+'đ</span>'+
+          (p.original_price&&p.original_price!==p.price?'<span style="font-size:.53rem;color:var(--tx3);text-decoration:line-through">'+p.original_price+'đ</span>':'')+
+          (p.discount?'<span style="font-size:.52rem;background:'+ac+'22;color:'+ac+';padding:1px 5px;border-radius:3px;font-weight:700">'+p.discount+'</span>':'')+
         '</div>'+
-        '<div class="aff-product-commission">💰 '+p.commission+' (~'+p.commission_amount+'đ/đơn)</div>'+
-        '<div style="font-size:.54rem;color:var(--tx3)">⭐'+p.rating+' · '+p.sold+' · '+p.shop+'</div>'+
-        '<div style="font-size:.55rem;color:#fbbf24;margin-top:1px">🔥 '+p.why_hot+'</div>'+
-        '<div class="aff-product-actions">'+
-          '<button class="aff-product-btn primary" onclick="createAffVideo('+gi+')">🎬 Tạo video</button>'+
-          '<button class="aff-product-btn" onclick="analyzeProductById('+gi+')">🧠 AI</button>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'+
+          '<span class="aff-product-commission" style="font-size:.58rem">💰 '+p.commission+'</span>'+
+          (p.commission_amount?'<span style="font-size:.52rem;color:#22c55e;font-weight:700">~'+p.commission_amount+'đ/đơn</span>':'')+
+        '</div>'+
+        '<div style="font-size:.53rem;color:var(--tx3);margin-top:2px">⭐'+p.rating+' · 🛒 '+p.sold+' đã bán'+(p.shop?' · '+p.shop.slice(0,22):'')+' </div>'+
+        (p.why_hot?'<div style="font-size:.53rem;color:#fbbf24;margin-top:2px">🔥 '+p.why_hot+'</div>':'')+
+        (feats?'<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">'+feats+'</div>':'')+
+        audience+hookTag+
+        '<div class="aff-product-actions" style="margin-top:8px">'+
+          '<button class="aff-product-btn primary" onclick="createAffVideoWithHeyGen('+gi+')" style="background:linear-gradient(135deg,'+ac+','+ac+'bb)">🎬 Tạo video</button>'+
+          '<button class="aff-product-btn" onclick="analyzeProductById('+gi+')">🧠 Phân tích</button>'+
+          '<button class="aff-product-btn" onclick="copyBestHook('+gi+')" title="Copy hook">📋</button>'+
         '</div>'+
       '</div></div>';
   }).join('');
+}
+
+function clearAffProducts(){
+  affProducts=[];affStats.found=0;refreshAffStats();
+  const el=$('aff-product-list');
+  if(el) el.innerHTML='<div class="aff-empty-state"><div style="font-size:2rem;margin-bottom:8px">🛍</div><div style="font-size:.7rem;color:var(--tx3)">Chưa có sản phẩm</div></div>';
+  affLog('dim','Đã xóa danh sách sản phẩm');
+}
+function copyBestHook(idx){
+  const p=affProducts[idx]; if(!p) return;
+  const text=p.best_hook||p.why_hot||('Review '+p.name+' giá chỉ '+p.price+'đ!');
+  navigator.clipboard?.writeText(text).then(()=>toast('Đã copy hook!','success',2000)).catch(()=>{});
 }
 
 function generateDemoProducts(cat){
@@ -13852,5 +13837,101 @@ function downloadDemoVideo(){
   a.download='VLC_Demo_Affiliate.webm';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+
+async function createAffVideoWithHeyGen(productIdx){
+  const p=affProducts[productIdx];
+  if(!p){toast('Không tìm thấy sản phẩm','warn',2000);return null;}
+  const mode=getHeyGenMode();
+  if(mode==='canvas') return createAffVideo(productIdx);
+  addAffQueueItem(p,'pending');
+  affLog('info','['+mode.toUpperCase()+'] Workflow: '+p.name+' ['+((p.category||'trending').toUpperCase())+']');
+  try{
+    updateAffQueueItem(p.name,'running',8,'Claude viết script...');
+    let script=_buildDefaultScript(p);
+    const k=getAnthropicKey();
+    if(k){
+      try{
+        const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,
+            system:'Bạn là copywriter TikTok affiliate chuyên nghiệp. Chỉ trả về script thuần.',
+            messages:[{role:'user',content:_buildScriptPrompt(p)}]})});
+        const dd=await rr.json();const ss=(dd.content?.[0]?.text||'').trim();
+        if(ss.length>30){script=ss;affLog('ok','Script ('+ss.split(/\s+/).length+'từ): '+ss.slice(0,80)+'...');}
+      }catch(e){affLog('dim','Script AI lỗi — dùng mặc định');}
+    }
+    let blob=null;
+    if(mode==='heygen'||mode==='hybrid'){
+      updateAffQueueItem(p.name,'running',20,'Gửi tới HeyGen...');
+      try{
+        const res=await generateHeyGenVideo(script,p,(pct,msg)=>updateAffQueueItem(p.name,'running',pct,msg));
+        blob=res.blob;affLog('heygen','HeyGen: '+(blob.size/1024/1024).toFixed(1)+'MB');
+      }catch(e){
+        affLog('warn','HeyGen lỗi: '+e.message.slice(0,40)+' → Canvas');
+        if(mode==='hybrid'){updateAffQueueItem(p.name,'running',50,'Canvas fallback...');blob=await _renderProductVideo(_buildCanvasContent(p),p);}
+        else throw e;
+      }
+    }
+    if(!blob||blob.size<1000){updateAffQueueItem(p.name,'failed',0,'Thất bại');return null;}
+    affStats.videos++;refreshAffStats();
+    showQueueItemReview(p.name,blob,p);
+    affLog('ok','Video sẵn sàng · Nhấn Duyệt để đăng TikTok');
+    toast('Video xong! Nhấn Duyệt để đăng','success',5000);
+    _trackVideoPerformance(p,p.name,blob.size);saveAffSettings();return blob;
+  }catch(e){
+    affLog('err','Lỗi: '+e.message);
+    updateAffQueueItem(p.name,'failed',0,e.message.slice(0,40));
+    toast('Lỗi: '+e.message.slice(0,50),'warn',4000);return null;
+  }
+}
+
+function _buildScriptPrompt(p){
+  const cat=p.category||'trending';
+  const cp={
+    beauty:{persona:'beauty creator',audience:'phụ nữ 18-35',hook:'vấn đề da/nhan sắc',proof:'before/after, cảm nhận dùng',urgency:'limited, hết hàng nhanh'},
+    fashion:{persona:'fashion influencer',audience:'người yêu thời trang',hook:'phong cách/outfit',proof:'OOTD viral',urgency:'xu hướng mùa, size limited'},
+    tech:{persona:'tech reviewer',audience:'người tìm value for money',hook:'tính năng vượt trội',proof:'test thực tế',urgency:'deal tốt nhất'},
+    food:{persona:'food creator',audience:'foodie',hook:'hương vị độc đáo',proof:'taste test',urgency:'nguyên liệu tươi'},
+    health:{persona:'health coach',audience:'quan tâm sức khỏe',hook:'vấn đề sức khỏe',proof:'kết quả sau N ngày',urgency:'chăm sóc từ sớm'},
+    sport:{persona:'fitness enthusiast',audience:'gym/thể thao',hook:'performance đột phá',proof:'kết quả workout',urgency:'season sale'},
+    home:{persona:'home decorator',audience:'nội trợ',hook:'tiết kiệm thời gian',proof:'demo trực tiếp',urgency:'sale dọn kho'},
+    trending:{persona:'viral creator',audience:'gen Z millennial',hook:'mọi người đang nói về',proof:'số lượng mua khổng lồ',urgency:'trend sắp qua'},
+  }[cat]||{persona:'content creator',audience:'người mua online',hook:'vấn đề thực tế',proof:'đánh giá thực tế',urgency:'ưu đãi có hạn'};
+  return [
+    'NHIỆM VỤ: Script TikTok affiliate 30 giây, AI avatar đọc, sản phẩm '+cat.toUpperCase()+'.',
+    'PERSONA: '+cp.persona+' | TARGET: '+cp.audience,
+    '',
+    'SẢN PHẨM:',
+    '• '+p.name,
+    '• Giá: '+p.price+'đ'+(p.original_price&&p.original_price!==p.price?' (gốc '+p.original_price+'đ, -'+p.discount+')':''),
+    '• '+p.rating+' sao · '+p.sold+' người mua',
+    '• HH: '+p.commission+(p.commission_amount?' (~'+p.commission_amount+'đ/đơn)':''),
+    (p.why_hot?'• Hot: '+p.why_hot:''),
+    (p.best_hook?'• Hook gợi ý: '+p.best_hook:''),
+    '',
+    'BLUEPRINT:',
+    '▸ [HOOK 3s] '+cp.hook+'. Câu hỏi/tuyên bố mạnh. KHÔNG "Xin chào".',
+    '▸ [PAIN 5s] Nỗi đau của '+cp.audience+'.',
+    '▸ [SOLUTION 7s] '+p.name+' giải quyết. 1-2 điểm nổi bật.',
+    '▸ [PROOF 5s] '+cp.proof+'. '+p.rating+' sao, '+p.sold+' người mua.',
+    '▸ [URGENCY 5s] '+cp.urgency+'. Giá '+p.price+'đ.',
+    '▸ [CTA 5s] Link trong bio + action.',
+    '',
+    'FORMAT: 1 đoạn liền mạch, [dừng 0.5s] đúng 4 lần, 80-95 từ, tiếng Việt tự nhiên.',
+    'KHÔNG xuống dòng, KHÔNG bullet, KHÔNG ngoặc kép bao ngoài.',
+  ].filter(Boolean).join('\n');
+}
+
+function _buildDefaultScript(p){
+  const hooks={beauty:'Da bạn có đang gặp vấn đề gì không? [dừng 0.5s]',fashion:'Outfit hôm nay đủ trendy chưa? [dừng 0.5s]',tech:'Thiết bị cũ đang làm phiền không? [dừng 0.5s]',food:'Món ngon này bạn đã thử chưa? [dừng 0.5s]',health:'Sức khỏe bạn đang ổn không? [dừng 0.5s]',sport:'Bạn có đang stuck trong tập luyện không? [dừng 0.5s]',home:'Nhà bạn có cần upgrade không? [dừng 0.5s]',trending:'Mọi người đang nói gì vậy? [dừng 0.5s]'};
+  const h=hooks[p.category||'trending']||hooks.trending;
+  return h+'Mình vừa tìm được '+p.name+' quá xịn! [dừng 0.5s] Chỉ '+p.price+' đồng, giảm '+p.discount+'. [dừng 0.5s] Đã '+p.sold+' người mua, đánh giá '+p.rating+' sao. [dừng 0.5s] Flash sale sắp hết — đặt ngay! Link trong bio nhé!';
+}
+
+function _buildCanvasContent(p){
+  const cc={beauty:{g1:'#2d0020',g2:'#1a0030',accent:'#ff2d78',e:'💄'},fashion:{g1:'#1a0035',g2:'#0d0025',accent:'#a78bfa',e:'👗'},tech:{g1:'#001020',g2:'#002030',accent:'#22d3ee',e:'📱'},food:{g1:'#1a0800',g2:'#2d1000',accent:'#fb923c',e:'🍜'},health:{g1:'#001510',g2:'#002820',accent:'#4ade80',e:'💊'},sport:{g1:'#0a1000',g2:'#1a2000',accent:'#facc15',e:'🏃'},home:{g1:'#0a0a20',g2:'#1a1030',accent:'#34d399',e:'🏠'},trending:{g1:'#1a0020',g2:'#2d0035',accent:'#ff2d78',e:'🔥'}};
+  const c=cc[p.category||'trending']||cc.trending;
+  return {title:p.name,features:[(p.discount?'Giảm '+p.discount:'Giá tốt'),('Rating '+p.rating+' sao'),'Giao nhanh'],cta:'Mua ngay! Link trong bio',hashtags:'#tiktokshop #affiliate #'+(p.category||'muasam'),emoji:c.e,bg_color1:c.g1,bg_color2:c.g2,accent:c.accent};
 }
 </script>
