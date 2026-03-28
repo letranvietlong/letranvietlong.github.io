@@ -965,9 +965,7 @@ main {
   font-family:'Be Vietnam Pro',sans-serif; white-space:nowrap;
 }
 .auto-title span { color:#00e5c3; }
-.auto-subtitle {
-  font-size:.7rem; color:var(--tx3); line-height:1.5; white-space:nowrap;
-}
+
 .auto-header-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 
 /* Stats bar */
@@ -1025,23 +1023,13 @@ main {
   padding:16px; border-bottom:1px solid var(--line);
 }
 .auto-card:last-child { border-bottom:none; }
-.auto-card-title {
-  display:flex; align-items:center; gap:7px;
-  font-size:.62rem; font-weight:700; color:var(--tx2);
-  letter-spacing:.08em; margin-bottom:12px;
-  font-family:'IBM Plex Mono',monospace;
-  text-transform:uppercase;
-}
+
 .auto-card-title::before {
   content:''; width:4px; height:4px; border-radius:50%;
   background:var(--a2); box-shadow:0 0 5px var(--a2);
 }
 
 /* Card actions row */
-.auto-card-actions {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:12px;
-}
 
 /* Run button */
 .auto-run-btn {
@@ -1057,7 +1045,6 @@ main {
 .auto-run-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 
 /* Queue */
-.auto-queue { max-height:none; overflow-y:visible; }
 
 /* Analytics */
 #analytics-dash { max-height:none; overflow-y:visible; }
@@ -1070,7 +1057,7 @@ main {
 }
 
 /* Form fields */
-.auto-fg { margin-bottom:12px; }
+
 .auto-fg label {
   display:block; font-size:.62rem; color:var(--tx3);
   font-family:'IBM Plex Mono',monospace; margin-bottom:5px;
@@ -1105,16 +1092,11 @@ main {
   color:var(--tx); border-radius:8px; padding:6px 10px;
   font-family:'IBM Plex Mono',monospace; font-size:.75rem; outline:none;
 }
-.add-slot-btn {
-  padding:6px 14px; border-radius:8px; border:1px solid var(--a2);
-  background:transparent; color:var(--a2); cursor:pointer;
-  font-size:.65rem; font-family:'IBM Plex Mono',monospace;
-  font-weight:700; transition:all .2s;
-}
+
 .add-slot-btn:hover{background:rgba(0,229,195,.1);}
 
 /* Queue */
-.auto-queue { margin-top:18px; }
+
 .queue-item {
   display:flex; align-items:center; gap:12px;
   padding:10px 12px; border-radius:9px; margin-bottom:8px;
@@ -1141,12 +1123,7 @@ main {
 }
 
 /* Log console */
-.auto-log {
-  background:#020408; border:1px solid var(--line);
-  border-radius:var(--r); padding:12px; margin-top:16px;
-  max-height:160px; overflow-y:auto; font-family:'IBM Plex Mono',monospace;
-  font-size:.6rem; line-height:1.8;
-}
+
 .log-line { margin:0; }
 .log-line.info  { color:#60a5fa; }
 .log-line.ok    { color:#4ade80; }
@@ -1182,8 +1159,8 @@ main {
 .yt-connect-btn.connected{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,.1);}
 
 /* Stats row */
-.auto-stats { display:none; /* replaced by .auto-stats-bar */ }
-@media(max-width:480px){.auto-stats{grid-template-columns:repeat(2,1fr);}}
+
+@media(max-width:480px){}
 .stat-box { display:none; /* replaced */ }
 .stat-val {
   font-size:1.3rem; font-weight:800; color:var(--a2);
@@ -1259,7 +1236,7 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .ratio-btn{padding:4px 10px;border-radius:5px;cursor:pointer;font-size:.6rem;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--tx3);border:none;background:none;transition:all .18s;}
 .ratio-btn.active{background:var(--a1);color:var(--ink);box-shadow:0 0 8px rgba(255,45,120,.3);}
 /* ── MULTI-IMAGE ── */
-.artimg-slot{width:56px;height:72px;border-radius:6px;object-fit:cover;cursor:pointer;border:1.5px dashed var(--line2);transition:all .18s;flex-shrink:0;}
+
 .artimg-slot:hover,.artimg-slot.has-img{border-color:var(--a2);}
 .artimg-slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 /* ── REDUCED MOTION ── */
@@ -1291,11 +1268,11 @@ header { padding:0 32px; }
 }
 
 /* Auto tab: 3 columns */
-@media(max-width:680px)  { .auto-grid { grid-template-columns:1fr !important; } }
+@media(max-width:680px)  {  }
 
 /* Auto card compact */
 .auto-card { padding:14px; }
-.auto-card-title { font-size:.63rem !important; }
+
 .auto-fg label { font-size:.6rem; }
 .auto-fg input, .auto-fg select, .auto-fg textarea {
   font-size:.65rem; padding:5px 9px;
@@ -1322,12 +1299,7 @@ header { padding:0 32px; }
   position:sticky; top:0; z-index:20;
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
 }
-.aff-header-left { display:flex; align-items:center; gap:20px; }
-.aff-header-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
-.aff-title {
-  font-size:1.15rem; font-weight:800; color:var(--tx);
-  font-family:'Be Vietnam Pro',sans-serif;
-}
+
 .aff-title span {
   background:linear-gradient(90deg,#ff2d78,#ff6b9d);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
@@ -1347,7 +1319,7 @@ header { padding:0 32px; }
   min-width:120px; transition:background .2s;
 }
 .aff-stat-item:hover { background:var(--surface); }
-.aff-stat-icon { font-size:1.1rem; }
+
 .aff-stat-val {
   font-size:1.35rem; font-weight:800; line-height:1;
   font-family:'IBM Plex Mono',monospace;
@@ -1392,29 +1364,14 @@ header { padding:0 32px; }
   background:linear-gradient(180deg,#ff2d78,#ff6b9d);
   flex-shrink:0;
 }
-.aff-card-actions {
-  display:flex; align-items:center;
-  justify-content:space-between; margin-bottom:10px;
-}
 
 /* Form fields */
 
-.aff-hint { font-size:.57rem; color:var(--tx3); margin-top:3px; line-height:1.4; }
-
 /* Connect box */
-.aff-connect-box {
-  display:flex; align-items:center; gap:10px;
-  background:var(--surface2); border:1px solid var(--line2);
-  border-radius:9px; padding:10px 12px; cursor:pointer;
-  transition:all .18s; margin-bottom:10px;
-}
+
 .aff-connect-box:hover { border-color:rgba(255,45,120,.4); background:rgba(255,45,120,.04); }
 .aff-connect-box.connected { border-color:rgba(255,45,120,.5); }
-.aff-mini-btn {
-  padding:4px 10px; border-radius:6px; border:none;
-  color:#fff; font-size:.6rem; font-weight:700; cursor:pointer;
-  white-space:nowrap; transition:opacity .18s;
-}
+
 .aff-mini-btn:hover { opacity:.85; }
 
 /* Product card */
@@ -1455,12 +1412,7 @@ header { padding:0 32px; }
 }
 
 /* Queue item */
-.aff-qi {
-  display:flex; align-items:center; gap:10px;
-  padding:9px 12px; border-radius:8px; margin-bottom:6px;
-  background:var(--surface2); border:1px solid var(--line);
-  transition:all .2s; animation:qi-in .25s ease-out;
-}
+
 .aff-qi.running { border-color:#fbbf24; background:rgba(251,191,36,.05); }
 .aff-qi.done    { border-color:#22c55e; background:rgba(34,197,94,.05); }
 .aff-qi.failed  { border-color:#ef4444; background:rgba(239,68,68,.05); }
@@ -1485,13 +1437,7 @@ header { padding:0 32px; }
 #aff-log .log-dim  { color:var(--tx3); }
 
 /* Schedule chip */
-.aff-slot-chip {
-  display:flex; align-items:center; gap:5px;
-  background:rgba(255,45,120,.08); border:1px solid rgba(255,45,120,.2);
-  border-radius:20px; padding:4px 10px; margin-bottom:5px;
-  font-size:.6rem; color:#ff6b9d;
-  font-family:'IBM Plex Mono',monospace;
-}
+
 .aff-slot-chip button {
   background:none; border:none; color:var(--tx3);
   cursor:pointer; font-size:.68rem; padding:0; transition:color .15s;
@@ -1537,7 +1483,6 @@ body:has(#panel-affiliate.show) main {
 /* Login button: fits column */
 
 /* Proxy status text */
-
 
 /* ══════════════════════════════════════════
    AFFILIATE PANEL — DEFINITIVE CSS
@@ -1623,12 +1568,6 @@ body:has(#panel-affiliate.show) main {
   background:linear-gradient(180deg,#ff2d78,#ff6b9d);
   flex-shrink:0;
 }
-.aff-card-actions {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:10px;
-}
 
 .aff-fg { margin-bottom:9px; }
 .aff-fg label {
@@ -1657,36 +1596,9 @@ body:has(#panel-affiliate.show) main {
 }
 .aff-fg input:focus,
 .aff-fg select:focus { border-color:#ff2d78; box-shadow:0 0 0 2px rgba(255,45,120,.1); }
-.aff-hint { font-size:.56rem; color:var(--tx3); margin-top:3px; line-height:1.4; }
 
-.aff-connect-box {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:var(--surface2);
-  border:1px solid var(--line2);
-  border-radius:9px;
-  padding:8px 10px;
-  cursor:pointer;
-  transition:all .18s;
-  margin-bottom:10px;
-  min-width:0;
-  overflow:hidden;
-}
 .aff-connect-box:hover { border-color:rgba(255,45,120,.4); }
 .aff-connect-box.connected { border-color:rgba(255,45,120,.5); }
-
-.aff-mini-btn {
-  padding:4px 8px;
-  border-radius:6px;
-  border:none;
-  color:#fff;
-  font-size:.58rem;
-  font-weight:700;
-  cursor:pointer;
-  white-space:nowrap;
-  flex-shrink:0;
-}
 
 #aff-login-btn {
   width:100%;
@@ -1740,7 +1652,6 @@ body:has(#panel-affiliate.show) main {
 .aff-product-btn:hover { border-color:#ff2d78; color:#ff2d78; }
 .aff-product-btn.primary { background:linear-gradient(135deg,#ff2d78,#ff6b9d); border-color:transparent; color:#fff; }
 
-.aff-qi { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:7px; margin-bottom:5px; background:var(--surface2); border:1px solid var(--line); min-width:0; overflow:hidden; }
 .aff-qi.running { border-color:#fbbf24; }
 .aff-qi.done    { border-color:#22c55e; }
 .aff-qi.failed  { border-color:#ef4444; }
@@ -1779,7 +1690,6 @@ body:has(#panel-affiliate.show) main {
 .aff-stats-bar { display:flex; gap:1px; background:var(--line); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
 .aff-stats-bar::-webkit-scrollbar { display:none; }
 
-.aff-slot-chip { display:flex; align-items:center; gap:5px; background:rgba(255,45,120,.08); border:1px solid rgba(255,45,120,.2); border-radius:20px; padding:3px 9px; margin-bottom:4px; font-size:.58rem; color:#ff6b9d; font-family:'IBM Plex Mono',monospace; }
 .aff-slot-chip button { background:none; border:none; color:var(--tx3); cursor:pointer; font-size:.65rem; padding:0; }
 .aff-slot-chip button:hover { color:#ef4444; }
 
@@ -1946,30 +1856,8 @@ body:has(#panel-affiliate.show) main {
 }
 .aff-fg input:focus,
 .aff-fg select:focus { border-color:#ff2d78; }
-.aff-hint {
-  font-size:.55rem !important;
-  color:var(--tx3);
-  margin-top:3px;
-  line-height:1.4;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
 
 /* Connect box */
-.aff-connect-box {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:var(--surface2);
-  border:1px solid var(--line2);
-  border-radius:8px;
-  padding:8px 10px;
-  cursor:pointer;
-  transition:all .18s;
-  margin-bottom:8px;
-  min-width:0;
-  overflow:hidden;
-}
 
 /* Product card */
 .aff-product-card {
@@ -2045,13 +1933,7 @@ body:has(#panel-affiliate.show) main {
 }
 
 /* Queue item */
-.aff-qi {
-  display:flex; align-items:center; gap:8px;
-  padding:7px 9px; border-radius:7px;
-  margin-bottom:5px;
-  background:var(--surface2); border:1px solid var(--line);
-  min-width:0; overflow:hidden;
-}
+
 .aff-qi-title {
   font-size:.64rem !important;
   font-weight:600; color:var(--tx);
@@ -2102,19 +1984,6 @@ body:has(#panel-affiliate.show) main {
 #aff-log > div { padding:1px 0; }
 
 /* Slot chips */
-.aff-slot-chip {
-  display:flex; align-items:center; gap:5px;
-  background:rgba(255,45,120,.08);
-  border:1px solid rgba(255,45,120,.2);
-  border-radius:20px;
-  padding:3px 9px;
-  margin-bottom:4px;
-  font-size:.57rem !important;
-  color:#ff6b9d;
-  font-family:'IBM Plex Mono',monospace;
-  white-space:nowrap;
-  overflow:hidden;
-}
 
 /* Session chip */
 #aff-session-chip {
@@ -2275,7 +2144,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v10.7 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.0 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2509,858 +2378,20 @@ body:has(#panel-affiliate.show) main {
     </div><!-- /right -->
 
   </div><!-- /2-col grid -->
-<div id="panel-auto">
-
-  <div class="auto-header">
-    <div class="auto-header-left">
-      <div>
-        <div class="auto-title">🤖 Tự Động Hóa <span>AI</span></div>
-        <div class="auto-warn" id="auto-warn-api" style="font-size:.64rem;color:#fbbf24;margin-top:2px">
-          ⚠ Cần kết nối YouTube API để upload tự động ·
-          <span onclick="scrollToGuide()" style="color:var(--a2);cursor:pointer;text-decoration:underline">Xem hướng dẫn</span>
-        </div>
-      </div>
+<div id="panel-auto" class="tab-panel" style="display:none">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:20px;padding:60px;text-align:center">
+    <div style="font-size:3rem">🚀</div>
+    <div style="font-size:1.3rem;font-weight:800;color:var(--tx);font-family:'IBM Plex Mono',monospace">TỰ ĐỘNG HÓA</div>
+    <div style="font-size:.85rem;color:var(--tx3);max-width:400px;line-height:1.8">Tính năng tự động hóa YouTube đang được phát triển. Upload tự động, lên lịch, analytics và nhiều hơn nữa.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+      <span style="padding:7px 14px;border-radius:8px;border:1px solid var(--line);font-size:.68rem;color:var(--tx3)">📺 YouTube Upload</span>
+      <span style="padding:7px 14px;border-radius:8px;border:1px solid var(--line);font-size:.68rem;color:var(--tx3)">🕐 Lên lịch tự động</span>
+      <span style="padding:7px 14px;border-radius:8px;border:1px solid var(--line);font-size:.68rem;color:var(--tx3)">📊 Analytics</span>
+      <span style="padding:7px 14px;border-radius:8px;border:1px solid var(--line);font-size:.68rem;color:var(--tx3)">🔍 Đối thủ</span>
     </div>
-    <div class="auto-header-actions">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-        <span style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">TRẠNG THÁI</span>
-        <span id="auto-status-badge" style="font-size:.62rem;color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">● STANDBY</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div id="run-spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(0,229,195,.3);border-top-color:var(--a2);border-radius:50%;animation:spin .7s linear infinite"></div>
-        <button class="auto-run-btn" id="auto-run-main-btn" onclick="runAutomationNow()">▶ CHẠY NGAY</button>
-      </div>
-    </div>
+    <div style="font-size:.62rem;color:var(--a2);font-family:'IBM Plex Mono',monospace">⏳ Coming Soon</div>
   </div>
-
-  <!-- Stats Bar -->
-  <div class="auto-stats-bar">
-    <div class="auto-stat-item">
-      <div class="auto-stat-icon">🎬</div>
-      <div><div class="auto-stat-val" id="stat-total">0</div><div class="auto-stat-lbl">Video đã tạo</div></div>
-    </div>
-    <div class="auto-stat-item">
-      <div class="auto-stat-icon">☁️</div>
-      <div><div class="auto-stat-val" id="stat-uploaded">0</div><div class="auto-stat-lbl">Đã upload</div></div>
-    </div>
-    <div class="auto-stat-item">
-      <div class="auto-stat-icon">⏳</div>
-      <div><div class="auto-stat-val" id="stat-queued">0</div><div class="auto-stat-lbl">Đang chờ</div></div>
-    </div>
-    <div class="auto-stat-item">
-      <div class="auto-stat-icon">⏰</div>
-      <div><div class="auto-stat-val" id="stat-next" style="font-size:.9rem">--:--</div><div class="auto-stat-lbl">Lần tiếp theo</div></div>
-    </div>
-    <div class="auto-stat-item" style="flex:2;background:linear-gradient(90deg,rgba(0,229,195,.04),transparent)">
-      <div style="font-size:.62rem;color:var(--tx3);line-height:1.6">
-        <span style="color:var(--a2);font-weight:700;font-family:'IBM Plex Mono',monospace">AUTO MODE</span>
-        · Tự tìm nhạc hot → tạo video → upload YouTube theo lịch
-      </div>
-    </div>
-  </div>
-
-<!-- Full-width workspace -->
-  <div class="auto-workspace">
-
-    <!-- COL LEFT: Config & Setup -->
-    <div class="auto-col">
-      <div class="auto-col-header"><div class="auto-col-header-dot"></div>⚙ CẤU HÌNH</div>
-      <div class="auto-card">
-        <div class="auto-card-title">📺 KẾT NỐI YOUTUBE</div>
-        <div class="yt-connect-box" id="yt-box" onclick="connectYouTube()" style="padding:8px;margin-bottom:8px">
-          <div class="yt-icon" style="font-size:1.1rem">📺</div>
-          <div class="yt-info" style="flex:1;min-width:0">
-            <div class="yt-channel" id="yt-channel-name" style="font-size:.68rem">Chưa kết nối</div>
-            <div class="yt-status" id="yt-status-txt" style="font-size:.58rem">Nhấn để kết nối</div>
-          </div>
-          <button class="yt-connect-btn" id="yt-btn" style="padding:4px 10px;font-size:.6rem">KẾT NỐI</button>
-        </div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <label style="font-size:.58rem">YouTube Data API Key</label>
-          <input type="password" id="yt-api-key" placeholder="AIza..." oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-          <div class="hint2" style="font-size:.54rem"><a href="https://console.cloud.google.com" target="_blank" style="color:var(--a2)">Google Cloud Console</a> → Enable YouTube Data API v3</div>
-        </div>
-        <div class="auto-fg">
-          <label style="font-size:.58rem">Channel ID</label>
-          <input type="text" id="yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">🎵 NGUỒN NHẠC</div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <label style="font-size:.58rem">Tìm nhạc từ</label>
-          <select id="music-source" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-            <option value="yt-trending">YouTube Music Trending (VN)</option>
-            <option value="yt-search">Tìm kiếm theo từ khóa</option>
-            <option value="manual">Nhập thủ công URL/ID</option>
-          </select>
-        </div>
-        <div class="auto-fg" id="search-kw-row" style="margin-bottom:5px">
-          <label style="font-size:.58rem">Từ khóa tìm kiếm</label>
-          <input type="text" id="search-keywords" value="nhạc hot 2025,remix việt,ballad việt nam" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-          <div class="hint2" style="font-size:.54rem">Phân cách bằng dấu phẩy</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div class="auto-fg">
-            <label style="font-size:.58rem">Số bài / lần</label>
-            <select id="songs-per-run" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-              <option value="1">1 bài</option><option value="2" selected>2 bài</option>
-              <option value="3">3 bài</option><option value="5">5 bài</option>
-            </select>
-          </div>
-          <div class="auto-fg">
-            <label style="font-size:.58rem">Upload mode</label>
-            <select id="yt-privacy" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-              <option value="private">🔒 Private</option>
-              <option value="unlisted">🔗 Unlisted</option>
-              <option value="public">🌍 Public</option>
-            </select>
-          </div>
-        </div>
-        <div class="auto-fg" style="margin-top:5px">
-          <label style="font-size:.58rem">Mẫu video</label>
-          <select id="auto-template" onchange="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-            <option value="ai">🤖 AI tự chọn phù hợp thể loại</option>
-            <option value="mc-rose">Music Card · Hoa Hồng</option>
-            <option value="mc-ocean">Music Card · Đại Dương</option>
-            <option value="mc-fire">Music Card · Lửa Rực</option>
-            <option value="mc-galaxy">Music Card · Vũ Trụ</option>
-            <option value="mc-cyber">Music Card · Cyber Neon</option>
-            <option value="mc-dream">Music Card · Giấc Mơ</option>
-            <option value="mc-lofi">Music Card · Lo-Fi Cafe</option>
-            <option value="mc-aurora">Music Card · Cực Quang</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">⚙ CÀI ĐẶT VIDEO</div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
-            <label style="flex:1;font-size:.58rem">Tiêu đề</label>
-            <button onclick="optimizeTitles()" style="padding:2px 7px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.54rem;cursor:pointer">🤖 AI</button>
-          </div>
-          <input type="text" id="yt-title-tpl" value="{title} - {artist} | Nhạc Remix Tiktok 2026" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-          <div class="hint2" style="font-size:.52rem">{title} · {artist} · {date} · {year}</div>
-        </div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <label style="font-size:.58rem">Mô tả video</label>
-          <textarea id="yt-desc-tpl" rows="2" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem;resize:vertical">🎵 {title} - {artist}
-Tạo bởi VietLong Creator · Auto Music Video
-
-#{genre} #NhacViet #MusicVideo #{artist_tag}</textarea>
-        </div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <label style="font-size:.58rem">Tags</label>
-          <input type="text" id="yt-tags" value="nhạc việt,music video,remix,nhạc hot" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          
-          <div style="display:flex;flex-direction:column;gap:4px;justify-content:flex-end">
-            <button onclick="exportSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📦 Export JSON</button>
-            <button onclick="importSettingsJSON()" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer">📥 Import JSON</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">🖼 ẢNH NGHỆ SĨ TỰ ĐỘNG</div>
-        <div class="auto-fg" style="margin-bottom:5px">
-          <label style="font-size:.58rem">Nguồn ảnh</label>
-          <select id="img-source" onchange="onImgSourceChange();saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-            <option value="pexels">Pexels (miễn phí · thương mại)</option>
-            <option value="unsplash">Unsplash (miễn phí · thương mại)</option>
-            <option value="none">Không dùng ảnh tự động</option>
-          </select>
-        </div>
-        <div id="img-api-pexels">
-          <div class="auto-fg" style="margin-bottom:5px">
-            <label style="font-size:.58rem">Pexels API Key</label>
-            <input type="password" id="pexels-api-key" placeholder="Lấy miễn phí tại pexels.com/api" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-          </div>
-        </div>
-        <div id="img-api-unsplash" style="display:none">
-          <div class="auto-fg" style="margin-bottom:5px">
-            <label style="font-size:.58rem">Unsplash Access Key</label>
-            <input type="password" id="unsplash-api-key" placeholder="Access Key từ unsplash.com/developers" oninput="saveAutoSettings()" style="padding:5px 8px;font-size:.62rem">
-          </div>
-        </div>
-        <button onclick="previewFetchImage()" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.6rem;cursor:pointer;margin-top:4px">🔍 Test tìm ảnh ngay</button>
-        <div id="img-preview-strip" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"></div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">🔍 PHÂN TÍCH ĐỐI THỦ</div>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="competitor-id" placeholder="Channel ID đối thủ (UCxxxxx)..." style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
-          <button onclick="analyzeCompetitor($('competitor-id').value)" style="padding:5px 12px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-size:.62rem;cursor:pointer;font-weight:700">🔍</button>
-        </div>
-        <div style="font-size:.54rem;color:var(--tx3);margin-top:4px">Cần YouTube API Key · Phân tích top videos của đối thủ</div>
-      </div>
-    </div>
-
-    <!-- COL CENTER: Queue & Analytics -->
-    <div class="auto-col">
-      <div class="auto-col-header"><div class="auto-col-header-dot" style="background:#7c6fff;box-shadow:0 0 6px #7c6fff"></div>📋 HÀNG ĐỢI & ANALYTICS</div>
-      <div class="auto-card" style="flex:1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span class="auto-card-title" style="margin-bottom:0">📋 HÀNG ĐỢI VIDEO</span>
-          <button onclick="clearCompletedQueue()" title="Xóa đã xong" style="padding:2px 9px;border-radius:4px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer">🧹 Dọn</button>
-        </div>
-        <div id="auto-queue" style="overflow-y:auto">
-          <div class="queue-empty" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:40px 16px;color:var(--tx3);text-align:center">
-            <div style="font-size:2rem;opacity:.35">📭</div>
-            <div style="font-size:.7rem;font-weight:600">Chưa có video nào</div>
-            <div style="font-size:.6rem;opacity:.7">Nhấn <strong>CHẠY NGAY</strong> để bắt đầu</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span class="auto-card-title" style="margin-bottom:0">📊 YOUTUBE ANALYTICS</span>
-          <button onclick="fetchYTAnalytics()" style="padding:2px 9px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.55rem;cursor:pointer">↻ Refresh</button>
-        </div>
-        <div id="analytics-dash" style="overflow-y:auto;max-height:360px">
-          <div style="color:var(--tx3);font-size:.62rem;text-align:center;padding:16px">Nhấn Refresh để tải dữ liệu YouTube</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COL RIGHT: Schedule & Tools -->
-    <div class="auto-col" style="border-right:none">
-      <div class="auto-col-header"><div class="auto-col-header-dot" style="background:#ff6b9d;box-shadow:0 0 6px #ff6b9d"></div>🚀 CÔNG CỤ & LỊCH</div>
-      <div class="auto-card">
-        <div class="auto-card-title">🕐 LỊCH CHẠY TỰ ĐỘNG</div>
-        <div id="time-slots" style="margin-bottom:8px;max-height:200px;overflow-y:auto"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <span style="font-size:.58rem;color:var(--tx3)">Thêm giờ chạy:</span>
-          <button onclick="showUploadTimeSuggestion()" style="padding:2px 8px;border-radius:4px;border:1px solid var(--a2);background:rgba(0,229,195,.08);color:var(--a2);font-size:.55rem;cursor:pointer">⏰ Gợi ý</button>
-        </div>
-        <div class="add-slot-row" style="display:flex;gap:6px">
-          <select id="new-slot-day" style="flex:1;padding:4px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem">
-            <option value="mon">Thứ 2</option><option value="tue">Thứ 3</option>
-            <option value="wed">Thứ 4</option><option value="thu">Thứ 5</option>
-            <option value="fri">Thứ 6</option><option value="sat">Thứ 7</option>
-            <option value="sun">Chủ Nhật</option><option value="daily">Hàng ngày</option>
-          </select>
-          <input type="time" id="new-slot-time" value="20:00" style="padding:4px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx);font-size:.6rem;width:80px">
-          <button onclick="addTimeSlot()" style="padding:4px 12px;border-radius:5px;border:none;background:var(--a2);color:var(--ink);font-size:.7rem;cursor:pointer;font-weight:700">+</button>
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">⚡ GITHUB ACTIONS</div>
-        <div style="font-size:.63rem;color:var(--tx3);margin-bottom:10px;line-height:1.6;padding:7px 10px;background:rgba(124,111,255,.06);border-radius:7px;border-left:2px solid rgba(124,111,255,.4)">
-          ⚡ Tự động hóa với GitHub Actions — không cần máy tính luôn bật.
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button onclick="exportGHWorkflow()" class="seo-btn" style="border-color:rgba(124,111,255,.35);background:rgba(124,111,255,.08);color:#a5b4fc">📥 Workflow</button>
-          <button onclick="exportGHScript()" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(165,180,252,.4);background:rgba(165,180,252,.08);color:#a5b4fc;font-size:.6rem;cursor:pointer;font-weight:600">📥 Script</button>
-        </div>
-        <div style="background:var(--surface2);border-radius:7px;padding:9px">
-          <div class="gh-guide">
-          <div class="gh-guide-title">Hướng dẫn nhanh</div>
-          <div class="gh-guide-steps">
-            1. Tải <code>vlc-auto.yml</code> về<br>
-            2. Đặt vào <code>.github/workflows/</code><br>
-            3. Thêm API Key vào GitHub Secrets<br>
-            4. Enable Actions trong repo settings
-          </div>
-        </div>
-      </div>
-
-      <div class="auto-card">
-        <div class="auto-card-title">📈 SEO & HASHTAG AI</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <button onclick="generateHashtags('youtube')" class="seo-btn" style="border-color:rgba(255,50,50,.3);background:rgba(255,50,50,.07);color:#ff4444">🏷 Hashtag YouTube (AI)</button>
-          class="seo-btn" style="border-color:rgba(255,45,120,.3);background:rgba(255,45,120,.07);color:#ff2d78" onclick="generateHashtags('tiktok')">🎵 Hashtag TikTok (AI)</button>
-          <button onclick="optimizeTitles()" class="seo-btn" style="border-color:rgba(0,229,195,.35);background:rgba(0,229,195,.08);color:var(--a2)">🤖 Tối Ưu Tiêu Đề AI</button>
-          <button onclick="showUploadTimeSuggestion()" class="seo-btn" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.07);color:#fbbf24">⏰ Giờ Đăng Tốt Nhất</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  
-<!-- ═══════════════════════════════════════════════════════════════
-     PANEL: TIKTOK AFFILIATE AUTOMATION
-═══════════════════════════════════════════════════════════════ -->
-
 </div>
-</div>
-
-<style>
-.day-chip {
-  display:flex; align-items:center; gap:4px;
-  padding:4px 10px; border-radius:20px;
-  background:var(--surface2); border:1px solid var(--line2);
-  font-size:.62rem; color:var(--tx3); cursor:pointer;
-  font-family:'IBM Plex Mono',monospace; transition:all .2s;
-}
-.day-chip:has(input:checked) {
-  background:rgba(0,229,195,.12); border-color:var(--a2); color:var(--a2);
-}
-
-[data-theme="light"]{--bg:#f4f4f8;--bg2:#e8e8f0;--surface:#ffffff;--surface2:#f0f0f8;--ink:#e8e8f0;--tx:#0d0d1a;--tx2:#3a3a5c;--tx3:#7070a0;--line:rgba(0,0,0,.12);--line2:rgba(0,0,0,.08);--a1:#d4006a;--a2:#008870;--a3:#6a00d4;--a4:#c45200;}
-[data-theme="light"] header{background:rgba(244,244,248,.95);border-bottom:1px solid rgba(0,0,0,.1);}
-[data-theme="light"] .panel{background:#fff;border-color:rgba(0,0,0,.08);}
-[data-theme="light"] .tcard{background:#f8f8fc;border-color:rgba(0,0,0,.1);}
-[data-theme="light"] .auto-card{background:#f8f8fc;border-color:rgba(0,0,0,.1);}
-.speed-btn{padding:2px 6px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.55rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
-#theme-toggle{background:var(--surface2);border:1px solid var(--line2);color:var(--tx2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:.75rem;transition:all .2s;}
-#theme-toggle:hover{border-color:var(--a2);color:var(--a2);}
-.tanim-btn,.pbst-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
-.tanim-btn.active,.pbst-btn.active{border-color:var(--a2);background:rgba(0,229,195,.1);color:var(--a2);}
-
-/* Color filter buttons */
-.cf-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
-/* EQ preset buttons */
-.eq-preset-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;}
-/* Sticker panel */
-.sticker-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.sticker-item{font-size:1.4rem;cursor:pointer;padding:4px 6px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);transition:all .18s;}
-.sticker-item:hover{transform:scale(1.2);border-color:var(--a2);}
-/* Chapter panel */
-#chapter-list{max-height:150px;overflow-y:auto;margin-top:6px;}
-/* Intro/outro toggle */
-.intro-toggle{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--surface2);margin-bottom:6px;}
-
-/* ── Auto tab 3-column responsive ── */
-@media(max-width:1100px){
-  [style*="grid-template-columns:1fr 1fr 1fr"]{
-    grid-template-columns:1fr 1fr!important;
-  }
-}
-@media(max-width:720px){
-  [style*="grid-template-columns:1fr 1fr 1fr"]{
-    grid-template-columns:1fr!important;
-  }
-}
-/* Compact auto-card */
-.auto-card{padding:12px;}
-.auto-fg label{margin-bottom:3px;display:block;}
-.auto-fg{margin-bottom:0;}
-.auto-card-title{font-size:.63rem!important;margin-bottom:8px;}
-.yt-connect-box{cursor:pointer;}
-
-/* ══ FULL SCREEN LAYOUT OVERRIDES ══ */
-
-/* Remove all max-width constraints from step panels */
-.panel { max-width:100% !important; }
-
-/* Step 1: upload area centered, max 600px */
-#p1 .upload-area { max-width:640px; margin:0 auto 16px; }
-#p1 .ameta { max-width:640px; margin:0 auto; }
-
-/* Step 2: template grid - more columns on wide screen */
-.tgrid {
-  display:grid !important;
-  grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)) !important;
-  gap:12px !important;
-}
-.tcard { min-width:0 !important; }
-
-/* Step 3: #cfg content in 2 cols via CSS */
-#cfg > div { max-width:100% !important; }
-
-/* Step 4: 2-col already done via inline style */
-/* Make playbar more compact */
-.playbar { flex-wrap:wrap; gap:6px; padding:8px 12px; }
-
-/* Export card full width in its column */
-.export-card { width:100% !important; }
-
-/* Auto tab: ensure 3-col works */
-#panel-auto [style*="grid-template-columns:1fr 1fr 1fr"] {
-  grid-template-columns:1fr 1fr 1fr !important;
-}
-
-/* Responsive breakpoints */
-@media(max-width:1200px){
-  #panel-auto [style*="grid-template-columns:1fr 1fr 1fr"] {
-    grid-template-columns:1fr 1fr !important;
-  }
-}
-@media(max-width:768px){
-  #panel-auto [style*="grid-template-columns:1fr 1fr 1fr"],
-  [style*="grid-template-columns:minmax(0,1.2fr)"] {
-    grid-template-columns:1fr !important;
-  }
-  .tgrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important; }
-}
-
-/* Header full width */
-header { max-width:100% !important; padding:0 32px; }
-
-/* Step bar centered */
-.steps { max-width:900px; margin:0 auto 20px; }
-
-/* Canvas preview responsive */
-.preview-frame { aspect-ratio:16/9; width:100%; }
-.preview-frame canvas { position:absolute; inset:0; width:100%; height:100%; }
-
-/* Auto panel full-width override */
-#panel-auto.show {
-  display:block;
-  margin-left:calc(-50vw + 50%);
-  margin-right:calc(-50vw + 50%);
-  width:100vw;
-}
-.auto-workspace {
-  display:grid;
-  grid-template-columns: 320px 1fr 300px;
-  min-height:calc(100vh - 180px);
-}
-@media(max-width:1200px){
-  .auto-workspace { grid-template-columns: 280px 1fr 260px; }
-}
-@media(max-width:900px){
-  .auto-workspace { grid-template-columns: 1fr; }
-  .auto-col { border-right:none; border-bottom:1px solid var(--line); }
-}
-.auto-stats-bar {
-  display:flex; gap:1px;
-  background:var(--line);
-  border-bottom:1px solid var(--line);
-  overflow-x:auto;
-}
-.auto-stat-item { min-width:120px; }
-
-/* Full-width reset for auto panel */
-body:has(#panel-auto.show) main {
-  max-width:100% !important;
-  padding:0 !important;
-}
-body:has(#panel-auto.show) .step-bar {
-  max-width:960px; margin:0 auto;
-}
-
-
-/* ═══════════════════════════════════════════════════════════
-   AUTO PANEL — FULL-WIDTH PROFESSIONAL REDESIGN
-═══════════════════════════════════════════════════════════ */
-
-/* ── Header ── */
-.auto-header {
-  background: linear-gradient(135deg,
-    rgba(0,229,195,.07) 0%, rgba(124,111,255,.05) 50%, rgba(255,45,120,.04) 100%);
-  border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; z-index: 20;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-.auto-title { font-size: 1.15rem; font-weight: 800; }
-.auto-title span {
-  background: linear-gradient(90deg,#00e5c3,#7c6fff);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Stats Bar ── */
-.auto-stats-bar { overflow-x: auto; scrollbar-width: none; }
-.auto-stats-bar::-webkit-scrollbar { display:none; }
-.auto-stat-item {
-  cursor: default; position: relative; overflow: hidden;
-}
-.auto-stat-item::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(0,229,195,.0) 0%, rgba(0,229,195,.04) 100%);
-  opacity: 0; transition: opacity .25s;
-}
-.auto-stat-item:hover::after { opacity: 1; }
-.auto-stat-val {
-  font-size: 1.45rem; font-weight: 800; line-height: 1;
-  font-family: 'IBM Plex Mono', monospace;
-  background: linear-gradient(135deg,var(--a2),#7c6fff);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.auto-stat-icon { font-size: 1.2rem; filter: drop-shadow(0 0 4px rgba(0,229,195,.4)); }
-
-/* ── Workspace ── */
-.auto-workspace {
-  grid-template-columns: 300px 1fr 290px;
-}
-@media (max-width:1400px) { .auto-workspace { grid-template-columns: 280px 1fr 270px; } }
-@media (max-width:1100px) { .auto-workspace { grid-template-columns: 250px 1fr 240px; } }
-@media (max-width:860px)  { .auto-workspace { grid-template-columns: 1fr; } }
-
-/* ── Column Headers ── */
-.auto-col-header {
-  font-size: .6rem; font-weight: 800; letter-spacing: .12em;
-  padding: 8px 16px; text-transform: uppercase;
-  color: var(--tx3); background: var(--bg);
-  border-bottom: 1px solid var(--line);
-  display: flex; align-items: center; gap: 8px;
-  position: sticky; top: 57px; z-index: 5;
-}
-.auto-col-header-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  animation: pulse-dot 2.5s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-  0%,100% { opacity: 1; }
-  50% { opacity: .35; }
-}
-
-/* ── Cards ── */
-.auto-card {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--line);
-  position: relative; transition: background .18s;
-}
-.auto-card:last-child { border-bottom: none; }
-.auto-card:hover { background: rgba(255,255,255,.012); }
-.auto-card-title {
-  display: flex; align-items: center; gap: 7px;
-  font-size: .6rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .1em; margin-bottom: 10px;
-  color: var(--tx3); font-family: 'IBM Plex Mono', monospace;
-}
-.auto-card-title::before {
-  content: ''; width: 3px; height: 12px; border-radius: 2px;
-  background: linear-gradient(180deg, var(--a2), #7c6fff);
-  flex-shrink: 0;
-}
-.auto-card-actions {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-/* ── Form fields ── */
-.auto-fg { margin-bottom: 10px; }
-.auto-fg label {
-  display: block; font-size: .58rem; color: var(--tx3);
-  font-family: 'IBM Plex Mono', monospace; margin-bottom: 4px;
-  letter-spacing: .06em; text-transform: uppercase;
-}
-.auto-fg input, .auto-fg select, .auto-fg textarea {
-  width: 100%; background: var(--ink); border: 1px solid var(--line2);
-  color: var(--tx); border-radius: 7px; padding: 7px 10px;
-  font-family: var(--fb); font-size: .76rem; outline: none;
-  box-sizing: border-box; transition: border-color .18s, box-shadow .18s;
-}
-.auto-fg input:focus,
-.auto-fg select:focus,
-.auto-fg textarea:focus {
-  border-color: var(--a2);
-  box-shadow: 0 0 0 2px rgba(0,229,195,.12);
-}
-.auto-fg .hint2 { font-size: .57rem; color: var(--tx3); margin-top: 3px; line-height: 1.4; }
-
-/* ── Run button ── */
-.auto-run-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 20px; border-radius: 9px; border: none; cursor: pointer;
-  background: linear-gradient(135deg,#00e5c3,#7c6fff);
-  color: #000; font-weight: 800; font-size: .73rem;
-  font-family: 'IBM Plex Mono', monospace; letter-spacing: .05em;
-  white-space: nowrap; transition: all .2s;
-  box-shadow: 0 3px 16px rgba(0,229,195,.28);
-}
-.auto-run-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(0,229,195,.42);
-}
-.auto-run-btn:active { transform: translateY(0); }
-.auto-run-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-
-/* ── YT Connect box ── */
-.yt-connect-box {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface2); border: 1px solid var(--line2);
-  border-radius: 9px; padding: 10px 12px; cursor: pointer;
-  transition: border-color .18s, background .18s; margin-bottom: 10px;
-}
-.yt-connect-box:hover { border-color: rgba(255,0,0,.4); background: rgba(255,0,0,.04); }
-.yt-connect-box.connected { border-color: rgba(0,229,195,.4); }
-
-/* ── Queue items ── */
-.queue-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px; border-radius: 8px; margin-bottom: 6px;
-  background: var(--surface2); border: 1px solid var(--line);
-  transition: all .2s; animation: qi-in .25s ease-out;
-}
-@keyframes qi-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.queue-item:hover { border-color: var(--line2); background: var(--surface); }
-.queue-item.running { border-color: #fbbf24; background: rgba(251,191,36,.05); }
-.queue-item.done    { border-color: #22c55e; background: rgba(34,197,94,.05); }
-.queue-item.failed  { border-color: #ef4444; background: rgba(239,68,68,.05); }
-
-/* ── Queue empty state ── */
-#auto-queue:empty::before,
-.queue-empty {
-  content: '';
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 32px 16px;
-  color: var(--tx3); font-size: .68rem; text-align: center;
-  gap: 8px;
-}
-
-/* ── Analytics dash ── */
-#analytics-dash {
-  font-size: .7rem;
-}
-
-/* ── SEO buttons ── */
-.seo-btn {
-  width: 100%; padding: 8px 12px; border-radius: 8px;
-  font-size: .7rem; font-weight: 700; cursor: pointer;
-  transition: all .18s; display: flex; align-items: center;
-  justify-content: center; gap: 6px; border: 1px solid transparent;
-}
-.seo-btn:hover { transform: translateX(2px); }
-
-/* ── Schedule slots ── */
-.schedule-slots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.slot-chip {
-  display: flex; align-items: center; gap: 5px;
-  background: rgba(0,229,195,.08); border: 1px solid rgba(0,229,195,.2);
-  border-radius: 20px; padding: 4px 10px;
-  font-size: .6rem; color: var(--a2);
-  font-family: 'IBM Plex Mono', monospace;
-  transition: background .15s;
-}
-.slot-chip:hover { background: rgba(0,229,195,.15); }
-.slot-chip button {
-  background: none; border: none; color: var(--tx3);
-  cursor: pointer; font-size: .68rem; padding: 0; line-height: 1;
-  transition: color .15s;
-}
-.slot-chip button:hover { color: #ff2d78; }
-
-/* ── Add slot row ── */
-.add-slot-row {
-  display: flex; gap: 7px; margin-top: 8px;
-}
-.add-slot-row input[type=time] {
-  background: var(--ink); border: 1px solid var(--line2);
-  color: var(--tx); border-radius: 7px; padding: 6px 9px;
-  font-family: 'IBM Plex Mono', monospace; font-size: .72rem;
-  outline: none; transition: border-color .18s;
-}
-.add-slot-row input[type=time]:focus { border-color: var(--a2); }
-.add-slot-btn {
-  padding: 6px 14px; border-radius: 7px;
-  border: 1px solid var(--a2); background: transparent;
-  color: var(--a2); cursor: pointer;
-  font-size: .62rem; font-family: 'IBM Plex Mono', monospace;
-  font-weight: 700; transition: all .18s;
-}
-.add-slot-btn:hover { background: rgba(0,229,195,.1); }
-
-/* ── GitHub card ── */
-.gh-guide {
-  background: var(--surface2); border: 1px solid var(--line2);
-  border-radius: 8px; padding: 10px 13px; margin-top: 6px;
-}
-.gh-guide-title {
-  font-size: .57rem; color: var(--tx3);
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: .1em; text-transform: uppercase;
-  margin-bottom: 7px; font-weight: 700;
-}
-.gh-guide-steps {
-  font-size: .6rem; color: var(--tx2); line-height: 1.8;
-}
-.gh-guide-steps code {
-  color: var(--a2); background: rgba(0,229,195,.08);
-  border-radius: 3px; padding: 1px 4px;
-  font-family: 'IBM Plex Mono', monospace; font-size: .57rem;
-}
-
-/* ── Hashtag list ── */
-#htag-list {
-  display: flex; flex-wrap: wrap; gap: 5px;
-  margin-top: 8px; max-height: 120px; overflow-y: auto;
-}
-#htag-list:empty::before {
-  content: 'Nhấn nút trên để tạo hashtag AI';
-  color: var(--tx3); font-size: .62rem;
-}
-
-/* ── Image preview strip ── */
-#img-preview-strip {
-  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
-}
-#img-preview-strip img {
-  width: 52px; height: 52px; object-fit: cover;
-  border-radius: 6px; border: 1px solid var(--line2);
-  transition: transform .2s;
-}
-#img-preview-strip img:hover { transform: scale(1.08); }
-
-/* ── Warn banner ── */
-.auto-warn {
-  display: flex; align-items: center; gap: 6px;
-  font-size: .62rem; color: #fbbf24; line-height: 1.4;
-}
-
-/* ── Light theme overrides ── */
-[data-theme="light"] .auto-card:hover { background: rgba(0,0,0,.015); }
-[data-theme="light"] .auto-col-header { background: #f8f8fb; }
-[data-theme="light"] .auto-workspace { background: #f4f4f8; }
-
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.tc-dbl-hint {
-  position:absolute; bottom:8px; left:0; right:0;
-  text-align:center; font-size:.55rem; font-weight:700;
-  color:rgba(255,255,255,.75); letter-spacing:.06em;
-  opacity:0; transition:opacity .2s;
-  font-family:'IBM Plex Mono',monospace;
-  text-shadow:0 1px 4px rgba(0,0,0,.5);
-  pointer-events:none;
-}
-.tcard:hover .tc-dbl-hint { opacity:1; }
-.tcard.selected .tc-dbl-hint { display:none; }
-.tc-hover-overlay { flex-direction:column; gap:4px; }
-/* ── PAGINATION ── */
-.gallery-pagination {
-  display:flex; align-items:center; justify-content:center;
-  gap:6px; margin-top:22px; padding:4px 0;
-  flex-wrap:wrap;
-}
-.pg-btn {
-  min-width:34px; height:34px; border-radius:8px;
-  border:1px solid var(--line2); background:var(--surface2);
-  color:var(--tx2); font-size:.72rem; font-weight:600;
-  font-family:'IBM Plex Mono',monospace;
-  cursor:pointer; transition:all .18s;
-  display:flex; align-items:center; justify-content:center;
-  padding:0 10px;
-}
-.pg-btn:hover { border-color:var(--a2); color:var(--a2); background:rgba(0,229,195,.08); }
-.pg-btn.active {
-  background:var(--a2); color:#000; border-color:var(--a2);
-  box-shadow:0 2px 12px rgba(0,229,195,.35);
-  font-weight:800;
-}
-.pg-btn:disabled { opacity:.35; cursor:not-allowed; pointer-events:none; }
-.pg-btn.pg-arrow { font-size:.9rem; }
-.pg-info {
-  font-size:.6rem; color:var(--tx3);
-  font-family:'IBM Plex Mono',monospace;
-  padding:0 8px; white-space:nowrap;
-}
-.pg-dots { color:var(--tx3); font-size:.8rem; padding:0 2px; letter-spacing:2px; }
-
-/* ── STEP 4: 9:16 TikTok layout ── */
-#p4 .s4-grid {
-  display:grid;
-  grid-template-columns: minmax(0,1.2fr) minmax(320px,480px);
-  gap:20px;
-  align-items:start;
-  transition:grid-template-columns .3s ease;
-}
-#p4 .s4-grid.is-916 {
-  /* 9:16: left col shrinks to just fit the portrait canvas */
-  grid-template-columns: auto 1fr;
-  justify-items:center;
-  align-items:start;
-  gap:24px;
-}
-#p4 .s4-left {
-  width:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-#p4 .s4-grid.is-916 .s4-left {
-  /* Center the portrait preview in its col */
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  width:auto;
-}
-/* When 9:16: make preview frame centered and larger */
-#p4 .s4-grid.is-916 .preview-frame {
-  margin:0 auto;
-}
-#p4 .s4-grid.is-916 .ratio-916 {
-  height:76vh;
-  width:calc(76vh * 9 / 16) !important;
-}
-/* Controls below preview stay full-width of left col */
-#p4 .s4-grid.is-916 .s4-controls {
-  width:100%;
-  max-width:calc(76vh * 9 / 16);
-  margin:0 auto;
-}
-/* 16:9: controls normal width */
-#p4 .s4-controls {
-  width:100%;
-}
-/* Right export col: sticky so it stays visible while scrolling */
-#p4 .s4-right {
-  position:sticky;
-  top:72px;
-}
-@media(max-width:900px){
-  #p4 .s4-grid,
-  #p4 .s4-grid.is-916 {
-    grid-template-columns:1fr;
-  }
-  #p4 .s4-right { position:static; }
-  #p4 .s4-grid.is-916 .ratio-916 {
-    height:60vw;
-    width:calc(60vw * 9 / 16) !important;
-  }
-}
-
-/* ── Export Timer Row ── */
-.export-timer-row {
-  display:flex; align-items:center; gap:0;
-  margin-top:10px; padding:9px 14px;
-  background:var(--surface2); border:1px solid var(--line2);
-  border-radius:9px; flex-wrap:wrap; gap:6px;
-}
-.export-timer-item {
-  display:flex; flex-direction:column; align-items:center;
-  gap:2px; flex:1; min-width:80px;
-}
-.export-timer-label {
-  font-size:.54rem; color:var(--tx3);
-  font-family:'IBM Plex Mono',monospace;
-  letter-spacing:.04em; white-space:nowrap;
-}
-.export-timer-val {
-  font-size:.82rem; font-weight:800; color:var(--a2);
-  font-family:'IBM Plex Mono',monospace;
-  letter-spacing:.04em;
-}
-.export-timer-sep {
-  color:var(--line2); font-size:.9rem; padding:0 2px;
-  align-self:center;
-}
-@media(max-width:480px){
-  .export-timer-sep { display:none; }
-  .export-timer-row { justify-content:space-around; }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   AFFILIATE TIKTOK PANEL CSS
-═══════════════════════════════════════════════════════════ */
-#panel-affiliate {
-  display:none; width:100%; max-width:100%;
-  padding:0 0 40px; box-sizing:border-box;
-}
-#panel-affiliate.show { display:block; }
-
-/* Full-width like auto panel */
-body:has(#panel-affiliate.show) main {
-  max-width:100% !important; padding:0 !important;
-}
-
-/* Header */
-</style>
 
 <div id="panel-affiliate">
 
@@ -3375,7 +2406,8 @@ body:has(#panel-affiliate.show) main {
     </div>
     <div style="display:flex;align-items:center;gap:8px;padding:0 16px;flex-shrink:0">
       <button id="aff-run-btn" onclick="runAffiliateNow()" class="aff-run-btn">▶ Chạy ngay</button>
-      <button onclick="runDemoAffVideo()" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(0,229,195,.5);background:rgba(0,229,195,.1);color:var(--a2);font-size:.66rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace;transition:all .2s">🎬 Demo Video</button>
+      <button onclick="runDemoAffVideo()" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(0,229,195,.5);background:rgba(0,229,195,.1);color:var(--a2);font-size:.66rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace;transition:all .2s">🎬 Demo</button>
+      <button onclick="createBatchVideos()" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.66rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace" title="Tạo video tất cả sản phẩm cùng lúc">⚡ Batch</button>
       <button onclick="stopAffiliate()" id="aff-stop-btn" style="display:none;padding:7px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;font-size:.64rem;font-weight:700;cursor:pointer;white-space:nowrap">■ Dừng</button>
     </div>
   </div>
@@ -3696,8 +2728,9 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v10.7';
-const VERSION_HISTORY = [("v8.1", "Simplify: TikTok token paste trực tiếp — không cần OAuth, Vercel, hay proxy"), ("v8.0", "Refactor: xóa toàn bộ CSS aff-* cũ, viết lại từ đầu — fix layout lộn xộn"), ("v7.9", "Fix: CSS overhaul aff-col layout, col-header z-index, card overflow"), ("v7.8", "Fix: Affiliate col layout - z-index, button size, proxy row compact"), ("v7.7", "Feature: TikTok OAuth Cấp 3 — Vercel proxy, user chỉ nhấn Login 1 nút"), ("v7.6", "Feature: TikTok OAuth PKCE Login — tự động lấy token, user info, auto-restore session"), ("v7.5", "Fix: layout lề 32px đúng, sửa yt-connect-box text overlap"), ("v7.4", "UI: Tự Động Hóa & Affiliate TikTok canh lề 32px giống tab Tạo Video"), ("v7.3", "Fix: panel-affiliate nằm trong panel-auto do thiếu thẻ div đóng — tab Affiliate TikTok trắng"), ("v7.2", "Fix: Thẻ style-tag thứ 2 không đóng — browser bỏ qua toàn bộ JS, switchMainTab không định nghĩa được"), ("v7.1", "Fix: Affiliate CSS ngoài style block — panel trắng khi click tab"), ("v7.0", "Perf: export 2K tốc độ tăng 5-10x — batch 60, bgCache giữ nguyên, progress mỗi 30 frame, backpressure 30"), ("v6.9", "Fix: CSS orphan braces causing Unexpected token, exportGHScript/Workflow template literals, duplicate fn declarations"), ("v6.8", "Fix: Affiliate TikTok tab, duplicate fns, template literal f-string, 2K export AVC L5.1, async fixes"), ("v4.0", "Base release — 18 templates, WebCodecs export, BPM detect"), ("v4.1", "Fix: ovCvs resize during export, AudioEncoder stable"), ("v4.2", "Fix: export audio silent, offscreen canvas no flicker"), ("v4.3", "Performance: batch frames, no getImageData, backpressure"), ("v4.4", "UI: Auto tab 3-column layout, full-width panels"), ("v4.5", "Fix: exportAudEl.muted, no per-frame canvas swap"), ("v5.0", "Major: 22 new features (theme, mood, hashtag, GIF, analytics...)"), ("v5.1", "Fix: remix label top-right, artist/title order"), ("v5.2", "Fix: export audio muted + silentGain, offscreen canvas once"), ("v5.3", "Layout: full-screen 2-col step4, auto 3-col, no max-width")];
+const APP_VERSION = 'v11.0';
+const VERSION_HISTORY=[['v11.0','Source audit: bug fixes, cleanup, new features'],['v10.7','Export engine: segment loop, DOM cache, hardwareAcceleration'],['v10.3','Removed REMIX label from photo card'],['v10.2','Tab Affiliate: enhanced product cards, ROI stat, copy hook'],['v10.1','Category-aware script prompt, HeyGen workflow']];
+
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
 function setAnthropicKey(k){ localStorage.setItem('vlc_anthropic_key',k.trim()); }
@@ -3811,7 +2844,7 @@ async function createAffVideoWithHeyGen(productIdx){
     updateAffQueueItem(p.name,'running',8,'AI viết kịch bản...');
     let script='Ơi bạn ơi! '+p.name+' chỉ '+p.price+' đồng, giảm '+p.discount+'! Rating '+p.rating+', '+p.sold+' người mua. Link trong bio!';
     const k=getAnthropicKey();
-    if(k){try{const prompt='Viết script TikTok 30 giây tiếng Việt tự nhiên review: '+p.name+' giá '+p.price+'đ giảm '+p.discount+' rating '+p.rating+'. Hook mạnh, CTA rõ. Chỉ trả script.';const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});const dd=await rr.json();const ss=dd.content?.[0]?.text||'';if(ss.length>20)script=ss;}catch(e){}}
+    if(k){try{const prompt='Viết script TikTok 30 giây tiếng Việt tự nhiên review: '+p.name+' giá '+p.price+'đ giảm '+p.discount+' rating '+p.rating+'. Hook mạnh, CTA rõ. Chỉ trả script.';const rr=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})});const dd=await rr.json();const ss=dd.content?.[0]?.text||'';if(ss.length>20)script=ss;}catch(_e){}}
     let blob=null;
     if(mode==='heygen'||mode==='hybrid'){
       try{const res=await generateHeyGenVideo(script,p,(pct,msg)=>updateAffQueueItem(p.name,'running',pct,msg));blob=res.blob;affLog('ok','HeyGen: '+(blob.size/1024/1024).toFixed(1)+'MB');}
@@ -3979,70 +3012,18 @@ function setEqPreset(name){
 }
 
 // ── Sticker & Emoji Overlay ──
-let _stickers=[];
 let _stickerDragging=null;
 const STICKER_PRESETS=['🔥','⚡','💫','🎵','🎶','💎','👑','🌟','✨','💯','🎤','🎧','💥','🎯','🌈'];
 
-function addSticker(emoji,xRatio,yRatio){
-  _stickers.push({
-    emoji,
-    x:xRatio||0.5+Math.random()*0.2-0.1,
-    y:yRatio||0.3+Math.random()*0.2,
-    scale:1+Math.random()*0.3,
-    rotate:(Math.random()-0.5)*0.4,
-    beatBounce:true,
-    id:Date.now()+Math.random(),
-  });
-  toast('✨ Đã thêm sticker '+emoji,'info',1000);
-}
-function removeLastSticker(){
-  if(_stickers.length) _stickers.pop();
-}
-function clearStickers(){ _stickers=[]; }
 
-function drawStickers(ctx,W,H,bass){
-  if(!_stickers.length) return;
-  ctx.save();
-  _stickers.forEach(s=>{
-    const x=s.x*W, y=s.y*H;
-    const scale=s.scale*(s.beatBounce?1+bass*0.2:1);
-    const sz=Math.max(20,W*.04)*scale;
-    ctx.save();
-    ctx.translate(x,y);
-    ctx.rotate(s.rotate+(s.beatBounce?bass*0.1:0));
-    ctx.font=sz+'px serif';
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(0,0,0,.5)';
-    ctx.shadowBlur=4;
-    ctx.fillText(s.emoji,0,0);
-    ctx.restore();
-  });
-  ctx.restore();
-}
 
 // Touch/mouse drag for sticker positioning
-function initStickerDrag(){
-  const cvs=ovCvs; if(!cvs) return;
-  cvs.addEventListener('mousedown',e=>{
-    const rect=cvs.getBoundingClientRect();
-    const mx=(e.clientX-rect.left)/rect.width;
-    const my=(e.clientY-rect.top)/rect.height;
-    _stickerDragging=_stickers.findIndex(s=>Math.abs(s.x-mx)<0.05&&Math.abs(s.y-my)<0.05);
-  });
-  cvs.addEventListener('mousemove',e=>{
-    if(_stickerDragging<0) return;
-    const rect=cvs.getBoundingClientRect();
-    _stickers[_stickerDragging].x=(e.clientX-rect.left)/rect.width;
-    _stickers[_stickerDragging].y=(e.clientY-rect.top)/rect.height;
-  });
-  cvs.addEventListener('mouseup',()=>{ _stickerDragging=-1; });
-}
 
 
 // ── Custom Watermark / Branding ──
 let _watermarkText='';
 let _exportTitle=null,_exportArtist=null,_exportWt=null;
+let _previewTitle=null,_previewArtist=null,_previewWt=null;
 let _watermarkPos='bottom-right';
 let _watermarkOpacity=0.6;
 let _watermarkImg=null;
@@ -4091,71 +3072,13 @@ function drawWatermark(ctx,W,H){
 }
 
 // ── Template Quick Compare ──
-let _compareMode=false;
 let _compareTpl=null;
 let _compareCanvas=null;
 
-function toggleCompareMode(tplId){
-  if(_compareMode&&_compareTpl?.id===TMPLS.find(t=>t.id===tplId)?.id){
-    _compareMode=false; _compareTpl=null;
-    toast('So sánh tắt','info',1000); return;
-  }
-  const tpl=TMPLS.find(t=>t.id===tplId);
-  if(!tpl){toast('Template không tìm thấy','warn');return;}
-  _compareMode=true; _compareTpl=tpl;
-  toast('🔀 So sánh: '+tpl.name+' vs '+chosenTpl?.name,'info',2000);
-}
 
-function drawCompareOverlay(mainCtx,W,H,bass,mid,t){
-  if(!_compareMode||!_compareTpl||!chosenTpl) return;
-  // Draw compare template on right half
-  const split=W/2;
-  mainCtx.save();
-  mainCtx.beginPath(); mainCtx.rect(split,0,split,H); mainCtx.clip();
-  // Swap template and draw
-  const orig=chosenTpl;
-  chosenTpl=_compareTpl;
-  drawFrame();
-  chosenTpl=orig;
-  mainCtx.restore();
-  // Divider line
-  mainCtx.save();
-  mainCtx.strokeStyle='rgba(255,255,255,.6)'; mainCtx.lineWidth=2;
-  mainCtx.setLineDash([8,4]); mainCtx.shadowColor='rgba(255,255,255,.5)'; mainCtx.shadowBlur=6;
-  mainCtx.beginPath(); mainCtx.moveTo(split,0); mainCtx.lineTo(split,H); mainCtx.stroke();
-  mainCtx.setLineDash([]); mainCtx.shadowBlur=0;
-  // Labels
-  mainCtx.font='600 '+(W*.015)+'px "Be Vietnam Pro",Arial';
-  mainCtx.textBaseline='top'; mainCtx.fillStyle='rgba(255,255,255,.75)';
-  mainCtx.textAlign='left'; mainCtx.fillText(orig?.name||'Current',W*.02,H*.02);
-  mainCtx.textAlign='right'; mainCtx.fillText(_compareTpl.name,W*.98,H*.02);
-  mainCtx.restore();
-}
 
 
 // ── Competitor Channel Analysis ──
-async function analyzeCompetitor(channelId){
-  const apiKey=autoSettings?.ytApiKey||'';
-  if(!apiKey){toast('Cần YouTube API Key','warn');return;}
-  if(!channelId){toast('Nhập Channel ID','warn');return;}
-  toast('🔍 Phân tích đối thủ...','info',2000);
-  try{
-    const searchRes=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&channelId='+channelId+'&maxResults=20&order=viewCount&type=video&key='+apiKey);
-    const sd=await searchRes.json();
-    if(!searchRes.ok) throw new Error(sd.error?.message||'API error');
-    const vids=(sd.items||[]).map(i=>i.id.videoId).filter(Boolean);
-    const statsRes=await fetch('https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id='+vids.join(',')+'&key='+apiKey);
-    const statsData=await statsRes.json();
-    const videos=(statsData.items||[]).map(v=>({
-      title:v.snippet?.title||'',
-      views:parseInt(v.statistics?.viewCount||0),
-      likes:parseInt(v.statistics?.likeCount||0),
-      date:v.snippet?.publishedAt?.slice(0,10)||'',
-      tags:(v.snippet?.tags||[]).slice(0,10),
-    }));
-    showCompetitorModal(videos,channelId);
-  }catch(e){toast('Lỗi phân tích: '+e.message,'error');}
-}
 
 function showCompetitorModal(videos,channelId){
   let m=$('competitor-modal');
@@ -4557,31 +3480,6 @@ function seekFromTimeline(e){
 }
 
 // ── AI Title Optimizer ──
-async function optimizeTitles(){
-  const title=($('cc-title')?.value||'').trim(),artist=($('cc-artist')?.value||'').trim();
-  if(!title){toast('Nhập tên bài hát trước','warn');return;}
-  toast('🤖 AI tạo tiêu đề...','info',2000);
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:
-        'Create 5 YouTube title variations for Vietnamese music video "'+title+'" by "'+artist+'". Return ONLY JSON: {"titles":[{"style":"...","title":"...","reason":"..."}]}'
-      }]})
-    });
-    const d=await res.json();
-    const text=d.content?.[0]?.text||'{}';
-    const data=JSON.parse(text.replace(/```json|```/g,'').trim());
-    showTitleOptModal(data.titles||[]);
-  }catch(e){
-    showTitleOptModal([
-      {style:'🔥 Trending',title:title+' - '+artist+' | Nhạc Hot '+new Date().getFullYear(),reason:'Xu hướng hiện tại'},
-      {style:'📈 SEO',title:'[FULL] '+title+' - '+artist+' | Official MV',reason:'Tối ưu tìm kiếm'},
-      {style:'💔 Emotional',title:title+' - Bản Nhạc Triệu Người Yêu Thích | '+artist,reason:'Kéo cảm xúc'},
-      {style:'🎵 Simple',title:title+' | '+artist,reason:'Đơn giản, rõ ràng'},
-      {style:'🚀 Clickbait',title:'Nghe '+title+' mà không khóc... | '+artist,reason:'Tăng click rate'},
-    ]);
-  }
-}
 function showTitleOptModal(titles){
   let m=$('title-opt-modal');
   if(!m){m=document.createElement('div');m.id='title-opt-modal';m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';document.body.appendChild(m);}
@@ -4598,27 +3496,6 @@ function applyOptTitle(i){
 
 // ── YouTube Analytics Dashboard ──
 let _analyticsData=[];
-async function fetchYTAnalytics(){
-  const apiKey=autoSettings?.ytApiKey||'',channelId=autoSettings?.channelId||'';
-  if(!apiKey||!channelId){toast('Cần YouTube API Key và Channel ID','warn');return;}
-  toast('📊 Tải analytics...','info',2000);
-  try{
-    const searchRes=await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&channelId='+channelId+'&maxResults=10&order=date&type=video&key='+apiKey);
-    const searchData=await searchRes.json();
-    if(!searchRes.ok) throw new Error(searchData.error?.message||'API error');
-    const videoIds=(searchData.items||[]).map(i=>i.id.videoId).filter(Boolean).join(',');
-    if(!videoIds){toast('Không tìm thấy video','warn');return;}
-    const statsRes=await fetch('https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id='+videoIds+'&key='+apiKey);
-    const statsData=await statsRes.json();
-    _analyticsData=(statsData.items||[]).map(v=>({
-      id:v.id,title:v.snippet?.title||'',thumb:v.snippet?.thumbnails?.default?.url||'',
-      views:parseInt(v.statistics?.viewCount||0),likes:parseInt(v.statistics?.likeCount||0),
-      comments:parseInt(v.statistics?.commentCount||0),date:v.snippet?.publishedAt?.slice(0,10)||'',
-    }));
-    renderAnalyticsDash();
-    toast('📊 Loaded '+_analyticsData.length+' videos','success',2000);
-  }catch(e){toast('Lỗi analytics: '+e.message,'error');}
-}
 function renderAnalyticsDash(){
   const cont=$('analytics-dash');if(!cont)return;
   if(!_analyticsData.length){cont.innerHTML='<div style="color:var(--tx3);font-size:.68rem;text-align:center;padding:20px">Nhấn Refresh để tải dữ liệu</div>';return;}
@@ -4684,18 +3561,6 @@ const UPLOAD_TIMES={
   'Thứ 7':{slots:['10:00','15:00','20:00','22:00'],score:[78,82,95,88]},
   'Chủ Nhật':{slots:['09:00','14:00','19:00','21:00'],score:[75,80,91,85]},
 };
-function showUploadTimeSuggestion(){
-  const m=document.createElement('div');
-  m.style.cssText='position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
-  const rows=Object.entries(UPLOAD_TIMES).map(([day,data])=>{
-    const bestIdx=data.score.indexOf(Math.max(...data.score));
-    const slots=data.slots.map((s,i)=>'<span onclick="applyUploadTime(\''+day+'\',\''+s+'\',this.closest(\'[data-modal]\'))" style="padding:3px 8px;border-radius:6px;font-size:.6rem;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;background:'+(i===bestIdx?'var(--a2)':'var(--surface2)')+';color:'+(i===bestIdx?'var(--ink)':'var(--tx3)')+';border:1px solid '+(i===bestIdx?'var(--a2)':'var(--line2)')+'" title="Score: '+data.score[i]+'%">'+s+(i===bestIdx?' ⭐':'')+'</span>').join('');
-    return '<div style="margin-bottom:10px"><div style="font-size:.65rem;font-weight:700;color:var(--tx);margin-bottom:5px">'+day+'</div><div style="display:flex;gap:5px;flex-wrap:wrap">'+slots+'</div></div>';
-  }).join('');
-  m.dataset.modal='1';
-  m.innerHTML='<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw);max-height:80vh;overflow-y:auto"><div style="font-size:.82rem;font-weight:800;color:var(--a2);margin-bottom:6px;font-family:\'IBM Plex Mono\',monospace">⏰ KHUNG GIỜ TỐT NHẤT</div><div style="font-size:.62rem;color:var(--tx3);margin-bottom:14px">Peak hour người dùng Việt Nam · ⭐ = tốt nhất ngày đó</div>'+rows+'<button onclick="this.closest(\'[data-modal]\').remove()" style="margin-top:8px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">Đóng</button></div>';
-  document.body.appendChild(m);
-}
 function applyUploadTime(day,time,modal){
   const input=$('new-slot-time');if(input) input.value=time;
   if(typeof addTimeSlot==='function') addTimeSlot();
@@ -5288,24 +4153,6 @@ function toggleMute(){
 }
 
 // ── Settings JSON Export/Import ──
-function exportSettingsJSON(){
-  const blob=new Blob([JSON.stringify({autoSettings,v:'4.0',ts:new Date().toISOString()},null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=`VLC_settings_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast('📦 Đã xuất settings','success',2000);
-}
-async function importSettingsJSON(){
-  const fi=document.createElement('input'); fi.type='file'; fi.accept='.json';
-  fi.onchange=async e=>{
-    const f=e.target.files[0]; if(!f) return;
-    try{
-      const d=JSON.parse(await f.text());
-      if(d.autoSettings){ Object.assign(autoSettings,d.autoSettings); saveAutoSettings(); loadAutoSettings(); toast('✅ Import thành công','success',3000); }
-      else throw new Error('File không hợp lệ');
-    }catch(err){ toast('❌ Lỗi: '+err.message,'error'); }
-  }; fi.click();
-}
 
 // ── Lyrics Tap-to-Sync ──
 let _lyricTimestamps=[];
@@ -5429,15 +4276,6 @@ function renderTimeSlots(){
     el.appendChild(chip);
   });
 }
-function addTimeSlot(){
-  const t=$('new-slot-time')?.value; if(!t)return;
-  if(!autoSettings.timeSlots) autoSettings.timeSlots=[];
-  if(!autoSettings.timeSlots.includes(t)){
-    autoSettings.timeSlots.push(t);
-    autoSettings.timeSlots.sort();
-    renderTimeSlots(); saveAutoSettings();
-  }
-}
 function removeSlot(i){
   autoSettings.timeSlots.splice(i,1);
   renderTimeSlots(); saveAutoSettings();
@@ -5510,61 +4348,6 @@ function refreshStats(){
 }
 
 // ── Main automation run ──
-async function runAutomationNow(){
-  const btn=$('auto-run-btn'); if(btn)btn.disabled=true;
-  const mainBtn=$('auto-run-main-btn'); if(mainBtn){mainBtn.disabled=true;mainBtn.innerHTML='⏳ ĐANG CHẠY...';}
-  const spinner=$('run-spinner'); if(spinner)spinner.style.display='block';
-  const badge=$('auto-status-badge'); if(badge){badge.style.color='#fbbf24';badge.textContent='● RUNNING';}
-  alog('info','🚀 Bắt đầu automation cycle...');
-  try{
-    // 1. Tìm nhạc hot
-    alog('dim','[1/4] Đang tìm bài nhạc đang HOT...');
-    const songs = await fetchTrendingSongs();
-    if(!songs.length){ alog('warn','Không tìm được bài nhạc nào. Kiểm tra API key.'); return; }
-    alog('ok',`Tìm được ${songs.length} bài: ${songs.map(s=>s.title).join(', ')}`);
-
-    // 2. Chọn template + tìm ảnh bằng AI
-    alog('dim','[2/4] AI chọn template + tìm ảnh...');
-    for(const song of songs){
-      const tplId = await aiPickTemplate(song);
-      alog('ok',`"${song.title}" → template: ${tplId}`);
-
-      // Fetch ảnh từ Pexels/Unsplash
-      const imgData = await fetchArtistImage(song);
-
-      const item = {
-        id: Date.now()+Math.random(), title:song.title, artist:song.artist,
-        genre:song.genre||'pop', tplId, thumbUrl:song.thumb||'',
-        imgUrl: imgData?.url||'', imgCredit: imgData?.credit||'',
-        status:'queued', progress:0, ytId:'', createdAt:new Date().toISOString()
-      };
-      autoQueue.unshift(item);
-      autoStats.total++;
-    }
-    saveQueue(); refreshQueueUI(); refreshStats();
-
-    // 3. Render + export video (simulation trong browser)
-    alog('dim','[3/4] Đang tạo video...');
-    await processQueuedItems();
-
-    // 4. Upload YouTube
-    if(autoSettings.channelId && autoSettings.ytApiKey){
-      alog('dim','[4/4] Đang upload lên YouTube...');
-      await uploadPendingVideos();
-    } else {
-      alog('warn','[4/4] Chưa cấu hình YouTube API — bỏ qua upload · Video đã được tạo và lưu');
-    }
-    alog('ok','✅ Automation cycle hoàn tất!');
-  }catch(e){
-    alog('error','Lỗi: '+e.message);
-  }finally{
-    if(btn)btn.disabled=false;
-  if(mainBtn){mainBtn.disabled=false;mainBtn.innerHTML='▶ CHẠY NGAY';}
-  if(spinner)spinner.style.display='none';
-  if(badge){badge.style.color='var(--a2)';badge.textContent='● STANDBY';}
-    try{localStorage.setItem('vlc_auto_stats',JSON.stringify(autoStats));}catch(_){}
-  }
-}
 
 // ── Fetch trending songs ──
 async function fetchTrendingSongs(){
@@ -5700,20 +4483,6 @@ async function uploadToYouTube(item){
 }
 
 // ── YouTube connect (OAuth2 flow) ──
-async function connectYouTube(){
-  const apiKey = $('yt-api-key')?.value||'';
-  if(!apiKey){ alog('warn','Nhập API Key trước khi kết nối'); return; }
-  // Open Google OAuth consent
-  const clientId = 'YOUR_CLIENT_ID'; // user phải tự điền
-  const scope = encodeURIComponent('https://www.googleapis.com/auth/youtube.upload');
-  const redirect = encodeURIComponent(window.location.href);
-  const oauthUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${redirect}&scope=${scope}&response_type=token`;
-  if(clientId==='YOUR_CLIENT_ID'){
-    alog('warn','Cần cấu hình OAuth2 Client ID trong Google Cloud Console');
-    showOAuthGuide(); return;
-  }
-  window.open(oauthUrl,'_blank','width=500,height=600');
-}
 
 function showOAuthGuide(){
   alog('info','Hướng dẫn: console.cloud.google.com → Credentials → OAuth 2.0 Client ID');
@@ -5763,7 +4532,6 @@ function refreshQueueUI(){
 }
 function removeQueueItem(idx){autoQueue.splice(idx,1);saveQueue();refreshQueueUI();refreshStats();toast('🗑 Đã xóa','info',1500);}
 function retryQueueItem(idx){const i=autoQueue[idx];if(!i)return;i.status='queued';i.progress=0;i.ytId='';saveQueue();refreshQueueUI();toast('↻ Đặt lại: '+sanitizeText(i.title||''),'info',2000);}
-function clearCompletedQueue(){const b=autoQueue.length;autoQueue=autoQueue.filter(i=>i.status!=='done'&&i.status!=='failed');saveQueue();refreshQueueUI();refreshStats();toast(`🧹 Đã xóa ${b-autoQueue.length} mục`,'success',2000);}
 
 function saveQueue(){
   try{ localStorage.setItem('vlc_auto_queue', JSON.stringify(autoQueue.slice(0,50))); }catch(_){}
@@ -5878,138 +4646,12 @@ async function fetchArtistImage(song){
 }
 
 // ── Load ảnh vào Image element ──
-function loadImgFromUrl(url){
-  return new Promise((resolve)=>{
-    const img=new Image(); img.crossOrigin='anonymous';
-    img.onload=()=>resolve(img);
-    img.onerror=()=>resolve(null);
-    img.src=url;
-  });
-}
 
 // ── Preview test ──
-async function previewFetchImage(){
-  const strip=$('img-preview-strip'); if(!strip)return;
-  strip.innerHTML='<span style="font-size:.62rem;color:var(--tx3);font-family:\'IBM Plex Mono\',monospace">Đang tìm ảnh...</span>';
-  saveAutoSettings();
-
-  // Test 3 thể loại
-  const tests=[
-    {genre:'ballad', style:autoSettings.imgStyle||'aesthetic'},
-    {genre:'edm',    style:autoSettings.imgStyle||'aesthetic'},
-    {genre:'pop',    style:autoSettings.imgStyle||'aesthetic'},
-  ];
-
-  strip.innerHTML='';
-  for(const test of tests){
-    const query=buildImgQuery(test.genre, test.style);
-    try{
-      let results=[];
-      const src=autoSettings.imgSource||'pexels';
-      if(src==='pexels')   results=await fetchFromPexels(query,2);
-      if(src==='unsplash') results=await fetchFromUnsplash(query,2);
-      if(src==='none'){strip.innerHTML='<span style="font-size:.62rem;color:var(--tx3)">Tắt tự động ảnh</span>';return;}
-
-      results.forEach(r=>{
-        const wrap=document.createElement('div');
-        wrap.style.cssText='position:relative;flex-shrink:0';
-        wrap.innerHTML=`
-          <img src="${r.thumb}" style="width:72px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line2)" title="${test.genre}">
-          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);font-size:.48rem;color:#fff;padding:2px 3px;border-radius:0 0 5px 5px;font-family:'IBM Plex Mono',monospace;text-align:center">${test.genre}</div>
-        `;
-        strip.appendChild(wrap);
-      });
-    }catch(e){
-      const err=document.createElement('div');
-      err.style.cssText='font-size:.6rem;color:#f87171;font-family:\'IBM Plex Mono\',monospace;padding:4px';
-      err.textContent=e.message.slice(0,50);
-      strip.appendChild(err);
-    }
-  }
-  if(!strip.children.length){
-    strip.innerHTML='<span style="font-size:.62rem;color:#f87171">Lỗi · Kiểm tra API key</span>';
-  }
-}
 
 // ── Logging ──
-function alog(type, msg){
-  const el=$('auto-log'); if(!el)return;
-  const t=new Date().toLocaleTimeString('vi-VN',{hour12:false});
-  const icons={info:'ℹ',ok:'✔',warn:'⚠',error:'✖',dim:'·'};
-  const p=document.createElement('p');
-  p.className=`log-line ${type}`;
-  p.textContent=`[${t}] ${icons[type]||'·'} ${msg}`;
-  el.appendChild(p);
-  el.scrollTop=el.scrollHeight;
-  autoLog.push({t,type,msg});
-  if(el.children.length>200) el.removeChild(el.firstChild);
-}
-function clearLog(){
-  const el=$('auto-log'); if(el)el.innerHTML='';
-  autoLog=[];
-}
 
 // ── Export GitHub Actions workflow YAML ──
-function exportGHWorkflow(){
-  const s = autoSettings;
-  // Convert local time slots to UTC cron (assume GMT+7)
-  const cronParts = (s.timeSlots||['08:00','20:00']).map(slot=>{
-    const [h,m]=slot.split(':').map(Number);
-    const utcH = ((h - 7) + 24) % 24;
-    return `${m} ${utcH} * * ${(s.activeDays||[1,2,3,4,5]).join(',')}`;
-  });
-  const scheduleLines = cronParts.map(c=>`    - cron: '${c}'  # GMT+7`).join('\n');
-  const yaml = [
-    '# VietLong Creator — GitHub Actions Auto Upload',
-    '# File này: .github/workflows/auto-upload.yml',
-    '# Docs: https://docs.github.com/actions',
-    '',
-    'name: VietLong Auto Upload',
-    '',
-    'on:',
-    '  schedule:',
-    '${scheduleLines}',
-    '  workflow_dispatch:   # Cho phép chạy thủ công từ tab Actions',
-    '',
-    'jobs:',
-    '  auto-upload:',
-    '    runs-on: ubuntu-latest',
-    '    timeout-minutes: 30',
-    '',
-    '    steps:',
-    '      - name: Checkout repo',
-    '        uses: actions/checkout@v4',
-    '',
-    '      - name: Setup Node.js',
-    '        uses: actions/setup-node@v4',
-    '        with:',
-    '          node-version: \'20\'',
-    '',
-    '      - name: Install dependencies',
-    '        run: npm install axios form-data',
-    '',
-    '      - name: Run VietLong Auto Upload',
-    '        run: node .github/scripts/auto-upload.js',
-    '        env:',
-    '          YT_API_KEY:      \\${{ secrets.YT_API_KEY }}',
-    '          YT_OAUTH_TOKEN:  \\${{ secrets.YT_OAUTH_TOKEN }}',
-    '          YT_REFRESH_TOKEN:\\${{ secrets.YT_REFRESH_TOKEN }}',
-    '          YT_CLIENT_ID:    \\${{ secrets.YT_CLIENT_ID }}',
-    '          YT_CLIENT_SECRET:\\${{ secrets.YT_CLIENT_SECRET }}',
-    '          YT_CHANNEL_ID:   \'${s.channelId||\'\'}\'',
-    '          SONGS_PER_RUN:   \'${s.songsPerRun||2}\'',
-    '          KEYWORDS:        \'${(s.searchKeywords||\'nhạc hot việt nam\').replace(/\'/g,"\\\\\'")}\'',
-    '          TEMPLATE_CHOICE: \'${s.templateChoice||\'ai\'}\'',
-    '          YT_PRIVACY:      \'${s.ytPrivacy||\'private\'}\'',
-    '          YT_TITLE_TPL:    \'${(s.ytTitleTpl||\'{title} - {artist}\').replace(/\'/g,"\\\\\'")}\'',
-    '          YT_TAGS:         \'${(s.ytTags||\'nhạc việt\').replace(/\'/g,"\\\\\'")}\'',
-    '          REMIX_LABEL:     \'${(s.remixLabel||\'VIET LONG REMIX\').replace(/\'/g,"\\\\\'")}\'',
-    ''
-  ].join('\n');
-  downloadFile('auto-upload.yml', yaml, 'text/yaml');
-  alog('ok','Đã xuất auto-upload.yml → đặt vào .github/workflows/ trong repo');
-  alog('info','Thêm Secrets: Settings → Secrets and variables → Actions');
-}
 
 // ── Export Node.js script cho GitHub Actions ──
 async function exportGHScript(){
@@ -11720,7 +10362,7 @@ function saveAffSettings(){
       stats:    affStats,
     };
     localStorage.setItem('vlc_aff_settings',JSON.stringify(affSettings));
-  }catch(e){}
+  }catch(_e){}
 }
 
 function loadAffSettings(){
@@ -11747,7 +10389,7 @@ function loadAffSettings(){
     affSettings=s;
     onAffPlatformChange();
     refreshAffStats();
-  }catch(e){}
+  }catch(_e){}
 }
 
 // ── UI helpers ──────────────────────────────────────────────────
@@ -11892,7 +10534,8 @@ function renderAffProducts(products){
         '<div class="aff-product-actions" style="margin-top:8px">'+
           '<button class="aff-product-btn primary" onclick="createAffVideoWithHeyGen('+gi+')" style="background:linear-gradient(135deg,'+ac+','+ac+'bb)">🎬 Tạo video</button>'+
           '<button class="aff-product-btn" onclick="analyzeProductById('+gi+')">🧠 Phân tích</button>'+
-          '<button class="aff-product-btn" onclick="copyBestHook('+gi+')" title="Copy hook">📋</button>'+
+          '<button class="aff-product-btn" onclick="copyBestHook('+gi+')" title="Copy hook">💡 Hook</button>'+
+          '<button class="aff-product-btn" onclick="copyAutoCaption(event,'+gi+')" title="AI tạo caption TikTok">📝 Caption</button>'+
         '</div>'+
       '</div></div>';
   }).join('');
@@ -11928,40 +10571,7 @@ function generateDemoProducts(cat){
   return demos[cat]||demos.trending;
 }
 
-function renderAffProducts(products){
-  const list=$('aff-product-list');
-  if(!list) return;
-  if(!products?.length){
-    list.innerHTML=`<div class="aff-empty-state"><div style="font-size:1.8rem;opacity:.3">🛍</div><div style="font-size:.7rem;font-weight:600">Không tìm thấy sản phẩm</div></div>`;
-    return;
-  }
-  list.innerHTML='';
-  products.forEach((p,i)=>{
-    const card=document.createElement('div');
-    card.className='aff-product-card';
-    card.innerHTML=`
-      <div class="aff-product-img">${p.emoji||'🛍'}</div>
-      <div class="aff-product-info">
-        <div class="aff-product-name">${p.name}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
-          <span class="aff-product-price">${p.price}đ</span>
-          <span style="font-size:.56rem;color:var(--tx3);text-decoration:line-through">${p.originalPrice}đ</span>
-          <span style="font-size:.56rem;color:#ff2d78;background:rgba(255,45,120,.1);padding:1px 5px;border-radius:4px">${p.discount}</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:3px;align-items:center">
-          <span class="aff-product-commission">💰 HH: ${p.commission}</span>
-          <span class="aff-product-rating">⭐ ${p.rating}</span>
-          <span style="font-size:.56rem;color:var(--tx3)">🛒 ${p.sold} đã bán</span>
-        </div>
-        <div class="aff-product-actions">
-          <button class="aff-product-btn primary" onclick="createAffVideo(${i})">🎬 Tạo Video</button>
-          <button class="aff-product-btn" onclick="analyzeProductById(${i})">🧠 Phân tích</button>
-          <button class="aff-product-btn" onclick="copyAffLink(${i})">🔗 Copy Link</button>
-        </div>
-      </div>`;
-    list.appendChild(card);
-  });
-}
+
 
 // ── Analyze product with AI ─────────────────────────────────────
 async function analyzeProduct(){
@@ -12975,25 +11585,7 @@ function addAffTimeSlot(){
   toast(`✅ Đã thêm lịch ${labels[day]} ${time}`,'success',2000);
 }
 
-function renderAffSlots(){
-  const el=$('aff-time-slots'); if(!el) return;
-  if(!affTimeSlots.length){ el.innerHTML='<div style="font-size:.6rem;color:var(--tx3)">Chưa có lịch nào</div>'; return; }
-  el.innerHTML='';
-  affTimeSlots.forEach((s,i)=>{
-    const chip=document.createElement('div'); chip.className='aff-slot-chip';
-    chip.innerHTML=`<span>${s.label} ${s.time}</span><button onclick="removeAffSlot(${i})" title="Xóa">✕</button>`;
-    el.appendChild(chip);
-  });
-  // Update next run info
-  const next=$('aff-next-run');
-  if(next&&affTimeSlots.length) next.textContent=`⏰ Lịch tiếp theo: ${affTimeSlots[0].label} ${affTimeSlots[0].time}`;
-}
 
-function removeAffSlot(i){
-  affTimeSlots.splice(i,1);
-  renderAffSlots();
-  saveAffSettings();
-}
 
 function suggestAffSchedule(){
   const suggestions=[
@@ -13038,21 +11630,7 @@ function copyAffLink(idx){
     .catch(()=>toast('Không copy được','warn',2000));
 }
 
-function refreshAffAnalytics(){
-  const token=$('aff-tt-token')?.value?.trim();
-  if(!token){ toast('Kết nối TikTok trước','warn',2000); return; }
-  affLog('info','📊 Đang tải analytics...');
-  // Show mock data
-  setTimeout(()=>{
-    if($('aff-total-views')) $('aff-total-views').textContent=affStats.uploaded*Math.floor(Math.random()*5000+1000);
-    if($('aff-total-revenue')) $('aff-total-revenue').textContent=(affStats.clicks*15000).toLocaleString('vi')+'đ';
-    affLog('ok','📊 Analytics đã cập nhật');
-  },1500);
-}
 
-function scrollToAffGuide(){
-  $('aff-guide')?.scrollIntoView({behavior:'smooth',block:'center'});
-}
 
 function exportAffScript(){
   const ttToken=$('aff-tt-token')?.value||'YOUR_TOKEN';
@@ -13381,7 +11959,7 @@ async function _fetchTTUserByCookie(sessionId){
         avatar: u.avatarMedium||u.avatarThumb||'',
       };
     }
-  }catch(e){}
+  }catch(_e){}
   return null;
 }
 
@@ -13407,7 +11985,7 @@ async function uploadVideoTikTok(videoBlob, title, privacy='private'){
     try{
       await navigator.clipboard.writeText(title);
       affLog('ok','📋 Caption đã copy vào clipboard');
-    }catch(e){}
+    }catch(_e){}
 
     // 3. Open TikTok upload page after short delay
     setTimeout(()=>{
@@ -13906,5 +12484,87 @@ function _buildCanvasContent(p){
   const cc={beauty:{g1:'#2d0020',g2:'#1a0030',accent:'#ff2d78',e:'💄'},fashion:{g1:'#1a0035',g2:'#0d0025',accent:'#a78bfa',e:'👗'},tech:{g1:'#001020',g2:'#002030',accent:'#22d3ee',e:'📱'},food:{g1:'#1a0800',g2:'#2d1000',accent:'#fb923c',e:'🍜'},health:{g1:'#001510',g2:'#002820',accent:'#4ade80',e:'💊'},sport:{g1:'#0a1000',g2:'#1a2000',accent:'#facc15',e:'🏃'},home:{g1:'#0a0a20',g2:'#1a1030',accent:'#34d399',e:'🏠'},trending:{g1:'#1a0020',g2:'#2d0035',accent:'#ff2d78',e:'🔥'}};
   const c=cc[p.category||'trending']||cc.trending;
   return {title:p.name,features:[(p.discount?'Giảm '+p.discount:'Giá tốt'),('Rating '+p.rating+' sao'),'Giao nhanh'],cta:'Mua ngay! Link trong bio',hashtags:'#tiktokshop #affiliate #'+(p.category||'muasam'),emoji:c.e,bg_color1:c.g1,bg_color2:c.g2,accent:c.accent};
+}
+
+// ═══════════════════════════════════════════════════════
+// BATCH VIDEO
+// ═══════════════════════════════════════════════════════
+var _batchRunning=false;
+async function createBatchVideos(){
+  if(_batchRunning){toast("Batch đang chạy...","warn",2000);return;}
+  if(!affProducts.length){toast("Chưa có sản phẩm — tìm sản phẩm trước","warn",3000);return;}
+  _batchRunning=true;
+  var total=affProducts.length;
+  affLog("info","⚡ Batch: "+total+" video · "+getHeyGenMode().toUpperCase());
+  toast("⚡ Bắt đầu tạo "+total+" video...","info",4000);
+  var done=0,fail=0;
+  for(var bi=0;bi<total;bi++){
+    if(!_batchRunning)break;
+    try{
+      affLog("info","["+(bi+1)+"/"+total+"] "+affProducts[bi].name);
+      await createAffVideoWithHeyGen(bi);
+      done++;
+    }catch(be){
+      fail++;
+      affLog("warn","⚠ ["+(bi+1)+"] "+be.message.slice(0,50));
+    }
+    await new Promise(function(r){setTimeout(r,600);});
+  }
+  _batchRunning=false;
+  affLog("ok","✅ Batch xong: "+done+" thành công"+(fail?" · "+fail+" lỗi":""));
+  toast("Batch xong! "+done+"/"+total+" video","success",5000);
+}
+function stopBatch(){
+  _batchRunning=false;
+  affLog("warn","⏹ Dừng batch");
+  toast("Đã dừng batch","warn",2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTO CAPTION
+// ═══════════════════════════════════════════════════════
+async function generateAutoCaption(p){
+  var k=getAnthropicKey(); if(!k)return null;
+  var cat=p.category||"trending";
+  var prompt="Tạo caption TikTok Affiliate cho: "+p.name
+    +" | Giá: "+p.price+"đ (giảm "+p.discount+")"
+    +" | HH: "+p.commission
+    +" | Danh mục: "+cat
+    +(p.why_hot?" | Hot: "+p.why_hot:"")
+    +"\n\nTrả về JSON thuần: {caption,hashtags,cta}"
+    +"\nCaption: 100-130 ký tự, tiếng Việt tự nhiên, emoji, hook mạnh."
+    +"\nHashtags: 6-8 hashtag phù hợp danh mục."
+    +"\nCTA: kêu gọi hành động ngắn gọn.";
+  try{
+    var r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":k,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:350,
+        system:"Chuyên gia TikTok Affiliate Việt Nam. Chỉ trả về JSON thuần không markdown.",
+        messages:[{role:"user",content:prompt}]})
+    });
+    var d=await r.json();
+    var txt=(d.content&&d.content[0]&&d.content[0].text||"{}").replace(/```json|```/g,"").trim();
+    return JSON.parse(txt);
+  }catch(_ce){return null;}
+}
+async function copyAutoCaption(evt,idx){
+  var p=affProducts[idx]; if(!p)return;
+  var btn=evt&&evt.target;
+  if(btn){btn.textContent="⏳";btn.disabled=true;}
+  affLog("info","📝 Caption AI: "+p.name);
+  var res=await generateAutoCaption(p);
+  var text="";
+  if(res&&res.caption){
+    text=res.caption+"\n\n"+(res.cta||"Link trong bio 👇")+"\n\n"+(res.hashtags||"#tiktokshop");
+    affLog("ok","📋 "+res.caption.slice(0,70)+"...");
+  } else {
+    text=p.name+" giảm "+p.discount+" chỉ còn "+p.price+"đ! Link trong bio 👇 #tiktokshop #"+p.category;
+    affLog("dim","Caption mặc định (chưa có Claude key)");
+  }
+  await navigator.clipboard.writeText(text).catch(function(){});
+  toast("✅ Caption copied!","success",2500);
+  if(btn){btn.textContent="📝 Caption";btn.disabled=false;}
 }
 </script>
