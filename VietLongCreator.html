@@ -12567,4 +12567,26 @@ async function copyAutoCaption(evt,idx){
   toast("✅ Caption copied!","success",2500);
   if(btn){btn.textContent="📝 Caption";btn.disabled=false;}
 }
+
+// Restored stubs — slot display element only exists in old Auto tab (now stub)
+function renderAffSlots(){
+  const el=$('aff-slots'); if(!el) return;
+  if(!affTimeSlots||!affTimeSlots.length){
+    el.innerHTML='<div style="font-size:.6rem;color:var(--tx3);padding:4px">Chưa có lịch — nhấn Gợi ý</div>';
+    return;
+  }
+  el.innerHTML=affTimeSlots.map((s,i)=>
+    '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.6rem">'
+    +'<span style="color:var(--tx2)">'+(s.label||s.day)+' '+s.time+'</span>'
+    +'<button onclick="removeAffSlot('+i+')" style="font-size:.55rem;background:none;border:none;'
+    +'color:var(--tx3);cursor:pointer;padding:0 2px">✕</button></div>'
+  ).join('');
+}
+
+function removeAffSlot(idx){
+  if(!affTimeSlots) return;
+  affTimeSlots.splice(idx,1);
+  renderAffSlots();
+  saveAffSettings();
+}
 </script>
