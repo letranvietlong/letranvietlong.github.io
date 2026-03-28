@@ -2138,7 +2138,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.1 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.2 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2722,7 +2722,7 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v11.1';
+const APP_VERSION = 'v11.2';
 const VERSION_HISTORY=[['v11.0','Source audit: bug fixes, cleanup, new features'],['v10.7','Export engine: segment loop, DOM cache, hardwareAcceleration'],['v10.3','Removed REMIX label from photo card'],['v10.2','Tab Affiliate: enhanced product cards, ROI stat, copy hook'],['v10.1','Category-aware script prompt, HeyGen workflow']];
 
 
@@ -5281,7 +5281,7 @@ function addCard(grid,t,idx){
     <div class="tc-preview">
       <canvas class="tc-canvas" id="cv-${t.id}" width="320" height="180"></canvas>
       <div class="tc-badge">DEMO TRỰC TIẾP</div>
-      <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div><div class="tc-dbl-hint">2× chọn nhanh</div></div>
+      <div class="tc-hover-overlay"><div class="tc-play-ring">▶</div></div>
       <div class="tc-selected-mark">✓</div>
       <div class="tcard-num">${String(idx).padStart(2,'0')}</div>
     </div>
@@ -5623,11 +5623,10 @@ function buildCfg(force=false){
   `;
 
   // Điền lại giá trị đã lưu
-  if($('cc-title'))  $('cc-title').value  = dr?.title  || sv.title;
-  if($('cc-artist')) $('cc-artist').value = dr?.artist || sv.artist;
+  if($('cc-title'))  $('cc-title').value  = sv.title;
+  if($('cc-artist')) $('cc-artist').value = sv.artist;
   if($('cc-lyr'))    $('cc-lyr').value    = sv.lyr;
   if($('cc-wt'))     $('cc-wt').value     = sv.wt;
-  if(dr){ window._draftRestore=null; } // consumed
 
   // Khôi phục preview ảnh
   if(artImg&&artImg.src){
