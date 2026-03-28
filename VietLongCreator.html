@@ -1218,8 +1218,7 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .preset-swatch:hover{transform:scale(1.15);border-color:#fff;}
 .preset-swatch.active{border-color:var(--a2);box-shadow:0 0 8px var(--a2);}
 /* ── DRAFT BANNER ── */
-#draft-banner{display:none;position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:7777;background:rgba(15,17,28,.97);border:1px solid var(--a2);border-radius:10px;padding:12px 18px;gap:12px;align-items:center;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,229,195,.2);font-size:.72rem;animation:toastIn .3s ease;white-space:nowrap;}
-#draft-banner.show{display:flex;}
+
 /* ── TRIM MODAL ── */
 #trim-modal{display:none;position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
 #trim-modal.show{display:flex;}
@@ -2006,12 +2005,7 @@ body:has(#panel-affiliate.show) main {
 <div id="toast-container"></div>
 
 <!-- Draft restore banner -->
-<div id="draft-banner">
-  <span>💾</span>
-  <span id="draft-banner-txt">Tìm thấy dự án chưa hoàn thành</span>
-  <button onclick="restoreDraft()" style="padding:5px 12px;border-radius:6px;border:none;background:var(--a2);color:var(--ink);font-weight:700;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">Tiếp tục</button>
-  <button onclick="discardDraft()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--line2);background:none;color:var(--tx3);font-size:.65rem;cursor:pointer">Bỏ qua</button>
-</div>
+
 
 <!-- Keyboard shortcuts modal -->
 <div id="kb-modal" onclick="if(event.target===this)toggleKbModal()">
@@ -2144,7 +2138,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.0 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.1 📋</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2728,7 +2722,7 @@ body:has(#panel-affiliate.show) main {
 <script>
 
 // ── Version Info ──
-const APP_VERSION = 'v11.0';
+const APP_VERSION = 'v11.1';
 const VERSION_HISTORY=[['v11.0','Source audit: bug fixes, cleanup, new features'],['v10.7','Export engine: segment loop, DOM cache, hardwareAcceleration'],['v10.3','Removed REMIX label from photo card'],['v10.2','Tab Affiliate: enhanced product cards, ROI stat, copy hook'],['v10.1','Category-aware script prompt, HeyGen workflow']];
 
 
@@ -3616,7 +3610,7 @@ document.addEventListener('keydown', e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
   const key=e.key.toLowerCase();
   const ctrl=e.ctrlKey||e.metaKey;
-  if(ctrl&&key==='s'){ e.preventDefault(); saveDraftNow(); toast('💾 Đã lưu draft','success',1500); return; }
+  
   switch(key){
     case ' ':     e.preventDefault(); if(typeof togglePlay==='function')togglePlay(); break;
     case 'm': case 'M': if(typeof toggleMute==='function')toggleMute(); break;
@@ -3647,71 +3641,11 @@ function seekAudio(sec){
 // ─────────────────────────────────────────
 // 3. AUTO-SAVE DRAFT SYSTEM
 // ─────────────────────────────────────────
-let draftTimer=null;
-const DRAFT_KEY='vlc_draft_v2';
 
 function scheduleDraftSave(){
-  clearTimeout(draftTimer);
-  draftTimer=setTimeout(saveDraftNow, 3000);
-}
-function saveDraftNow(){
-  try{
-    const draft={
-      ts: Date.now(),
-      title:   $('cc-title')?.value||'',
-      artist:  $('cc-artist')?.value||'',
-            lyr:     $('cc-lyr')?.value||'',
-      tplId:   typeof chosenTpl!=='undefined'?chosenTpl?.id:'',
-      step:    typeof step!=='undefined'?step:1,
-      artImgSrc: (typeof artImg!=='undefined'&&artImg?.src&&!artImg.src.startsWith('http'))?artImg.src:'',
-      trimStart: trimState.start,
-      trimEnd:   trimState.end,
-      ratio:     currentRatio,
-      stickers:  typeof _stickers!=='undefined'?JSON.parse(JSON.stringify(_stickers)):[],
-      textAnim:  typeof _textAnimStyle!=='undefined'?_textAnimStyle:'default',
-      pbStyle:   typeof _pbStyle!=='undefined'?_pbStyle:'default',
-      colorFilter:typeof _colorFilter!=='undefined'?_colorFilter:'none',
-    };
-    if($('cc-b1'))  draft.colorB1=$('cc-b1').value;
-    if($('cc-wc'))  draft.colorWC=$('cc-wc').value;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  }catch(_){}
-}
-function checkDraftOnLoad(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
-    if(!saved) return;
-    const age=(Date.now()-saved.ts)/1000/60; // minutes
-    if(age>2880) return; // 48 hours expired
-    const b=$('draft-banner');
-    const t=$('draft-banner-txt');
-    if(!b) return;
-    const timeStr=new Date(saved.ts).toLocaleString('vi-VN',{hour12:false,hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
-    if(t) t.textContent=`💾 Dự án "${saved.title||'chưa đặt tên'}" lúc ${timeStr} — Tiếp tục?`;
-    b.classList.add('show');
-    window._pendingDraft=saved;
-  }catch(_){}
-}
-function restoreDraft(){
-  const d=window._pendingDraft; if(!d) return;
-  $('draft-banner')?.classList.remove('show');
-  // Restore fields (will be applied when buildCfg runs)
-  window._draftRestore=d;
-  toast(`✅ Đã khôi phục dự án "${d.title||''}"`, 'success');
-  if(d.tplId && typeof TMPLS!=='undefined'){
-    const t=TMPLS.find(x=>x.id===d.tplId);
-    if(t && typeof pickTpl==='function') pickTpl(t);
-  }
-  // Restore visual settings
-  if(d.stickers&&Array.isArray(d.stickers)) _stickers=d.stickers;
-  if(d.textAnim&&typeof setTextAnim==='function') setTextAnim(d.textAnim);
-  if(d.pbStyle&&typeof setPbStyle==='function') setPbStyle(d.pbStyle);
-  if(d.colorFilter&&typeof setColorFilter==='function') setColorFilter(d.colorFilter);
-}
-function discardDraft(){
-  $('draft-banner')?.classList.remove('show');
-  localStorage.removeItem(DRAFT_KEY);
-  window._pendingDraft=null;
+  _previewTitle=$("cc-title")?.value||null;
+  _previewArtist=$("cc-artist")?.value||null;
+  _previewWt=$("cc-wt")?.value||null;
 }
 // Hook vào input events
 document.addEventListener('input', e=>{
@@ -4101,7 +4035,6 @@ window.addEventListener('unhandledrejection',e=>{
 // INIT — run on DOMContentLoaded
 // ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
-  checkDraftOnLoad();
   // Request notification permission hint after 30s
   setTimeout(()=>{
     if(Notification?.permission==='default'){
@@ -5690,7 +5623,6 @@ function buildCfg(force=false){
   `;
 
   // Điền lại giá trị đã lưu
-  const dr = window._draftRestore;
   if($('cc-title'))  $('cc-title').value  = dr?.title  || sv.title;
   if($('cc-artist')) $('cc-artist').value = dr?.artist || sv.artist;
   if($('cc-lyr'))    $('cc-lyr').value    = sv.lyr;
