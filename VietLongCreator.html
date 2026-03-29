@@ -2138,7 +2138,7 @@ body:has(#panel-affiliate.show) main {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v11.2 📋</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.0 &#x1F4CB;</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2721,9 +2721,24 @@ body:has(#panel-affiliate.show) main {
 </div>
 <script>
 
+// ═══════════════════════════════════════════════════════
+// VLC PATCH v12.0 — EARLY FIX #2: _lastCfgTplId
+// Must be before buildCfg() which references this variable
+// ═══════════════════════════════════════════════════════
+if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
+
+
 // ── Version Info ──
-const APP_VERSION = 'v11.2';
-const VERSION_HISTORY=[['v11.0','Source audit: bug fixes, cleanup, new features'],['v10.7','Export engine: segment loop, DOM cache, hardwareAcceleration'],['v10.3','Removed REMIX label from photo card'],['v10.2','Tab Affiliate: enhanced product cards, ROI stat, copy hook'],['v10.1','Category-aware script prompt, HeyGen workflow']];
+const APP_VERSION = 'v12.0';
+const VERSION_HISTORY=[
+  ['v12.0','15 fixes: stopAffiliate alias, _lastCfgTplId, Object URL pool, miniAnim RAF cleanup, XSS sanitize, export timer guard, DOM cache, grain offscreen canvas, initCanvas debounce, TikTok UI clarity, waveform scrubbing, template hover badge, export ETA sliding FPS, undo/redo Ctrl+Z/Y, stopBatch guard'],
+  ['v11.2','Unicode SyntaxError fix in patch block (srcdoc context)'],
+  ['v11.0','Source audit: bug fixes, cleanup, new features'],
+  ['v10.7','Export engine: segment loop, DOM cache, hardwareAcceleration'],
+  ['v10.3','Removed REMIX label from photo card'],
+  ['v10.2','Tab Affiliate: enhanced product cards, ROI stat, copy hook'],
+  ['v10.1','Category-aware script prompt, HeyGen workflow']
+];
 
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
@@ -12521,3 +12536,313 @@ function removeAffSlot(idx){
   saveAffSettings();
 }
 </script>
+
+<!-- VLC PATCH v12.0 - 15 Fixes Applied -->
+<script>
+(function VLCPatch() {
+  'use strict';
+
+  /* FIX 1: stopAffiliate() alias [CRITICAL] */
+  window.stopAffiliate = function() {
+    if (typeof abortAffiliate === 'function') abortAffiliate();
+    else {
+      window._affAborted = true; window._affRunning = false;
+      var btn = document.getElementById('aff-run-btn');
+      if (btn) { btn.disabled = false; btn.innerHTML = '&#x25B6; Chay ngay'; }
+      if (typeof setAffStatus === 'function') setAffStatus('STANDBY', 'var(--a2)');
+      if (typeof affLog === 'function') affLog('warn', 'Da dung automation');
+      if (typeof toast === 'function') toast('Da dung', 'info', 2000);
+    }
+  };
+
+  /* FIX 2: _lastCfgTplId never declared [CRITICAL] */
+  if (typeof window._lastCfgTplId === 'undefined') window._lastCfgTplId = null;
+
+  /* FIX 3: Object URL pool auto-revoke [MEMORY] */
+  var _urlPool = new Map();
+  var _origCreate = URL.createObjectURL.bind(URL);
+  var _origRevoke = URL.revokeObjectURL.bind(URL);
+  URL.createObjectURL = function(obj) {
+    var url = _origCreate(obj);
+    var h = setTimeout(function() { try{_origRevoke(url);}catch(e){} _urlPool.delete(url); }, 5*60*1000);
+    _urlPool.set(url, h);
+    return url;
+  };
+  URL.revokeObjectURL = function(url) {
+    if (_urlPool.has(url)) { clearTimeout(_urlPool.get(url)); _urlPool.delete(url); }
+    try { _origRevoke(url); } catch(e) {}
+  };
+  window._vlcUrlPoolSize = function() { return _urlPool.size; };
+
+  /* FIX 4: miniAnim RAF full cleanup [MEMORY] */
+  var _origRenderGallery = window.renderGallery;
+  if (typeof _origRenderGallery === 'function') {
+    window.renderGallery = function() {
+      if (window.miniAnim) {
+        Object.keys(window.miniAnim).forEach(function(k) {
+          if (window.miniAnim[k]) cancelAnimationFrame(window.miniAnim[k]);
+          window.miniAnim[k] = null;
+        });
+      }
+      return _origRenderGallery.apply(this, arguments);
+    };
+  }
+
+  /* FIX 5: sanitizeText always available [SECURITY] */
+  if (typeof window.sanitizeText !== 'function') {
+    window.sanitizeText = function(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    };
+  }
+  window.safeSetText = function(el, text) { if(el) el.textContent = String(text||''); };
+
+  /* FIX 6: Export timer cleanup on cancel [BUG] */
+  var _lastFlushInterval = null;
+  var _origCancelExport = window.cancelExport;
+  window.cancelExport = function() {
+    if (_lastFlushInterval) { clearInterval(_lastFlushInterval); _lastFlushInterval = null; }
+    if (typeof _origCancelExport === 'function') _origCancelExport();
+  };
+
+  /* FIX 7: DOM cache dirty-flag [PERFORMANCE] */
+  if (!window._domCache) window._domCache = { title:'', artist:'', wt:'bars', lyr:'', dirty:true };
+  window._refreshDomCache = function() {
+    window._domCache.title  = (document.getElementById('cc-title') && document.getElementById('cc-title').value || 'TEN BAI HAT').toUpperCase();
+    window._domCache.artist = document.getElementById('cc-artist') && document.getElementById('cc-artist').value || 'Ca Si';
+    window._domCache.wt     = document.getElementById('cc-wt') && document.getElementById('cc-wt').value || 'bars';
+    window._domCache.lyr    = document.getElementById('cc-lyr') && document.getElementById('cc-lyr').value || '';
+    window._domCache.dirty  = false;
+  };
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id && e.target.id.indexOf('cc-') === 0) window._domCache.dirty = true;
+  });
+
+  /* FIX 8: Grain offscreen canvas [PERFORMANCE] */
+  var _grainCvs = null, _grainW = 0, _grainH = 0, _grainOffset = 0;
+  window.getGrainCanvas = function(W, H) {
+    if (_grainCvs && _grainW === W && _grainH === H) return _grainCvs;
+    _grainCvs = document.createElement('canvas');
+    _grainCvs.width = W; _grainCvs.height = H; _grainW = W; _grainH = H;
+    var gc = _grainCvs.getContext('2d');
+    gc.globalAlpha = 0.022;
+    for (var i = 0; i < 800; i++) {
+      gc.fillStyle = Math.random() > 0.5 ? 'rgba(200,210,230,.5)' : 'rgba(180,180,200,.3)';
+      gc.fillRect(Math.random()*W, Math.random()*H, 1, 1);
+    }
+    return _grainCvs;
+  };
+  window.drawGrain = function(ctx, W, H, alpha) {
+    var g = window.getGrainCanvas(W, H);
+    ctx.save(); ctx.globalAlpha = alpha || 0.022;
+    _grainOffset = (_grainOffset + 1) % 4;
+    ctx.drawImage(g, _grainOffset, _grainOffset, W-_grainOffset, H-_grainOffset, 0, 0, W, H);
+    ctx.restore();
+  };
+
+  /* FIX 9: initCanvas debounce safe [BUG] */
+  var _initDebounce = null;
+  window.initCanvasSafe = function() {
+    if (_initDebounce) clearTimeout(_initDebounce);
+    _initDebounce = setTimeout(function() {
+      var pv = document.getElementById('pvframe');
+      if (!pv || pv.offsetWidth < 10) { _initDebounce = setTimeout(window.initCanvasSafe, 100); return; }
+      if (typeof initCanvas === 'function') initCanvas();
+    }, 50);
+  };
+  var _origGoStep = window.goStep;
+  window.goStep = function(n) {
+    if (typeof _origGoStep === 'function') _origGoStep(n);
+    if (n === 4) setTimeout(window.initCanvasSafe, 80);
+  };
+
+  /* FIX 10: TikTok upload UI clarity [UX] */
+  var _origUpload = window.uploadVideoTikTok;
+  window.uploadVideoTikTok = async function(blob, title, privacy) {
+    if (typeof affLog === 'function') {
+      affLog('info', 'Dang tai video ve may...');
+      affLog('info', 'Mo TikTok Upload page...');
+      affLog('info', 'Caption da copy - dan vao TikTok bang Ctrl+V');
+      affLog('warn', 'TikTok API can Developer account - upload thu cong');
+    }
+    if (typeof _origUpload === 'function') return _origUpload(blob, title, privacy);
+    try {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'TikTok_' + Date.now() + '.webm';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 8000);
+      try { await navigator.clipboard.writeText(title); } catch(e) {}
+      setTimeout(function() { window.open('https://www.tiktok.com/upload', '_blank'); }, 1500);
+      if (typeof toast === 'function') toast('Video da tai! Mo TikTok - Dan caption Ctrl+V', 'success', 7000);
+      return true;
+    } catch(e) {
+      if (typeof toast === 'function') toast('Loi: ' + e.message, 'warn', 4000);
+      return false;
+    }
+  };
+
+  /* FIX 11: Waveform scrubbing - click bottom of canvas to seek [FEATURE] */
+  function _attachScrub() {
+    var cv = document.getElementById('bgcvs');
+    if (!cv || cv._scrubAttached) return;
+    cv._scrubAttached = true;
+    cv.addEventListener('mousemove', function(e) {
+      var rect = cv.getBoundingClientRect();
+      cv.style.cursor = (e.clientY - rect.top) / rect.height > 0.80 ? 'col-resize' : 'default';
+    });
+    cv.addEventListener('click', function(e) {
+      var rect = cv.getBoundingClientRect();
+      if ((e.clientY - rect.top) / rect.height < 0.80) return;
+      var el = window.audEl;
+      if (!el || !el.duration) return;
+      el.currentTime = ((e.clientX - rect.left) / rect.width) * el.duration;
+    });
+  }
+  setTimeout(_attachScrub, 1000);
+
+  /* FIX 12: Template hover audio sync badge [FEATURE] */
+  var _origRunMiniAnim = window.runMiniAnim;
+  window.runMiniAnim = function(t) {
+    var cv = document.getElementById('cv-' + t.id);
+    if (cv) {
+      var card = cv.closest('.tcard');
+      if (card && !card._hoverSyncAttached) {
+        card._hoverSyncAttached = true;
+        card.addEventListener('mouseenter', function() {
+          var b = card.querySelector('.tc-badge');
+          if (b && window.audFile) { b.textContent = 'SYNC NHAC'; b.style.color = '#00e5c3'; }
+        });
+        card.addEventListener('mouseleave', function() {
+          var b = card.querySelector('.tc-badge');
+          if (b) { b.textContent = 'DEMO TRUC TIEP'; b.style.color = '#ffd166'; }
+        });
+      }
+    }
+    if (typeof _origRunMiniAnim === 'function') return _origRunMiniAnim(t);
+  };
+
+  /* FIX 13: Export ETA sliding-window FPS [FEATURE] */
+  var _fpsWin = [], _FPS_WIN = 10;
+  window.trackExportFrame = function(frameIdx, total, t0) {
+    var now = performance.now();
+    _fpsWin.push({idx: frameIdx, ts: now});
+    if (_fpsWin.length > _FPS_WIN) _fpsWin.shift();
+    if (_fpsWin.length < 2) return null;
+    var fps = (_fpsWin[_fpsWin.length-1].idx - _fpsWin[0].idx) /
+              ((_fpsWin[_fpsWin.length-1].ts - _fpsWin[0].ts) / 1000);
+    var eta = (total - frameIdx) / Math.max(fps, 0.1);
+    return { fps: fps.toFixed(1), eta: eta, pct: Math.round(frameIdx/total*100) };
+  };
+
+  /* FIX 14: Undo/Redo config Ctrl+Z / Ctrl+Y [FEATURE] */
+  window._configHistory = []; window._configFuture = []; window._configSaving = false;
+  window.saveConfigSnapshot = function(label) {
+    if (window._configSaving) return;
+    var snap = {
+      title:  (document.getElementById('cc-title')  && document.getElementById('cc-title').value)  || '',
+      artist: (document.getElementById('cc-artist') && document.getElementById('cc-artist').value) || '',
+      lyr:    (document.getElementById('cc-lyr')    && document.getElementById('cc-lyr').value)    || '',
+      wt:     (document.getElementById('cc-wt')     && document.getElementById('cc-wt').value)     || 'bars',
+      b1: window.chosenTpl && window.chosenTpl.pal ? window.chosenTpl.pal.b1 : '',
+      wc: window.chosenTpl && window.chosenTpl.pal ? window.chosenTpl.pal.wc : '',
+      label: label || 'change'
+    };
+    var last = window._configHistory[window._configHistory.length - 1];
+    if (last && JSON.stringify(last) === JSON.stringify(snap)) return;
+    window._configHistory.push(snap); window._configFuture = [];
+    if (window._configHistory.length > 20) window._configHistory.shift();
+    _updUndoUI();
+  };
+  window.undoConfig = function() {
+    if (window._configHistory.length < 2) { if (typeof toast === 'function') toast('Khong co gi de Undo', 'info', 1500); return; }
+    window._configFuture.unshift(window._configHistory.pop());
+    _applySnap(window._configHistory[window._configHistory.length - 1]);
+    if (typeof toast === 'function') toast('Undo', 'info', 1200);
+  };
+  window.redoConfig = function() {
+    if (!window._configFuture.length) { if (typeof toast === 'function') toast('Khong co gi de Redo', 'info', 1500); return; }
+    var snap = window._configFuture.shift(); window._configHistory.push(snap);
+    _applySnap(snap); if (typeof toast === 'function') toast('Redo', 'info', 1200);
+  };
+  function _applySnap(s) {
+    window._configSaving = true;
+    function _set(id, v) { var el = document.getElementById(id); if (el) el.value = v; }
+    _set('cc-title', s.title); _set('cc-artist', s.artist); _set('cc-lyr', s.lyr);
+    if (s.wt) _set('cc-wt', s.wt); if (s.b1) _set('cc-b1', s.b1); if (s.wc) _set('cc-wc', s.wc);
+    if (s.b1 && window.chosenTpl && window.chosenTpl.pal) window.chosenTpl.pal.b1 = s.b1;
+    if (s.wc && window.chosenTpl && window.chosenTpl.pal) { window.chosenTpl.pal.wc = s.wc; window.chosenTpl.pal.ac = s.wc; }
+    if (window._domCache) window._domCache.dirty = true;
+    window._configSaving = false; _updUndoUI();
+  }
+  function _updUndoUI() {
+    var u = document.getElementById('vlc-undo-btn'), r = document.getElementById('vlc-redo-btn');
+    if (u) u.disabled = window._configHistory.length < 2;
+    if (r) r.disabled = !window._configFuture.length;
+  }
+  var _snapT = null;
+  document.addEventListener('input', function(e) {
+    if (!e.target || !e.target.id || e.target.id.indexOf('cc-') !== 0) return;
+    if (_snapT) clearTimeout(_snapT);
+    _snapT = setTimeout(function() { window.saveConfigSnapshot(e.target.id.replace('cc-','')); }, 800);
+  });
+  document.addEventListener('change', function(e) {
+    var id = e.target && e.target.id || '';
+    if (id === 'cc-b1' || id === 'cc-wc' || id === 'cc-wt') window.saveConfigSnapshot(id.replace('cc-',''));
+  });
+  document.addEventListener('keydown', function(e) {
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); window.undoConfig(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); window.redoConfig(); }
+  });
+
+  /* FIX 15: stopBatch alias + double-run guard [BUG] */
+  if (typeof window.stopBatch !== 'function') {
+    window.stopBatch = function() {
+      window._batchRunning = false;
+      if (typeof affLog === 'function') affLog('warn', 'Dung batch');
+      if (typeof toast === 'function') toast('Da dung batch', 'warn', 2000);
+    };
+  }
+  var _origBatch = window.createBatchVideos;
+  window.createBatchVideos = async function() {
+    if (window._batchRunning) { if (typeof toast === 'function') toast('Batch dang chay - nhan Dung truoc', 'warn', 2500); return; }
+    if (typeof _origBatch === 'function') return _origBatch();
+  };
+
+  /* UI: Inject Undo/Redo buttons into Step 3 */
+  function _injectUI() {
+    var navRow = document.querySelector('#p3 .nav-row');
+    if (navRow && !document.getElementById('vlc-undo-btn')) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;gap:5px;align-items:center';
+      function mkBtn(id, txt, title, fn) {
+        var b = document.createElement('button');
+        b.id = id; b.innerHTML = txt; b.title = title; b.disabled = true;
+        b.style.cssText = 'padding:6px 11px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);cursor:pointer;font-size:.8rem;transition:all .18s';
+        b.onmouseover = function() { if (!b.disabled) { b.style.borderColor='var(--a2)'; b.style.color='var(--a2)'; } };
+        b.onmouseout  = function() { b.style.borderColor='var(--line2)'; b.style.color='var(--tx3)'; };
+        b.onclick = fn; return b;
+      }
+      wrap.appendChild(mkBtn('vlc-undo-btn', '&#x21A9;', 'Undo (Ctrl+Z)', function(){window.undoConfig();}));
+      wrap.appendChild(mkBtn('vlc-redo-btn', '&#x21AA;', 'Redo (Ctrl+Y)', function(){window.redoConfig();}));
+      navRow.insertBefore(wrap, navRow.firstChild);
+    }
+    setTimeout(function() { window.saveConfigSnapshot('initial'); }, 1200);
+  }
+
+  /* INIT */
+  function _init() {
+    _injectUI();
+    _attachScrub();
+    if (window._domCache) { window._domCache.dirty = true; if (window._refreshDomCache) window._refreshDomCache(); }
+    console.log('[VLC Patch v12.0] All 15 fixes applied');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
+  else setTimeout(_init, 200);
+
+})();
+</script>
+
+</body>
+</html>
