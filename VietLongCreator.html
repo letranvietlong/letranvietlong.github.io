@@ -2174,7 +2174,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.8 &#x1F4CB;</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.9 &#x1F4CB;</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2751,8 +2751,9 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
 
 
 //  Version Info 
-const APP_VERSION = 'v12.8';
+const APP_VERSION = 'v12.9';
 const VERSION_HISTORY=[
+  ['v12.9','Fix export video: BUG1 WebCodecs freq data from audioBuf at frame time (waves now animate), BUG2 MediaRecorder canvas restore race condition fixed (no more layout shrink)'],
   ['v12.8','Fix UI: playbar buttons equal, remove Mau label, artImg HQ, title font Orbitron, domCache refresh, GIF CORS Blob workaround'],
   ['v12.7','12 templates moi: Radial Pulse, DNA Helix, Oscilloscope, Liquid Ripple, 3D Bars Pro, Neon Typewriter, Karaoke Pro + 5 MC moi (Aurora3D, Liquid Metal, Quantum, Mandala, Electric Storm)'],
   ['v12.6','Xuat video MP4 tren moi trinh duyet: MediaRecorder MP4-first, _remuxWebMToMP4 fallback, badge cap nhat dung'],
@@ -10628,6 +10629,8 @@ async function exportWithWebCodecs(q){
   bgCvs=offBg; ovCvs=offOv;
   bgX=offBg.getContext('2d',{willReadFrequently:false});
   ovX=offOv.getContext('2d',{willReadFrequently:false});
+  bgX.imageSmoothingEnabled=true; bgX.imageSmoothingQuality='high';
+  ovX.imageSmoothingEnabled=true; ovX.imageSmoothingQuality='high';
   bgCache=null;
 
   // Cache DOM values ONCE -- khng c DOM mi frame
@@ -10724,9 +10727,53 @@ async function exportWithWebCodecs(q){
 
     //  Video render + encode 
     upProg(20,'Render + encode video...');
+    // BUG1 FIX: Pre-compute per-frame energy from decoded audioBuf
+    // WebCodecs renders 3-8x faster than realtime, so live analyser is always behind
+    // Instead: slice audioBuf at frame time, compute RMS -> synthesise _freqBuf values
+    const _exportSampleRate = audioBuf ? audioBuf.sampleRate : 44100;
+    const _exportCh0 = audioBuf ? audioBuf.getChannelData(0) : null;
+    const _exportCh1 = audioBuf && audioBuf.numberOfChannels>1 ? audioBuf.getChannelData(1) : _exportCh0;
+    const _fftSize = 2048;
+    const _syntheticFreqBuf = new Uint8Array(_fftSize/2);
+
+    function _computeFreqAtTime(timeSec) {
+      if(!_exportCh0) { _syntheticFreqBuf.fill(60); return; }
+      const sampleStart = Math.floor(timeSec * _exportSampleRate);
+      const len = _fftSize;
+      // Build a simplified frequency spectrum using DFT-like approach
+      // We compute energy in frequency bins directly from PCM samples
+      const endSample = Math.min(sampleStart + len, _exportCh0.length);
+      const actualLen = endSample - sampleStart;
+      if(actualLen <= 0) { _syntheticFreqBuf.fill(0); return; }
+      // Number of output bins
+      const bins = _syntheticFreqBuf.length;
+      // Simple approach: divide spectrum into bins, compute RMS per band
+      const samplesPerBin = Math.max(1, Math.floor(actualLen / bins));
+      let maxRMS = 0;
+      const rmsArr = new Float32Array(bins);
+      for(let b=0; b<bins; b++) {
+        const s0 = sampleStart + b * samplesPerBin;
+        const s1 = Math.min(s0 + samplesPerBin, endSample);
+        let sum = 0, cnt = 0;
+        for(let s=s0; s<s1; s++) {
+          const v = ((_exportCh0[s]||0) + (_exportCh1[s]||0)) * 0.5;
+          sum += v*v; cnt++;
+        }
+        rmsArr[b] = cnt > 0 ? Math.sqrt(sum/cnt) : 0;
+        if(rmsArr[b] > maxRMS) maxRMS = rmsArr[b];
+      }
+      // Normalise to 0-255
+      const scale = maxRMS > 0 ? 255/maxRMS : 0;
+      for(let b=0; b<bins; b++) {
+        // Apply frequency shaping: boost bass (low bins), attenuate very high
+        const freq_weight = b < bins*0.12 ? 1.4 : b < bins*0.5 ? 1.1 : 0.7;
+        _syntheticFreqBuf[b] = Math.min(255, Math.round(rmsArr[b] * scale * freq_weight));
+      }
+    }
+
     exportAudEl.currentTime=0;
     exportAudEl.play().catch(()=>{});
-    const expFreqBuf=new Uint8Array(exportAn.frequencyBinCount);
+    const expFreqBuf = _syntheticFreqBuf; // alias - same buffer reused
     const t0=performance.now();
     let frameIdx=0;
 
@@ -10743,11 +10790,12 @@ async function exportWithWebCodecs(q){
       const segEnd=Math.min(frameIdx+SEG, totalFrames);
       while(frameIdx<segEnd){
         const el=frameIdx/FPS;
-        exportAn.getByteFrequencyData(expFreqBuf);
-        _freqBuf=expFreqBuf;
-        const blen=expFreqBuf.length, bE=Math.floor(blen*.12), mE=Math.floor(blen*.5);
+        // BUG1 FIX: Use decoded audioBuf data at exact frame time (not live analyser)
+        _computeFreqAtTime(el);
+        _freqBuf=_syntheticFreqBuf;
+        const blen=_syntheticFreqBuf.length, bE=Math.floor(blen*.12), mE=Math.floor(blen*.5);
         let bs=0,ms2=0,al=0;
-        for(let ii=0;ii<blen;ii++){const v=expFreqBuf[ii];al+=v;if(ii<bE)bs+=v;else if(ii<mE)ms2+=v;}
+        for(let ii=0;ii<blen;ii++){const v=_syntheticFreqBuf[ii];al+=v;if(ii<bE)bs+=v;else if(ii<mE)ms2+=v;}
         _bass=bs/(bE*255); _mid=ms2/((mE-bE)*255); _eng=al/(blen*255);
 
         aiT=el*.4; aiGP=el*.0026;
@@ -11109,6 +11157,8 @@ async function exportWithMediaRecorder(q){
   const _mrSaveBgX=bgX, _mrSaveOvX=ovX;
   bgCvs=mrOffBg; ovCvs=mrOffOv;
   bgX=mrOffBg.getContext('2d'); ovX=mrOffOv.getContext('2d');
+  bgX.imageSmoothingEnabled=true; bgX.imageSmoothingQuality='high';
+  ovX.imageSmoothingEnabled=true; ovX.imageSmoothingQuality='high';
   bgCache=null;
 
   exportAudEl.currentTime=0;
@@ -11118,13 +11168,16 @@ async function exportWithMediaRecorder(q){
   upProg(20,`Render WebM ${EW}\u00D7${EH}...`);
 
   function fr(){
-    if(_exportAborted){ bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){} try{exportActx?.close();}catch(_){} _isExporting=false; return; }
+    if(_exportAborted){ try{mr.stop();}catch(_){} bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null; try{URL.revokeObjectURL(_mrAudFileUrl);}catch(_){} try{exportActx?.close();}catch(_){} _isExporting=false; return; }
     // FIX: use audio currentTime for accurate A/V sync (not wall clock which drifts)
     const el=exportAudEl.currentTime||((performance.now()-t0)/1000);
     if(el>=dur+0.1||exportAudEl.ended){
       upProg(94,'\u0110\u00F3ng g\u00F3i...',`${fmt(dur)} / ${fmt(dur)}`);
-      bgCvs=_mrSaveBgCvs; ovCvs=_mrSaveOvCvs; bgX=_mrSaveBgX; ovX=_mrSaveOvX; bgCache=null;
-      setTimeout(()=>mr.stop(),200); return; // delay 200ms so last frame is captured
+      // BUG2 FIX: Do NOT restore bgCvs here -- keep rendering to export canvas until mr.stop()
+      // Restoring here causes a race: any frame between restore and mr.stop()
+      // would render to the small preview canvas, then get composited wrongly
+      // Canvas refs are restored inside mr.onstop (which fires after all data is flushed)
+      mr.stop(); return;
     }
     exportAn.getByteFrequencyData(expFreqBuf);
     _freqBuf=expFreqBuf;
@@ -13824,7 +13877,7 @@ function removeAffSlot(idx){
     _injectUI();
     _attachScrub();
     if (window._domCache) { window._domCache.dirty = true; if (window._refreshDomCache) window._refreshDomCache(); }
-    console.log('[VLC Patch v12.8] 12 new templates + MP4 + Affiliate CSS applied');
+    console.log('[VLC Patch v12.9] 12 new templates + MP4 + Affiliate CSS applied');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
   else setTimeout(_init, 200);
