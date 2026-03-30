@@ -2343,9 +2343,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
     <!-- RIGHT: Export -->
     <div>
-  <div style="display:flex;gap:8px;margin-bottom:10px">
-    <button onclick="generateThumbnail()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">&#x1F5BC; Thumbnail</button>
-  </div>
   <div class="export-card">
     <div class="exp-h">Xuất Video <span>Hoàn Chỉnh</span></div>
     <div class="exp-sub" id="export-method-badge" style="margin-bottom:10px">
@@ -2411,6 +2408,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <div id="export-summary" style="font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin:4px 0 10px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
       <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
     </div>
+  </div>
+  <!-- Thumbnail button: below export card, easy to find after export -->
+  <div style="margin-top:10px">
+    <button onclick="generateThumbnail()" style="width:100%;height:36px;border-radius:9px;border:1px solid rgba(251,191,36,.4);background:rgba(251,191,36,.06);color:#fbbf24;font-size:.68rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s" onmouseover="this.style.borderColor='#fbbf24';this.style.background='rgba(251,191,36,.12)'" onmouseout="this.style.borderColor='rgba(251,191,36,.4)';this.style.background='rgba(251,191,36,.06)'">&#x1F5BC; Lưu Thumbnail</button>
   </div>
   <div class="nav-row">
     <button class="nbtn" onclick="goStep(3)">← Tuỳ Chỉnh Lại</button>
@@ -2799,13 +2800,14 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v13.7';
+const APP_VERSION = 'v13.8';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
   if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
 });
 const VERSION_HISTORY=[
+  ['v13.8','Di chuyen Thumbnail button xuong duoi export card (vi tri hop ly hon, ben canh nut Tuy Chinh Lai)'],
   ['v13.7','Playbar: xoa beat-ring (hinh tron thua), thong nhat chieu cao 34px cho tat ca button/element trong playbar'],
   ['v13.6','Fix export wave = preview: thay FFT sai bang OfflineAudioContext pre-bake (dung chinh engine Web Audio nhu preview, spectrum lookup table per frame, fallback RMS)'],
   ['v13.5','Fix export timer row: 3 items chia deu, separator thanh duong doc, khong bi lech sang 1 ben'],
