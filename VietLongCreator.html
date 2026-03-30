@@ -738,7 +738,9 @@ main {
   padding:8px 18px; border-radius:9px;
   border:1px solid var(--line2); background:var(--surface2);
   color:var(--tx); font-family:var(--fb); font-size:.76rem;
-  font-weight:600; cursor:pointer; transition:all .2s;
+  font-weight:600; cursor:pointer; transition:background .2s, border-color .2s, color .2s, box-shadow .2s;
+  /* FIX: fixed width so Phat/Tam Dung never shifts layout */
+  min-width:110px; text-align:center; white-space:nowrap;
 }
 .pbtn:hover { border-color:var(--a2); color:var(--a2); }
 .pbtn.active {
@@ -1492,22 +1494,29 @@ body:has(#panel-affiliate.show) main {
 
 /* -- Step 4: Export timer row -- */
 .export-timer-row {
-  display:flex; align-items:center; gap:8px;
-  flex-wrap:wrap; margin-top:8px; padding:8px;
+  display:flex; align-items:center;
+  justify-content:space-around;
+  margin-top:8px; padding:8px 12px;
   background:rgba(0,0,0,.3); border-radius:7px;
+  gap:0;
 }
 .export-timer-item {
-  display:flex; flex-direction:column; align-items:center; gap:2px;
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:3px;
 }
 .export-timer-label {
   font-size:.55rem; color:var(--tx3);
   font-family:'IBM Plex Mono',monospace;
+  white-space:nowrap;
 }
 .export-timer-val {
-  font-size:.72rem; font-weight:700; color:var(--a2);
+  font-size:.78rem; font-weight:700; color:var(--a2);
   font-family:'IBM Plex Mono',monospace;
 }
-.export-timer-sep { color:var(--tx3); }
+.export-timer-sep {
+  color:var(--line2); width:1px; height:28px;
+  background:var(--line2); flex-shrink:0; margin:0 4px;
+}
 
 /* -- Fix: #bgcvs position (canvas overlap fix) -- */
 #bgcvs {
@@ -2307,9 +2316,20 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     <div style="display:flex;gap:3px;margin-left:8px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span id="tpl-label" style="display:none"></span>
   </div>
 
-  <div style="margin:6px 0 2px;position:relative">
-    <canvas id="beat-timeline-cvs" style="width:100%;height:28px;border-radius:6px;cursor:pointer;display:block" onclick="seekFromTimeline(event)"></canvas>
-    <button onclick="buildBeatTimeline()" style="position:absolute;right:4px;top:4px;padding:2px 7px;border-radius:4px;border:none;background:rgba(0,0,0,.5);color:var(--a2);font-size:.55rem;cursor:pointer;font-family:'IBM Plex Mono',monospace">🥁 Beats</button>
+  <!-- Seekbar: click/drag to seek to any time in the song -->
+  <div style="margin:6px 0 4px;position:relative" id="seek-wrap">
+    <!-- Progress track -->
+    <div id="seek-track" style="width:100%;height:6px;border-radius:3px;background:var(--line2);cursor:pointer;position:relative;overflow:visible"
+         onclick="_seekClick(event)" onmousemove="_seekHover(event)" onmouseleave="_seekLeave()">
+      <!-- Filled portion -->
+      <div id="seek-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--a1),var(--a3));border-radius:3px;pointer-events:none;transition:width .1s linear"></div>
+      <!-- Thumb dot -->
+      <div id="seek-thumb" style="position:absolute;top:50%;left:0%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--a1),0 2px 6px rgba(0,0,0,.4);pointer-events:none;transition:left .1s linear"></div>
+      <!-- Hover tooltip -->
+      <div id="seek-tip" style="display:none;position:absolute;bottom:14px;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;font-size:.58rem;font-family:'IBM Plex Mono',monospace;padding:2px 7px;border-radius:4px;pointer-events:none;white-space:nowrap"></div>
+    </div>
+    <!-- Hidden canvas kept for beat detection internals -->
+    <canvas id="beat-timeline-cvs" style="display:none" onclick="seekFromTimeline(event)"></canvas>
   </div>
   <!-- Intro/Outro settings -->
   
@@ -2321,9 +2341,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
     <!-- RIGHT: Export -->
     <div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-    <button onclick="generateThumbnail()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🖼 Thumbnail</button>
-    <button onclick="exportGIF()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">🎞 GIF 15s</button>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button onclick="generateThumbnail()" style="flex:1;padding:7px 12px;border-radius:8px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:#fbbf24;font-size:.65rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">&#x1F5BC; Thumbnail</button>
   </div>
   <div class="export-card">
     <div class="exp-h">Xuất Video <span>Hoàn Chỉnh</span></div>
@@ -2373,12 +2392,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
           <span class="export-timer-label">⏱ Thời gian thực</span>
           <span class="export-timer-val" id="export-wall-time">0:00</span>
         </div>
-        <div class="export-timer-sep">·</div>
+        <div class="export-timer-sep"></div>
         <div class="export-timer-item">
           <span class="export-timer-label">⏳ Ước tính còn</span>
           <span class="export-timer-val" id="export-eta">–</span>
         </div>
-        <div class="export-timer-sep">·</div>
+        <div class="export-timer-sep"></div>
         <div class="export-timer-item">
           <span class="export-timer-label">🚀 Tốc độ</span>
           <span class="export-timer-val" id="export-speed">–</span>
@@ -2778,13 +2797,15 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v13.3';
+const APP_VERSION = 'v13.5';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
   if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
 });
 const VERSION_HISTORY=[
+  ['v13.5','Fix export timer row: 3 items chia deu, separator thanh duong doc, khong bi lech sang 1 ben'],
+  ['v13.4','Playbar: fix nut Phat/Tam Dung width co dinh, xoa Beats button, xoa GIF 15s, them seekbar thoi gian click/drag/hover'],
   ['v13.3','Version cleanup: pill header tu dong doc APP_VERSION qua DOMContentLoaded, xoa console.log thua, gom ve 2 cho update duy nhat'],
   ['v13.2','Fix thumbnail: xoa fillText() thu cong thua gay double text, composite tu drawFrame() nhu video, imageSmoothingQuality=high, simulate spectrum dep'],
   ['v13.1','Fix export wave: thay RMS sai bang real FFT Cooley-Tukey (Hann window + log-scale mapping + exponential smoothing) -> song nhac khop preview'],
@@ -6064,6 +6085,7 @@ function startIdleLoop(){
     _renderTime=audEl?.currentTime||0;
     _renderDur =audEl?.duration||0;
     drawFrame();
+    _updateSeekbar();
     if(!playing && step===4) idleRaf=requestAnimationFrame(idleTick);
     else idleRaf=null;
   }
@@ -6142,7 +6164,11 @@ function renderLoop(ts=0){
   drawFrame(); drawSpec();
   // Only update time display when second changes (reduces DOM writes 30x)
   const _curSec=Math.floor(audEl?.currentTime||0);
-  if(audEl&&_curSec!==renderLoop._lastSec){renderLoop._lastSec=_curSec;$('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);}
+  if(audEl&&_curSec!==renderLoop._lastSec){
+    renderLoop._lastSec=_curSec;
+    $('tdisp').textContent=fmt(audEl.currentTime)+' / '+fmt(audEl.duration||0);
+    _updateSeekbar(); // sync seekbar with playback
+  }
   // Throttle beat timeline to every 3 frames (10fps is enough for timeline)
   if(typeof _beatMarkers!=='undefined'&&_beatMarkers.length>0){
     renderLoop._btlFrame=(renderLoop._btlFrame||0)+1;
@@ -11429,6 +11455,58 @@ async function exportWithMediaRecorder(q){
    showOnboarding, loadScript, upProg, toast, keyboard shortcuts, DOMContentLoaded
    Search: Ctrl+F -> S13
    ============================================================================ */
+
+/* SEEKBAR: click/drag/hover to seek */
+function _updateSeekbar(){
+  if(!audEl||!audEl.duration) return;
+  const pct = Math.min(1, (audEl.currentTime||0) / audEl.duration) * 100;
+  const fill  = document.getElementById('seek-fill');
+  const thumb = document.getElementById('seek-thumb');
+  if(fill)  fill.style.width = pct + '%';
+  if(thumb) thumb.style.left = pct + '%';
+}
+function _seekClick(e){
+  if(!audEl||!audEl.duration) return;
+  const track = document.getElementById('seek-track');
+  if(!track) return;
+  const rect = track.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  audEl.currentTime = ratio * audEl.duration;
+  _updateSeekbar();
+}
+function _seekHover(e){
+  if(!audEl||!audEl.duration) return;
+  const track = document.getElementById('seek-track');
+  const tip   = document.getElementById('seek-tip');
+  if(!track||!tip) return;
+  const rect  = track.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const t     = ratio * audEl.duration;
+  tip.textContent = fmt(t);
+  tip.style.left  = (ratio * 100) + '%';
+  tip.style.display = 'block';
+}
+function _seekLeave(){
+  const tip = document.getElementById('seek-tip');
+  if(tip) tip.style.display = 'none';
+}
+// Drag support on seek track
+(function _bindSeekDrag(){
+  function _onReady(){
+    const track = document.getElementById('seek-track');
+    if(!track){ setTimeout(_onReady, 300); return; }
+    let _dragging = false;
+    track.addEventListener('mousedown', e=>{ _dragging=true; _seekClick(e); });
+    document.addEventListener('mousemove', e=>{ if(_dragging){ _seekClick(e); _seekHover(e); } });
+    document.addEventListener('mouseup',   ()=>{ _dragging=false; });
+    // Touch support
+    track.addEventListener('touchstart', e=>{ const t=e.touches[0]; _seekClick(t); }, {passive:true});
+    track.addEventListener('touchmove',  e=>{ const t=e.touches[0]; _seekClick(t); }, {passive:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _onReady);
+  else _onReady();
+})();
+
 
 function showOnboarding(){
   if(localStorage.getItem('vlc_onboarded')) return;
