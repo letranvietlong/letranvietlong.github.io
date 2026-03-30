@@ -2174,7 +2174,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.9 &#x1F4CB;</div>
+    <div class="hpill ver" id="ver-pill" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer"></div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2778,8 +2778,17 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v12.9';
+const APP_VERSION = 'v13.3';
+// Auto-fill version pill as soon as DOM is ready (single source of truth)
+document.addEventListener('DOMContentLoaded', function() {
+  var p = document.getElementById('ver-pill');
+  if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
+});
 const VERSION_HISTORY=[
+  ['v13.3','Version cleanup: pill header tu dong doc APP_VERSION qua DOMContentLoaded, xoa console.log thua, gom ve 2 cho update duy nhat'],
+  ['v13.2','Fix thumbnail: xoa fillText() thu cong thua gay double text, composite tu drawFrame() nhu video, imageSmoothingQuality=high, simulate spectrum dep'],
+  ['v13.1','Fix export wave: thay RMS sai bang real FFT Cooley-Tukey (Hann window + log-scale mapping + exponential smoothing) -> song nhac khop preview'],
+  ['v13.0','Restructure sourcecode: TOC S01-S13, section headers, Ctrl+F navigation, zero code movement'],
   ['v12.9','Fix export video: BUG1 WebCodecs freq data from audioBuf at frame time (waves now animate), BUG2 MediaRecorder canvas restore race condition fixed (no more layout shrink)'],
   ['v12.8','Fix UI: playbar buttons equal, remove Mau label, artImg HQ, title font Orbitron, domCache refresh, GIF CORS Blob workaround'],
   ['v12.7','12 templates moi: Radial Pulse, DNA Helix, Oscilloscope, Liquid Ripple, 3D Bars Pro, Neon Typewriter, Karaoke Pro + 5 MC moi (Aurora3D, Liquid Metal, Quantum, Mandala, Electric Storm)'],
@@ -3373,39 +3382,88 @@ function setPlaybackSpeed(s){
 //  Video Thumbnail Generator 
 function generateThumbnail(){
   if(!chosenTpl||!bgCvs){toast('C\u1EA7n \u1EDF B\u01B0\u1EDBc 4 v\u1EDBi template \u0111\u00E3 ch\u1ECDn','warn');return;}
-  const TW=1280,TH=720;
-  const thumbCvs=document.createElement('canvas');thumbCvs.width=TW;thumbCvs.height=TH;
-  const tCtx=thumbCvs.getContext('2d');
-  const offBgT=document.createElement('canvas');offBgT.width=TW;offBgT.height=TH;
-  const offOvT=document.createElement('canvas');offOvT.width=TW;offOvT.height=TH;
+
+  // FIX: Thumbnail must match the video frame exactly -- NO extra text layer
+  // drawFrame() already renders title + artist inside ovX (the overlay canvas)
+  // Adding fillText() again on top causes double/overlapping text
+
+  const TW=1280, TH=720;
+
+  // Offscreen canvases at export resolution
+  const offBgT = document.createElement('canvas'); offBgT.width=TW; offBgT.height=TH;
+  const offOvT = document.createElement('canvas'); offOvT.width=TW; offOvT.height=TH;
+  const offBgCtx = offBgT.getContext('2d'); const offOvCtx = offOvT.getContext('2d');
+  offBgCtx.imageSmoothingEnabled=true; offBgCtx.imageSmoothingQuality='high';
+  offOvCtx.imageSmoothingEnabled=true; offOvCtx.imageSmoothingQuality='high';
+
+  // Redirect globals -- same approach as WebCodecs export
   const _oBg=bgCvs,_oOv=ovCvs,_oBgX=bgX,_oOvX=ovX;
-  bgCvs=offBgT;ovCvs=offOvT;bgCache=null;
-  bgX=offBgT.getContext('2d');ovX=offOvT.getContext('2d');
-  const savedT=aiT,savedB=_bass,savedM=_mid;
-  aiT=3.14;_bass=0.9;_mid=0.7;
+  bgCvs=offBgT; ovCvs=offOvT;
+  bgX=offBgCtx; ovX=offOvCtx;
+  bgCache=null;
+
+  // Cache export values so drawFrame reads them (not DOM)
+  window._exportTitle  = ($('cc-title')?.value||'T\u00CAN B\u00C0I H\u00C1T');
+  window._exportArtist = ($('cc-artist')?.value||'Ca S\u0129');
+  window._exportWt     = ($('cc-wt')?.value||'bars');
+  const _wasExporting  = _isExporting;
+  _isExporting = true; // use cached title/artist (not DOM query)
+
+  // Pick a good visual moment: slightly into the song (bass peak)
+  const savedT=aiT, savedB=_bass, savedM=_mid, savedEng=_eng;
+  const savedRT=_renderTime, savedRD=_renderDur;
+
+  aiT=3.14; _bass=0.88; _mid=0.65; _eng=0.55;
+  _renderTime = audEl?.currentTime || 0;
+  _renderDur  = audEl?.duration   || 240;
+
+  // Simulate frequency buffer at peak energy
+  if(!_freqBuf||_freqBuf.length<64) _freqBuf=new Uint8Array(1024);
+  for(let i=0;i<_freqBuf.length;i++){
+    // Simulate a rich music spectrum: bass heavy, mid present, high roll-off
+    const norm = i/_freqBuf.length;
+    const bassShape = norm<0.12 ? (1-norm/0.12)*0.9+0.1 : 0;
+    const midShape  = norm>=0.12 && norm<0.5 ? Math.sin((norm-0.12)/(0.38)*Math.PI)*0.7 : 0;
+    const highShape = norm>=0.5 ? (1-norm)*0.3 : 0;
+    _freqBuf[i] = Math.round((bassShape+midShape+highShape)*230 + Math.random()*25);
+  }
+
   drawFrame();
-  tCtx.drawImage(offBgT,0,0);tCtx.drawImage(offOvT,0,0);
-  bgCvs=_oBg;ovCvs=_oOv;bgX=_oBgX;ovX=_oOvX;
-  aiT=savedT;_bass=savedB;_mid=savedM;bgCache=null;
-  const grd=tCtx.createLinearGradient(0,TH*0.6,0,TH);
-  grd.addColorStop(0,'transparent');grd.addColorStop(1,'rgba(0,0,0,.8)');
-  tCtx.fillStyle=grd;tCtx.fillRect(0,0,TW,TH);
-  const title=($('cc-title')?.value||'TITLE').toUpperCase();
-  const artist=$('cc-artist')?.value||'Artist';
-  const tsz=Math.min(TW*.042,52);
-  tCtx.textAlign='left';tCtx.textBaseline='bottom';
-  tCtx.font='900 '+tsz+'px Orbitron,"Be Vietnam Pro",sans-serif';
-  tCtx.fillStyle='#fff';tCtx.shadowColor='rgba(0,0,0,.8)';tCtx.shadowBlur=12;
-  tCtx.fillText(title,TW*.04,TH-.12*TH,TW*.9);
-  tCtx.font='400 '+(tsz*.5)+'px "Be Vietnam Pro",sans-serif';
-  tCtx.fillStyle='rgba(255,255,255,.75)';
-  tCtx.fillText(artist,TW*.04,TH-.04*TH,TW*.9);
-  tCtx.shadowBlur=0;
+
+  // Restore everything immediately
+  bgCvs=_oBg; ovCvs=_oOv; bgX=_oBgX; ovX=_oOvX;
+  aiT=savedT; _bass=savedB; _mid=savedM; _eng=savedEng;
+  _renderTime=savedRT; _renderDur=savedRD;
+  _isExporting=_wasExporting;
+  window._exportTitle=null; window._exportArtist=null; window._exportWt=null;
+  bgCache=null;
+
+  // Composite: bg + overlay (title/artist already in offOvT from drawFrame)
+  const thumbCvs = document.createElement('canvas'); thumbCvs.width=TW; thumbCvs.height=TH;
+  const tCtx = thumbCvs.getContext('2d');
+  tCtx.imageSmoothingEnabled=true; tCtx.imageSmoothingQuality='high';
+  tCtx.drawImage(offBgT,0,0);
+  tCtx.drawImage(offOvT,0,0);
+  // Apply color grading if active
+  if(typeof _colorFilter!=='undefined'&&_colorFilter!=='none'&&typeof COLOR_FILTERS!=='undefined'){
+    const _cf=COLOR_FILTERS[_colorFilter];
+    if(_cf){
+      const {brightness:bri=1,contrast:con=1,saturate:sat=1,sepia:sep=0,hue=0}=_cf;
+      // Re-draw with filter (canvas filter API)
+      const tmp=document.createElement('canvas'); tmp.width=TW; tmp.height=TH;
+      const tmpCtx=tmp.getContext('2d');
+      tmpCtx.filter=`brightness(${bri}) contrast(${con}) saturate(${sat}) sepia(${sep}) hue-rotate(${hue}deg)`;
+      tmpCtx.drawImage(thumbCvs,0,0); tCtx.clearRect(0,0,TW,TH); tCtx.drawImage(tmp,0,0);
+    }
+  }
+  // NO extra text: title/artist is already baked in by drawFrame() via ovX
+
   thumbCvs.toBlob(blob=>{
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;
-    a.download='thumbnail_'+chosenTpl.id+'_1280x720.jpg';
-    a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    const a=document.createElement('a'); a.href=url;
+    const fname='thumbnail_'+chosenTpl.id+'_1280x720.jpg';
+    a.download=fname; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
     toast('\u{1F5BC} Thumbnail saved!','success',2500);
   },'image/jpeg',0.95);
 }
@@ -10840,38 +10898,84 @@ async function exportWithWebCodecs(q){
     const _fftSize = 2048;
     const _syntheticFreqBuf = new Uint8Array(_fftSize/2);
 
+    // Real DFT-based spectrum analyser for export
+    // Uses a reduced DFT (N_DFT=256) with Hann window, then maps to 1024 bins
+    // matching Web Audio AnalyserNode.getByteFrequencyData() behaviour
+    const N_DFT = 256; // must be power of 2 for good perf (256 = fast enough)
+    const _hannWin = new Float32Array(N_DFT);
+    for(let i=0;i<N_DFT;i++) _hannWin[i]=0.5*(1-Math.cos(2*Math.PI*i/(N_DFT-1)));
+    const _re = new Float32Array(N_DFT);
+    const _im = new Float32Array(N_DFT);
+    // Smoothing buffer (matches AnalyserNode smoothingTimeConstant ~0.8)
+    const _smooth = new Float32Array(_syntheticFreqBuf.length);
+    const SMOOTH = 0.77; // matches browser AnalyserNode default
+
+    function _dftMagnitudes(pcm0, pcm1, startSample) {
+      // Fill windowed input
+      for(let i=0;i<N_DFT;i++){
+        const s = startSample+i;
+        const v = s < pcm0.length ? ((pcm0[s]+(pcm1?pcm1[s]:pcm0[s]))*0.5) : 0;
+        _re[i] = v * _hannWin[i];
+        _im[i] = 0;
+      }
+      // Cooley-Tukey in-place FFT (iterative)
+      let n = N_DFT;
+      for(let s=1;s<n;s<<=1){
+        const step=s<<1;
+        const wr=Math.cos(Math.PI/s), wi=-Math.sin(Math.PI/s);
+        for(let k=0;k<n;k+=step){
+          let pr=1, pi=0;
+          for(let j=0;j<s;j++){
+            const ur=_re[k+j+s], ui=_im[k+j+s];
+            const tr=ur*pr-ui*pi, ti=ur*pi+ui*pr;
+            _re[k+j+s]=_re[k+j]-tr; _im[k+j+s]=_im[k+j]-ti;
+            _re[k+j]+=tr; _im[k+j]+=ti;
+            const newPr=pr*wr-pi*wi; pi=pr*wi+pi*wr; pr=newPr;
+          }
+        }
+      }
+      // Bit-reversal permutation
+      for(let i=1,j=0;i<n;i++){
+        let bit=n>>1;
+        for(;j&bit;bit>>=1) j^=bit;
+        j^=bit;
+        if(i<j){
+          let t=_re[i];_re[i]=_re[j];_re[j]=t;
+          t=_im[i];_im[i]=_im[j];_im[j]=t;
+        }
+      }
+    }
+
     function _computeFreqAtTime(timeSec) {
       if(!_exportCh0) { _syntheticFreqBuf.fill(60); return; }
       const sampleStart = Math.floor(timeSec * _exportSampleRate);
-      const len = _fftSize;
-      // Build a simplified frequency spectrum using DFT-like approach
-      // We compute energy in frequency bins directly from PCM samples
-      const endSample = Math.min(sampleStart + len, _exportCh0.length);
-      const actualLen = endSample - sampleStart;
-      if(actualLen <= 0) { _syntheticFreqBuf.fill(0); return; }
-      // Number of output bins
-      const bins = _syntheticFreqBuf.length;
-      // Simple approach: divide spectrum into bins, compute RMS per band
-      const samplesPerBin = Math.max(1, Math.floor(actualLen / bins));
-      let maxRMS = 0;
-      const rmsArr = new Float32Array(bins);
-      for(let b=0; b<bins; b++) {
-        const s0 = sampleStart + b * samplesPerBin;
-        const s1 = Math.min(s0 + samplesPerBin, endSample);
-        let sum = 0, cnt = 0;
-        for(let s=s0; s<s1; s++) {
-          const v = ((_exportCh0[s]||0) + (_exportCh1[s]||0)) * 0.5;
-          sum += v*v; cnt++;
-        }
-        rmsArr[b] = cnt > 0 ? Math.sqrt(sum/cnt) : 0;
-        if(rmsArr[b] > maxRMS) maxRMS = rmsArr[b];
-      }
-      // Normalise to 0-255
-      const scale = maxRMS > 0 ? 255/maxRMS : 0;
-      for(let b=0; b<bins; b++) {
-        // Apply frequency shaping: boost bass (low bins), attenuate very high
-        const freq_weight = b < bins*0.12 ? 1.4 : b < bins*0.5 ? 1.1 : 0.7;
-        _syntheticFreqBuf[b] = Math.min(255, Math.round(rmsArr[b] * scale * freq_weight));
+      if(sampleStart >= _exportCh0.length) { _syntheticFreqBuf.fill(0); return; }
+
+      // Run DFT
+      _dftMagnitudes(_exportCh0, _exportCh1, sampleStart);
+
+      // Map N_DFT/2 FFT bins -> output bins (log-scaled like browser AnalyserNode)
+      const halfDFT = N_DFT >> 1;           // 128 usable bins from DFT
+      const outBins = _syntheticFreqBuf.length; // 1024
+      // Max dB range (matches AnalyserNode maxDecibels=-30, minDecibels=-100)
+      const MIN_DB = -100, MAX_DB = -30;
+      const DB_RANGE = MAX_DB - MIN_DB;
+
+      // Magnitude -> dB -> 0-255 for each output bin
+      // Log-scale mapping: output bin b -> DFT bin using log spacing
+      for(let b=0; b<outBins; b++){
+        // Map output bin to DFT bin (log scale like browser)
+        const fftBin = Math.max(1, Math.min(halfDFT-1,
+          Math.round(Math.pow(halfDFT, b/outBins))
+        ));
+        const mag = Math.sqrt(_re[fftBin]*_re[fftBin] + _im[fftBin]*_im[fftBin]);
+        // Convert to dB
+        const db = mag > 1e-10 ? 20*Math.log10(mag/N_DFT) : MIN_DB;
+        // Map [MIN_DB, MAX_DB] -> [0, 255]
+        const val = Math.round(255 * Math.max(0, Math.min(1, (db - MIN_DB) / DB_RANGE)));
+        // Exponential smoothing (prevent flicker, match browser behaviour)
+        _smooth[b] = SMOOTH * _smooth[b] + (1-SMOOTH) * val;
+        _syntheticFreqBuf[b] = Math.round(_smooth[b]);
       }
     }
 
@@ -13689,7 +13793,7 @@ function removeAffSlot(idx){
 }
 </script>
 
-<!-- VLC PATCH v12.1 - 16 Optimizations Applied -->
+<!-- VLC PATCH - Applied -->
 <script>
 (function VLCPatch() {
   'use strict';
@@ -13988,7 +14092,7 @@ function removeAffSlot(idx){
     _injectUI();
     _attachScrub();
     if (window._domCache) { window._domCache.dirty = true; if (window._refreshDomCache) window._refreshDomCache(); }
-    console.log('[VLC Patch v12.9] 12 new templates + MP4 + Affiliate CSS applied');
+    // ver-pill is filled by DOMContentLoaded in main script (APP_VERSION)
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
   else setTimeout(_init, 200);
