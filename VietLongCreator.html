@@ -2174,7 +2174,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.7 &#x1F4CB;</div>
+    <div class="hpill ver" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer">v12.8 &#x1F4CB;</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2293,10 +2293,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <button class="ratio-btn active" id="ratio-169" onclick="setRatio('16:9')">16:9 YouTube</button>
       <button class="ratio-btn" id="ratio-916" onclick="setRatio('9:16')">9:16 TikTok</button>
     </div>
-    <button onclick="openTrimModal()" style="margin-left:auto;padding:5px 12px;border-radius:7px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.62rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .18s" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--line2)';this.style.color='var(--tx3)'">✂ Cắt nhạc</button>
   <div class="playbar">
-    <button class="pbtn active" id="pbtn" onclick="togglePlay()">▶ Phát</button>
-    <button class="pbtn" onclick="doRestart()">↺ Lại Đầu</button>
+    <button class="pbtn active" id="pbtn" onclick="togglePlay()">&#x25B6; Phát</button>
+    <button class="pbtn" onclick="doRestart()">&#x21BA; Lại Đầu</button>
+    <button class="pbtn" onclick="openTrimModal()">&#x2702; Cắt nhạc</button>
     <span class="tdisp" id="tdisp">00:00 / 00:00</span>
     <div class="beat-ring" id="beat"></div>
     <span style="font-size:.6rem;color:var(--tx3);font-family:var(--fm)">NHỊP</span>
@@ -2304,7 +2304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng (M)" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:2px 4px;line-height:1">🔊</button>
       <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" style="width:58px;height:3px;cursor:pointer;accent-color:var(--a2)">
     </div>
-    <div style="display:flex;gap:3px;margin-left:8px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span style="margin-left:auto;font-size:.66rem;color:var(--tx3)">Mẫu: <strong id="tpl-label" style="color:var(--a2)">—</strong></span>
+    <div style="display:flex;gap:3px;margin-left:8px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span id="tpl-label" style="display:none"></span>
   </div>
 
   <div style="margin:6px 0 2px;position:relative">
@@ -2751,8 +2751,9 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
 
 
 //  Version Info 
-const APP_VERSION = 'v12.7';
+const APP_VERSION = 'v12.8';
 const VERSION_HISTORY=[
+  ['v12.8','Fix UI: playbar buttons equal, remove Mau label, artImg HQ, title font Orbitron, domCache refresh, GIF CORS Blob workaround'],
   ['v12.7','12 templates moi: Radial Pulse, DNA Helix, Oscilloscope, Liquid Ripple, 3D Bars Pro, Neon Typewriter, Karaoke Pro + 5 MC moi (Aurora3D, Liquid Metal, Quantum, Mandala, Electric Storm)'],
   ['v12.6','Xuat video MP4 tren moi trinh duyet: MediaRecorder MP4-first, _remuxWebMToMP4 fallback, badge cap nhat dung'],
   ['v12.5','Fix CSS Affiliate tab: .aff-qi, .aff-slot-chip, .aff-connect-box, COL2 header div fix, demo modal conflict, dead CSS removed, workspace height'],
@@ -3555,7 +3556,20 @@ async function exportGIF(){
   let startSec=0;
   if(_beatMarkers.length>4&&audEl?.duration>15)
     startSec=Math.max(0,_beatMarkers[Math.floor(_beatMarkers.length*0.25)]-2);
-  const gif=new GIF({workers:2,quality:8,width:GW,height:GH,workerScript:'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'});
+  // FIX 4: CORS workaround - fetch worker script and create Blob URL
+  let _gifWorkerUrl = window._gifWorkerBlobUrl;
+  if(!_gifWorkerUrl){
+    try{
+      const workerSrc = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js')
+        .then(r=>r.text());
+      _gifWorkerUrl = URL.createObjectURL(new Blob([workerSrc],{type:'application/javascript'}));
+      window._gifWorkerBlobUrl = _gifWorkerUrl; // cache for reuse
+    }catch(fetchErr){
+      console.warn('[GIF] Worker fetch failed, using CDN URL directly:', fetchErr);
+      _gifWorkerUrl = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js';
+    }
+  }
+  const gif=new GIF({workers:2,quality:8,width:GW,height:GH,workerScript:_gifWorkerUrl});
   const offBgG=document.createElement('canvas');offBgG.width=GW;offBgG.height=GH;
   const offOvG=document.createElement('canvas');offOvG.width=GW;offOvG.height=GH;
   const outC=document.createElement('canvas');outC.width=GW;outC.height=GH;
@@ -3687,6 +3701,7 @@ function seekAudio(sec){
 // 
 
 function scheduleDraftSave(){
+  if(typeof window._refreshDomCache==='function') window._refreshDomCache();
   _previewTitle=$("cc-title")?.value||null;
   _previewArtist=$("cc-artist")?.value||null;
   _previewWt=$("cc-wt")?.value||null;
@@ -5050,12 +5065,15 @@ function goStep(n){
   if(n===4){
     // Cancel ALL mini preview animations before entering step 4
     for(const k in miniAnim){if(miniAnim[k])cancelAnimationFrame(miniAnim[k]);miniAnim[k]=null;}
-    bgCache=null;     //  Panel phi visible TRC khi c clientWidth -- dng requestAnimationFrame  ch layout
+    bgCache=null;
+    // FIX 5: Force refresh _domCache so title/artist shows correctly immediately
+    if(typeof window._refreshDomCache==='function') window._refreshDomCache();
     requestAnimationFrame(()=>{
       requestAnimationFrame(()=>{
         initCanvas();
         setupAudio();
-        // Bt u idle animation ngay
+        // Also refresh after DOM is ready (cc-* fields may have just been populated)
+        if(typeof window._refreshDomCache==='function') window._refreshDomCache();
         startIdleLoop();
       });
     });
@@ -5227,11 +5245,11 @@ function guessFromFilename(name){
 function applyAIInfo(){
   const title=($('ai-title-inp')?.value||'').toUpperCase().trim();
   const artist=($('ai-artist-inp')?.value||'').trim();
-  // Lu vo cfg saved  buildCfg restore
   if(title||artist){
-    // Nu ang  step 3, gn trc tip
     if($('cc-title')) $('cc-title').value=title;
     if($('cc-artist')) $('cc-artist').value=artist;
+    // Refresh domCache so preview shows immediately
+    if(typeof window._refreshDomCache==='function') window._refreshDomCache();
     $('ai-detect-status').textContent='\u2705 \u0110\u00E3 \u00E1p d\u1EE5ng! Ti\u1EBFp t\u1EE5c ch\u1ECDn m\u1EABu \u2192';
   }
 }
@@ -9291,6 +9309,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
     let sw,sh,sx,sy;
     if(ir>cr){sh=ch*imgZoom;sw=sh*ir;sx=cx-(sw-cw)/2;sy=cy-(sh-ch)/2;}
     else{sw=cw*imgZoom;sh=sw/ir;sx=cx-(sw-cw)/2;sy=cy-(sh-ch)/2;}
+    bgX.imageSmoothingEnabled=true;bgX.imageSmoothingQuality='high';
     bgX.drawImage(artImg,sx,sy,sw,sh);
     // Warm flash khi bass nh
     if(bass>0.5){
@@ -9386,7 +9405,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
   //  TITLE -- 4 lp render 
-  ovX.font=`900 ${tsz}px Be Vietnam Pro,Arial,sans-serif`;
+  ovX.font=`900 ${tsz}px Orbitron,'Be Vietnam Pro',Arial,sans-serif`;
   ovX.letterSpacing = `${Math.round(tsz*0.04)}px`;
 
   // Lp 0: blur glow rng (ho quang xa)
@@ -13805,7 +13824,7 @@ function removeAffSlot(idx){
     _injectUI();
     _attachScrub();
     if (window._domCache) { window._domCache.dirty = true; if (window._refreshDomCache) window._refreshDomCache(); }
-    console.log('[VLC Patch v12.7] 12 new templates + MP4 + Affiliate CSS applied');
+    console.log('[VLC Patch v12.8] 12 new templates + MP4 + Affiliate CSS applied');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
   else setTimeout(_init, 200);
