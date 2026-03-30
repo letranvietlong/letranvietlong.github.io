@@ -84,11 +84,11 @@ body::before {
 }
 input[type=file]{ display:none; }
 
-/* ╔══════════════════════════════════════════╗
-   ║  CYBERPUNK HEADER SYSTEM                 ║
-   ╚══════════════════════════════════════════╝ */
+/* +==========================================+
+   |  CYBERPUNK HEADER SYSTEM                 |
+   +==========================================+ */
 
-/* ── HEADER SHELL ── */
+/* -- HEADER SHELL -- */
 header {
   position:sticky; top:0; z-index:300;
   height:64px; padding:0 28px;
@@ -137,14 +137,14 @@ header::before {
   to  { background-position:0 64px }
 }
 
-/* ── LOGO WRAPPER ── */
+/* -- LOGO WRAPPER -- */
 .logo {
   display:flex; align-items:center; gap:14px;
   position:relative; z-index:1;
   text-decoration:none;
 }
 
-/* ── SVG LOGO MARK ── */
+/* -- SVG LOGO MARK -- */
 .logo-svg-wrap {
   position:relative; width:44px; height:44px; flex-shrink:0;
 }
@@ -160,7 +160,7 @@ header::before {
   50%    { opacity:1;   transform:scale(1.1) }
 }
 
-/* ── LOGO WORDMARK ── */
+/* -- LOGO WORDMARK -- */
 .logo-wordmark { display:flex; flex-direction:column; gap:2px; line-height:1; }
 
 .logo-name {
@@ -249,7 +249,7 @@ header::before {
   50%    { opacity:.2; transform:scale(.5) }
 }
 
-/* ── HEADER RIGHT — Pills ── */
+/* -- HEADER RIGHT — Pills -- */
 .hpills {
   display:flex; gap:8px; align-items:center;
   position:relative; z-index:1;
@@ -283,7 +283,7 @@ header::before {
   border:1px solid rgba(124,111,255,.2);
   color:#7c6fff;
 }
-/* ── Online status badge ── */
+/* -- Online status badge -- */
 .hpill.status {
   background:rgba(255,45,120,.08);
   border:1px solid rgba(255,45,120,.25);
@@ -308,14 +308,14 @@ header::before {
   .hpill.ver{ display:none; }
 }
 
-/* ── MAIN ── */
+/* -- MAIN -- */
 main {
   position:relative; z-index:5;
   max-width:100%;
   padding:20px 32px 80px;
 }
 
-/* ── STEP TABS — Cyberpunk ── */
+/* -- STEP TABS — Cyberpunk -- */
 .steps {
   display:flex; align-items:center;
   gap:0; margin-bottom:32px;
@@ -376,7 +376,7 @@ main {
 .step-line.done { background:linear-gradient(90deg,#00e5c3,rgba(0,229,195,.25)); }
 @media(max-width:560px){ .step-l{display:none;} .steps{padding:10px 14px;} }
 
-/* ── PANEL ── */
+/* -- PANEL -- */
 .panel {
   background:var(--surface);
   border:1px solid var(--line);
@@ -397,7 +397,7 @@ main {
   background:linear-gradient(90deg,var(--line),transparent);
 }
 
-/* ── STEP 1: UPLOAD ── */
+/* -- STEP 1: UPLOAD -- */
 .upload-area {
   border:2px dashed var(--line2);
   border-radius:var(--r2);
@@ -467,9 +467,9 @@ main {
 }
 .al-change:hover { border-color:var(--a1); color:var(--a1); }
 
-/* ── STEP 2: TEMPLATE GALLERY ── */
+/* -- STEP 2: TEMPLATE GALLERY -- */
 
-/* ── FILTER TABS ── */
+/* -- FILTER TABS -- */
 .filter-bar {
   display:flex; gap:8px; flex-wrap:wrap;
   margin-bottom:20px; padding-bottom:16px;
@@ -490,7 +490,7 @@ main {
   border-color:var(--a3); color:var(--a3);
   box-shadow:0 0 10px rgba(124,111,255,.2);
 }
-/* ── AI DETECT BADGE ── */
+/* -- AI DETECT BADGE -- */
 .ai-detect-box {
   display:none; margin-top:14px;
   padding:14px 16px;
@@ -532,7 +532,7 @@ main {
   margin-top:8px; line-height:1.6;
 }
 
-/* ── GALLERY ── */
+/* -- GALLERY -- */
 .gallery-group { margin-bottom:28px; }
 .gallery-group-title {
   font-size:.6rem; font-weight:700; font-family:'IBM Plex Mono',monospace;
@@ -644,7 +644,7 @@ main {
   color:#ff2d78;
 }
 
-/* ── STEP 3: CUSTOMIZE ── */
+/* -- STEP 3: CUSTOMIZE -- */
 .cfg-layout {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -702,7 +702,7 @@ main {
   font-size:.7rem; color:var(--tx2); text-align:center; line-height:1.6;
 }
 
-/* ── STEP 4: PREVIEW ── */
+/* -- STEP 4: PREVIEW -- */
 .spec-strip {
   background:var(--ink2);
   border-radius:9px; overflow:hidden;
@@ -867,7 +867,7 @@ main {
 }
 .dl-btn:hover { opacity:.82; }
 
-/* ── NAV ROW ── */
+/* -- NAV ROW -- */
 .nav-row {
   display:flex; justify-content:space-between;
   align-items:center; margin-top:22px;
@@ -906,7 +906,7 @@ main {
 .section-sub {
   font-size:.75rem; color:var(--tx2); margin-bottom:18px; line-height:1.7;
 }
-/* ── MAIN NAV TABS ── */
+/* -- MAIN NAV TABS -- */
 .main-nav {
   display:flex; gap:4px; align-items:center;
   background:rgba(255,255,255,.04);
@@ -941,7 +941,7 @@ main {
   50%{box-shadow:0 0 0 5px transparent;}
 }
 
-/* ── AUTOMATION PANEL ── */
+/* -- AUTOMATION PANEL -- */
 /* panel-auto removed */
 
 
@@ -1138,7 +1138,7 @@ main {
   line-height:1.6; white-space:pre-wrap;
 }
 
-/* ── TOAST NOTIFICATIONS ── */
+/* -- TOAST NOTIFICATIONS -- */
 #toast-container {
   position:fixed; bottom:24px; right:24px; z-index:9999;
   display:flex; flex-direction:column; gap:8px; pointer-events:none;
@@ -1161,7 +1161,7 @@ main {
 .toast-close:hover{opacity:1;}
 @keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 @keyframes toastOut{from{opacity:1;}to{opacity:0;transform:translateX(20px);}}
-/* ── KEYBOARD MODAL ── */
+/* -- KEYBOARD MODAL -- */
 #kb-modal{display:none;position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
 #kb-modal.show{display:flex;}
 #kb-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;}
@@ -1171,20 +1171,20 @@ main {
 .kb-key{display:flex;gap:4px;flex-shrink:0;}
 kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;padding:2px 7px;font-size:.62rem;font-family:'IBM Plex Mono',monospace;color:var(--tx2);box-shadow:0 2px 0 var(--line2);}
 .kb-desc{font-size:.66rem;color:var(--tx2);}
-/* ── FULLSCREEN ── */
+/* -- FULLSCREEN -- */
 #pvframe:-webkit-full-screen{width:100vw!important;height:100vh!important;}
 #pvframe:fullscreen{width:100vw!important;height:100vh!important;background:#000;}
 .preview-frame{position:relative;}
 .fullscreen-btn{position:absolute;top:8px;right:8px;z-index:10;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.7rem;backdrop-filter:blur(8px);transition:all .2s;}
 .fullscreen-btn:hover{background:rgba(255,255,255,.15);}
-/* ── COLOR PRESETS ── */
+/* -- COLOR PRESETS -- */
 .preset-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .preset-swatch{width:30px;height:30px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:all .18s;position:relative;}
 .preset-swatch:hover{transform:scale(1.15);border-color:#fff;}
 .preset-swatch.active{border-color:var(--a2);box-shadow:0 0 8px var(--a2);}
-/* ── DRAFT BANNER ── */
+/* -- DRAFT BANNER -- */
 
-/* ── TRIM MODAL ── */
+/* -- TRIM MODAL -- */
 #trim-modal{display:none;position:fixed;inset:0;z-index:8888;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
 #trim-modal.show{display:flex;}
 #trim-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(560px,92vw);}
@@ -1195,18 +1195,18 @@ kbd{background:var(--ink);border:1px solid var(--line2);border-radius:4px;paddin
 .trim-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
 .trim-preset{padding:4px 10px;border-radius:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--line2);font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;transition:all .18s;}
 .trim-preset:hover{border-color:var(--a2);color:var(--a2);}
-/* ── RATIO TOGGLE ── */
+/* -- RATIO TOGGLE -- */
 .ratio-toggle{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:3px;}
 .ratio-btn{padding:4px 10px;border-radius:5px;cursor:pointer;font-size:.6rem;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--tx3);border:none;background:none;transition:all .18s;}
 .ratio-btn.active{background:var(--a1);color:var(--ink);box-shadow:0 0 8px rgba(255,45,120,.3);}
-/* ── MULTI-IMAGE ── */
+/* -- MULTI-IMAGE -- */
 
 .artimg-slot:hover,.artimg-slot.has-img{border-color:var(--a2);}
 .artimg-slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
-/* ── REDUCED MOTION ── */
+/* -- REDUCED MOTION -- */
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
 
-/* ── Full-width responsive layout ── */
+/* -- Full-width responsive layout -- */
 header { padding:0 32px; }
 
 /* Step 4: Preview (canvas) + Export side by side */
@@ -1374,7 +1374,7 @@ header { padding:0 32px; }
 }
 .aff-slot-chip button:hover { color:#ef4444; }
 
-/* ── Affiliate Panel Base ── */
+/* -- Affiliate Panel Base -- */
 #panel-affiliate {
   display:none; width:100%; max-width:100%;
   padding:0 0 40px; box-sizing:border-box;
@@ -1387,7 +1387,7 @@ body:has(#panel-affiliate.show) main {
 .auto-col:first-child, 
 .auto-col:last-child,  
 
-/* ── Affiliate col layout fixes ── */
+/* -- Affiliate col layout fixes -- */
 
 #aff-tt-login-area { min-width:0; }
 
@@ -1414,10 +1414,10 @@ body:has(#panel-affiliate.show) main {
 
 /* Proxy status text */
 
-/* ── FIX: --bg variable (was undefined) ── */
+/* -- FIX: --bg variable (was undefined) -- */
 /* Already aliased: --bg = --ink2 (darkest surface) */
 
-/* ── Step 4: Speed buttons ── */
+/* -- Step 4: Speed buttons -- */
 .speed-btn {
   padding:3px 7px; border-radius:5px;
   border:1px solid var(--line2); background:var(--surface2);
@@ -1428,7 +1428,7 @@ body:has(#panel-affiliate.show) main {
 .speed-btn:hover { border-color:var(--a2); color:var(--a2); }
 .speed-btn.active { background:var(--a2); color:var(--ink); border-color:var(--a2); }
 
-/* ── Step 3: Color filter buttons ── */
+/* -- Step 3: Color filter buttons -- */
 .cf-btn {
   padding:4px 9px; border-radius:7px;
   border:1px solid var(--line2); background:var(--surface2);
@@ -1438,7 +1438,7 @@ body:has(#panel-affiliate.show) main {
 .cf-btn:hover { border-color:var(--a2); color:var(--a2); }
 .cf-btn.active { background:rgba(0,229,195,.12); border-color:var(--a2); color:var(--a2); }
 
-/* ── Step 3: Text animation buttons ── */
+/* -- Step 3: Text animation buttons -- */
 .tanim-btn {
   padding:4px 9px; border-radius:7px;
   border:1px solid var(--line2); background:var(--surface2);
@@ -1448,7 +1448,7 @@ body:has(#panel-affiliate.show) main {
   border-color:var(--a2); color:var(--a2); background:rgba(0,229,195,.08);
 }
 
-/* ── Step 3: Progress bar style buttons ── */
+/* -- Step 3: Progress bar style buttons -- */
 .pbst-btn {
   padding:4px 9px; border-radius:7px;
   border:1px solid var(--line2); background:var(--surface2);
@@ -1458,12 +1458,12 @@ body:has(#panel-affiliate.show) main {
   border-color:var(--a2); color:var(--a2); background:rgba(0,229,195,.08);
 }
 
-/* ── Step 3: Sticker grid ── */
+/* -- Step 3: Sticker grid -- */
 .sticker-grid { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .sticker-item { font-size:1.5rem; cursor:pointer; transition:transform .15s; user-select:none; }
 .sticker-item:hover { transform:scale(1.3); }
 
-/* ── Step 3: EQ preset buttons ── */
+/* -- Step 3: EQ preset buttons -- */
 .eq-preset-btn {
   padding:4px 9px; border-radius:7px;
   border:1px solid var(--line2); background:var(--surface2);
@@ -1473,7 +1473,7 @@ body:has(#panel-affiliate.show) main {
 .eq-preset-btn:hover { border-color:var(--a2); color:var(--a2); }
 .eq-preset-btn.active { background:rgba(0,229,195,.1); border-color:var(--a2); color:var(--a2); }
 
-/* ── Step 2: Gallery pagination ── */
+/* -- Step 2: Gallery pagination -- */
 .gallery-pagination {
   display:flex; align-items:center; gap:6px;
   margin-top:16px; flex-wrap:wrap; justify-content:center;
@@ -1490,7 +1490,7 @@ body:has(#panel-affiliate.show) main {
 .pg-dots { color:var(--tx3); font-size:.65rem; padding:0 4px; }
 .pg-info { font-size:.58rem; color:var(--tx3); font-family:'IBM Plex Mono',monospace; margin-left:8px; }
 
-/* ── Step 4: Export timer row ── */
+/* -- Step 4: Export timer row -- */
 .export-timer-row {
   display:flex; align-items:center; gap:8px;
   flex-wrap:wrap; margin-top:8px; padding:8px;
@@ -1509,23 +1509,23 @@ body:has(#panel-affiliate.show) main {
 }
 .export-timer-sep { color:var(--tx3); }
 
-/* ── Fix: #bgcvs position (canvas overlap fix) ── */
+/* -- Fix: #bgcvs position (canvas overlap fix) -- */
 #bgcvs {
   display:block; width:100%; height:100%;
   position:absolute; top:0; left:0;
   cursor:default;
 }
 
-/* ── Fix: .auto-col-header-dot uses undefined --a2 (already defined — alias fix) ── */
+/* -- Fix: .auto-col-header-dot uses undefined --a2 (already defined — alias fix) -- */
 /* .aff-col-dot already has bg:var(--a2) which is correct */
 
-/* ── Fix: missing --bg var → alias to --ink2 ── */
+/* -- Fix: missing --bg var → alias to --ink2 -- */
 :root { --bg: var(--ink2); }
 
-/* ── Fix: .prog-time uses undefined --muted → use --tx3 ── */
+/* -- Fix: .prog-time uses undefined --muted → use --tx3 -- */
 .prog-time { font-size:.64rem; color:var(--tx3); font-family:var(--fm); }
 
-/* ── Fix: artimg-slot missing (referenced in JS) ── */
+/* -- Fix: artimg-slot missing (referenced in JS) -- */
 .artimg-slot {
   width:56px; height:72px; border-radius:6px;
   border:1.5px dashed var(--line2); cursor:pointer;
@@ -1535,7 +1535,7 @@ body:has(#panel-affiliate.show) main {
 }
 .artimg-slot:hover, .artimg-slot.has-img { border-color:var(--a2); }
 
-/* ── Fix: step4 two-col layout ── */
+/* -- Fix: step4 two-col layout -- */
 #step4-inner {
   display:grid;
   grid-template-columns:minmax(0,1.2fr) minmax(320px,480px);
@@ -1544,7 +1544,7 @@ body:has(#panel-affiliate.show) main {
 }
 @media(max-width:900px){ #step4-inner { grid-template-columns:1fr; } }
 
-/* ── Fix: step3 two-col layout ── */  
+/* -- Fix: step3 two-col layout -- */  
 #step3-inner {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -1553,10 +1553,10 @@ body:has(#panel-affiliate.show) main {
 }
 @media(max-width:820px){ #step3-inner { grid-template-columns:1fr; } }
 
-/* ── Fix: heygen picker modal (injected by JS) ── */
+/* -- Fix: heygen picker modal (injected by JS) -- */
 #heygen-picker-modal { z-index:9999; }
 
-/* ── Fix: aff-demo modal ── */
+/* -- Fix: aff-demo modal -- */
 #aff-demo-modal {
   display:none; position:fixed; inset:0;
   background:rgba(0,0,0,.92); z-index:9998;
@@ -1565,38 +1565,38 @@ body:has(#panel-affiliate.show) main {
 }
 #aff-demo-modal.show { display:flex; }
 
-/* ── Fix: version modal ── */
+/* -- Fix: version modal -- */
 #ver-modal { z-index:9999; }
 
-/* ── Fix: hashtag modal ── */
+/* -- Fix: hashtag modal -- */
 #hashtag-modal { z-index:8888; }
 
-/* ── Fix: lyric-sync-modal ── */
+/* -- Fix: lyric-sync-modal -- */
 #lyric-sync-modal { z-index:8888; }
 
-/* ── Fix: beat-timeline-cvs (clickable) ── */
+/* -- Fix: beat-timeline-cvs (clickable) -- */
 #beat-timeline-cvs {
   width:100%; height:28px;
   border-radius:6px; cursor:pointer; display:block;
 }
 
-/* ── Accessibility: focus visible ── */
+/* -- Accessibility: focus visible -- */
 button:focus-visible, input:focus-visible, select:focus-visible {
   outline:2px solid var(--a2);
   outline-offset:2px;
 }
 
-/* ── Fix: scrollbar styling ── */
+/* -- Fix: scrollbar styling -- */
 ::-webkit-scrollbar { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:var(--ink); }
 ::-webkit-scrollbar-thumb { background:var(--line2); border-radius:3px; }
 ::-webkit-scrollbar-thumb:hover { background:var(--line); }
 
-/* ══════════════════════════════════════════
+/* ==========================================
    AFFILIATE TAB — LAYOUT FIX v9.4
    Fixes: text overlap, cramped stats bar,
    inconsistent fonts, card padding
-══════════════════════════════════════════ */
+========================================== */
 
 /* Stats bar — wrap on small screens, consistent height */
 .aff-stats-bar {
@@ -1899,7 +1899,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .aff-qi.reviewing{border-color:rgba(251,191,36,.45)!important;background:rgba(251,191,36,.03)!important}.aff-qi.uploaded{border-color:rgba(34,197,94,.5)!important;background:rgba(34,197,94,.03)!important}.aff-qi-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end}
 
 
-/* ══ AFFILIATE TAB — MISSING CLASSES FIX v12.4 ══ */
+/* == AFFILIATE TAB — MISSING CLASSES FIX v12.4 == */
 
 /* Base queue item */
 .aff-qi {
@@ -2751,6 +2751,33 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
 
 
 //  Version Info 
+
+/* +==============================================================================+
+   |              VIETLONG CREATOR -- TABLE OF CONTENTS                           |
+   |  Tim section: Ctrl+F theo S01 ... S13                                       |
+   +==============================================================================+
+   |  S01 - CONFIG & CONSTANTS      APP_VERSION, EXPORT_QUALITY, TMPLS           |
+   |  S02 - UTILITY FUNCTIONS       fmt, h2r, rrF, sanitizeText, readAudioOnce   |
+   |  S03 - AFFILIATE & AI APIS     Anthropic, HeyGen, TikTok, AI video gen      |
+   |  S04 - EQ / COLOR / WATERMARK  Equalizer, Color grading, Watermark          |
+   |  S05 - FEATURES & TOOLS        BPM, trim, lyrics sync, sticker, draft       |
+   |  S06 - EXPORT ENGINE           GIF, WebCodecs MP4, MediaRecorder, Remux     |
+   |  S07 - TEMPLATES & WIZARD      TMPLS[60], goStep, gallery, buildCfg         |
+   |  S08 - MINI PREVIEW FUNCTIONS  drawMiniFrame + 13 mini render funcs         |
+   |  S09 - CANVAS & RENDER LOOP    initCanvas, renderLoop, drawFrame, drawSpec  |
+   |  S10 - NEW VISUALIZER STYLES   fullRadial, fullDNA, fullOSC, fullBars3D     |
+   |  S11 - FULL TEMPLATE RENDERS   fullMC, fullPT, fullSP, fullLV, fullTunnel   |
+   |  S12 - BACKGROUND FUNCTIONS    bgNeonCity, bgFire, bgAurora3D ... (47 funcs)|
+   |  S13 - UI & INITIALIZATION     toast, keyboard, onboarding, DOMContentLoaded|
+   +==============================================================================+ */
+
+
+/* ============================================================================
+   S01 -  CONFIG & CONSTANTS
+   APP_VERSION, VERSION_HISTORY, EXPORT_QUALITY, HAS_WEBCODECS, MOOD_TMPLS
+   Search: Ctrl+F -> S01
+   ============================================================================ */
+
 const APP_VERSION = 'v12.9';
 const VERSION_HISTORY=[
   ['v12.9','Fix export video: BUG1 WebCodecs freq data from audioBuf at frame time (waves now animate), BUG2 MediaRecorder canvas restore race condition fixed (no more layout shrink)'],
@@ -2771,6 +2798,13 @@ const VERSION_HISTORY=[
   ['v10.1','Category-aware script prompt, HeyGen workflow']
 ];
 
+
+
+/* ============================================================================
+   S03 -  AFFILIATE & AI APIs
+   Anthropic key, HeyGen key/avatars/voices, TikTok connect, AI video gen
+   Search: Ctrl+F  S03
+   ============================================================================ */
 
 function getAnthropicKey(){ return localStorage.getItem('vlc_anthropic_key')||(document.getElementById('settings-anthropic-key')?.value||'').trim(); }
 function setAnthropicKey(k){ localStorage.setItem('vlc_anthropic_key',k.trim()); }
@@ -3037,6 +3071,13 @@ function setupEqualizer(){
   }
 }
 
+
+/* ============================================================================
+   S04 -  EQ / COLOR / WATERMARK
+   Equalizer presets, Color grading filters, Watermark, Sticker overlay
+   Search: Ctrl+F  S04
+   ============================================================================ */
+
 function setEqPreset(name){
   _eqPreset=name;
   const preset=EQ_PRESETS[name];
@@ -3067,6 +3108,13 @@ let _previewTitle=null,_previewArtist=null,_previewWt=null;
 let _watermarkPos='bottom-right';
 let _watermarkOpacity=0.6;
 let _watermarkImg=null;
+
+
+/* ============================================================================
+   S05 -  FEATURES & TOOLS
+   Trim modal, BPM detect, Mood detect, Lyrics sync, Competitor analysis, Draft save
+   Search: Ctrl+F  S05
+   ============================================================================ */
 
 function setWatermark(text,pos,opacity){
   _watermarkText=text||'';
@@ -3544,6 +3592,13 @@ function renderAnalyticsDash(){
 }
 
 //  Export GIF 
+
+/* ============================================================================
+   S06 -  EXPORT ENGINE
+   GIF export, Export history/share/timer, WebCodecs MP4, MediaRecorder fallback, Remux
+   Search: Ctrl+F  S06
+   ============================================================================ */
+
 async function exportGIF(){
   if(!chosenTpl){toast('C\u1EA7n \u1EDF B\u01B0\u1EDBc 4 v\u1EDBi template \u0111\u00E3 ch\u1ECDn','warn');return;}
   toast('\u{1F39E} T\u1EA1o GIF 15 gi\u00E2y...','info',3000);
@@ -4888,6 +4943,13 @@ let spCvs=null, spX=null;
 })();
 
 /*  TEMPLATE DEFINITIONS -- 18 Professional Templates  */
+
+/* ============================================================================
+   S07 -  TEMPLATES & WIZARD
+   TMPLS array (60 templates), goStep wizard, renderGallery, pickTpl, buildCfg
+   Search: Ctrl+F  S07
+   ============================================================================ */
+
 const TMPLS = [
   //  MUSIC CARD . BALLAD/POP 
   {id:'mc-rose',    name:'Music Card \u00B7 Hoa H\u1ED3ng',    cat:'mc-ballad',
@@ -5004,6 +5066,13 @@ const TMPLS = [
 /*  UTILS  */
 const fmt=s=>{s=isNaN(s)||s<0?0:s;return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;};
 const h2r=h=>{try{return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}catch{return[0,0,0];}};
+
+/* ============================================================================
+   S02 -  UTILITY FUNCTIONS
+   rrF, fmt, h2r, sanitizeText, nrg, readAudioOnce, sendNotif
+   Search: Ctrl+F  S02
+   ============================================================================ */
+
 function rrF(c,x,y,w,h,r){if(w<=0||h<=0)return;c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();c.fill();}
 /*  AUDIO DATA CACHE -- c 1 ln/frame thay v 3 ln  */
 let _freqBuf=null;
@@ -5418,6 +5487,13 @@ function runMiniAnim(t){
   }
   fid=requestAnimationFrame(fr);miniAnim[t.id]=fid;
 }
+
+
+/* ============================================================================
+   S08 -  MINI PREVIEW FUNCTIONS
+   drawMiniFrame dispatcher + miniMC, miniSP, miniLV, miniTunnel, miniWV + 7 new styles
+   Search: Ctrl+F  S08
+   ============================================================================ */
 
 function drawMiniFrame(c,W,H,t,ti,bass,fd){
   if(t.style==='mc')     miniMC(c,W,H,t,ti,bass,fd);
@@ -5857,6 +5933,13 @@ function loadArtImg(inp){
 }
 
 /*  CANVAS INIT  */
+
+/* ============================================================================
+   S09   CANVAS & RENDER LOOP
+   initCanvas, startIdleLoop, setupAudio, renderLoop, drawFrame dispatcher, drawSpec
+   Search: Ctrl+F -> S09
+   ============================================================================ */
+
 function initCanvas(){
   const pvframe=$('pvframe');
   if(!pvframe) return;
@@ -6095,6 +6178,13 @@ function drawMCBackground(c,W,H,t,bass,p,type){
 =========================================================================== */
 
 //  01 . NEON CITY 
+
+/* ============================================================================
+   S12   BACKGROUND FUNCTIONS (47 funcs)
+   bgNeonCity...bgElectricStorm -- all MC background animations. Add new bg here.
+   Search: Ctrl+F -> S12
+   ============================================================================ */
+
 function bgNeonCity(c,W,H,t,bass,p){
   // Sky: deep night gradient
   const sky=c.createLinearGradient(0,0,0,H);
@@ -9252,6 +9342,13 @@ function bgDream(c,W,H,t,bass,p){
   c.fillStyle=vg;c.fillRect(0,0,W,H);
 }
 
+
+/* ============================================================================
+   S11   FULL TEMPLATE RENDERS
+   fullMC (Music Card), fullPT (Particles), fullSP (Spectrum), fullLV (Lyric), fullTunnel, fullWV
+   Search: Ctrl+F -> S11
+   ============================================================================ */
+
 function fullMC(W,H,t,bass,mid,eng,p,title,artist){
     const bgType = chosenTpl?.bg || 'ocean';
 
@@ -9672,6 +9769,13 @@ function fullWV(W,H,t,bass,eng,p,title,artist){
   }
   ovX.clearRect(0,0,W,H);drawTitleOv(W,H*.27,title,artist);drawLyrics(ovX,W,H);
 }
+
+
+/* ============================================================================
+   S10   NEW VISUALIZER RENDER STYLES
+   fullRadial, fullDNA, fullOSC, fullRipple, fullBars3D, fullLV2 (Typewriter), fullLV3 (Karaoke)
+   Search: Ctrl+F -> S10
+   ============================================================================ */
 
 /* =======================================================
    NEW TEMPLATE RENDER FUNCTIONS v12.6
@@ -11215,6 +11319,13 @@ async function exportWithMediaRecorder(q){
 }
 
 //  Onboarding 
+
+/* ============================================================================
+   S13   UI & INITIALIZATION
+   showOnboarding, loadScript, upProg, toast, keyboard shortcuts, DOMContentLoaded
+   Search: Ctrl+F -> S13
+   ============================================================================ */
+
 function showOnboarding(){
   if(localStorage.getItem('vlc_onboarded')) return;
   const uz=$('uz'); if(!uz) return;
