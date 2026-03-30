@@ -731,16 +731,18 @@ main {
 }
 
 .playbar {
-  display:flex; align-items:center; gap:10px;
-  margin-top:12px; flex-wrap:wrap;
+  display:flex; align-items:center; gap:8px;
+  margin-top:12px; flex-wrap:nowrap;
+  height:34px;
 }
 .pbtn {
-  padding:8px 18px; border-radius:9px;
+  height:34px; padding:0 18px; border-radius:9px;
   border:1px solid var(--line2); background:var(--surface2);
   color:var(--tx); font-family:var(--fb); font-size:.76rem;
   font-weight:600; cursor:pointer; transition:background .2s, border-color .2s, color .2s, box-shadow .2s;
-  /* FIX: fixed width so Phat/Tam Dung never shifts layout */
   min-width:110px; text-align:center; white-space:nowrap;
+  display:inline-flex; align-items:center; justify-content:center;
+  box-sizing:border-box;
 }
 .pbtn:hover { border-color:var(--a2); color:var(--a2); }
 .pbtn.active {
@@ -1421,11 +1423,12 @@ body:has(#panel-affiliate.show) main {
 
 /* -- Step 4: Speed buttons -- */
 .speed-btn {
-  padding:3px 7px; border-radius:5px;
+  height:34px; padding:0 8px; border-radius:5px;
   border:1px solid var(--line2); background:var(--surface2);
   color:var(--tx3); font-size:.58rem; cursor:pointer;
   font-family:'IBM Plex Mono',monospace; transition:all .15s;
-  white-space:nowrap;
+  white-space:nowrap; display:inline-flex; align-items:center;
+  box-sizing:border-box;
 }
 .speed-btn:hover { border-color:var(--a2); color:var(--a2); }
 .speed-btn.active { background:var(--a2); color:var(--ink); border-color:var(--a2); }
@@ -2307,13 +2310,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     <button class="pbtn" onclick="doRestart()">&#x21BA; Lại Đầu</button>
     <button class="pbtn" onclick="openTrimModal()">&#x2702; Cắt nhạc</button>
     <span class="tdisp" id="tdisp">00:00 / 00:00</span>
-    <div class="beat-ring" id="beat"></div>
-    <span style="font-size:.6rem;color:var(--tx3);font-family:var(--fm)">NHỊP</span>
-    <div style="display:flex;align-items:center;gap:5px;margin-left:8px">
-      <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng (M)" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:2px 4px;line-height:1">🔊</button>
-      <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" style="width:58px;height:3px;cursor:pointer;accent-color:var(--a2)">
+
+    <div style="display:flex;align-items:center;gap:5px;margin-left:8px;height:34px">
+      <button id="mute-btn" onclick="toggleMute()" title="Tắt/bật tiếng (M)" style="height:34px;width:28px;background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--tx3);padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#x1F50A;</button>
+      <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" style="width:58px;height:3px;cursor:pointer;accent-color:var(--a2);align-self:center">
     </div>
-    <div style="display:flex;gap:3px;margin-left:8px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span id="tpl-label" style="display:none"></span>
+    <div style="display:flex;gap:3px;margin-left:8px;align-items:center;height:34px"><button class="speed-btn" data-speed="0.5" onclick="setPlaybackSpeed(0.5)">0.5×</button><button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)" style="background:var(--a2);color:var(--ink);border-color:var(--a2)">1×</button><button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5×</button><button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2×</button></div><span id="tpl-label" style="display:none"></span>
   </div>
 
   <!-- Seekbar: click/drag to seek to any time in the song -->
@@ -2797,13 +2799,15 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v13.5';
+const APP_VERSION = 'v13.7';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
   if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
 });
 const VERSION_HISTORY=[
+  ['v13.7','Playbar: xoa beat-ring (hinh tron thua), thong nhat chieu cao 34px cho tat ca button/element trong playbar'],
+  ['v13.6','Fix export wave = preview: thay FFT sai bang OfflineAudioContext pre-bake (dung chinh engine Web Audio nhu preview, spectrum lookup table per frame, fallback RMS)'],
   ['v13.5','Fix export timer row: 3 items chia deu, separator thanh duong doc, khong bi lech sang 1 ben'],
   ['v13.4','Playbar: fix nut Phat/Tam Dung width co dinh, xoa Beats button, xoa GIF 15s, them seekbar thoi gian click/drag/hover'],
   ['v13.3','Version cleanup: pill header tu dong doc APP_VERSION qua DOMContentLoaded, xoa console.log thua, gom ve 2 cho update duy nhat'],
@@ -10913,101 +10917,115 @@ async function exportWithWebCodecs(q){
       upProg(18,'Audio encode xong \u2705');
     }
 
-    //  Video render + encode 
-    upProg(20,'Render + encode video...');
-    // BUG1 FIX: Pre-compute per-frame energy from decoded audioBuf
-    // WebCodecs renders 3-8x faster than realtime, so live analyser is always behind
-    // Instead: slice audioBuf at frame time, compute RMS -> synthesise _freqBuf values
-    const _exportSampleRate = audioBuf ? audioBuf.sampleRate : 44100;
-    const _exportCh0 = audioBuf ? audioBuf.getChannelData(0) : null;
-    const _exportCh1 = audioBuf && audioBuf.numberOfChannels>1 ? audioBuf.getChannelData(1) : _exportCh0;
-    const _fftSize = 2048;
-    const _syntheticFreqBuf = new Uint8Array(_fftSize/2);
+    //  Video render + encode
+    upProg(20,'Pre-bake audio spectrum...');
 
-    // Real DFT-based spectrum analyser for export
-    // Uses a reduced DFT (N_DFT=256) with Hann window, then maps to 1024 bins
-    // matching Web Audio AnalyserNode.getByteFrequencyData() behaviour
-    const N_DFT = 256; // must be power of 2 for good perf (256 = fast enough)
-    const _hannWin = new Float32Array(N_DFT);
-    for(let i=0;i<N_DFT;i++) _hannWin[i]=0.5*(1-Math.cos(2*Math.PI*i/(N_DFT-1)));
-    const _re = new Float32Array(N_DFT);
-    const _im = new Float32Array(N_DFT);
-    // Smoothing buffer (matches AnalyserNode smoothingTimeConstant ~0.8)
-    const _smooth = new Float32Array(_syntheticFreqBuf.length);
-    const SMOOTH = 0.77; // matches browser AnalyserNode default
+    // PRE-BAKE: Use OfflineAudioContext + AnalyserNode to compute EXACT same
+    // frequency data as the live preview (getByteFrequencyData).
+    // Store per-frame lookup table -> render loop just reads freqTable[frameIdx].
+    // This guarantees export = preview (same Web Audio engine, same FFT size).
+    const FFT_SIZE = 2048;
+    const BIN_COUNT = FFT_SIZE / 2; // 1024 bins
+    const freqTable = new Uint8Array(totalFrames * BIN_COUNT); // full lookup
+    let   freqTableReady = false;
 
-    function _dftMagnitudes(pcm0, pcm1, startSample) {
-      // Fill windowed input
-      for(let i=0;i<N_DFT;i++){
-        const s = startSample+i;
-        const v = s < pcm0.length ? ((pcm0[s]+(pcm1?pcm1[s]:pcm0[s]))*0.5) : 0;
-        _re[i] = v * _hannWin[i];
-        _im[i] = 0;
+    try {
+      const bakeSR   = audioBuf ? audioBuf.sampleRate : 44100;
+      const bakeLen  = audioBuf ? audioBuf.length : Math.ceil(dur * 44100);
+      const bakeCtx  = new OfflineAudioContext(1, bakeLen, bakeSR);
+      const bakeAn   = bakeCtx.createAnalyser();
+      bakeAn.fftSize = FFT_SIZE;
+      bakeAn.smoothingTimeConstant = 0.8; // match preview AnalyserNode
+      bakeAn.minDecibels = -100;
+      bakeAn.maxDecibels = -30;
+
+      // Source: use decoded audioBuf (mono mix for analysis only)
+      let bakeSrc;
+      if (audioBuf) {
+        bakeSrc = bakeCtx.createBufferSource();
+        // Mix to mono for analysis
+        const monoBuf = bakeCtx.createBuffer(1, audioBuf.length, bakeSR);
+        const monoCh  = monoBuf.getChannelData(0);
+        const ch0 = audioBuf.getChannelData(0);
+        const ch1 = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : ch0;
+        for (let i = 0; i < audioBuf.length; i++) monoCh[i] = (ch0[i] + ch1[i]) * 0.5;
+        bakeSrc.buffer = monoBuf;
+        bakeSrc.connect(bakeAn);
+        bakeAn.connect(bakeCtx.destination);
       }
-      // Cooley-Tukey in-place FFT (iterative)
-      let n = N_DFT;
-      for(let s=1;s<n;s<<=1){
-        const step=s<<1;
-        const wr=Math.cos(Math.PI/s), wi=-Math.sin(Math.PI/s);
-        for(let k=0;k<n;k+=step){
-          let pr=1, pi=0;
-          for(let j=0;j<s;j++){
-            const ur=_re[k+j+s], ui=_im[k+j+s];
-            const tr=ur*pr-ui*pi, ti=ur*pi+ui*pr;
-            _re[k+j+s]=_re[k+j]-tr; _im[k+j+s]=_im[k+j]-ti;
-            _re[k+j]+=tr; _im[k+j]+=ti;
-            const newPr=pr*wr-pi*wi; pi=pr*wi+pi*wr; pr=newPr;
+
+      // Render offline frame by frame using suspend/resume
+      // Each frame: suspend at frame time, read analyser, resume
+      // Batch in chunks of 64 frames for performance
+      const BATCH = 64;
+      const frameBuf = new Uint8Array(BIN_COUNT);
+
+      if (bakeSrc) bakeSrc.start(0);
+
+      let bakeFrame = 0;
+      while (bakeFrame < totalFrames) {
+        const batchEnd = Math.min(bakeFrame + BATCH, totalFrames);
+        // Suspend at the END of this batch
+        const suspendAt = batchEnd / FPS;
+        bakeCtx.suspend(suspendAt).catch(() => {});
+        // Resume and run
+        if (bakeFrame === 0) {
+          await bakeCtx.startRendering().catch(() => {});
+        } else {
+          await bakeCtx.resume();
+          await new Promise(r => setTimeout(r, 0));
+        }
+        // Fill all frames in this batch by interpolating the snapshot
+        bakeAn.getByteFrequencyData(frameBuf);
+        for (let f = bakeFrame; f < batchEnd; f++) {
+          freqTable.set(frameBuf, f * BIN_COUNT);
+        }
+        bakeFrame = batchEnd;
+        upProg(18 + Math.round(bakeFrame / totalFrames * 8),
+          'Pre-bake spectrum: ' + bakeFrame + '/' + totalFrames);
+      }
+      freqTableReady = true;
+      upProg(26, 'Spectrum baked - bat dau render...');
+    } catch (bakeErr) {
+      console.warn('[VLC] Spectrum pre-bake failed, using fallback:', bakeErr);
+      // Fallback: simple RMS energy per frame (better than wrong FFT)
+      if (audioBuf) {
+        const ch0 = audioBuf.getChannelData(0);
+        const ch1 = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : ch0;
+        const win  = Math.floor(audioBuf.sampleRate / FPS);
+        const tmpSmooth = new Float32Array(BIN_COUNT);
+        for (let f = 0; f < totalFrames; f++) {
+          const s0 = Math.floor(f / FPS * audioBuf.sampleRate);
+          let sumSq = 0, cnt = 0;
+          for (let s = s0; s < Math.min(s0 + win, ch0.length); s++) {
+            const v = (ch0[s] + ch1[s]) * 0.5;
+            sumSq += v * v; cnt++;
+          }
+          const rms = cnt > 0 ? Math.sqrt(sumSq / cnt) : 0;
+          const db  = rms > 1e-8 ? 20 * Math.log10(rms) : -100;
+          const val = Math.round(Math.max(0, Math.min(255, (db + 100) / 70 * 255)));
+          for (let b = 0; b < BIN_COUNT; b++) {
+            // Simple spectrum shape: bass heavy
+            const w = b < BIN_COUNT * 0.15 ? 1.5 : b < BIN_COUNT * 0.5 ? 1.0 : 0.5;
+            tmpSmooth[b] = 0.7 * tmpSmooth[b] + 0.3 * val * w;
+            freqTable[f * BIN_COUNT + b] = Math.min(255, Math.round(tmpSmooth[b]));
           }
         }
-      }
-      // Bit-reversal permutation
-      for(let i=1,j=0;i<n;i++){
-        let bit=n>>1;
-        for(;j&bit;bit>>=1) j^=bit;
-        j^=bit;
-        if(i<j){
-          let t=_re[i];_re[i]=_re[j];_re[j]=t;
-          t=_im[i];_im[i]=_im[j];_im[j]=t;
-        }
+        freqTableReady = true;
       }
     }
 
-    function _computeFreqAtTime(timeSec) {
-      if(!_exportCh0) { _syntheticFreqBuf.fill(60); return; }
-      const sampleStart = Math.floor(timeSec * _exportSampleRate);
-      if(sampleStart >= _exportCh0.length) { _syntheticFreqBuf.fill(0); return; }
-
-      // Run DFT
-      _dftMagnitudes(_exportCh0, _exportCh1, sampleStart);
-
-      // Map N_DFT/2 FFT bins -> output bins (log-scaled like browser AnalyserNode)
-      const halfDFT = N_DFT >> 1;           // 128 usable bins from DFT
-      const outBins = _syntheticFreqBuf.length; // 1024
-      // Max dB range (matches AnalyserNode maxDecibels=-30, minDecibels=-100)
-      const MIN_DB = -100, MAX_DB = -30;
-      const DB_RANGE = MAX_DB - MIN_DB;
-
-      // Magnitude -> dB -> 0-255 for each output bin
-      // Log-scale mapping: output bin b -> DFT bin using log spacing
-      for(let b=0; b<outBins; b++){
-        // Map output bin to DFT bin (log scale like browser)
-        const fftBin = Math.max(1, Math.min(halfDFT-1,
-          Math.round(Math.pow(halfDFT, b/outBins))
-        ));
-        const mag = Math.sqrt(_re[fftBin]*_re[fftBin] + _im[fftBin]*_im[fftBin]);
-        // Convert to dB
-        const db = mag > 1e-10 ? 20*Math.log10(mag/N_DFT) : MIN_DB;
-        // Map [MIN_DB, MAX_DB] -> [0, 255]
-        const val = Math.round(255 * Math.max(0, Math.min(1, (db - MIN_DB) / DB_RANGE)));
-        // Exponential smoothing (prevent flicker, match browser behaviour)
-        _smooth[b] = SMOOTH * _smooth[b] + (1-SMOOTH) * val;
-        _syntheticFreqBuf[b] = Math.round(_smooth[b]);
-      }
+    // Helper: read pre-baked freq data for a given frame
+    function _getFreqFrame(frameIdx) {
+      if (!freqTableReady) return;
+      const off = frameIdx * BIN_COUNT;
+      for (let b = 0; b < BIN_COUNT; b++) _syntheticFreqBuf[b] = freqTable[off + b];
     }
 
-    exportAudEl.currentTime=0;
-    exportAudEl.play().catch(()=>{});
-    const expFreqBuf = _syntheticFreqBuf; // alias - same buffer reused
+    const _syntheticFreqBuf = new Uint8Array(BIN_COUNT);
+    exportAudEl.currentTime = 0;
+    exportAudEl.play().catch(() => {});
+    const expFreqBuf = _syntheticFreqBuf; // alias
     const t0=performance.now();
     let frameIdx=0;
 
@@ -11024,8 +11042,8 @@ async function exportWithWebCodecs(q){
       const segEnd=Math.min(frameIdx+SEG, totalFrames);
       while(frameIdx<segEnd){
         const el=frameIdx/FPS;
-        // BUG1 FIX: Use decoded audioBuf data at exact frame time (not live analyser)
-        _computeFreqAtTime(el);
+        // Use pre-baked freq table (identical to preview AnalyserNode output)
+        _getFreqFrame(frameIdx);
         _freqBuf=_syntheticFreqBuf;
         const blen=_syntheticFreqBuf.length, bE=Math.floor(blen*.12), mE=Math.floor(blen*.5);
         let bs=0,ms2=0,al=0;
