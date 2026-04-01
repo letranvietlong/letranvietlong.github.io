@@ -2429,6 +2429,28 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <p id="dl-success-msg">✅ Xuất thành công! Video đã sẵn sàng.</p>
       <div id="export-summary" style="font-size:.62rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin:4px 0 10px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
       <a class="dl-btn" id="dllink" href="#">⬇ Tải Video Về Máy</a>
+
+      <!-- YouTube Title Suggestion -->
+      <div style="margin-top:14px;padding:12px;background:rgba(255,0,0,.07);border:1px solid rgba(255,80,80,.2);border-radius:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:.62rem;font-weight:700;color:#ff6b6b;font-family:'IBM Plex Mono',monospace">▶ GỢI Ý TIÊU ĐỀ YOUTUBE</span>
+          <button onclick="_genYtTitle()" id="yt-title-btn" style="padding:3px 9px;border-radius:5px;border:1px solid rgba(255,80,80,.4);background:rgba(255,80,80,.1);color:#ff6b6b;font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">✨ AI Gợi ý</button>
+        </div>
+        <!-- Static rule-based suggestion (auto-filled) -->
+        <div id="yt-title-display" style="font-size:.66rem;color:var(--tx);font-family:'IBM Plex Mono',monospace;line-height:1.6"></div>
+        <div id="yt-title-list" style="display:none;margin-top:8px"></div>
+        <button onclick="_copyYtTitle(this)" id="yt-copy-btn" style="display:none;margin-top:8px;width:100%;padding:6px;border-radius:7px;border:1px solid rgba(255,80,80,.3);background:rgba(255,80,80,.08);color:#ff6b6b;font-size:.62rem;cursor:pointer;font-weight:700">📋 Copy tiêu đề</button>
+      </div>
+
+      <!-- Hashtag Suggestion -->
+      <div style="margin-top:10px;padding:12px;background:rgba(0,229,195,.05);border:1px solid rgba(0,229,195,.2);border-radius:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:.62rem;font-weight:700;color:var(--a2);font-family:'IBM Plex Mono',monospace"># GỢI Ý HASHTAG</span>
+          <button onclick="_genExportHashtags()" id="exp-hash-btn" style="padding:3px 9px;border-radius:5px;border:1px solid rgba(0,229,195,.4);background:rgba(0,229,195,.08);color:var(--a2);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:700">✨ AI Hashtag</button>
+        </div>
+        <div id="exp-hash-display" style="font-size:.62rem;color:var(--tx3);line-height:1.8;word-break:break-word"></div>
+        <button onclick="_copyExpHashtags()" id="exp-hash-copy" style="display:none;margin-top:8px;width:100%;padding:6px;border-radius:7px;border:1px solid rgba(0,229,195,.3);background:rgba(0,229,195,.06);color:var(--a2);font-size:.62rem;cursor:pointer;font-weight:700">📋 Copy hashtag</button>
+      </div>
     </div>
   </div>
   <!-- Thumbnail button: below export card, easy to find after export -->
@@ -2822,13 +2844,16 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v14.0';
+const APP_VERSION = 'v14.3';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
   if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
 });
 const VERSION_HISTORY=[
+  ['v14.3','Them chuc nang goi y sau khi xuat video: YouTube Title (5 mau + AI), Hashtag 30 tags (local + AI), click de copy tung tag'],
+  ['v14.2','Fix bgAurora3D: rgba() voi hex alpha (rgba(0,255,120,3d)) la CSS khong hop le, sua thanh decimal alpha'],
+  ['v14.1','Fix text size in exported video: remove fixed px caps on title/artist/lyric fonts, now scale proportionally with canvas width (2K/1080p/720p all correct)'],
   ['v14.0','Fix QuotaExceededError: pre-bake spectrum TRUOC khi tao VideoEncoder, dung pure JS FFT chinh xac (bit-reversal truoc butterfly), khong dung OfflineAudioContext suspend/resume cham'],
   ['v13.9','Fix vol-slider thumb: custom CSS thay the OS circle mac dinh, thu nho 10px, mau a2, hop voi UI'],
   ['v13.8','Di chuyen Thumbnail button xuong duoi export card (vi tri hop ly hon, ben canh nut Tuy Chinh Lai)'],
@@ -9584,7 +9609,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   const waveY=cy+ch+H*.018;
   // 9:16: less wave height so title fits nicely below center
   const remainH = H - waveY;
-  const titleSz = Math.min(W*.056, 42);
+  const titleSz = W*.056; // FIX: no fixed px cap
   const minTitleSpace = titleSz * 2.5;
   const maxWaveH = remainH - minTitleSpace - H*.02;
   const waveHBase = is916 ? H*.05 : H*.08;
@@ -9612,7 +9637,8 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   //  TITLE + ARTIST -- Premium Typography 
   const tyY = waveY + waveH + H*.052;
   // 9:16: slightly smaller text so it fits in portrait width nicely
-  const tsz = Math.min(is916 ? W*.072 : W*.056, 44) * (1 + bass * 0.018);
+  // FIX: no fixed px cap - scale with canvas width (correct at all resolutions)
+  const tsz = (is916 ? W*.072 : W*.056) * (1 + bass * 0.018);
   ovX.save();
   ovX.textAlign='center'; ovX.textBaseline='middle';
 
@@ -9655,7 +9681,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
 
   //  SEPARATOR -- ng k ngang c dot 
   const sepY = tyY + tsz * 0.72;
-  const sepW = Math.min(W * 0.32, 180);
+  const sepW = W * 0.28; // FIX: relative to canvas width
   // Line tri
   const lg1=ovX.createLinearGradient(W/2-sepW,sepY,W/2-tsz*.35,sepY);
   lg1.addColorStop(0,'transparent'); lg1.addColorStop(1,`${wc}88`);
@@ -9664,7 +9690,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   // Dot trung tm
   ovX.fillStyle=wc; ovX.globalAlpha=0.7+bass*0.25;
   ovX.shadowColor=wc; ovX.shadowBlur=6+bass*4;
-  ovX.beginPath(); ovX.arc(W/2,sepY,2.5,0,Math.PI*2); ovX.fill();
+  ovX.beginPath(); ovX.arc(W/2,sepY,Math.max(2.5,W*.001),0,Math.PI*2); ovX.fill();
   ovX.shadowBlur=0; ovX.globalAlpha=1;
   // Line phi
   const lg2=ovX.createLinearGradient(W/2+tsz*.35,sepY,W/2+sepW,sepY);
@@ -9673,7 +9699,7 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
   ovX.beginPath(); ovX.moveTo(W/2+tsz*.3,sepY); ovX.lineTo(W/2+sepW,sepY); ovX.stroke();
 
   //  ARTIST -- letter-spaced uppercase sang trng 
-  const asz = Math.min(W*.024, 18);
+  const asz = W*.024; // FIX: no fixed px cap
   const artistY = sepY + tsz * 0.52;
   ovX.font=`600 ${asz}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.letterSpacing=`${Math.round(asz*0.35)}px`;
@@ -10301,8 +10327,8 @@ function bgAurora3D(c,W,H,t,bass,p){
     }
     c.lineTo(W,H);c.closePath();
     const g=c.createLinearGradient(0,H*(b.cy-b.amp),0,H*(b.cy+b.amp));
-    g.addColorStop(0,b.col+(alpha*255|0).toString(16).padStart(2,'0')+')');
-    g.addColorStop(.5,b.col+(alpha*180|0).toString(16).padStart(2,'0')+')');
+    g.addColorStop(0,b.col+alpha.toFixed(3)+')');
+    g.addColorStop(.5,b.col+(alpha*.7).toFixed(3)+')');
     g.addColorStop(1,'transparent');
     c.fillStyle=g;c.globalCompositeOperation='screen';c.fill();
   });
@@ -10526,7 +10552,7 @@ function drawWaveOv(W,H,wt,wc,wh,ws,wp){
 function drawTitleOv(W,Y,title,artist){
   if(!title&&!artist)return;
   ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
-  const ts=Math.min(W*.052,38);
+  const ts=W*.052; // FIX: no fixed px cap
   ovX.font=`900 ${ts}px Be Vietnam Pro,Arial,sans-serif`;
   ovX.shadowColor='rgba(0,0,0,.9)';ovX.shadowBlur=16;
   ovX.fillStyle='#fff';ovX.fillText(title||'',W/2,Y,W*.88);ovX.shadowBlur=0;
@@ -11127,6 +11153,8 @@ async function exportWithWebCodecs(q){
     $('dl-success-msg').textContent=`\u2705 Xu\u1EA5t xong! MP4 ${EW}\u00D7${EH} \u00B7 ${_mbSize}MB`;
     $('dllink').textContent=`\u2B07 T\u1EA3i MP4 v\u1EC1 m\u00E1y (${_mbSize}MB)`;
     $('dlbox').style.display='block';
+  // Auto-fill YouTube title + hashtag suggestions
+  setTimeout(_fillExportSuggestions, 200);
     btn.disabled=false; upProg(100,'Ho\u00E0n t\u1EA5t!','');
     _showCancelBtn(false);
     // FIX 9: call showExportSummary + addExportHistory (were missing in WebCodecs path)
@@ -11277,6 +11305,8 @@ function _finishExport(blob, ext, fmt, btn, q){
   $('dl-success-msg').textContent=`\u2705 Video ${fmt} \u00B7 ${mbSize}MB`;
   $('dllink').textContent=`\u2B07 T\u1EA3i ${fmt} v\u1EC1 m\u00E1y (${mbSize}MB)`;
   $('dlbox').style.display='block';
+  // Auto-fill YouTube title + hashtag suggestions
+  setTimeout(_fillExportSuggestions, 200);
   btn.disabled=false; upProg(100,'Ho\u00E0n t\u1EA5t!','');
   if(typeof showExportSummary==='function') showExportSummary(q.label+' '+fmt, `${mbSize}MB`);
   releaseWakeLock(); _showCancelBtn(false);
@@ -11382,6 +11412,8 @@ async function exportWithMediaRecorder(q){
       $('dl-success-msg').textContent=`\u2705 Video ${fmt} ${EW}\u00D7${EH} \u00B7 ${mbSize}MB`;
       $('dllink').textContent=`\u2B07 T\u1EA3i ${fmt} v\u1EC1 m\u00E1y (${mbSize}MB)`;
       $('dlbox').style.display='block';
+  // Auto-fill YouTube title + hashtag suggestions
+  setTimeout(_fillExportSuggestions, 200);
       btn.disabled=false; upProg(100,'Ho\u00E0n t\u1EA5t!','');
       if(typeof showExportSummary==='function') showExportSummary(q.label+' '+fmt, `${mbSize}MB`);
       releaseWakeLock();
@@ -11530,6 +11562,178 @@ function _seekLeave(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _onReady);
   else _onReady();
 })();
+
+
+/* EXPORT SUGGESTIONS: YouTube Title + Hashtag */
+
+// Auto-fill suggestions when download box appears
+function _fillExportSuggestions() {
+  const title  = ($('cc-title')?.value  || window._exportTitle  || 'TEN BAI HAT').toUpperCase().trim();
+  const artist = ($('cc-artist')?.value || window._exportArtist || 'Ca Si').trim();
+  _renderYtTitles(title, artist);
+  _renderExportHashtags(title, artist);
+}
+
+// 1. YouTube Title
+function _renderYtTitles(title, artist) {
+  const yr = new Date().getFullYear();
+  const titleNorm = title.charAt(0) + title.slice(1).toLowerCase(); // Title case
+  const artistNorm = artist;
+  const suggestions = [
+    title + ' - ' + artistNorm + ' | Nh\u1EA1c TikTok Remix ' + yr,
+    title + ' - ' + artistNorm + ' | Nh\u1EA1c Remix Hay Nh\u1EA5t ' + yr,
+    titleNorm + ' (B\u1EA3n Chu\u1EA9n) - ' + artistNorm + ' | Nh\u1EA1c Vi\u1EC7t ' + yr,
+    title + ' - ' + artistNorm + ' | Nh\u1EA1c Tr\u1EB1 ' + yr + ' Hay Nh\u1EA5t',
+    titleNorm + ' Remix - ' + artistNorm + ' | Nh\u1EA1c Hot TikTok ' + yr,
+  ];
+  const box = $('yt-title-display');
+  const listBox = $('yt-title-list');
+  const copyBtn = $('yt-copy-btn');
+  if (!box) return;
+  // Show first suggestion inline
+  box.textContent = suggestions[0];
+  box.style.color = 'var(--tx)';
+  box.style.cursor = 'pointer';
+  box.title = 'Click de chon tieu de khac';
+  box.onclick = () => {
+    listBox.style.display = listBox.style.display === 'none' ? 'block' : 'none';
+  };
+  // Show all suggestions as list
+  listBox.innerHTML = suggestions.map((s, i) =>
+    '<div onclick="$(\'yt-title-display\').textContent=this.textContent;$(\'yt-title-list\').style.display=\'none\'" style="padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);margin-bottom:4px;font-size:.62rem;color:var(--tx);cursor:pointer;font-family:\'IBM Plex Mono\',monospace;transition:background .15s" onmouseover="this.style.background=\'var(--surface3)\'" onmouseout="this.style.background=\'var(--surface2)\'">' + s + '</div>'
+  ).join('');
+  if (copyBtn) copyBtn.style.display = 'block';
+  window._ytTitleSuggestions = suggestions;
+}
+
+async function _genYtTitle() {
+  const title  = ($('cc-title')?.value  || '').toUpperCase().trim() || 'TEN BAI HAT';
+  const artist = ($('cc-artist')?.value || '').trim() || 'Ca Si';
+  const btn = $('yt-title-btn');
+  const key = getAnthropicKey();
+  if (!key) {
+    _renderYtTitles(title, artist);
+    toast('\u0110ang d\u00F9ng g\u1EE3i \u00FD local (ch\u01B0a c\u00F3 API key)','info',2500);
+    return;
+  }
+  btn.disabled = true; btn.textContent = '\u23F3...';
+  try {
+    const yr = new Date().getFullYear();
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:
+        'Tao 5 tieu de YouTube cho video nhac Viet Nam. Bai: "'+title+'" - Ca si: "'+artist+'". Nam: '+yr+'. Rule: TEN BAI HAT - Ten Ca Si | Loai nhac + nam. Vi du: TEN BAI HAT - Ca Si | Nhac TikTok Remix '+yr+'. Tra ve JSON array 5 chuoi, khong markdown: ["title1","title2","title3","title4","title5"]'
+      }]})
+    });
+    const d = await res.json();
+    const text = (d.content?.[0]?.text || '[]').replace(/```json|```/g,'').trim();
+    const arr = JSON.parse(text);
+    if (Array.isArray(arr) && arr.length) {
+      const box = $('yt-title-display');
+      const listBox = $('yt-title-list');
+      const copyBtn = $('yt-copy-btn');
+      box.textContent = arr[0];
+      box.style.cursor = 'pointer';
+      box.onclick = () => { listBox.style.display = listBox.style.display === 'none' ? 'block' : 'none'; };
+      listBox.innerHTML = arr.map(s =>
+        '<div onclick="$(\'yt-title-display\').textContent=this.textContent;$(\'yt-title-list\').style.display=\'none\'" style="padding:5px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--surface2);margin-bottom:4px;font-size:.62rem;color:var(--tx);cursor:pointer;font-family:\'IBM Plex Mono\',monospace;transition:background .15s" onmouseover="this.style.background=\'var(--surface3)\'" onmouseout="this.style.background=\'var(--surface2)\'">' + s + '</div>'
+      ).join('');
+      if (copyBtn) copyBtn.style.display = 'block';
+      window._ytTitleSuggestions = arr;
+      toast('\u2705 AI t\u1EA1o ' + arr.length + ' ti\u00EAu \u0111\u1EC1!', 'success', 2000);
+    }
+  } catch(e) {
+    _renderYtTitles(title, artist);
+  }
+  btn.disabled = false; btn.textContent = '\u2728 AI G\u1EE3i \u00FD';
+}
+
+function _copyYtTitle(btn) {
+  const t = $('yt-title-display')?.textContent || '';
+  if (!t) return;
+  navigator.clipboard?.writeText(t).then(() => {
+    btn.textContent = '\u2705 Da copy!';
+    setTimeout(() => { btn.textContent = '\u{1F4CB} Copy ti\u00EAu \u0111\u1EC1'; }, 1800);
+  });
+}
+
+// 2. Hashtags
+function _renderExportHashtags(title, artist) {
+  const yr = new Date().getFullYear();
+  const t = (title||'').toLowerCase().replace(/[^a-z0-9\u00C0-\u1EF9]/gi,'');
+  const a = (artist||'').toLowerCase().replace(/[^a-z0-9\u00C0-\u1EF9]/gi,'');
+  const base = [
+    '#nhacviet','#nhacremix','#musicvideo','#nhachot','#remix'+yr,
+    '#nhactiktok','#nhacmoi','#top1nhac','#nhactrend','#xuhuong'+yr,
+    '#fyp','#foryou','#viral','#trending','#nhacviet'+yr,
+    '#vietlongcreator','#nhacvietnam','#nhactre','#amnhac','#cover'
+  ];
+  const specific = [
+    '#'+t, '#'+a,
+    '#nhac'+t, '#'+a+'official',
+    '#'+t+yr, '#'+a+yr,
+    '#'+t+'remix', '#'+a+'music',
+    '#'+t+'mv', '#nhachot'+yr
+  ].filter(h => h.length > 2);
+  const all = [...new Set([...specific, ...base])].slice(0, 30);
+  const box = $('exp-hash-display');
+  const copyBtn = $('exp-hash-copy');
+  if (!box) return;
+  box.innerHTML = all.map(h =>
+    '<span onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent);this.style.background=\'rgba(0,229,195,.3)\';setTimeout(()=>this.style.background=\'rgba(0,229,195,.1)\',800)" style="display:inline-block;margin:2px 3px;padding:3px 8px;border-radius:12px;background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.25);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;transition:background .2s" title="Click de copy">' + h + '</span>'
+  ).join('');
+  window._expHashtags = all;
+  if (copyBtn) copyBtn.style.display = 'block';
+}
+
+async function _genExportHashtags() {
+  const title  = ($('cc-title')?.value  || '').toUpperCase().trim() || 'TEN BAI HAT';
+  const artist = ($('cc-artist')?.value || '').trim() || 'Ca Si';
+  const btn = $('exp-hash-btn');
+  const key = getAnthropicKey();
+  if (!key) {
+    _renderExportHashtags(title, artist);
+    toast('\u0110ang d\u00F9ng hashtag local','info',2000);
+    return;
+  }
+  btn.disabled = true; btn.textContent = '\u23F3...';
+  try {
+    const yr = new Date().getFullYear();
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
+        'Tao 30 hashtag cho video nhac Viet Nam len YouTube/TikTok. Bai hat: "'+title+'", Ca si: "'+artist+'", Nam: '+yr+'. Tra ve JSON array khong markdown: ["#tag1","#tag2",...30 tags]. Mix giua: hashtag pho bien, hashtag theo ten bai/ca si, hashtag trending '+yr+'.'
+      }]})
+    });
+    const d = await res.json();
+    const text = (d.content?.[0]?.text || '[]').replace(/```json|```/g,'').trim();
+    const arr = JSON.parse(text);
+    if (Array.isArray(arr) && arr.length) {
+      const box = $('exp-hash-display');
+      const copyBtn = $('exp-hash-copy');
+      box.innerHTML = arr.map(h =>
+        '<span onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent);this.style.background=\'rgba(0,229,195,.3)\';setTimeout(()=>this.style.background=\'rgba(0,229,195,.1)\',800)" style="display:inline-block;margin:2px 3px;padding:3px 8px;border-radius:12px;background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.25);color:var(--a2);font-size:.6rem;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;transition:background .2s" title="Click de copy">' + h + '</span>'
+      ).join('');
+      window._expHashtags = arr;
+      if (copyBtn) copyBtn.style.display = 'block';
+      toast('\u{1F3F7} ' + arr.length + ' hashtag AI!', 'success', 2000);
+    }
+  } catch(e) {
+    _renderExportHashtags(title, artist);
+  }
+  btn.disabled = false; btn.textContent = '\u2728 AI Hashtag';
+}
+
+function _copyExpHashtags() {
+  const tags = (window._expHashtags || []).join(' ');
+  if (!tags) return;
+  navigator.clipboard?.writeText(tags).then(() => {
+    const btn = $('exp-hash-copy');
+    if (btn) { btn.textContent = '\u2705 Da copy!'; setTimeout(() => { btn.textContent = '\u{1F4CB} Copy hashtag'; }, 1800); }
+  });
+}
 
 
 function showOnboarding(){
