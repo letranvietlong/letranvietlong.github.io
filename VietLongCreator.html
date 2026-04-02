@@ -401,7 +401,7 @@ main {
 .upload-area {
   border:2px dashed var(--line2);
   border-radius:var(--r2);
-  padding:60px 32px;
+  padding:32px 32px;
   text-align:center;
   cursor:pointer;
   transition:all .3s;
@@ -446,8 +446,8 @@ main {
 }
 .ua-btn:hover { transform:scale(1.04); box-shadow:var(--glow1); }
 .audio-loaded {
-  display:none; margin-top:16px;
-  padding:14px 18px;
+  display:none; margin-top:8px;
+  padding:10px 14px;
   background:rgba(0,229,195,.06);
   border:1px solid rgba(0,229,195,.2);
   border-radius:var(--r);
@@ -1654,8 +1654,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 <!-- Global drag-and-drop overlay -->
 <div id="global-drop-overlay" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none">
   <div style="font-size:3rem">&#x1F3B5;</div>
-  <div style="font-size:1.1rem;font-weight:700;color:#fff;font-family:'IBM Plex Mono',monospace">Th\u1EA3 file nh\u1EA1c v\u00E0o \u0111\u00E2y</div>
-  <div style="font-size:.75rem;color:rgba(255,255,255,.6)">MP3 \u00B7 WAV \u00B7 OGG \u00B7 M4A \u00B7 FLAC</div>
+  <div style="font-size:1.1rem;font-weight:700;color:#fff;font-family:'IBM Plex Mono',monospace">Thả file nhạc vào đây</div>
+  <div style="font-size:.75rem;color:rgba(255,255,255,.6)">MP3 · WAV · OGG · M4A · FLAC</div>
 </div>
 
 <!-- HEADER -->
@@ -1796,7 +1796,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   <!-- RIGHT PILLS -->
   <div class="hpills">
     <div class="hpill ver" id="ver-pill" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer"></div>
-    <div class="hpill" onclick="showExportHistory()" title="Lịch sử xuất" style="cursor:pointer;font-size:.6rem">&#x1F4CB;</div>
+    <div class="hpill" onclick="showExportHistory()" title="Lịch sử xuất" style="cursor:pointer;font-size:.6rem;padding:3px 10px">Hist</div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -1838,14 +1838,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <div class="al-name" id="aname">&#x2014;</div>
       <div class="al-meta" id="ameta">&#x2014;</div>
     </div>
-    <button class="al-change" onclick="resetAudio()">\u0110\u1ED5i File</button>
+    <button class="al-change" onclick="resetAudio()">Đổi File</button>
   </div>
   <!-- Mini waveform after upload -->
-  <canvas id="upload-waveform" height="48"
-    style="display:none;width:100%;border-radius:8px;background:rgba(0,0,0,.3);margin-top:6px;cursor:pointer"
-    title="Click \u0111\u1EC3 phát xem tr\u01B0\u1EDBc" onclick="togglePlay()"></canvas>
+  <canvas id="upload-waveform" height="32"
+    style="display:none;width:100%;height:44px;border-radius:6px;background:rgba(0,0,0,.25);margin-top:4px;cursor:pointer"
+    title="Click để phát xem trước" onclick="togglePlay()"></canvas>
 
-  <div class="note">💡 Website sẽ tự động tạo hiệu ứng hình ảnh đồng bộ với nhịp nhạc của bạn — không cần video gốc.</div>
+  <div class="note" style="margin:6px 0">&#x1F4A1; Website s&#x1EBD; t&#x1EF1; &#x0111;&#x1ED9;ng t&#x1EA1;o hi&#x1EC7;u &#x1EE9;ng h&#xEC;nh &#x1EA3;nh &#x0111;&#x1ED3;ng b&#x1ED9; v&#x1EDB;i nh&#x1ECB;p nh&#x1EA1;c — kh&#xF4;ng c&#x1EA7;n video g&#x1ED1;c.</div>
 
   <!-- AI Nhận Dạng Bài Hát -->
   <div class="ai-detect-box" id="ai-detect-box">
@@ -1951,8 +1951,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   </div>
   <!-- A-B Loop controls -->
   <div style="display:flex;align-items:center;gap:6px;margin-top:4px;height:26px">
-    <button id="ab-a-btn" onclick="_setAbPoint('A')" title="\u0110\u1EB7t \u0111i\u1EC3m A (b\u1EAFt \u0111\u1EA7u l\u1EB7p)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s">A</button>
-    <button id="ab-b-btn" onclick="_setAbPoint('B')" title="\u0110\u1EB7t \u0111i\u1EC3m B (k\u1EBFt th\u00FAc l\u1EB7p)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s">B</button>
+    <button id="ab-a-btn" onclick="_setAbPoint('A')" title="Đặt điểm A (bắt đầu lặp)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s">A</button>
+    <button id="ab-b-btn" onclick="_setAbPoint('B')" title="Đặt điểm B (kết thúc lặp)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s">B</button>
     <span id="ab-display" style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace"></span>
     <button id="ab-clear-btn" onclick="_clearAbLoop()" style="display:none;padding:2px 6px;border-radius:5px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.1);color:#f87171;font-size:.55rem;cursor:pointer">&#x2715;</button>
     <!-- Export time estimate -->
@@ -1991,7 +1991,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
     <!-- Clip length selector -->
     <div style="margin-bottom:10px">
-      <div style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">&#x23F1; \u0110\u1ED9 d\u00E0i xu\u1EA5t</div>
+      <div style="font-size:.58rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px">&#x23F1; Độ dài xuất</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="clip-btn active" data-len="full" onclick="_setClipLen('full',this)">&#x1F3AC; Full</button>
         <button class="clip-btn" data-len="60"  onclick="_setClipLen('60',this)">60s Reels</button>
@@ -1999,14 +1999,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
         <button class="clip-btn" data-len="15"  onclick="_setClipLen('15',this)">15s Shorts</button>
       </div>
       <div id="clip-start-row" style="display:none;margin-top:7px">
-        <div style="font-size:.6rem;color:var(--tx3);margin-bottom:3px">&#x25B6; B\u1EAFt \u0111\u1EA7u t\u1EEB: <span id="clip-start-disp" style="color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">00:00</span></div>
+        <div style="font-size:.6rem;color:var(--tx3);margin-bottom:3px">&#x25B6; Bắt đầu từ: <span id="clip-start-disp" style="color:var(--a2);font-family:'IBM Plex Mono',monospace;font-weight:700">00:00</span></div>
         <input type="range" id="clip-start-slider" min="0" max="100" value="0" step="1" oninput="_updateClipStart(this.value)" style="width:100%">
       </div>
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      <button class="exp-btn" id="expbtn" onclick="startExport()">&#x26A1; Xu\u1EA5t Video</button>
-      <button id="cancel-export-btn" onclick="cancelExport()" style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace">&#x2715; H\u1EE7y</button>
+      <button class="exp-btn" id="expbtn" onclick="startExport()">&#x26A1; Xuất Video</button>
+      <button id="cancel-export-btn" onclick="cancelExport()" style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace">&#x2715; Hủy</button>
     </div>
     <div class="prog-bar-wrap" id="progwrap">
       <div class="prog-header">
@@ -2142,7 +2142,7 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v15.2';
+const APP_VERSION = 'v15.7';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
@@ -2155,6 +2155,11 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(_) {}
 });
 const VERSION_HISTORY=[
+  ['v15.7','Fix QuotaExceededError: VE yield after configure, FFT_N 2048->512 (4x nhanh), API response safe parsing, cache-control no-cache'],
+  ['v15.6','Fix Step 3 features: (1) addSticker/drawStickers implemented, (2) Stickers+Watermark hooked into all templates via drawFrame, (3) Text animation connected to fullMC, (4) Progress bar style works on all templates, (5) clearStickers alias fix'],
+  ['v15.5','Fix icon thua trong header: doi history button tu emoji sang text Hist'],
+  ['v15.4','Fix font loi: chuyen \\uXXXX escape trong HTML thanh ky tu Unicode thuc su - Xuat Video, Huy, Do dai xuat, Dat diem A/B hien thi dung'],
+  ['v15.3','Thu nho waveform preview Step 1: giam chieu cao tu 96px xuong 44px de vua man hinh'],
   ['v15.2','Fix download bi chan tren github.io: dung showSaveFilePicker() (Chrome File System Access API) voi fallback a.click(). Blob URL khong bi revoke som. Ap dung cho tat ca: MP4, WebM, Thumbnail, GIF'],
   ['v15.1','Xoa tab Affiliate TikTok: HTML panel (320 lines), ~2300 lines JS, CSS .aff-, HeyGen/TikTok functions. Giam 158 KB. Tap trung vao tab Tao Video'],
   ['v15.0','Major UX update: (1) Drag&drop toan trang + waveform mini, (2) AI goi y mau + tab Gan Day, (3) Font selector + Zoom/Pan anh, (4) Export clip ngan 15/30/60s, (5) A-B loop preview + uoc tinh thoi gian export, (6) Cat nhac chuyen vao Buoc 3, (7) Lich su export 10 entries'],
@@ -2217,8 +2222,8 @@ async function testAnthropicKey(){
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:5,messages:[{role:'user',content:'Hi'}]})
     });
-    const data=await resp.json();
-    if(resp.ok&&data.content){
+    const data=await resp.json().catch(()=>({}));
+    if(resp.ok&&data&&data.content){
       if(status){status.textContent='\u2705 API key h\u1EE3p l\u1EC7 \u00B7 Claude s\u1EB5n s\u00E0ng';status.style.color='#22c55e';}
       toast('\u2705 API key ho\u1EA1t \u0111\u1ED9ng t\u1ED1t!','success',3000);
       if(typeof affLog==='function') affLog('ok','\u2705 Claude API key h\u1EE3p l\u1EC7');
@@ -2368,6 +2373,46 @@ const STICKER_PRESETS=['\u{1F525}','\u26A1','\u{1F4AB}','\u{1F3B5}','\u{1F3B6}',
 
 // Touch/mouse drag for sticker positioning
 
+/* Sticker system */
+let _stickers = []; // [{emoji, x, y, size, rot}] - x/y as fraction of canvas W/H
+
+function addSticker(emoji) {
+  _stickers.push({ emoji, x: 0.5, y: 0.5, size: 0.08, rot: 0 });
+  toast(emoji + ' Sticker added - drag to position', 'success', 1200);
+  bgCache = null;
+}
+function clearAllStickers() {
+  _stickers = [];
+  bgCache = null;
+  toast('Stickers cleared', 'info', 1000);
+}
+function removeLastSticker() {
+  if (_stickers.length) { _stickers.pop(); bgCache = null; }
+}
+function drawStickers(ctx, W, H, bass) {
+  if (!_stickers || !_stickers.length) return;
+  ctx.save();
+  _stickers.forEach(s => {
+    const sz = (s.size || 0.08) * Math.min(W, H) * (1 + (bass||0) * 0.08);
+    const x  = (s.x || 0.5) * W;
+    const y  = (s.y || 0.5) * H;
+    ctx.font = sz + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.92;
+    if (s.rot) {
+      ctx.translate(x, y);
+      ctx.rotate(s.rot);
+      ctx.fillText(s.emoji, 0, 0);
+      ctx.rotate(-s.rot);
+      ctx.translate(-x, -y);
+    } else {
+      ctx.fillText(s.emoji, x, y);
+    }
+    ctx.globalAlpha = 1;
+  });
+  ctx.restore();
+}
 
 //  Custom Watermark / Branding 
 let _watermarkText='';
@@ -4543,7 +4588,7 @@ async function _drawUploadWaveform(file) {
     const buf = await decCtx.decodeAudioData(ab);
     const data = buf.getChannelData(0);
     const W = cvs.offsetWidth || 600; cvs.width = W * 2; // retina
-    const H = cvs.height = 96;
+    const H = cvs.height = 44;
     const ctx2 = cvs.getContext('2d');
     ctx2.clearRect(0, 0, W*2, H);
     const step = Math.ceil(data.length / (W * 2));
@@ -5292,7 +5337,7 @@ function buildCfg(force=false){
         <span style="font-size:.6rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace">\u{1F3AD} STICKER / EMOJI</span>
         <div style="display:flex;gap:4px">
           <button onclick="removeLastSticker()" style="padding:2px 8px;border-radius:5px;border:1px solid var(--line2);background:var(--surface2);color:var(--tx3);font-size:.58rem;cursor:pointer">\u21A9 X\u00F3a</button>
-          <button onclick="clearStickers()" style="padding:2px 8px;border-radius:5px;border:1px solid #f87171;background:none;color:#f87171;font-size:.58rem;cursor:pointer">\u2715 X\u00F3a h\u1EBFt</button>
+          <button onclick="clearAllStickers()" style="padding:2px 8px;border-radius:5px;border:1px solid #f87171;background:none;color:#f87171;font-size:.58rem;cursor:pointer">\u2715 X\u00F3a h\u1EBFt</button>
         </div>
       </div>
       <div class="sticker-grid">${STICKER_PRESETS.map((e,i)=>`<span class="sticker-item" onclick="addSticker('${e}')" title="Th\u00EAm ${e}">${e}</span>`).join('')}</div>
@@ -5559,6 +5604,18 @@ function drawFrame(){
   else if(s==='bars3d') fullBars3D(W,H,aiT,bass,eng,p,title,artist);
   else if(s==='lv2')    fullLV2(W,H,aiT,bass,mid,eng,p,title,artist);
   else if(s==='lv3')    fullLV3(W,H,aiT,bass,mid,eng,p,title,artist);
+  // Global overlays: stickers + watermark on ALL templates (except mc which handles internally)
+  if(s!=='mc'){
+    if(typeof _stickers!=='undefined'&&_stickers.length) drawStickers(ovX,W,H,bass);
+    if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)) drawWatermark(ovX,W,H);
+    // Progress bar style for non-mc templates
+    if(typeof _pbStyle!=='undefined'&&_pbStyle!=='default'&&typeof drawProgressBar==='function'){
+      const _audCur=_renderTime||0,_audDur=_renderDur||audEl?.duration||1;
+      const _prog=_audDur>0?Math.min(1,_audCur/_audDur):0;
+      const _pW=W,_pH=H;
+      drawProgressBar(ovX,0,0,_pW,_pH,_pW,_pH,_prog,_audCur,_audDur,chosenTpl?.pal?.wc||'#22d3ee',chosenTpl?.pal);
+    }
+  }
   if(typeof _applyPostProcessing==='function'&&!_isExporting){
     _applyPostProcessing(bgCvs.width,bgCvs.height);
   }
@@ -8976,10 +9033,16 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
     fullMC._tg.addColorStop(1,'#ffffff');
     fullMC._tgKey=_tgKey;
   }
-  ovX.fillStyle=fullMC._tg;
-  ovX.shadowColor='rgba(0,0,0,.5)'; ovX.shadowBlur=8;
-  ovX.fillText(title, W/2, tyY, W*.88);
-  ovX.shadowBlur=0; ovX.letterSpacing='0px';
+  if(typeof _textAnimStyle!=='undefined'&&_textAnimStyle!=='default'){
+    ovX.restore();
+    drawAnimatedTitle(ovX,title,W/2,tyY,W*.88,tsz,fullMC._tg||'#fff',wc,bass,mid,aiT);
+    ovX.save();ovX.textAlign='center';ovX.textBaseline='middle';
+  } else {
+    ovX.fillStyle=fullMC._tg;
+    ovX.shadowColor='rgba(0,0,0,.5)'; ovX.shadowBlur=8;
+    ovX.fillText(title, W/2, tyY, W*.88);
+    ovX.shadowBlur=0; ovX.letterSpacing='0px';
+  }
 
   //  SEPARATOR -- ng k ngang c dot 
   const sepY = tyY + tsz * 0.72;
@@ -9024,6 +9087,10 @@ function fullMC(W,H,t,bass,mid,eng,p,title,artist){
 
   // Lyrics
   drawLyrics(ovX,W,H);
+  // Stickers (always on top)
+  if(typeof _stickers!=='undefined'&&_stickers.length) drawStickers(ovX,W,H,_bass);
+  // Watermark (on overlay)
+  if(typeof _watermarkText!=='undefined'&&(_watermarkText||_watermarkImg)) drawWatermark(ovX,W,H);
 }
 
 /*  PARTICLES FULL  */
@@ -10237,7 +10304,7 @@ async function exportWithWebCodecs(q){
     // (VideoEncoder times out after ~60s idle if bake takes too long)
     upProg(20, 'Pre-bake audio spectrum (pure JS FFT)...');
 
-    const FFT_N    = 2048;   // match preview fftSize
+    const FFT_N    = 512;    // 512 = fast bake, same visual quality as 2048
     const BIN_COUNT = FFT_N >> 1; // 1024 output bins
     const freqTable = new Uint8Array(totalFrames * BIN_COUNT);
 
@@ -10339,17 +10406,17 @@ async function exportWithWebCodecs(q){
       error:e=>console.error('VideoEncoder:',e),
     });
     videoEncoder.configure({
-      // PERF: avc1.640033 = High Profile L5.1 (supports up to 4K@30)
-      // avc1.4d0028 = Main Profile L4.0 (supports up to 1080p@30)
       codec: EW*EH>2_073_600 ? 'avc1.640033' : 'avc1.4d0028',
       width:EW, height:EH,
       bitrate:q.videoBps,
       framerate:FPS,
       bitrateMode:'variable',
-      // 'quality' mode: higher quality, uses GPU efficiently (not realtime which limits quality)
       latencyMode:'quality',
       hardwareAcceleration:'prefer-hardware',
     });
+    // Keep VideoEncoder alive: yield immediately after configure so browser
+    // registers the encoder as 'active' before any potential blocking code
+    await new Promise(r => setTimeout(r, 0));
 
     //  AudioEncoder 
     const audioEncoder=new AudioEncoder({
