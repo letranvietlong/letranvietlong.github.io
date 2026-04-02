@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VietLong Creator — AI Music Video Studio</title>
+<title>VietLong Creator v15.9 — AI Music Video Studio</title>
 <meta name="description" content="Tạo video âm nhạc chuyên nghiệp chuẩn YouTube/TikTok miễn phí. 18 template đẹp, hiệu ứng beat sync, tự động hóa upload YouTube.">
 <meta name="keywords" content="tạo video âm nhạc, music video, nhạc việt, youtube, tiktok, remix, vietlong creator">
 <meta name="author" content="Lê Trần Việt Long">
@@ -25,6 +25,9 @@
 <!-- PWA manifest inline -->
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;VietLong Creator&quot;,&quot;short_name&quot;:&quot;VLC&quot;,&quot;start_url&quot;:&quot;/VietLongCreator.html&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2305060c&quot;,&quot;theme_color&quot;:&quot;%2305060c&quot;,&quot;description&quot;:&quot;AI Music Video Studio&quot;}">
 <meta name="theme-color" content="#05060c">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VietLong Creator">
@@ -2142,7 +2145,7 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v15.9';
+const APP_VERSION = 'v16.0';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
@@ -2155,6 +2158,7 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(_) {}
 });
 const VERSION_HISTORY=[
+  ['v16.0','Changelog UI: expandable cards voi tag Fix/Feature/Perf/UX, bullet points chi tiet, click de mo rong tung version'],
   ['v15.9','Fix RangeError ArrayBuffer OOM: (1) pre-flight size warning, (2) StreamTarget cho file lon (>500MB) luu thang vao disk, (3) RangeError bao loi ro rang thay vi crash'],
   ['v15.8','Fix blob ERR_FILE_NOT_FOUND: tang auto-revoke timeout tu 5 phut len 2 gio (export bai dai can blob URL song); Fix Canvas2D readback warning: willReadFrequently:true'],
   ['v15.7','Fix QuotaExceededError: VE yield after configure, FFT_N 2048->512 (4x nhanh), API response safe parsing, cache-control no-cache'],
@@ -2255,21 +2259,161 @@ function showVersionHistory(){
   if(!modal){
     modal=document.createElement('div');
     modal.id='ver-modal';
-    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center';
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center';
     document.body.appendChild(modal);
   }
-  const rows=VERSION_HISTORY.slice().reverse().map(([v,desc])=>
-    `<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2)">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:${v===APP_VERSION?'var(--a2)':'var(--tx3)'};font-weight:${v===APP_VERSION?'800':'400'};min-width:48px">${v}</span>
-      <span style="font-size:.65rem;color:${v===APP_VERSION?'var(--tx)':'var(--tx3)'}">${desc}</span>
-    </div>`
-  ).join('');
-  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(520px,90vw);max-height:80vh;overflow-y:auto">
-    <div style="font-size:.8rem;font-weight:800;color:var(--a2);margin-bottom:14px;font-family:'IBM Plex Mono',monospace">\u{1F4CB} CHANGELOG</div>
-    ${rows}
-    <button onclick="$('ver-modal').style.display='none'" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.68rem">\u0110\u00F3ng</button>
+
+  // Tag config
+  const TAG={
+    fix:     {label:'\u{1F527} Fix',     bg:'rgba(239,68,68,.15)',  color:'#f87171'},
+    feature: {label:'\u2728 Feature',   bg:'rgba(0,229,195,.12)',  color:'var(--a2)'},
+    perf:    {label:'\u26A1 Perf',      bg:'rgba(251,191,36,.12)', color:'#fbbf24'},
+    refactor:{label:'\u{1F9F9} Refactor',bg:'rgba(139,92,246,.12)',color:'#a78bfa'},
+    remove:  {label:'\u{1F5D1} Remove', bg:'rgba(239,68,68,.1)',   color:'#fca5a5'},
+    ux:      {label:'\u{1F3A8} UX',     bg:'rgba(59,130,246,.12)', color:'#93c5fd'},
+  };
+
+  // Version metadata: [version, type, short_title, bullets[]]
+  const META=[
+    ['v16.0','ux','Changelog UI nâng cấp',[
+      'Expandable cards với tag Fix/Feature/Perf/UX',
+      'Bullet points chi tiết, click để mở rộng từng version',
+      'Click outside để đóng modal, version count badge',
+    ]],
+  ['v15.9','fix','Fix RAM crash khi xu\u1EA5t file l\u1EDBn',[
+      'Pre-flight warning khi file > 1.8GB (b\u00E0i d\u00E0i + quality cao)',
+      'StreamTarget: ghi tr\u1EF1c ti\u1EBFp v\u00E0o \u1ED5 \u0111\u0129a, kh\u00F4ng c\u1EA7n RAM (file > 500MB)',
+      'RangeError \u0111\u01B0\u1EE3c b\u1EAFt ri\u00EAng v\u1EDBi th\u00F4ng b\u00E1o r\u00F5 r\u00E0ng thay v\u00EC crash im l\u1EB7ng',
+    ]],
+    ['v15.8','fix','Fix blob URL b\u1ECB x\u00F3a s\u1EDBm & Canvas warning',[
+      'Auto-revoke timeout t\u0103ng t\u1EEB 5 ph\u00FAt \u2192 2 gi\u1EDD (b\u00E0i d\u00E0i c\u1EA7n blob s\u1ED1ng)',
+      'Canvas2D willReadFrequently:true cho bgX \u2192 gi\u1EA3m GPU readback warning',
+    ]],
+    ['v15.7','fix','Fix QuotaExceededError VideoEncoder',[
+      'Yield sau configure() \u0111\u1EC3 browser \u0111\u0103ng k\u00FD VE l\u00E0 active',
+      'FFT_N gi\u1EA3m 2048\u2192512: bake nhanh 4\u00D7 (~0.3s thay v\u00EC 1.5s)',
+      'Anthropic API response parse an to\u00E0n h\u01A1n v\u1EDBi .catch(()=>({}))',
+    ]],
+    ['v15.6','fix','Fix t\u1EA5t c\u1EA3 ch\u1EE9c n\u0103ng B\u01B0\u1EDBc 3 b\u1ECB broken',[
+      'Sticker: implement addSticker(), drawStickers(), clearAllStickers() (tr\u01B0\u1EDBc \u0111\u00F3 l\u00E0 dead button)',
+      'Watermark & Sticker hi\u1EC7n trong preview (tr\u01B0\u1EDBc ch\u1EC9 c\u00F3 trong export)',
+      'Text Animation k\u1EBFt n\u1ED1i v\u00E0o fullMC qua drawAnimatedTitle()',
+      'Progress Bar Style ho\u1EA1t \u0111\u1ED9ng v\u1EDBi t\u1EA5t c\u1EA3 templates (kh\u00F4ng ch\u1EC9 MC)',
+    ]],
+    ['v15.5','ux','Fix icon th\u1EEBa trong header',[
+      '\u0110\u1ED5i history button t\u1EEB emoji \u{1F4CB} tr\u00F9ng v\u1EDBi version pill \u2192 text "Hist"',
+    ]],
+    ['v15.4','fix','Fix font ch\u1EEF b\u1ECB hi\u1EC3n th\u1ECB m\u00E3 Unicode th\u00F4',[
+      'Chuy\u1EC3n \\uXXXX trong HTML th\u00E0nh k\u00FD t\u1EF1 Unicode th\u1EF1c (Xu\u1EA5t Video, H\u1EE7y, \u0110\u1EB7t A/B...)',
+      '40 escape sequences b\u1ECB sai \u0111\u01B0\u1EE3c fix',
+    ]],
+    ['v15.3','ux','Thu nh\u1ECF waveform Step 1',[
+      'Waveform canvas: 96px \u2192 44px',
+      'Upload area padding: 60px \u2192 32px',
+      'B\u01B0\u1EDBc 1 gi\u1EDD v\u1EEBa 1 m\u00E0n h\u00ECnh, kh\u00F4ng c\u1EA7n scroll',
+    ]],
+    ['v15.2','fix','Fix download b\u1ECB ch\u1EB7n tr\u00EAn github.io',[
+      'D\u00F9ng showSaveFilePicker() API \u2192 Chrome kh\u00F4ng ch\u1EB7n blob download',
+      'Fallback a.click() cho Firefox/Safari',
+      '\u00C1p d\u1EE5ng cho: MP4, WebM, Thumbnail JPG, GIF',
+    ]],
+    ['v15.1','remove','X\u00F3a tab Affiliate TikTok',[
+      'X\u00F3a 320 lines HTML panel, ~2300 lines JS, to\u00E0n b\u1ED9 CSS .aff-*',
+      'Gi\u1EA3m 158KB (683\u2192525KB), t\u1EADp trung v\u00E0o tab T\u1EA1o Video',
+    ]],
+    ['v15.0','feature','Major UX Update: 7 t\u00EDnh n\u0103ng m\u1EDBi',[
+      'Drag & drop nh\u1EA1c to\u00E0n trang + waveform preview sau upload',
+      'Tab "AI G\u1EE3i \u00DD" m\u1EABu theo BPM & th\u1EC3 lo\u1EA1i + tab "G\u1EA7n \u0110\u00E2y" (5 m\u1EABu)',
+      'Font selector 6 ki\u1EC3u + Zoom/Pan \u1EA3nh ngh\u1EC7 s\u0129 (slider X/Y/zoom)',
+      'Export clip ng\u1EAFn 15s/30s/60s v\u1EDBi \u0111i\u1EC3m b\u1EAFt \u0111\u1EA7u t\u00F9y ch\u1ECDn',
+      'A-B loop preview + \u01B0\u1EDBc t\u00EDnh th\u1EDDi gian export',
+      'N\u00FAt C\u1EAFt nh\u1EA1c chuy\u1EC3n v\u00E0o B\u01B0\u1EDBc 3 (\u0111\u00FAng ng\u1EEF c\u1EA3nh)',
+      'L\u1ECBch s\u1EED export 10 entries (button Hist trong header)',
+    ]],
+    ['v14.3','feature','G\u1EE3i \u00FD sau khi xu\u1EA5t video',[
+      'YouTube Title: 5 m\u1EABu t\u1EF1 \u0111\u1ED9ng theo rule + AI t\u1EA1o',
+      'Hashtag: 30 tags (local + AI), click t\u1EEBng tag \u0111\u1EC3 copy',
+    ]],
+    ['v14.2','fix','Fix bgAurora3D crash',[
+      'rgba() v\u1EDBi hex alpha (rgba(0,255,120,3d)) l\u00E0 CSS kh\u00F4ng h\u1EE3p l\u1EC7',
+      'S\u1EEDa th\u00E0nh decimal alpha 0-1',
+    ]],
+    ['v14.1','fix','Fix ch\u1EEF b\u00E9 trong video export',[
+      'B\u1ECF hard-cap px (44px title, 18px artist)',
+      'Font scale theo % canvas width: 5.6% W \u2192 \u0111\u00FAng \u1EDF m\u1ECDi resolution',
+    ]],
+    ['v14.0','fix','Fix QuotaExceededError (l\u1EA7n 1)',[
+      'Pre-bake FFT TR\u01AF\u1EDAC khi t\u1EA1o VideoEncoder',
+      'Pure JS FFT \u0111\u00FAng: bit-reversal tr\u01B0\u1EDBc butterfly',
+      'B\u1ECF OfflineAudioContext suspend/resume ch\u1EADm',
+    ]],
+    ['v13.9','ux','Fix vol-slider thumb to l\u1EA1c l\u00F5ng',[
+      'Custom CSS -webkit-slider-thumb: 10px, m\u00E0u a2, kh\u00F4ng d\u00F9ng OS default',
+    ]],
+    ['v13.7','ux','Playbar \u0111\u1ED3ng \u0111\u1EC1u chi\u1EC1u cao',[
+      'X\u00F3a beat-ring (h\u00ECnh tr\u00F2n th\u1EEBa) + label "NH\u1ECAP"',
+      'T\u1EA5t c\u1EA3 elements: height:34px c\u1ED1 \u0111\u1ECBnh',
+    ]],
+    ['v13.6','fix','Fix export wave = preview (l\u1EA7n 2)',[
+      'D\u00F9ng \u0111\u00FAng engine Web Audio (OfflineAudioContext)',
+      'Spectrum lookup table per frame',
+    ]],
+    ['v13.4','feature','Th\u00EAm seekbar th\u1EDDi gian',[
+      'Click/drag \u0111\u1EC3 seek \u0111\u1EBFn b\u1EA5t k\u1EF3 \u0111i\u1EC3m n\u00E0o',
+      'Hover tooltip hi\u1EC7n th\u1EDDi gian',
+      'Touch support mobile',
+      'X\u00F3a Beats button & GIF 15s button',
+    ]],
+    ['v13.0','refactor','Restructure source code',[
+      'TOC S01-S13 v\u1EDBi section headers',
+      'Ctrl+F navigation',
+      'Zero code movement - kh\u00F4ng r\u1EE7i ro bug',
+    ]],
+    ['v12.9','fix','Fix export video 2 bugs',[
+      'BUG1: WebCodecs freq data t\u1EEB audioBuf t\u1EA1i \u0111\u00FAng th\u1EDDi \u0111i\u1EC3m frame',
+      'BUG2: MediaRecorder canvas restore race condition (no layout shrink)',
+    ]],
+    ['v12.7','feature','12 templates m\u1EDBi (48\u219260)',[
+      'Radial Pulse, DNA Helix, Oscilloscope, Liquid Ripple, 3D Bars Pro',
+      'Neon Typewriter, Karaoke Pro',
+      '5 MC m\u1EDBi: Aurora3D, Liquid Metal, Quantum, Mandala, Electric Storm',
+    ]],
+  ];
+
+  const metaMap = Object.fromEntries(META.map(m=>[m[0],m]));
+
+  const rows = VERSION_HISTORY.map(([v,desc])=>{
+    const meta = metaMap[v];
+    const isCur = v===APP_VERSION;
+    const type = (meta && meta[1] && TAG[meta[1]]) ? meta[1] : 'fix';
+    const tag = TAG[type]||TAG.fix;
+    const title = (meta && meta[2]) ? meta[2] : desc.substring(0,60);
+    const bullets = (meta && meta[3]) ? meta[3] : [];
+    const id = 'vrow-'+v.replace(/\./g,'-');
+    return `<div style="border-bottom:1px solid var(--line2);padding:8px 0${isCur?';background:rgba(0,229,195,.04);margin:0 -4px;padding:8px 4px;border-radius:6px':''}">
+      <div onclick="document.getElementById('${id}').style.display=document.getElementById('${id}').style.display==='none'?'block':'none'"
+           style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:.62rem;font-weight:${isCur?'800':'500'};color:${isCur?'var(--a2)':'var(--tx3)'};min-width:44px;flex-shrink:0">${v}</span>
+        <span style="font-size:.58rem;padding:1px 6px;border-radius:10px;background:${tag.bg};color:${tag.color};flex-shrink:0">${tag.label}</span>
+        <span style="font-size:.65rem;color:${isCur?'var(--tx)':'var(--tx2)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
+        ${bullets.length?`<span style="font-size:.6rem;color:var(--tx3)">&#x25BC;</span>`:''}
+      </div>
+      ${bullets.length?`<div id="${id}" style="display:none;margin-top:6px;padding-left:52px">
+        ${bullets.map(b=>`<div style="font-size:.6rem;color:var(--tx3);padding:2px 0;display:flex;gap:6px"><span style="color:var(--a2);flex-shrink:0">&#x2022;</span>${b}</div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }).join('');
+
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;width:min(560px,92vw);max-height:85vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-shrink:0">
+      <span style="font-size:.85rem;font-weight:800;color:var(--a2);font-family:'IBM Plex Mono',monospace">&#x1F4CB; CHANGELOG</span>
+      <span style="font-size:.6rem;padding:2px 8px;border-radius:10px;background:rgba(0,229,195,.15);color:var(--a2);font-family:'IBM Plex Mono',monospace">${APP_VERSION} &#x2022; ${VERSION_HISTORY.length} versions</span>
+      <button onclick="$('ver-modal').style.display='none'" style="margin-left:auto;width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--tx3);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center">&#x2715;</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">${rows}</div>
   </div>`;
   modal.style.display='flex';
+  modal.onclick=e=>{ if(e.target===modal) modal.style.display='none'; };
 }
 
 //  Color Grading & Filters 
