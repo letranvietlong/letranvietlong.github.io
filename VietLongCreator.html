@@ -2033,7 +2033,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      <button class="exp-btn" id="expbtn" onclick="startExport()">&#x26A1; Xuất Video</button>
+      <button class="exp-btn" id="expbtn" onclick="handleExportClick()">&#x26A1; Xuất Video</button>
       <button id="cancel-export-btn" onclick="cancelExport()" style="display:none;padding:10px 18px;border-radius:10px;border:1px solid #f87171;background:rgba(248,113,113,.1);color:#f87171;cursor:pointer;font-size:.76rem;font-weight:700;font-family:'IBM Plex Mono',monospace">&#x2715; Hủy</button>
     </div>
     <div class="prog-bar-wrap" id="progwrap">
@@ -2170,7 +2170,7 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v16.6';
+const APP_VERSION = 'v16.7';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var vt = document.getElementById('ver-tag');
@@ -10212,10 +10212,7 @@ let _exportAborted=false;
 let _lastExportUrl='', _lastExportFile=null;
 function cancelExport(){
   // Clean up pre-opened writable if export was cancelled
-  if(window._exportWritable){
-    try{window._exportWritable.abort();}catch(_){}
-    window._exportWritable=null;
-  }
+  if(window._exportFH){ window._exportFH=null; }
   _exportAborted=true;
   if(typeof stopExportTimer==='function') stopExportTimer();
   _isExporting=false;
@@ -10353,6 +10350,50 @@ function fmtSec(s){
   return m>0?`${m}m ${String(sec).padStart(2,'0')}s`:`${sec}s`;
 }
 
+/* handleExportClick: synchronous entry point for export
+   Calls showSaveFilePicker() HERE (in click event context) for large files,
+   then delegates to async startExport(). This preserves Chrome user gesture. */
+function handleExportClick() {
+  if(!chosenTpl||!audFile){ toast('C\u1EA7n ch\u1ECDn template v\u00E0 nh\u1EA1c tr\u01B0\u1EDBc','warn'); return; }
+  if(typeof _isExporting!=='undefined'&&_isExporting) return;
+
+  // Estimate file size synchronously
+  const _q0 = EXPORT_QUALITY[typeof currentQuality!=='undefined'?currentQuality:'good']||{};
+  const _clipLen0 = (typeof _clipLen!=='undefined'&&_clipLen!=='full') ? parseInt(_clipLen) : null;
+  const _dur0 = (typeof audEl!=='undefined'&&audEl?.duration)
+    ? (_clipLen0 ? Math.min(_clipLen0, audEl.duration) : audEl.duration) : 0;
+  const _estMB0 = ((_q0.videoBps||8_000_000) * _dur0 / 8) / 1024 / 1024;
+  const _hasStream = !!(window.showSaveFilePicker && window.Mp4Muxer?.StreamTarget);
+
+  // Clear any previous file handle
+  window._exportFH = null;
+
+  if(_estMB0 > 600 && _hasStream) {
+    // SYNCHRONOUS: call showSaveFilePicker while still in click event
+    // Chrome allows this because we're directly inside onclick handler
+    const _fname = 'VietLongCreator_'
+      + (typeof chosenTpl!=='undefined'&&chosenTpl?.id ? chosenTpl.id : 'video')
+      + (_dur0 > 60 ? '_' + Math.round(_dur0/60) + 'min' : '')
+      + '.mp4';
+    window.showSaveFilePicker({
+      suggestedName: _fname,
+      types:[{description:'MP4 Video', accept:{'video/mp4':['.mp4']}}]
+    }).then(fh => {
+      window._exportFH = fh;
+      toast('\u{1F4BE} File \u0111\u00E3 ch\u1ECDn \u2014 b\u1EAFt \u0111\u1EA7u xu\u1EA5t stream...','success',2500);
+      startExport();
+    }).catch(e => {
+      if(e.name === 'AbortError') return; // user cancelled
+      // Fallback: try without stream
+      console.warn('[VLC] showSaveFilePicker failed:',e.message,'-> ArrayBuffer mode');
+      startExport();
+    });
+  } else {
+    startExport();
+  }
+}
+
+
 async function startExport(){
   _exportAborted=false;
   _isExporting=true;
@@ -10364,34 +10405,6 @@ async function startExport(){
   $('progwrap').style.display='block';
   $('dlbox').style.display='none';
   startExportTimer();
-
-  // LARGE FILE STRATEGY: open save dialog NOW (still in user gesture context)
-  // before any await. Pass the writable stream to the encoder.
-  const _q0 = Object.assign({}, EXPORT_QUALITY[currentQuality]||EXPORT_QUALITY.good);
-  const _clipLen0 = (typeof _clipLen!=='undefined'&&_clipLen!=='full') ? parseInt(_clipLen) : null;
-  const _dur0 = audEl?.duration ? (_clipLen0 ? Math.min(_clipLen0, audEl.duration) : audEl.duration) : 0;
-  const _estMB0 = (((_q0.videoBps||8_000_000) * _dur0 / 8) / 1024 / 1024);
-  const _needStream = window.showSaveFilePicker && window.Mp4Muxer?.StreamTarget && _estMB0 > 600;
-
-  let _preOpenedWritable = null;
-  if(_needStream){
-    try {
-      const _fh = await window.showSaveFilePicker({
-        suggestedName: 'VietLongCreator_' + (chosenTpl?.id||'video') + '_' + Math.round(_dur0/60) + 'min.mp4',
-        types:[{description:'MP4 Video', accept:{'video/mp4':['.mp4']}}]
-      });
-      _preOpenedWritable = await _fh.createWritable();
-    } catch(e) {
-      if(e.name==='AbortError'){
-        // User cancelled file picker -> abort export
-        btn.disabled=false; _isExporting=false; _showCancelBtn(false); stopExportTimer(); return;
-      }
-      // SecurityError or other -> fall back to ArrayBuffer
-      _preOpenedWritable = null;
-    }
-  }
-  // Pass writable to encoder via global (cleared after use)
-  window._exportWritable = _preOpenedWritable;
 
   await acquireWakeLock();
   const q=Object.assign({},EXPORT_QUALITY[currentQuality]||EXPORT_QUALITY.good);
@@ -10410,7 +10423,7 @@ async function startExport(){
       const _min = Math.round(_dur/60);
       const _mbps = Math.round((q.videoBps||0)/1e6);
       // If stream mode is available (file already opened above) -> allow large files
-      const _streamReady = !!window._exportWritable;
+      const _streamReady = !!window._exportFH;
       if(_estMB > 3500 && !_streamReady){
         // No stream mode: hard block
         alert(
@@ -10629,13 +10642,21 @@ async function exportWithWebCodecs(q){
     //  mp4-muxer
     const {Muxer,ArrayBufferTarget,StreamTarget}=window.Mp4Muxer;
     // Use pre-opened writable from startExport() if available (large file stream mode)
-    const _preWritable = window._exportWritable || null;
-    window._exportWritable = null; // consume immediately
+    // Use pre-opened FileHandle from handleExportClick (set synchronously in click event)
+    const _exportFH = window._exportFH || null;
+    window._exportFH = null; // consume
     let target, _streamWS = null;
-    if(_preWritable && StreamTarget){
-      _streamWS = _preWritable;
-      target = new StreamTarget({ onData: chunk => _streamWS.write(chunk), chunked:true });
-      console.log('[VLC Export] Stream mode: writing directly to disk (no RAM limit)');
+    if(_exportFH && StreamTarget){
+      try{
+        _streamWS = await _exportFH.createWritable();
+        target = new StreamTarget({ onData: chunk => _streamWS.write(chunk), chunked:true });
+        console.log('[VLC Export] Stream mode active: writing directly to disk');
+        upProg(4,'Stream mode: ghi tr\u1EF1c ti\u1EBFp v\u00E0o \u1ED5 \u0111\u0129a...');
+      }catch(fhErr){
+        console.warn('[VLC] createWritable failed:',fhErr,'-> ArrayBuffer');
+        _streamWS = null;
+        target = new ArrayBufferTarget();
+      }
     } else {
       target = new ArrayBufferTarget();
       console.log('[VLC Export] ArrayBuffer mode');
