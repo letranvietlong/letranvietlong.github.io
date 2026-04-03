@@ -258,11 +258,33 @@ header::before {
   position:relative; z-index:1;
 }
 .hpill {
-  font-size:.56rem; padding:4px 11px;
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 12px;
   font-family:'IBM Plex Mono',monospace;
-  letter-spacing:.1em; position:relative;
+  letter-spacing:.04em; position:relative;
   clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  background:rgba(20,22,32,.95);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);
+  transition:border-color .18s, color .18s, background .18s;
+  user-select:none;
   overflow:hidden;
+}
+.hpill:hover {
+  border-color:rgba(255,255,255,.28);
+  color:rgba(255,255,255,.85);
+  background:rgba(30,33,48,.95);
+}
+.hpill-icon { font-size:.72rem; line-height:1; }
+.hpill-label { font-size:.58rem; font-weight:600; letter-spacing:.06em; color:inherit; }
+.hpill-sub {
+  font-size:.52rem; letter-spacing:.04em;
+  color:rgba(124,111,255,.9);
+  background:rgba(124,111,255,.12);
+  border:1px solid rgba(124,111,255,.2);
+  border-radius:3px;
+  padding:0 4px;
+  margin-left:1px;
 }
 .hpill.free {
   background:linear-gradient(135deg,rgba(0,229,195,.12),rgba(124,111,255,.08));
@@ -281,11 +303,7 @@ header::before {
   0%,60%  { transform:translateX(-100%) }
   100%    { transform:translateX(200%) }
 }
-.hpill.ver {
-  background:rgba(26,29,38,.9);
-  border:1px solid rgba(124,111,255,.2);
-  color:#7c6fff;
-}
+/* ver + hist share the base .hpill style — no extra overrides needed */
 /* -- Online status badge -- */
 .hpill.status {
   background:rgba(255,45,120,.08);
@@ -1798,8 +1816,15 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
   <!-- RIGHT PILLS -->
   <div class="hpills">
-    <div class="hpill ver" id="ver-pill" onclick="showVersionHistory()" title="Xem changelog" style="cursor:pointer"></div>
-    <div class="hpill" onclick="showExportHistory()" title="Lịch sử xuất" style="cursor:pointer;font-size:.6rem;padding:3px 10px">Hist</div>
+    <div class="hpill ver" id="ver-pill" onclick="showVersionHistory()" title="Xem changelog và lịch sử cập nhật" style="cursor:pointer">
+      <span class="hpill-icon">&#x1F4CB;</span>
+      <span class="hpill-label">Changelog</span>
+      <span class="hpill-sub" id="ver-tag"></span>
+    </div>
+    <div class="hpill hist" onclick="showExportHistory()" title="Lịch sử video đã xuất" style="cursor:pointer">
+      <span class="hpill-icon">&#x1F553;</span>
+      <span class="hpill-label">Lịch Sử</span>
+    </div>
   </div></div>
   <!-- Main nav tabs -->
   <div class="main-nav">
@@ -2145,11 +2170,11 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v16.2';
+const APP_VERSION = 'v16.4';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
-  var p = document.getElementById('ver-pill');
-  if(p) p.textContent = APP_VERSION + ' \u{1F4CB}';
+  var vt = document.getElementById('ver-tag');
+  if(vt) vt.textContent = APP_VERSION;
   // Show Recent tab if user has history
   try {
     const rec = JSON.parse(localStorage.getItem('vlc_recent_tmpls')||'[]');
