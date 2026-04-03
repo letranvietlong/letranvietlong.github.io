@@ -2145,7 +2145,7 @@ if (typeof _lastCfgTplId === 'undefined') var _lastCfgTplId = null;
    Search: Ctrl+F -> S01
    ============================================================================ */
 
-const APP_VERSION = 'v16.0';
+const APP_VERSION = 'v16.2';
 // Auto-fill version pill as soon as DOM is ready (single source of truth)
 document.addEventListener('DOMContentLoaded', function() {
   var p = document.getElementById('ver-pill');
@@ -2275,10 +2275,10 @@ function showVersionHistory(){
 
   // Version metadata: [version, type, short_title, bullets[]]
   const META=[
-    ['v16.0','ux','Changelog UI nâng cấp',[
-      'Expandable cards với tag Fix/Feature/Perf/UX',
-      'Bullet points chi tiết, click để mở rộng từng version',
-      'Click outside để đóng modal, version count badge',
+    ['v16.0','ux','Changelog UI n\u00E2ng c\u1EA5p',[
+      'Expandable cards v\u1EDBi tag Fix/Feature/Perf/UX',
+      'Bullet points chi ti\u1EBFt, click \u0111\u1EC3 m\u1EDF r\u1ED9ng t\u1EEBng version',
+      'Click outside \u0111\u1EC3 \u0111\u00F3ng modal, version count badge',
     ]],
   ['v15.9','fix','Fix RAM crash khi xu\u1EA5t file l\u1EDBn',[
       'Pre-flight warning khi file > 1.8GB (b\u00E0i d\u00E0i + quality cao)',
@@ -10347,11 +10347,26 @@ async function startExport(){
   if(audEl?.duration){
     const _dur = q._clipLen ? Math.min(q._clipLen, audEl.duration) : audEl.duration;
     const _estMB = (q.videoBps||8_000_000) * _dur / 8 / 1024 / 1024;
-    if(_estMB > 1800){
+    if(_estMB > 1500){
+      const _gb = Math.round(_estMB/1024*10)/10;
+      const _min = Math.round(_dur/60);
+      const _mbps = Math.round((q.videoBps||0)/1e6);
+      // Hard block: > 3.5GB will definitely crash
+      if(_estMB > 3500){
+        alert(
+          '\u274C Video ' + _min + ' ph\u00FAt @ ' + _mbps + 'Mbps (~' + _gb + 'GB)\n' +
+          'V\u01B0\u1EE3t gi\u1EDBi h\u1EA1n RAM c\u1EE7a tr\u00ECnh duy\u1EC7t!\n\n' +
+          'Gi\u1EA3i ph\u00E1p:\n' +
+          '\u2022 Ch\u1ECDn HD 720p (8Mbps) \u2192 ~' + Math.round(_min*8/8*60/1024*10)/10 + 'GB\n' +
+          '\u2022 Ho\u1EB7c xu\u1EA5t clip ng\u1EAFn (60s/30s/15s)'
+        );
+        btn.disabled=false; _isExporting=false; _showCancelBtn(false); stopExportTimer(); releaseWakeLock(); return;
+      }
+      // Warning: 1.5-3.5GB
       const _ok = confirm(
-        'C\u1EA3nh b\u00E1o: Video ' + Math.round(_dur/60) + ' ph\u00FAt @ ' + Math.round((q.videoBps||0)/1e6) + 'Mbps\n' +
-        '\u01AF\u1EDBc t\u00EDnh ~' + Math.round(_estMB/1024*10)/10 + 'GB - c\u00F3 th\u1EC3 kh\u00F4ng \u0111\u1EE7 RAM!\n\n' +
-        'H\u00E3y ch\u1ECDn ch\u1EA5t l\u01B0\u1EE3ng th\u1EA5p h\u01A1n (HD 720p) ho\u1EB7c xu\u1EA5t clip ng\u1EAFn.\n\nTi\u1EBFp t\u1EE5c?'
+        '\u26A0 C\u1EA3nh b\u00E1o: Video ' + _min + ' ph\u00FAt @ ' + _mbps + 'Mbps (~' + _gb + 'GB)\n' +
+        'C\u00F3 th\u1EC3 kh\u00F4ng \u0111\u1EE7 RAM trung gi\u1ECDng ph\u00FAc n\u00E0o!\n\n' +
+        'Khuy\u1EBFn ngh\u1ECB: Ch\u1ECDn Full HD 1080p (16Mbps) ho\u1EB7c th\u1EA5p h\u01A1n.\n\nTi\u1EBFp t\u1EE5c?'
       );
       if(!_ok){ btn.disabled=false; _isExporting=false; _showCancelBtn(false); stopExportTimer(); releaseWakeLock(); return; }
     }
@@ -10359,8 +10374,10 @@ async function startExport(){
   toast(`\u{1F3AC} Xu\u1EA5t video ${q.label}${clipLabel}...`,'info',3000);
 
   if(HAS_WEBCODECS){
+    console.log('[VLC Export] Using WebCodecs path (MP4/H.264)');
     await exportWithWebCodecs(q);
   } else {
+    console.log('[VLC Export] WebCodecs not available, using MediaRecorder (WebM)');
     await exportWithMediaRecorder(q);
   }
 }
@@ -10549,39 +10566,16 @@ async function exportWithWebCodecs(q){
     const expFreqBuf = _syntheticFreqBuf; // alias
 
     //  mp4-muxer
-    const {Muxer,ArrayBufferTarget,StreamTarget}=window.Mp4Muxer;
-    // For large files, use StreamTarget (showSaveFilePicker) to avoid OOM
-    const _estBytes = (q.videoBps||8_000_000) * dur / 8;
-    const _useStream = StreamTarget && window.showSaveFilePicker && _estBytes > 500*1024*1024;
-    let target, _streamFH=null, _streamWS=null, _streamChunks=[];
-    if(_useStream){
-      try{
-        const _extHint = [{description:'MP4 Video',accept:{'video/mp4':['.mp4']}}];
-        _streamFH = await window.showSaveFilePicker({
-          suggestedName:`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`,
-          types:_extHint
-        });
-        _streamWS = await _streamFH.createWritable();
-        target = new StreamTarget({
-          onData: chunk => _streamWS.write(chunk),
-          chunked: true,
-        });
-        toast('\u{1F4BE} Stream mode: luu truc tiep vao o dia (khong gioi han RAM)','info',4000);
-      } catch(pickErr){
-        if(pickErr.name==='AbortError'){ restore(); return; }
-        // fallback to ArrayBuffer
-        console.warn('StreamTarget failed, using ArrayBuffer:',pickErr);
-        target = new ArrayBufferTarget();
-        _streamWS = null;
-      }
-    } else {
-      target = new ArrayBufferTarget();
-    }
+    const {Muxer,ArrayBufferTarget}=window.Mp4Muxer;
+    // Always use ArrayBufferTarget (StreamTarget removed - SecurityError without user gesture)
+    // Pre-flight OOM check is done in startExport() before this function
+    const target = new ArrayBufferTarget();
+    const _streamWS = null; // kept for finalize compat
     const muxer=new Muxer({
       target,
       video:{codec:'avc', width:EW, height:EH},
       audio:{codec:'aac', sampleRate:44100, numberOfChannels:2},
-      fastStart: _useStream && _streamWS ? 'fragmented' : 'in-memory',
+      fastStart:'in-memory',
     });
 
     //  VideoEncoder 
@@ -10713,20 +10707,7 @@ async function exportWithWebCodecs(q){
     upProg(97,'T\u1EA1o file...');
     const songTitle=$('cc-title')?.value||'Video';
     const fname=`VietLongCreator_${chosenTpl?.id||'video'}_${EW}x${EH}.mp4`;
-    // Stream mode: close -> file already written to disk
-    if(typeof _streamWS!=='undefined' && _streamWS){
-      try{
-        await _streamWS.close();
-        $('dl-success-msg').textContent='\u2705 Xu\u1EA5t xong! File \u0111\u00E3 l\u01B0u v\u00E0o m\u00E1y.';
-        $('dlbox').style.display='block';
-        setTimeout(_fillExportSuggestions,200); _saveExportHistory(q);
-        btn.disabled=false; upProg(100,'Ho\u00E0n t\u1EA5t!',''); _showCancelBtn(false); releaseWakeLock();
-        sendNotif('\u2705 Export xong!',`"${songTitle}" \u2014 ${EW}\u00D7${EH}`);
-        restore(); exportAudEl.pause();
-        try{URL.revokeObjectURL(_audFileUrl);}catch(_){} try{exportActx.close();}catch(_){}
-        return;
-      }catch(se){ console.warn('Stream close error:',se); }
-    }
+
     // ArrayBuffer path
     const {buffer}=target;
     const blob=new Blob([buffer],{type:'video/mp4'});
