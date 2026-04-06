@@ -2117,24 +2117,10 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 }
 
 /* ── Correlation matrix cell hover ── */
-#corrMatrix td:hover {
-  transform: scale(1.15);
-  z-index: 2;
-  position: relative;
-  box-shadow: 0 0 12px rgba(0,212,255,.3);
-}
 
 /* ── Coin selector chips active state ── */
-#corrCoinSelector button:hover {
-  border-color: rgba(0,212,255,.4) !important;
-  color: #7dd3fc !important;
-}
 
 /* ── Correlation page layout ── */
-#page-correlation .spinner {
-  width: 28px; height: 28px;
-  border-top-color: #00d4ff;
-}
 
 /* ── VN Market Skeleton Loading ── */
 @keyframes vn-shimmer {
@@ -2420,7 +2406,23 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
         <span class="hm-status-badge" id="vnMarketStatus">⏹</span>
       </button>
     </div>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700">v4.0.14</span></span></div>
+    <button onclick="showDonateGlobal()" style="
+      display:flex;align-items:center;gap:6px;
+      background:linear-gradient(135deg,rgba(244,63,94,.18),rgba(244,63,94,.08));
+      border:1px solid rgba(244,63,94,.4);
+      border-radius:20px;padding:5px 13px;cursor:pointer;
+      color:#fb7185;font-size:12px;font-weight:700;
+      transition:all .2s;white-space:nowrap;
+      box-shadow:0 0 12px rgba(244,63,94,.15);
+    " onmouseover="this.style.background='linear-gradient(135deg,rgba(244,63,94,.28),rgba(244,63,94,.15))';this.style.borderColor='rgba(244,63,94,.7)'"
+       onmouseout="this.style.background='linear-gradient(135deg,rgba(244,63,94,.18),rgba(244,63,94,.08))';this.style.borderColor='rgba(244,63,94,.4)'">
+      <svg viewBox="0 0 20 20" width="13" height="13" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 16.5C10 16.5 2.5 11 2.5 6.5a4 4 0 017.5-2 4 4 0 017.5 2C17.5 11 10 16.5 10 16.5z" fill="#f43f5e"/>
+        <circle cx="13.5" cy="5.5" r="1.1" fill="rgba(255,255,255,.4)"/>
+      </svg>
+      Ủng Hộ
+    </button>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span onclick="showChangelogModal()" style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#475569';this.style.color='#e2e8f0'" onmouseout="this.style.background='#334155';this.style.color='#94a3b8'">v4.0.20</span></span></div>
 
 
     
@@ -2522,31 +2524,12 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 
 
-    <button class="sub-tab" id="stab-correlation" role="tab" onclick="showPage('correlation',this)">
-    <span class="tab-icon">
-      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="7" height="7" rx="1" fill="rgba(0,212,255,.7)"/>
-        <rect x="11" y="2" width="7" height="7" rx="1" fill="rgba(0,212,255,.4)"/>
-        <rect x="2" y="11" width="7" height="7" rx="1" fill="rgba(0,212,255,.4)"/>
-        <rect x="11" y="11" width="7" height="7" rx="1" fill="rgba(34,197,94,.7)"/>
-      </svg>
-    </span>
-    <span class="tab-label">Tương Quan</span>
-  </button>
-<button class="sub-tab sub-tab-donate" id="stab-donate" role="tab" onclick="showPage('donate',this)">
-    <span class="tab-icon ti-donate">
-      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 16.5C10 16.5 2.5 11 2.5 6.5a4 4 0 017.5-2 4 4 0 017.5 2C17.5 11 10 16.5 10 16.5z" fill="#f43f5e"/>
-        <path d="M10 16.5C10 16.5 5 12 3.5 8" fill="none" stroke="#fb7185" stroke-width="1" stroke-linecap="round" opacity=".6"/>
-        <circle cx="13.5" cy="5.5" r="1.2" fill="rgba(255,255,255,.35)"/>
-      </svg>
-    </span>
-    <span class="tab-label">Ủng Hộ</span>
-  </button>
+
+
 </nav>
 
 <!-- SUB-NAV CKVN (Level 2) -->
-<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(7,1fr);display:none" id="subNavVN" role="tablist">
+<nav class="sub-nav sub-nav-vn" style="grid-template-columns:repeat(6,1fr);display:none" id="subNavVN" role="tablist">
   <button class="sub-tab active" id="stab-vn-market" role="tab" onclick="showVNPage('vn-market',this)">
     <span class="tab-icon">
       <svg viewBox="0 0 20 20" width="18" height="18"><rect x="2" y="10" width="3" height="7" rx="1" fill="#e8192c"/><rect x="8.5" y="6" width="3" height="11" rx="1" fill="#e8192c" opacity=".8"/><rect x="15" y="3" width="3" height="14" rx="1" fill="#e8192c" opacity=".6"/><polyline points="3.5,9.5 10,5.5 16.5,2.5" fill="none" stroke="#ffcd00" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="9.5" r="1.2" fill="#ffcd00"/><circle cx="10" cy="5.5" r="1.2" fill="#ffcd00"/><circle cx="16.5" cy="2.5" r="1.2" fill="#ffcd00"/></svg>
@@ -2592,15 +2575,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     <span class="tab-label">Heatmap</span>
   </button>
 
-  <button class="sub-tab sub-tab-donate" id="stab-vn-donate" role="tab" onclick="showVNPage('vn-donate',this)">
-    <span class="tab-icon">
-      <svg viewBox="0 0 20 20" width="18" height="18">
-        <path d="M10 16.5s-7-4.5-7-8.5a4 4 0 0 1 7-2.65A4 4 0 0 1 17 8c0 4-7 8.5-7 8.5z" fill="#f43f5e" opacity=".85"/>
-        <path d="M10 16.5s-7-4.5-7-8.5a4 4 0 0 1 7-2.65A4 4 0 0 1 17 8c0 4-7 8.5-7 8.5z" fill="none" stroke="#fb7185" stroke-width=".8"/>
-      </svg>
-    </span>
-    <span class="tab-label">Ủng Hộ</span>
-  </button>
+
 </nav>
 
 <!-- SUB-NAV FOREX -->
@@ -3593,52 +3568,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 
 <!-- ══════════════ PAGE: CK VIỆT NAM ══════════════ -->
 <!-- ════ PAGE: CORRELATION MATRIX ════ -->
-<div class="page" id="page-correlation">
-  <div style="max-width:1100px;margin:0 auto;padding:24px 20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-      <h2 style="font-size:16px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px">
-        <svg viewBox="0 0 20 20" width="18" height="18" style="fill:#00d4ff"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
-        Bảng Tương Quan Giá
-      </h2>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select id="corrTf" onchange="loadCorrelation()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">
-          <option value="1d">1 Ngày</option>
-          <option value="7d" selected>7 Ngày</option>
-          <option value="30d">30 Ngày</option>
-          <option value="90d">90 Ngày</option>
-        </select>
-        <button onclick="loadCorrelation()" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:#00d4ff;border-radius:6px;padding:5px 14px;font-size:11px;cursor:pointer">🔄 Tải Lại</button>
-      </div>
-    </div>
 
-    <!-- Coin selector -->
-    <div id="corrCoinSelector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
-      <!-- filled by JS -->
-    </div>
-
-    <!-- Matrix -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto">
-      <div id="corrMatrix">
-        <div style="text-align:center;padding:40px;color:var(--muted)">
-          <div class="spinner" style="margin:0 auto 12px;border-top-color:#00d4ff"></div>
-          Đang tính toán tương quan...
-        </div>
-      </div>
-    </div>
-
-    <!-- Legend -->
-    <div style="display:flex;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap">
-      <span style="font-size:10px;color:var(--muted)">Hệ số tương quan (Pearson):</span>
-      <div style="display:flex;align-items:center;gap:4px">
-        <div style="width:60px;height:8px;border-radius:3px;background:linear-gradient(to right,#ef4444,#f59e0b,#22c55e)"></div>
-        <span style="font-size:9px;color:var(--muted)">-1 → 0 → +1</span>
-      </div>
-      <span style="font-size:10px;color:#22c55e">■ Tương quan thuận</span>
-      <span style="font-size:10px;color:#ef4444">■ Tương quan nghịch</span>
-      <span style="font-size:10px;color:#94a3b8">■ Không tương quan</span>
-    </div>
-  </div>
-</div>
 
 <div class="page" id="page-donate">
 <div class="donate-layout">
@@ -7029,7 +6959,6 @@ function showPage(id,el){
   if(id==='events')    { if(!eventsData.length) loadEvents(); else renderEvents(); }
 
 
-  if(id==='correlation') setTimeout(loadCorrelation,50);
 }
 
 
@@ -7603,184 +7532,7 @@ function clearChat(){
    CORRELATION MATRIX — Pearson trên daily close prices
 ══════════════════════════════════════════════════════ */
 
-const CORR_COINS_DEFAULT = ['BTC','ETH','BNB','SOL','XRP','ADA','AVAX','DOT','DOGE','MATIC'];
-let _corrCoins = [...CORR_COINS_DEFAULT];
-let _corrCache = {};          // sym → [closes]
-let _corrLoadVer = 0;
 
-// ── Tính hệ số Pearson ──────────────────────────────────────────
-function pearson(a, b){
-  const n = Math.min(a.length, b.length);
-  if(n < 2) return 0;
-  const ax = a.slice(-n), bx = b.slice(-n);
-  const ma = ax.reduce((s,v)=>s+v,0)/n;
-  const mb = bx.reduce((s,v)=>s+v,0)/n;
-  let num=0, da=0, db=0;
-  for(let i=0;i<n;i++){
-    const ai=ax[i]-ma, bi=bx[i]-mb;
-    num+=ai*bi; da+=ai*ai; db+=bi*bi;
-  }
-  const denom=Math.sqrt(da*db);
-  return denom===0 ? 1 : Math.max(-1,Math.min(1, num/denom));
-}
-
-// ── Màu ô matrix theo hệ số ────────────────────────────────────
-function corrColor(r){
-  if(r >= 0.9)  return {bg:'rgba(34,197,94,.85)', fg:'#fff'};
-  if(r >= 0.7)  return {bg:'rgba(34,197,94,.5)',  fg:'#d1fae5'};
-  if(r >= 0.4)  return {bg:'rgba(34,197,94,.2)',  fg:'#86efac'};
-  if(r >= 0.1)  return {bg:'rgba(34,197,94,.08)', fg:'#94a3b8'};
-  if(r >= -0.1) return {bg:'rgba(148,163,184,.1)',fg:'#64748b'};
-  if(r >= -0.4) return {bg:'rgba(239,68,68,.1)',  fg:'#fca5a5'};
-  if(r >= -0.7) return {bg:'rgba(239,68,68,.25)', fg:'#f87171'};
-  return               {bg:'rgba(239,68,68,.6)',  fg:'#fff'};
-}
-
-// ── Fetch lịch sử giá (daily close) từ Binance klines ──────────
-async function _fetchCorrData(sym, days){
-  const key = sym+'_'+days;
-  if(_corrCache[key] && Date.now()-_corrCache[key].ts < 10*60*1000)
-    return _corrCache[key].closes;
-
-  const limit = Math.min(days+2, 500);
-  const r = await fetch(
-    `https://api.binance.com/api/v3/klines?symbol=${sym}USDT&interval=1d&limit=${limit}`,
-    {signal: AbortSignal.timeout(8000)}
-  );
-  if(!r.ok) throw new Error('klines '+r.status);
-  const raw = await r.json();
-  const closes = raw.slice(0,-1).map(k=>parseFloat(k[4])); // bỏ nến chưa đóng
-  _corrCache[key] = {ts: Date.now(), closes};
-  return closes;
-}
-
-// ── Render coin selector chips ──────────────────────────────────
-function _renderCorrSelector(){
-  const el = document.getElementById('corrCoinSelector');
-  if(!el) return;
-  const ALL = ['BTC','ETH','BNB','SOL','XRP','ADA','AVAX','DOT','DOGE','MATIC',
-               'LINK','UNI','ATOM','LTC','BCH','APT','ARB','OP','INJ','SUI'];
-  el.innerHTML = ALL.map(sym=>{
-    const active = _corrCoins.includes(sym);
-    return `<button onclick="_toggleCorrCoin('${sym}')" style="
-      padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
-      cursor:pointer;border:1px solid ${active?'rgba(0,212,255,.5)':'rgba(255,255,255,.08)'};
-      background:${active?'rgba(0,212,255,.15)':'transparent'};
-      color:${active?'#00d4ff':'#64748b'};transition:all .15s">${sym}</button>`;
-  }).join('');
-}
-
-function _toggleCorrCoin(sym){
-  if(_corrCoins.includes(sym)){
-    if(_corrCoins.length <= 3) return; // min 3
-    _corrCoins = _corrCoins.filter(s=>s!==sym);
-  } else {
-    if(_corrCoins.length >= 12) return; // max 12
-    _corrCoins.push(sym);
-  }
-  _renderCorrSelector();
-  loadCorrelation();
-}
-
-// ── Main: load + render correlation matrix ──────────────────────
-async function loadCorrelation(){
-  const matrixEl = document.getElementById('corrMatrix');
-  if(!matrixEl) return;
-
-  const myVer = ++_corrLoadVer;
-  _renderCorrSelector();
-
-  const tfSel = document.getElementById('corrTf');
-  const tfVal = tfSel?.value || '7d';
-  const days  = tfVal==='1d'?2 : tfVal==='7d'?8 : tfVal==='30d'?31 : 91;
-
-  matrixEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
-    <div class="spinner" style="margin:0 auto 12px;border-top-color:#00d4ff"></div>
-    Đang tải ${_corrCoins.length} chuỗi giá (${tfVal})...
-  </div>`;
-
-  // Fetch tất cả parallel
-  const results = await Promise.allSettled(
-    _corrCoins.map(sym => _fetchCorrData(sym, days))
-  );
-  if(myVer !== _corrLoadVer) return;
-
-  // Lọc những coin fetch thành công
-  const valid = [];
-  results.forEach((res, i)=>{
-    if(res.status==='fulfilled' && res.value?.length >= 2){
-      valid.push({sym: _corrCoins[i], closes: res.value});
-    }
-  });
-
-  if(valid.length < 2){
-    matrixEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Không đủ dữ liệu để tính tương quan</div>';
-    return;
-  }
-
-  // Build matrix HTML
-  const cellSz = Math.max(44, Math.min(64, Math.floor(560/valid.length)));
-  let html = `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:10px;min-width:max-content">`;
-
-  // Header row
-  html += `<tr><th style="width:${cellSz}px;height:${cellSz}px"></th>`;
-  valid.forEach(d=>{
-    html += `<th style="width:${cellSz}px;text-align:center;color:var(--muted);font-weight:700;font-size:9px;padding:4px">${d.sym}</th>`;
-  });
-  html += `</tr>`;
-
-  // Data rows
-  valid.forEach((row, i)=>{
-    html += `<tr>`;
-    html += `<th style="text-align:right;padding-right:8px;color:var(--muted);font-weight:700;font-size:9px;white-space:nowrap">${row.sym}</th>`;
-    valid.forEach((col, j)=>{
-      const r = i===j ? 1 : pearson(row.closes, col.closes);
-      const {bg,fg} = corrColor(r);
-      const diag = i===j ? 'border:2px solid rgba(0,212,255,.4)' : '';
-      const title = `${row.sym}/${col.sym}: ${r.toFixed(3)}`;
-      html += `<td title="${title}" style="
-        width:${cellSz}px;height:${cellSz}px;text-align:center;
-        background:${bg};color:${fg};font-weight:${i===j?800:700};
-        font-size:${cellSz>50?11:9}px;border-radius:4px;
-        border:1px solid rgba(255,255,255,.04);${diag};
-        cursor:default;transition:transform .1s;
-        ">${r===1?row.sym:r.toFixed(2)}</td>`;
-    });
-    html += `</tr>`;
-  });
-
-  html += `</table></div>`;
-
-  // Stats summary
-  const allPairs = [];
-  for(let i=0;i<valid.length;i++)
-    for(let j=i+1;j<valid.length;j++)
-      allPairs.push(pearson(valid[i].closes, valid[j].closes));
-  const avgCorr = allPairs.reduce((s,v)=>s+v,0)/allPairs.length;
-  const maxCorr = Math.max(...allPairs);
-  const minCorr = Math.min(...allPairs);
-
-  html += `<div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
-    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">TB Tương Quan</div>
-      <div style="font-size:14px;font-weight:800;color:${avgCorr>0.5?'#22c55e':avgCorr<0?'#ef4444':'#94a3b8'}">${avgCorr.toFixed(3)}</div>
-    </div>
-    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Cao Nhất</div>
-      <div style="font-size:14px;font-weight:800;color:#22c55e">${maxCorr.toFixed(3)}</div>
-    </div>
-    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Thấp Nhất</div>
-      <div style="font-size:14px;font-weight:800;color:#ef4444">${minCorr.toFixed(3)}</div>
-    </div>
-    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;text-align:center">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">Cập Nhật</div>
-      <div style="font-size:11px;font-weight:700;color:var(--text)">${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
-    </div>
-  </div>`;
-
-  matrixEl.innerHTML = html;
-}
 
 /* ══════════════════════════════════════════════════
    FUNDING RATE + LONG/SHORT RATIO (Binance Futures)
@@ -10227,6 +9979,27 @@ setInterval(()=>{
 }, 60000);
 window.showVNPage = showVNPage;
 window.loadVNChart = loadVNChart;
+// ── Donate button từ header (visible ở mọi tab) ──
+function showDonateGlobal(){
+  // Hiện page donate
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-donate');
+  if(pg) pg.classList.add('active');
+
+  // Ẩn TẤT CẢ sub-nav → không tab nào được focus
+  ['subNavCrypto','subNavVN','subNavForex'].forEach(id => {
+    const nav = document.getElementById(id);
+    if(nav) nav.style.display = 'none';
+  });
+
+  // Bỏ active khỏi tất cả sub-tab
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+
+  // Bỏ active khỏi tất cả nút header market (hm-btn, top-tab)
+  document.querySelectorAll('.hm-btn, .top-tab').forEach(b => b.classList.remove('active'));
+}
+window.showDonateGlobal = showDonateGlobal;
+
 window.vnSelectStock = vnSelectStock;
 window.vnSearchStock = vnSearchStock;
 window.vnAddToWatchlist = vnAddToWatchlist;
@@ -11102,5 +10875,266 @@ window.fxSwapConv2    = fxSwapConv2;
 window.fxSetTf        = fxSetTf;
 
 </script>
+
+<!-- ═══════════════ CHANGELOG MODAL ═══════════════ -->
+<div id="changelogModal" style="
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:20px;
+" onclick="if(event.target===this)closeChangelogModal()">
+  <div style="
+    background:linear-gradient(145deg,#0d1520,#0c1118);
+    border:1px solid rgba(0,212,255,.15);
+    border-radius:20px;width:100%;max-width:660px;
+    max-height:82vh;display:flex;flex-direction:column;
+    box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(0,212,255,.08);
+    overflow:hidden;
+  ">
+    <!-- Header -->
+    <div style="
+      padding:22px 26px 16px;
+      background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(139,92,246,.04));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;gap:12px;flex-shrink:0;
+    ">
+      <div style="
+        width:38px;height:38px;border-radius:10px;
+        background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(139,92,246,.15));
+        border:1px solid rgba(0,212,255,.25);
+        display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      ">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2L12.5 7.5H18L13.5 11L15.5 17L10 13.5L4.5 17L6.5 11L2 7.5H7.5Z" fill="none" stroke="#00d4ff" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="10" cy="10" r="2" fill="#a78bfa"/>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:800;color:#e2e8f0;letter-spacing:-.2px">Lịch Sử Cập Nhật</div>
+        <div style="font-size:11px;color:#64748b;margin-top:1px">VietLongCrypto — Release Notes</div>
+      </div>
+      <button onclick="closeChangelogModal()" style="
+        width:30px;height:30px;border-radius:8px;border:none;
+        background:rgba(255,255,255,.05);color:#64748b;cursor:pointer;
+        font-size:16px;display:flex;align-items:center;justify-content:center;
+        transition:all .15s;
+      " onmouseover="this.style.background='rgba(255,255,255,.1)';this.style.color='#e2e8f0'"
+         onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.color='#64748b'">✕</button>
+    </div>
+
+    <!-- Body scrollable -->
+    <div style="overflow-y:auto;padding:20px 26px 26px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,.2) transparent">
+
+      <!-- v4.0.20 -->
+      <div class="cl-version cl-version-current">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag cl-ver-tag-current">v4.0.20</span>
+          <span class="cl-ver-date">Tháng 4 / 2026</span>
+          <span class="cl-ver-badge cl-badge-fix">BUG FIX</span>
+          <span class="cl-badge-current">● HIỆN TẠI</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-fix">Sửa nút <strong>Ủng Hộ</strong> trên header: tab Tiền Ảo không còn sáng khi vào trang Ủng Hộ</li>
+          <li class="cl-fix">Ẩn toàn bộ sub-nav khi vào trang Ủng Hộ để không gây nhầm lẫn focus</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.19 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.19</span>
+          <span class="cl-ver-date">Tháng 4 / 2026</span>
+          <span class="cl-ver-badge cl-badge-fix">BUG FIX</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-fix">Sửa nút <strong>Ủng Hộ</strong> header vẫn giữ focus tab Crypto khi click</li>
+          <li class="cl-fix">Ẩn sub-nav hoàn toàn khi xem trang Ủng Hộ</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.15–18 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.15–18</span>
+          <span class="cl-ver-date">Tháng 4 / 2026</span>
+          <span class="cl-ver-badge cl-badge-feature">TÍNH NĂNG</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-feature">Thêm nút <strong>❤ Ủng Hộ</strong> cố định trên header — hiển thị ở mọi tab</li>
+          <li class="cl-remove">Xóa tab <strong>Tương Quan</strong> khỏi module Tiền Ảo</li>
+          <li class="cl-remove">Xóa tab <strong>Ủng Hộ</strong> khỏi sub-nav (đã chuyển lên header)</li>
+          <li class="cl-fix">Fix grid layout VN sub-nav: 7 cột → 6 cột sau khi xóa tab</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.12–14 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.12–14</span>
+          <span class="cl-ver-date">Tháng 4 / 2026</span>
+          <span class="cl-ver-badge cl-badge-fix">BUG FIX</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-fix">Sửa chart <strong>Chứng Khoán VN</strong> luôn hiện Apple Inc thay vì đúng cổ phiếu</li>
+          <li class="cl-fix">Tìm ra root cause: TradingView <code>tv.js</code> không hỗ trợ HOSE khi embed ngoài tradingview.com</li>
+          <li class="cl-fix">Chuyển sang <code>embed-widget-advanced-chart.js</code> — public API hỗ trợ mọi sàn</li>
+          <li class="cl-fix">Tách <code>tvSym()</code> và <code>tvScanSym()</code>: widget dùng HSX:, scanner dùng HOSE:</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.9–11 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.9–11</span>
+          <span class="cl-ver-date">Tháng 4 / 2026</span>
+          <span class="cl-ver-badge cl-badge-fix">BUG FIX</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-fix">Điều tra lỗi chart VN: thử <code>HOSE:</code> → <code>HSX:</code> → widgetembed URL</li>
+          <li class="cl-fix">Sửa lỗi <strong>logo cổ phiếu VN</strong>: các CDN (fireant, vietstock) bị DNS block từ github.io → chuyển sang SVG inline</li>
+          <li class="cl-fix">Nâng cấp SVG logo với radial gradient, glow effect, brand colors chính xác</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.7–8 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.7–8</span>
+          <span class="cl-ver-date">Tháng 3 / 2026</span>
+          <span class="cl-ver-badge cl-badge-feature">TÍNH NĂNG</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-feature">Thêm <strong>logo SVG</strong> cho cổ phiếu VN với brand color thực tế</li>
+          <li class="cl-fix">Redesign <strong>Heatmap Ngoại Hối</strong> fullscreen + strength bars</li>
+          <li class="cl-fix">Fix click card Forex không chuyển sang tab Biểu Đồ</li>
+        </ul>
+      </div>
+
+      <!-- v4.0.0–6 -->
+      <div class="cl-version">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag">v4.0.0–6</span>
+          <span class="cl-ver-date">Tháng 3 / 2026</span>
+          <span class="cl-ver-badge cl-badge-major">MAJOR</span>
+        </div>
+        <ul class="cl-list">
+          <li class="cl-feature">🎉 Ra mắt <strong>Module 3 — Ngoại Hối Toàn Cầu</strong>: thị trường, biểu đồ, heatmap, quy đổi, phiên giao dịch</li>
+          <li class="cl-fix">Fix CORS cho Yahoo Finance, SSI, TCBS — chuyển sang TradingView Scanner</li>
+          <li class="cl-fix">Fix badge Chứng Khoán VN luôn hiện ĐÓNG CỬA</li>
+          <li class="cl-fix">Tách JS thành 4 vùng module rõ ràng (Shared / Crypto / VN / Forex)</li>
+        </ul>
+      </div>
+
+      <!-- v3.5 -->
+      <div class="cl-version" style="opacity:.6">
+        <div class="cl-ver-header">
+          <span class="cl-ver-tag" style="background:rgba(71,85,105,.3);color:#64748b">v3.5.0</span>
+          <span class="cl-ver-date">2025</span>
+          <span class="cl-ver-badge" style="background:rgba(71,85,105,.2);color:#64748b;border-color:rgba(71,85,105,.3)">LEGACY</span>
+        </div>
+        <ul class="cl-list">
+          <li style="color:#475569;font-size:12px;list-style:none;padding-left:0">Phiên bản gốc — Module Tiền Ảo + Chứng Khoán VN</li>
+        </ul>
+      </div>
+
+    </div><!-- /body -->
+  </div>
+</div>
+
+<style>
+.cl-version{
+  margin-bottom:22px;
+  padding-bottom:22px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.cl-version-current{
+  background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(139,92,246,.03));
+  border:1px solid rgba(0,212,255,.18);
+  border-radius:12px;
+  padding:14px 16px 16px;
+  margin-left:-16px;margin-right:-16px;
+  position:relative;
+}
+.cl-version-current::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,#00d4ff,#a78bfa);
+  border-radius:12px 0 0 12px;
+}
+.cl-ver-tag-current{
+  background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(139,92,246,.15)) !important;
+  border-color:rgba(0,212,255,.5) !important;
+  color:#00d4ff !important;
+  box-shadow:0 0 12px rgba(0,212,255,.2);
+}
+.cl-badge-current{
+  font-size:9px;font-weight:800;letter-spacing:.8px;
+  padding:2px 8px;border-radius:4px;text-transform:uppercase;
+  background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(139,92,246,.1));
+  color:#67e8f9;border:1px solid rgba(0,212,255,.3);
+  animation:cl-pulse 2s ease-in-out infinite;
+}
+@keyframes cl-pulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(0,212,255,.3); }
+  50%{ box-shadow:0 0 0 4px rgba(0,212,255,0); }
+}
+.cl-version:last-child{ border-bottom:none; margin-bottom:0; }
+.cl-ver-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;
+}
+.cl-ver-tag{
+  font-size:13px;font-weight:800;color:#00d4ff;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
+  padding:2px 10px;border-radius:6px;letter-spacing:.3px;font-family:monospace;
+}
+.cl-ver-date{
+  font-size:11px;color:#475569;flex:1;
+}
+.cl-ver-badge{
+  font-size:9px;font-weight:800;letter-spacing:1px;
+  padding:2px 8px;border-radius:4px;text-transform:uppercase;
+  border:1px solid;
+}
+.cl-badge-major{ background:rgba(168,85,247,.15);color:#a855f7;border-color:rgba(168,85,247,.3); }
+.cl-badge-feature{ background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.25); }
+.cl-badge-fix{ background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.25); }
+.cl-badge-remove{ background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.25); }
+.cl-list{
+  margin:0;padding-left:0;list-style:none;
+  display:flex;flex-direction:column;gap:6px;
+}
+.cl-list li{
+  font-size:12.5px;color:#94a3b8;line-height:1.5;
+  display:flex;align-items:flex-start;gap:8px;
+}
+.cl-list li::before{
+  font-size:11px;margin-top:1px;flex-shrink:0;
+}
+.cl-feature::before{ content:"✨";color:#22c55e; }
+.cl-fix::before{ content:"🔧";color:#fbbf24; }
+.cl-remove::before{ content:"🗑";color:#ef4444; }
+.cl-list li strong{ color:#e2e8f0; }
+.cl-list li code{
+  font-family:monospace;font-size:11px;
+  background:rgba(0,212,255,.08);color:#67e8f9;
+  padding:1px 5px;border-radius:4px;
+}
+#changelogModal::-webkit-scrollbar{ width:4px; }
+#changelogModal > div > div:nth-child(2)::-webkit-scrollbar{ width:4px; }
+#changelogModal > div > div:nth-child(2)::-webkit-scrollbar-thumb{ background:rgba(0,212,255,.2);border-radius:2px; }
+</style>
+
+<script>
+function showChangelogModal(){
+  const m = document.getElementById('changelogModal');
+  m.style.display = 'flex';
+  requestAnimationFrame(()=>{ m.style.opacity='0'; m.style.transition='opacity .2s'; requestAnimationFrame(()=>m.style.opacity='1'); });
+}
+function closeChangelogModal(){
+  const m = document.getElementById('changelogModal');
+  m.style.opacity='0';
+  setTimeout(()=>m.style.display='none', 200);
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeChangelogModal(); });
+</script>
+
 </body>
 </html>
