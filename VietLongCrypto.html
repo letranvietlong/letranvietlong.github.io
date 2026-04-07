@@ -2340,6 +2340,38 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 }
 
 @media(max-width:768px){.forex-pairs-grid{grid-template-columns:1fr;}.forex-stats-row{grid-template-columns:repeat(2,1fr);}}
+
+/* ── SENTIMENT DASHBOARD ─────────────────────────────────── */
+.sent-metric-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px 18px;
+  transition:border-color .2s;
+}
+.sent-metric-card:hover{ border-color:rgba(167,139,250,.4); }
+.smc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.smc-val{font-size:26px;font-weight:900;color:var(--text);line-height:1;margin-bottom:4px}
+.smc-sub{font-size:11px;color:var(--muted)}
+.sent-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+}
+.sent-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;position:relative}
+.sent-bar-long{height:100%;background:#22c55e;border-radius:3px;transition:width .6s}
+.sent-bar-short{position:absolute;right:0;top:0;height:100%;background:#ef4444;border-radius:3px;transition:width .6s}
+.fr-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;border-radius:8px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+}
+.fr-rate-pos{color:#22c55e;font-weight:800;font-size:13px}
+.fr-rate-neg{color:#ef4444;font-weight:800;font-size:13px}
+.fr-rate-neu{color:var(--muted);font-weight:800;font-size:13px}
+@media(max-width:900px){
+  #sentimentMetrics{grid-template-columns:repeat(2,1fr)!important}
+  #page-sentiment .page-inner > div:nth-child(3){grid-template-columns:1fr!important}
+  #page-sentiment .page-inner > div:nth-child(4){grid-template-columns:1fr!important}
+}
 </style>
   <!-- TradingView chart library -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -2422,7 +2454,7 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
       </svg>
       Ủng Hộ
     </button>
-    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span onclick="showChangelogModal()" style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#475569';this.style.color='#e2e8f0'" onmouseout="this.style.background='#334155';this.style.color='#94a3b8'">v4.0.20</span></span></div>
+    <div class="clock-box"><span id="clock">—</span><span class="clock-tz">UTC+7 Hà Nội &nbsp;<span onclick="showChangelogModal()" style="background:#334155;color:#94a3b8;font-size:9px;padding:1px 5px;border-radius:4px;letter-spacing:.3px;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#475569';this.style.color='#e2e8f0'" onmouseout="this.style.background='#334155';this.style.color='#94a3b8'">v4.0.21</span></span></div>
 
 
     
@@ -2522,9 +2554,21 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
     <span class="tab-label">Heatmap</span>
   </button>
 
-
-
-
+  <button class="sub-tab" id="stab-sentiment" role="tab" onclick="showPage('sentiment',this)">
+    <span class="tab-icon ti-sentiment">
+      <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 13.5 A7 7 0 0 1 17 13.5" fill="none" stroke="#a78bfa" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M5.5 13.5 A4.5 4.5 0 0 1 14.5 13.5" fill="rgba(167,139,250,.15)" stroke="none"/>
+        <line x1="10" y1="13.5" x2="13.5" y2="7.5" stroke="#f43f5e" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="10" cy="13.5" r="1.4" fill="#a78bfa"/>
+        <circle cx="3.5" cy="14" r="1" fill="#22c55e"/>
+        <circle cx="16.5" cy="14" r="1" fill="#ef4444"/>
+        <text x="4" y="11" font-size="3.5" fill="#22c55e" font-weight="bold">SỢ</text>
+        <text x="13" y="11" font-size="3.5" fill="#ef4444" font-weight="bold">THAM</text>
+      </svg>
+    </span>
+    <span class="tab-label">Tâm Lý</span>
+  </button>
 
 </nav>
 
@@ -3471,6 +3515,113 @@ body.market-vn .vn-idx-card:hover{border-color:rgba(232,25,44,.35);}
 </div><!-- /page-ai -->
 
 <!-- ══════════════ PAGE: HEATMAP ══════════════ -->
+
+<div class="page" id="page-sentiment">
+  <div class="page-inner" style="padding:16px 20px;max-width:1400px;margin:0 auto">
+
+    <!-- Header row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="font-size:17px;font-weight:800;color:var(--text);margin:0 0 3px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">🧠</span> Tâm Lý Thị Trường
+        </h2>
+        <p style="font-size:11px;color:var(--muted);margin:0">Fear &amp; Greed · BTC Dominance · Long/Short Ratio · Cập nhật tự động</p>
+      </div>
+      <button onclick="loadSentiment()" style="display:flex;align-items:center;gap:6px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:6px 14px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer">
+        ↻ Làm mới
+      </button>
+    </div>
+
+    <!-- Top metrics -->
+    <div id="sentimentMetrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div class="sent-metric-card" id="sm-fg">
+        <div class="smc-label">Fear &amp; Greed Index</div>
+        <div class="smc-val" id="fg-val">—</div>
+        <div class="smc-sub" id="fg-label">Đang tải...</div>
+      </div>
+      <div class="sent-metric-card" id="sm-dom">
+        <div class="smc-label">BTC Dominance</div>
+        <div class="smc-val" id="dom-val">—</div>
+        <div class="smc-sub" id="dom-sub">% tổng vốn hóa</div>
+      </div>
+      <div class="sent-metric-card" id="sm-ls">
+        <div class="smc-label">Long/Short Ratio (BTC)</div>
+        <div class="smc-val" id="ls-val">—</div>
+        <div class="smc-sub" id="ls-sub">Toàn thị trường</div>
+      </div>
+      <div class="sent-metric-card" id="sm-fr">
+        <div class="smc-label">Funding Rate BTC</div>
+        <div class="smc-val" id="fr-val">—</div>
+        <div class="smc-sub" id="fr-sub">Perpetual futures</div>
+      </div>
+    </div>
+
+    <!-- Main layout: Gauge + History -->
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;margin-bottom:20px">
+
+      <!-- Gauge -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Gauge Hôm Nay</div>
+        <canvas id="fgGauge" width="260" height="150" style="max-width:100%"></canvas>
+        <div id="fgScore" style="font-size:52px;font-weight:900;margin:8px 0 4px;color:var(--text)">—</div>
+        <div id="fgClass" style="font-size:14px;font-weight:700;color:var(--muted)">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:16px">
+          <div style="text-align:center;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:8px">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Hôm qua</div>
+            <div id="fg-yesterday" style="font-size:16px;font-weight:800;color:#22c55e">—</div>
+          </div>
+          <div style="text-align:center;background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.2);border-radius:8px;padding:8px">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Tuần trước</div>
+            <div id="fg-lastweek" style="font-size:16px;font-weight:800;color:#63b3ed">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History chart -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Lịch Sử 30 Ngày</div>
+          <div style="display:flex;gap:6px">
+            <span style="font-size:10px;display:flex;align-items:center;gap:3px;color:var(--muted)"><span style="width:10px;height:3px;background:#a78bfa;display:inline-block;border-radius:2px"></span>F&amp;G Index</span>
+            <span style="font-size:10px;display:flex;align-items:center;gap:3px;color:var(--muted)"><span style="width:10px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px"></span>BTC Price</span>
+          </div>
+        </div>
+        <canvas id="fgHistory" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom row: Long/Short table + Funding rates -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+      <!-- Long/Short Ratio table -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Long / Short Ratio Top Coins</div>
+        <div id="lsTable" style="display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Đang tải...</div>
+        </div>
+      </div>
+
+      <!-- Funding Rate table -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Funding Rate</div>
+          <div id="fr-countdown" style="font-size:11px;color:var(--accent);font-weight:700;background:rgba(0,212,255,.08);padding:3px 10px;border-radius:6px">8h 00m</div>
+        </div>
+        <div id="frTable" style="display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extreme alerts -->
+    <div id="sentAlerts" style="display:none;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:14px 18px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">⚠ Tín hiệu cực đoan</div>
+      <div id="sentAlertsList" style="font-size:12px;color:var(--text2);line-height:1.8"></div>
+    </div>
+
+  </div>
+</div><!-- /page-sentiment -->
+
 <div class="page" id="page-heatmap">
 <div class="heatmap-layout">
   <div class="heatmap-header">
@@ -6955,6 +7106,7 @@ function showPage(id,el){
   if(id==='news')      { renderNewsPage(); maybeTriggerDailyReport(); }
   if(id==='ai'&&SYMBOLS.length&&!aiScores.length) runAISignals();
   if(id==='heatmap')   setTimeout(renderHeatmap, 100);
+  if(id==='sentiment') setTimeout(loadSentiment, 50);
   if(id==='portfolio') renderPortfolio();
   if(id==='events')    { if(!eventsData.length) loadEvents(); else renderEvents(); }
 
@@ -9980,6 +10132,426 @@ setInterval(()=>{
 window.showVNPage = showVNPage;
 window.loadVNChart = loadVNChart;
 // ── Donate button từ header (visible ở mọi tab) ──
+
+// ══════════════════════════════════════════════════════════════
+//  🧠 SENTIMENT DASHBOARD
+//  Nguồn: alternative.me (Fear&Greed) · Binance Futures (FR, L/S)
+//         CoinGecko (BTC dominance, BTC price history)
+// ══════════════════════════════════════════════════════════════
+
+let _sentLoaded = false;
+let _sentInterval = null;
+let _fgHistory = [];        // [{value, timestamp, price}]
+let _frCountdownTimer = null;
+
+// Màu sắc theo mức F&G
+function _fgColor(score){
+  if(score <= 20)  return '#ef4444';   // Extreme Fear
+  if(score <= 40)  return '#f97316';   // Fear
+  if(score <= 60)  return '#fbbf24';   // Neutral
+  if(score <= 80)  return '#84cc16';   // Greed
+  return '#22c55e';                    // Extreme Greed
+}
+function _fgClass(score){
+  if(score <= 20)  return 'Sợ Hãi Cực Độ';
+  if(score <= 40)  return 'Sợ Hãi';
+  if(score <= 60)  return 'Trung Lập';
+  if(score <= 80)  return 'Tham Lam';
+  return 'Tham Lam Cực Độ';
+}
+
+// Vẽ Gauge bán vòng tròn trên canvas
+function _drawFGGauge(canvas, score){
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W/2, cy = H - 20, r = Math.min(W, H*1.8)/2 - 14;
+
+  // Segments gradient: đỏ → cam → vàng → xanh lá nhạt → xanh lá
+  const segments = [
+    {from: Math.PI, to: Math.PI*1.2, color:'#ef4444'},
+    {from: Math.PI*1.2, to: Math.PI*1.4, color:'#f97316'},
+    {from: Math.PI*1.4, to: Math.PI*1.6, color:'#fbbf24'},
+    {from: Math.PI*1.6, to: Math.PI*1.8, color:'#84cc16'},
+    {from: Math.PI*1.8, to: Math.PI*2,   color:'#22c55e'},
+  ];
+  segments.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, s.from, s.to);
+    ctx.lineWidth = 22;
+    ctx.strokeStyle = s.color;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+  });
+
+  // Track background (dim)
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI, Math.PI*2);
+  ctx.lineWidth = 22;
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.stroke();
+
+  // Redraw segments on top
+  segments.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, s.from, s.to);
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = s.color + 'cc';
+    ctx.stroke();
+  });
+
+  // Needle
+  const angle = Math.PI + (score / 100) * Math.PI;
+  const nx = cx + (r - 10) * Math.cos(angle);
+  const ny = cy + (r - 10) * Math.sin(angle);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(nx, ny);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Labels
+  ctx.font = 'bold 10px system-ui';
+  ctx.fillStyle = '#ef4444';
+  ctx.textAlign = 'center';
+  ctx.fillText('0', cx - r - 2, cy + 14);
+  ctx.fillStyle = '#22c55e';
+  ctx.fillText('100', cx + r + 4, cy + 14);
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('50', cx, cy - r - 8);
+}
+
+// Vẽ biểu đồ lịch sử F&G 30 ngày
+function _drawFGHistory(canvas, data){
+  if(!data || data.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 600;
+  canvas.width = W;
+  const H = parseInt(canvas.getAttribute('height')) || 160;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = {l:36, r:12, t:10, b:24};
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const n  = data.length;
+
+  // Normalize prices
+  const prices = data.map(d=>d.price||0).filter(p=>p>0);
+  const minP = Math.min(...prices), maxP = Math.max(...prices);
+  const priceRange = maxP - minP || 1;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth = .5;
+  [0,25,50,75,100].forEach(v=>{
+    const y = pad.t + ch - (v/100)*ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(v, pad.l-4, y+3);
+  });
+
+  // BTC price line (secondary axis)
+  if(prices.length === n){
+    ctx.beginPath();
+    data.forEach((d,i)=>{
+      const x = pad.l + (i/(n-1))*cw;
+      const y = pad.t + ch - ((d.price - minP)/priceRange)*ch;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = 'rgba(245,158,11,.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // F&G area fill
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x = pad.l + (i/(n-1))*cw;
+    const y = pad.t + ch - (d.value/100)*ch;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l+cw, pad.t+ch);
+  ctx.lineTo(pad.l, pad.t+ch);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t+ch);
+  grad.addColorStop(0, 'rgba(167,139,250,.35)');
+  grad.addColorStop(1, 'rgba(167,139,250,.02)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // F&G line
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x = pad.l + (i/(n-1))*cw;
+    const y = pad.t + ch - (d.value/100)*ch;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dots at extremes
+  data.forEach((d,i)=>{
+    const x = pad.l + (i/(n-1))*cw;
+    const y = pad.t + ch - (d.value/100)*ch;
+    if(d.value <= 20 || d.value >= 80){
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fillStyle = _fgColor(d.value);
+      ctx.fill();
+    }
+  });
+
+  // X axis labels (first, middle, last)
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  ctx.font = '9px system-ui';
+  ctx.textAlign = 'center';
+  [[0,'hôm nay'], [Math.floor(n/2),'-15d'], [n-1,'-30d']].forEach(([i,lbl])=>{
+    const x = pad.l + (i/(n-1))*cw;
+    ctx.fillText(lbl, x, H-6);
+  });
+}
+
+// Render Long/Short table
+function _renderLSTable(data){
+  const el = document.getElementById('lsTable');
+  if(!el) return;
+  if(!data || !data.length){
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px">Không có dữ liệu</div>';
+    return;
+  }
+  el.innerHTML = data.map(d=>{
+    const ratio  = parseFloat(d.longShortRatio) || 1;
+    const longPct  = ((ratio/(1+ratio))*100).toFixed(1);
+    const shortPct = (100 - parseFloat(longPct)).toFixed(1);
+    const lCol = parseFloat(longPct) > 55 ? '#22c55e' : parseFloat(longPct) < 45 ? '#ef4444' : '#fbbf24';
+    return `<div class="sent-row">
+      <span style="font-size:12px;font-weight:800;color:var(--text);width:44px;flex-shrink:0">${d.sym}</span>
+      <div class="sent-bar-wrap">
+        <div class="sent-bar-long" style="width:${longPct}%"></div>
+        <div class="sent-bar-short" style="width:${shortPct}%"></div>
+      </div>
+      <span style="font-size:11px;color:${lCol};font-weight:700;width:52px;text-align:right;flex-shrink:0">
+        L ${longPct}%
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// Render Funding Rate table
+function _renderFRTable(data){
+  const el = document.getElementById('frTable');
+  if(!el) return;
+  if(!data || !data.length){
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px">Không có dữ liệu</div>';
+    return;
+  }
+  el.innerHTML = data.map(d=>{
+    const rate = d.rate;
+    const cls  = rate > 0.01 ? 'fr-rate-pos' : rate < -0.01 ? 'fr-rate-neg' : 'fr-rate-neu';
+    const sign = rate > 0 ? '+' : '';
+    const bg   = rate > 0.05 ? 'rgba(34,197,94,.06)' : rate < -0.02 ? 'rgba(239,68,68,.06)' : 'rgba(255,255,255,.02)';
+    return `<div class="fr-row" style="background:${bg}">
+      <span style="font-size:12px;font-weight:800;color:var(--text);width:44px">${d.sym}</span>
+      <span style="font-size:10px;color:var(--muted);flex:1">
+        ${rate > 0.05 ? '⚠ Long nhiều' : rate < -0.02 ? '⚠ Short nhiều' : '● Bình thường'}
+      </span>
+      <span class="${cls}">${sign}${(rate).toFixed(4)}%</span>
+    </div>`;
+  }).join('');
+}
+
+// Kiểm tra và hiện alerts cực đoan
+function _checkSentAlerts(fg, lsRatio, frBTC){
+  const alerts = [];
+  if(fg <= 15) alerts.push('🔴 <strong>Fear & Greed cực thấp (' + fg + ')</strong> — Tín hiệu mua ngược chiều (contrarian buy)');
+  if(fg >= 90) alerts.push('🟡 <strong>Fear & Greed cực cao (' + fg + ')</strong> — Thị trường tham lam quá mức, cẩn thận bán ra');
+  if(frBTC > 0.08) alerts.push('⚠ <strong>Funding Rate BTC cao (+' + frBTC.toFixed(4) + '%)</strong> — Long quá nhiều, rủi ro squeeze');
+  if(frBTC < -0.03) alerts.push('⚠ <strong>Funding Rate BTC âm (' + frBTC.toFixed(4) + '%)</strong> — Short quá nhiều, rủi ro short squeeze');
+  if(lsRatio && lsRatio > 1.8) alerts.push('📊 Long/Short BTC rất cao (' + lsRatio.toFixed(2) + ') — Đa số đang long');
+  if(lsRatio && lsRatio < 0.6) alerts.push('📊 Long/Short BTC rất thấp (' + lsRatio.toFixed(2) + ') — Đa số đang short');
+
+  const box  = document.getElementById('sentAlerts');
+  const list = document.getElementById('sentAlertsList');
+  if(!box || !list) return;
+  if(alerts.length){
+    list.innerHTML = alerts.join('<br>');
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// Countdown đến lần funding tiếp theo (mỗi 8h: 00:00, 08:00, 16:00 UTC)
+function _startFRCountdown(){
+  if(_frCountdownTimer) clearInterval(_frCountdownTimer);
+  function _tick(){
+    const el = document.getElementById('fr-countdown');
+    if(!el) return;
+    const now  = new Date();
+    const utcH = now.getUTCHours(), utcM = now.getUTCMinutes(), utcS = now.getUTCSeconds();
+    const nextH = Math.ceil((utcH + 1/60) / 8) * 8 % 24;
+    let diffSec = ((nextH - utcH)*3600 - utcM*60 - utcS + 86400) % 86400;
+    if(diffSec === 0) diffSec = 28800;
+    const h = String(Math.floor(diffSec/3600)).padStart(2,'0');
+    const m = String(Math.floor((diffSec%3600)/60)).padStart(2,'0');
+    const s = String(diffSec%60).padStart(2,'0');
+    el.textContent = h + ':' + m + ':' + s;
+  }
+  _tick();
+  _frCountdownTimer = setInterval(_tick, 1000);
+}
+
+// ─── MAIN LOAD FUNCTION ─────────────────────────────────────
+async function loadSentiment(){
+  _startFRCountdown();
+
+  // Update metric card helpers
+  function setMetric(id, val, sub, color){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const valEl = el.querySelector('.smc-val');
+    const subEl = el.querySelector('.smc-sub');
+    if(valEl){ valEl.textContent = val; if(color) valEl.style.color = color; }
+    if(subEl && sub) subEl.textContent = sub;
+  }
+  function setCard(id, accent){
+    const el = document.getElementById(id);
+    if(el && accent) el.style.borderColor = accent + '55';
+  }
+
+  let fgScore = 50, fgYday = 50, fgLastWeek = 50, frBTC = 0, lsRatioBTC = 1;
+
+  // ── 1. Fear & Greed Index ──────────────────────────────────
+  try{
+    const r = await fetch('https://api.alternative.me/fng/?limit=35', {signal:AbortSignal.timeout(8000)});
+    const j = await r.json();
+    const arr = j.data || [];
+    fgScore    = parseInt(arr[0]?.value  || 50);
+    fgYday     = parseInt(arr[1]?.value  || 50);
+    fgLastWeek = parseInt(arr[7]?.value  || 50);
+
+    // Gauge
+    const canvas = document.getElementById('fgGauge');
+    if(canvas) _drawFGGauge(canvas, fgScore);
+
+    // Score + class
+    const col = _fgColor(fgScore);
+    const scoreEl = document.getElementById('fgScore');
+    const classEl = document.getElementById('fgClass');
+    if(scoreEl){ scoreEl.textContent = fgScore; scoreEl.style.color = col; }
+    if(classEl){ classEl.textContent = _fgClass(fgScore); classEl.style.color = col; }
+
+    // Yesterday / last week
+    const ydEl = document.getElementById('fg-yesterday');
+    const lwEl = document.getElementById('fg-lastweek');
+    if(ydEl){ ydEl.textContent = fgYday; ydEl.style.color = _fgColor(fgYday); }
+    if(lwEl){ lwEl.textContent = fgLastWeek; lwEl.style.color = _fgColor(fgLastWeek); }
+
+    // Metric card
+    setMetric('sm-fg', fgScore, _fgClass(fgScore), col);
+    setCard('sm-fg', col);
+
+    // Build history data (last 30)
+    _fgHistory = arr.slice(0,30).reverse().map(d=>({
+      value: parseInt(d.value),
+      timestamp: parseInt(d.timestamp)*1000,
+      price: 0,
+    }));
+  }catch(e){ setMetric('sm-fg','—','Lỗi kết nối'); }
+
+  // ── 2. BTC Price history để overlay ───────────────────────
+  try{
+    const r = await fetch(
+      'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=35',
+      {signal:AbortSignal.timeout(8000)});
+    const klines = await r.json();
+    klines.slice(-30).forEach((k,i)=>{
+      if(_fgHistory[i]) _fgHistory[i].price = parseFloat(k[4]);
+    });
+    const histCanvas = document.getElementById('fgHistory');
+    if(histCanvas) _drawFGHistory(histCanvas, _fgHistory);
+  }catch(e){}
+
+  // ── 3. BTC Dominance (CoinGecko) ──────────────────────────
+  try{
+    const r = await fetch('https://api.coingecko.com/api/v3/global', {signal:AbortSignal.timeout(8000)});
+    const j = await r.json();
+    const dom = j.data?.market_cap_percentage?.btc || 0;
+    setMetric('sm-dom', dom.toFixed(1)+'%',
+      dom > 55 ? 'Altcoin chưa bùng nổ' : dom < 45 ? 'Altseason đang diễn ra' : 'Thị trường cân bằng',
+      dom > 55 ? '#f59e0b' : '#22c55e');
+    setCard('sm-dom', dom > 55 ? '#f59e0b' : '#22c55e');
+  }catch(e){ setMetric('sm-dom','—','CoinGecko timeout'); }
+
+  // ── 4. Long/Short Ratio top 8 coins ───────────────────────
+  const LS_COINS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT'];
+  try{
+    const results = await Promise.allSettled(LS_COINS.map(async sym=>{
+      const r = await fetch(
+        `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`,
+        {signal:AbortSignal.timeout(6000)});
+      if(!r.ok) throw 0;
+      const d = await r.json();
+      return { sym: sym.replace('USDT',''), longShortRatio: d[0]?.longShortRatio || 1 };
+    }));
+    const lsData = results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+    if(lsData.length){
+      lsRatioBTC = parseFloat(lsData[0]?.longShortRatio || 1);
+      const lsPct = ((lsRatioBTC/(1+lsRatioBTC))*100).toFixed(1);
+      setMetric('sm-ls', lsPct+'% L',
+        lsRatioBTC > 1.3 ? 'Long chiếm ưu thế' : lsRatioBTC < 0.8 ? 'Short chiếm ưu thế' : 'Cân bằng',
+        lsRatioBTC > 1.3 ? '#22c55e' : lsRatioBTC < 0.8 ? '#ef4444' : '#fbbf24');
+      setCard('sm-ls', lsRatioBTC > 1.3 ? '#22c55e' : '#ef4444');
+      _renderLSTable(lsData);
+    }
+  }catch(e){ setMetric('sm-ls','—','Binance timeout'); }
+
+  // ── 5. Funding Rate top 10 ─────────────────────────────────
+  const FR_COINS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
+                    'DOGEUSDT','ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT'];
+  try{
+    const r = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex', {signal:AbortSignal.timeout(8000)});
+    const all = await r.json();
+    const frData = all
+      .filter(d=>FR_COINS.includes(d.symbol))
+      .map(d=>({ sym: d.symbol.replace('USDT',''), rate: parseFloat(d.lastFundingRate)*100 }))
+      .sort((a,b)=>Math.abs(b.rate)-Math.abs(a.rate));
+
+    frBTC = frData.find(d=>d.sym==='BTC')?.rate || 0;
+    const frSign = frBTC > 0 ? '+' : '';
+    setMetric('sm-fr', frSign+frBTC.toFixed(4)+'%',
+      frBTC > 0.05 ? 'Long nhiều — cẩn thận' : frBTC < -0.02 ? 'Short nhiều — dễ squeeze' : 'Bình thường',
+      frBTC > 0.05 ? '#f97316' : frBTC < -0.02 ? '#ef4444' : '#22c55e');
+    setCard('sm-fr', frBTC > 0.05 ? '#f97316' : frBTC < 0 ? '#ef4444' : '#22c55e');
+    _renderFRTable(frData);
+  }catch(e){ setMetric('sm-fr','—','Binance timeout'); }
+
+  // ── 6. Extreme alerts ─────────────────────────────────────
+  _checkSentAlerts(fgScore, lsRatioBTC, frBTC);
+
+  _sentLoaded = true;
+}
+
+// Auto refresh sentiment mỗi 5 phút khi tab đang active
+setInterval(()=>{
+  if(document.getElementById('page-sentiment')?.classList.contains('active')){
+    loadSentiment();
+  }
+}, 5*60*1000);
+
+window.loadSentiment = loadSentiment;
+
 function showDonateGlobal(){
   // Hiện page donate
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
