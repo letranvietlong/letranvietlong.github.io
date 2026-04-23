@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Cyberpunk bingo number caller, 1-75, with custom auto-draw interval." />
+  <meta name="color-scheme" content="dark" />
+  <title>BINGO // NEON_75</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" />
+
+  <style>
+    /* ══════ styles/tokens.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   Single source of truth for all themeable values.
+   Edit here to reskin the entire app.
+   ═════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ─── Base surfaces ─── */
+  --bg-void:     #0e0c1e;
+  --bg-deep:     #15132a;
+  --bg-panel:    #1a1838;
+  --bg-elevated: #221f47;
+  --grid-line:   rgba(236, 126, 255, 0.04);
+
+  /* ─── Neon palette (pastel, easier on eyes) ─── */
+  --neon-pink:   #ff7ae0;
+  --neon-cyan:   #6ee5f5;
+  --neon-yellow: #ffe27a;
+  --neon-green:  #7cf2a5;
+  --neon-purple: #c49bff;
+  --neon-peach:  #ffa87a;
+
+  /* ─── Text ─── */
+  --text-primary: #f2eeff;
+  --text-soft:    #b8b3d6;
+  --text-muted:   #7a759a;
+  --text-dim:     #4a4569;
+
+  /* ─── Column colors ─── */
+  --col-b: var(--neon-pink);
+  --col-i: var(--neon-peach);
+  --col-n: var(--neon-green);
+  --col-g: var(--neon-purple);
+  --col-o: var(--neon-cyan);
+
+  /* ─── Radii ─── */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+
+  /* ─── Typography ─── */
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono:    'Share Tech Mono', monospace;
+  --font-body:    'Be Vietnam Pro', sans-serif;
+
+  /* ─── Motion ─── */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-soft:   cubic-bezier(.22, 1, .36, 1);
+}
+
+    /* ══════ styles/base.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   BASE
+   Reset, body, ambient background effects
+   ═════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--bg-void);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Grid background (animated) ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  z-index: 0;
+  pointer-events: none;
+  animation: gridShift 32s linear infinite;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+}
+@keyframes gridShift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 56px 56px, 56px 56px; }
+}
+
+/* ─── Ambient glow orbs ─── */
+.ambient-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  animation: orbFloat 22s ease-in-out infinite;
+  will-change: transform;
+}
+.ambient-glow.pink   { background: var(--neon-pink);   width: 460px; height: 460px; top: -120px;    left: -120px; }
+.ambient-glow.cyan   { background: var(--neon-cyan);   width: 400px; height: 400px; bottom: -100px; right: -100px; animation-delay: -11s; }
+.ambient-glow.purple { background: var(--neon-purple); width: 340px; height: 340px; top: 40%; right: 20%; animation-delay: -6s; opacity: 0.18; }
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(70px, 50px) scale(1.2); }
+}
+
+/* ─── App shell ─── */
+.app {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 18px 60px;
+}
+
+/* ─── Respect reduced motion preference ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  body::before, .ambient-glow { animation: none; }
+}
+
+    /* ══════ styles/layout.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   LAYOUT — Header, panels, secondary buttons
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Header ─── */
+header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.brand-mark {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--neon-cyan);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  opacity: 0.6;
+}
+.brand-mark::before { content: '‹ '; }
+.brand-mark::after  { content: ' ›'; }
+
+.logo {
+  display: inline-flex;
+  gap: 10px;
+}
+.logo span {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(52px, 12vw, 92px);
+  line-height: 1;
+  letter-spacing: 4px;
+  display: inline-block;
+  animation: neonPulse 3s ease-in-out infinite;
+}
+.logo span:nth-child(1) { color: var(--col-b); animation-delay: 0s;  }
+.logo span:nth-child(2) { color: var(--col-i); animation-delay: .2s; }
+.logo span:nth-child(3) { color: var(--col-n); animation-delay: .4s; }
+.logo span:nth-child(4) { color: var(--col-g); animation-delay: .6s; }
+.logo span:nth-child(5) { color: var(--col-o); animation-delay: .8s; }
+
+@keyframes neonPulse {
+  0%, 100% { text-shadow: 0 0 18px currentColor, 0 0 38px currentColor; }
+  50%      { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor; }
+}
+
+.tagline {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 14px;
+}
+.tagline .divider {
+  color: var(--neon-pink);
+  margin: 0 10px;
+  opacity: 0.7;
+}
+
+/* ─── Panel ─── */
+.panel {
+  background: linear-gradient(145deg, rgba(26, 24, 56, 0.7), rgba(21, 19, 42, 0.7));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow:
+    0 20px 60px -30px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(145deg,
+    rgba(255, 122, 224, 0.25),
+    rgba(255, 255, 255, 0.02) 30%,
+    rgba(255, 255, 255, 0.02) 70%,
+    rgba(110, 229, 245, 0.25));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--neon-cyan);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-title::before {
+  content: '◈ ';
+  color: var(--neon-pink);
+  opacity: 0.8;
+}
+
+.panel-body { padding: 24px 22px; }
+
+/* ─── Primary draw button ─── */
+.btn-draw {
+  flex: 1.4;
+  padding: 18px 14px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  border: none;
+  border-radius: var(--r-md);
+  color: #1a1838;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.25s, filter 0.2s;
+  box-shadow:
+    0 10px 30px -8px rgba(255, 122, 224, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btn-draw::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.8s;
+}
+.btn-draw:hover:not(:disabled)::before { transform: translateX(120%); }
+.btn-draw:hover:not(:disabled) {
+  box-shadow:
+    0 14px 40px -8px rgba(255, 122, 224, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform: translateY(-3px);
+  filter: brightness(1.08);
+}
+.btn-draw:active:not(:disabled) { transform: translateY(-1px); }
+.btn-draw:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ─── Action button row ─── */
+.btn-row {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+/* ─── Reset button ─── */
+.controls-row {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+}
+.btn-reset {
+  flex: 1;
+  padding: 14px;
+  background: rgba(14, 12, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+}
+.btn-reset:hover {
+  color: var(--neon-pink);
+  border-color: var(--neon-pink);
+  background: rgba(255, 122, 224, 0.05);
+  box-shadow: 0 0 16px rgba(255, 122, 224, 0.3);
+}
+
+    /* ══════ styles/slot.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   SLOT MACHINE — Stage, display cluster, status, recent strip
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.slot-stage {
+  background:
+    radial-gradient(ellipse at center top,    rgba(255, 122, 224, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse at center bottom, rgba(110, 229, 245, 0.08) 0%, transparent 55%),
+    rgba(14, 12, 30, 0.5);
+  padding: 28px 22px 20px;
+  border-radius: var(--r-md);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-corner {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  opacity: 0.45;
+}
+.hud-corner.tl { top: 12px; left: 16px; }
+.hud-corner.tr { top: 12px; right: 16px; }
+
+/* ─── Display cluster (letter + number) ─── */
+.display-cluster {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.letter-badge {
+  width: 78px;
+  height: 96px;
+  border-radius: var(--r-md);
+  background: linear-gradient(145deg, rgba(34, 31, 71, 0.6), rgba(21, 19, 42, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 46px;
+  color: var(--text-dim);
+  transition: all 0.45s var(--ease-spring);
+}
+.letter-badge.active {
+  border-color: currentColor;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 122, 224, 0.08), transparent),
+    linear-gradient(145deg, rgba(34, 31, 71, 0.8), rgba(21, 19, 42, 0.8));
+  box-shadow:
+    0 0 30px currentColor,
+    0 0 60px currentColor,
+    inset 0 0 20px rgba(255, 255, 255, 0.04);
+  text-shadow: 0 0 22px currentColor;
+}
+
+/* ─── Number window ─── */
+.number-window {
+  width: 180px;
+  height: 150px;
+  background: radial-gradient(ellipse at center, rgba(14, 12, 30, 0.9), rgba(10, 8, 22, 1));
+  border: 1px solid rgba(110, 229, 245, 0.3);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 40px rgba(110, 229, 245, 0.12),
+    inset 0 0 50px rgba(0, 0, 0, 0.6);
+}
+/* Scanlines */
+.number-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(110, 229, 245, 0.025) 3px,
+    rgba(110, 229, 245, 0.025) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+/* Horizon line */
+.number-window::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  opacity: 0.5;
+  filter: blur(1px);
+}
+
+#slotDisplay {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 76px;
+  line-height: 1;
+  color: var(--text-primary);
+  position: relative;
+  z-index: 1;
+  will-change: transform, opacity;
+  letter-spacing: 1px;
+}
+
+#slotDisplay.glitch { animation: glitchText 0.09s infinite; }
+@keyframes glitchText {
+  0%   { transform: translate(0, 0);      text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-cyan); }
+  33%  { transform: translate(-1px, 1px); text-shadow: -1px 0 var(--neon-pink), 1px 0 var(--neon-cyan); }
+  66%  { transform: translate(1px, -1px); text-shadow: 1px 1px var(--neon-pink), -1px -1px var(--neon-cyan); }
+  100% { transform: translate(0, 0);      text-shadow: 0 0 14px currentColor; }
+}
+
+#slotDisplay.locked { animation: lockedPulse 2s ease-in-out infinite; }
+@keyframes lockedPulse {
+  0%, 100% { text-shadow: 0 0 18px currentColor, 0 0 36px currentColor; }
+  50%      { text-shadow: 0 0 28px currentColor, 0 0 56px currentColor, 0 0 84px currentColor; }
+}
+
+/* ─── Status line ─── */
+.status-line {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  min-height: 24px;
+}
+.status-line .tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 10px;
+  letter-spacing: 2px;
+}
+.status-line .val {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 3px;
+}
+
+.status-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+/* ─── Recent draws strip ─── */
+.last-strip-wrap {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.strip-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.last-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+  min-height: 36px;
+  align-items: center;
+}
+.last-strip::-webkit-scrollbar { display: none; }
+
+.last-strip:empty::before {
+  content: '— no draws yet —';
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  width: 100%;
+  text-align: center;
+}
+
+.last-chip {
+  flex-shrink: 0;
+  min-width: 52px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid;
+  animation: chipIn 0.4s var(--ease-spring);
+}
+@keyframes chipIn {
+  from { transform: scale(0) rotate(-90deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);    opacity: 1; }
+}
+.last-chip .ltr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.75;
+  font-weight: 400;
+}
+.last-chip.b { color: var(--col-b); border-color: var(--col-b); background: rgba(255, 122, 224, 0.08); box-shadow: 0 0 16px rgba(255, 122, 224, 0.35); }
+.last-chip.i { color: var(--col-i); border-color: var(--col-i); background: rgba(255, 168, 122, 0.08); box-shadow: 0 0 16px rgba(255, 168, 122, 0.35); }
+.last-chip.n { color: var(--col-n); border-color: var(--col-n); background: rgba(124, 242, 165, 0.08); box-shadow: 0 0 16px rgba(124, 242, 165, 0.35); }
+.last-chip.g { color: var(--col-g); border-color: var(--col-g); background: rgba(196, 155, 255, 0.08); box-shadow: 0 0 16px rgba(196, 155, 255, 0.35); }
+.last-chip.o { color: var(--col-o); border-color: var(--col-o); background: rgba(110, 229, 245, 0.08); box-shadow: 0 0 16px rgba(110, 229, 245, 0.35); }
+
+    /* ══════ styles/auto.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   AUTO-DRAW PANEL — Auto button, interval input, presets, countdown
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Auto button (paired with draw button) ─── */
+.btn-auto {
+  flex: 1;
+  padding: 18px 14px;
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.06), rgba(196, 155, 255, 0.04));
+  border: 1px solid rgba(110, 229, 245, 0.25);
+  border-radius: var(--r-md);
+  color: var(--neon-cyan);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.btn-auto:hover:not(:disabled) {
+  border-color: var(--neon-cyan);
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.12), rgba(196, 155, 255, 0.08));
+  box-shadow: 0 0 24px rgba(110, 229, 245, 0.3);
+  transform: translateY(-2px);
+}
+.btn-auto:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-auto .btn-label {
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+.btn-auto .btn-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.btn-auto .btn-meta strong {
+  color: var(--neon-yellow);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 226, 122, 0.5);
+}
+
+/* Active state */
+.btn-auto.on {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  border-color: transparent;
+  color: #15132a;
+  box-shadow:
+    0 10px 30px -8px rgba(110, 229, 245, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: autoPulse 2s ease-in-out infinite;
+}
+.btn-auto.on .btn-meta { color: rgba(26, 24, 56, 0.7); }
+.btn-auto.on .btn-meta strong { color: #15132a; text-shadow: none; }
+.btn-auto.on:hover:not(:disabled) {
+  box-shadow:
+    0 14px 40px -8px rgba(110, 229, 245, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.08);
+}
+
+@keyframes autoPulse {
+  0%, 100% { box-shadow: 0 10px 30px -8px rgba(110, 229, 245, 0.6),  inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50%      { box-shadow: 0 10px 40px -6px rgba(110, 229, 245, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+}
+
+/* Indicator dot */
+.btn-auto::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.3s;
+}
+.btn-auto.on::before {
+  background: var(--neon-yellow);
+  box-shadow: 0 0 10px var(--neon-yellow);
+  animation: dotBlink 1s ease-in-out infinite;
+}
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ─── Auto panel container ─── */
+.auto-panel {
+  margin-top: 18px;
+  padding: 18px;
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.04), rgba(196, 155, 255, 0.03));
+  border: 1px solid rgba(110, 229, 245, 0.12);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auto-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.auto-row-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ─── Interval input group ─── */
+.interval-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(14, 12, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 4px 4px 4px 14px;
+  transition: all 0.25s;
+}
+.interval-group:focus-within {
+  border-color: var(--neon-yellow);
+  box-shadow: 0 0 16px rgba(255, 226, 122, 0.35);
+}
+
+.interval-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--neon-yellow);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  width: 42px;
+  text-align: center;
+  padding: 2px 0;
+  text-shadow: 0 0 10px rgba(255, 226, 122, 0.5);
+}
+.interval-input::-webkit-inner-spin-button,
+.interval-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.interval-unit {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  padding: 0 10px;
+  text-transform: uppercase;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 3px;
+}
+.stepper-btn {
+  width: 26px;
+  height: 15px;
+  background: rgba(34, 31, 71, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  font-size: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 4px;
+}
+.stepper-btn:hover {
+  color: var(--neon-yellow);
+  border-color: var(--neon-yellow);
+}
+
+/* ─── Preset chips ─── */
+.preset-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+.preset-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+.preset-chip {
+  padding: 6px 14px;
+  background: rgba(14, 12, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s;
+  letter-spacing: 1px;
+}
+.preset-chip:hover {
+  color: var(--neon-yellow);
+  border-color: var(--neon-yellow);
+}
+.preset-chip.active {
+  color: var(--neon-yellow);
+  border-color: var(--neon-yellow);
+  background: rgba(255, 226, 122, 0.1);
+  box-shadow: 0 0 14px rgba(255, 226, 122, 0.3);
+}
+
+/* ─── Countdown ─── */
+.countdown-wrap {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.countdown-wrap.visible { display: flex; }
+
+.countdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.countdown-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.countdown-timer {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--neon-yellow);
+  letter-spacing: 1px;
+  min-width: 52px;
+  text-align: right;
+  text-shadow: 0 0 10px rgba(255, 226, 122, 0.5);
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(14, 12, 30, 0.8);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-yellow), var(--neon-pink));
+  width: 100%;
+  box-shadow: 0 0 14px rgba(255, 226, 122, 0.6);
+  border-radius: 999px;
+}
+
+    /* ══════ styles/board.css ══════ */
+/* ═════════════════════════════════════════════════════════════════════════
+   NUMBER MATRIX — 5 grouped ranges (B/I/N/G/O)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.board-counter {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--neon-yellow);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 226, 122, 0.5);
+}
+.board-counter .total {
+  color: var(--text-muted);
+  text-shadow: none;
+}
+
+.range-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.range-group {
+  background: linear-gradient(145deg, rgba(26, 24, 56, 0.4), rgba(21, 19, 42, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--group-color);
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  position: relative;
+  transition: background 0.3s;
+}
+.range-group:hover {
+  background: linear-gradient(145deg, rgba(26, 24, 56, 0.55), rgba(21, 19, 42, 0.4));
+}
+
+.range-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.range-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.range-letter {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 24px;
+  color: var(--group-color);
+  line-height: 1;
+  text-shadow: 0 0 16px var(--group-color);
+  letter-spacing: 2px;
+}
+
+.range-numbers {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+.range-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+.range-count .done {
+  color: var(--group-color);
+  font-weight: 700;
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 5px;
+}
+@media (max-width: 680px) {
+  .range-grid { grid-template-columns: repeat(8, 1fr); }
+}
+
+.num-cell {
+  aspect-ratio: 1;
+  background: rgba(14, 12, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-dim);
+  transition: all 0.4s var(--ease-spring);
+}
+
+.num-cell.drawn {
+  background: radial-gradient(ellipse at center, var(--group-color), rgba(255, 255, 255, 0.8));
+  border-color: var(--group-color);
+  color: #15132a;
+  box-shadow:
+    0 0 20px var(--group-color),
+    inset 0 0 12px rgba(255, 255, 255, 0.4);
+  transform: scale(1.08);
+  animation: drawnPop 0.5s var(--ease-spring);
+}
+
+@keyframes drawnPop {
+  0%   { transform: scale(1)    rotate(0deg);  }
+  60%  { transform: scale(1.35) rotate(-4deg); }
+  100% { transform: scale(1.08) rotate(0deg);  }
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow pink"   aria-hidden="true"></div>
+  <div class="ambient-glow cyan"   aria-hidden="true"></div>
+  <div class="ambient-glow purple" aria-hidden="true"></div>
+
+  <div class="app">
+
+    <header>
+      <div class="brand-mark">SYSTEM.ONLINE</div>
+      <h1 class="logo" aria-label="BINGO">
+        <span aria-hidden="true">B</span>
+        <span aria-hidden="true">I</span>
+        <span aria-hidden="true">N</span>
+        <span aria-hidden="true">G</span>
+        <span aria-hidden="true">O</span>
+      </h1>
+      <p class="tagline">NEON_75<span class="divider" aria-hidden="true">//</span>CYBER EDITION</p>
+    </header>
+
+    <!-- ═══════ Draw engine ═══════ -->
+    <section class="panel" aria-labelledby="drawEngineTitle">
+      <div class="panel-title">
+        <span id="drawEngineTitle">DRAW.ENGINE</span>
+        <span id="engineStatus" style="color: var(--neon-pink); font-size: 10px;">● STANDBY</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="slot-stage">
+          <div class="hud-corner tl">RNG.LIVE</div>
+          <div class="hud-corner tr" id="drawCounter">#000</div>
+
+          <div class="display-cluster" aria-live="polite">
+            <div class="letter-badge" id="slotLetter">—</div>
+            <div class="number-window">
+              <div id="slotDisplay">00</div>
+            </div>
+          </div>
+
+          <div class="status-line" id="statusLine">
+            <span style="color: var(--text-muted)">// AWAITING INPUT</span>
+          </div>
+          <p class="status-sub" id="statusSub">Press DRAW to begin sequence</p>
+
+          <div class="last-strip-wrap">
+            <div class="strip-label">// RECENT DRAWS</div>
+            <div class="last-strip" id="lastStrip" role="log" aria-label="Recent draws"></div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-draw" id="btnDraw" type="button">
+            ▶ EXECUTE DRAW
+          </button>
+          <button class="btn-auto" id="btnAuto" type="button" aria-pressed="false">
+            <span class="btn-label">AUTO</span>
+            <span class="btn-meta">EVERY <strong id="btnAutoSec">5</strong>S</span>
+          </button>
+        </div>
+
+        <div class="auto-panel">
+          <div class="auto-row">
+            <span class="auto-row-label">INTERVAL:</span>
+            <div class="interval-group">
+              <input
+                class="interval-input"
+                id="intervalInput"
+                type="number"
+                min="2"
+                max="60"
+                step="1"
+                value="5"
+                aria-label="Auto-draw interval in seconds"
+              />
+              <span class="interval-unit">SEC</span>
+              <div class="stepper">
+                <button class="stepper-btn" type="button" data-delta="1"  aria-label="Increase">▲</button>
+                <button class="stepper-btn" type="button" data-delta="-1" aria-label="Decrease">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="preset-chips" id="presetChips">
+            <span class="preset-label">PRESETS:</span>
+            <button class="preset-chip" type="button" data-sec="3">3S</button>
+            <button class="preset-chip active" type="button" data-sec="5">5S</button>
+            <button class="preset-chip" type="button" data-sec="10">10S</button>
+            <button class="preset-chip" type="button" data-sec="15">15S</button>
+            <button class="preset-chip" type="button" data-sec="30">30S</button>
+          </div>
+
+          <div class="countdown-wrap" id="countdownWrap">
+            <div class="countdown-row">
+              <span class="countdown-label">// NEXT DRAW IN</span>
+              <span class="countdown-timer" id="countdownTimer">5.0S</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════ Number matrix ═══════ -->
+    <section class="panel" aria-labelledby="matrixTitle">
+      <div class="panel-title">
+        <span id="matrixTitle">NUMBER.MATRIX</span>
+        <span class="board-counter">
+          <span id="drawnCount">0</span><span class="total">/75</span>
+        </span>
+      </div>
+      <div class="panel-body">
+        <div class="range-groups" id="rangeGroups"></div>
+      </div>
+    </section>
+
+    <div class="controls-row">
+      <button class="btn-reset" id="btnReset" type="button">↺ RESET SYSTEM</button>
+    </div>
+
+  </div>
+
+  <script>
+(() => {
+  'use strict';
+
+  // ══════ scripts/config.js ══════
+/**
+ * Game configuration constants.
+ * Frozen to prevent accidental mutation at runtime.
+ */
+
+const COLUMNS = Object.freeze({
+  B: { range: [1,  15], color: 'b', cssVar: '--col-b' },
+  I: { range: [16, 30], color: 'i', cssVar: '--col-i' },
+  N: { range: [31, 45], color: 'n', cssVar: '--col-n' },
+  G: { range: [46, 60], color: 'g', cssVar: '--col-g' },
+  O: { range: [61, 75], color: 'o', cssVar: '--col-o' },
+});
+
+const COL_ORDER = Object.freeze(['B', 'I', 'N', 'G', 'O']);
+
+/** Total numbers in the pool. */
+const POOL_SIZE = 75;
+
+/** Auto-draw interval bounds (seconds). */
+const INTERVAL = Object.freeze({
+  MIN: 2,
+  MAX: 60,
+  DEFAULT: 5,
+});
+
+/** Slot animation timing (milliseconds). */
+const SLOT = Object.freeze({
+  SPIN_DURATION: 1200,
+  TICK_BASE: 45,
+  TICK_EASING_MAX: 200,
+  CALLBACK_DELAY: 250,
+});
+
+/** Max items kept in the recent-draws strip. */
+const RECENT_STRIP_MAX = 12;
+
+/**
+ * Map a number (1-75) to its column letter.
+ * Returns null if out of range.
+ * @param {number} n
+ * @returns {string|null}
+ */
+function getColumnFor(n) {
+  for (const col of COL_ORDER) {
+    const [min, max] = COLUMNS[col].range;
+    if (n >= min && n <= max) return col;
+  }
+  return null;
+}
+
+  // ══════ scripts/state.js ══════
+/**
+ * Game state — single source of truth.
+ *
+ * All reads happen via getters; all writes happen via explicit actions.
+ * Anyone can subscribe to state changes via `subscribe()`.
+ */
+
+
+/* ─── Private state ─── */
+
+const state = {
+  pool: [],            // Remaining numbers (top of stack = next draw)
+  drawn: new Set(),    // Numbers already drawn
+  isSpinning: false,   // True while slot animation plays
+  isAutoOn: false,     // True when auto-draw is active
+  interval: INTERVAL.DEFAULT,
+};
+
+/* ─── Subscribers ─── */
+
+const subscribers = new Set();
+
+function notify(event) {
+  for (const fn of subscribers) {
+    try {
+      fn(event);
+    } catch (err) {
+      console.error('[state] subscriber error:', err);
+    }
+  }
+}
+
+/* ─── Utilities ─── */
+
+/**
+ * Fisher-Yates shuffle. Mutates `arr` in place.
+ * @template T
+ * @param {T[]} arr
+ * @returns {T[]}
+ */
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* ─── Public API ─── */
+
+const gameState = {
+  /** Subscribe to state change events. Returns unsubscribe fn. */
+  subscribe(fn) {
+    subscribers.add(fn);
+    return () => subscribers.delete(fn);
+  },
+
+  /** True if no more numbers left to draw. */
+  get isExhausted() { return state.pool.length === 0; },
+
+  /** True while slot animation is running. */
+  get isSpinning() { return state.isSpinning; },
+
+  /** Count of numbers drawn so far. */
+  get drawCount() { return state.drawn.size; },
+
+  /** True if auto-draw is active. */
+  get isAutoOn() { return state.isAutoOn; },
+
+  /** Current auto-draw interval (seconds). */
+  get interval() { return state.interval; },
+
+  /** Iterable of drawn numbers. */
+  get drawnNumbers() { return state.drawn; },
+
+  /** Reset pool and drawn set. */
+  resetPool() {
+    state.pool = Array.from({ length: POOL_SIZE }, (_, i) => i + 1);
+    shuffle(state.pool);
+    state.drawn.clear();
+    notify({ type: 'reset' });
+  },
+
+  /**
+   * Pop the next number from the pool. Returns null if empty.
+   * Also adds the number to the drawn set.
+   */
+  drawNext() {
+    if (state.pool.length === 0) return null;
+    const n = state.pool.pop();
+    state.drawn.add(n);
+    notify({ type: 'draw', number: n });
+    return n;
+  },
+
+  setSpinning(isSpinning) {
+    state.isSpinning = isSpinning;
+  },
+
+  setAutoOn(isOn) {
+    state.isAutoOn = isOn;
+    notify({ type: 'auto-changed', isOn });
+  },
+
+  /**
+   * Set auto-draw interval (seconds).
+   * Clamped to [INTERVAL.MIN, INTERVAL.MAX].
+   */
+  setInterval(seconds) {
+    const clamped = Math.min(INTERVAL.MAX, Math.max(INTERVAL.MIN, seconds | 0));
+    state.interval = clamped;
+    notify({ type: 'interval-changed', seconds: clamped });
+    return clamped;
+  },
+};
+
+  // ══════ scripts/dom.js ══════
+/**
+ * DOM references — resolved once at startup.
+ *
+ * Calling `cacheDom()` populates `dom` with every element the app needs.
+ * Throws if any required element is missing (fail-fast on startup).
+ */
+
+const dom = {};
+
+const REQUIRED_IDS = [
+  'slotDisplay',
+  'slotLetter',
+  'statusLine',
+  'statusSub',
+  'drawCounter',
+  'engineStatus',
+  'lastStrip',
+  'btnDraw',
+  'btnAuto',
+  'btnAutoSec',
+  'intervalInput',
+  'presetChips',
+  'countdownWrap',
+  'countdownTimer',
+  'progressFill',
+  'rangeGroups',
+  'drawnCount',
+];
+
+function cacheDom() {
+  for (const id of REQUIRED_IDS) {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`[dom] required element not found: #${id}`);
+    dom[id] = el;
+  }
+}
+
+  // ══════ scripts/board.js ══════
+/**
+ * Number matrix board — 5 grouped ranges (B/I/N/G/O).
+ *
+ * Built once on init using a single DocumentFragment to minimize reflow.
+ * Cells are referenced by id (`cell-${n}`) for O(1) lookup during marking.
+ */
+
+
+
+/** Map: number → cached cell element, set after build. */
+const cellCache = new Map();
+
+/** Map: column letter → count element, set after build. */
+const groupCountCache = new Map();
+
+/**
+ * Build the number matrix into `dom.rangeGroups`.
+ * Idempotent — clears existing content before rebuilding.
+ */
+function buildBoard() {
+  cellCache.clear();
+  groupCountCache.clear();
+
+  const fragment = document.createDocumentFragment();
+
+  for (const col of COL_ORDER) {
+    const { range, cssVar } = COLUMNS[col];
+    const [min, max] = range;
+
+    const group = document.createElement('div');
+    group.className = 'range-group';
+    group.style.setProperty('--group-color', `var(${cssVar})`);
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'range-header';
+
+    const label = document.createElement('div');
+    label.className = 'range-label';
+    label.innerHTML = `
+      <span class="range-letter">${col}</span>
+      <span class="range-numbers">${min}–${max}</span>
+    `;
+
+    const count = document.createElement('span');
+    count.className = 'range-count';
+    const done = document.createElement('span');
+    done.className = 'done';
+    done.textContent = '0';
+    count.append(done, `/${max - min + 1}`);
+    groupCountCache.set(col, done);
+
+    header.append(label, count);
+    group.appendChild(header);
+
+    // Grid of cells
+    const grid = document.createElement('div');
+    grid.className = 'range-grid';
+
+    for (let n = min; n <= max; n++) {
+      const cell = document.createElement('div');
+      cell.className = 'num-cell';
+      cell.textContent = String(n);
+      grid.appendChild(cell);
+      cellCache.set(n, cell);
+    }
+
+    group.appendChild(grid);
+    fragment.appendChild(group);
+  }
+
+  dom.rangeGroups.replaceChildren(fragment);
+}
+
+/**
+ * Mark a cell as drawn.
+ * @param {number} n
+ * @param {string} col - column letter (B/I/N/G/O)
+ */
+function markCell(n, col) {
+  const cell = cellCache.get(n);
+  if (!cell) return;
+  const { cssVar } = COLUMNS[col];
+  cell.style.setProperty('--group-color', `var(${cssVar})`);
+  cell.classList.add('drawn');
+}
+
+/**
+ * Update the "done count" label for a given group.
+ * @param {string} col
+ * @param {Set<number>} drawnSet
+ */
+function updateGroupCount(col, drawnSet) {
+  const el = groupCountCache.get(col);
+  if (!el) return;
+  const [min, max] = COLUMNS[col].range;
+  let count = 0;
+  for (let n = min; n <= max; n++) {
+    if (drawnSet.has(n)) count++;
+  }
+  el.textContent = String(count);
+}
+
+  // ══════ scripts/draw-engine.js ══════
+/**
+ * Draw engine — coordinates drawing a number, animating the slot,
+ * and updating all dependent UI.
+ *
+ * Slot animation uses `requestAnimationFrame` for smooth 60fps
+ * instead of chained setTimeout which is subject to drift and
+ * throttling in background tabs.
+ */
+
+
+
+
+
+/**
+ * Draw the next number. No-op if already spinning or pool exhausted.
+ * @returns {Promise<number|null>} the drawn number, or null if nothing drawn
+ */
+async function drawNumber() {
+  if (gameState.isSpinning || gameState.isExhausted) return null;
+
+  gameState.setSpinning(true);
+  setButtonDisabled(true);
+  setEngineStatus('drawing');
+
+  const n = gameState.drawNext();
+  const col = getColumnFor(n);
+
+  await spinSlot(n, col);
+
+  // Post-draw UI updates
+  markCell(n, col);
+  updateGroupCount(col, gameState.drawnNumbers);
+  addRecentChip(n, col);
+  updateDrawnCount();
+
+  gameState.setSpinning(false);
+
+  if (gameState.isExhausted) {
+    setButtonDisabled(true);
+    setExhaustedStatus();
+  } else {
+    setButtonDisabled(false);
+    setEngineStatus('active');
+  }
+
+  return n;
+}
+
+/**
+ * Animate the slot machine to reveal the target number.
+ * Uses RAF with a time-based easing curve — ticks get slower near the end.
+ *
+ * @param {number} finalNumber
+ * @param {string} col - column letter
+ * @returns {Promise<void>}
+ */
+function spinSlot(finalNumber, col) {
+  return new Promise((resolve) => {
+    const { slotDisplay, slotLetter } = dom;
+    const info = COLUMNS[col];
+    const colorVar = `var(${info.cssVar})`;
+
+    // Reset letter badge (hidden until final)
+    slotLetter.className = 'letter-badge';
+    slotLetter.textContent = '?';
+    slotLetter.style.color = '';
+
+    // Start glitch phase
+    slotDisplay.className = 'glitch';
+    slotDisplay.style.color = colorVar;
+
+    const startTime = performance.now();
+    let lastTickAt = 0;
+
+    function frame(now) {
+      const elapsed = now - startTime;
+      const progress = elapsed / SLOT.SPIN_DURATION;
+
+      if (progress < 1) {
+        // Ease-in curve: ticks slow down as we approach the target
+        const eased = progress * progress;
+        const tickInterval = SLOT.TICK_BASE + (eased * SLOT.TICK_EASING_MAX);
+
+        if (now - lastTickAt >= tickInterval) {
+          const fake = Math.floor(Math.random() * POOL_SIZE) + 1;
+          slotDisplay.textContent = formatTwoDigits(fake);
+          lastTickAt = now;
+        }
+        requestAnimationFrame(frame);
+      } else {
+        // Lock in final value
+        slotDisplay.classList.remove('glitch');
+        slotDisplay.classList.add('locked');
+        slotDisplay.textContent = formatTwoDigits(finalNumber);
+        slotDisplay.style.color = colorVar;
+
+        // Activate letter badge
+        slotLetter.classList.add('active');
+        slotLetter.textContent = col;
+        slotLetter.style.color = colorVar;
+
+        // Status line + HUD counter
+        dom.statusLine.innerHTML = `
+          <span class="tag" style="color: ${colorVar}; border-color: ${colorVar}">${col}</span>
+          <span class="val" style="color: ${colorVar}">${finalNumber}</span>
+        `;
+        dom.statusSub.textContent = `// RANGE ${info.range[0]} → ${info.range[1]}`;
+        dom.drawCounter.textContent = `#${String(gameState.drawCount).padStart(3, '0')}`;
+
+        setTimeout(resolve, SLOT.CALLBACK_DELAY);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  });
+}
+
+/* ─── UI helpers ─── */
+
+function formatTwoDigits(n) {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function setButtonDisabled(disabled) {
+  dom.btnDraw.disabled = disabled;
+}
+
+function setEngineStatus(kind) {
+  const { engineStatus } = dom;
+  switch (kind) {
+    case 'drawing':
+      engineStatus.textContent = '● DRAWING...';
+      engineStatus.style.color = 'var(--neon-yellow)';
+      break;
+    case 'active':
+      engineStatus.textContent = '● ACTIVE';
+      engineStatus.style.color = 'var(--neon-green)';
+      break;
+    case 'standby':
+      engineStatus.textContent = '● STANDBY';
+      engineStatus.style.color = 'var(--neon-pink)';
+      break;
+  }
+}
+
+function setExhaustedStatus() {
+  dom.statusLine.innerHTML =
+    `<span style="color: var(--neon-yellow)">// SEQUENCE EXHAUSTED</span>`;
+  dom.statusSub.textContent = 'All 75 numbers drawn';
+}
+
+function addRecentChip(n, col) {
+  const chip = document.createElement('div');
+  chip.className = `last-chip ${COLUMNS[col].color}`;
+  chip.innerHTML = `<span class="ltr">${col}</span>${n}`;
+  dom.lastStrip.insertBefore(chip, dom.lastStrip.firstChild);
+
+  // Trim excess
+  while (dom.lastStrip.childElementCount > RECENT_STRIP_MAX) {
+    dom.lastStrip.lastElementChild.remove();
+  }
+}
+
+function updateDrawnCount() {
+  dom.drawnCount.textContent = String(gameState.drawCount);
+}
+
+/**
+ * Reset slot display and recent strip to initial state.
+ * Does not touch game state — call after `gameState.resetPool()`.
+ */
+function resetEngine() {
+  const { slotDisplay, slotLetter } = dom;
+
+  slotDisplay.className = '';
+  slotDisplay.textContent = '00';
+  slotDisplay.style.color = '';
+
+  slotLetter.className = 'letter-badge';
+  slotLetter.textContent = '—';
+  slotLetter.style.color = '';
+
+  dom.statusLine.innerHTML =
+    `<span style="color: var(--text-muted)">// AWAITING INPUT</span>`;
+  dom.statusSub.textContent = 'Press DRAW to begin sequence';
+  dom.drawCounter.textContent = '#000';
+  dom.lastStrip.replaceChildren();
+  dom.drawnCount.textContent = '0';
+  setButtonDisabled(false);
+  setEngineStatus('standby');
+}
+
+  // ══════ scripts/auto-draw.js ══════
+/**
+ * Auto-draw controller.
+ *
+ * Manages the auto-draw interval + a visual countdown bar.
+ * Countdown timer uses `performance.now()` for drift-free timing
+ * and only updates the text every 100ms.
+ */
+
+
+
+
+
+let autoTimer = null;
+let countdownRaf = null;
+let countdownStart = 0;
+
+/** Start auto-draw at the current interval. */
+function startAuto() {
+  stopAuto(/* keepUi */ true);
+
+  if (gameState.isExhausted) {
+    stopAuto();
+    return;
+  }
+
+  gameState.setAutoOn(true);
+  dom.btnAuto.classList.add('on');
+
+  const intervalMs = gameState.interval * 1000;
+
+  const tick = async () => {
+    if (gameState.isExhausted) { stopAuto(); return; }
+    await drawNumber();
+    startCountdown();
+  };
+
+  // Fire immediately, then schedule
+  tick();
+  autoTimer = setInterval(tick, intervalMs);
+}
+
+/**
+ * Stop auto-draw.
+ * @param {boolean} [keepUi] - if true, leave button "on" state intact
+ *   (used internally when restarting with new interval).
+ */
+function stopAuto(keepUi = false) {
+  if (autoTimer !== null) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+  }
+  if (countdownRaf !== null) {
+    cancelAnimationFrame(countdownRaf);
+    countdownRaf = null;
+  }
+
+  if (!keepUi) {
+    gameState.setAutoOn(false);
+    dom.btnAuto.classList.remove('on');
+  }
+
+  dom.countdownWrap.classList.remove('visible');
+  dom.progressFill.style.transition = 'none';
+  dom.progressFill.style.width = '100%';
+}
+
+/** Toggle auto-draw on/off. */
+function toggleAuto() {
+  if (gameState.isAutoOn) stopAuto();
+  else startAuto();
+}
+
+/**
+ * If auto-draw is running, restart it so the new interval takes effect
+ * starting from the next tick.
+ */
+function applyIntervalChange() {
+  if (gameState.isAutoOn) startAuto();
+}
+
+/* ─── Countdown visuals ─── */
+
+function startCountdown() {
+  if (countdownRaf !== null) cancelAnimationFrame(countdownRaf);
+
+  const totalMs = gameState.interval * 1000;
+  countdownStart = performance.now();
+
+  dom.countdownWrap.classList.add('visible');
+
+  // Restart CSS transition on progress bar
+  const fill = dom.progressFill;
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  // Force reflow so transition restarts reliably
+  void fill.offsetWidth;
+  fill.style.transition = `width ${totalMs}ms linear`;
+  fill.style.width = '0%';
+
+  // Drive the numeric readout with RAF (~60fps) — more efficient than
+  // a setInterval + doesn't drift relative to the CSS bar.
+  const tick = (now) => {
+    const elapsed = now - countdownStart;
+    const remaining = Math.max(0, totalMs - elapsed);
+    dom.countdownTimer.textContent = `${(remaining / 1000).toFixed(1)}S`;
+    if (remaining > 0) {
+      countdownRaf = requestAnimationFrame(tick);
+    } else {
+      countdownRaf = null;
+    }
+  };
+  countdownRaf = requestAnimationFrame(tick);
+}
+
+  // ══════ scripts/main.js ══════
+/**
+ * App entry point.
+ *
+ * Responsibilities:
+ *   1. Cache DOM references.
+ *   2. Build the number matrix once.
+ *   3. Reset game state.
+ *   4. Wire event listeners (using event delegation where possible).
+ *
+ * No global functions — everything is scoped to this module.
+ */
+
+
+
+
+
+
+
+/* ─── Boot ─── */
+
+function boot() {
+  cacheDom();
+  buildBoard();
+  gameState.resetPool();
+  resetEngine();
+  wireEvents();
+  syncIntervalUi(gameState.interval);
+}
+
+/* ─── Event wiring ─── */
+
+function wireEvents() {
+  // Primary actions
+  dom.btnDraw.addEventListener('click', () => {
+    drawNumber().catch(err => console.error('[draw] failed:', err));
+  });
+  dom.btnAuto.addEventListener('click', toggleAuto);
+
+  // Reset button lives outside our panel; find by id once
+  const resetBtn = document.getElementById('btnReset');
+  if (resetBtn) resetBtn.addEventListener('click', handleReset);
+
+  // Interval input: change + input both call the handler
+  const handleIntervalInput = () => {
+    const raw = parseInt(dom.intervalInput.value, 10);
+    const clamped = gameState.setInterval(Number.isFinite(raw) ? raw : INTERVAL.DEFAULT);
+    syncIntervalUi(clamped);
+    applyIntervalChange();
+  };
+  dom.intervalInput.addEventListener('input', handleIntervalInput);
+  dom.intervalInput.addEventListener('change', handleIntervalInput);
+
+  // Stepper buttons (+/-) — delegated via parent
+  document.querySelectorAll('.stepper-btn').forEach(btn => {
+    const delta = Number(btn.dataset.delta);
+    btn.addEventListener('click', () => {
+      const next = gameState.interval + delta;
+      const clamped = gameState.setInterval(next);
+      dom.intervalInput.value = String(clamped);
+      syncIntervalUi(clamped);
+      applyIntervalChange();
+    });
+  });
+
+  // Preset chips: one delegated handler on the container
+  dom.presetChips.addEventListener('click', (e) => {
+    const chip = e.target.closest('.preset-chip');
+    if (!chip) return;
+    const sec = Number(chip.dataset.sec);
+    if (!Number.isFinite(sec)) return;
+    const clamped = gameState.setInterval(sec);
+    dom.intervalInput.value = String(clamped);
+    syncIntervalUi(clamped);
+    applyIntervalChange();
+  });
+
+  // Keyboard shortcuts for power users
+  document.addEventListener('keydown', handleKeydown);
+}
+
+function handleKeydown(e) {
+  // Ignore when typing in the interval input
+  if (e.target === dom.intervalInput) return;
+
+  switch (e.code) {
+    case 'Space':
+    case 'Enter':
+      e.preventDefault();
+      if (!dom.btnDraw.disabled) drawNumber();
+      break;
+    case 'KeyA':
+      e.preventDefault();
+      toggleAuto();
+      break;
+    case 'KeyR':
+      if (e.shiftKey) {
+        e.preventDefault();
+        handleReset();
+      }
+      break;
+  }
+}
+
+function handleReset() {
+  stopAuto();
+  gameState.resetPool();
+  buildBoard();
+  resetEngine();
+}
+
+/**
+ * Sync all interval-dependent UI elements:
+ *   - the `btn-auto` meta label
+ *   - the active preset chip
+ *
+ * @param {number} seconds
+ */
+function syncIntervalUi(seconds) {
+  dom.btnAutoSec.textContent = String(seconds);
+
+  for (const chip of dom.presetChips.querySelectorAll('.preset-chip')) {
+    const chipSec = Number(chip.dataset.sec);
+    chip.classList.toggle('active', chipSec === seconds);
+  }
+}
+
+/* ─── Start ─── */
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+  </script>
+</body>
+</html>
