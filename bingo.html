@@ -9,7 +9,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=JetBrains+Mono:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
 
   <style>
     /* ══════ styles/tokens.css ══════ */
@@ -53,8 +53,8 @@
   --r-lg: 22px;
 
   /* ─── Typography ─── */
-  --font-display: 'Orbitron', sans-serif;
-  --font-mono:    'Share Tech Mono', monospace;
+  --font-display: 'Russo One', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
   --font-body:    'Be Vietnam Pro', sans-serif;
 
   /* ─── Motion ─── */
@@ -131,9 +131,22 @@ body::before {
 .app {
   position: relative;
   z-index: 2;
-  max-width: 900px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 18px 60px;
+  padding: 14px 16px 16px;
+}
+
+/* Two-column layout on desktop */
+.main-grid {
+  display: grid;
+  grid-template-columns: minmax(380px, 460px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ─── Respect reduced motion preference ─── */
@@ -151,19 +164,22 @@ body::before {
    LAYOUT — Header, panels, secondary buttons
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Header ─── */
+/* ─── Header — compact inline ─── */
 header {
-  text-align: center;
-  margin-bottom: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .brand-mark {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--neon-cyan);
-  letter-spacing: 6px;
+  letter-spacing: 4px;
   text-transform: uppercase;
-  margin-bottom: 14px;
   opacity: 0.6;
 }
 .brand-mark::before { content: '‹ '; }
@@ -171,14 +187,13 @@ header {
 
 .logo {
   display: inline-flex;
-  gap: 10px;
+  gap: 6px;
 }
 .logo span {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(52px, 12vw, 92px);
+  font-size: clamp(32px, 5vw, 46px);
   line-height: 1;
-  letter-spacing: 4px;
+  letter-spacing: 2px;
   display: inline-block;
   animation: neonPulse 3s ease-in-out infinite;
 }
@@ -189,21 +204,20 @@ header {
 .logo span:nth-child(5) { color: var(--col-o); animation-delay: .8s; }
 
 @keyframes neonPulse {
-  0%, 100% { text-shadow: 0 0 18px currentColor, 0 0 38px currentColor; }
-  50%      { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor; }
+  0%, 100% { text-shadow: 0 0 12px currentColor, 0 0 24px currentColor; }
+  50%      { text-shadow: 0 0 6px currentColor,  0 0 14px currentColor; }
 }
 
 .tagline {
   font-family: var(--font-mono);
   color: var(--text-muted);
-  font-size: 12px;
-  letter-spacing: 4px;
+  font-size: 10px;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  margin-top: 14px;
 }
 .tagline .divider {
   color: var(--neon-pink);
-  margin: 0 10px;
+  margin: 0 8px;
   opacity: 0.7;
 }
 
@@ -216,11 +230,12 @@ header {
   border-radius: var(--r-lg);
   position: relative;
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   box-shadow:
     0 20px 60px -30px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
+.panel:last-child { margin-bottom: 0; }
 .panel::before {
   content: '';
   position: absolute;
@@ -245,7 +260,7 @@ header {
   color: var(--neon-cyan);
   letter-spacing: 3px;
   text-transform: uppercase;
-  padding: 14px 20px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   display: flex;
   justify-content: space-between;
@@ -257,26 +272,25 @@ header {
   opacity: 0.8;
 }
 
-.panel-body { padding: 24px 22px; }
+.panel-body { padding: 14px 16px; }
 
 /* ─── Primary draw button ─── */
 .btn-draw {
   flex: 1.4;
-  padding: 18px 14px;
+  padding: 14px 14px;
   background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
   border: none;
   border-radius: var(--r-md);
   color: #1a1838;
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 2px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.25s, filter 0.2s;
   box-shadow:
-    0 10px 30px -8px rgba(255, 122, 224, 0.55),
+    0 8px 24px -8px rgba(255, 122, 224, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
@@ -295,9 +309,9 @@ header {
 .btn-draw:hover:not(:disabled)::before { transform: translateX(120%); }
 .btn-draw:hover:not(:disabled) {
   box-shadow:
-    0 14px 40px -8px rgba(255, 122, 224, 0.75),
+    0 12px 32px -8px rgba(255, 122, 224, 0.75),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   filter: brightness(1.08);
 }
 .btn-draw:active:not(:disabled) { transform: translateY(-1px); }
@@ -305,25 +319,25 @@ header {
 
 /* ─── Action button row ─── */
 .btn-row {
-  margin-top: 20px;
+  margin-top: 12px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* ─── Reset button ─── */
 .controls-row {
-  margin-top: 18px;
+  margin-top: 10px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 .btn-reset {
   flex: 1;
-  padding: 14px;
+  padding: 10px;
   background: rgba(14, 12, 30, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 2px;
   border-radius: var(--r-md);
@@ -348,7 +362,7 @@ header {
     radial-gradient(ellipse at center top,    rgba(255, 122, 224, 0.1) 0%, transparent 55%),
     radial-gradient(ellipse at center bottom, rgba(110, 229, 245, 0.08) 0%, transparent 55%),
     rgba(14, 12, 30, 0.5);
-  padding: 28px 22px 20px;
+  padding: 18px 16px 14px;
   border-radius: var(--r-md);
   text-align: center;
   position: relative;
@@ -363,21 +377,21 @@ header {
   letter-spacing: 2px;
   opacity: 0.45;
 }
-.hud-corner.tl { top: 12px; left: 16px; }
-.hud-corner.tr { top: 12px; right: 16px; }
+.hud-corner.tl { top: 8px; left: 12px; }
+.hud-corner.tr { top: 8px; right: 12px; }
 
 /* ─── Display cluster (letter + number) ─── */
 .display-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin: 10px 0 14px;
 }
 
 .letter-badge {
-  width: 78px;
-  height: 96px;
+  width: 64px;
+  height: 78px;
   border-radius: var(--r-md);
   background: linear-gradient(145deg, rgba(34, 31, 71, 0.6), rgba(21, 19, 42, 0.6));
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -385,8 +399,7 @@ header {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 46px;
+  font-size: 36px;
   color: var(--text-dim);
   transition: all 0.45s var(--ease-spring);
 }
@@ -396,16 +409,16 @@ header {
     radial-gradient(ellipse at center, rgba(255, 122, 224, 0.08), transparent),
     linear-gradient(145deg, rgba(34, 31, 71, 0.8), rgba(21, 19, 42, 0.8));
   box-shadow:
-    0 0 30px currentColor,
-    0 0 60px currentColor,
-    inset 0 0 20px rgba(255, 255, 255, 0.04);
-  text-shadow: 0 0 22px currentColor;
+    0 0 24px currentColor,
+    0 0 48px currentColor,
+    inset 0 0 16px rgba(255, 255, 255, 0.04);
+  text-shadow: 0 0 18px currentColor;
 }
 
 /* ─── Number window ─── */
 .number-window {
-  width: 180px;
-  height: 150px;
+  width: 150px;
+  height: 120px;
   background: radial-gradient(ellipse at center, rgba(14, 12, 30, 0.9), rgba(10, 8, 22, 1));
   border: 1px solid rgba(110, 229, 245, 0.3);
   border-radius: var(--r-md);
@@ -415,8 +428,8 @@ header {
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 0 40px rgba(110, 229, 245, 0.12),
-    inset 0 0 50px rgba(0, 0, 0, 0.6);
+    0 0 32px rgba(110, 229, 245, 0.12),
+    inset 0 0 40px rgba(0, 0, 0, 0.6);
 }
 /* Scanlines */
 .number-window::before {
@@ -447,8 +460,7 @@ header {
 
 #slotDisplay {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 76px;
+  font-size: 58px;
   line-height: 1;
   color: var(--text-primary);
   position: relative;
@@ -474,30 +486,30 @@ header {
 /* ─── Status line ─── */
 .status-line {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   letter-spacing: 2px;
-  margin-bottom: 6px;
-  min-height: 24px;
+  margin-bottom: 4px;
+  min-height: 22px;
 }
 .status-line .tag {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border: 1px solid currentColor;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  margin-right: 10px;
+  margin-right: 8px;
   letter-spacing: 2px;
 }
 .status-line .val {
   font-weight: 700;
-  font-size: 17px;
+  font-size: 16px;
   letter-spacing: 3px;
 }
 
 .status-sub {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-dim);
   letter-spacing: 1px;
   font-family: var(--font-mono);
@@ -505,31 +517,31 @@ header {
 
 /* ─── Recent draws strip ─── */
 .last-strip-wrap {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px dashed rgba(255, 255, 255, 0.06);
 }
 .strip-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-muted);
   letter-spacing: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
 }
 .last-strip {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   padding: 2px 0;
   scrollbar-width: none;
-  min-height: 36px;
+  min-height: 32px;
   align-items: center;
 }
 .last-strip::-webkit-scrollbar { display: none; }
 
 .last-strip:empty::before {
-  content: '— no draws yet —';
+  content: '— chưa có số nào —';
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-dim);
@@ -540,17 +552,16 @@ header {
 
 .last-chip {
   flex-shrink: 0;
-  min-width: 52px;
-  height: 42px;
-  padding: 0 12px;
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   border: 1px solid;
   animation: chipIn 0.4s var(--ease-spring);
 }
@@ -578,77 +589,144 @@ header {
 /* ─── Auto button (paired with draw button) ─── */
 .btn-auto {
   flex: 1;
-  padding: 18px 14px;
-  background: linear-gradient(145deg, rgba(110, 229, 245, 0.06), rgba(196, 155, 255, 0.04));
-  border: 1px solid rgba(110, 229, 245, 0.25);
+  padding: 10px 14px;
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.08), rgba(196, 155, 255, 0.05));
+  border: 1px solid rgba(110, 229, 245, 0.3);
   border-radius: var(--r-md);
   color: var(--neon-cyan);
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 15px;
-  letter-spacing: 2px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s;
+  transition: all 0.4s var(--ease-soft);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 10px;
   white-space: nowrap;
 }
 .btn-auto:hover:not(:disabled) {
   border-color: var(--neon-cyan);
-  background: linear-gradient(145deg, rgba(110, 229, 245, 0.12), rgba(196, 155, 255, 0.08));
-  box-shadow: 0 0 24px rgba(110, 229, 245, 0.3);
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.14), rgba(196, 155, 255, 0.1));
+  box-shadow: 0 0 28px rgba(110, 229, 245, 0.35);
   transform: translateY(-2px);
 }
 .btn-auto:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* Icon circle on the left */
+.btn-auto .btn-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(110, 229, 245, 0.15);
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.4s var(--ease-soft);
+}
+.btn-auto .btn-icon::before {
+  /* Play triangle by default */
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 7px solid currentColor;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  margin-left: 2px;
+  transition: all 0.3s var(--ease-spring);
+}
+
+/* Label stack on the right */
+.btn-auto .btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
 .btn-auto .btn-label {
-  font-size: 15px;
+  font-size: 13px;
   letter-spacing: 2px;
+  line-height: 1;
 }
 .btn-auto .btn-meta {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 1.5px;
+  font-size: 10px;
+  letter-spacing: 1px;
   color: var(--text-muted);
   font-weight: 400;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 .btn-auto .btn-meta strong {
   color: var(--neon-yellow);
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(255, 226, 122, 0.5);
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-shadow: 0 0 10px rgba(255, 226, 122, 0.6);
+  transition: color 0.3s;
 }
 
-/* Active state */
+/* ═══ ON state ═══ */
 .btn-auto.on {
-  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
   border-color: transparent;
   color: #15132a;
   box-shadow:
-    0 10px 30px -8px rgba(110, 229, 245, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  animation: autoPulse 2s ease-in-out infinite;
+    0 12px 32px -10px rgba(110, 229, 245, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  animation: autoPulse 2.4s ease-in-out infinite;
 }
-.btn-auto.on .btn-meta { color: rgba(26, 24, 56, 0.7); }
-.btn-auto.on .btn-meta strong { color: #15132a; text-shadow: none; }
+.btn-auto.on .btn-icon {
+  background: rgba(21, 19, 42, 0.25);
+  border-color: transparent;
+  animation: iconSpin 3s linear infinite;
+}
+.btn-auto.on .btn-icon::before {
+  /* Double pause bars when running */
+  content: '';
+  width: 10px;
+  height: 12px;
+  border: none;
+  margin: 0;
+  background:
+    linear-gradient(to right,
+      currentColor 0%, currentColor 30%,
+      transparent 30%, transparent 70%,
+      currentColor 70%, currentColor 100%);
+  border-radius: 1px;
+}
+.btn-auto.on .btn-meta {
+  color: rgba(26, 24, 56, 0.75);
+}
+.btn-auto.on .btn-meta strong {
+  color: #15132a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
 .btn-auto.on:hover:not(:disabled) {
   box-shadow:
-    0 14px 40px -8px rgba(110, 229, 245, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 16px 42px -8px rgba(110, 229, 245, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   filter: brightness(1.08);
 }
 
 @keyframes autoPulse {
-  0%, 100% { box-shadow: 0 10px 30px -8px rgba(110, 229, 245, 0.6),  inset 0 1px 0 rgba(255, 255, 255, 0.3); }
-  50%      { box-shadow: 0 10px 40px -6px rgba(110, 229, 245, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+  0%, 100% { box-shadow: 0 12px 32px -10px rgba(110, 229, 245, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+  50%      { box-shadow: 0 12px 44px -6px rgba(110, 229, 245, 1),     inset 0 1px 0 rgba(255, 255, 255, 0.45); }
 }
 
-/* Indicator dot */
-.btn-auto::before {
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Small indicator dot at top-right corner */
+.btn-auto::after {
   content: '';
   position: absolute;
   top: 10px;
@@ -659,33 +737,45 @@ header {
   background: var(--text-dim);
   transition: all 0.3s;
 }
-.btn-auto.on::before {
+.btn-auto.on::after {
   background: var(--neon-yellow);
   box-shadow: 0 0 10px var(--neon-yellow);
   animation: dotBlink 1s ease-in-out infinite;
 }
 @keyframes dotBlink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
 }
+
+/* Sweep shine on activation */
+.btn-auto::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.9s;
+  pointer-events: none;
+}
+.btn-auto.on::before { transform: translateX(120%); }
 
 /* ─── Auto panel container ─── */
 .auto-panel {
-  margin-top: 18px;
-  padding: 18px;
+  margin-top: 12px;
+  padding: 12px 14px;
   background: linear-gradient(145deg, rgba(110, 229, 245, 0.04), rgba(196, 155, 255, 0.03));
   border: 1px solid rgba(110, 229, 245, 0.12);
   border-radius: var(--r-md);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .auto-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .auto-row-label {
@@ -718,7 +808,6 @@ header {
   outline: none;
   color: var(--neon-yellow);
   font-family: var(--font-display);
-  font-weight: 700;
   font-size: 20px;
   width: 42px;
   text-align: center;
@@ -828,7 +917,6 @@ header {
 }
 .countdown-timer {
   font-family: var(--font-display);
-  font-weight: 700;
   font-size: 15px;
   color: var(--neon-yellow);
   letter-spacing: 1px;
@@ -872,14 +960,14 @@ header {
 .range-groups {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .range-group {
   background: linear-gradient(145deg, rgba(26, 24, 56, 0.4), rgba(21, 19, 42, 0.3));
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-left: 3px solid var(--group-color);
-  padding: 16px 18px;
+  padding: 10px 12px;
   border-radius: var(--r-md);
   position: relative;
   transition: background 0.3s;
@@ -892,35 +980,34 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .range-label {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .range-letter {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 24px;
+  font-size: 20px;
   color: var(--group-color);
   line-height: 1;
-  text-shadow: 0 0 16px var(--group-color);
+  text-shadow: 0 0 14px var(--group-color);
   letter-spacing: 2px;
 }
 
 .range-numbers {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 .range-count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-dim);
   letter-spacing: 1px;
 }
@@ -932,10 +1019,10 @@ header {
 .range-grid {
   display: grid;
   grid-template-columns: repeat(15, 1fr);
-  gap: 5px;
+  gap: 4px;
 }
 @media (max-width: 680px) {
-  .range-grid { grid-template-columns: repeat(8, 1fr); }
+  .range-grid { grid-template-columns: repeat(15, 1fr); }
 }
 
 .num-cell {
@@ -947,8 +1034,7 @@ header {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
   transition: all 0.4s var(--ease-spring);
 }
@@ -981,7 +1067,7 @@ header {
   <div class="app">
 
     <header>
-      <div class="brand-mark">SYSTEM.ONLINE</div>
+      <div class="brand-mark">HỆ THỐNG ĐANG HOẠT ĐỘNG</div>
       <h1 class="logo" aria-label="BINGO">
         <span aria-hidden="true">B</span>
         <span aria-hidden="true">I</span>
@@ -989,19 +1075,19 @@ header {
         <span aria-hidden="true">G</span>
         <span aria-hidden="true">O</span>
       </h1>
-      <p class="tagline">NEON_75<span class="divider" aria-hidden="true">//</span>CYBER EDITION</p>
+      <p class="tagline">LUCKY 75<span class="divider" aria-hidden="true">//</span>LongLTV</p>
     </header>
 
     <!-- ═══════ Draw engine ═══════ -->
     <section class="panel" aria-labelledby="drawEngineTitle">
       <div class="panel-title">
-        <span id="drawEngineTitle">DRAW.ENGINE</span>
-        <span id="engineStatus" style="color: var(--neon-pink); font-size: 10px;">● STANDBY</span>
+        <span id="drawEngineTitle">BẢNG QUAY SỐ</span>
+        <span id="engineStatus" style="color: var(--neon-pink); font-size: 10px;">● SẴN SÀNG</span>
       </div>
       <div class="panel-body">
 
         <div class="slot-stage">
-          <div class="hud-corner tl">RNG.LIVE</div>
+          <div class="hud-corner tl">QUAY NGẪU NHIÊN</div>
           <div class="hud-corner tr" id="drawCounter">#000</div>
 
           <div class="display-cluster" aria-live="polite">
@@ -1012,29 +1098,32 @@ header {
           </div>
 
           <div class="status-line" id="statusLine">
-            <span style="color: var(--text-muted)">// AWAITING INPUT</span>
+            <span style="color: var(--text-muted)">// CHỜ THAO TÁC</span>
           </div>
-          <p class="status-sub" id="statusSub">Press DRAW to begin sequence</p>
+          <p class="status-sub" id="statusSub">Nhấn QUAY SỐ để bắt đầu</p>
 
           <div class="last-strip-wrap">
-            <div class="strip-label">// RECENT DRAWS</div>
-            <div class="last-strip" id="lastStrip" role="log" aria-label="Recent draws"></div>
+            <div class="strip-label">// CÁC SỐ GẦN ĐÂY</div>
+            <div class="last-strip" id="lastStrip" role="log" aria-label="Các số vừa quay"></div>
           </div>
         </div>
 
         <div class="btn-row">
           <button class="btn-draw" id="btnDraw" type="button">
-            ▶ EXECUTE DRAW
+            ▶ QUAY SỐ
           </button>
           <button class="btn-auto" id="btnAuto" type="button" aria-pressed="false">
-            <span class="btn-label">AUTO</span>
-            <span class="btn-meta">EVERY <strong id="btnAutoSec">5</strong>S</span>
+            <span class="btn-icon" aria-hidden="true"></span>
+            <span class="btn-text">
+              <span class="btn-label">TỰ ĐỘNG</span>
+              <span class="btn-meta">Mỗi <strong id="btnAutoSec">5</strong> giây</span>
+            </span>
           </button>
         </div>
 
         <div class="auto-panel">
           <div class="auto-row">
-            <span class="auto-row-label">INTERVAL:</span>
+            <span class="auto-row-label">THỜI GIAN:</span>
             <div class="interval-group">
               <input
                 class="interval-input"
@@ -1044,29 +1133,29 @@ header {
                 max="60"
                 step="1"
                 value="5"
-                aria-label="Auto-draw interval in seconds"
+                aria-label="Thời gian giữa 2 lần quay (giây)"
               />
-              <span class="interval-unit">SEC</span>
+              <span class="interval-unit">GIÂY</span>
               <div class="stepper">
-                <button class="stepper-btn" type="button" data-delta="1"  aria-label="Increase">▲</button>
-                <button class="stepper-btn" type="button" data-delta="-1" aria-label="Decrease">▼</button>
+                <button class="stepper-btn" type="button" data-delta="1"  aria-label="Tăng">▲</button>
+                <button class="stepper-btn" type="button" data-delta="-1" aria-label="Giảm">▼</button>
               </div>
             </div>
           </div>
 
           <div class="preset-chips" id="presetChips">
-            <span class="preset-label">PRESETS:</span>
-            <button class="preset-chip" type="button" data-sec="3">3S</button>
-            <button class="preset-chip active" type="button" data-sec="5">5S</button>
-            <button class="preset-chip" type="button" data-sec="10">10S</button>
-            <button class="preset-chip" type="button" data-sec="15">15S</button>
-            <button class="preset-chip" type="button" data-sec="30">30S</button>
+            <span class="preset-label">NHANH:</span>
+            <button class="preset-chip" type="button" data-sec="3">3s</button>
+            <button class="preset-chip active" type="button" data-sec="5">5s</button>
+            <button class="preset-chip" type="button" data-sec="10">10s</button>
+            <button class="preset-chip" type="button" data-sec="15">15s</button>
+            <button class="preset-chip" type="button" data-sec="30">30s</button>
           </div>
 
           <div class="countdown-wrap" id="countdownWrap">
             <div class="countdown-row">
-              <span class="countdown-label">// NEXT DRAW IN</span>
-              <span class="countdown-timer" id="countdownTimer">5.0S</span>
+              <span class="countdown-label">// SỐ TIẾP THEO SAU</span>
+              <span class="countdown-timer" id="countdownTimer">5.0s</span>
             </div>
             <div class="progress-bar-bg">
               <div class="progress-bar-fill" id="progressFill"></div>
@@ -1080,7 +1169,7 @@ header {
     <!-- ═══════ Number matrix ═══════ -->
     <section class="panel" aria-labelledby="matrixTitle">
       <div class="panel-title">
-        <span id="matrixTitle">NUMBER.MATRIX</span>
+        <span id="matrixTitle">BẢNG SỐ</span>
         <span class="board-counter">
           <span id="drawnCount">0</span><span class="total">/75</span>
         </span>
@@ -1091,7 +1180,7 @@ header {
     </section>
 
     <div class="controls-row">
-      <button class="btn-reset" id="btnReset" type="button">↺ RESET SYSTEM</button>
+      <button class="btn-reset" id="btnReset" type="button">↺ CHƠI LẠI</button>
     </div>
 
   </div>
@@ -1517,7 +1606,7 @@ function spinSlot(finalNumber, col) {
           <span class="tag" style="color: ${colorVar}; border-color: ${colorVar}">${col}</span>
           <span class="val" style="color: ${colorVar}">${finalNumber}</span>
         `;
-        dom.statusSub.textContent = `// RANGE ${info.range[0]} → ${info.range[1]}`;
+        dom.statusSub.textContent = `// CỘT ${col} · SỐ ${info.range[0]} → ${info.range[1]}`;
         dom.drawCounter.textContent = `#${String(gameState.drawCount).padStart(3, '0')}`;
 
         setTimeout(resolve, SLOT.CALLBACK_DELAY);
@@ -1542,15 +1631,15 @@ function setEngineStatus(kind) {
   const { engineStatus } = dom;
   switch (kind) {
     case 'drawing':
-      engineStatus.textContent = '● DRAWING...';
+      engineStatus.textContent = '● ĐANG QUAY...';
       engineStatus.style.color = 'var(--neon-yellow)';
       break;
     case 'active':
-      engineStatus.textContent = '● ACTIVE';
+      engineStatus.textContent = '● HOẠT ĐỘNG';
       engineStatus.style.color = 'var(--neon-green)';
       break;
     case 'standby':
-      engineStatus.textContent = '● STANDBY';
+      engineStatus.textContent = '● SẴN SÀNG';
       engineStatus.style.color = 'var(--neon-pink)';
       break;
   }
@@ -1558,8 +1647,8 @@ function setEngineStatus(kind) {
 
 function setExhaustedStatus() {
   dom.statusLine.innerHTML =
-    `<span style="color: var(--neon-yellow)">// SEQUENCE EXHAUSTED</span>`;
-  dom.statusSub.textContent = 'All 75 numbers drawn';
+    `<span style="color: var(--neon-yellow)">// ĐÃ QUAY HẾT 75 SỐ</span>`;
+  dom.statusSub.textContent = 'Nhấn CHƠI LẠI để bắt đầu ván mới';
 }
 
 function addRecentChip(n, col) {
@@ -1594,8 +1683,8 @@ function resetEngine() {
   slotLetter.style.color = '';
 
   dom.statusLine.innerHTML =
-    `<span style="color: var(--text-muted)">// AWAITING INPUT</span>`;
-  dom.statusSub.textContent = 'Press DRAW to begin sequence';
+    `<span style="color: var(--text-muted)">// CHỜ THAO TÁC</span>`;
+  dom.statusSub.textContent = 'Nhấn QUAY SỐ để bắt đầu';
   dom.drawCounter.textContent = '#000';
   dom.lastStrip.replaceChildren();
   dom.drawnCount.textContent = '0';
@@ -1708,7 +1797,7 @@ function startCountdown() {
   const tick = (now) => {
     const elapsed = now - countdownStart;
     const remaining = Math.max(0, totalMs - elapsed);
-    dom.countdownTimer.textContent = `${(remaining / 1000).toFixed(1)}S`;
+    dom.countdownTimer.textContent = `${(remaining / 1000).toFixed(1)}s`;
     if (remaining > 0) {
       countdownRaf = requestAnimationFrame(tick);
     } else {
