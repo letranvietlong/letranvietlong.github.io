@@ -7,6 +7,10 @@
   <meta name="color-scheme" content="dark" />
   <title>BINGO BY LONGLTV</title>
 
+  <!-- Favicon: abstract geometric cyberpunk mark -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23ff7ae0'/><stop offset='50%25' stop-color='%23c49bff'/><stop offset='100%25' stop-color='%236ee5f5'/></linearGradient></defs><rect x='2' y='2' width='60' height='60' rx='14' fill='%230e0c1e' stroke='url(%23g)' stroke-width='2'/><circle cx='32' cy='32' r='14' fill='none' stroke='url(%23g)' stroke-width='2.5'/><circle cx='32' cy='32' r='5' fill='url(%23g)'/><path d='M 32 8 L 32 16 M 32 48 L 32 56 M 8 32 L 16 32 M 48 32 L 56 32' stroke='url(%23g)' stroke-width='2' stroke-linecap='round'/></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23ff7ae0'/><stop offset='50%25' stop-color='%23c49bff'/><stop offset='100%25' stop-color='%236ee5f5'/></linearGradient></defs><rect x='2' y='2' width='60' height='60' rx='14' fill='%230e0c1e' stroke='url(%23g)' stroke-width='2'/><circle cx='32' cy='32' r='14' fill='none' stroke='url(%23g)' stroke-width='2.5'/><circle cx='32' cy='32' r='5' fill='url(%23g)'/><path d='M 32 8 L 32 16 M 32 48 L 32 56 M 8 32 L 16 32 M 48 32 L 56 32' stroke='url(%23g)' stroke-width='2' stroke-linecap='round'/></svg>" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
@@ -407,55 +411,207 @@ header {
 
 .panel-body { padding: 14px 16px; }
 
-/* ─── Primary draw button ─── */
-.btn-draw {
-  flex: 1.4;
-  padding: 14px 14px;
-  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
-  border: none;
-  border-radius: var(--r-md);
-  color: #1a1838;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: 2px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.25s, filter 0.2s;
-  box-shadow:
-    0 8px 24px -8px rgba(255, 122, 224, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-.btn-draw::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.8s;
-}
-.btn-draw:hover:not(:disabled)::before { transform: translateX(120%); }
-.btn-draw:hover:not(:disabled) {
-  box-shadow:
-    0 12px 32px -8px rgba(255, 122, 224, 0.75),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  transform: translateY(-2px);
-  filter: brightness(1.08);
-}
-.btn-draw:active:not(:disabled) { transform: translateY(-1px); }
-.btn-draw:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* ─── Action button row ─── */
+/* ─── Action buttons (shared style) ─── */
 .btn-row {
   margin-top: 12px;
   display: flex;
   gap: 10px;
+}
+
+.btn-draw,
+.btn-auto {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-family: var(--font-display);
+  font-weight: 800;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s var(--ease-soft);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+/* Sweep shine — both buttons */
+.btn-draw::after,
+.btn-auto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.8s;
+  pointer-events: none;
+}
+.btn-draw:hover:not(:disabled)::after,
+.btn-auto:hover:not(:disabled)::after { transform: translateX(120%); }
+
+.btn-draw:disabled,
+.btn-auto:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Indicator dot at top-right corner */
+.btn-draw::before,
+.btn-auto::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  transition: all 0.3s;
+}
+
+/* Icon circle */
+.btn-draw .btn-icon,
+.btn-auto .btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.4s var(--ease-soft);
+}
+.btn-draw .btn-icon::before,
+.btn-auto .btn-icon::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 8px solid currentColor;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  margin-left: 2px;
+  transition: all 0.3s var(--ease-spring);
+}
+
+/* Text stack */
+.btn-draw .btn-text,
+.btn-auto .btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+.btn-draw .btn-label,
+.btn-auto .btn-label {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  line-height: 1;
+}
+.btn-draw .btn-meta,
+.btn-auto .btn-meta {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+/* ═══ Variant: PINK (Quay số thủ công) ═══ */
+.btn-draw {
+  background: linear-gradient(145deg, rgba(255, 122, 224, 0.12), rgba(196, 155, 255, 0.08));
+  border-color: rgba(255, 122, 224, 0.4);
+  color: var(--neon-pink);
+}
+.btn-draw .btn-meta { color: var(--text-muted); }
+.btn-draw:hover:not(:disabled) {
+  border-color: var(--neon-pink);
+  background: linear-gradient(145deg, rgba(255, 122, 224, 0.2), rgba(196, 155, 255, 0.14));
+  box-shadow: 0 0 24px rgba(255, 122, 224, 0.35);
+  transform: translateY(-2px);
+}
+.btn-draw:active:not(:disabled) { transform: translateY(0); }
+
+/* ═══ Variant: CYAN (Quay số tự động) ═══ */
+.btn-auto {
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.12), rgba(196, 155, 255, 0.08));
+  border-color: rgba(110, 229, 245, 0.4);
+  color: var(--neon-cyan);
+}
+.btn-auto .btn-meta { color: var(--text-muted); }
+.btn-auto .btn-meta strong {
+  color: var(--neon-yellow);
+  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 12px;
+  text-shadow: 0 0 8px rgba(255, 226, 122, 0.5);
+}
+.btn-auto:hover:not(:disabled) {
+  border-color: var(--neon-cyan);
+  background: linear-gradient(145deg, rgba(110, 229, 245, 0.2), rgba(196, 155, 255, 0.14));
+  box-shadow: 0 0 24px rgba(110, 229, 245, 0.35);
+  transform: translateY(-2px);
+}
+.btn-auto:active:not(:disabled) { transform: translateY(0); }
+
+/* ═══ AUTO ON state (active running) ═══ */
+.btn-auto.on {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  border-color: transparent;
+  color: #15132a;
+  box-shadow:
+    0 10px 28px -8px rgba(110, 229, 245, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: autoPulse 2.4s ease-in-out infinite;
+}
+.btn-auto.on .btn-icon {
+  background: rgba(21, 19, 42, 0.25);
+  border-color: transparent;
+  animation: iconSpin 3s linear infinite;
+}
+.btn-auto.on .btn-icon::before {
+  /* Pause bars when running */
+  width: 9px;
+  height: 11px;
+  border: none;
+  margin: 0;
+  background:
+    linear-gradient(to right,
+      currentColor 0%, currentColor 30%,
+      transparent 30%, transparent 70%,
+      currentColor 70%, currentColor 100%);
+  border-radius: 1px;
+}
+.btn-auto.on .btn-meta { color: rgba(26, 24, 56, 0.75); }
+.btn-auto.on .btn-meta strong { color: #15132a; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25); }
+.btn-auto.on::before {
+  background: var(--neon-yellow);
+  opacity: 1;
+  box-shadow: 0 0 10px var(--neon-yellow);
+  animation: dotBlink 1s ease-in-out infinite;
+}
+.btn-auto.on:hover:not(:disabled) {
+  box-shadow:
+    0 14px 36px -6px rgba(110, 229, 245, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.08);
+}
+.btn-auto.on::after { transform: translateX(120%); }
+
+@keyframes autoPulse {
+  0%, 100% { box-shadow: 0 10px 28px -8px rgba(110, 229, 245, 0.6),  inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50%      { box-shadow: 0 10px 40px -4px rgba(110, 229, 245, 1),    inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+}
+@keyframes iconSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
 }
 
 /* ─── Reset button ─── */
@@ -726,184 +882,7 @@ header {
 .last-chip.o { color: var(--col-o); border-color: var(--col-o); background: rgba(110, 229, 245, 0.08); box-shadow: 0 0 16px rgba(110, 229, 245, 0.35); }
 
     /* ══════ styles/auto.css ══════ */
-/* ═════════════════════════════════════════════════════════════════════════
-   AUTO-DRAW PANEL — Auto button, interval input, presets, countdown
-   ═════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Auto button (paired with draw button) ─── */
-.btn-auto {
-  flex: 1;
-  padding: 10px 14px;
-  background: linear-gradient(145deg, rgba(110, 229, 245, 0.08), rgba(196, 155, 255, 0.05));
-  border: 1px solid rgba(110, 229, 245, 0.3);
-  border-radius: var(--r-md);
-  color: var(--neon-cyan);
-  font-family: var(--font-display);
-  font-weight: 800;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s var(--ease-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  white-space: nowrap;
-}
-.btn-auto:hover:not(:disabled) {
-  border-color: var(--neon-cyan);
-  background: linear-gradient(145deg, rgba(110, 229, 245, 0.14), rgba(196, 155, 255, 0.1));
-  box-shadow: 0 0 28px rgba(110, 229, 245, 0.35);
-  transform: translateY(-2px);
-}
-.btn-auto:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* Icon circle on the left */
-.btn-auto .btn-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(110, 229, 245, 0.15);
-  border: 1px solid currentColor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: relative;
-  transition: all 0.4s var(--ease-soft);
-}
-.btn-auto .btn-icon::before {
-  /* Play triangle by default */
-  content: '';
-  width: 0;
-  height: 0;
-  border-left: 7px solid currentColor;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  margin-left: 2px;
-  transition: all 0.3s var(--ease-spring);
-}
-
-/* Label stack on the right */
-.btn-auto .btn-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-}
-.btn-auto .btn-label {
-  font-size: 13px;
-  letter-spacing: 2px;
-  line-height: 1;
-}
-.btn-auto .btn-meta {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  font-weight: 400;
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-.btn-auto .btn-meta strong {
-  color: var(--neon-yellow);
-  font-weight: 700;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 14px;
-  text-shadow: 0 0 10px rgba(255, 226, 122, 0.6);
-  transition: color 0.3s;
-}
-
-/* ═══ ON state ═══ */
-.btn-auto.on {
-  background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
-  border-color: transparent;
-  color: #15132a;
-  box-shadow:
-    0 12px 32px -10px rgba(110, 229, 245, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  animation: autoPulse 2.4s ease-in-out infinite;
-}
-.btn-auto.on .btn-icon {
-  background: rgba(21, 19, 42, 0.25);
-  border-color: transparent;
-  animation: iconSpin 3s linear infinite;
-}
-.btn-auto.on .btn-icon::before {
-  /* Double pause bars when running */
-  content: '';
-  width: 10px;
-  height: 12px;
-  border: none;
-  margin: 0;
-  background:
-    linear-gradient(to right,
-      currentColor 0%, currentColor 30%,
-      transparent 30%, transparent 70%,
-      currentColor 70%, currentColor 100%);
-  border-radius: 1px;
-}
-.btn-auto.on .btn-meta {
-  color: rgba(26, 24, 56, 0.75);
-}
-.btn-auto.on .btn-meta strong {
-  color: #15132a;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-.btn-auto.on:hover:not(:disabled) {
-  box-shadow:
-    0 16px 42px -8px rgba(110, 229, 245, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  filter: brightness(1.08);
-}
-
-@keyframes autoPulse {
-  0%, 100% { box-shadow: 0 12px 32px -10px rgba(110, 229, 245, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-  50%      { box-shadow: 0 12px 44px -6px rgba(110, 229, 245, 1),     inset 0 1px 0 rgba(255, 255, 255, 0.45); }
-}
-
-@keyframes iconSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* Small indicator dot at top-right corner */
-.btn-auto::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  transition: all 0.3s;
-}
-.btn-auto.on::after {
-  background: var(--neon-yellow);
-  box-shadow: 0 0 10px var(--neon-yellow);
-  animation: dotBlink 1s ease-in-out infinite;
-}
-@keyframes dotBlink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.4; transform: scale(0.7); }
-}
-
-/* Sweep shine on activation */
-.btn-auto::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.9s;
-  pointer-events: none;
-}
-.btn-auto.on::before { transform: translateX(120%); }
 
 /* ─── Auto panel container ─── */
 .auto-panel {
@@ -1262,12 +1241,16 @@ header {
 
           <div class="btn-row">
             <button class="btn-draw" id="btnDraw" type="button">
-              ▶ QUAY SỐ
+              <span class="btn-icon" aria-hidden="true"></span>
+              <span class="btn-text">
+                <span class="btn-label">QUAY SỐ THỦ CÔNG</span>
+                <span class="btn-meta">Nhấn để quay 1 số</span>
+              </span>
             </button>
             <button class="btn-auto" id="btnAuto" type="button" aria-pressed="false">
               <span class="btn-icon" aria-hidden="true"></span>
               <span class="btn-text">
-                <span class="btn-label">TỰ ĐỘNG</span>
+                <span class="btn-label">QUAY SỐ TỰ ĐỘNG</span>
                 <span class="btn-meta">Mỗi <strong id="btnAutoSec">5</strong> giây</span>
               </span>
             </button>
