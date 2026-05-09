@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Cyberpunk bingo number caller, 1-75, with custom auto-draw interval." />
+  <meta name="description" content="BINGO BY LONGLTV - Trang quay số bingo 1-75 với chế độ tự động." />
   <meta name="color-scheme" content="dark" />
-  <title>BINGO // NEON_75</title>
+  <title>BINGO BY LONGLTV</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=JetBrains+Mono:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
 
   <style>
     /* ══════ styles/tokens.css ══════ */
@@ -53,7 +53,7 @@
   --r-lg: 22px;
 
   /* ─── Typography ─── */
-  --font-display: 'Russo One', sans-serif;
+  --font-display: 'Exo 2', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
   --font-body:    'Be Vietnam Pro', sans-serif;
 
@@ -220,9 +220,83 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: nowrap;
   flex-shrink: 0;
+}
+
+/* Site logo — wide horizontal LONGLTV mark */
+.site-logo {
+  height: 60px;
+  padding: 8px 18px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 122, 224, 0.12), rgba(110, 229, 245, 0.12)),
+    rgba(14, 12, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 24px rgba(255, 122, 224, 0.25),
+    0 0 48px rgba(110, 229, 245, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  animation: logoFloat 6s ease-in-out infinite;
+}
+/* Scanline overlay inside logo */
+.site-logo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(110, 229, 245, 0.04) 2px,
+    rgba(110, 229, 245, 0.04) 3px
+  );
+  pointer-events: none;
+}
+/* Animated gradient sweep */
+.site-logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 70%);
+  transform: translateX(-100%);
+  animation: logoSweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+.site-logo svg {
+  height: 100%;
+  width: auto;
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes logoSweep {
+  0%   { transform: translateX(-100%); }
+  60%  { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
+}
+
+/* Center: logo + brand text */
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .brand-mark {
@@ -243,6 +317,7 @@ header {
 }
 .logo span {
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 38px;
   line-height: 1;
   letter-spacing: 2px;
@@ -263,15 +338,20 @@ header {
 .tagline {
   font-family: var(--font-mono);
   color: var(--text-muted);
-  font-size: 10px;
-  letter-spacing: 3px;
+  font-size: 11px;
+  letter-spacing: 4px;
   text-transform: uppercase;
   white-space: nowrap;
 }
-.tagline .divider {
-  color: var(--neon-pink);
-  margin: 0 8px;
-  opacity: 0.7;
+.tagline .by {
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+.tagline .author {
+  color: var(--neon-cyan);
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(110, 229, 245, 0.5);
+  letter-spacing: 5px;
 }
 
 /* ─── Panel ─── */
@@ -336,6 +416,7 @@ header {
   border-radius: var(--r-md);
   color: #1a1838;
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 14px;
   letter-spacing: 2px;
   cursor: pointer;
@@ -457,6 +538,7 @@ header {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 46px;
   color: var(--text-dim);
   transition: all 0.45s var(--ease-spring);
@@ -520,6 +602,7 @@ header {
 
 #slotDisplay {
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 80px;
   line-height: 1;
   color: var(--text-primary);
@@ -621,6 +704,7 @@ header {
   justify-content: center;
   gap: 5px;
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 13px;
   border: 1px solid;
   animation: chipIn 0.4s var(--ease-spring);
@@ -655,6 +739,7 @@ header {
   border-radius: var(--r-md);
   color: var(--neon-cyan);
   font-family: var(--font-display);
+  font-weight: 800;
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -727,6 +812,7 @@ header {
   color: var(--neon-yellow);
   font-weight: 700;
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 14px;
   text-shadow: 0 0 10px rgba(255, 226, 122, 0.6);
   transition: color 0.3s;
@@ -868,6 +954,7 @@ header {
   outline: none;
   color: var(--neon-yellow);
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 20px;
   width: 42px;
   text-align: center;
@@ -969,6 +1056,7 @@ header {
 }
 .countdown-timer {
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 15px;
   color: var(--neon-yellow);
   letter-spacing: 1px;
@@ -1049,6 +1137,7 @@ header {
 
 .range-letter {
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: 18px;
   color: var(--group-color);
   line-height: 1;
@@ -1094,6 +1183,7 @@ header {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
+  font-weight: 800;
   font-size: clamp(10px, 1vw, 13px);
   color: var(--text-dim);
   transition: all 0.4s var(--ease-spring);
@@ -1127,15 +1217,15 @@ header {
   <div class="app">
 
     <header>
-      <div class="brand-mark">HỆ THỐNG ĐANG HOẠT ĐỘNG</div>
-      <h1 class="logo" aria-label="BINGO">
-        <span aria-hidden="true">B</span>
-        <span aria-hidden="true">I</span>
-        <span aria-hidden="true">N</span>
-        <span aria-hidden="true">G</span>
-        <span aria-hidden="true">O</span>
-      </h1>
-      <p class="tagline">LUCKY 75<span class="divider" aria-hidden="true">//</span>PHIÊN BẢN NEON</p>
+      <div class="brand-stack">
+        <h1 class="logo" aria-label="BINGO">
+          <span aria-hidden="true">B</span>
+          <span aria-hidden="true">I</span>
+          <span aria-hidden="true">N</span>
+          <span aria-hidden="true">G</span>
+          <span aria-hidden="true">O</span>
+        </h1>
+      </div>
     </header>
 
     <div class="main-grid">
