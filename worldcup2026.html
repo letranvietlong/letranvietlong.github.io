@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.18.0">
+<meta name="app-version" content="v1.19.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -490,7 +490,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 /* =========================================================
-   FEATURE PACK v1.2.0 → v1.18.0
+   FEATURE PACK v1.2.0 → v1.19.0
    Single-file GitHub Pages enhancements
 ========================================================= */
 .build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
@@ -777,7 +777,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.18.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.19.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -791,7 +791,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.18.0';
+const APP_VERSION='v1.19.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -1082,7 +1082,7 @@ function renderSchedule(data){
     html=`<div class="loading-state"><div style="font-size:32px">📅</div><div class="loading-txt">Giải đấu bắt đầu ngày 11/06/2026</div></div>`;
   }
 
-  container.innerHTML=html;
+  container.innerHTML=hiddenNote+html;
 
   // Inject flags after render
   container.querySelectorAll('[data-t1],[data-t2]').forEach(el=>{
@@ -2199,7 +2199,7 @@ async function refreshData(){
 
 
 // =========================================================
-// FEATURE PACK v1.2.0 → v1.18.0
+// FEATURE PACK v1.2.0 → v1.19.0
 // 14 requested features, one version per feature.
 // =========================================================
 const WC_CHANGELOG=[
@@ -2217,7 +2217,8 @@ const WC_CHANGELOG=[
   ['v1.13.0','SEO theo từng section: đổi title, meta description và canonical hash khi chuyển tab.'],
   ['v1.14.0','JSON-LD sạch hơn: bổ sung WebApplication + SportsEvent metadata đã kiểm soát.'],
   ['v1.17.0','Road to Final cho từng đội trong popup đội tuyển.'],
-  ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.']
+  ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.'],
+  ['v1.19.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.']
 ];
 
 const WC_FEATURE_STATE={
@@ -2256,6 +2257,81 @@ function countdownText(match){
   return `Còn ${Math.max(1,m)} phút`;
 }
 function roundLabel(match){return match.group?'Vòng bảng':(match.round||'Knockout');}
+
+// v1.19.0 — Chỉ hiển thị trận đã xác định đủ 2 đội.
+// Các seed như Winner Group A / Runner-up Group B / 1A / 2A sẽ được tự resolve
+// khi vòng bảng đã có đủ kết quả, sau đó trận sẽ tự xuất hiện trong lịch.
+function isPlaceholderTeamName(name){
+  const raw=String(name||'').trim();
+  if(!raw)return true;
+  const n=normalizeText(raw);
+  if(['tbd','tba','to be determined','to be confirmed','unknown','-','—'].includes(n))return true;
+  if(/\b(uefa|afc|caf|concacaf|conmebol|ofc)\s+(path|play\s*off|playoff)/i.test(raw))return true;
+  if(/\b(path|play\s*off|playoff)\b/i.test(raw))return true;
+  if(/\b(winner|runner\s*-?up|best\s+third|third\s+place|loser)\b/i.test(raw))return true;
+  if(/\b(match|game)\s*\d+\b/i.test(raw))return true;
+  if(/^\s*[12]\s*[A-L]\s*$/i.test(raw))return true;
+  if(/^\s*[WL]\s*\d+\s*$/i.test(raw))return true;
+  if(/^\s*(1st|2nd|first|second|1º|2º)\s+(place\s+)?(group\s+)?[A-L]\s*$/i.test(raw))return true;
+  return false;
+}
+function computeResolvedGroupRankings(data){
+  const groups={};
+  (data&&data.matches?data.matches:[]).filter(m=>m.group).forEach(m=>{
+    const g=m.group;
+    if(!groups[g])groups[g]={teams:{},matches:[],done:0};
+    groups[g].matches.push(m);
+    [m.team1,m.team2].forEach(t=>{
+      if(!isPlaceholderTeamName(t)&&!groups[g].teams[t])groups[g].teams[t]={team:t,pts:0,w:0,d:0,l:0,gf:0,ga:0};
+    });
+    if(m.score&&m.score.ft&&!isPlaceholderTeamName(m.team1)&&!isPlaceholderTeamName(m.team2)){
+      groups[g].done++;
+      const [s1,s2]=m.score.ft;
+      const t1=groups[g].teams[m.team1],t2=groups[g].teams[m.team2];
+      if(!t1||!t2)return;
+      t1.gf+=s1;t1.ga+=s2;t2.gf+=s2;t2.ga+=s1;
+      if(s1>s2){t1.w++;t1.pts+=3;t2.l++;}
+      else if(s1<s2){t2.w++;t2.pts+=3;t1.l++;}
+      else{t1.d++;t1.pts++;t2.d++;t2.pts++;}
+    }
+  });
+  const out={};
+  Object.entries(groups).forEach(([g,obj])=>{
+    const teams=Object.values(obj.teams);
+    const expectedMatches=teams.length===4?6:obj.matches.length;
+    const complete=teams.length>=4&&obj.done>=expectedMatches;
+    out[g]={complete,ranking:teams.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf)};
+  });
+  return out;
+}
+function resolveSeedTeamName(data,name){
+  const raw=String(name||'').trim();
+  if(!raw)return raw;
+  const rankings=computeResolvedGroupRankings(data);
+  let rank=null, groupLetter=null;
+  let m=raw.match(/^\s*1\s*([A-L])\s*$/i)||raw.match(/^\s*(?:1st|first|1º)\s+(?:place\s+)?(?:group\s+)?([A-L])\s*$/i)||raw.match(/\bwinner\s+(?:of\s+)?group\s+([A-L])\b/i)||raw.match(/\bgroup\s+([A-L])\s+winner\b/i);
+  if(m){rank=0;groupLetter=m[1].toUpperCase();}
+  if(rank===null){
+    m=raw.match(/^\s*2\s*([A-L])\s*$/i)||raw.match(/^\s*(?:2nd|second|2º)\s+(?:place\s+)?(?:group\s+)?([A-L])\s*$/i)||raw.match(/\brunner\s*-?up\s+(?:of\s+)?group\s+([A-L])\b/i)||raw.match(/\bgroup\s+([A-L])\s+runner\s*-?up\b/i);
+    if(m){rank=1;groupLetter=m[1].toUpperCase();}
+  }
+  if(rank===null)return raw;
+  const g='Group '+groupLetter;
+  const pack=rankings[g];
+  if(!pack||!pack.complete||!pack.ranking[rank])return raw;
+  return pack.ranking[rank].team;
+}
+function prepareVisibleScheduleMatch(data,match,index){
+  if(!match)return null;
+  const t1=resolveSeedTeamName(data,match.team1);
+  const t2=resolveSeedTeamName(data,match.team2);
+  if(isPlaceholderTeamName(t1)||isPlaceholderTeamName(t2))return null;
+  return {...match,team1:t1,team2:t2,_sourceIndex:index};
+}
+function getVisibleScheduleMatches(data){
+  return (data&&data.matches?data.matches:[]).map((m,i)=>prepareVisibleScheduleMatch(data,m,i)).filter(Boolean);
+}
+
 function matchPassesFilters(match){
   const f=WC_FEATURE_STATE.filters;
   const status=matchStatus(match).status;
@@ -2270,8 +2346,8 @@ function matchPassesFilters(match){
   return true;
 }
 function getFilteredMatches(){
-  const matches=(WC_FEATURE_STATE.lastData&&WC_FEATURE_STATE.lastData.matches)||[];
-  return matches.filter(matchPassesFilters);
+  const data=WC_FEATURE_STATE.lastData;
+  return getVisibleScheduleMatches(data).filter(matchPassesFilters);
 }
 function ensureFeatureToolbar(){
   const container=document.getElementById('matchesContainer');
@@ -2332,14 +2408,17 @@ renderSchedule=function(data){
   dataObj.matches.forEach(m=>{if(m.score&&m.score.ft){totalGoals+=m.score.ft[0]+m.score.ft[1];doneCount++;}});
   const kg=document.getElementById('kpi-goals'),km=document.getElementById('kpi-matches'),kd=document.getElementById('kpi-days');
   if(kg)kg.textContent=totalGoals;if(km)km.textContent=doneCount+'/'+dataObj.matches.length;if(kd)kd.textContent=Math.max(0,Math.ceil((new Date('2026-06-11')-new Date())/86400000));
+  const visibleAll=getVisibleScheduleMatches(dataObj);
+  const hiddenCount=Math.max(0,(dataObj.matches||[]).length-visibleAll.length);
   const matches=getFilteredMatches().sort((a,b)=>matchStartDate(a)-matchStartDate(b));
   WC_FEATURE_STATE.lastMatches=matches;
-  renderTodayPanel(dataObj.matches);
-  if(!matches.length){container.innerHTML='<div class="error-state">⚠ Không có trận nào khớp bộ lọc hiện tại</div>';return;}
+  renderTodayPanel(visibleAll);
+  const hiddenNote=hiddenCount?`<div class="note-banner">🧩 Đã tạm ẩn ${hiddenCount} trận chưa xác định đủ 2 đội. Khi dữ liệu cập nhật đội thắng, nhất bảng hoặc nhì bảng, các trận này sẽ tự động hiển thị.</div>`:'';
+  if(!matches.length){container.innerHTML=hiddenNote+'<div class="error-state">⚠ Không có trận đã xác định đủ 2 đội khớp bộ lọc hiện tại</div>';return;}
   let html='';
   if(WC_FEATURE_STATE.view==='calendar'){
     const byDate=groupMatchesByDate(matches);
-    html='<div class="calendar-grid">'+Object.keys(byDate).sort().map(date=>`<div class="cal-day"><div class="cal-head">${formatDate(date)}</div><div class="cal-body">${byDate[date].map((m,i)=>`<div class="cal-match" data-match-index="${dataObj.matches.indexOf(m)}"><div class="cal-time">${displayMatchTime(m)} · ${countdownText(m)}</div><div class="cal-teams">${tn(m.team1)} vs ${tn(m.team2)}</div><div class="cal-meta">${m.group||m.round||''} · ${m.ground||''}</div></div>`).join('')}</div></div>`).join('')+'</div>';
+    html='<div class="calendar-grid">'+Object.keys(byDate).sort().map(date=>`<div class="cal-day"><div class="cal-head">${formatDate(date)}</div><div class="cal-body">${byDate[date].map((m,i)=>`<div class="cal-match" data-match-index="${m._sourceIndex}"><div class="cal-time">${displayMatchTime(m)} · ${countdownText(m)}</div><div class="cal-teams">${tn(m.team1)} vs ${tn(m.team2)}</div><div class="cal-meta">${m.group||m.round||''} · ${m.ground||''}</div></div>`).join('')}</div></div>`).join('')+'</div>';
   }else{
     const byDate=groupMatchesByDate(matches);
     html=Object.keys(byDate).sort().map(date=>`<div class="day-sep"><div class="ds-line"></div><div class="ds-txt">${formatDate(date)}</div><div class="ds-line"></div></div>${byDate[date].map(m=>buildEnhancedMatchCard(m,matchStatus(m),matchStatus(m).status==='live'?'live-m':'')).join('')}`).join('');
@@ -2381,7 +2460,7 @@ function renderGlobalSearch(q){
   const text=normalizeText(q);if(text.length<2){panel.classList.remove('on');return;}
   const results=[];
   TEAMS_STATIC.forEach(t=>{if(normalizeText([t.n,t.g,t.coach,t.cap].join(' ')).includes(text))results.push({type:'Đội tuyển',title:t.n,sub:`Bảng ${t.g} · FIFA #${t.r}`,action:()=>{openTeamModal(t);}})});
-  (WC_FEATURE_STATE.lastData?.matches||[]).forEach(m=>{const hay=normalizeText([m.team1,m.team2,tn(m.team1),tn(m.team2),m.ground,m.group,m.round].join(' '));if(hay.includes(text))results.push({type:'Trận đấu',title:`${tn(m.team1)} vs ${tn(m.team2)}`,sub:`${formatMatchDateTime(m)} · ${m.group||m.round||''} · ${m.ground||''}`,action:()=>openMatchModal(tn(m.team1),tn(m.team2),'','',getCC(m.team1),getCC(m.team2),'Giờ: '+displayMatchTime(m),m.group||m.round||'',m.ground||'', '', displayMatchTime(m))});});
+  getVisibleScheduleMatches(WC_FEATURE_STATE.lastData).forEach(m=>{const hay=normalizeText([m.team1,m.team2,tn(m.team1),tn(m.team2),m.ground,m.group,m.round].join(' '));if(hay.includes(text))results.push({type:'Trận đấu',title:`${tn(m.team1)} vs ${tn(m.team2)}`,sub:`${formatMatchDateTime(m)} · ${m.group||m.round||''} · ${m.ground||''}`,action:()=>openMatchModal(tn(m.team1),tn(m.team2),'','',getCC(m.team1),getCC(m.team2),'Giờ: '+displayMatchTime(m),m.group||m.round||'',m.ground||'', '', displayMatchTime(m))});});
   VENUES.forEach(v=>{if(normalizeText([v.n,v.c,v.info].join(' ')).includes(text))results.push({type:'Sân vận động',title:v.n,sub:`${v.c} · ${v.cap}`,action:()=>openVenueModal(v)});});
   panel.innerHTML=results.slice(0,12).map((r,i)=>`<div class="search-result" data-i="${i}"><div><div class="sr-type">${r.type}</div><div class="sr-title">${r.title}</div><div class="sr-sub">${r.sub}</div></div><div style="color:var(--text3)">↵</div></div>`).join('')||'<div class="search-result"><div class="sr-title">Không tìm thấy kết quả phù hợp</div></div>';
   panel.classList.add('on');
