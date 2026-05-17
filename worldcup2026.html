@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.20.0">
+<meta name="app-version" content="v1.22.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -490,7 +490,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 /* =========================================================
-   FEATURE PACK v1.2.0 → v1.20.0
+   FEATURE PACK v1.2.0 → v1.22.0
    Single-file GitHub Pages enhancements
 ========================================================= */
 .build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
@@ -777,7 +777,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.20.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.22.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -791,7 +791,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.20.0';
+const APP_VERSION='v1.22.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2138,6 +2138,23 @@ function getFallbackTicker(){
   ];
 }
 
+// v1.22.0 — Helper dùng chung để nhận diện đội đã xác định cụ thể.
+// Đặt trước buildTicker() để tránh ReferenceError khi refreshData() chạy sớm.
+function isConcreteTeam(name){
+  const raw=String(name||'').trim();
+  if(!raw)return false;
+  const n=raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(['tbd','tba','to be determined','to be confirmed','unknown','-','—'].includes(n))return false;
+  if(/\b(uefa|afc|caf|concacaf|conmebol|ofc)\s+(path|play\s*off|playoff)/i.test(raw))return false;
+  if(/\b(path|play\s*off|playoff)\b/i.test(raw))return false;
+  if(/\b(winner|runner\s*-?up|best\s+third|third\s+place|loser)\b/i.test(raw))return false;
+  if(/\b(match|game)\s*\d+\b/i.test(raw))return false;
+  if(/^\s*[12]\s*[A-L]\s*$/i.test(raw))return false;
+  if(/^\s*[WL]\s*\d+\s*$/i.test(raw))return false;
+  if(/^\s*(1st|2nd|first|second|1º|2º)\s+(place\s+)?(group\s+)?[A-L]\s*$/i.test(raw))return false;
+  return true;
+}
+
 // v1.20.0 — Live ticker renderer.
 // Một số bản build trước gọi buildTicker() trong refreshData() nhưng thiếu hàm này,
 // gây lỗi ReferenceError và làm gián đoạn luồng cập nhật dữ liệu.
@@ -2249,7 +2266,7 @@ async function refreshData(){
 
 
 // =========================================================
-// FEATURE PACK v1.2.0 → v1.20.0
+// FEATURE PACK v1.2.0 → v1.22.0
 // 14 requested features, one version per feature.
 // =========================================================
 const WC_CHANGELOG=[
@@ -2268,7 +2285,9 @@ const WC_CHANGELOG=[
   ['v1.14.0','JSON-LD sạch hơn: bổ sung WebApplication + SportsEvent metadata đã kiểm soát.'],
   ['v1.17.0','Road to Final cho từng đội trong popup đội tuyển.'],
   ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.'],
-  ['v1.20.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.']
+  ['v1.20.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.'],
+  ['v1.21.0','Chuẩn hóa toàn bộ website về một múi giờ duy nhất: Giờ Việt Nam (UTC+7); bỏ tùy chọn giờ máy người dùng để tránh lệch lịch.'],
+  ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.']
 ];
 
 const WC_FEATURE_STATE={
@@ -2279,6 +2298,10 @@ const WC_FEATURE_STATE={
   lastMatches:[]
 };
 
+// v1.21.0 — Website dùng một múi giờ duy nhất để tránh lệch lịch giữa các thiết bị.
+const APP_TIME_ZONE='Asia/Ho_Chi_Minh';
+const APP_TIMEZONE_LABEL='Giờ Việt Nam (UTC+7)';
+
 function getTeamMeta(name){
   const raw=String(name||'').trim();
   return TEAMS_STATIC.find(t=>t.n===raw||tn(t.n)===raw||raw===tn(t.n))||null;
@@ -2287,13 +2310,11 @@ function normalizeText(v){return String(v||'').toLowerCase().normalize('NFD').re
 function matchStartDate(match){return parseMatchTime(match.date,match.time)||new Date((match.date||'')+'T00:00:00');}
 function formatMatchDateTime(match){
   const dt=matchStartDate(match);
-  const tz=WC_FEATURE_STATE.timezone==='vn'?'Asia/Ho_Chi_Minh':Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return dt.toLocaleString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:tz});
+  return dt.toLocaleString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:APP_TIME_ZONE}) + ' · GMT+7';
 }
 function displayMatchTime(match){
   const dt=matchStartDate(match);
-  const tz=WC_FEATURE_STATE.timezone==='vn'?'Asia/Ho_Chi_Minh':Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return dt.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',timeZone:tz});
+  return dt.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',timeZone:APP_TIME_ZONE});
 }
 function countdownText(match){
   const st=matchStatus(match);
@@ -2309,6 +2330,7 @@ function countdownText(match){
 function roundLabel(match){return match.group?'Vòng bảng':(match.round||'Knockout');}
 
 // v1.20.0 — Chỉ hiển thị trận đã xác định đủ 2 đội.
+// v1.21.0 — Múi giờ mặc định và duy nhất: Giờ Việt Nam (UTC+7).
 // Các seed như Winner Group A / Runner-up Group B / 1A / 2A sẽ được tự resolve
 // khi vòng bảng đã có đủ kết quả, sau đó trận sẽ tự xuất hiện trong lịch.
 function isPlaceholderTeamName(name){
@@ -2415,8 +2437,8 @@ function ensureFeatureToolbar(){
     <div class="ft-row">
       <span class="ft-label">Hiển thị</span>
       <button class="ft-chip on" data-status="all">Tất cả</button><button class="ft-chip" data-status="live">● Live</button><button class="ft-chip" data-status="done">Kết thúc</button><button class="ft-chip" data-status="soon">Sắp tới</button>
-      <span class="ft-label" style="margin-left:8px">Giờ</span>
-      <button class="ft-chip on" data-tz="vn">Giờ Việt Nam</button><button class="ft-chip" data-tz="local">Giờ máy bạn</button>
+      <span class="ft-label" style="margin-left:8px">Múi giờ</span>
+      <button class="ft-chip on" type="button" title="Toàn bộ lịch thi đấu đang hiển thị theo Giờ Việt Nam GMT+7">Giờ Việt Nam · GMT+7</button>
       <span class="ft-label" style="margin-left:8px">Layout</span>
       <button class="ft-chip on" data-view="list">Danh sách</button><button class="ft-chip" data-view="calendar">Lịch ngày</button>
     </div>`;
@@ -2427,7 +2449,7 @@ function ensureFeatureToolbar(){
   toolbar.querySelector('#groupFilter').addEventListener('change',e=>{WC_FEATURE_STATE.filters.group=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
   toolbar.querySelector('#roundFilter').addEventListener('change',e=>{WC_FEATURE_STATE.filters.round=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
   toolbar.querySelectorAll('[data-status]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-status]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.filters.status=b.dataset.status;renderSchedule(WC_FEATURE_STATE.lastData);}));
-  toolbar.querySelectorAll('[data-tz]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-tz]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.timezone=b.dataset.tz;renderSchedule(WC_FEATURE_STATE.lastData);}));
+  // v1.21.0: bỏ chuyển đổi múi giờ; toàn bộ website luôn dùng Giờ Việt Nam (GMT+7).
   toolbar.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.view=b.dataset.view;renderSchedule(WC_FEATURE_STATE.lastData);}));
 }
 function renderTodayPanel(matches){
