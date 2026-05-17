@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.1.0">
+<meta name="app-version" content="v1.15.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -475,6 +475,23 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   .page{padding:20px 0 60px}
   .mc{grid-template-columns:44px 1fr 90px}
 }
+
+
+/* =========================================================
+   FEATURE PACK v1.2.0 → v1.15.0
+   Single-file GitHub Pages enhancements
+========================================================= */
+.build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
+.feature-toolbar{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:12px;margin-bottom:14px;display:grid;gap:10px}
+.ft-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ft-label{font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-right:2px}.ft-control{background:var(--ink3);border:1px solid var(--line2);border-radius:10px;color:var(--text);font-family:var(--font-vn);font-size:12px;padding:8px 10px;outline:none;min-height:36px}.ft-control:focus{border-color:var(--amber)}.ft-search{min-width:260px;flex:1}.ft-chip{background:transparent;border:1px solid var(--line2);color:var(--text2);border-radius:20px;padding:7px 12px;font-size:11px;font-weight:700}.ft-chip.on,.ft-chip:hover{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.today-panel{background:linear-gradient(135deg,rgba(240,165,0,.1),rgba(61,142,240,.05));border:1px solid rgba(240,165,0,.22);border-radius:var(--r2);padding:13px 15px;margin-bottom:14px}.today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.today-title{font-size:13px;font-weight:800;color:var(--white)}.today-sub{font-size:10px;color:var(--text3)}.today-list{display:grid;gap:6px}.today-mini{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;background:rgba(13,17,23,.45);border:1px solid rgba(255,255,255,.04);font-size:12px}.today-mini strong{color:var(--amber)}
+.match-countdown{font-size:9px;color:var(--amber2);font-weight:700;white-space:nowrap;margin-top:2px}.mc-date-mini{font-size:9px;color:var(--text3);margin-top:2px;white-space:nowrap}.mc-actions{display:flex;gap:4px;margin-top:4px}.mini-btn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text3);border-radius:7px;padding:3px 6px;font-size:9px;font-weight:700}.mini-btn:hover{border-color:var(--amber);color:var(--amber)}
+.calendar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.cal-day{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}.cal-head{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;font-weight:800;color:var(--amber);background:rgba(255,255,255,.015)}.cal-body{padding:9px;display:grid;gap:7px}.cal-match{padding:8px;border-radius:8px;background:var(--ink3);border:1px solid var(--line);cursor:pointer}.cal-match:hover{border-color:var(--line2)}.cal-time{font-family:var(--font-num);font-size:11px;color:var(--amber);font-weight:800}.cal-teams{font-size:12px;font-weight:700;color:var(--text);margin-top:3px}.cal-meta{font-size:10px;color:var(--text3);margin-top:3px}
+.site-search{margin-left:12px;flex:1;max-width:360px;position:relative}.site-search input{width:100%;background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:8px 32px 8px 12px;color:var(--text);font-size:12px;outline:none}.site-search input:focus{border-color:var(--amber)}.site-search:after{content:'⌕';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px}.search-panel{display:none;position:fixed;z-index:650;top:112px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 28px));max-height:70vh;overflow:auto;background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r3);box-shadow:0 24px 64px rgba(0,0,0,.5);padding:12px}.search-panel.on{display:block}.search-result{display:flex;justify-content:space-between;gap:12px;padding:10px;border-bottom:1px solid var(--line);cursor:pointer}.search-result:last-child{border-bottom:none}.search-result:hover{background:rgba(255,255,255,.03)}.sr-type{font-size:9px;font-weight:800;color:var(--amber);letter-spacing:.06em}.sr-title{font-size:13px;font-weight:700;color:var(--text);margin-top:2px}.sr-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.compare-box,.road-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.compare-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}.compare-card{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:10px}.compare-name{font-size:13px;font-weight:800;color:var(--white)}.compare-stat{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}.compare-stat:last-child{border-bottom:none}.compare-vs{display:grid;place-items:center;color:var(--text3);font-family:var(--font-num);font-weight:800}.share-note{font-size:10px;color:var(--green);text-align:center;margin-top:8px;display:none}.road-line{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}.road-step{background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:8px 5px;text-align:center}.road-step strong{display:block;font-size:10px;color:var(--text);line-height:1.2}.road-step span{display:block;font-size:9px;color:var(--text3);margin-top:3px}.road-step.current{border-color:var(--amber);background:var(--amber3)}
+.changelog-modal,.venue-modal{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:18px}.changelog-modal.on,.venue-modal.on{display:flex}.change-box,.venue-box{background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r3);width:min(760px,100%);max-height:88vh;overflow:auto;box-shadow:0 24px 64px rgba(0,0,0,.5)}.change-head,.venue-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--ink3)}.change-title,.venue-title{font-size:18px;font-weight:900;color:var(--white)}.change-body,.venue-body{padding:16px 20px}.change-item{display:grid;grid-template-columns:86px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.change-item:last-child{border-bottom:none}.change-ver{font-family:var(--font-num);font-size:14px;font-weight:900;color:var(--amber)}.change-text{font-size:12px;color:var(--text2);line-height:1.6}.close-lite{background:var(--ink2);border:1px solid var(--line2);color:var(--text2);border-radius:8px;width:32px;height:32px;cursor:pointer}.close-lite:hover{border-color:var(--amber);color:var(--amber)}.venue-hero{height:210px;background:var(--ink3);position:relative;overflow:hidden}.venue-hero img{width:100%;height:100%;object-fit:cover}.venue-hero:after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(13,17,23,.92),transparent 65%)}.venue-hero-title{position:absolute;left:18px;right:18px;bottom:16px;z-index:1}.venue-hero-title h2{font-size:22px;color:#fff;margin:0}.venue-hero-title p{font-size:12px;color:rgba(255,255,255,.72);margin-top:4px}.venue-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.venue-detail{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:10px}.venue-detail span{display:block;font-size:10px;color:var(--text3)}.venue-detail strong{display:block;font-size:13px;color:var(--text);margin-top:4px}
+@media(max-width:780px){.site-search{display:none}.compare-grid{grid-template-columns:1fr}.compare-vs{display:none}.road-line{grid-template-columns:repeat(2,1fr)}.change-item{grid-template-columns:1fr}.ft-search{min-width:100%}}
+
 </style>
 </head>
 <body>
@@ -723,7 +740,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.1.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.15.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -737,7 +754,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.1.0';
+const APP_VERSION='v1.15.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -1704,9 +1721,9 @@ const FALLBACK_NEWS_HTML=`
 const TRENDS=[
   {t:'Mexico vs South Africa — Trận Khai Mạc 11/06',d:'Chính thức'},
   {t:'48 Đội — Format Mới 12 Bảng A Đến L',d:'FIFA.com'},
-  {t:'Việt Nam Lần Đầu Dự World Cup — Bảng G',d:'VFF.org.vn'},
+  {t:'Theo dõi danh sách đội tham dự và bảng đấu chính thức',d:'Cập nhật xác thực'},
   {t:'Sân Azteca: Khai Mạc Và Bán Kết Lần Thứ 3 Liên Tiếp',d:'ESPN'},
-  {t:'Argentina vs Algeria — Haskell Khủng Tại Bảng J',d:'Goal.com'},
+  {t:'Argentina và các nhà vô địch được chú ý tại World Cup 2026',d:'Phân tích'},
   {t:'MetLife Stadium Đăng Cai Chung Kết World Cup 2026',d:'FIFA.com'},
   {t:'Lịch Brazil — Morocco, Haiti, Scotland Bảng C',d:'Chính thức'},
 ];
@@ -2117,6 +2134,271 @@ async function refreshData(){
     renderSchedule(fallback);buildGroups(fallback);buildBracket(fallback);buildStats(fallback);buildTicker(fallback);
     setApiStatus('error','API lỗi · Dùng dữ liệu dự phòng');
   }
+}
+
+
+// =========================================================
+// FEATURE PACK v1.2.0 → v1.15.0
+// 14 requested features, one version per feature.
+// =========================================================
+const WC_CHANGELOG=[
+  ['v1.2.0','Bộ lọc lịch thi đấu nâng cao: tìm đội, lọc bảng, lọc vòng, lọc trạng thái.'],
+  ['v1.3.0','Chế độ giờ Việt Nam / giờ địa phương cho lịch thi đấu.'],
+  ['v1.4.0','Version badge nâng cấp: bấm vào version để xem popup lịch sử phiên bản.'],
+  ['v1.5.0','Countdown cho từng trận: còn bao lâu, đang diễn ra hoặc đã kết thúc.'],
+  ['v1.6.0','Khu vực “Hôm nay có trận gì?” và gợi ý trận gần nhất nếu hôm nay chưa có trận.'],
+  ['v1.7.0','Tìm kiếm toàn website: đội tuyển, trận đấu, sân vận động.'],
+  ['v1.8.0','So sánh 2 đội trong popup trận đấu: bảng, FIFA rank, HLV, đội trưởng, cầu thủ nổi bật.'],
+  ['v1.9.0','Chuyển layout lịch thi đấu giữa danh sách và lịch ngày.'],
+  ['v1.10.0','PWA cơ bản: manifest data URL, theme color, app metadata cho GitHub Pages.'],
+  ['v1.11.0','Share card cho từng trận: copy link sâu và hỗ trợ Web Share API trên thiết bị tương thích.'],
+  ['v1.12.0','Popup chi tiết sân vận động: ảnh, thành phố, quốc gia, sức chứa, vai trò tổ chức.'],
+  ['v1.13.0','SEO theo từng section: đổi title, meta description và canonical hash khi chuyển tab.'],
+  ['v1.14.0','JSON-LD sạch hơn: bổ sung WebApplication + SportsEvent metadata đã kiểm soát.'],
+  ['v1.15.0','Road to Final cho từng đội trong popup đội tuyển.']
+];
+
+const WC_FEATURE_STATE={
+  filters:{text:'',team:'all',group:'all',round:'all',status:'all'},
+  timezone:'vn',
+  view:'list',
+  lastData:null,
+  lastMatches:[]
+};
+
+function getTeamMeta(name){
+  const raw=String(name||'').trim();
+  return TEAMS_STATIC.find(t=>t.n===raw||tn(t.n)===raw||raw===tn(t.n))||null;
+}
+function normalizeText(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function matchStartDate(match){return parseMatchTime(match.date,match.time)||new Date((match.date||'')+'T00:00:00');}
+function formatMatchDateTime(match){
+  const dt=matchStartDate(match);
+  const tz=WC_FEATURE_STATE.timezone==='vn'?'Asia/Ho_Chi_Minh':Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return dt.toLocaleString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:tz});
+}
+function displayMatchTime(match){
+  const dt=matchStartDate(match);
+  const tz=WC_FEATURE_STATE.timezone==='vn'?'Asia/Ho_Chi_Minh':Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return dt.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',timeZone:tz});
+}
+function countdownText(match){
+  const st=matchStatus(match);
+  if(st.status==='done')return 'Đã kết thúc';
+  if(st.status==='live')return 'Đang diễn ra';
+  const diff=matchStartDate(match)-new Date();
+  if(diff<=0)return 'Sắp bắt đầu';
+  const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000);
+  if(d>0)return `Còn ${d} ngày ${h} giờ`;
+  if(h>0)return `Còn ${h} giờ ${m} phút`;
+  return `Còn ${Math.max(1,m)} phút`;
+}
+function roundLabel(match){return match.group?'Vòng bảng':(match.round||'Knockout');}
+function matchPassesFilters(match){
+  const f=WC_FEATURE_STATE.filters;
+  const status=matchStatus(match).status;
+  const groupId=(match.group||'').replace('Group ','');
+  const round=roundLabel(match);
+  const hay=normalizeText([tn(match.team1),tn(match.team2),match.team1,match.team2,match.ground,match.group,match.round].join(' '));
+  if(f.status!=='all'&&f.status!==status)return false;
+  if(f.group!=='all'&&f.group!==groupId)return false;
+  if(f.team!=='all'&&normalizeText(f.team)!==normalizeText(tn(match.team1))&&normalizeText(f.team)!==normalizeText(tn(match.team2)))return false;
+  if(f.round!=='all'&&normalizeText(f.round)!==normalizeText(round))return false;
+  if(f.text&& !hay.includes(normalizeText(f.text)))return false;
+  return true;
+}
+function getFilteredMatches(){
+  const matches=(WC_FEATURE_STATE.lastData&&WC_FEATURE_STATE.lastData.matches)||[];
+  return matches.filter(matchPassesFilters);
+}
+function ensureFeatureToolbar(){
+  const container=document.getElementById('matchesContainer');
+  if(!container||document.getElementById('featureToolbar'))return;
+  const teams=[...new Set(TEAMS_STATIC.map(t=>t.n))].sort((a,b)=>a.localeCompare(b,'vi'));
+  const toolbar=document.createElement('div');toolbar.id='featureToolbar';toolbar.className='feature-toolbar';
+  toolbar.innerHTML=`
+    <div class="ft-row">
+      <span class="ft-label">Tìm nhanh</span>
+      <input id="scheduleSearchInput" class="ft-control ft-search" placeholder="Tìm đội, sân, bảng đấu...">
+      <select id="teamFilter" class="ft-control"><option value="all">Tất cả đội</option>${teams.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+      <select id="groupFilter" class="ft-control"><option value="all">Tất cả bảng</option>${'ABCDEFGHIJKL'.split('').map(g=>`<option value="${g}">Bảng ${g}</option>`).join('')}</select>
+      <select id="roundFilter" class="ft-control"><option value="all">Tất cả vòng</option><option>Vòng bảng</option><option>Round of 32</option><option>Round of 16</option><option>Quarter-finals</option><option>Semi-finals</option><option>Final</option></select>
+    </div>
+    <div class="ft-row">
+      <span class="ft-label">Hiển thị</span>
+      <button class="ft-chip on" data-status="all">Tất cả</button><button class="ft-chip" data-status="live">● Live</button><button class="ft-chip" data-status="done">Kết thúc</button><button class="ft-chip" data-status="soon">Sắp tới</button>
+      <span class="ft-label" style="margin-left:8px">Giờ</span>
+      <button class="ft-chip on" data-tz="vn">Giờ Việt Nam</button><button class="ft-chip" data-tz="local">Giờ máy bạn</button>
+      <span class="ft-label" style="margin-left:8px">Layout</span>
+      <button class="ft-chip on" data-view="list">Danh sách</button><button class="ft-chip" data-view="calendar">Lịch ngày</button>
+    </div>`;
+  container.parentNode.insertBefore(toolbar,container);
+  const today=document.createElement('div');today.id='todayPanel';today.className='today-panel';container.parentNode.insertBefore(today,container);
+  toolbar.querySelector('#scheduleSearchInput').addEventListener('input',e=>{WC_FEATURE_STATE.filters.text=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
+  toolbar.querySelector('#teamFilter').addEventListener('change',e=>{WC_FEATURE_STATE.filters.team=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
+  toolbar.querySelector('#groupFilter').addEventListener('change',e=>{WC_FEATURE_STATE.filters.group=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
+  toolbar.querySelector('#roundFilter').addEventListener('change',e=>{WC_FEATURE_STATE.filters.round=e.target.value;renderSchedule(WC_FEATURE_STATE.lastData);});
+  toolbar.querySelectorAll('[data-status]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-status]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.filters.status=b.dataset.status;renderSchedule(WC_FEATURE_STATE.lastData);}));
+  toolbar.querySelectorAll('[data-tz]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-tz]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.timezone=b.dataset.tz;renderSchedule(WC_FEATURE_STATE.lastData);}));
+  toolbar.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{toolbar.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('on'));b.classList.add('on');WC_FEATURE_STATE.view=b.dataset.view;renderSchedule(WC_FEATURE_STATE.lastData);}));
+}
+function renderTodayPanel(matches){
+  const panel=document.getElementById('todayPanel');if(!panel)return;
+  const todayVN=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'});
+  let list=matches.filter(m=>m.date===todayVN);
+  let title='Trận đấu hôm nay';let sub=new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
+  if(!list.length){
+    const upcoming=matches.filter(m=>matchStatus(m).status==='soon').sort((a,b)=>matchStartDate(a)-matchStartDate(b)).slice(0,3);
+    list=upcoming;title='Hôm nay chưa có trận';sub='Gợi ý các trận gần nhất sắp diễn ra';
+  }
+  panel.innerHTML=`<div class="today-head"><div><div class="today-title">${title}</div><div class="today-sub">${sub}</div></div><button class="mini-btn" onclick="WC_FEATURE_STATE.filters.status='soon';renderSchedule(WC_FEATURE_STATE.lastData)">Xem sắp tới</button></div><div class="today-list">${list.slice(0,4).map(m=>`<div class="today-mini"><span><strong>${displayMatchTime(m)}</strong> · ${tn(m.team1)} vs ${tn(m.team2)}</span><span>${m.group||m.round||''}</span></div>`).join('')||'<div class="today-mini">Không tìm thấy lịch phù hợp.</div>'}</div>`;
+}
+function buildEnhancedMatchCard(m,st,extraCls){
+  const base=buildMatchCard(m,st,extraCls);
+  const extra=`<div class="match-countdown">${countdownText(m)}</div><div class="mc-date-mini">${formatMatchDateTime(m)}</div><div class="mc-actions"><button class="mini-btn" onclick="event.stopPropagation();shareMatchFromData('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}')">Chia sẻ</button></div>`;
+  return base.replace('<span class="mc-ven">',''+extra+'<span class="mc-ven">');
+}
+const originalRenderSchedule_v115=renderSchedule;
+renderSchedule=function(data){
+  const container=document.getElementById('matchesContainer');
+  if(!container)return;
+  ensureFeatureToolbar();
+  WC_FEATURE_STATE.lastData=data||WC_FEATURE_STATE.lastData;
+  if(!WC_FEATURE_STATE.lastData||!WC_FEATURE_STATE.lastData.matches){originalRenderSchedule_v115(data);return;}
+  const dataObj=WC_FEATURE_STATE.lastData;
+  let totalGoals=0,doneCount=0;
+  dataObj.matches.forEach(m=>{if(m.score&&m.score.ft){totalGoals+=m.score.ft[0]+m.score.ft[1];doneCount++;}});
+  const kg=document.getElementById('kpi-goals'),km=document.getElementById('kpi-matches'),kd=document.getElementById('kpi-days');
+  if(kg)kg.textContent=totalGoals;if(km)km.textContent=doneCount+'/'+dataObj.matches.length;if(kd)kd.textContent=Math.max(0,Math.ceil((new Date('2026-06-11')-new Date())/86400000));
+  const matches=getFilteredMatches().sort((a,b)=>matchStartDate(a)-matchStartDate(b));
+  WC_FEATURE_STATE.lastMatches=matches;
+  renderTodayPanel(dataObj.matches);
+  if(!matches.length){container.innerHTML='<div class="error-state">⚠ Không có trận nào khớp bộ lọc hiện tại</div>';return;}
+  let html='';
+  if(WC_FEATURE_STATE.view==='calendar'){
+    const byDate=groupMatchesByDate(matches);
+    html='<div class="calendar-grid">'+Object.keys(byDate).sort().map(date=>`<div class="cal-day"><div class="cal-head">${formatDate(date)}</div><div class="cal-body">${byDate[date].map((m,i)=>`<div class="cal-match" data-match-index="${dataObj.matches.indexOf(m)}"><div class="cal-time">${displayMatchTime(m)} · ${countdownText(m)}</div><div class="cal-teams">${tn(m.team1)} vs ${tn(m.team2)}</div><div class="cal-meta">${m.group||m.round||''} · ${m.ground||''}</div></div>`).join('')}</div></div>`).join('')+'</div>';
+  }else{
+    const byDate=groupMatchesByDate(matches);
+    html=Object.keys(byDate).sort().map(date=>`<div class="day-sep"><div class="ds-line"></div><div class="ds-txt">${formatDate(date)}</div><div class="ds-line"></div></div>${byDate[date].map(m=>buildEnhancedMatchCard(m,matchStatus(m),matchStatus(m).status==='live'?'live-m':'')).join('')}`).join('');
+  }
+  container.innerHTML=html;
+  container.querySelectorAll('.mc').forEach(card=>{
+    card.addEventListener('click',()=>openMatchModal(card.dataset.team1,card.dataset.team2,card.dataset.s1,card.dataset.s2,getCC(card.dataset.team1),getCC(card.dataset.team2),card.dataset.st,card.dataset.grp,card.dataset.ven,'',card.dataset.vnt));
+  });
+  container.querySelectorAll('.cal-match').forEach(card=>card.addEventListener('click',()=>{
+    const m=dataObj.matches[Number(card.dataset.matchIndex)],st=matchStatus(m),s1=m.score&&m.score.ft?String(m.score.ft[0]):'',s2=m.score&&m.score.ft?String(m.score.ft[1]):'';
+    openMatchModal(tn(m.team1),tn(m.team2),s1,s2,getCC(m.team1),getCC(m.team2),st.status==='done'?'Kết thúc':st.status==='live'?'Đang live':'Giờ: '+displayMatchTime(m),m.group||m.round||'',m.ground||'', '', displayMatchTime(m));
+  }));
+};
+filterMatches=function(f,btn){
+  WC_FEATURE_STATE.filters.status=f;
+  document.querySelectorAll('#featureToolbar [data-status]').forEach(b=>b.classList.toggle('on',b.dataset.status===f));
+  renderSchedule(WC_FEATURE_STATE.lastData);
+  if(btn){document.querySelectorAll('#pg-schedule .pills .pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+};
+
+function ensureChangelogModal(){
+  if(document.getElementById('changelogModal'))return;
+  const m=document.createElement('div');m.id='changelogModal';m.className='changelog-modal';m.onclick=e=>{if(e.target===m)m.classList.remove('on')};
+  m.innerHTML=`<div class="change-box"><div class="change-head"><div><div class="change-title">Build ${APP_VERSION}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Lịch sử version theo từng chức năng</div></div><button class="close-lite" onclick="document.getElementById('changelogModal').classList.remove('on')">✕</button></div><div class="change-body">${WC_CHANGELOG.slice().reverse().map(([v,t])=>`<div class="change-item"><div class="change-ver">${v}</div><div class="change-text">${t}</div></div>`).join('')}</div></div>`;
+  document.body.appendChild(m);
+}
+function showChangelog(){ensureChangelogModal();document.getElementById('changelogModal').classList.add('on');}
+
+function setupGlobalSearch(){
+  const header=document.querySelector('.header-inner');if(!header||document.getElementById('globalSearchBox'))return;
+  const box=document.createElement('div');box.className='site-search';box.innerHTML='<input id="globalSearchBox" placeholder="Tìm đội, trận, sân vận động...">';
+  header.insertBefore(box,document.querySelector('.header-cd'));
+  const panel=document.createElement('div');panel.id='searchPanel';panel.className='search-panel';document.body.appendChild(panel);
+  document.getElementById('globalSearchBox').addEventListener('input',e=>renderGlobalSearch(e.target.value));
+  document.addEventListener('click',e=>{if(!box.contains(e.target)&&!panel.contains(e.target))panel.classList.remove('on')});
+}
+function renderGlobalSearch(q){
+  const panel=document.getElementById('searchPanel');if(!panel)return;
+  const text=normalizeText(q);if(text.length<2){panel.classList.remove('on');return;}
+  const results=[];
+  TEAMS_STATIC.forEach(t=>{if(normalizeText([t.n,t.g,t.coach,t.cap].join(' ')).includes(text))results.push({type:'Đội tuyển',title:t.n,sub:`Bảng ${t.g} · FIFA #${t.r}`,action:()=>{openTeamModal(t);}})});
+  (WC_FEATURE_STATE.lastData?.matches||[]).forEach(m=>{const hay=normalizeText([m.team1,m.team2,tn(m.team1),tn(m.team2),m.ground,m.group,m.round].join(' '));if(hay.includes(text))results.push({type:'Trận đấu',title:`${tn(m.team1)} vs ${tn(m.team2)}`,sub:`${formatMatchDateTime(m)} · ${m.group||m.round||''} · ${m.ground||''}`,action:()=>openMatchModal(tn(m.team1),tn(m.team2),'','',getCC(m.team1),getCC(m.team2),'Giờ: '+displayMatchTime(m),m.group||m.round||'',m.ground||'', '', displayMatchTime(m))});});
+  VENUES.forEach(v=>{if(normalizeText([v.n,v.c,v.info].join(' ')).includes(text))results.push({type:'Sân vận động',title:v.n,sub:`${v.c} · ${v.cap}`,action:()=>openVenueModal(v)});});
+  panel.innerHTML=results.slice(0,12).map((r,i)=>`<div class="search-result" data-i="${i}"><div><div class="sr-type">${r.type}</div><div class="sr-title">${r.title}</div><div class="sr-sub">${r.sub}</div></div><div style="color:var(--text3)">↵</div></div>`).join('')||'<div class="search-result"><div class="sr-title">Không tìm thấy kết quả phù hợp</div></div>';
+  panel.classList.add('on');
+  panel.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{panel.classList.remove('on');document.getElementById('globalSearchBox').value='';results[Number(el.dataset.i)].action();});
+}
+
+const originalOpenMatchModal_v115=openMatchModal;
+openMatchModal=function(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime){
+  originalOpenMatchModal_v115(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime);
+  const body=document.getElementById('mm-body');if(!body)return;
+  const a=getTeamMeta(t1),b=getTeamMeta(t2);
+  body.innerHTML+=`<div class="compare-box"><div class="mm-glbl">⚖️ So sánh trước trận</div><div class="compare-grid"><div class="compare-card"><div class="compare-name">${t1}</div>${teamCompareRows(a)}</div><div class="compare-vs">VS</div><div class="compare-card"><div class="compare-name">${t2}</div>${teamCompareRows(b)}</div></div></div><div class="share-note" id="shareNote">Đã copy link trận đấu</div>`;
+  const foot=document.querySelector('#mModal .mm-foot');
+  if(foot&&!document.getElementById('matchShareBtn')){
+    const btn=document.createElement('button');btn.id='matchShareBtn';btn.className='mmbtn s';btn.textContent='Chia sẻ';btn.onclick=()=>shareCurrentMatch();foot.insertBefore(btn,foot.firstChild);
+  }
+  window.__currentShareMatch={t1,t2,grp,venue};
+};
+function teamCompareRows(t){
+  if(!t)return '<div class="compare-stat"><span>Dữ liệu</span><strong>Đang cập nhật</strong></div>';
+  return `<div class="compare-stat"><span>Bảng</span><strong>${t.g}</strong></div><div class="compare-stat"><span>FIFA</span><strong>#${t.r}</strong></div><div class="compare-stat"><span>HLV</span><strong>${t.coach||'—'}</strong></div><div class="compare-stat"><span>Đội trưởng</span><strong>${t.cap||'—'}</strong></div><div class="compare-stat"><span>Ngôi sao</span><strong>${(t.players&&t.players[0])||'—'}</strong></div>`;
+}
+function shareMatchFromData(t1,t2){window.__currentShareMatch={t1:decodeURIComponent(t1),t2:decodeURIComponent(t2)};shareCurrentMatch();}
+async function shareCurrentMatch(){
+  const m=window.__currentShareMatch||{};
+  const text=`${m.t1||'World Cup 2026'} vs ${m.t2||''}`.trim();
+  const url=location.origin+location.pathname+'#schedule';
+  try{if(navigator.share){await navigator.share({title:text,text:`Theo dõi ${text} trên World Cup 2026 Fan Site`,url});}else{await navigator.clipboard.writeText(url+' · '+text);}}
+  catch(e){try{await navigator.clipboard.writeText(url+' · '+text);}catch(_){}}
+  const note=document.getElementById('shareNote');if(note){note.style.display='block';setTimeout(()=>note.style.display='none',1800);}
+}
+
+const originalBuildVenues_v115=buildVenues;
+buildVenues=function(){
+  const el=document.getElementById('venuesGrid');if(!el)return;
+  el.innerHTML=VENUES.map((v,i)=>`<div class="ven-c" onclick="openVenueModalByIndex(${i})" style="cursor:pointer"><div class="ven-img" style="height:160px;position:relative;overflow:hidden;background:var(--ink3)">${v.img?`<img src="${v.img}" alt="${v.n}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .4s" onerror="this.style.display='none'">`:''}<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(13,17,23,.85) 0%,transparent 55%)"></div><div style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.75);font-size:9px;font-weight:600;padding:3px 8px;border-radius:4px">${v.cc==='us'?'🇺🇸 USA':v.cc==='mx'?'🇲🇽 Mexico':'🇨🇦 Canada'}</div><div style="position:absolute;bottom:8px;left:10px;right:10px"><div style="font-size:13px;font-weight:700;color:#fff;line-height:1.2">${v.n}</div><div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px">📍 ${v.c}</div></div></div><div class="ven-body"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="ven-cap">⬡ ${v.cap}</div><div style="font-size:10px;color:var(--text3)">${v.info}</div></div><button class="mini-btn" onclick="event.stopPropagation();openVenueModalByIndex(${i})">Chi tiết sân</button></div></div>`).join('');
+};
+function ensureVenueModal(){
+  if(document.getElementById('venueModal'))return;
+  const m=document.createElement('div');m.id='venueModal';m.className='venue-modal';m.onclick=e=>{if(e.target===m)m.classList.remove('on')};document.body.appendChild(m);
+}
+function openVenueModalByIndex(i){openVenueModal(VENUES[i]);}
+function openVenueModal(v){
+  ensureVenueModal();const m=document.getElementById('venueModal');
+  const country=v.cc==='us'?'United States':v.cc==='mx'?'Mexico':'Canada';
+  m.innerHTML=`<div class="venue-box"><div class="venue-head"><div class="venue-title">Chi tiết sân vận động</div><button class="close-lite" onclick="document.getElementById('venueModal').classList.remove('on')">✕</button></div><div class="venue-hero">${v.img?`<img src="${v.img}" alt="${v.n}">`:''}<div class="venue-hero-title"><h2>${v.n}</h2><p>📍 ${v.c}</p></div></div><div class="venue-body"><div class="venue-details"><div class="venue-detail"><span>Quốc gia</span><strong>${country}</strong></div><div class="venue-detail"><span>Sức chứa</span><strong>${v.cap}</strong></div><div class="venue-detail"><span>Vai trò</span><strong>${v.info}</strong></div><div class="venue-detail"><span>World Cup 2026</span><strong>Host venue</strong></div></div><div style="margin-top:12px;font-size:12px;color:var(--text2);line-height:1.7">Sân này nằm trong danh sách địa điểm hiển thị của fan site. Dữ liệu có thể được cập nhật tiếp khi lịch thi đấu chính thức được đồng bộ.</div></div></div>`;
+  m.classList.add('on');
+}
+
+const originalOpenTeamModal_v115=openTeamModal;
+openTeamModal=function(t){
+  originalOpenTeamModal_v115(t);
+  const body=document.getElementById('tm-body');if(!body)return;
+  body.innerHTML+=`<div class="road-box"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🛣 Road to Final</div><div class="road-line"><div class="road-step current"><strong>Vòng bảng</strong><span>Bảng ${t.g}</span></div><div class="road-step"><strong>1/32</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>1/8</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Tứ kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Bán kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Chung kết</strong><span>19/07</span></div></div></div>`;
+};
+
+function setupPWA(){
+  const manifest={name:'FIFA World Cup 2026 Fan Site',short_name:'WC2026',start_url:'./index.html',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',lang:'vi',description:'Lịch thi đấu, bảng đấu, nhánh đấu và tin tức FIFA World Cup 2026.'};
+  let link=document.querySelector('link[rel="manifest"]');if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link);}link.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
+  if(!document.querySelector('meta[name="application-name"]')){const m=document.createElement('meta');m.name='application-name';m.content='WC2026';document.head.appendChild(m);}
+}
+const SEO_MAP={schedule:['Lịch thi đấu World Cup 2026','Xem lịch thi đấu FIFA World Cup 2026, lọc theo đội, bảng, vòng đấu và giờ Việt Nam.'],groups:['Bảng đấu World Cup 2026','Bảng xếp hạng 12 bảng A–L của FIFA World Cup 2026.'],bracket:['Nhánh đấu World Cup 2026','Theo dõi nhánh đấu knockout FIFA World Cup 2026.'],highlights:['Highlights World Cup 2026','Tổng hợp video highlights và khoảnh khắc đáng chú ý.'],news:['Tin tức World Cup 2026','Tin tức mới nhất về FIFA World Cup 2026.'],stats:['Thống kê World Cup 2026','Thống kê bàn thắng, cầu thủ và đội tuyển World Cup 2026.'],teams:['Đội tuyển World Cup 2026','Danh sách đội tuyển tham dự FIFA World Cup 2026.'],venues:['Sân vận động World Cup 2026','Thông tin các sân vận động tổ chức FIFA World Cup 2026.']};
+function updateSectionSEO(id){
+  const cfg=SEO_MAP[id]||SEO_MAP.schedule;document.title=cfg[0]+' · FIFA World Cup 2026 Fan Site';
+  let desc=document.querySelector('meta[name="description"]');if(desc)desc.content=cfg[1];
+  let canon=document.querySelector('link[rel="canonical"]');if(canon)canon.href=location.origin+location.pathname+'#'+id;
+}
+const originalGoTo_v115=goTo;
+goTo=function(id,btn,fromHash=false){originalGoTo_v115(id,btn,fromHash);updateSectionSEO(id);};
+function injectCleanJsonLd(){
+  if(document.getElementById('wc-clean-jsonld'))return;
+  const data={"@context":"https://schema.org","@type":"WebApplication","name":"FIFA World Cup 2026 Fan Site","applicationCategory":"SportsApplication","operatingSystem":"Web","inLanguage":"vi","url":location.origin+location.pathname,"version":APP_VERSION,"description":"Fan site một file HTML cho lịch thi đấu, bảng đấu, nhánh đấu, tin tức và thống kê FIFA World Cup 2026."};
+  const script=document.createElement('script');script.type='application/ld+json';script.id='wc-clean-jsonld';script.textContent=JSON.stringify(data);document.head.appendChild(script);
+}
+function setupFeaturePack(){
+  ensureChangelogModal();
+  const chip=document.querySelector('.build-chip');if(chip){chip.title='Bấm để xem lịch sử version';chip.onclick=showChangelog;}
+  setupGlobalSearch();setupPWA();injectCleanJsonLd();updateSectionSEO(pageFromHash());
+  const label=document.getElementById('appVersionLabel');if(label)label.textContent=APP_VERSION+' · Build completed';
 }
 
 (async()=>{
