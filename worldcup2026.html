@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<!-- Single-file HTML build for GitHub Pages. Generated/continued with ChatGPT. -->
+<!-- Single-file HTML build for GitHub Pages. Version v1.1.0. Build date: 2026-05-17. Generated/continued with ChatGPT. -->
 <html lang="vi" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="app-version" content="v1.1.0">
+<meta name="app-build-date" content="2026-05-17">
+<meta name="app-build-target" content="github-pages-single-file">
 
 <!-- PRIMARY SEO -->
 <title>FIFA World Cup 2026</title>
@@ -445,6 +448,8 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .footer-link:hover{color:var(--amber)}
 .footer-bottom{max-width:1340px;margin:22px auto 0;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .footer-copy{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;color:var(--text3)}
+.build-chip{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--amber);border:1px solid rgba(240,165,0,.25);background:var(--amber3);border-radius:999px;padding:5px 10px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.build-chip small{font-family:'Be Vietnam Pro',sans-serif;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:0}
 .footer-hosts{display:flex;align-items:center;gap:6px}
 
 /* API STATUS */
@@ -718,6 +723,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.1.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -727,6 +733,23 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 </footer>
 
 <script>
+// ═══════════════════════════════════════════
+// BUILD VERSION
+// Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
+// ═══════════════════════════════════════════
+const APP_VERSION='v1.1.0';
+const APP_BUILD_DATE='2026-05-17';
+const APP_BUILD_TARGET='github-pages-single-file';
+window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
+function renderBuildVersion(){
+  const versionEl=document.getElementById('appVersionLabel');
+  const dateEl=document.getElementById('appBuildDate');
+  if(versionEl)versionEl.textContent=APP_VERSION;
+  if(dateEl)dateEl.textContent='Build '+APP_BUILD_DATE;
+  document.documentElement.dataset.appVersion=APP_VERSION;
+  console.info(`[WC2026] ${APP_VERSION} · Build ${APP_BUILD_DATE} · ${APP_BUILD_TARGET}`);
+}
+
 // ═══════════════════════════════════════════
 // FLAG HELPER
 // ═══════════════════════════════════════════
@@ -2097,6 +2120,7 @@ async function refreshData(){
 }
 
 (async()=>{
+  renderBuildVersion();
   // Render ngay lập tức từ dữ liệu tĩnh — phù hợp GitHub Pages, không cần backend
   buildGroups(null);
   buildBracket(null);
