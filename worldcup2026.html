@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.27.0">
+<meta name="app-version" content="v1.28.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -549,7 +549,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 
-/* v1.27.0 — Remove top live ticker and redesign Home as a one-screen dashboard */
+/* v1.28.0 — Remove top live ticker and redesign Home as a one-screen dashboard */
 #matchesContainer{width:100%;max-width:100%;overflow:hidden}
 .mc{
   grid-template-columns:76px minmax(0,1fr) 182px;
@@ -663,7 +663,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 }
 
 
-/* v1.27.0 — Home one-screen layout and no top live ticker */
+/* v1.28.0 — Home one-screen layout and no top live ticker */
 body.home-active{overflow:hidden}
 body.home-active .footer{display:none}
 #pg-home.page.on{display:grid;grid-template-rows:auto 1fr;height:calc(100vh - 104px);min-height:calc(100vh - 104px);max-height:calc(100vh - 104px);padding:0;overflow:hidden}
@@ -747,9 +747,9 @@ body.home-active .footer{display:none}
         <h1 class="home-title">FIFA World Cup <span>2026</span></h1>
         <p class="home-desc">Fan site theo dõi World Cup 2026 bằng tiếng Việt: lịch thi đấu giờ Việt Nam, bảng đấu, nhánh knockout, đội tuyển, sân vận động, highlights và tin tức mới nhất.</p>
         <div class="home-actions">
-          <button class="home-btn primary" onclick="goTo('schedule',document.querySelector('[onclick*='schedule']'))">📅 Xem lịch thi đấu</button>
-          <button class="home-btn" onclick="goTo('teams',document.querySelector('[onclick*='teams']'))">🌍 Xem đội tuyển</button>
-          <button class="home-btn" onclick="goTo('venues',document.querySelector('[onclick*='venues']'))">🏟 Khám phá sân vận động</button>
+          <button class="home-btn primary" onclick="goTo('schedule',navBtn('schedule'))">📅 Xem lịch thi đấu</button>
+          <button class="home-btn" onclick="goTo('teams',navBtn('teams'))">🌍 Xem đội tuyển</button>
+          <button class="home-btn" onclick="goTo('venues',navBtn('venues'))">🏟 Khám phá sân vận động</button>
         </div>
         <div class="home-meta">
           <div class="hero-tag">📅 <strong>11/06 – 19/07/2026</strong></div>
@@ -780,16 +780,16 @@ body.home-active .footer{display:none}
   </section>
   <div class="home-grid">
     <section class="home-section-card">
-      <div class="home-section-head"><div class="home-section-title">Trận <em>sắp diễn ra</em></div><button class="home-link-mini" onclick="goTo('schedule',document.querySelector('[onclick*='schedule']'))">Xem tất cả</button></div>
+      <div class="home-section-head"><div class="home-section-title">Trận <em>sắp diễn ra</em></div><button class="home-link-mini" onclick="goTo('schedule',navBtn('schedule'))">Xem tất cả</button></div>
       <div id="homeMatchList" class="home-match-list"><div class="home-empty">Đang tải danh sách trận đã xác định đủ 2 đội...</div></div>
     </section>
     <section class="home-section-card">
       <div class="home-section-head"><div class="home-section-title">Lối tắt <em>nhanh</em></div></div>
       <div class="home-shortcuts">
-        <div class="home-shortcut" onclick="goTo('groups',document.querySelector('[onclick*='groups']'))"><div class="home-shortcut-icon">📊</div><div class="home-shortcut-title">Bảng đấu</div><div class="home-shortcut-text">Xem bảng A–L, điểm số và suất đi tiếp.</div></div>
-        <div class="home-shortcut" onclick="goTo('bracket',document.querySelector('[onclick*='bracket']'))"><div class="home-shortcut-icon">🗺</div><div class="home-shortcut-title">Nhánh đấu</div><div class="home-shortcut-text">Theo dõi đường đến chung kết.</div></div>
-        <div class="home-shortcut" onclick="goTo('highlights',document.querySelector('[onclick*='highlights']'))"><div class="home-shortcut-icon">🎬</div><div class="home-shortcut-title">Highlights</div><div class="home-shortcut-text">Video FIFA và tìm highlights theo trận.</div></div>
-        <div class="home-shortcut" onclick="goTo('news',document.querySelector('[onclick*='news']'))"><div class="home-shortcut-icon">📰</div><div class="home-shortcut-title">Tin tức</div><div class="home-shortcut-text">RSS từ FIFA, BBC, ESPN và nguồn bóng đá.</div></div>
+        <div class="home-shortcut" onclick="goTo('groups',navBtn('groups'))"><div class="home-shortcut-icon">📊</div><div class="home-shortcut-title">Bảng đấu</div><div class="home-shortcut-text">Xem bảng A–L, điểm số và suất đi tiếp.</div></div>
+        <div class="home-shortcut" onclick="goTo('bracket',navBtn('bracket'))"><div class="home-shortcut-icon">🗺</div><div class="home-shortcut-title">Nhánh đấu</div><div class="home-shortcut-text">Theo dõi đường đến chung kết.</div></div>
+        <div class="home-shortcut" onclick="goTo('highlights',navBtn('highlights'))"><div class="home-shortcut-icon">🎬</div><div class="home-shortcut-title">Highlights</div><div class="home-shortcut-text">Video FIFA và tìm highlights theo trận.</div></div>
+        <div class="home-shortcut" onclick="goTo('news',navBtn('news'))"><div class="home-shortcut-icon">📰</div><div class="home-shortcut-title">Tin tức</div><div class="home-shortcut-text">RSS từ FIFA, BBC, ESPN và nguồn bóng đá.</div></div>
       </div>
     </section>
   </div>
@@ -963,10 +963,10 @@ body.home-active .footer{display:none}
     </div>
     <div>
       <div class="footer-col-h">Khám Phá</div>
-      <a class="footer-link" onclick="goTo('schedule',document.querySelector('.nb'))">📅 Lịch Thi Đấu</a>
-      <a class="footer-link" onclick="goTo('groups',document.querySelectorAll('.nb')[1])">📊 Bảng Đấu</a>
-      <a class="footer-link" onclick="goTo('bracket',document.querySelectorAll('.nb')[2])">🗺 Nhánh Đấu</a>
-      <a class="footer-link" onclick="goTo('teams',document.querySelectorAll('.nb')[6])">🌍 Đội Tuyển</a>
+      <a class="footer-link" onclick="goTo('schedule',navBtn('schedule'))">📅 Lịch Thi Đấu</a>
+      <a class="footer-link" onclick="goTo('groups',navBtn('groups'))">📊 Bảng Đấu</a>
+      <a class="footer-link" onclick="goTo('bracket',navBtn('bracket'))">🗺 Nhánh Đấu</a>
+      <a class="footer-link" onclick="goTo('teams',navBtn('teams'))">🌍 Đội Tuyển</a>
     </div>
     <div>
       <div class="footer-col-h">Nguồn Dữ Liệu</div>
@@ -979,7 +979,7 @@ body.home-active .footer{display:none}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.27.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" id="buildChip" role="button" tabindex="0" title="Bấm để xem lịch sử version"><span id="appVersionLabel">v1.28.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -993,7 +993,7 @@ body.home-active .footer{display:none}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.27.0';
+const APP_VERSION='v1.28.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2244,6 +2244,14 @@ function buildVenues(){
     </div>`).join('');
 }
 
+
+function navBtn(id){
+  return Array.from(document.querySelectorAll('.nb')).find(btn=>{
+    const raw = btn.getAttribute('onclick') || '';
+    return raw.includes(`'${id}'`) || raw.includes(`"${id}"`);
+  }) || document.querySelector('.nb');
+}
+
 function goTo(id,btn,fromHash=false){
   const page=document.getElementById('pg-'+id);
   if(!page)return;
@@ -2505,7 +2513,7 @@ const WC_CHANGELOG=[
   ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.'],
   ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.'],
   ['v1.26.0','Dọn lỗi Console do CORS proxy: bỏ corsproxy.io khỏi luồng tải RSS để tránh lỗi 403 khi chạy trên GitHub Pages.'],
-  ['v1.27.0','Xóa thanh LIVE ticker chạy ngang ở đầu website; thiết kế lại Trang Chủ thành dashboard gọn trong một màn hình desktop, hạn chế scroll và ẩn footer ở trang chủ.'],
+  ['v1.28.0','Xóa thanh LIVE ticker chạy ngang ở đầu website; thiết kế lại Trang Chủ thành dashboard gọn trong một màn hình desktop, hạn chế scroll và ẩn footer ở trang chủ.'],
   ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.']
 ];
 
