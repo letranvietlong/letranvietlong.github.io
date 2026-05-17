@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.22.0">
+<meta name="app-version" content="v1.23.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -210,6 +210,26 @@ button{font-family:'Be Vietnam Pro',sans-serif;cursor:pointer}
 .kpi{background:var(--ink3);padding:14px 18px;text-align:center}
 .kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--white);line-height:1;letter-spacing:-.02em}
 .kpi-lbl{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0;margin-top:3px}
+
+
+/* HOME PAGE v1.23.0 */
+.home-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#0D1117 0%,#121A25 45%,#1A1410 100%);border-bottom:1px solid var(--line);padding:52px 0 46px;margin-bottom:24px}
+.home-hero::before{content:'';position:absolute;inset:-20%;background:radial-gradient(circle at 78% 18%,rgba(240,165,0,.22),transparent 34%),radial-gradient(circle at 12% 80%,rgba(61,142,240,.14),transparent 32%);filter:blur(1px);pointer-events:none}
+.home-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,17,23,.96),rgba(13,17,23,.58),rgba(13,17,23,.92));pointer-events:none}
+.home-hero-inner{position:relative;z-index:1;max-width:1340px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:28px;align-items:center}
+.home-eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--amber);font-size:12px;font-weight:800;letter-spacing:.04em;margin-bottom:12px}.home-eyebrow::before{content:'';width:30px;height:2px;background:var(--amber);border-radius:2px}
+.home-title{font-family:var(--font-vn);font-size:clamp(42px,6vw,76px);font-weight:900;letter-spacing:-.05em;line-height:.98;color:#fff;margin-bottom:14px}.home-title span{display:block;color:var(--amber);text-shadow:0 0 28px rgba(240,165,0,.22)}
+.home-desc{max-width:620px;font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:20px}.home-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}.home-btn{border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--text);border-radius:999px;padding:10px 16px;font-size:12px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:.18s}.home-btn.primary{background:var(--amber);border-color:var(--amber);color:var(--ink)}.home-btn:hover{transform:translateY(-1px);border-color:var(--amber);color:var(--amber)}.home-btn.primary:hover{color:var(--ink);background:var(--amber2)}
+.home-meta{display:flex;gap:16px;flex-wrap:wrap}.home-meta .hero-tag{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);padding:7px 10px;border-radius:999px}
+.home-panel{background:rgba(22,27,34,.72);border:1px solid rgba(255,255,255,.1);border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.28);overflow:hidden;backdrop-filter:blur(12px)}
+.home-panel-top{padding:18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.home-panel-title{font-size:14px;font-weight:900;color:#fff}.home-panel-sub{font-size:10px;color:var(--text3);margin-top:3px}.home-live-pill{font-size:10px;font-weight:900;color:var(--red);display:flex;align-items:center;gap:5px}.home-live-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite}
+.home-kpis{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}.home-kpi{padding:18px;text-align:center;border-right:1px solid var(--line)}.home-kpi:last-child{border-right:none}.home-kpi .kpi-val{font-size:32px}.home-kpi .kpi-lbl{font-size:10px}
+.home-next{padding:16px 18px}.home-next-label{font-size:10px;color:var(--text3);font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}.home-next-card{background:linear-gradient(135deg,rgba(240,165,0,.12),rgba(61,142,240,.06));border:1px solid rgba(240,165,0,.22);border-radius:14px;padding:13px 14px}.home-next-teams{font-size:15px;font-weight:900;color:#fff}.home-next-meta{font-size:11px;color:var(--text2);margin-top:5px;line-height:1.6}
+.home-grid{max-width:1340px;margin:0 auto 32px;padding:0 24px;display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.home-section-card{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r3);padding:18px;overflow:hidden}.home-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}.home-section-title{font-size:16px;font-weight:900;color:#fff}.home-section-title em{color:var(--amber);font-style:normal}.home-link-mini{font-size:11px;color:var(--text3);border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:transparent}.home-link-mini:hover{border-color:var(--amber);color:var(--amber)}
+.home-match-list{display:flex;flex-direction:column;gap:8px}.home-match-row{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;background:var(--ink3);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.home-match-time{font-family:var(--font-num);font-size:13px;font-weight:900;color:var(--amber)}.home-match-teams{font-size:13px;font-weight:800;color:var(--text)}.home-match-meta{font-size:10px;color:var(--text3);text-align:right}.home-empty{font-size:12px;color:var(--text3);line-height:1.7;background:var(--ink3);border:1px dashed var(--line2);border-radius:12px;padding:14px}
+.home-shortcuts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.home-shortcut{background:var(--ink3);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:.18s}.home-shortcut:hover{border-color:var(--amber);transform:translateY(-2px)}.home-shortcut-icon{font-size:22px;margin-bottom:8px}.home-shortcut-title{font-size:13px;font-weight:900;color:#fff}.home-shortcut-text{font-size:11px;color:var(--text3);line-height:1.6;margin-top:5px}
+@media(max-width:900px){.home-hero-inner,.home-grid{grid-template-columns:1fr}.home-panel{max-width:none}.home-title{font-size:44px}.home-shortcuts{grid-template-columns:1fr}}
+@media(max-width:520px){.home-hero{padding:34px 0}.home-hero-inner,.home-grid{padding:0 14px}.home-kpi{padding:13px 8px}.home-kpi .kpi-val{font-size:24px}.home-match-row{grid-template-columns:1fr}.home-match-meta{text-align:left}.home-actions{gap:7px}.home-btn{padding:9px 12px}}
 
 /* MATCH CARDS */
 .day-sep{display:flex;align-items:center;gap:10px;margin:20px 0 11px}
@@ -490,7 +510,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 /* =========================================================
-   FEATURE PACK v1.2.0 → v1.22.0
+   FEATURE PACK v1.2.0 → v1.23.0
    Single-file GitHub Pages enhancements
 ========================================================= */
 .build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
@@ -563,7 +583,8 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-inner">
-    <button class="nb on" onclick="goTo('schedule',this)">📅 Lịch Thi Đấu</button>
+    <button class="nb on" onclick="goTo('home',this)">🏠 Trang Chủ</button>
+    <button class="nb" onclick="goTo('schedule',this)">📅 Lịch Thi Đấu</button>
     <button class="nb" onclick="goTo('groups',this)">📊 Bảng Đấu</button>
     <button class="nb" onclick="goTo('bracket',this)">🗺 Nhánh Đấu</button>
     <button class="nb" onclick="goTo('highlights',this)">🎬 Highlights</button>
@@ -574,27 +595,65 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
 </nav>
 
-<!-- SCHEDULE -->
-<div id="pg-schedule" class="page on">
-  <div class="hero">
-    <div class="hero-inner">
+<!-- HOME -->
+<div id="pg-home" class="page on">
+  <section class="home-hero">
+    <div class="home-hero-inner">
       <div>
-        <div class="hero-eyebrow">Giải Đấu Lớn Nhất Hành Tinh</div>
-        <div class="hero-title">FIFA World Cup<br><span>2026</span></div>
-        <div class="hero-meta">
+        <div class="home-eyebrow">Giải Đấu Lớn Nhất Hành Tinh</div>
+        <h1 class="home-title">FIFA World Cup <span>2026</span></h1>
+        <p class="home-desc">Fan site theo dõi World Cup 2026 bằng tiếng Việt: lịch thi đấu giờ Việt Nam, bảng đấu, nhánh knockout, đội tuyển, sân vận động, highlights và tin tức mới nhất.</p>
+        <div class="home-actions">
+          <button class="home-btn primary" onclick="goTo('schedule',document.querySelector('[onclick*='schedule']'))">📅 Xem lịch thi đấu</button>
+          <button class="home-btn" onclick="goTo('teams',document.querySelector('[onclick*='teams']'))">🌍 Xem đội tuyển</button>
+          <button class="home-btn" onclick="goTo('venues',document.querySelector('[onclick*='venues']'))">🏟 Khám phá sân vận động</button>
+        </div>
+        <div class="home-meta">
           <div class="hero-tag">📅 <strong>11/06 – 19/07/2026</strong></div>
           <div class="hero-tag">🏟 <strong>16 Sân</strong></div>
           <div class="hero-tag">🌍 <strong>48 Đội</strong></div>
           <div class="hero-tag">⚽ <strong>104 Trận</strong></div>
         </div>
       </div>
-      <div class="hero-kpis">
-        <div class="kpi"><div class="kpi-val" id="kpi-goals">—</div><div class="kpi-lbl">Bàn thắng</div></div>
-        <div class="kpi"><div class="kpi-val" id="kpi-matches">—</div><div class="kpi-lbl">Trận đấu</div></div>
-        <div class="kpi"><div class="kpi-val" id="kpi-days">—</div><div class="kpi-lbl">Ngày còn lại</div></div>
-      </div>
+      <aside class="home-panel">
+        <div class="home-panel-top">
+          <div><div class="home-panel-title">Bảng điều khiển World Cup</div><div class="home-panel-sub">Cập nhật theo dữ liệu hiện có · Giờ Việt Nam UTC+7</div></div>
+          <div class="home-live-pill">LIVE</div>
+        </div>
+        <div class="home-kpis">
+          <div class="home-kpi"><div class="kpi-val" id="kpi-goals">—</div><div class="kpi-lbl">Bàn thắng</div></div>
+          <div class="home-kpi"><div class="kpi-val" id="kpi-matches">—</div><div class="kpi-lbl">Trận đấu</div></div>
+          <div class="home-kpi"><div class="kpi-val" id="kpi-days">—</div><div class="kpi-lbl">Ngày còn lại</div></div>
+        </div>
+        <div class="home-next">
+          <div class="home-next-label">Trận gần nhất</div>
+          <div class="home-next-card">
+            <div class="home-next-teams" id="homeNextTitle">Đang tải dữ liệu...</div>
+            <div class="home-next-meta" id="homeNextMeta">Lịch sẽ tự cập nhật khi dữ liệu sẵn sàng.</div>
+          </div>
+        </div>
+      </aside>
     </div>
+  </section>
+  <div class="home-grid">
+    <section class="home-section-card">
+      <div class="home-section-head"><div class="home-section-title">Trận <em>sắp diễn ra</em></div><button class="home-link-mini" onclick="goTo('schedule',document.querySelector('[onclick*='schedule']'))">Xem tất cả</button></div>
+      <div id="homeMatchList" class="home-match-list"><div class="home-empty">Đang tải danh sách trận đã xác định đủ 2 đội...</div></div>
+    </section>
+    <section class="home-section-card">
+      <div class="home-section-head"><div class="home-section-title">Lối tắt <em>nhanh</em></div></div>
+      <div class="home-shortcuts">
+        <div class="home-shortcut" onclick="goTo('groups',document.querySelector('[onclick*='groups']'))"><div class="home-shortcut-icon">📊</div><div class="home-shortcut-title">Bảng đấu</div><div class="home-shortcut-text">Xem bảng A–L, điểm số và suất đi tiếp.</div></div>
+        <div class="home-shortcut" onclick="goTo('bracket',document.querySelector('[onclick*='bracket']'))"><div class="home-shortcut-icon">🗺</div><div class="home-shortcut-title">Nhánh đấu</div><div class="home-shortcut-text">Theo dõi đường đến chung kết.</div></div>
+        <div class="home-shortcut" onclick="goTo('highlights',document.querySelector('[onclick*='highlights']'))"><div class="home-shortcut-icon">🎬</div><div class="home-shortcut-title">Highlights</div><div class="home-shortcut-text">Video FIFA và tìm highlights theo trận.</div></div>
+        <div class="home-shortcut" onclick="goTo('news',document.querySelector('[onclick*='news']'))"><div class="home-shortcut-icon">📰</div><div class="home-shortcut-title">Tin tức</div><div class="home-shortcut-text">RSS từ FIFA, BBC, ESPN và nguồn bóng đá.</div></div>
+      </div>
+    </section>
   </div>
+</div>
+
+<!-- SCHEDULE -->
+<div id="pg-schedule" class="page">
   <div class="wrap">
     <div class="ph">
       <div>
@@ -777,7 +836,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.22.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.23.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -791,7 +850,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.22.0';
+const APP_VERSION='v1.23.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2228,8 +2287,8 @@ function readCache(key,maxAgeMs=1000*60*60*12){
 }
 function pageFromHash(){
   const h=(location.hash||'').replace('#','').trim();
-  const ok=['schedule','groups','bracket','highlights','news','stats','teams','venues'];
-  return ok.includes(h)?h:'schedule';
+  const ok=['home','schedule','groups','bracket','highlights','news','stats','teams','venues'];
+  return ok.includes(h)?h:'home';
 }
 function syncHashToPage(){
   const id=pageFromHash();
@@ -2266,7 +2325,7 @@ async function refreshData(){
 
 
 // =========================================================
-// FEATURE PACK v1.2.0 → v1.22.0
+// FEATURE PACK v1.2.0 → v1.23.0
 // 14 requested features, one version per feature.
 // =========================================================
 const WC_CHANGELOG=[
@@ -2287,7 +2346,8 @@ const WC_CHANGELOG=[
   ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.'],
   ['v1.20.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.'],
   ['v1.21.0','Chuẩn hóa toàn bộ website về một múi giờ duy nhất: Giờ Việt Nam (UTC+7); bỏ tùy chọn giờ máy người dùng để tránh lệch lịch.'],
-  ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.']
+  ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.'],
+  ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.']
 ];
 
 const WC_FEATURE_STATE={
@@ -2468,6 +2528,29 @@ function buildEnhancedMatchCard(m,st,extraCls){
   const extra=`<div class="match-countdown">${countdownText(m)}</div><div class="mc-date-mini">${formatMatchDateTime(m)}</div><div class="mc-actions"><button class="mini-btn" onclick="event.stopPropagation();shareMatchFromData('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}')">Chia sẻ</button></div>`;
   return base.replace('<span class="mc-ven">',''+extra+'<span class="mc-ven">');
 }
+
+function renderHomeDashboard(dataObj, visibleMatches){
+  const title=document.getElementById('homeNextTitle');
+  const meta=document.getElementById('homeNextMeta');
+  const list=document.getElementById('homeMatchList');
+  if(!title&&!list)return;
+  const now=new Date();
+  const matches=(visibleMatches||getVisibleScheduleMatches(dataObj||{}))
+    .filter(m=>matchStartDate(m)>=now || !(m.score&&m.score.ft))
+    .sort((a,b)=>matchStartDate(a)-matchStartDate(b))
+    .slice(0,5);
+  if(!matches.length){
+    if(title)title.textContent='Chưa có trận đã xác định';
+    if(meta)meta.textContent='Các trận chưa xác định đội sẽ tự hiển thị khi có kết quả nhất bảng, nhì bảng hoặc đội thắng.';
+    if(list)list.innerHTML='<div class="home-empty">Chưa có trận sắp tới đã xác định đủ 2 đội. Website sẽ tự cập nhật khi dữ liệu mới sẵn sàng.</div>';
+    return;
+  }
+  const first=matches[0];
+  if(title)title.textContent=`${tn(first.team1)} vs ${tn(first.team2)}`;
+  if(meta)meta.textContent=`${displayMatchTime(first)} · ${formatDate(first.date)} · ${first.group||first.round||''} ${first.ground?'· '+first.ground:''}`;
+  if(list)list.innerHTML=matches.map(m=>`<div class="home-match-row" onclick="goTo('schedule',document.querySelector('[onclick*=\\'schedule\\']'))"><div class="home-match-time">${displayMatchTime(m)}</div><div><div class="home-match-teams">${tn(m.team1)} vs ${tn(m.team2)}</div><div class="home-next-meta">${countdownText(m)}</div></div><div class="home-match-meta">${m.group||m.round||''}<br>${m.ground||''}</div></div>`).join('');
+}
+
 const originalRenderSchedule_v115=renderSchedule;
 renderSchedule=function(data){
   const container=document.getElementById('matchesContainer');
@@ -2481,6 +2564,7 @@ renderSchedule=function(data){
   const kg=document.getElementById('kpi-goals'),km=document.getElementById('kpi-matches'),kd=document.getElementById('kpi-days');
   if(kg)kg.textContent=totalGoals;if(km)km.textContent=doneCount+'/'+dataObj.matches.length;if(kd)kd.textContent=Math.max(0,Math.ceil((new Date('2026-06-11')-new Date())/86400000));
   const visibleAll=getVisibleScheduleMatches(dataObj);
+  renderHomeDashboard(dataObj, visibleAll);
   const hiddenCount=Math.max(0,(dataObj.matches||[]).length-visibleAll.length);
   const matches=getFilteredMatches().sort((a,b)=>matchStartDate(a)-matchStartDate(b));
   WC_FEATURE_STATE.lastMatches=matches;
@@ -2594,9 +2678,9 @@ function setupPWA(){
   let link=document.querySelector('link[rel="manifest"]');if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link);}link.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
   if(!document.querySelector('meta[name="application-name"]')){const m=document.createElement('meta');m.name='application-name';m.content='WC2026';document.head.appendChild(m);}
 }
-const SEO_MAP={schedule:['Lịch thi đấu World Cup 2026','Xem lịch thi đấu FIFA World Cup 2026, lọc theo đội, bảng, vòng đấu và giờ Việt Nam.'],groups:['Bảng đấu World Cup 2026','Bảng xếp hạng 12 bảng A–L của FIFA World Cup 2026.'],bracket:['Nhánh đấu World Cup 2026','Theo dõi nhánh đấu knockout FIFA World Cup 2026.'],highlights:['Highlights World Cup 2026','Tổng hợp video highlights và khoảnh khắc đáng chú ý.'],news:['Tin tức World Cup 2026','Tin tức mới nhất về FIFA World Cup 2026.'],stats:['Thống kê World Cup 2026','Thống kê bàn thắng, cầu thủ và đội tuyển World Cup 2026.'],teams:['Đội tuyển World Cup 2026','Danh sách đội tuyển tham dự FIFA World Cup 2026.'],venues:['Sân vận động World Cup 2026','Thông tin các sân vận động tổ chức FIFA World Cup 2026.']};
+const SEO_MAP={home:['FIFA World Cup 2026 Fan Site','Trang chủ fan site FIFA World Cup 2026: lịch thi đấu, đội tuyển, sân vận động, highlights và tin tức bằng tiếng Việt.'],schedule:['Lịch thi đấu World Cup 2026','Xem lịch thi đấu FIFA World Cup 2026, lọc theo đội, bảng, vòng đấu và giờ Việt Nam.'],groups:['Bảng đấu World Cup 2026','Bảng xếp hạng 12 bảng A–L của FIFA World Cup 2026.'],bracket:['Nhánh đấu World Cup 2026','Theo dõi nhánh đấu knockout FIFA World Cup 2026.'],highlights:['Highlights World Cup 2026','Tổng hợp video highlights và khoảnh khắc đáng chú ý.'],news:['Tin tức World Cup 2026','Tin tức mới nhất về FIFA World Cup 2026.'],stats:['Thống kê World Cup 2026','Thống kê bàn thắng, cầu thủ và đội tuyển World Cup 2026.'],teams:['Đội tuyển World Cup 2026','Danh sách đội tuyển tham dự FIFA World Cup 2026.'],venues:['Sân vận động World Cup 2026','Thông tin các sân vận động tổ chức FIFA World Cup 2026.']};
 function updateSectionSEO(id){
-  const cfg=SEO_MAP[id]||SEO_MAP.schedule;document.title=cfg[0]+' · FIFA World Cup 2026 Fan Site';
+  const cfg=SEO_MAP[id]||SEO_MAP.home;document.title=cfg[0]+' · FIFA World Cup 2026 Fan Site';
   let desc=document.querySelector('meta[name="description"]');if(desc)desc.content=cfg[1];
   let canon=document.querySelector('link[rel="canonical"]');if(canon)canon.href=location.origin+location.pathname+'#'+id;
 }
