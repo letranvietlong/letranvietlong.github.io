@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.26.0">
+<meta name="app-version" content="v1.27.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -142,7 +142,7 @@ button{font-family:'Be Vietnam Pro',sans-serif;cursor:pointer}
 .tick-tm{font-size:10px;color:var(--text3)}
 
 /* HEADER */
-.header{position:sticky;top:44px;z-index:300;height:58px;background:var(--ink);border-bottom:1px solid var(--line)}
+.header{position:sticky;top:0;z-index:300;height:58px;background:var(--ink);border-bottom:1px solid var(--line)}
 .header-inner{max-width:1340px;margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center}
 .logo{display:flex;align-items:center;gap:12px;padding-right:24px;border-right:1px solid var(--line);flex-shrink:0}
 .logo-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--amber),#E8900A);display:grid;place-items:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(240,165,0,.3)}
@@ -156,7 +156,7 @@ button{font-family:'Be Vietnam Pro',sans-serif;cursor:pointer}
 .cd-colon{font-family:'Syne',sans-serif;font-size:18px;font-weight:300;color:var(--line2);padding:0 1px;margin-bottom:10px}
 
 /* NAV */
-.nav{position:sticky;top:102px;z-index:200;height:46px;background:var(--ink2);border-bottom:1px solid var(--line)}
+.nav{position:sticky;top:58px;z-index:200;height:46px;background:var(--ink2);border-bottom:1px solid var(--line)}
 .nav-inner{max-width:1340px;margin:0 auto;padding:0 16px;height:100%;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
 .nav-inner::-webkit-scrollbar{display:none}
 .nb{font-family:'Be Vietnam Pro',sans-serif;font-size:12px;font-weight:600;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;padding:0 14px;white-space:nowrap;letter-spacing:0;transition:color .2s,border-color .2s;display:flex;align-items:center;gap:5px}
@@ -549,7 +549,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 
-/* v1.26.0 — CORS proxy cleanup: bỏ corsproxy.io để tránh lỗi 403 trên Console */
+/* v1.27.0 — Remove top live ticker and redesign Home as a one-screen dashboard */
 #matchesContainer{width:100%;max-width:100%;overflow:hidden}
 .mc{
   grid-template-columns:76px minmax(0,1fr) 182px;
@@ -662,15 +662,43 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   .mc-ven{text-align:left;white-space:normal}
 }
 
+
+/* v1.27.0 — Home one-screen layout and no top live ticker */
+body.home-active{overflow:hidden}
+body.home-active .footer{display:none}
+#pg-home.page.on{display:grid;grid-template-rows:auto 1fr;height:calc(100vh - 104px);min-height:calc(100vh - 104px);max-height:calc(100vh - 104px);padding:0;overflow:hidden}
+#pg-home .home-hero{margin:0;padding:clamp(20px,3vh,34px) 0 clamp(16px,2.6vh,28px)}
+#pg-home .home-hero-inner{grid-template-columns:minmax(0,1fr) minmax(360px,430px);gap:22px}
+#pg-home .home-title{font-size:clamp(40px,5.2vw,64px);margin-bottom:12px}
+#pg-home .home-desc{font-size:13px;line-height:1.58;margin-bottom:14px;max-width:680px}
+#pg-home .home-actions{margin-bottom:14px}
+#pg-home .home-btn{padding:9px 14px}
+#pg-home .home-meta{gap:10px}
+#pg-home .home-meta .hero-tag{padding:6px 9px;font-size:11px}
+#pg-home .home-panel{border-radius:18px}
+#pg-home .home-panel-top{padding:15px 16px}
+#pg-home .home-kpi{padding:13px 10px}
+#pg-home .home-kpi .kpi-val{font-size:28px}
+#pg-home .home-next{padding:14px 16px}
+#pg-home .home-next-card{padding:12px}
+#pg-home .home-grid{height:100%;min-height:0;margin:0 auto;padding:14px 24px 18px;grid-template-columns:minmax(0,1fr) minmax(360px,.8fr);align-items:stretch}
+#pg-home .home-section-card{min-height:0;padding:15px 16px;border-radius:14px}
+#pg-home .home-section-head{padding-bottom:10px;margin-bottom:10px}
+#pg-home .home-match-list{gap:7px;overflow:hidden}
+#pg-home .home-match-row{grid-template-columns:64px minmax(0,1fr) 116px;padding:9px 11px;gap:9px}
+#pg-home .home-match-teams{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pg-home .home-match-meta{white-space:normal;line-height:1.35}
+#pg-home .home-shortcuts{height:calc(100% - 44px);grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#pg-home .home-shortcut{min-height:0;padding:12px}
+#pg-home .home-shortcut-icon{font-size:20px;margin-bottom:6px}
+#pg-home .home-shortcut-text{font-size:10px;line-height:1.45;margin-top:4px}
+@media(max-width:900px){body.home-active{overflow:auto}body.home-active .footer{display:block}#pg-home.page.on{display:block;height:auto;min-height:calc(100vh - 104px);max-height:none;overflow:visible}#pg-home .home-hero-inner,#pg-home .home-grid{grid-template-columns:1fr}#pg-home .home-shortcuts{height:auto}}
+@media(max-width:520px){#pg-home .home-hero-inner,#pg-home .home-grid{padding-left:14px;padding-right:14px}#pg-home .home-match-row{grid-template-columns:1fr}#pg-home .home-match-meta{text-align:left}}
+
 </style>
 </head>
-<body>
+<body class="home-active">
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-badge"><span class="live-dot"></span>Live</div>
-  <div class="ticker-wrap"><div class="ticker-track" id="tickerEl"></div></div>
-</div>
 
 <!-- HEADER -->
 <header class="header">
@@ -951,7 +979,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.26.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.27.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -965,7 +993,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.26.0';
+const APP_VERSION='v1.27.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2221,6 +2249,7 @@ function goTo(id,btn,fromHash=false){
   if(!page)return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   page.classList.add('on');
+  document.body.classList.toggle('home-active',id==='home');
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
   if(!fromHash&&location.hash!=='#'+id)history.replaceState(null,'','#'+id);
@@ -2476,6 +2505,7 @@ const WC_CHANGELOG=[
   ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.'],
   ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.'],
   ['v1.26.0','Dọn lỗi Console do CORS proxy: bỏ corsproxy.io khỏi luồng tải RSS để tránh lỗi 403 khi chạy trên GitHub Pages.'],
+  ['v1.27.0','Xóa thanh LIVE ticker chạy ngang ở đầu website; thiết kế lại Trang Chủ thành dashboard gọn trong một màn hình desktop, hạn chế scroll và ẩn footer ở trang chủ.'],
   ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.']
 ];
 
@@ -2667,7 +2697,7 @@ function renderHomeDashboard(dataObj, visibleMatches){
   const matches=(visibleMatches||getVisibleScheduleMatches(dataObj||{}))
     .filter(m=>matchStartDate(m)>=now || !(m.score&&m.score.ft))
     .sort((a,b)=>matchStartDate(a)-matchStartDate(b))
-    .slice(0,5);
+    .slice(0,3);
   if(!matches.length){
     if(title)title.textContent='Chưa có trận đã xác định';
     if(meta)meta.textContent='Các trận chưa xác định đội sẽ tự hiển thị khi có kết quả nhất bảng, nhì bảng hoặc đội thắng.';
