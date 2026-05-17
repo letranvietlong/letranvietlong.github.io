@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.19.0">
+<meta name="app-version" content="v1.20.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -490,7 +490,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 /* =========================================================
-   FEATURE PACK v1.2.0 → v1.19.0
+   FEATURE PACK v1.2.0 → v1.20.0
    Single-file GitHub Pages enhancements
 ========================================================= */
 .build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
@@ -777,7 +777,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.19.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.20.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -791,7 +791,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.19.0';
+const APP_VERSION='v1.20.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2138,6 +2138,56 @@ function getFallbackTicker(){
   ];
 }
 
+// v1.20.0 — Live ticker renderer.
+// Một số bản build trước gọi buildTicker() trong refreshData() nhưng thiếu hàm này,
+// gây lỗi ReferenceError và làm gián đoạn luồng cập nhật dữ liệu.
+function buildTicker(data){
+  const el=document.getElementById('tickerEl');
+  if(!el)return;
+
+  const source=(data&&Array.isArray(data.matches)&&data.matches.length)
+    ? data.matches
+    : getFallbackTicker();
+
+  const known=source
+    .filter(m=>m&&isConcreteTeam(m.team1)&&isConcreteTeam(m.team2))
+    .slice()
+    .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+
+  const now=new Date();
+  const upcoming=known.filter(m=>{
+    const dt=parseMatchTime(m.date,m.time);
+    return !dt || dt>=now || (m.score&&m.score.ft);
+  }).slice(0,12);
+
+  const list=(upcoming.length?upcoming:known.slice(0,12));
+  if(!list.length){
+    el.innerHTML='<span class="tick"><span class="tick-sc">World Cup 2026</span><span class="tick-tm">Lịch thi đấu sẽ được cập nhật</span></span>';
+    return;
+  }
+
+  const items=list.map(m=>{
+    const st=matchStatus(m);
+    const cc1=getCC(tn(m.team1));
+    const cc2=getCC(tn(m.team2));
+    const t1=tn(m.team1);
+    const t2=tn(m.team2);
+    const score=(m.score&&m.score.ft)?`${m.score.ft[0]} - ${m.score.ft[1]}`:'vs';
+    const status=st.status==='live'?'<span class="tick-lv">LIVE</span>':st.status==='done'?'<span class="tick-ft">FT</span>':`<span class="tick-tm">${formatVNTime(null,m.date,m.time)||formatDate(m.date)||''}</span>`;
+    return `<span class="tick">
+      <span class="tick-f"><img src="${FB}w20/${cc1}.png" alt="${cc1}" onerror="this.style.display='none'" loading="lazy"></span>
+      <span>${escapeHTML(t1)}</span>
+      <span class="tick-sc">${score}</span>
+      <span>${escapeHTML(t2)}</span>
+      <span class="tick-f"><img src="${FB}w20/${cc2}.png" alt="${cc2}" onerror="this.style.display='none'" loading="lazy"></span>
+      ${status}
+    </span>`;
+  }).join('');
+
+  // Nhân đôi nội dung để animation ticker chạy liền mạch.
+  el.innerHTML=items+items;
+}
+
 
 // ═══════════════════════════════════════════
 // GITHUB PAGES SINGLE-FILE HELPERS
@@ -2199,7 +2249,7 @@ async function refreshData(){
 
 
 // =========================================================
-// FEATURE PACK v1.2.0 → v1.19.0
+// FEATURE PACK v1.2.0 → v1.20.0
 // 14 requested features, one version per feature.
 // =========================================================
 const WC_CHANGELOG=[
@@ -2218,7 +2268,7 @@ const WC_CHANGELOG=[
   ['v1.14.0','JSON-LD sạch hơn: bổ sung WebApplication + SportsEvent metadata đã kiểm soát.'],
   ['v1.17.0','Road to Final cho từng đội trong popup đội tuyển.'],
   ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.'],
-  ['v1.19.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.']
+  ['v1.20.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.']
 ];
 
 const WC_FEATURE_STATE={
@@ -2258,7 +2308,7 @@ function countdownText(match){
 }
 function roundLabel(match){return match.group?'Vòng bảng':(match.round||'Knockout');}
 
-// v1.19.0 — Chỉ hiển thị trận đã xác định đủ 2 đội.
+// v1.20.0 — Chỉ hiển thị trận đã xác định đủ 2 đội.
 // Các seed như Winner Group A / Runner-up Group B / 1A / 2A sẽ được tự resolve
 // khi vòng bảng đã có đủ kết quả, sau đó trận sẽ tự xuất hiện trong lịch.
 function isPlaceholderTeamName(name){
