@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.25.0">
+<meta name="app-version" content="v1.26.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -549,7 +549,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 
-/* v1.25.0 — Schedule card layout fix: chống tràn chữ và tối ưu responsive */
+/* v1.26.0 — CORS proxy cleanup: bỏ corsproxy.io để tránh lỗi 403 trên Console */
 #matchesContainer{width:100%;max-width:100%;overflow:hidden}
 .mc{
   grid-template-columns:76px minmax(0,1fr) 182px;
@@ -951,7 +951,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.25.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.26.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -965,7 +965,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.25.0';
+const APP_VERSION='v1.26.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -1782,9 +1782,9 @@ function safeOpenUrl(url){try{const u=new URL(url,location.href);return ['http:'
 function cacheSet(key,value){try{localStorage.setItem(key,JSON.stringify({savedAt:Date.now(),value}));}catch(e){}}
 function cacheGet(key,maxAge=1000*60*60*3){try{const raw=localStorage.getItem(key);if(!raw)return null;const obj=JSON.parse(raw);if(!obj.savedAt||Date.now()-obj.savedAt>maxAge)return null;return obj.value||null;}catch(e){return null;}}
 function proxyUrls(url){return [
+  // Không dùng corsproxy.io vì thường trả 403 trên GitHub Pages và tạo lỗi đỏ trong Console.
   `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  `https://corsproxy.io/?${encodeURIComponent(url)}`
+  `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
 ];}
 async function fetchTextViaProxy(url,timeoutMs=9000){
   for(const proxied of proxyUrls(url)){
@@ -2475,6 +2475,7 @@ const WC_CHANGELOG=[
   ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.'],
   ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.'],
   ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.'],
+  ['v1.26.0','Dọn lỗi Console do CORS proxy: bỏ corsproxy.io khỏi luồng tải RSS để tránh lỗi 403 khi chạy trên GitHub Pages.'],
   ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.']
 ];
 
