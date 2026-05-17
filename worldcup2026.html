@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Single-file HTML build for GitHub Pages. Generated/continued with ChatGPT. -->
 <html lang="vi" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
@@ -75,7 +76,7 @@
 
 <!-- STRUCTURED DATA: FAQPage (Google People Also Ask) -->
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"World Cup 2026 diễn ra ở đâu?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 diễn ra tại 3 quốc gia: Mỹ (USA), Canada và Mexico. 16 sân vận động được sử dụng, bao gồm MetLife Stadium (New Jersey), Rose Bowl (Los Angeles), AT&T Stadium (Dallas), Estadio Azteca (Mexico City) và nhiều sân khác."}},{"@type":"Question","name":"World Cup 2026 bắt đầu ngày nào?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 khai mạc ngày 11 tháng 6 năm 2026 tại Estadio Azteca, Mexico City. Trận chung kết diễn ra ngày 19 tháng 7 năm 2026 tại MetLife Stadium, New Jersey."}},{"@type":"Question","name":"World Cup 2026 có bao nhiêu đội tham dự?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 có 48 đội tuyển quốc gia tham dự — tăng từ 32 đội. 48 đội chia vào 12 bảng (A–L), mỗi bảng 4 đội. Tổng cộng 104 trận đấu."}},{"@type":"Question","name":"Việt Nam có tham dự World Cup 2026 không?","acceptedAnswer":{"@type":"Answer","text":"Có! Đây là lần đầu tiên đội tuyển Việt Nam tham dự FIFA World Cup. Việt Nam nằm ở Bảng G cùng Belgium, Iran và New Zealand."}},{"@type":"Question","name":"World Cup 2026 có bao nhiêu trận đấu?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 có 104 trận đấu: 72 trận vòng bảng, 16 trận 1/32, 8 trận 1/8, 4 tứ kết, 2 bán kết, 1 tranh hạng ba và 1 chung kết."}},{"@type":"Question","name":"Xem lịch thi đấu World Cup 2026 ở đâu?","acceptedAnswer":{"@type":"Answer","text":"Xem toàn bộ lịch thi đấu FIFA World Cup 2026 với 104 trận, tỷ số trực tiếp, bảng xếp hạng và nhánh đấu knockout ngay tại trang web này. Dữ liệu cập nhật tự động sau mỗi trận."}}]}
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"World Cup 2026 diễn ra ở đâu?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 diễn ra tại 3 quốc gia: Mỹ (USA), Canada và Mexico. 16 sân vận động được sử dụng, bao gồm MetLife Stadium (New Jersey), Rose Bowl (Los Angeles), AT&T Stadium (Dallas), Estadio Azteca (Mexico City) và nhiều sân khác."}},{"@type":"Question","name":"World Cup 2026 bắt đầu ngày nào?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 khai mạc ngày 11 tháng 6 năm 2026 tại Estadio Azteca, Mexico City. Trận chung kết diễn ra ngày 19 tháng 7 năm 2026 tại MetLife Stadium, New Jersey."}},{"@type":"Question","name":"World Cup 2026 có bao nhiêu đội tham dự?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 có 48 đội tuyển quốc gia tham dự — tăng từ 32 đội. 48 đội chia vào 12 bảng (A–L), mỗi bảng 4 đội. Tổng cộng 104 trận đấu."}},{"@type":"Question","name":"Việt Nam có tham dự World Cup 2026 không?","acceptedAnswer":{"@type":"Answer","text":"Danh sách đội tuyển và bảng đấu World Cup 2026 cần được kiểm tra theo nguồn chính thức mới nhất. Trang web này sẽ cập nhật lịch thi đấu, bảng đấu và kết quả khi có dữ liệu xác thực."}},{"@type":"Question","name":"World Cup 2026 có bao nhiêu trận đấu?","acceptedAnswer":{"@type":"Answer","text":"FIFA World Cup 2026 có 104 trận đấu: 72 trận vòng bảng, 16 trận 1/32, 8 trận 1/8, 4 tứ kết, 2 bán kết, 1 tranh hạng ba và 1 chung kết."}},{"@type":"Question","name":"Xem lịch thi đấu World Cup 2026 ở đâu?","acceptedAnswer":{"@type":"Answer","text":"Xem toàn bộ lịch thi đấu FIFA World Cup 2026 với 104 trận, tỷ số trực tiếp, bảng xếp hạng và nhánh đấu knockout ngay tại trang web này. Dữ liệu cập nhật tự động sau mỗi trận."}}]}
 </script>
 
 <!-- STRUCTURED DATA: BreadcrumbList -->
@@ -820,11 +821,16 @@ async function fetchWCData(){
   }
 }
 
-function setApiStatus(ok,txt){
+function setApiStatus(state,txt){
   const dot=document.getElementById('apiDot');
   const t=document.getElementById('apiTxt');
-  if(dot){dot.className='api-dot '+(ok?'live':'err');}
-  if(t)t.textContent=txt;
+  if(dot){
+    let cls='api-dot';
+    if(state===true||state==='live')cls+=' live';
+    if(state===false||state==='error')cls+=' err';
+    dot.className=cls;
+  }
+  if(t)t.textContent=txt||'';
 }
 
 // ═══════════════════════════════════════════
@@ -1924,11 +1930,14 @@ function buildVenues(){
     </div>`).join('');
 }
 
-function goTo(id,btn){
+function goTo(id,btn,fromHash=false){
+  const page=document.getElementById('pg-'+id);
+  if(!page)return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
-  document.getElementById('pg-'+id).classList.add('on');
+  page.classList.add('on');
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
+  if(!fromHash&&location.hash!=='#'+id)history.replaceState(null,'','#'+id);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function filterMatches(f,btn){
@@ -2028,22 +2037,73 @@ function getFallbackTicker(){
   ];
 }
 
+
+// ═══════════════════════════════════════════
+// GITHUB PAGES SINGLE-FILE HELPERS
+// Cache dữ liệu, hash routing, chạy ổn định trên github.io
+// ═══════════════════════════════════════════
+const APP_CACHE={
+  wcData:'wc2026:data:v1',
+  lastUpdated:'wc2026:lastUpdated:v1'
+};
+function saveCache(key,value){
+  try{localStorage.setItem(key,JSON.stringify({savedAt:Date.now(),value}));}
+  catch(e){console.warn('Cache save failed',e);}
+}
+function readCache(key,maxAgeMs=1000*60*60*12){
+  try{
+    const raw=localStorage.getItem(key);if(!raw)return null;
+    const obj=JSON.parse(raw);if(!obj||!obj.savedAt)return null;
+    if(Date.now()-obj.savedAt>maxAgeMs)return null;
+    return obj.value||null;
+  }catch(e){console.warn('Cache read failed',e);return null;}
+}
+function pageFromHash(){
+  const h=(location.hash||'').replace('#','').trim();
+  const ok=['schedule','groups','bracket','highlights','news','stats','teams','venues'];
+  return ok.includes(h)?h:'schedule';
+}
+function syncHashToPage(){
+  const id=pageFromHash();
+  const btn=[...document.querySelectorAll('.nb')].find(b=>(b.getAttribute('onclick')||'').includes(`'${id}'`));
+  if(typeof goTo==='function')goTo(id,btn||document.querySelector('.nb'),true);
+}
+window.addEventListener('hashchange',syncHashToPage);
+
 async function refreshData(){
-  const data=await fetchWCData();
-  renderSchedule(data);
-  buildGroups(data);
-  buildBracket(data);
-  buildStats(data);
-  buildTicker(data);
+  const cached=readCache(APP_CACHE.wcData);
+  if(cached){
+    renderSchedule(cached);buildGroups(cached);buildBracket(cached);buildStats(cached);buildTicker(cached);
+    setApiStatus('live','Đang dùng dữ liệu đã lưu');
+  }
+  try{
+    setApiStatus('loading','Đang cập nhật dữ liệu...');
+    const data=await fetchWCData();
+    if(data){
+      saveCache(APP_CACHE.wcData,data);
+      localStorage.setItem(APP_CACHE.lastUpdated,String(Date.now()));
+      renderSchedule(data);buildGroups(data);buildBracket(data);buildStats(data);buildTicker(data);
+      setApiStatus('live','Dữ liệu đã cập nhật');
+    }else if(cached){
+      setApiStatus('error','API lỗi · Đang dùng cache');
+    }
+  }catch(e){
+    console.warn('refreshData failed',e);
+    if(cached){setApiStatus('error','API lỗi · Đang dùng cache');return;}
+    const fallback=getFallbackData();
+    renderSchedule(fallback);buildGroups(fallback);buildBracket(fallback);buildStats(fallback);buildTicker(fallback);
+    setApiStatus('error','API lỗi · Dùng dữ liệu dự phòng');
+  }
 }
 
 (async()=>{
-  // Render ngay lập tức từ TEAMS_STATIC — không cần đợi API
+  // Render ngay lập tức từ dữ liệu tĩnh — phù hợp GitHub Pages, không cần backend
   buildGroups(null);
   buildBracket(null);
   buildHL();buildTrends();buildTeams();buildVenues();
   injectFlag('ft-us','us','sm');injectFlag('ft-ca','ca','sm');injectFlag('ft-mx','mx','sm');
   tick();setInterval(tick,1000);
+  syncHashToPage();
   // Sau đó fetch API để overlay kết quả thực tế (nếu có)
   await refreshData();
   setInterval(refreshData,60000);
