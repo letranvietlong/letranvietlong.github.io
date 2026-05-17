@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.17.0">
+<meta name="app-version" content="v1.18.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -396,6 +396,18 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .ven-cap{font-family:'Be Vietnam Pro',sans-serif;font-size:11px;font-weight:600;color:var(--amber)}
 .ven-info{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;color:var(--text3);margin-top:4px}
 
+
+.venue-card-v118 .ven-img{height:178px;background:linear-gradient(135deg,var(--ink3),#101722);position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.venue-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.01);transition:opacity .35s ease,transform .5s ease;z-index:1}
+.ven-img.img-ready .venue-photo{opacity:1}
+.venue-card-v118:hover .venue-photo{transform:scale(1.06)}
+.venue-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle at 30% 20%,rgba(240,165,0,.16),transparent 35%),linear-gradient(135deg,#1c242f,#0d1117);z-index:0;color:rgba(255,255,255,.16)}
+.venue-fallback-icon{font-size:38px;line-height:1}.venue-fallback-code{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.2)}
+.venue-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(13,17,23,.92) 0%,rgba(13,17,23,.35) 48%,rgba(13,17,23,.05) 100%);z-index:2;pointer-events:none}
+.venue-country-pill{position:absolute;top:9px;left:9px;z-index:3;background:rgba(0,0,0,.58);backdrop-filter:blur(6px);color:rgba(255,255,255,.82);font-size:9px;font-weight:700;padding:4px 8px;border-radius:7px;border:1px solid rgba(255,255,255,.08)}
+.venue-card-title{position:absolute;left:11px;right:11px;bottom:10px;z-index:3}.venue-card-title div{font-size:14px;font-weight:800;color:#fff;line-height:1.18;text-shadow:0 2px 10px rgba(0,0,0,.65)}.venue-card-title span{display:block;font-size:10px;color:rgba(255,255,255,.72);margin-top:3px;line-height:1.35}
+.v118-venue-hero{min-height:240px;background:linear-gradient(135deg,var(--ink3),#101722)}.v118-venue-hero .venue-fallback{z-index:0}.v118-venue-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}.v118-venue-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(13,17,23,.94),rgba(13,17,23,.08));z-index:2}.v118-venue-hero .venue-hero-title{z-index:3}
+
 /* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:20px}
 .modal-bg.on{display:flex;animation:fadeIn .2s}
@@ -478,7 +490,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 /* =========================================================
-   FEATURE PACK v1.2.0 → v1.17.0
+   FEATURE PACK v1.2.0 → v1.18.0
    Single-file GitHub Pages enhancements
 ========================================================= */
 .build-chip{cursor:pointer;user-select:none;gap:8px}.build-chip:hover{border-color:var(--amber);color:var(--amber)}
@@ -765,7 +777,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.17.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.18.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -779,7 +791,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.17.0';
+const APP_VERSION='v1.18.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2187,7 +2199,7 @@ async function refreshData(){
 
 
 // =========================================================
-// FEATURE PACK v1.2.0 → v1.17.0
+// FEATURE PACK v1.2.0 → v1.18.0
 // 14 requested features, one version per feature.
 // =========================================================
 const WC_CHANGELOG=[
@@ -2204,7 +2216,8 @@ const WC_CHANGELOG=[
   ['v1.12.0','Popup chi tiết sân vận động: ảnh, thành phố, quốc gia, sức chứa, vai trò tổ chức.'],
   ['v1.13.0','SEO theo từng section: đổi title, meta description và canonical hash khi chuyển tab.'],
   ['v1.14.0','JSON-LD sạch hơn: bổ sung WebApplication + SportsEvent metadata đã kiểm soát.'],
-  ['v1.17.0','Road to Final cho từng đội trong popup đội tuyển.']
+  ['v1.17.0','Road to Final cho từng đội trong popup đội tuyển.'],
+  ['v1.18.0','Bổ sung ảnh sân vận động thực tế bằng Wikipedia/Wikimedia, có cache và fallback khi ảnh lỗi.']
 ];
 
 const WC_FEATURE_STATE={
@@ -2449,6 +2462,110 @@ function setupFeaturePack(){
   setupGlobalSearch();setupPWA();injectCleanJsonLd();updateSectionSEO(pageFromHash());
   const label=document.getElementById('appVersionLabel');if(label)label.textContent=APP_VERSION+' · Build completed';
 }
+
+
+// =========================================================
+// VENUE IMAGE PACK v1.18.0
+// Bổ sung ảnh thật cho thẻ sân vận động bằng Wikipedia/Wikimedia.
+// Cơ chế này phù hợp GitHub Pages: chạy client-side, có cache localStorage,
+// nếu API ảnh lỗi thì vẫn giữ fallback đẹp thay vì để card trống.
+// =========================================================
+const VENUE_IMAGE_CACHE_KEY='wc2026:venue-images:v1';
+const VENUE_WIKI_TITLES={
+  'Estadio Azteca':'Estadio Azteca',
+  'MetLife Stadium':'MetLife Stadium',
+  'Rose Bowl':'Rose Bowl (stadium)',
+  'AT&T Stadium':'AT&T Stadium',
+  'Hard Rock Stadium':'Hard Rock Stadium',
+  'SoFi Stadium':'SoFi Stadium',
+  "Levi's Stadium":"Levi's Stadium",
+  'Gillette Stadium':'Gillette Stadium',
+  'Lincoln Financial Field':'Lincoln Financial Field',
+  'Arrowhead Stadium':'Arrowhead Stadium',
+  'Estadio Akron':'Estadio Akron',
+  'Estadio BBVA':'Estadio BBVA',
+  'BMO Field':'BMO Field',
+  'BC Place':'BC Place',
+  'Stade Olympique':'Olympic Stadium (Montreal)',
+  'Commonwealth Stadium':'Commonwealth Stadium (Edmonton)'
+};
+function readVenueImageCache(){
+  try{return JSON.parse(localStorage.getItem(VENUE_IMAGE_CACHE_KEY)||'{}')||{};}catch(e){return {};}
+}
+function saveVenueImageCache(cache){
+  try{localStorage.setItem(VENUE_IMAGE_CACHE_KEY,JSON.stringify(cache));}catch(e){}
+}
+function venueCountryLabel(cc){return cc==='us'?'🇺🇸 USA':cc==='mx'?'🇲🇽 Mexico':'🇨🇦 Canada';}
+function venueFallbackHTML(v){
+  const initial=(v.n||'S').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+  return `<div class="venue-fallback"><div class="venue-fallback-icon">🏟</div><div class="venue-fallback-code">${initial}</div></div>`;
+}
+async function fetchVenueImage(v){
+  const title=VENUE_WIKI_TITLES[v.n]||v.n;
+  const url=`https://en.wikipedia.org/w/api.php?action=query&origin=*&format=json&prop=pageimages&piprop=thumbnail&pithumbsize=900&titles=${encodeURIComponent(title)}`;
+  const res=await fetch(url,{cache:'force-cache'});
+  if(!res.ok)throw new Error('Venue image API failed');
+  const data=await res.json();
+  const pages=data&&data.query&&data.query.pages?Object.values(data.query.pages):[];
+  const thumb=pages[0]&&pages[0].thumbnail&&pages[0].thumbnail.source;
+  if(!thumb)throw new Error('No thumbnail for '+v.n);
+  return thumb.replace(/^http:/,'https:');
+}
+async function hydrateVenueImages(){
+  const imgs=[...document.querySelectorAll('.venue-photo[data-venue-index]')];
+  if(!imgs.length)return;
+  const cache=readVenueImageCache();
+  await Promise.allSettled(imgs.map(async img=>{
+    const i=Number(img.dataset.venueIndex);
+    const v=VENUES[i];
+    if(!v)return;
+    let src=cache[v.n];
+    if(!src){
+      try{src=await fetchVenueImage(v);cache[v.n]=src;saveVenueImageCache(cache);}catch(e){img.closest('.ven-img')?.classList.add('img-missing');return;}
+    }
+    img.onload=()=>img.closest('.ven-img')?.classList.add('img-ready');
+    img.onerror=()=>{img.closest('.ven-img')?.classList.add('img-missing');};
+    img.src=src;
+  }));
+}
+function venuePhotoMarkup(v,i){
+  const cache=readVenueImageCache();
+  const src=cache[v.n]||'';
+  return `<img class="venue-photo" data-venue-index="${i}" ${src?`src="${src}"`:''} alt="${v.n}" loading="lazy">${venueFallbackHTML(v)}`;
+}
+
+// Ghi đè renderer sân vận động để ảnh hiển thị thật thay vì khung trống.
+buildVenues=function(){
+  const el=document.getElementById('venuesGrid');if(!el)return;
+  el.innerHTML=VENUES.map((v,i)=>`
+    <div class="ven-c venue-card-v118" onclick="openVenueModalByIndex(${i})" style="cursor:pointer">
+      <div class="ven-img">
+        ${venuePhotoMarkup(v,i)}
+        <div class="venue-shade"></div>
+        <div class="venue-country-pill">${venueCountryLabel(v.cc)}</div>
+        <div class="venue-card-title"><div>${v.n}</div><span>📍 ${v.c}</span></div>
+      </div>
+      <div class="ven-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px">
+          <div class="ven-cap">⬡ ${v.cap}</div>
+          <div style="font-size:10px;color:var(--text3);text-align:right">${v.info}</div>
+        </div>
+        <button class="mini-btn" onclick="event.stopPropagation();openVenueModalByIndex(${i})">Chi tiết sân</button>
+      </div>
+    </div>`).join('');
+  hydrateVenueImages();
+};
+
+// Nâng cấp popup chi tiết sân: dùng ảnh đã cache, nếu chưa có thì tải rồi cập nhật modal.
+openVenueModal=function(v){
+  ensureVenueModal();const m=document.getElementById('venueModal');
+  const country=v.cc==='us'?'United States':v.cc==='mx'?'Mexico':'Canada';
+  const cache=readVenueImageCache();
+  const img=cache[v.n]||'';
+  m.innerHTML=`<div class="venue-box"><div class="venue-head"><div class="venue-title">Chi tiết sân vận động</div><button class="close-lite" onclick="document.getElementById('venueModal').classList.remove('on')">✕</button></div><div class="venue-hero v118-venue-hero">${img?`<img id="venueModalPhoto" src="${img}" alt="${v.n}">`:`<img id="venueModalPhoto" alt="${v.n}" style="display:none">${venueFallbackHTML(v)}`}<div class="venue-hero-title"><h2>${v.n}</h2><p>📍 ${v.c}</p></div></div><div class="venue-body"><div class="venue-details"><div class="venue-detail"><span>Quốc gia</span><strong>${country}</strong></div><div class="venue-detail"><span>Sức chứa</span><strong>${v.cap}</strong></div><div class="venue-detail"><span>Vai trò</span><strong>${v.info}</strong></div><div class="venue-detail"><span>Nguồn ảnh</span><strong>Wikipedia/Wikimedia</strong></div></div><div style="margin-top:12px;font-size:12px;color:var(--text2);line-height:1.7">Ảnh sân vận động được tải động và lưu cache trên trình duyệt để lần mở sau nhanh hơn. Nếu nguồn ảnh tạm lỗi, website vẫn hiển thị khung fallback.</div></div></div>`;
+  m.classList.add('on');
+  if(!img){fetchVenueImage(v).then(src=>{const c=readVenueImageCache();c[v.n]=src;saveVenueImageCache(c);const photo=document.getElementById('venueModalPhoto');if(photo){photo.src=src;photo.style.display='block';const fb=photo.parentElement.querySelector('.venue-fallback');if(fb)fb.style.display='none';}}).catch(()=>{});}
+};
 
 (async()=>{
   renderBuildVersion();
