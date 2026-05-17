@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.23.0">
+<meta name="app-version" content="v1.24.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -836,7 +836,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.23.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.24.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -850,7 +850,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.23.0';
+const APP_VERSION='v1.24.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -861,6 +861,17 @@ function renderBuildVersion(){
   if(dateEl)dateEl.textContent='Build '+APP_BUILD_DATE;
   document.documentElement.dataset.appVersion=APP_VERSION;
   console.info(`[WC2026] ${APP_VERSION} · Build ${APP_BUILD_DATE} · ${APP_BUILD_TARGET}`);
+}
+
+
+// Escape HTML để render dữ liệu an toàn từ API/RSS và tránh ReferenceError khi ticker/news render.
+function escapeHTML(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
 }
 
 // ═══════════════════════════════════════════
@@ -2347,7 +2358,8 @@ const WC_CHANGELOG=[
   ['v1.20.0','Lịch thi đấu chỉ hiển thị các trận đã xác định đủ 2 đội; tự hiện trận knockout khi dữ liệu cập nhật đội thắng/nhất bảng/nhì bảng.'],
   ['v1.21.0','Chuẩn hóa toàn bộ website về một múi giờ duy nhất: Giờ Việt Nam (UTC+7); bỏ tùy chọn giờ máy người dùng để tránh lệch lịch.'],
   ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.'],
-  ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.']
+  ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.'],
+  ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.']
 ];
 
 const WC_FEATURE_STATE={
