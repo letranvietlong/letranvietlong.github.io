@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.24.0">
+<meta name="app-version" content="v1.25.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -547,6 +547,121 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .news-empty{background:rgba(61,142,240,.08);border:1px solid rgba(61,142,240,.22);border-radius:12px;padding:14px;color:#9EC3F7;font-size:12px;line-height:1.65}
 .news-source-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
+
+
+/* v1.25.0 — Schedule card layout fix: chống tràn chữ và tối ưu responsive */
+#matchesContainer{width:100%;max-width:100%;overflow:hidden}
+.mc{
+  grid-template-columns:76px minmax(0,1fr) 182px;
+  min-height:86px;
+  align-items:stretch;
+}
+.mc-t{min-width:0;background:rgba(255,255,255,.012)}
+.mc-b{
+  min-width:0;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+}
+.mc-tl,.mc-tr{
+  min-width:0;
+  width:100%;
+  overflow:hidden;
+  flex:initial;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.mc-tl{justify-content:flex-start}
+.mc-tr{flex-direction:row;justify-content:flex-end}
+.mc-nm{
+  display:block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  line-height:1.35;
+}
+.mc-tr .mc-nm{text-align:right}
+.mc-sv{
+  width:70px;
+  min-width:70px;
+  justify-self:center;
+  text-align:center;
+}
+.mc-r{
+  min-width:0;
+  overflow:hidden;
+  padding:10px 12px;
+  align-items:flex-start;
+  justify-content:center;
+  gap:5px;
+}
+.mc-r .bdg{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.mc-ven{
+  display:block;
+  width:100%;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+  text-align:left;
+}
+.match-countdown,
+.mc-date-mini{
+  max-width:100%;
+  white-space:normal;
+  line-height:1.35;
+}
+.mc-actions{margin-top:2px;flex-wrap:wrap}
+
+@media(max-width:860px){
+  .mc{
+    grid-template-columns:72px minmax(0,1fr);
+    min-height:auto;
+  }
+  .mc-r{
+    grid-column:1 / -1;
+    border-left:none;
+    border-top:1px solid var(--line);
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 12px;
+    gap:8px 12px;
+  }
+  .mc-ven{width:auto;flex:1 1 180px;text-align:right;white-space:nowrap}
+  .match-countdown,.mc-date-mini{margin-top:0;white-space:nowrap}
+  .mc-actions{margin-top:0}
+}
+@media(max-width:560px){
+  .mc{
+    grid-template-columns:1fr;
+    border-radius:14px;
+  }
+  .mc-t{
+    border-right:none;
+    border-bottom:1px solid var(--line);
+    justify-content:flex-start;
+    padding:8px 12px;
+  }
+  .mc-time{text-align:left}
+  .mc-b{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:12px;
+  }
+  .mc-tl,.mc-tr{justify-content:flex-start;flex-direction:row}
+  .mc-tr .mc-nm{text-align:left}
+  .mc-sv{width:100%;min-width:0;justify-content:flex-start;padding-left:36px}
+  .mc-r{grid-column:auto;justify-content:flex-start;align-items:flex-start;flex-direction:column}
+  .mc-ven{text-align:left;white-space:normal}
+}
+
 </style>
 </head>
 <body>
@@ -836,7 +951,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.24.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" title="Phiên bản build hiện tại"><span id="appVersionLabel">v1.25.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -850,7 +965,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.24.0';
+const APP_VERSION='v1.25.0';
 const APP_BUILD_DATE='2026-05-17';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
@@ -2359,7 +2474,8 @@ const WC_CHANGELOG=[
   ['v1.21.0','Chuẩn hóa toàn bộ website về một múi giờ duy nhất: Giờ Việt Nam (UTC+7); bỏ tùy chọn giờ máy người dùng để tránh lệch lịch.'],
   ['v1.22.0','Sửa lỗi buildTicker gọi isConcreteTeam khi hàm chưa được định nghĩa; ticker LIVE và luồng refresh dữ liệu hoạt động ổn định hơn.'],
   ['v1.23.0','Tách Trang chủ thành một tab riêng, thiết kế lại hero bắt mắt hơn và thêm dashboard/lối tắt nhanh.'],
-  ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.']
+  ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.'],
+  ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.']
 ];
 
 const WC_FEATURE_STATE={
