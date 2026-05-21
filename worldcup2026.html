@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="app-version" content="v1.28.0">
+<meta name="app-version" content="v1.29.0">
 <meta name="app-build-date" content="2026-05-17">
 <meta name="app-build-target" content="github-pages-single-file">
 
@@ -468,6 +468,23 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .tm-val{color:var(--text);font-weight:600;text-align:right}
 .tm-val.amber{color:var(--amber)}
 
+/* SQUADS */
+.squad-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.squad-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.squad-title{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.squad-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.squad-source{font-size:10px;color:var(--text3);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:rgba(255,255,255,.03)}
+.squad-source:hover{border-color:var(--amber);color:var(--amber)}
+.squad-refresh{font-family:var(--font-vn);font-size:10px;font-weight:700;color:var(--ink);background:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:4px 10px;cursor:pointer}
+.squad-note{font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:10px}
+.squad-loading,.squad-empty{font-size:12px;color:var(--text2);background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:var(--r);padding:12px;line-height:1.6}
+.squad-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px}
+.squad-player{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;padding:8px 9px;min-width:0}
+.squad-no{font-family:var(--font-num);font-size:12px;font-weight:800;color:var(--amber);text-align:center;background:rgba(240,165,0,.09);border:1px solid rgba(240,165,0,.18);border-radius:8px;padding:4px 0}
+.squad-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.squad-meta{font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;min-width:0}
+@media(max-width:560px){.squad-list{grid-template-columns:1fr}.squad-player{grid-template-columns:30px 1fr}.squad-name{white-space:normal}}
+
 /* FOOTER */
 .footer{background:var(--ink2);border-top:1px solid var(--line);padding:32px 24px 24px}
 .footer-inner{max-width:1340px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px}
@@ -549,7 +566,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 
 
-/* v1.28.0 — Remove top live ticker and redesign Home as a one-screen dashboard */
+/* v1.29.0 — Dynamic latest squads in team modal */
 #matchesContainer{width:100%;max-width:100%;overflow:hidden}
 .mc{
   grid-template-columns:76px minmax(0,1fr) 182px;
@@ -973,13 +990,13 @@ body.home-active .footer{display:none}
       <div class="footer-tagline" style="font-size:11px;line-height:1.8;color:var(--text3)">
         📡 openfootball/worldcup.json<br>
         🏁 flagcdn.com (Quốc kỳ)<br>
-        ⏱ Cập nhật sau mỗi trận
+        ⏱ Cập nhật sau mỗi trận<br>👥 Squad: Wikipedia/FIFA references
       </div>
     </div>
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2026 FIFA World Cup · Dữ liệu từ openfootball open source · GMT+7</div>
-    <div class="build-chip" id="buildChip" role="button" tabindex="0" title="Bấm để xem lịch sử version"><span id="appVersionLabel">v1.28.0</span><small id="appBuildDate">Build 2026-05-17</small></div>
+    <div class="build-chip" id="buildChip" role="button" tabindex="0" title="Bấm để xem lịch sử version"><span id="appVersionLabel">v1.29.0</span><small id="appBuildDate">Build 2026-05-21</small></div>
     <div class="footer-hosts">
       <span class="fl sm" id="ft-us"></span>
       <span class="fl sm" id="ft-ca"></span>
@@ -993,8 +1010,8 @@ body.home-active .footer{display:none}
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v1.28.0';
-const APP_BUILD_DATE='2026-05-17';
+const APP_VERSION='v1.29.0';
+const APP_BUILD_DATE='2026-05-21';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
 function renderBuildVersion(){
@@ -2190,7 +2207,8 @@ function buildTeams(filter='all'){
       </div>
       <div class="team-c-name">${t.n}</div>
       <div class="team-c-grp">Bảng ${t.g}</div>
-      <div class="team-c-rank">FIFA #${t.r}</div>`;
+      <div class="team-c-rank">FIFA #${t.r}</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text3);border-top:1px solid var(--line);padding-top:8px">👥 Danh sách cầu thủ</div>`;
     el.appendChild(c);
   });
 }
@@ -2305,14 +2323,18 @@ function openTeamModal(t){
   document.getElementById('tm-name').textContent=t.n;
   document.getElementById('tm-sub').textContent='Bảng '+t.g+' · FIFA #'+t.r;
   const conts={EU:'Châu Âu',SA:'Nam Mỹ',AS:'Châu Á',AF:'Châu Phi',NA:'Bắc & Trung Mỹ'};
-  const playersHtml=t.players&&t.players.length?`
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">⚽ Cầu Thủ Tiêu Biểu</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${t.players.map((p,i)=>`<span style="font-size:11px;font-weight:${i===0?'700':'500'};color:${i===0?'var(--amber)':'var(--text2)'};background:${i===0?'rgba(240,165,0,.1)':'rgba(255,255,255,.04)'};padding:4px 10px;border-radius:20px;border:1px solid ${i===0?'rgba(240,165,0,.3)':'var(--line)'};white-space:nowrap">${i===0?'★ ':''} ${p}</span>`).join('')}
+  const squadHtml=`
+    <div class="squad-box" id="teamSquadBox">
+      <div class="squad-head">
+        <div class="squad-title">👥 Danh sách cầu thủ cập nhật</div>
+        <div class="squad-actions">
+          <button class="squad-refresh" onclick="refreshTeamSquadFromButton()">⟳ Cập nhật</button>
+          <a class="squad-source" href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_squads" target="_blank" rel="noopener">Nguồn squad</a>
+        </div>
       </div>
-    </div>`:''
-  ;
+      <div class="squad-note">Danh sách được tải động từ trang tổng hợp squad World Cup 2026. Đội nào chưa công bố hoặc nguồn chưa cập nhật sẽ hiển thị trạng thái chờ.</div>
+      <div id="teamSquadContent" class="squad-loading">Đang tải danh sách cầu thủ mới nhất...</div>
+    </div>`;
   document.getElementById('tm-body').innerHTML=`
     <div class="tm-row"><span class="tm-key">Bảng đấu</span><span class="tm-val">Bảng ${t.g}</span></div>
     <div class="tm-row"><span class="tm-key">Xếp hạng FIFA</span><span class="tm-val amber">#${t.r}</span></div>
@@ -2320,9 +2342,116 @@ function openTeamModal(t){
     ${t.coach?`<div class="tm-row"><span class="tm-key">Huấn luyện viên</span><span class="tm-val">${t.coach}</span></div>`:''}
     ${t.cap?`<div class="tm-row"><span class="tm-key">Đội trưởng</span><span class="tm-val" style="color:var(--amber)">${t.cap}</span></div>`:''}
     ${t.form?`<div class="tm-row"><span class="tm-key">Sơ đồ chiến thuật</span><span class="tm-val">${t.form}</span></div>`:''}
-    ${playersHtml}`;
+    ${squadHtml}`;
   document.getElementById('tmModal').classList.add('on');
+  renderTeamSquad(t);
 }
+
+// ═══════════════════════════════════════════
+// LATEST SQUADS — Dynamic fetch from public squad page
+// ═══════════════════════════════════════════
+const SQUAD_CACHE_KEY='wc2026:squads:v1';
+const SQUAD_CACHE_TTL=1000*60*60*12;
+const SQUAD_API='https://en.wikipedia.org/w/api.php?action=parse&page=2026_FIFA_World_Cup_squads&prop=text&format=json&origin=*';
+let SQUAD_DATA=null;
+let CURRENT_TEAM_FOR_SQUAD=null;
+const TEAM_WIKI_MAP={
+  'Mexico':'Mexico','Nam Phi':'South Africa','Hàn Quốc':'South Korea','Séc':'Czech Republic',
+  'Canada':'Canada','Thụy Sĩ':'Switzerland','Qatar':'Qatar','Bosnia & Herzegovina':'Bosnia and Herzegovina',
+  'Brazil':'Brazil','Ma-rốc':'Morocco','Haiti':'Haiti','Scotland':'Scotland',
+  'Mỹ':'United States','USA':'United States','Paraguay':'Paraguay','Úc':'Australia','Thổ Nhĩ Kỳ':'Turkey',
+  'Đức':'Germany','Curaçao':'Curaçao','Bờ Biển Ngà':'Ivory Coast','Ecuador':'Ecuador',
+  'Hà Lan':'Netherlands','Nhật Bản':'Japan','Thụy Điển':'Sweden','Tunisia':'Tunisia',
+  'Bỉ':'Belgium','Ai Cập':'Egypt','Iran':'Iran','New Zealand':'New Zealand',
+  'Tây Ban Nha':'Spain','Cabo Verde':'Cape Verde','Ả Rập Xê-út':'Saudi Arabia','Uruguay':'Uruguay',
+  'Pháp':'France','Senegal':'Senegal','Na Uy':'Norway','Iraq':'Iraq',
+  'Argentina':'Argentina','Algeria':'Algeria','Áo':'Austria','Jordan':'Jordan',
+  'Bồ Đào Nha':'Portugal','Uzbekistan':'Uzbekistan','CH Congo':'DR Congo','Colombia':'Colombia',
+  'Anh':'England','Croatia':'Croatia','Ghana':'Ghana','Panama':'Panama'
+};
+function cleanSquadText(v){return String(v||'').replace(/\[\d+\]/g,'').replace(/\s+/g,' ').trim();}
+function squadCacheRead(){
+  try{const raw=localStorage.getItem(SQUAD_CACHE_KEY);if(!raw)return null;const p=JSON.parse(raw);if(Date.now()-p.savedAt>SQUAD_CACHE_TTL)return null;return p.value||null;}catch(e){return null;}
+}
+function squadCacheSave(value){try{localStorage.setItem(SQUAD_CACHE_KEY,JSON.stringify({savedAt:Date.now(),value}));}catch(e){} }
+function normalizeSquadKey(v){return cleanSquadText(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim();}
+function findSquadForTeam(team){
+  if(!SQUAD_DATA)return null;
+  const target=TEAM_WIKI_MAP[team.n]||team.n;
+  const keys=[target,team.n].map(normalizeSquadKey);
+  for(const [name,players] of Object.entries(SQUAD_DATA.teams||{})){
+    const k=normalizeSquadKey(name);
+    if(keys.includes(k)||keys.some(x=>k.includes(x)||x.includes(k)))return {sourceName:name,players};
+  }
+  return null;
+}
+async function fetchSquadData(force=false){
+  if(SQUAD_DATA&&!force)return SQUAD_DATA;
+  const cached=!force?squadCacheRead():null;
+  if(cached){SQUAD_DATA=cached;return cached;}
+  const res=await fetch(SQUAD_API,{cache:force?'reload':'default'});
+  if(!res.ok)throw new Error('Squad HTTP '+res.status);
+  const json=await res.json();
+  const html=json?.parse?.text?.['*'];
+  if(!html)throw new Error('Squad page empty');
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const teams={};
+  const headings=[...doc.querySelectorAll('h3,h4')];
+  headings.forEach(h=>{
+    const headline=h.querySelector('.mw-headline');
+    const name=cleanSquadText(headline?headline.textContent:h.textContent);
+    if(!name||/Group [A-L]/i.test(name)||/Notes|References|External links/i.test(name))return;
+    let node=h.nextElementSibling,table=null;
+    while(node&&!/^H[234]$/i.test(node.tagName)){
+      if(node.matches&&node.matches('table.wikitable')){table=node;break;}
+      table=node.querySelector&&node.querySelector('table.wikitable');
+      if(table)break;
+      node=node.nextElementSibling;
+    }
+    if(!table)return;
+    const rows=[...table.querySelectorAll('tr')];
+    const headerCells=[...rows[0]?.querySelectorAll('th,td')||[]].map(x=>cleanSquadText(x.textContent));
+    const idxPlayer=Math.max(0,headerCells.findIndex(x=>/player|name/i.test(x)));
+    const idxNo=headerCells.findIndex(x=>/^no\.?|number/i.test(x));
+    const idxPos=headerCells.findIndex(x=>/pos|position/i.test(x));
+    const idxClub=headerCells.findIndex(x=>/club/i.test(x));
+    const players=[];
+    rows.slice(1).forEach(r=>{
+      const cells=[...r.querySelectorAll('td,th')];
+      if(cells.length<2)return;
+      const get=i=>i>=0&&cells[i]?cleanSquadText(cells[i].textContent):'';
+      let player=get(idxPlayer);
+      if(!player&&cells.length>=3)player=cleanSquadText(cells[2].textContent);
+      player=player.replace(/^\d+\s*/,'').replace(/\s*\(captain\)$/i,'');
+      if(!player||/coach|manager|player/i.test(player))return;
+      players.push({no:get(idxNo)||'—',pos:get(idxPos)||'',name:player,club:get(idxClub)||''});
+    });
+    if(players.length)teams[name]=players.slice(0,30);
+  });
+  const value={updatedAt:Date.now(),teams};
+  SQUAD_DATA=value;squadCacheSave(value);return value;
+}
+function renderSquadPlayers(match){
+  const box=document.getElementById('teamSquadContent');if(!box)return;
+  if(!match||!match.players||!match.players.length){
+    box.className='squad-empty';
+    box.innerHTML='Chưa tìm thấy danh sách cầu thủ đã công bố cho đội này trong nguồn đang dùng. Khi FIFA/đội tuyển công bố và nguồn cập nhật, mục này sẽ tự hiển thị.';
+    return;
+  }
+  box.className='';
+  const count=match.players.length;
+  const time=SQUAD_DATA?.updatedAt?new Date(SQUAD_DATA.updatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
+  box.innerHTML=`<div class="squad-note">Đội: <b style="color:var(--amber)">${escapeHTML(match.sourceName)}</b> · ${count} cầu thủ · Cập nhật cache: ${escapeHTML(time)} GMT+7</div>
+    <div class="squad-list">${match.players.map(p=>`<div class="squad-player"><div class="squad-no">${escapeHTML(p.no||'—')}</div><div><div class="squad-name" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</div><div class="squad-meta">${escapeHTML([p.pos,p.club].filter(Boolean).join(' · ')||'Thông tin đang cập nhật')}</div></div></div>`).join('')}</div>`;
+}
+async function renderTeamSquad(team,force=false){
+  CURRENT_TEAM_FOR_SQUAD=team;
+  const box=document.getElementById('teamSquadContent');if(!box)return;
+  box.className='squad-loading';box.textContent=force?'Đang làm mới danh sách cầu thủ...':'Đang tải danh sách cầu thủ mới nhất...';
+  try{await fetchSquadData(force);renderSquadPlayers(findSquadForTeam(team));}
+  catch(e){console.warn('Squad fetch failed',e);box.className='squad-empty';box.innerHTML='Không tải được danh sách cầu thủ online lúc này. Hãy thử lại sau hoặc mở link nguồn squad ở phía trên.';}
+}
+function refreshTeamSquadFromButton(){if(CURRENT_TEAM_FOR_SQUAD)renderTeamSquad(CURRENT_TEAM_FOR_SQUAD,true);}
 
 function tick(){
   const target=new Date('2026-06-11T20:00:00');
@@ -2514,7 +2643,8 @@ const WC_CHANGELOG=[
   ['v1.24.0','Sửa lỗi escapeHTML is not defined khiến buildTicker bị crash sau khi refresh dữ liệu; bổ sung helper escapeHTML toàn cục.'],
   ['v1.26.0','Dọn lỗi Console do CORS proxy: bỏ corsproxy.io khỏi luồng tải RSS để tránh lỗi 403 khi chạy trên GitHub Pages.'],
   ['v1.28.0','Xóa thanh LIVE ticker chạy ngang ở đầu website; thiết kế lại Trang Chủ thành dashboard gọn trong một màn hình desktop, hạn chế scroll và ẩn footer ở trang chủ.'],
-  ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.']
+  ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.'],
+  ['v1.29.0','Cập nhật danh sách cầu thủ mới nhất trong popup đội tuyển: tải động từ nguồn squad online, có cache và nút làm mới.']
 ];
 
 const WC_FEATURE_STATE={
