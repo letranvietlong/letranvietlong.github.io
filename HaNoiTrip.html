@@ -23,7 +23,7 @@
   }
   .tab-btn {
     flex: 1; padding: 10px 0;
-    font-size: 13px; font-weight: 700;
+    font-size: 11px; font-weight: 700;
     border: none; border-radius: 12px; cursor: pointer;
     transition: all 0.2s;
   }
@@ -154,8 +154,115 @@
   .tb.car  { background:#EBF8FF; color:#2B6CB0; }
   .tb.walk { background:#F0FFF4; color:#276749; }
 
-  .act-item.highlight      { background:#FFF8F0; border-left:2px solid #F57C00; padding-left:12px; }
-  .act-item.highlight-blue { background:#F0F7FF; border-left:2px solid #2196F3; padding-left:12px; }
+  /* ── CONTACTS ── */
+  .contact-section { margin-top: 4px; display: flex; flex-direction: column; gap: 8px; }
+  .contact-group-title {
+    font-size: 10px; font-weight: 700; color: #a0aec0;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 4px 0 2px;
+  }
+  .contact-card {
+    background: white; border-radius: 14px;
+    border: 1px solid #dde3ed; overflow: hidden;
+  }
+  .contact-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px; border-bottom: 1px solid #f4f6f9;
+  }
+  .contact-item:last-child { border-bottom: none; }
+  .contact-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .ci-purple { background: #EDE9FE; }
+  .ci-blue   { background: #EBF8FF; }
+  .ci-green  { background: #F0FFF4; }
+  .ci-red    { background: #FFF5F5; }
+  .ci-amber  { background: #FFFBEB; }
+  .contact-info { flex: 1; }
+  .contact-name   { font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 1px; }
+  .contact-detail { font-size: 11px; color: #a0aec0; }
+  .call-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: #1565C0; color: white;
+    border: none; border-radius: 10px;
+    padding: 7px 14px; font-size: 12px; font-weight: 700;
+    text-decoration: none; cursor: pointer; flex-shrink: 0;
+  }
+  .call-btn.green { background: #38A169; }
+  .call-btn.red   { background: #E53E3E; }
+
+  /* ── EXPENSES ── */
+  .exp-section { margin-top: 4px; display: flex; flex-direction: column; gap: 8px; }
+  .exp-summary {
+    background: linear-gradient(135deg, #1565C0, #1B8C5E);
+    border-radius: 14px; padding: 16px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .exp-total-label { font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .exp-total-val   { font-size: 26px; font-weight: 800; color: white; }
+  .exp-total-sub   { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .exp-per-person  { text-align: right; }
+  .exp-pp-label    { font-size: 10px; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
+  .exp-pp-val      { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.9); }
+
+  .exp-card { background: white; border-radius: 14px; border: 1px solid #dde3ed; overflow: hidden; }
+  .exp-card-head {
+    padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #f4f6f9; background: #fafbfc;
+  }
+  .exp-card-title { font-size: 12px; font-weight: 700; color: #4a5568; }
+  .exp-card-total { font-size: 12px; font-weight: 700; color: #1565C0; }
+
+  .exp-row { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid #f4f6f9; }
+  .exp-row:last-child { border-bottom: none; }
+  .exp-label { flex: 1; font-size: 12px; color: #4a5568; }
+  .exp-input {
+    width: 110px; text-align: right;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 5px 8px; font-size: 12px; font-weight: 600;
+    color: #2d3748; background: #f7fafc;
+    outline: none;
+  }
+  .exp-input:focus { border-color: #90CDF4; background: white; }
+  .exp-unit { font-size: 11px; color: #a0aec0; width: 20px; }
+
+  .exp-note-area {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; color: #4a5568;
+    background: #f7fafc; resize: none; outline: none;
+    font-family: inherit; line-height: 1.6;
+    margin-top: 4px;
+  }
+  .exp-note-area:focus { border-color: #90CDF4; background: white; }
+  .exp-note-card { background: white; border-radius: 14px; border: 1px solid #dde3ed; padding: 14px 16px; }
+  .exp-note-title { font-size: 12px; font-weight: 700; color: #4a5568; margin-bottom: 8px; }
+  .exp-add-row { padding: 8px 16px; }
+  .exp-add-btn {
+    width: 100%; padding: 8px; border: 1.5px dashed #cbd5e0;
+    border-radius: 10px; background: transparent;
+    font-size: 12px; font-weight: 600; color: #a0aec0;
+    cursor: pointer;
+  }
+  .exp-add-btn:hover { border-color: #90CDF4; color: #2B6CB0; background: #EBF8FF; }
+  .exp-del-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; color: #cbd5e0; padding: 0 2px; flex-shrink: 0;
+  }
+  .exp-del-btn:hover { color: #FC8181; }
+  .exp-name-input {
+    flex: 1; border: none; background: transparent;
+    font-size: 12px; color: #4a5568; outline: none;
+    min-width: 0;
+  }
+  .exp-name-input::placeholder { color: #cbd5e0; }
+    background: #1565C0; color: white; border: none;
+    border-radius: 12px; font-size: 13px; font-weight: 700;
+    cursor: pointer;
+  }
+  .exp-save-btn:active { opacity: 0.85; }
+  .exp-saved-msg { text-align: center; font-size: 11px; color: #38A169; margin-top: 6px; height: 16px; }
 </style>
 </head>
 <body>
@@ -165,6 +272,8 @@
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('itinerary', this)">🗓️ Lịch trình</button>
     <button class="tab-btn" onclick="switchTab('weather', this)">🌤️ Thời tiết</button>
+    <button class="tab-btn" onclick="switchTab('contacts', this)">📞 Liên hệ</button>
+    <button class="tab-btn" onclick="switchTab('expenses', this)">💰 Chi phí</button>
   </div>
 
   <!-- TAB: LỊCH TRÌNH -->
@@ -239,7 +348,7 @@
             <div class="act-time fri">15:45</div>
             <div class="act-name">🏠 Xuất phát từ nhà</div>
             <div class="act-addr">06 Hoàng Công Chất, Đà Nẵng</div>
-            <div class="tb car">🚗 ~7km · 15 phút</div>
+            <div class="tb car">🚗 ~7km · 15 phút → Sân bay DAD</div>
           </div>
         </div>
         <div class="act-item">
@@ -263,7 +372,7 @@
           <div class="act-body">
             <div class="act-time fri">~20:40</div>
             <div class="act-name">🛬 Đáp Nội Bài</div>
-            <div class="tb car">🚗 ~30km · 45–55 phút</div>
+            <div class="tb car">🚗 ~30km · 45–55 phút → KS</div>
           </div>
         </div>
         <div class="act-item">
@@ -307,7 +416,7 @@
             <div class="act-time sat">Sáng</div>
             <div class="act-name">☕ Phê La Hồ Tây</div>
             <div class="act-addr">📍 145 Trích Sài</div>
-            <div class="tb car">🚗 ~6km · 15 phút từ KS</div>
+            <div class="tb car">🚗 ~6km · 15 phút từ Hàng Giầy</div>
           </div>
         </div>
         <div class="act-item">
@@ -316,7 +425,7 @@
             <div class="act-time sat">Sáng</div>
             <div class="act-name">🏛️ Lăng Bác</div>
             <div class="act-addr">📍 Số 1 Hùng Vương, Ba Đình</div>
-            <div class="tb car">🚗 ~4.5km · 15 phút từ KS</div>
+            <div class="tb car">🚗 ~5km · 15 phút từ Hồ Tây</div>
           </div>
         </div>
         <div class="act-item">
@@ -334,7 +443,7 @@
             <div class="act-time sat">Trưa</div>
             <div class="act-name">🍲 Bún ngan · Miến ngan</div>
             <div class="act-addr">📍 Cạnh Starbucks, Vincom LĐH</div>
-            <div class="tb car">🚗 ~2.5km · 8 phút</div>
+            <div class="tb car">🚗 ~2.5km · 8 phút từ Chùa Một Cột</div>
           </div>
         </div>
         <div class="act-item">
@@ -343,7 +452,7 @@
             <div class="act-time sat">Chiều tối</div>
             <div class="act-name">🌅 Hồ Gươm</div>
             <div class="act-detail">Đền Ngọc Sơn · Phố đi bộ</div>
-            <div class="tb car">🚗 ~2.5km · 10 phút về KS</div>
+            <div class="tb car">🚗 ~3km · 10 phút từ Vincom LĐH</div>
           </div>
         </div>
       </div>
@@ -370,7 +479,7 @@
           <div class="act-body">
             <div class="act-time sun">Sáng</div>
             <div class="act-name">☕ Cafe Hồ Gươm</div>
-            <div class="tb walk">🚶 350m · 5 phút từ KS</div>
+            <div class="tb walk">🚶 350m · 5 phút từ Nhà thờ Lớn</div>
           </div>
         </div>
         <div class="act-item">
@@ -387,7 +496,7 @@
             <div class="act-time sun">Trưa</div>
             <div class="act-name">🛍️ Mua quà · Ăn trưa</div>
             <div class="act-addr">📍 Phố Hàng Gai</div>
-            <div class="tb walk">🚶 400m · 5 phút từ KS</div>
+            <div class="tb walk">🚶 400m · 5 phút từ Hồ Gươm</div>
           </div>
         </div>
         <div class="act-item highlight">
@@ -395,7 +504,7 @@
           <div class="act-body">
             <div class="act-time sun">15:00</div>
             <div class="act-name">🚗 Ra sân bay Nội Bài</div>
-            <div class="tb car">🚗 ~30km · 45–55 phút</div>
+            <div class="tb car">🚗 ~30km · 45–55 phút từ KS</div>
           </div>
         </div>
         <div class="act-item highlight">
@@ -412,7 +521,7 @@
             <div class="act-time sun">~18:35</div>
             <div class="act-name">🏠 Về đến nhà 🎉</div>
             <div class="act-addr">📍 06 Hoàng Công Chất, Ngũ Hành Sơn, Đà Nẵng</div>
-            <div class="tb car">🚗 ~7km · 15 phút từ sân bay</div>
+            <div class="tb car">🚗 ~7km · 15 phút từ sân bay DAD</div>
           </div>
         </div>
       </div>
@@ -435,6 +544,149 @@
       <div class="weather-note">Dữ liệu từ Open-Meteo · Cập nhật mỗi lần mở trang</div>
     </div>
   </div><!-- end tab-weather -->
+
+  <!-- TAB: LIÊN HỆ KHẨN -->
+  <div class="tab-panel" id="tab-contacts">
+    <div class="contact-section">
+
+      <div class="contact-group-title">🏨 Khách sạn</div>
+      <div class="contact-card">
+        <div class="contact-item">
+          <div class="contact-icon ci-purple">🏨</div>
+          <div class="contact-info">
+            <div class="contact-name">The Chi Boutique Hotel</div>
+            <div class="contact-detail">13-15 P.Nhà Chung, Hoàn Kiếm</div>
+          </div>
+          <a class="call-btn" href="tel:+842439386666">📞 Gọi</a>
+        </div>
+      </div>
+
+      <div class="contact-group-title">✈️ Hàng không</div>
+      <div class="contact-card">
+        <div class="contact-item">
+          <div class="contact-icon ci-blue">✈️</div>
+          <div class="contact-info">
+            <div class="contact-name">Vietravel Airlines</div>
+            <div class="contact-detail">Hotline đặt vé & hỗ trợ</div>
+          </div>
+          <a class="call-btn" href="tel:19006865">📞 Gọi</a>
+        </div>
+      </div>
+
+      <div class="contact-group-title">🚗 Di chuyển</div>
+      <div class="contact-card">
+        <div class="contact-item">
+          <div class="contact-icon ci-green">🟢</div>
+          <div class="contact-info">
+            <div class="contact-name">Grab</div>
+            <div class="contact-detail">Đặt xe qua app</div>
+          </div>
+          <a class="call-btn green" href="https://grab.onelink.me/2695613898" target="_blank">Mở app</a>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon ci-amber">🟡</div>
+          <div class="contact-info">
+            <div class="contact-name">Taxi Nội Bài (G7)</div>
+            <div class="contact-detail">Taxi sân bay uy tín</div>
+          </div>
+          <a class="call-btn" href="tel:0243568686">📞 Gọi</a>
+        </div>
+      </div>
+
+      <div class="contact-group-title">🚨 Khẩn cấp</div>
+      <div class="contact-card">
+        <div class="contact-item">
+          <div class="contact-icon ci-red">🚑</div>
+          <div class="contact-info">
+            <div class="contact-name">Cấp cứu</div>
+            <div class="contact-detail">Y tế khẩn cấp</div>
+          </div>
+          <a class="call-btn red" href="tel:115">📞 115</a>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon ci-red">🚓</div>
+          <div class="contact-info">
+            <div class="contact-name">Cảnh sát</div>
+            <div class="contact-detail">An ninh trật tự</div>
+          </div>
+          <a class="call-btn red" href="tel:113">📞 113</a>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon ci-red">🚒</div>
+          <div class="contact-info">
+            <div class="contact-name">Cứu hỏa</div>
+            <div class="contact-detail">Phòng cháy chữa cháy</div>
+          </div>
+          <a class="call-btn red" href="tel:114">📞 114</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: CHI PHÍ -->
+  <div class="tab-panel" id="tab-expenses">
+    <div class="exp-section">
+
+      <div class="exp-summary">
+        <div>
+          <div class="exp-total-label">Tổng chi phí</div>
+          <div class="exp-total-val" id="exp-grand-total">0 ₫</div>
+          <div class="exp-total-sub">2 người · 3 ngày</div>
+        </div>
+        <div class="exp-per-person">
+          <div class="exp-pp-label">Mỗi người</div>
+          <div class="exp-pp-val" id="exp-per-person">0 ₫</div>
+        </div>
+      </div>
+
+      <!-- Ngày 22 -->
+      <div class="exp-card">
+        <div class="exp-card-head">
+          <div class="exp-card-title">✈️ Thứ Sáu 22/05</div>
+          <div class="exp-card-total" id="total-d1">0 ₫</div>
+        </div>
+        <div id="rows-d1"></div>
+        <div class="exp-add-row">
+          <button class="exp-add-btn" onclick="addRow('d1')">+ Thêm chi phí</button>
+        </div>
+      </div>
+
+      <!-- Ngày 23 -->
+      <div class="exp-card">
+        <div class="exp-card-head">
+          <div class="exp-card-title">🏛️ Thứ Bảy 23/05</div>
+          <div class="exp-card-total" id="total-d2">0 ₫</div>
+        </div>
+        <div id="rows-d2"></div>
+        <div class="exp-add-row">
+          <button class="exp-add-btn" onclick="addRow('d2')">+ Thêm chi phí</button>
+        </div>
+      </div>
+
+      <!-- Ngày 24 -->
+      <div class="exp-card">
+        <div class="exp-card-head">
+          <div class="exp-card-title">🏠 Chủ Nhật 24/05</div>
+          <div class="exp-card-total" id="total-d3">0 ₫</div>
+        </div>
+        <div id="rows-d3"></div>
+        <div class="exp-add-row">
+          <button class="exp-add-btn" onclick="addRow('d3')">+ Thêm chi phí</button>
+        </div>
+      </div>
+
+      <!-- Ghi chú -->
+      <div class="exp-note-card">
+        <div class="exp-note-title">📝 Ghi chú chuyến đi</div>
+        <textarea class="exp-note-area" id="exp-note" rows="4" placeholder="Cảm nhận, kỷ niệm, điều muốn nhớ..."></textarea>
+      </div>
+
+      <button class="exp-save-btn" onclick="saveExpenses()">💾 Lưu lại</button>
+      <div class="exp-saved-msg" id="save-msg"></div>
+
+    </div>
+  </div>
 
 </div><!-- end page -->
 
@@ -521,6 +773,84 @@ async function loadWeather() {
     el.innerHTML = '<div class="weather-err">⚠️ Không tải được thời tiết. Vui lòng kiểm tra kết nối mạng.</div>';
   }
 }
+// ── EXPENSES ──
+function fmt(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + 'M ₫';
+  if (n >= 1000) return Math.round(n/1000) + 'K ₫';
+  return n.toLocaleString() + ' ₫';
+}
+
+let rowCount = 0;
+function addRow(dayId, name='', amount='') {
+  const id = 'r' + (++rowCount);
+  const container = document.getElementById('rows-' + dayId);
+  const div = document.createElement('div');
+  div.className = 'exp-row';
+  div.id = id;
+  div.dataset.day = dayId;
+  div.innerHTML = `
+    <button class="exp-del-btn" onclick="delRow('${id}','${dayId}')">✕</button>
+    <input class="exp-name-input" type="text" placeholder="Tên khoản chi..." value="${name}">
+    <input class="exp-input" type="number" placeholder="0" value="${amount}" oninput="recalc()">
+    <div class="exp-unit">₫</div>`;
+  container.appendChild(div);
+  recalc();
+}
+
+function delRow(id, dayId) {
+  document.getElementById(id).remove();
+  recalc();
+}
+
+function recalc() {
+  let totals = {d1:0, d2:0, d3:0};
+  document.querySelectorAll('.exp-row[data-day]').forEach(row => {
+    const inp = row.querySelector('.exp-input');
+    const v = parseFloat(inp ? inp.value : 0) || 0;
+    const day = row.dataset.day;
+    if (totals[day] !== undefined) totals[day] += v;
+  });
+  const total = totals.d1 + totals.d2 + totals.d3;
+  document.getElementById('total-d1').textContent = fmt(totals.d1);
+  document.getElementById('total-d2').textContent = fmt(totals.d2);
+  document.getElementById('total-d3').textContent = fmt(totals.d3);
+  document.getElementById('exp-grand-total').textContent = fmt(total);
+  document.getElementById('exp-per-person').textContent = fmt(Math.round(total/2));
+}
+
+function saveExpenses() {
+  const data = {d1:[], d2:[], d3:[]};
+  ['d1','d2','d3'].forEach(day => {
+    document.querySelectorAll(`#rows-${day} .exp-row`).forEach(row => {
+      const name = row.querySelector('.exp-name-input').value;
+      const amount = row.querySelector('.exp-input').value;
+      data[day].push({name, amount});
+    });
+  });
+  const note = document.getElementById('exp-note').value;
+  try {
+    localStorage.setItem('hanoi_exp2', JSON.stringify(data));
+    localStorage.setItem('hanoi_note', note);
+    const msg = document.getElementById('save-msg');
+    msg.textContent = '✅ Đã lưu thành công!';
+    setTimeout(() => msg.textContent = '', 2500);
+  } catch(e) {}
+}
+
+function loadExpenses() {
+  try {
+    const data = JSON.parse(localStorage.getItem('hanoi_exp2') || 'null');
+    if (data) {
+      ['d1','d2','d3'].forEach(day => {
+        (data[day] || []).forEach(r => addRow(day, r.name, r.amount));
+      });
+    }
+    const note = localStorage.getItem('hanoi_note') || '';
+    document.getElementById('exp-note').value = note;
+    recalc();
+  } catch(e) {}
+}
+loadExpenses();
 </script>
 </body>
 </html>
