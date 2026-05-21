@@ -206,6 +206,29 @@
       }
     }
 
+
+    .version-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      border:1px solid rgba(90,178,255,.24);
+      background:rgba(90,178,255,.105);
+      color:#cfe3ff;
+      border-radius:999px;
+      padding:3px 7px;
+      font-size:10.5px;
+      font-weight:950;
+      cursor:pointer;
+      vertical-align:middle;
+      margin-right:5px;
+    }
+    .version-pill:active{
+      transform:scale(.97);
+    }
+    .brand p .version-pill{
+      max-width:max-content;
+    }
+
     .footer-note{text-align:center;color:var(--muted);font-size:11px;padding:18px 8px}.footer-note button{background:none;border:0;color:var(--blue);font-weight:900}
     @media(max-width:390px){body{padding-left:10px;padding-right:10px}.hero h2{font-size:28px}.toolbar,.toolbar.two{grid-template-columns:1fr}.coin-name{max-width:112px}.coin-sub{max-width:165px}.score{font-size:38px}.tab{font-size:9.8px}.heatmap{grid-template-columns:repeat(3,1fr)}}
   </style>
@@ -238,7 +261,7 @@
 </svg></div>
         <div>
           <h1>Crypto AI Market Pro</h1>
-          <p id="lastUpdate">Spot · Future · AI Signal · Modern logo</p>
+          <p id="lastUpdate"><button class="version-pill" onclick="showVersionHistory()">v2.1.1</button> Realtime WebSocket</p>
         </div>
       </div>
       <div class="live-wrap">
@@ -358,7 +381,7 @@
   </div>
 
 <script>
-const APP_VERSION='2.1.0';
+const APP_VERSION='2.1.1';
 const VERSION_HISTORY=[
   {v:'1.0.0',date:'Khởi tạo',items:['Website 1 file HTML deploy GitHub Pages','Trang chủ, Thị trường Spot/Future, AI đề xuất, Đánh giá coin, Tin tức']},
   {v:'1.1.0',date:'UI mobile',items:['Tối ưu giao diện iPhone 14 Pro Max','Card coin hiện đại hơn','Logo coin thực tế với fallback CDN']},
@@ -369,7 +392,8 @@ const VERSION_HISTORY=[
   {v:'2.0.1',date:'Tối ưu tab Đánh giá',items:['Sửa layout bị chật và text dễ đè nhau','Chuyển các khối tín hiệu dài sang dạng danh sách dễ đọc','Tối ưu vùng giá, cắt lỗ, chốt lời cho màn hình iPhone','Cho text tự xuống dòng và tăng khoảng cách giữa các card']},
   {v:'2.0.2',date:'Nâng cấp logo',items:['Thiết kế lại logo website theo phong cách hiện đại','Thêm favicon/logo browser bằng SVG nhúng trực tiếp trong file','Đồng bộ nhận diện logo giữa topbar và browser icon']},
   {v:'2.0.3',date:'Điều chỉnh logo fit khung',items:['Căn giữa lại logo trong topbar','Tối ưu kích thước SVG để không bị cắt hoặc lệch','Làm lại favicon/browser icon gọn hơn ở kích thước nhỏ']},
-  {v:'2.1.0',date:'Realtime tốc độ cao',items:['Nâng cấp từ polling 30 giây sang WebSocket realtime','Giá và % 24h cập nhật gần như liên tục khi website đang mở','REST API vẫn giữ làm fallback nếu WebSocket bị chặn','Giảm tải mini chart để tránh lag trên iPhone']}
+  {v:'2.1.0',date:'Realtime tốc độ cao',items:['Nâng cấp từ polling 30 giây sang WebSocket realtime','Giá và % 24h cập nhật gần như liên tục khi website đang mở','REST API vẫn giữ làm fallback nếu WebSocket bị chặn','Giảm tải mini chart để tránh lag trên iPhone']},
+  {v:'2.1.1',date:'Quản lý version history',items:['Version hiện tại luôn hiển thị trên topbar','Có thể bấm trực tiếp vào version để mở popup lịch sử','Popup liệt kê toàn bộ các version trước đó và ghi chú thay đổi','Quy ước: mỗi lần update đều tăng version và thêm note mới']}
 ];
 
 const SPOT_URL='https://data-api.binance.vision/api/v3/ticker/24hr';
@@ -405,6 +429,13 @@ function scoreCoin(x,isFuture=false){const pct=Number(x.priceChangePercent||0),v
 
 function simpleExplain(x,ai){const pct=Number(x.priceChangePercent||0);let text='';if(ai.action.includes('MUA'))text=`${baseSymbol(x.symbol)} đang có lực tăng tương đối tốt. Nên hiểu là “có thể theo dõi để mua từng phần”, không phải mua đuổi ngay lập tức.`;else if(ai.action==='BÁN')text=`${baseSymbol(x.symbol)} đang yếu hơn thị trường. Nếu đang nắm giữ, nên cân nhắc giảm rủi ro thay vì kỳ vọng hồi ngay.`;else if(ai.action==='TRÁNH')text=`${baseSymbol(x.symbol)} đang rủi ro cao. Đứng ngoài thường an toàn hơn bắt đáy hoặc dùng Future lúc biến động mạnh.`;else text=`${baseSymbol(x.symbol)} chưa có tín hiệu đủ rõ. Chờ thêm xác nhận sẽ an toàn hơn vào lệnh vội.`;return text+` Giá 24h: ${fmtPct(pct)}, volume: ${shortVol(volUsd(x))}, rủi ro: ${ai.risk.toLowerCase()}.`}
 function getDecisionDetail(x,ai,isFuture=false){const pct=Number(x.priceChangePercent||0),price=Number(x.lastPrice||0),high=Number(x.highPrice||price),low=Number(x.lowPrice||price),range=high>low?((high-low)/Math.max(price,1))*100:Math.abs(pct),funding=Number(ai.funding||0);let bias='Trung lập',buyCase='Chỉ cân nhắc mua khi giá giữ được vùng hiện tại và không xuất hiện nến giảm mạnh kèm volume lớn.',sellCase='Cân nhắc bán/giảm vị thế nếu giá mất động lượng hoặc giảm tiếp kèm volume tăng.',mainPlan='Ưu tiên chờ thêm xác nhận trước khi vào lệnh.',invalidation='Tín hiệu mất hiệu lực nếu biến động đảo chiều mạnh so với xu hướng 24h.',spotAction='Chia vốn nhỏ, không mua toàn bộ một lần.',futureAction='Không dùng đòn bẩy cao; ưu tiên đứng ngoài nếu chưa có điểm cắt lỗ rõ.';if(ai.action.includes('MUA')){bias='Ưu tiên mua có điều kiện';mainPlan='Có thể cân nhắc mua theo xu hướng, nhưng nên chia lệnh và chờ nhịp điều chỉnh ngắn thay vì đuổi giá.';buyCase='Mua hợp lý hơn khi giá giữ trên vùng hỗ trợ gần nhất, momentum 24h vẫn dương và volume không suy yếu.';sellCase='Không nên mua thêm nếu giá tăng quá nhanh rồi xuất hiện nến đảo chiều hoặc volume mua giảm rõ.';invalidation='Nếu giá quay đầu giảm mạnh và mất phần lớn mức tăng 24h, tín hiệu mua nên được hủy.';spotAction='Spot: có thể gom từng phần nhỏ, ưu tiên quản trị vốn hơn tối đa lợi nhuận.';futureAction='Future: chỉ cân nhắc long nhỏ khi có stop-loss; tránh vào sau cây nến tăng quá mạnh.'}else if(ai.action==='BÁN'){bias='Ưu tiên bán / giảm vị thế';mainPlan='Xu hướng đang yếu, nếu đang nắm giữ có thể cân nhắc chốt bớt hoặc giảm rủi ro.';buyCase='Chưa nên mua mới cho tới khi giá tạo đáy rõ hơn hoặc lấy lại động lượng tăng.';sellCase='Bán/giảm vị thế hợp lý hơn nếu giá tiếp tục yếu và không phục hồi sau nhịp hồi ngắn.';invalidation='Nếu giá phục hồi mạnh trở lại kèm volume lớn, tín hiệu bán cần được đánh giá lại.';spotAction='Spot: ưu tiên bảo toàn vốn, có thể giảm tỷ trọng thay vì bán toàn bộ nếu vẫn muốn nắm dài hạn.';futureAction='Future: tránh long ngược xu hướng; short chỉ phù hợp khi có điểm cắt lỗ chặt.'}else if(ai.action==='TRÁNH'){bias='Rủi ro cao, ưu tiên đứng ngoài';mainPlan='Không nên vội mua/bán đuổi theo giá. Giai đoạn này dễ bị quét stop-loss hoặc FOMO.';buyCase='Chỉ xem xét mua lại khi biến động hạ nhiệt và xuất hiện tín hiệu phục hồi rõ.';sellCase='Nếu đang có vị thế, nên giảm rủi ro hoặc dời stop-loss về mức an toàn hơn.';invalidation='Tín hiệu tránh có thể thay đổi khi volume ổn định và giá đi ngang tích lũy trở lại.';spotAction='Spot: không all-in; có thể chờ vùng giá tốt hơn.';futureAction='Future: nên tránh đòn bẩy, đặc biệt khi biến động 24h quá lớn.'}const entryZoneLow=price*(ai.action.includes('MUA')?0.985:0.97),entryZoneHigh=price*(ai.action.includes('MUA')?1.005:0.995),takeProfit1=price*(pct>=0?1.025:1.015),takeProfit2=price*(pct>=0?1.055:1.035),stopLoss=price*(ai.risk==='Cao'?0.965:ai.risk==='Vừa'?0.975:0.985);return{bias,buyCase,sellCase,mainPlan,invalidation,spotAction,futureAction,range,funding,entryZoneLow,entryZoneHigh,takeProfit1,takeProfit2,stopLoss,shortTerm:ai.action.includes('MUA')?'Tích cực nhưng không FOMO':ai.action==='BÁN'?'Yếu, ưu tiên phòng thủ':'Nhiễu, nên chờ',midTerm:ai.score>=62?'Theo dõi tiếp nếu giữ momentum':ai.score<=40?'Cần hồi phục rõ trước khi mua':'Trung tính',futureView:isFuture?(Math.abs(funding)>0.08?'Funding lệch, Future rủi ro cao':'Future chỉ phù hợp lệnh nhỏ có stop'):'Ưu tiên Spot hơn Future nếu chưa có kinh nghiệm',volume:volUsd(x)}}
+
+
+function setLastUpdateText(text){
+  const el=document.getElementById('lastUpdate');
+  if(!el) return;
+  el.innerHTML=`<button class="version-pill" onclick="showVersionHistory()">v${APP_VERSION}</button> ${text}`;
+}
 
 function setStatus(type,text){const s=document.getElementById('netStatus');s.className='status '+(type||'');s.innerHTML=`<span class="dot"></span><span>${text}</span>`}
 async function loadCoinLogos(){try{const json=await fetchJson('https://min-api.cryptocompare.com/data/all/coinlist',7000);if(json&&json.Data)Object.values(json.Data).forEach(c=>{if(c.Symbol&&c.ImageUrl)coinLogoMap[c.Symbol.toUpperCase()]='https://www.cryptocompare.com'+c.ImageUrl})}catch(e){}}
@@ -449,7 +480,7 @@ function openMarketStreams(){
       if(Array.isArray(arr)){
         arr.forEach(t=>mergeTickerRow(spotData,t));
         wsHealthy=true;
-        document.getElementById('lastUpdate').textContent='v'+APP_VERSION+' · Realtime '+new Date().toLocaleTimeString('vi-VN');
+        setLastUpdateText('Realtime '+new Date().toLocaleTimeString('vi-VN'));
         scheduleRealtimeRender();
       }
     }catch(e){}
@@ -498,7 +529,14 @@ function newsCard(n){const title=escapeHtml(n.title),source=escapeHtml(n.source_
 async function loadCoinNews(){let raw=(currentCoin||document.getElementById('coinInput').value||'').trim().toUpperCase().replace('/','');if(!raw)return;const coin=baseSymbol(raw.endsWith('USDT')?raw:raw+'USDT');const box=document.getElementById('coinNewsList'),sum=document.getElementById('coinNewsSummary');box.innerHTML='<div class="skeleton"></div>';try{if(!allNews.length){const json=await fetchJson(NEWS_URL);allNews=(json.Data||[]).slice(0,50)}const items=allNews.filter(n=>String(n.title||'').toUpperCase().includes(coin)||String(n.body||'').toUpperCase().includes(coin)).slice(0,8);const s=summarizeNews(items,coin);sum.innerHTML=`<div class="row"><b>${coin}: ${s.label}</b><span class="action-tag action-wait">AI News</span></div><ul class="reasons">${s.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;box.innerHTML=items.length?items.map(n=>newsCard(n)).join(''):'<div class="empty">Chưa tìm thấy tin riêng cho coin này trong nguồn hiện tại.</div>'}catch(e){sum.innerHTML='<div class="empty">Không tải được tin tức theo coin.</div>';box.innerHTML=''}}
 function openTab(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));if(btn)btn.classList.add('active');settings.lastTab=id;localStorage.setItem('cryptoAISettings',JSON.stringify(settings));if(id==='news'&&document.getElementById('newsList').textContent.includes('Đang'))loadNews();window.scrollTo({top:0,behavior:'smooth'})}
 function openTabById(id){openTab(id,document.querySelector(`.tab[data-tab="${id}"]`))}
-function showVersionHistory(){document.getElementById('versionList').innerHTML=VERSION_HISTORY.map(v=>`<div class="version-item"><b>v${v.v} · ${v.date}</b><ul>${v.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`).join('');document.getElementById('versionModal').classList.add('show')}
+function showVersionHistory(){
+  const sorted=[...VERSION_HISTORY].reverse();
+  document.getElementById('versionList').innerHTML=sorted.map(v=>{
+    const current=v.v===APP_VERSION?' <span class="action-tag action-buy">Hiện tại</span>':'';
+    return `<div class="version-item"><b>v${v.v} · ${v.date}${current}</b><ul>${v.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+  }).join('');
+  document.getElementById('versionModal').classList.add('show')
+}
 function closeVersionHistory(){document.getElementById('versionModal').classList.remove('show')}
 
 let pullStart=0,pulling=false;window.addEventListener('touchstart',e=>{if(window.scrollY===0){pullStart=e.touches[0].clientY;pulling=true}}, {passive:true});window.addEventListener('touchmove',e=>{if(!pulling)return;const d=e.touches[0].clientY-pullStart;if(d>55)document.getElementById('pullIndicator').classList.add('show')},{passive:true});window.addEventListener('touchend',()=>{const ind=document.getElementById('pullIndicator');if(ind.classList.contains('show')){ind.textContent='↻ Đang làm mới...';refreshAll(true).then(()=>{ind.textContent='✓ Đã cập nhật';setTimeout(()=>{ind.classList.remove('show');ind.textContent='↻ Kéo để làm mới'},700)})}pulling=false});
