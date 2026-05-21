@@ -509,6 +509,155 @@
       }
     }
 
+
+    /* v2.1.5 - Fix overlapping grids and coin icon rendering */
+    .coin-card-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .coin-main{
+      flex:1 1 auto;
+      min-width:0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .coin-meta{
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .coin-side{
+      flex:0 0 auto;
+      min-width:110px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:8px;
+    }
+    .coin-price-row{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      width:100%;
+    }
+    .coin .badge,
+    .coin-main .badge,
+    .card .badge{
+      width:40px !important;
+      height:40px !important;
+      min-width:40px !important;
+      min-height:40px !important;
+      flex:0 0 40px !important;
+      border-radius:14px !important;
+      padding:4px !important;
+      overflow:hidden !important;
+      background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.045)) !important;
+      border:1px solid rgba(255,255,255,.14) !important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.10) !important;
+    }
+    .coin .badge img,
+    .coin-main .badge img,
+    .card .badge img{
+      width:100% !important;
+      height:100% !important;
+      min-width:100% !important;
+      min-height:100% !important;
+      max-width:none !important;
+      max-height:none !important;
+      object-fit:contain !important;
+      object-position:center center !important;
+      transform:none !important;
+      border-radius:10px !important;
+      background:transparent !important;
+    }
+    .coin .badge.logo-fallback,
+    .coin-main .badge.logo-fallback,
+    .card .badge.logo-fallback{
+      padding:0 !important;
+      border-radius:14px !important;
+      display:grid !important;
+      place-items:center !important;
+      font-size:11px !important;
+      font-weight:1000 !important;
+      letter-spacing:-.2px !important;
+      background:linear-gradient(145deg,rgba(90,178,255,.22),rgba(167,139,250,.16)) !important;
+      color:#fff !important;
+    }
+    .signal-grid,
+    .level-row,
+    .timeframe-grid{
+      align-items:stretch;
+    }
+    .signal-mini,
+    .level,
+    .tf{
+      min-width:0;
+      overflow:hidden;
+    }
+    .signal-mini b,
+    .level b,
+    .tf b,
+    .signal-mini span,
+    .level span,
+    .tf span{
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+    @media(max-width:520px){
+      .signal-grid,
+      .level-row,
+      .timeframe-grid{
+        grid-template-columns:1fr !important;
+      }
+      .coin-card-head{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .coin-side{
+        min-width:0;
+        width:100%;
+        align-items:stretch;
+      }
+      .coin-price-row{
+        justify-content:space-between;
+      }
+      .coin-side .action-tag{
+        align-self:flex-start;
+      }
+      .price{
+        text-align:left !important;
+      }
+      .two{
+        grid-template-columns:1fr !important;
+      }
+    }
+    @media(max-width:390px){
+      .market-strip,
+      .quick-actions,
+      .signal-grid,
+      .level-row,
+      .timeframe-grid,
+      .two{
+        grid-template-columns:1fr !important;
+      }
+      .coin .badge,
+      .coin-main .badge,
+      .card .badge{
+        width:38px !important;
+        height:38px !important;
+        min-width:38px !important;
+        min-height:38px !important;
+        flex-basis:38px !important;
+      }
+    }
+
     .footer-note{text-align:center;color:var(--muted);font-size:11px;padding:18px 8px}.footer-note button{background:none;border:0;color:var(--blue);font-weight:900}
     @media(max-width:390px){body{padding-left:10px;padding-right:10px}.hero h2{font-size:28px}.toolbar,.toolbar.two{grid-template-columns:1fr}.coin-name{max-width:112px}.coin-sub{max-width:165px}.score{font-size:38px}.tab{font-size:9.8px}.heatmap{grid-template-columns:repeat(3,minmax(0,1fr))}}
   </style>
@@ -663,7 +812,7 @@
   </div>
 
 <script>
-const APP_VERSION='2.1.4';
+const APP_VERSION='2.1.5';
 const VERSION_HISTORY=[
   {v:'1.0.0',date:'Khởi tạo',items:['Website 1 file HTML deploy GitHub Pages','Trang chủ, Thị trường Spot/Future, AI đề xuất, Đánh giá coin, Tin tức']},
   {v:'1.1.0',date:'UI mobile',items:['Tối ưu giao diện iPhone 14 Pro Max','Card coin hiện đại hơn','Logo coin thực tế với fallback CDN']},
@@ -678,7 +827,8 @@ const VERSION_HISTORY=[
   {v:'2.1.1',date:'Quản lý version history',items:['Version hiện tại luôn hiển thị trên topbar','Có thể bấm trực tiếp vào version để mở popup lịch sử','Popup liệt kê toàn bộ các version trước đó và ghi chú thay đổi','Quy ước: mỗi lần update đều tăng version và thêm note mới']},
   {v:'2.1.2',date:'Kiểm tra và chống đè grid',items:['Rà soát toàn bộ grid/flex trong website','Thêm minmax(0,1fr) để các cột không ép tràn nhau','Bổ sung media query cho màn hình iPhone nhỏ','Cho text dài tự xuống dòng trong card, metric, signal, news và heatmap','Tối ưu các grid 2/3 cột tự chuyển về 1 cột khi màn hình hẹp']},
   {v:'2.1.3',date:'Kiểm tra fit logo',items:['Rà soát lại logo website, favicon/browser logo và logo coin','Đổi logo coin sang object-fit: contain để không bị cắt','Thêm padding an toàn trong khung logo coin','Căn giữa và cố định kích thước logo website trên topbar','Tối ưu favicon SVG để hiển thị gọn ở kích thước nhỏ']},
-  {v:'2.1.4',date:'Logo coin fit 100%',items:['Bỏ padding khiến logo coin bị nhỏ trong khung','Cho logo coin fill 100% khung 40x40','Ưu tiên nguồn CoinCap/GitHub được crop gọn hơn trước CryptoCompare','Thêm scale nhẹ để icon tròn fit đúng thiết kế','Fallback chữ viết tắt vẫn giữ gọn nếu không tải được icon']}
+  {v:'2.1.4',date:'Logo coin fit 100%',items:['Bỏ padding khiến logo coin bị nhỏ trong khung','Cho logo coin fill 100% khung 40x40','Ưu tiên nguồn CoinCap/GitHub được crop gọn hơn trước CryptoCompare','Thêm scale nhẹ để icon tròn fit đúng thiết kế','Fallback chữ viết tắt vẫn giữ gọn nếu không tải được icon']},
+  {v:'2.1.5',date:'Sửa lỗi grid và icon coin',items:['Sửa layout card coin để phần header không đè nhau trên màn hình hẹp','Ép các grid signal/level/timeframe chuyển sang 1 cột sớm hơn trên mobile','Bỏ kiểu crop icon coin gây cắt/méo logo','Chuyển logo coin sang object-fit: contain để hiển thị đầy đủ nội dung icon','Tối ưu fallback chữ viết tắt và căn giữa lại icon trong card']}
 ];
 
 const SPOT_URL='https://data-api.binance.vision/api/v3/ticker/24hr';
@@ -715,7 +865,7 @@ function coinIcon(base){
     cc
   ].filter(Boolean);
   const src=fallbacks[0]||'',f1=fallbacks[1]||'',f2=fallbacks[2]||'';
-  return `<div class="badge" title="${symbol}"><img src="${src}" alt="${symbol}" loading="lazy" decoding="async" onerror="if(!this.dataset.f1&&'${f1}'){this.dataset.f1=1;this.src='${f1}'}else if(!this.dataset.f2&&'${f2}'){this.dataset.f2=1;this.src='${f2}'}else{this.remove();this.parentNode.classList.add('logo-fallback');this.parentNode.textContent='${symbol.slice(0,3)}'}}"></div>`;
+  return `<div class="badge" title="${symbol}"><img src="${src}" alt="${symbol}" loading="lazy" decoding="async" onerror="if(!this.dataset.f1&&'${f1}'){this.dataset.f1=1;this.src='${f1}'}else if(!this.dataset.f2&&'${f2}'){this.dataset.f2=1;this.src='${f2}'}else{this.remove();this.parentNode.classList.add('logo-fallback');this.parentNode.textContent='${symbol.slice(0,4)}'}}"></div>`;
 }
 function cleanRows(rows){return(rows||[]).filter(x=>x.symbol&&x.symbol.endsWith('USDT')&&!x.symbol.includes('_')&&Number(x.lastPrice||x.price||0)>0).filter(x=>major.includes(x.symbol)||Number(x.quoteVolume||0)>10000000).map(x=>({...x,lastPrice:x.lastPrice||x.price}))}
 async function fetchJson(url,timeout=9500){const controller=new AbortController();const t=setTimeout(()=>controller.abort(),timeout);try{const res=await fetch(url,{signal:controller.signal,cache:'no-store'});if(!res.ok)throw new Error(res.status);return await res.json()}finally{clearTimeout(t)}}
@@ -808,8 +958,41 @@ function toggleWatch(symbol,ev){ev&&ev.stopPropagation();settings.watchlist=sett
 function miniSpark(symbol){const arr=miniChartMap[symbol];if(!arr||arr.length<2)return'<div class="mini-chart"></div>';const w=320,h=42,pad=4,min=Math.min(...arr),max=Math.max(...arr);const pts=arr.map((v,i)=>`${(pad+i*(w-pad*2)/(arr.length-1)).toFixed(1)},${(h-pad-((v-min)/(max-min||1))*(h-pad*2)).toFixed(1)}`).join(' ');const up=arr[arr.length-1]>=arr[0],color=up?'#12d18e':'#ff5f7a';return`<div class="mini-chart"><svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`}
 async function loadMiniCharts(){const visible=[...spotData].sort((a,b)=>volUsd(b)-volUsd(a)).slice(0,24).map(x=>x.symbol);await Promise.allSettled(visible.map(async sym=>{if(miniChartMap[sym])return;try{const data=await fetchJson(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1h&limit=24`,5000);miniChartMap[sym]=data.map(k=>Number(k[4])).filter(Boolean)}catch(e){}}));renderMarket();renderAI();renderHome()}
 
-function coinCard(x,ai=null,isFuture=false){const pct=Number(x.priceChangePercent||0),cls=pct>=0?'up':'down',base=baseSymbol(x.symbol),realAi=ai||scoreCoin(x,isFuture),isWatch=(settings.watchlist||[]).includes(x.symbol);const signal=ai?`<span class="action-tag ${realAi.actionClass}">${realAi.actionIcon} ${realAi.action}</span>`:'';const volTag=volUsd(x)>1000000000?'<span class="tag">💧 Volume lớn</span>':'';const riskTag=Math.abs(pct)>10?'<span class="tag warn">⚡ Biến động mạnh</span>':'';return`<div class="card" onclick="selectCoin('${x.symbol}')"><div class="row"><div class="coin">${coinIcon(base)}<div><div class="coin-name">${base} <span class="coin-sub">${isFuture?'Future':'Spot'}</span></div><div class="coin-sub">Vol ${shortVol(volUsd(x))}${ai?` · AI ${realAi.score}/100 · Tin cậy ${realAi.confidence}%`:''}</div></div></div><div style="text-align:right">${signal}<div class="row" style="gap:6px;justify-content:flex-end;margin-top:${ai?'8px':'0'}"><button class="star ${isWatch?'on':''}" onclick="toggleWatch('${x.symbol}',event)">${isWatch?'★':'☆'}</button><div class="price">${fmtPrice(x.lastPrice)}<div class="chg ${cls}">${fmtPct(pct)}</div></div></div></div></div>${miniSpark(x.symbol)}${ai?`<div class="confidence"><i style="width:${realAi.confidence}%"></i></div><div class="signal-grid"><div class="signal-mini"><b>${realAi.label}</b><span>Nhận định</span></div><div class="signal-mini"><b>${realAi.risk}</b><span>Rủi ro</span></div><div class="signal-mini"><b>${fmtPct(pct)}</b><span>Momentum</span></div></div><div class="analysis-card" style="margin-top:10px"><h4>Giải thích dễ hiểu</h4><p>${simpleExplain(x,realAi)}</p></div>`:`<div class="tag-row"><span class="tag">${isFuture?'Future':'Spot'}</span>${volTag}${riskTag}<span class="tag">AI ${realAi.score}</span></div>`}</div>`}
-
+function coinCard(x,ai=null,isFuture=false){
+  const pct=Number(x.priceChangePercent||0),cls=pct>=0?'up':'down',base=baseSymbol(x.symbol),realAi=ai||scoreCoin(x,isFuture),isWatch=(settings.watchlist||[]).includes(x.symbol);
+  const signal=ai?`<span class="action-tag ${realAi.actionClass}">${realAi.actionIcon} ${realAi.action}</span>`:'';
+  const volTag=volUsd(x)>1000000000?'<span class="tag">💧 Volume lớn</span>':'';
+  const riskTag=Math.abs(pct)>10?'<span class="tag warn">⚡ Biến động mạnh</span>':'';
+  return `<div class="card" onclick="selectCoin('${x.symbol}')">
+    <div class="coin-card-head">
+      <div class="coin-main">
+        ${coinIcon(base)}
+        <div class="coin-meta">
+          <div class="coin-name">${base} <span class="coin-sub">${isFuture?'Future':'Spot'}</span></div>
+          <div class="coin-sub">Vol ${shortVol(volUsd(x))}${ai?` · AI ${realAi.score}/100 · Tin cậy ${realAi.confidence}%`:''}</div>
+        </div>
+      </div>
+      <div class="coin-side">
+        ${signal}
+        <div class="coin-price-row">
+          <button class="star ${isWatch?'on':''}" onclick="toggleWatch('${x.symbol}',event)">${isWatch?'★':'☆'}</button>
+          <div class="price">${fmtPrice(x.lastPrice)}<div class="chg ${cls}">${fmtPct(pct)}</div></div>
+        </div>
+      </div>
+    </div>
+    ${miniSpark(x.symbol)}
+    ${ai?`<div class="confidence"><i style="width:${realAi.confidence}%"></i></div>
+      <div class="signal-grid">
+        <div class="signal-mini"><b>${realAi.label}</b><span>Nhận định</span></div>
+        <div class="signal-mini"><b>${realAi.risk}</b><span>Rủi ro</span></div>
+        <div class="signal-mini"><b>${fmtPct(pct)}</b><span>Momentum</span></div>
+      </div>
+      <div class="analysis-panel">
+        <div class="analysis-card"><h4>Giải thích dễ hiểu</h4><p>${simpleExplain(x,realAi)}</p></div>
+      </div>`:
+      `<div class="tag-row">${volTag}${riskTag}<span class="tag">AI ${realAi.score}/100</span><span class="tag">Tin cậy ${realAi.confidence}%</span></div>`}
+  </div>`;
+}
 function renderMarket(){const type=document.getElementById('marketType').value,sort=document.getElementById('sortBy').value,riskFilter=document.getElementById('riskFilter').value;let q=document.getElementById('search').value.trim().toUpperCase();let data=type==='future'?futureData:spotData;if(q==='AI')data=data.filter(x=>aiTags.includes(x.symbol));else if(q==='MEME')data=data.filter(x=>memeTags.includes(x.symbol));else if(q==='L1')data=data.filter(x=>l1Tags.includes(x.symbol));else if(q)data=data.filter(x=>x.symbol.includes(q.replace('/','')));data=[...data];if(riskFilter!=='all'){data=data.filter(x=>{const ai=scoreCoin(x,type==='future');if(riskFilter==='low')return ai.risk!=='Cao';if(riskFilter==='high')return ai.risk==='Cao';if(riskFilter==='signal')return['MUA','MUA NHỎ','BÁN','TRÁNH'].includes(ai.action);if(riskFilter==='watchlist')return(settings.watchlist||[]).includes(x.symbol);return true})}if(sort==='volume')data.sort((a,b)=>volUsd(b)-volUsd(a));if(sort==='gainers')data.sort((a,b)=>Number(b.priceChangePercent)-Number(a.priceChangePercent));if(sort==='losers')data.sort((a,b)=>Number(a.priceChangePercent)-Number(b.priceChangePercent));if(sort==='symbol')data.sort((a,b)=>a.symbol.localeCompare(b.symbol));if(sort==='ai')data.sort((a,b)=>scoreCoin(b,type==='future').score-scoreCoin(a,type==='future').score);document.getElementById('marketList').innerHTML=data.slice(0,80).map(x=>coinCard(x,null,type==='future')).join('')||'<div class="empty">Không tìm thấy coin phù hợp</div>'}
 function quickFilter(q,btn){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('search').value=q;saveSettings();renderMarket()}
 function renderAI(){const data=spotData.slice(0,100);const s=getSentiment();document.getElementById('globalScore').innerHTML=`${s.score}<small>/100</small>`;document.getElementById('globalBar').style.width=s.score+'%';document.getElementById('globalLabel').innerHTML=`<span class="dot"></span><span>${s.label}</span>`;document.getElementById('globalReasons').innerHTML=s.reasons.concat(['Giá cập nhật realtime bằng WebSocket khi trình duyệt hỗ trợ.']).map(x=>`<li>${x}</li>`).join('');renderHeatmap();const ranked=[...data].map(x=>({x,ai:scoreCoin(x)}));const opp=ranked.filter(o=>o.ai.action.includes('MUA')).sort((a,b)=>(b.ai.score+b.ai.confidence)-(a.ai.score+a.ai.confidence)).slice(0,8);const risk=ranked.filter(o=>o.ai.action==='TRÁNH'||o.ai.action==='BÁN'||o.ai.risk==='Cao').sort((a,b)=>Math.abs(Number(b.x.priceChangePercent))-Math.abs(Number(a.x.priceChangePercent))).slice(0,8);document.getElementById('topOpportunity').innerHTML=opp.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có cơ hội rõ.</div>';document.getElementById('topRisk').innerHTML=risk.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có rủi ro nổi bật.</div>'}
