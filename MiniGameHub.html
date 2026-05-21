@@ -3,147 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#0b1020" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Mini Game Hub" />
-  <title>Mini Game Hub</title>
+  <meta name="apple-mobile-web-app-title" content="GameHub Offline" />
+  <title>GameHub Offline</title>
   <style>
     :root{
-      --bg:#070b16;
-      --panel:#111827;
-      --panel2:#172033;
-      --text:#f9fafb;
-      --muted:#a7b0c0;
-      --line:rgba(255,255,255,.12);
-      --brand:#60a5fa;
-      --brand2:#a78bfa;
-      --good:#34d399;
-      --bad:#fb7185;
-      --warn:#fbbf24;
-      --shadow:0 22px 60px rgba(0,0,0,.35);
-      --radius:24px;
+      --bg:#070b16;--panel:#111827;--panel2:#172033;--text:#f9fafb;--muted:#a7b0c0;
+      --line:rgba(255,255,255,.12);--brand:#60a5fa;--brand2:#a78bfa;--good:#34d399;
+      --bad:#fb7185;--warn:#fbbf24;--shadow:0 22px 60px rgba(0,0,0,.35);--radius:24px
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
     body{
-      background:
-        radial-gradient(circle at top left, rgba(96,165,250,.38), transparent 34%),
-        radial-gradient(circle at 95% 5%, rgba(167,139,250,.32), transparent 35%),
-        radial-gradient(circle at 50% 115%, rgba(52,211,153,.22), transparent 40%),
-        var(--bg);
-      padding: max(14px, env(safe-area-inset-top)) 14px max(94px, env(safe-area-inset-bottom));
+      background:radial-gradient(circle at top left,rgba(96,165,250,.38),transparent 34%),
+      radial-gradient(circle at 95% 5%,rgba(167,139,250,.32),transparent 35%),
+      radial-gradient(circle at 50% 115%,rgba(52,211,153,.22),transparent 40%),var(--bg);
+      padding:max(14px,env(safe-area-inset-top)) 14px max(96px,env(safe-area-inset-bottom))
     }
-    .app{max-width:520px;margin:0 auto}
-    .topbar{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:10px 2px 16px;position:sticky;top:0;z-index:10;
-      backdrop-filter: blur(14px);
-    }
-    .logo{display:flex;align-items:center;gap:10px}
-    .logo-mark{
-      width:44px;height:44px;border-radius:15px;
-      background:linear-gradient(135deg,var(--brand),var(--brand2));
-      display:grid;place-items:center;font-size:24px;box-shadow:0 12px 28px rgba(96,165,250,.25)
-    }
-    .logo h1{font-size:18px;margin:0;letter-spacing:.2px}
-    .logo p{font-size:12px;margin:2px 0 0;color:var(--muted)}
-    .pill{
-      border:1px solid var(--line);background:rgba(255,255,255,.08);
-      padding:9px 12px;border-radius:999px;color:var(--text);font-weight:700;font-size:12px
-    }
-    .tabs{
-      position:fixed;left:50%;bottom:max(14px, env(safe-area-inset-bottom));transform:translateX(-50%);
-      width:min(492px, calc(100% - 28px));z-index:50;
-      background:rgba(17,24,39,.84);border:1px solid var(--line);backdrop-filter:blur(20px);
-      border-radius:24px;padding:8px;display:grid;grid-template-columns:1fr 1fr;box-shadow:var(--shadow)
-    }
-    .tab-btn{
-      border:0;border-radius:18px;padding:13px 12px;background:transparent;color:var(--muted);
-      font-weight:900;font-size:15px
-    }
-    .tab-btn.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:white;box-shadow:0 12px 26px rgba(96,165,250,.22)}
-    .screen{display:none;animation:fade .25s ease}
-    .screen.active{display:block}
-    @keyframes fade{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    .hero{
-      border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));
-      border-radius:32px;padding:24px;box-shadow:var(--shadow);overflow:hidden;position:relative
-    }
-    .hero:after{
-      content:"";position:absolute;right:-70px;top:-70px;width:170px;height:170px;border-radius:50%;
-      background:rgba(96,165,250,.24);filter:blur(4px)
-    }
-    .hero h2{font-size:34px;line-height:1.02;margin:0 0 12px;letter-spacing:-1px}
-    .hero p{margin:0;color:var(--muted);font-size:15px;line-height:1.55;max-width:360px}
-    .cta-row{display:flex;gap:10px;margin-top:22px}
-    .primary,.secondary,.small-btn{
-      border:0;border-radius:18px;padding:13px 16px;font-weight:900;color:white;background:linear-gradient(135deg,var(--brand),var(--brand2));
-      box-shadow:0 14px 30px rgba(96,165,250,.22)
-    }
-    .secondary{background:rgba(255,255,255,.1);border:1px solid var(--line);box-shadow:none}
-    .small-btn{padding:10px 12px;border-radius:14px;font-size:13px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-    .card{
-      border:1px solid var(--line);background:rgba(17,24,39,.72);border-radius:24px;padding:16px;
-      box-shadow:0 14px 34px rgba(0,0,0,.18)
-    }
-    .card h3{margin:0 0 6px;font-size:16px}
-    .card p{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
-    .game-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .game-card{
-      min-height:128px;text-align:left;border:1px solid var(--line);
-      background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));
-      border-radius:24px;padding:15px;color:var(--text);position:relative;overflow:hidden
-    }
-    .game-card .emoji{font-size:28px;margin-bottom:10px}
-    .game-card b{display:block;font-size:15px;margin-bottom:6px}
-    .game-card span{font-size:12px;color:var(--muted);line-height:1.35}
-    .game-card:active{transform:scale(.98)}
-    .modal{
-      position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);display:none;align-items:end;justify-content:center;
-      padding:14px;padding-bottom:max(14px, env(safe-area-inset-bottom));backdrop-filter:blur(8px)
-    }
-    .modal.show{display:flex}
-    .game-panel{
-      width:min(520px,100%);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#111827,#0b1020);
-      border:1px solid var(--line);border-radius:30px;padding:16px;box-shadow:var(--shadow)
-    }
-    .game-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-    .game-head h2{font-size:20px;margin:0}
-    .xbtn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:14px;width:42px;height:42px;font-size:20px}
-    .scorebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-    .scorebar span{font-size:13px;color:var(--muted);padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
+    .app{max-width:520px;margin:0 auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px 16px;position:sticky;top:0;z-index:10;backdrop-filter:blur(14px)}
+    .logo{display:flex;align-items:center;gap:10px}.logo-mark{width:44px;height:44px;border-radius:15px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:24px;box-shadow:0 12px 28px rgba(96,165,250,.25)}
+    .logo h1{font-size:18px;margin:0;letter-spacing:.2px}.logo p{font-size:12px;margin:2px 0 0;color:var(--muted)}
+    .status{border:1px solid var(--line);background:rgba(255,255,255,.08);padding:9px 12px;border-radius:999px;color:var(--text);font-weight:800;font-size:12px}
+    .tabs{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(492px,calc(100% - 28px));z-index:50;background:rgba(17,24,39,.84);border:1px solid var(--line);backdrop-filter:blur(20px);border-radius:24px;padding:8px;display:grid;grid-template-columns:1fr 1fr;box-shadow:var(--shadow)}
+    .tab-btn{border:0;border-radius:18px;padding:13px 12px;background:transparent;color:var(--muted);font-weight:900;font-size:15px}.tab-btn.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:white;box-shadow:0 12px 26px rgba(96,165,250,.22)}
+    .screen{display:none;animation:fade .25s ease}.screen.active{display:block}@keyframes fade{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .hero{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border-radius:32px;padding:24px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+    .hero:after{content:"";position:absolute;right:-70px;top:-70px;width:170px;height:170px;border-radius:50%;background:rgba(96,165,250,.24);filter:blur(4px)}
+    .hero h2{font-size:34px;line-height:1.02;margin:0 0 12px;letter-spacing:-1px}.hero p{margin:0;color:var(--muted);font-size:15px;line-height:1.55;max-width:370px}
+    .cta-row{display:flex;gap:10px;margin-top:22px}.primary,.secondary,.small-btn{border:0;border-radius:18px;padding:13px 16px;font-weight:900;color:white;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 14px 30px rgba(96,165,250,.22)}
+    .secondary{background:rgba(255,255,255,.1);border:1px solid var(--line);box-shadow:none}.small-btn{padding:10px 12px;border-radius:14px;font-size:13px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.card{border:1px solid var(--line);background:rgba(17,24,39,.72);border-radius:24px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.18)}
+    .card h3{margin:0 0 6px;font-size:16px}.card p{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
+    .filter{display:flex;gap:8px;overflow:auto;padding:2px 0 12px;margin-bottom:2px}.filter button{white-space:nowrap;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--muted);border-radius:999px;padding:10px 12px;font-weight:800}.filter button.active{background:rgba(96,165,250,.22);color:white}
+    .game-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.game-card{min-height:128px;text-align:left;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));border-radius:24px;padding:15px;color:var(--text);position:relative;overflow:hidden}
+    .game-card .emoji{font-size:28px;margin-bottom:10px}.game-card b{display:block;font-size:15px;margin-bottom:6px}.game-card span{font-size:12px;color:var(--muted);line-height:1.35}.game-card:active{transform:scale(.98)}
+    .tag{position:absolute;right:10px;top:10px;font-size:10px;color:white;background:rgba(255,255,255,.12);border:1px solid var(--line);border-radius:999px;padding:5px 7px;font-weight:900}
+    .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);display:none;align-items:end;justify-content:center;padding:14px;padding-bottom:max(14px,env(safe-area-inset-bottom));backdrop-filter:blur(8px)}
+    .modal.show{display:flex}.game-panel{width:min(520px,100%);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#111827,#0b1020);border:1px solid var(--line);border-radius:30px;padding:16px;box-shadow:var(--shadow)}
+    .game-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.game-head h2{font-size:20px;margin:0}.xbtn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:14px;width:42px;height:42px;font-size:20px}
+    .scorebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.scorebar span{font-size:13px;color:var(--muted);padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
     .game-area{border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:24px;padding:14px;min-height:270px}
-    canvas{width:100%;background:#050816;border-radius:18px;border:1px solid var(--line);touch-action:none}
-    .board3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .cell{aspect-ratio:1;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.08);color:white;font-size:42px;font-weight:900}
-    .memory{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-    .mem-card{aspect-ratio:1;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.08);color:white;font-size:26px;font-weight:900}
-    .mem-card.done{background:rgba(52,211,153,.22)}
-    .moles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .hole{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle at 50% 70%, #111827 0 35%, #050816 36% 100%);font-size:34px}
-    .hole.up{background:radial-gradient(circle at 50% 48%, rgba(251,191,36,.55), #111827 48%, #050816 49% 100%)}
-    .rps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .rps button,.choice-btn{border:1px solid var(--line);background:rgba(255,255,255,.08);border-radius:18px;color:white;padding:18px 8px;font-size:28px}
-    .num-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .tile{aspect-ratio:1;border-radius:14px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:22px;font-weight:900;border:1px solid var(--line)}
-    .tile.v2{background:rgba(96,165,250,.18)} .tile.v4{background:rgba(167,139,250,.2)} .tile.v8,.tile.v16,.tile.v32,.tile.v64{background:rgba(251,191,36,.22)} .tile.v128,.tile.v256,.tile.v512,.tile.v1024,.tile.v2048{background:rgba(52,211,153,.24)}
-    .controls{display:grid;grid-template-columns:60px 60px 60px;gap:8px;justify-content:center;margin-top:12px}
-    .controls button{height:48px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;font-size:20px;font-weight:900}
-    .wide{grid-column:1/-1}
-    input{
-      width:100%;border:1px solid var(--line);background:rgba(255,255,255,.08);border-radius:16px;padding:14px;color:white;font-size:16px;outline:none
-    }
-    .target{
-      width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--bad),var(--warn));
-      position:absolute;display:grid;place-items:center;font-weight:900;box-shadow:0 12px 24px rgba(251,113,133,.3)
-    }
+    canvas{width:100%;background:#050816;border-radius:18px;border:1px solid var(--line);touch-action:none}.board3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cell{aspect-ratio:1;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.08);color:white;font-size:42px;font-weight:900}
+    .memory{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.mem-card{aspect-ratio:1;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.08);color:white;font-size:24px;font-weight:900}.mem-card.done{background:rgba(52,211,153,.22)}
+    .moles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.hole{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle at 50% 70%,#111827 0 35%,#050816 36% 100%);font-size:34px}.hole.up{background:radial-gradient(circle at 50% 48%,rgba(251,191,36,.55),#111827 48%,#050816 49% 100%)}
+    .rps,.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.rps button,.choice-btn,.bigbtn{border:1px solid var(--line);background:rgba(255,255,255,.08);border-radius:18px;color:white;padding:18px 8px;font-size:28px}
+    .bigbtn{width:100%;font-size:18px;padding:18px 12px}.num-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.tile{aspect-ratio:1;border-radius:14px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:22px;font-weight:900;border:1px solid var(--line)}
+    .tile.v2{background:rgba(96,165,250,.18)}.tile.v4{background:rgba(167,139,250,.2)}.tile.v8,.tile.v16,.tile.v32,.tile.v64{background:rgba(251,191,36,.22)}.tile.v128,.tile.v256,.tile.v512,.tile.v1024,.tile.v2048{background:rgba(52,211,153,.24)}
+    .controls{display:grid;grid-template-columns:60px 60px 60px;gap:8px;justify-content:center;margin-top:12px}.controls button{height:48px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;font-size:20px;font-weight:900}
+    .wide{grid-column:1/-1}input{width:100%;border:1px solid var(--line);background:rgba(255,255,255,.08);border-radius:16px;padding:14px;color:white;font-size:16px;outline:none}
+    .target{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--bad),var(--warn));position:absolute;display:grid;place-items:center;font-weight:900;box-shadow:0 12px 24px rgba(251,113,133,.3)}
     .target-wrap{height:310px;position:relative;overflow:hidden;border-radius:18px;background:#050816;border:1px solid var(--line)}
-    .note{color:var(--muted);font-size:13px;line-height:1.45;margin:10px 0 0}
-    @media (max-width:390px){
-      .hero h2{font-size:30px}.grid,.game-list{gap:10px}.game-card{min-height:120px}.memory{gap:7px}.mem-card{font-size:22px}
-    }
+    .note{color:var(--muted);font-size:13px;line-height:1.45;margin:10px 0 0}.progress{height:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);overflow:hidden;margin:12px 0}.bar{height:100%;background:linear-gradient(90deg,var(--brand),var(--good));width:0%}
+    .shop{display:grid;gap:8px;margin-top:12px}.shop button{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:16px;padding:12px;text-align:left;font-weight:800}.log{min-height:70px;color:var(--muted);font-size:14px;line-height:1.5}
+    @media(max-width:390px){.hero h2{font-size:30px}.grid,.game-list{gap:10px}.game-card{min-height:120px}.memory{gap:7px}.mem-card{font-size:21px}}
   </style>
 </head>
 <body>
@@ -151,259 +65,139 @@
     <header class="topbar">
       <div class="logo">
         <div class="logo-mark">🎮</div>
-        <div>
-          <h1>Mini Game Hub</h1>
-          <p>10 trò chơi giải trí</p>
-        </div>
+        <div><h1>GameHub Offline</h1><p>30 trò chơi giải trí</p></div>
       </div>
-      <div class="pill">iPhone 14 Pro Max</div>
+      <div class="status" id="netStatus">Offline ready</div>
     </header>
-
     <main id="home" class="screen active">
       <section class="hero">
-        <h2>Giải trí nhanh trong một website duy nhất.</h2>
-        <p>Website HTML độc lập, tối ưu giao diện mobile, có trang chủ và tab trò chơi. Mọi game đều chạy trực tiếp trên trình duyệt.</p>
-        <div class="cta-row">
-          <button class="primary" onclick="switchTab('games')">Chơi ngay</button>
-          <button class="secondary" onclick="randomGame()">Game ngẫu nhiên</button>
-        </div>
+        <h2>Chơi game khi không có internet.</h2>
+        <p>Một file HTML duy nhất, phù hợp để lưu vào iPhone và chơi khi bật chế độ máy bay. Các game IDLE có lưu tiến trình bằng bộ nhớ trình duyệt.</p>
+        <div class="cta-row"><button class="primary" onclick="switchTab('games')">Chơi ngay</button><button class="secondary" onclick="randomGame()">Game ngẫu nhiên</button></div>
       </section>
-
       <section class="grid">
-        <div class="card">
-          <h3>⚡ Chạy offline</h3>
-          <p>Không dùng thư viện ngoài, chỉ cần mở file HTML là chơi được.</p>
-        </div>
-        <div class="card">
-          <h3>📱 Mobile first</h3>
-          <p>Thiết kế vừa màn hình lớn của iPhone 14 Pro Max.</p>
-        </div>
-        <div class="card">
-          <h3>🕹️ 10 mini game</h3>
-          <p>Từ trí tuệ, phản xạ đến game arcade đơn giản.</p>
-        </div>
-        <div class="card">
-          <h3>🎯 Dễ mở rộng</h3>
-          <p>Có thể thêm điểm cao, âm thanh, avatar hoặc PWA sau.</p>
-        </div>
+        <div class="card"><h3>✈️ Airplane mode</h3><p>Mở trực tiếp file hoặc mở website một lần trước chuyến bay.</p></div>
+        <div class="card"><h3>💾 Lưu tiến trình</h3><p>Một số game lưu điểm, level, tiền và nâng cấp offline.</p></div>
+        <div class="card"><h3>🕹️ 30 mini game</h3><p>Arcade, trí tuệ, phản xạ, may mắn và IDLE.</p></div>
+        <div class="card"><h3>📦 1 file duy nhất</h3><p>Không cần ảnh, font, CDN hay thư viện bên ngoài.</p></div>
       </section>
     </main>
-
     <main id="games" class="screen">
+      <div class="filter" id="filters"></div>
       <section class="game-list" id="gameList"></section>
     </main>
   </div>
-
-  <nav class="tabs">
-    <button id="tabHome" class="tab-btn active" onclick="switchTab('home')">🏠 Trang chủ</button>
-    <button id="tabGames" class="tab-btn" onclick="switchTab('games')">🎮 Trò chơi</button>
-  </nav>
-
-  <div class="modal" id="modal">
-    <div class="game-panel">
-      <div class="game-head">
-        <h2 id="gameTitle">Game</h2>
-        <button class="xbtn" onclick="closeGame()">×</button>
-      </div>
-      <div class="scorebar" id="scorebar"></div>
-      <div class="game-area" id="gameArea"></div>
-    </div>
-  </div>
+  <nav class="tabs"><button id="tabHome" class="tab-btn active" onclick="switchTab('home')">🏠 Trang chủ</button><button id="tabGames" class="tab-btn" onclick="switchTab('games')">🎮 Trò chơi</button></nav>
+  <div class="modal" id="modal"><div class="game-panel"><div class="game-head"><h2 id="gameTitle">Game</h2><button class="xbtn" onclick="closeGame()">×</button></div><div class="scorebar" id="scorebar"></div><div class="game-area" id="gameArea"></div></div></div>
 
 <script>
-const games = [
-  {id:'tictactoe', icon:'⭕', name:'Cờ caro 3x3', desc:'Đấu với máy đơn giản'},
-  {id:'snake', icon:'🐍', name:'Rắn săn mồi', desc:'Ăn táo và tránh va chạm'},
-  {id:'memory', icon:'🧠', name:'Lật thẻ nhớ', desc:'Tìm các cặp biểu tượng'},
-  {id:'mole', icon:'🔨', name:'Đập chuột', desc:'Chạm thật nhanh trong 30 giây'},
-  {id:'reaction', icon:'⚡', name:'Phản xạ nhanh', desc:'Chờ màu xanh rồi bấm'},
-  {id:'rps', icon:'✊', name:'Kéo búa bao', desc:'Đấu may mắn với máy'},
-  {id:'math', icon:'➕', name:'Tính nhanh', desc:'Trả lời phép tính trong 60 giây'},
-  {id:'target', icon:'🎯', name:'Bắn mục tiêu', desc:'Chạm mục tiêu di chuyển'},
-  {id:'pong', icon:'🏓', name:'Pong mini', desc:'Giữ bóng không rơi'},
-  {id:'g2048', icon:'🔢', name:'2048 mini', desc:'Gộp số để đạt điểm cao'}
+const games=[
+{id:'tictactoe',icon:'⭕',name:'Cờ caro 3x3',desc:'Đấu với máy đơn giản',cat:'Trí tuệ'},
+{id:'snake',icon:'🐍',name:'Rắn săn mồi',desc:'Ăn táo và tránh va chạm',cat:'Arcade'},
+{id:'memory',icon:'🧠',name:'Lật thẻ nhớ',desc:'Tìm các cặp biểu tượng',cat:'Trí tuệ'},
+{id:'mole',icon:'🔨',name:'Đập chuột',desc:'Chạm thật nhanh trong 30 giây',cat:'Phản xạ'},
+{id:'reaction',icon:'⚡',name:'Phản xạ nhanh',desc:'Chờ màu xanh rồi bấm',cat:'Phản xạ'},
+{id:'rps',icon:'✊',name:'Kéo búa bao',desc:'Đấu may mắn với máy',cat:'May mắn'},
+{id:'math',icon:'➕',name:'Tính nhanh',desc:'Trả lời phép tính trong 60 giây',cat:'Trí tuệ'},
+{id:'target',icon:'🎯',name:'Bắn mục tiêu',desc:'Chạm mục tiêu di chuyển',cat:'Phản xạ'},
+{id:'pong',icon:'🏓',name:'Pong mini',desc:'Giữ bóng không rơi',cat:'Arcade'},
+{id:'g2048',icon:'🔢',name:'2048 mini',desc:'Gộp số để đạt điểm cao',cat:'Trí tuệ'},
+{id:'idleMine',icon:'⛏️',name:'IDLE Đào mỏ',desc:'Đào quặng, nâng cấp, cày level',cat:'IDLE'},
+{id:'idleFarm',icon:'🌾',name:'IDLE Nông trại',desc:'Trồng lúa, bán hàng, mở rộng',cat:'IDLE'},
+{id:'idleCafe',icon:'☕',name:'IDLE Quán cà phê',desc:'Pha cà phê, thuê nhân viên',cat:'IDLE'},
+{id:'idleSpace',icon:'🚀',name:'IDLE Không gian',desc:'Thu năng lượng, nâng tàu',cat:'IDLE'},
+{id:'idleDragon',icon:'🐉',name:'IDLE Nuôi rồng',desc:'Cho ăn, luyện cấp, tiến hóa',cat:'IDLE'},
+{id:'guessNumber',icon:'🔮',name:'Đoán số',desc:'Tìm số bí mật từ 1 đến 100',cat:'Trí tuệ'},
+{id:'wordScramble',icon:'🔤',name:'Xếp chữ',desc:'Sắp xếp chữ cái tiếng Việt',cat:'Trí tuệ'},
+{id:'colorMatch',icon:'🌈',name:'Chọn màu đúng',desc:'Đọc chữ, chọn màu thật nhanh',cat:'Phản xạ'},
+{id:'tapRace',icon:'👆',name:'Tap Race',desc:'Chạm thật nhiều trong 10 giây',cat:'Phản xạ'},
+{id:'diceDuel',icon:'🎲',name:'Đấu xúc xắc',desc:'Đổ xúc xắc thắng máy',cat:'May mắn'},
+{id:'coinFlip',icon:'🪙',name:'Tung đồng xu',desc:'Đoán sấp hoặc ngửa',cat:'May mắn'},
+{id:'blackjack',icon:'🃏',name:'21 điểm mini',desc:'Rút bài gần 21 nhất',cat:'May mắn'},
+{id:'simon',icon:'💡',name:'Nhớ chuỗi màu',desc:'Lặp lại thứ tự đèn sáng',cat:'Trí tuệ'},
+{id:'mines',icon:'💣',name:'Dò mìn mini',desc:'Tránh bom trong lưới 5x5',cat:'Trí tuệ'},
+{id:'maze',icon:'🧭',name:'Mê cung',desc:'Đi đến đích bằng phím điều hướng',cat:'Arcade'},
+{id:'flappy',icon:'🐦',name:'Flappy mini',desc:'Bay qua cột đơn giản',cat:'Arcade'},
+{id:'runner',icon:'🏃',name:'Runner',desc:'Nhảy qua vật cản',cat:'Arcade'},
+{id:'slider',icon:'🧩',name:'Xếp hình 3x3',desc:'Sắp số theo thứ tự',cat:'Trí tuệ'},
+{id:'tower',icon:'🏗️',name:'Xếp tháp',desc:'Thả khối đúng nhịp',cat:'Arcade'},
+{id:'breath',icon:'🧘',name:'Thở thư giãn',desc:'Mini game thở theo nhịp',cat:'Thư giãn'}
 ];
+let currentCleanup=null, activeCat='Tất cả';
+const $=s=>document.querySelector(s), area=$('#gameArea'), scorebar=$('#scorebar');
+function setScore(items){scorebar.innerHTML=items.map(x=>`<span>${x}</span>`).join('')}
+function switchTab(tab){$('#home').classList.toggle('active',tab==='home');$('#games').classList.toggle('active',tab==='games');$('#tabHome').classList.toggle('active',tab==='home');$('#tabGames').classList.toggle('active',tab==='games')}
+function renderFilters(){let cats=['Tất cả',...new Set(games.map(g=>g.cat))];$('#filters').innerHTML=cats.map(c=>`<button class="${c===activeCat?'active':''}" onclick="activeCat='${c}';renderFilters();renderGames()">${c}</button>`).join('')}
+function renderGames(){let list=activeCat==='Tất cả'?games:games.filter(g=>g.cat===activeCat);$('#gameList').innerHTML=list.map(g=>`<button class="game-card" onclick="openGame('${g.id}')"><span class="tag">${g.cat}</span><div class="emoji">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span></button>`).join('')}
+function randomGame(){openGame(games[Math.floor(Math.random()*games.length)].id)}
+function openGame(id){closeGame(false);let g=games.find(x=>x.id===id);$('#gameTitle').textContent=`${g.icon} ${g.name}`;$('#modal').classList.add('show');(handlers[id]||placeholder)(id)}
+function closeGame(hide=true){if(currentCleanup)currentCleanup();currentCleanup=null;area.innerHTML='';scorebar.innerHTML='';if(hide)$('#modal').classList.remove('show')}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeGame()});
+function updateNet(){ $('#netStatus').textContent = navigator.onLine ? 'Online / Offline ready' : 'Đang offline';}
+addEventListener('online',updateNet);addEventListener('offline',updateNet);updateNet();
 
-let currentCleanup = null;
-const $ = s => document.querySelector(s);
-const area = $('#gameArea');
-const scorebar = $('#scorebar');
+/* 10 game gốc */
+function tictactoe(){let b=Array(9).fill(''),msg='Lượt của bạn';area.innerHTML=`<div class="board3">${b.map((_,i)=>`<button class="cell" data-i="${i}"></button>`).join('')}</div><p class="note" id="ttmsg"></p><button class="small-btn wide" onclick="tictactoe()">Chơi lại</button>`;const win=x=>[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].find(c=>x[c[0]]&&x[c[0]]===x[c[1]]&&x[c[1]]===x[c[2]]);function render(){document.querySelectorAll('.cell').forEach((c,i)=>c.textContent=b[i]);$('#ttmsg').textContent=msg;setScore(['Bạn: X','Máy: O'])}function move(i){if(b[i]||win(b)||!b.includes(''))return;b[i]='X';if(win(b)){msg='Bạn thắng!';return render()}if(!b.includes('')){msg='Hòa!';return render()}let e=b.map((v,i)=>v?'':i).filter(v=>v!=='');b[e[Math.floor(Math.random()*e.length)]]='O';msg=win(b)?'Máy thắng!':b.includes('')?'Lượt của bạn':'Hòa!';render()}document.querySelectorAll('.cell').forEach(c=>c.onclick=()=>move(+c.dataset.i));render()}
+function snake(){area.innerHTML=`<canvas id="snakeCanvas" width="360" height="360"></canvas><div class="controls"><div></div><button onclick="snakeDir('up')">↑</button><div></div><button onclick="snakeDir('left')">←</button><button onclick="snakeDir('down')">↓</button><button onclick="snakeDir('right')">→</button></div><p class="note">Vuốt trên khung hoặc dùng nút.</p>`;const c=$('#snakeCanvas'),ctx=c.getContext('2d'),n=18,cell=20;let s=[{x:8,y:8}],a={x:12,y:8},d={x:1,y:0},score=0,alive=true,loop;window.snakeDir=dir=>{const m={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}}[dir];if(m.x!==-d.x||m.y!==-d.y)d=m};let sx=0,sy=0;c.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY};c.ontouchend=e=>{let dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>Math.abs(dy))snakeDir(dx>0?'right':'left');else snakeDir(dy>0?'down':'up')};function draw(){if(!alive)return;let h={x:(s[0].x+d.x+n)%n,y:(s[0].y+d.y+n)%n};if(s.some(p=>p.x===h.x&&p.y===h.y)){alive=false;setScore([`Điểm: ${score}`,'Game over']);return}s.unshift(h);if(h.x===a.x&&h.y===a.y){score++;a={x:Math.floor(Math.random()*n),y:Math.floor(Math.random()*n)}}else s.pop();ctx.clearRect(0,0,360,360);ctx.fillStyle='#111827';ctx.fillRect(0,0,360,360);ctx.fillStyle='#fb7185';ctx.beginPath();ctx.arc(a.x*cell+10,a.y*cell+10,8,0,7);ctx.fill();ctx.fillStyle='#34d399';s.forEach(p=>ctx.fillRect(p.x*cell+2,p.y*cell+2,16,16));setScore([`Điểm: ${score}`,`Dài: ${s.length}`])}loop=setInterval(draw,135);currentCleanup=()=>clearInterval(loop)}
+function memory(){let icons=['🍎','🍌','🍇','🍉','⭐','🚗','🐱','🎲'],deck=[...icons,...icons].sort(()=>Math.random()-.5),open=[],done=0,moves=0;area.innerHTML=`<div class="memory">${deck.map((_,i)=>`<button class="mem-card" data-i="${i}">?</button>`).join('')}</div><button class="small-btn wide" onclick="memory()" style="margin-top:12px">Chơi lại</button>`;setScore([`Lượt: ${moves}`,`Đã tìm: ${done}/8`]);document.querySelectorAll('.mem-card').forEach(btn=>btn.onclick=()=>{let i=+btn.dataset.i;if(open.includes(i)||btn.classList.contains('done')||open.length===2)return;btn.textContent=deck[i];open.push(i);if(open.length===2){moves++;let[a,b]=open;if(deck[a]===deck[b]){document.querySelectorAll('.mem-card')[a].classList.add('done');document.querySelectorAll('.mem-card')[b].classList.add('done');done++;open=[]}else setTimeout(()=>{document.querySelectorAll('.mem-card')[a].textContent='?';document.querySelectorAll('.mem-card')[b].textContent='?';open=[]},650);setScore([`Lượt: ${moves}`,done===8?'Hoàn thành!':`Đã tìm: ${done}/8`])}})}
+function mole(){let score=0,time=30,active=-1,loop,tick;area.innerHTML=`<div class="moles">${Array.from({length:9},(_,i)=>`<button class="hole" data-i="${i}"></button>`).join('')}</div>`;document.querySelectorAll('.hole').forEach(h=>h.onclick=()=>{if(+h.dataset.i===active){score++;active=-1;h.classList.remove('up');h.textContent=''}});function pop(){document.querySelectorAll('.hole').forEach(h=>{h.classList.remove('up');h.textContent=''});active=Math.floor(Math.random()*9);let h=document.querySelectorAll('.hole')[active];h.classList.add('up');h.textContent='🐭'}loop=setInterval(pop,700);tick=setInterval(()=>{time--;setScore([`Điểm: ${score}`,`Còn: ${time}s`]);if(time<=0){clearInterval(loop);clearInterval(tick);active=-1;setScore(['Kết thúc',`Điểm: ${score}`])}},1000);setScore([`Điểm: ${score}`,`Còn: ${time}s`]);currentCleanup=()=>{clearInterval(loop);clearInterval(tick)}}
+function reaction(){let ready=false,start=0,timer=null,best=localStorage.bestReaction||'-';area.innerHTML=`<button id="reactBtn" class="choice-btn wide" style="width:100%;height:220px;font-size:22px">Bấm để bắt đầu</button><p class="note">Đừng bấm khi còn màu tối. Chờ nút chuyển xanh.</p>`;setScore([`Kỷ lục: ${best} ms`]);$('#reactBtn').onclick=()=>{const b=$('#reactBtn');if(!timer&&!ready){b.textContent='Chờ màu xanh...';b.style.background='rgba(251,191,36,.18)';timer=setTimeout(()=>{ready=true;start=performance.now();b.textContent='BẤM NGAY!';b.style.background='rgba(52,211,153,.35)'},1000+Math.random()*2500);return}if(timer&&!ready){clearTimeout(timer);timer=null;b.textContent='Bấm sớm quá! Bấm để thử lại';b.style.background='rgba(251,113,133,.25)';return}if(ready){let ms=Math.round(performance.now()-start);if(best==='-'||ms<+best){localStorage.bestReaction=ms;best=ms}setScore([`Kết quả: ${ms} ms`,`Kỷ lục: ${best} ms`]);ready=false;timer=null;b.textContent='Bấm để chơi lại';b.style.background='rgba(255,255,255,.08)'}};currentCleanup=()=>timer&&clearTimeout(timer)}
+function rps(){let score=0;area.innerHTML=`<div class="rps"><button>✊</button><button>✌️</button><button>✋</button></div><p class="note" id="rpsMsg">Chọn một biểu tượng.</p>`;const arr=['✊','✌️','✋'];document.querySelectorAll('.rps button').forEach((b,i)=>b.onclick=()=>{let ai=Math.floor(Math.random()*3),res='Hòa';if((i===0&&ai===1)||(i===1&&ai===2)||(i===2&&ai===0)){res='Bạn thắng';score++}else if(i!==ai){res='Máy thắng';score--}$('#rpsMsg').textContent=`Bạn ${arr[i]} - Máy ${arr[ai]} → ${res}`;setScore([`Điểm: ${score}`])});setScore([`Điểm: ${score}`])}
+function math(){let score=0,time=60,ans=0,tick;area.innerHTML=`<h3 id="q" style="font-size:34px;margin:8px 0 14px"></h3><input id="mathInput" type="number" inputmode="numeric" placeholder="Nhập đáp án..." /><p class="note">Nhập đúng để sang câu mới.</p>`;function next(){let a=Math.floor(Math.random()*20)+1,b=Math.floor(Math.random()*20)+1,ops=['+','-','×'],op=ops[Math.floor(Math.random()*ops.length)];ans=op==='+'?a+b:op==='-'?a-b:a*b;$('#q').textContent=`${a} ${op} ${b} = ?`;$('#mathInput').value=''}$('#mathInput').oninput=()=>{if(+$('#mathInput').value===ans){score++;setScore([`Điểm: ${score}`,`Còn: ${time}s`]);next()}};tick=setInterval(()=>{time--;setScore([`Điểm: ${score}`,time>0?`Còn: ${time}s`:'Hết giờ']);if(time<=0){clearInterval(tick);$('#mathInput').disabled=true}},1000);next();setScore([`Điểm: ${score}`,`Còn: ${time}s`]);currentCleanup=()=>clearInterval(tick)}
+function target(){let score=0,time=30,tick;area.innerHTML=`<div class="target-wrap" id="targetWrap"><button class="target" id="targetBtn">+1</button></div>`;const wrap=$('#targetWrap'),btn=$('#targetBtn');function move(){btn.style.left=Math.random()*(wrap.clientWidth-64)+'px';btn.style.top=Math.random()*(wrap.clientHeight-64)+'px'}btn.onclick=()=>{score++;move();setScore([`Điểm: ${score}`,`Còn: ${time}s`])};tick=setInterval(()=>{time--;move();setScore([`Điểm: ${score}`,time>0?`Còn: ${time}s`:'Kết thúc']);if(time<=0){clearInterval(tick);btn.disabled=true}},1000);move();setScore([`Điểm: ${score}`,`Còn: ${time}s`]);currentCleanup=()=>clearInterval(tick)}
+function pong(){area.innerHTML=`<canvas id="pongCanvas" width="360" height="420"></canvas><p class="note">Kéo thanh ngang bằng tay để đỡ bóng.</p>`;let c=$('#pongCanvas'),ctx=c.getContext('2d'),x=180,y=120,dx=3,dy=3,pad=140,score=0,loop;function setPad(clientX){let r=c.getBoundingClientRect();pad=(clientX-r.left)/r.width*360-45;pad=Math.max(0,Math.min(270,pad))}c.onpointermove=e=>setPad(e.clientX);c.onpointerdown=e=>setPad(e.clientX);function frame(){ctx.clearRect(0,0,360,420);ctx.fillStyle='#111827';ctx.fillRect(0,0,360,420);x+=dx;y+=dy;if(x<8||x>352)dx*=-1;if(y<8)dy*=-1;if(y>382&&x>pad&&x<pad+90){dy=-Math.abs(dy)-.08;score++}if(y>430){x=180;y=120;dy=3;score=0}ctx.fillStyle='#60a5fa';ctx.fillRect(pad,390,90,12);ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(x,y,8,0,7);ctx.fill();setScore([`Điểm: ${score}`]);loop=requestAnimationFrame(frame)}frame();currentCleanup=()=>cancelAnimationFrame(loop)}
+function g2048(){let grid=Array(16).fill(0),score=0;function add(){let e=grid.map((v,i)=>v?null:i).filter(v=>v!==null);if(e.length)grid[e[Math.floor(Math.random()*e.length)]]=Math.random()<.9?2:4}function draw(){area.innerHTML=`<div class="num-grid">${grid.map(v=>`<div class="tile ${v?'v'+v:''}">${v||''}</div>`).join('')}</div><div class="controls"><div></div><button onclick="move2048('up')">↑</button><div></div><button onclick="move2048('left')">←</button><button onclick="move2048('down')">↓</button><button onclick="move2048('right')">→</button></div><p class="note">Gộp các số giống nhau. Mục tiêu: 2048.</p>`;setScore([`Điểm: ${score}`,`Cao nhất: ${Math.max(...grid)}`])}function merge(line){line=line.filter(Boolean);for(let i=0;i<line.length-1;i++)if(line[i]===line[i+1]){line[i]*=2;score+=line[i];line.splice(i+1,1)}while(line.length<4)line.push(0);return line}window.move2048=dir=>{let old=grid.join(',');for(let i=0;i<4;i++){let line=[];for(let j=0;j<4;j++){let idx=dir==='left'||dir==='right'?i*4+j:j*4+i;line.push(grid[idx])}if(dir==='right'||dir==='down')line.reverse();line=merge(line);if(dir==='right'||dir==='down')line.reverse();for(let j=0;j<4;j++){let idx=dir==='left'||dir==='right'?i*4+j:j*4+i;grid[idx]=line[j]}}if(grid.join(',')!==old)add();draw()};let sx=0,sy=0;area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY};area.ontouchend=e=>{let dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>25||Math.abs(dy)>25)move2048(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'))};add();add();draw();currentCleanup=()=>{area.ontouchstart=null;area.ontouchend=null}}
 
-function switchTab(tab){
-  $('#home').classList.toggle('active', tab==='home');
-  $('#games').classList.toggle('active', tab==='games');
-  $('#tabHome').classList.toggle('active', tab==='home');
-  $('#tabGames').classList.toggle('active', tab==='games');
-}
-function renderGames(){
-  $('#gameList').innerHTML = games.map(g => `
-    <button class="game-card" onclick="openGame('${g.id}')">
-      <div class="emoji">${g.icon}</div>
-      <b>${g.name}</b>
-      <span>${g.desc}</span>
-    </button>`).join('');
-}
-function randomGame(){ const g=games[Math.floor(Math.random()*games.length)]; openGame(g.id); }
-function setScore(items){ scorebar.innerHTML = items.map(x=>`<span>${x}</span>`).join(''); }
-function openGame(id){
-  closeGame(false);
-  const g = games.find(x=>x.id===id);
-  $('#gameTitle').textContent = `${g.icon} ${g.name}`;
-  $('#modal').classList.add('show');
-  ({tictactoe, snake, memory, mole, reaction, rps, math, target, pong, g2048}[id])();
-}
-function closeGame(hide=true){
-  if(currentCleanup) currentCleanup();
-  currentCleanup = null;
-  area.innerHTML = '';
-  scorebar.innerHTML = '';
-  if(hide) $('#modal').classList.remove('show');
-}
-$('#modal').addEventListener('click', e => { if(e.target.id==='modal') closeGame(); });
-
-function tictactoe(){
-  let board = Array(9).fill(''), turn='X', msg='Lượt của bạn';
-  area.innerHTML = `<div class="board3">${board.map((_,i)=>`<button class="cell" data-i="${i}"></button>`).join('')}</div><p class="note" id="ttmsg"></p><button class="small-btn wide" onclick="tictactoe()">Chơi lại</button>`;
-  const win = b => [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].find(c=>b[c[0]]&&b[c[0]]===b[c[1]]&&b[c[1]]===b[c[2]]);
-  function render(){ document.querySelectorAll('.cell').forEach((c,i)=>c.textContent=board[i]); $('#ttmsg').textContent=msg; setScore([`Bạn: X`, `Máy: O`]); }
-  function move(i){
-    if(board[i] || win(board) || !board.includes('')) return;
-    board[i]='X';
-    if(win(board)){msg='Bạn thắng!'; return render();}
-    if(!board.includes('')){msg='Hòa!'; return render();}
-    let empty=board.map((v,i)=>v?'':i).filter(v=>v!=='');
-    let pick = empty[Math.floor(Math.random()*empty.length)];
-    board[pick]='O';
-    msg = win(board) ? 'Máy thắng!' : board.includes('') ? 'Lượt của bạn' : 'Hòa!';
-    render();
-  }
-  document.querySelectorAll('.cell').forEach(c=>c.onclick=()=>move(+c.dataset.i));
-  render();
+/* IDLE engine */
+const idleConfigs={
+ idleMine:{title:'Mỏ vàng',res:'Quặng',emoji:'⛏️',base:1,up:'Máy khoan',pet:'Thợ mỏ'},
+ idleFarm:{title:'Nông trại',res:'Lúa',emoji:'🌾',base:1,up:'Máy gặt',pet:'Nông dân'},
+ idleCafe:{title:'Quán cà phê',res:'Cà phê',emoji:'☕',base:1,up:'Máy pha',pet:'Nhân viên'},
+ idleSpace:{title:'Trạm không gian',res:'Năng lượng',emoji:'🚀',base:1,up:'Pin plasma',pet:'Robot'},
+ idleDragon:{title:'Hang rồng',res:'Thức ăn',emoji:'🐉',base:1,up:'Lò ấp',pet:'Rồng con'}
+};
+function idleGame(id){
+ let cfg=idleConfigs[id], key='save_'+id, now=Date.now();
+ let s=JSON.parse(localStorage.getItem(key)||'null')||{coins:0,lvl:1,power:1,auto:0,last:now};
+ let offline=Math.min(7200,Math.floor((now-(s.last||now))/1000)); s.coins+=offline*s.auto; s.last=now;
+ function save(){s.last=Date.now();localStorage.setItem(key,JSON.stringify(s))}
+ function render(){
+  let need=s.lvl*50, upCost=Math.floor(30*Math.pow(1.35,s.power-1)), autoCost=Math.floor(80*Math.pow(1.45,s.auto));
+  area.innerHTML=`<div style="text-align:center"><div style="font-size:64px">${cfg.emoji}</div><h3>${cfg.title}</h3><p class="note">${offline?`Đã nhận thưởng offline: ${Math.floor(offline*s.auto)} ${cfg.res}.`: 'Cày tài nguyên, nâng cấp và lên level.'}</p><button class="bigbtn" id="tapIdle">Khai thác +${s.power}</button></div><div class="progress"><div class="bar" style="width:${Math.min(100,(s.coins/need)*100)}%"></div></div><div class="shop"><button id="levelBtn">⬆️ Lên level — cần ${need} ${cfg.res}</button><button id="powerBtn">⚙️ Nâng ${cfg.up} — giá ${upCost}</button><button id="autoBtn">🤖 Thuê ${cfg.pet} — giá ${autoCost}</button><button id="resetBtn">🗑️ Reset game này</button></div>`;
+  setScore([`${cfg.res}: ${Math.floor(s.coins)}`,`Level: ${s.lvl}`,`Click: +${s.power}`,`Auto: ${s.auto}/s`]);
+  $('#tapIdle').onclick=()=>{s.coins+=s.power;save();render()};
+  $('#levelBtn').onclick=()=>{if(s.coins>=need){s.coins-=need;s.lvl++;s.power++;save();render()}};
+  $('#powerBtn').onclick=()=>{if(s.coins>=upCost){s.coins-=upCost;s.power++;save();render()}};
+  $('#autoBtn').onclick=()=>{if(s.coins>=autoCost){s.coins-=autoCost;s.auto++;save();render()}};
+  $('#resetBtn').onclick=()=>{if(confirm('Reset tiến trình game này?')){localStorage.removeItem(key);idleGame(id)}};
+ }
+ let loop=setInterval(()=>{s.coins+=s.auto;save();render()},1000);
+ render();currentCleanup=()=>{save();clearInterval(loop)}
 }
 
-function snake(){
-  area.innerHTML = `<canvas id="snakeCanvas" width="360" height="360"></canvas><div class="controls"><div></div><button onclick="snakeDir('up')">↑</button><div></div><button onclick="snakeDir('left')">←</button><button onclick="snakeDir('down')">↓</button><button onclick="snakeDir('right')">→</button></div><p class="note">Vuốt trên khung hoặc dùng nút điều hướng.</p>`;
-  const c=$('#snakeCanvas'), ctx=c.getContext('2d'), n=18, cell=20;
-  let snakeArr=[{x:8,y:8}], apple={x:12,y:8}, dir={x:1,y:0}, score=0, alive=true, loop;
-  window.snakeDir = d => { const m={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}}[d]; if(m.x!==-dir.x||m.y!==-dir.y)dir=m; };
-  let sx=0,sy=0;c.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY};c.ontouchend=e=>{let dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>Math.abs(dy)) snakeDir(dx>0?'right':'left'); else snakeDir(dy>0?'down':'up')};
-  function draw(){
-    if(!alive)return;
-    let head={x:(snakeArr[0].x+dir.x+n)%n,y:(snakeArr[0].y+dir.y+n)%n};
-    if(snakeArr.some(p=>p.x===head.x&&p.y===head.y)){alive=false;setScore([`Điểm: ${score}`, 'Game over']);return;}
-    snakeArr.unshift(head);
-    if(head.x===apple.x&&head.y===apple.y){score++; apple={x:Math.floor(Math.random()*n),y:Math.floor(Math.random()*n)}} else snakeArr.pop();
-    ctx.clearRect(0,0,360,360); ctx.fillStyle='#111827';ctx.fillRect(0,0,360,360);
-    ctx.fillStyle='#fb7185';ctx.beginPath();ctx.arc(apple.x*cell+10,apple.y*cell+10,8,0,7);ctx.fill();
-    ctx.fillStyle='#34d399'; snakeArr.forEach(p=>ctx.fillRect(p.x*cell+2,p.y*cell+2,16,16));
-    setScore([`Điểm: ${score}`, `Dài: ${snakeArr.length}`]);
-  }
-  loop=setInterval(draw,135); currentCleanup=()=>clearInterval(loop);
-}
+/* 15 game mới */
+function guessNumber(){let n=Math.floor(Math.random()*100)+1,tries=0;area.innerHTML=`<input id="guess" type="number" inputmode="numeric" placeholder="Nhập số 1-100"><p class="note" id="gm">Mình đã chọn một số bí mật.</p><button class="small-btn wide" onclick="guessNumber()" style="margin-top:12px">Chơi lại</button>`;setScore(['Số bí mật 1-100']);$('#guess').oninput=()=>{let v=+$('#guess').value;if(!v)return;tries++;$('#gm').textContent=v===n?`Đúng rồi! Bạn đoán trong ${tries} lần.`:v<n?'Lớn hơn nữa!':'Nhỏ hơn nữa!';setScore([`Lượt: ${tries}`])}}
+function wordScramble(){let words=['HANOI','DANANG','VIETNAM','MAYBAY','OFFLINE','TROCHOI','CAPHE','CONRONG'],w=words[Math.floor(Math.random()*words.length)],mix=w.split('').sort(()=>Math.random()-.5).join('');area.innerHTML=`<h2 style="letter-spacing:4px">${mix}</h2><input id="word" placeholder="Nhập từ đúng..."><p class="note" id="wm">Gợi ý: chữ không dấu, viết hoa/thường đều được.</p>`;setScore([`Số chữ: ${w.length}`]);$('#word').oninput=()=>{if($('#word').value.toUpperCase()===w)$('#wm').textContent='Chính xác! 🎉'}}
+function colorMatch(){let colors=[['Đỏ','#fb7185'],['Xanh','#60a5fa'],['Vàng','#fbbf24'],['Lục','#34d399']],score=0,time=30,tick,answer;function q(){let text=colors[Math.floor(Math.random()*4)],col=colors[Math.floor(Math.random()*4)];answer=col[0];area.innerHTML=`<h2 style="font-size:42px;color:${col[1]}">${text[0]}</h2><div class="choice-grid">${colors.map(c=>`<button class="choice-btn" onclick="colorPick('${c[0]}')">${c[0]}</button>`).join('')}</div><p class="note">Chọn MÀU HIỂN THỊ, không chọn chữ.</p>`}window.colorPick=x=>{if(x===answer)score++;else score=Math.max(0,score-1);setScore([`Điểm: ${score}`,`Còn: ${time}s`]);q()};tick=setInterval(()=>{time--;setScore([`Điểm: ${score}`,time>0?`Còn: ${time}s`:'Hết giờ']);if(time<=0)clearInterval(tick)},1000);q();setScore([`Điểm: ${score}`,`Còn: ${time}s`]);currentCleanup=()=>clearInterval(tick)}
+function tapRace(){let score=0,time=10,tick=null;area.innerHTML=`<button class="bigbtn" id="tapRace" style="height:230px;font-size:28px">TAP!</button><p class="note">Chạm càng nhiều càng tốt trong 10 giây.</p>`;$('#tapRace').onclick=()=>{if(!tick){tick=setInterval(()=>{time--;setScore([`Tap: ${score}`,time>0?`Còn: ${time}s`:'Kết thúc']);if(time<=0){clearInterval(tick);$('#tapRace').disabled=true}},1000)}score++;setScore([`Tap: ${score}`,`Còn: ${time}s`])};setScore([`Tap: ${score}`,`Còn: ${time}s`]);currentCleanup=()=>tick&&clearInterval(tick)}
+function diceDuel(){let score=0;area.innerHTML=`<button class="bigbtn" id="roll">🎲 Đổ xúc xắc</button><p class="note log" id="diceLog"></p>`;$('#roll').onclick=()=>{let a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);score+=a>b?1:a<b?-1:0;$('#diceLog').textContent=`Bạn: ${a} - Máy: ${b} → ${a>b?'Thắng':a<b?'Thua':'Hòa'}`;setScore([`Điểm: ${score}`])};setScore([`Điểm: ${score}`])}
+function coinFlip(){let score=0;area.innerHTML=`<div class="choice-grid"><button class="choice-btn" onclick="coin('Sấp')">Sấp</button><button class="choice-btn" onclick="coin('Ngửa')">Ngửa</button></div><p class="note log" id="coinLog"></p>`;window.coin=x=>{let r=Math.random()<.5?'Sấp':'Ngửa';score+=x===r?1:-1;$('#coinLog').textContent=`Kết quả: ${r}. ${x===r?'Bạn đoán đúng!':'Bạn đoán sai.'}`;setScore([`Điểm: ${score}`])};setScore([`Điểm: ${score}`])}
+function blackjack(){let player=[],dealer=[];const card=()=>1+Math.floor(Math.random()*10),sum=a=>a.reduce((x,y)=>x+y,0);function render(done=false){area.innerHTML=`<p>Bạn: ${player.join(', ')} = <b>${sum(player)}</b></p><p>Máy: ${done?dealer.join(', ')+' = '+sum(dealer):dealer[0]+', ?'}</p><div class="cta-row"><button class="primary" onclick="hit()">Rút</button><button class="secondary" onclick="stand()">Dừng</button></div><p class="note" id="bj"></p>`;setScore(['Mục tiêu gần 21 nhất'])}window.hit=()=>{player.push(card());if(sum(player)>21){render(true);$('#bj').textContent='Quá 21, bạn thua!'}else render()};window.stand=()=>{while(sum(dealer)<17)dealer.push(card());render(true);let p=sum(player),d=sum(dealer);$('#bj').textContent=(d>21||p>d)?'Bạn thắng!':p===d?'Hòa':'Máy thắng!'};player=[card(),card()];dealer=[card(),card()];render()}
+function simon(){let seq=[],input=[],colors=['🔴','🔵','🟡','🟢'],level=0;function next(){input=[];seq.push(Math.floor(Math.random()*4));level++;flash();setScore([`Level: ${level}`])}function flash(){area.innerHTML=`<div class="choice-grid">${colors.map((c,i)=>`<button class="choice-btn" onclick="simonTap(${i})">${c}</button>`).join('')}</div><p class="note" id="simonLog">Nhớ chuỗi: ${seq.map(i=>colors[i]).join(' ')}</p>`;setTimeout(()=>$('#simonLog').textContent='Bấm lại đúng thứ tự.',900)}window.simonTap=i=>{input.push(i);let k=input.length-1;if(input[k]!==seq[k]){$('#simonLog').textContent='Sai rồi! Bấm chơi lại.';return}if(input.length===seq.length)setTimeout(next,450)};next()}
+function mines(){let bombs=new Set();while(bombs.size<5)bombs.add(Math.floor(Math.random()*25));let opened=0;area.innerHTML=`<div class="num-grid" style="grid-template-columns:repeat(5,1fr)">${Array.from({length:25},(_,i)=>`<button class="tile" onclick="mineTap(${i})">?</button>`).join('')}</div><p class="note" id="mineLog">Mở ô an toàn. Có 5 bom.</p>`;window.mineTap=i=>{let btn=document.querySelectorAll('.tile')[i];if(btn.disabled)return;btn.disabled=true;if(bombs.has(i)){btn.textContent='💣';$('#mineLog').textContent='Nổ bom! Game over.';document.querySelectorAll('.tile').forEach((b,j)=>{if(bombs.has(j))b.textContent='💣';b.disabled=true})}else{btn.textContent='✓';opened++;setScore([`An toàn: ${opened}/20`]);if(opened===20)$('#mineLog').textContent='Bạn đã thắng!'}};setScore(['An toàn: 0/20'])}
+function maze(){let pos=0,end=24,walls=new Set([2,3,8,11,13,16,18,21]);function draw(){area.innerHTML=`<div class="num-grid" style="grid-template-columns:repeat(5,1fr)">${Array.from({length:25},(_,i)=>`<div class="tile">${i===pos?'🙂':i===end?'🏁':walls.has(i)?'⬛':''}</div>`).join('')}</div><div class="controls"><div></div><button onclick="mazeMove(0,-1)">↑</button><div></div><button onclick="mazeMove(-1,0)">←</button><button onclick="mazeMove(0,1)">↓</button><button onclick="mazeMove(1,0)">→</button></div><p class="note" id="mazeLog">${pos===end?'Hoàn thành!':'Tìm đường đến cờ.'}</p>`}window.mazeMove=(dx,dy)=>{let x=pos%5,y=Math.floor(pos/5),nx=x+dx,ny=y+dy,np=ny*5+nx;if(nx>=0&&nx<5&&ny>=0&&ny<5&&!walls.has(np)){pos=np;draw()}};draw();setScore(['Mê cung 5x5'])}
+function flappy(){area.innerHTML=`<canvas id="flappyCanvas" width="360" height="420"></canvas><p class="note">Chạm màn hình để bay.</p>`;let c=$('#flappyCanvas'),ctx=c.getContext('2d'),y=200,v=0,pipes=[],score=0,loop,alive=true;c.onpointerdown=()=>v=-6;function frame(){if(!alive)return;v+=.35;y+=v;if(pipes.length===0||pipes[pipes.length-1].x<210)pipes.push({x:360,gap:90+Math.random()*190});pipes.forEach(p=>p.x-=2.2);pipes=pipes.filter(p=>p.x>-50);ctx.fillStyle='#101827';ctx.fillRect(0,0,360,420);ctx.fillStyle='#34d399';pipes.forEach(p=>{ctx.fillRect(p.x,0,42,p.gap-60);ctx.fillRect(p.x,p.gap+60,42,420);if(p.x<72&&p.x+42>48&&(y<p.gap-60||y>p.gap+60))alive=false;if(Math.abs(p.x-45)<1)score++});ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(55,y,12,0,7);ctx.fill();if(y<0||y>420)alive=false;setScore([`Điểm: ${score}`]);if(!alive)setScore([`Game over`, `Điểm: ${score}`]);loop=requestAnimationFrame(frame)}frame();currentCleanup=()=>cancelAnimationFrame(loop)}
+function runner(){area.innerHTML=`<canvas id="runCanvas" width="360" height="260"></canvas><button class="bigbtn" id="jump">NHẢY</button>`;let c=$('#runCanvas'),ctx=c.getContext('2d'),y=200,vy=0,obs=360,score=0,loop,alive=true;$('#jump').onclick=()=>{if(y>=200)vy=-8};function frame(){vy+=.45;y+=vy;if(y>200){y=200;vy=0}obs-=4;if(obs<0){obs=360;score++}ctx.fillStyle='#101827';ctx.fillRect(0,0,360,260);ctx.fillStyle='#60a5fa';ctx.fillRect(55,y-32,28,32);ctx.fillStyle='#fb7185';ctx.fillRect(obs,190,25,42);if(obs<83&&obs+25>55&&y>188)alive=false;setScore([alive?`Điểm: ${score}`:'Game over']);if(alive)loop=requestAnimationFrame(frame)}frame();currentCleanup=()=>cancelAnimationFrame(loop)}
+function slider(){let arr=[1,2,3,4,5,6,7,8,0].sort(()=>Math.random()-.5);function draw(){area.innerHTML=`<div class="num-grid" style="grid-template-columns:repeat(3,1fr)">${arr.map((v,i)=>`<button class="tile" onclick="slide(${i})">${v||''}</button>`).join('')}</div><p class="note" id="slLog">Sắp số từ 1 đến 8.</p>`}window.slide=i=>{let z=arr.indexOf(0),ok=[z-1,z+1,z-3,z+3].includes(i)&&!(z%3===0&&i===z-1)&&!(z%3===2&&i===z+1);if(ok){[arr[i],arr[z]]=[arr[z],arr[i]];draw();if(arr.join(',')==='1,2,3,4,5,6,7,8,0')$('#slLog').textContent='Hoàn thành!'}};draw();setScore(['Xếp hình 3x3'])}
+function tower(){area.innerHTML=`<canvas id="towerCanvas" width="360" height="420"></canvas><button class="bigbtn" id="drop">THẢ KHỐI</button>`;let c=$('#towerCanvas'),ctx=c.getContext('2d'),base={x:100,w:160},block={x:0,w:160,dir:3},level=0,loop;function draw(){ctx.fillStyle='#101827';ctx.fillRect(0,0,360,420);ctx.fillStyle='#60a5fa';ctx.fillRect(base.x,380-level*18,base.w,16);ctx.fillStyle='#fbbf24';ctx.fillRect(block.x,360-level*18,block.w,16);block.x+=block.dir;if(block.x<0||block.x+block.w>360)block.dir*=-1;setScore([`Tầng: ${level}`]);loop=requestAnimationFrame(draw)}$('#drop').onclick=()=>{let overlap=Math.max(0,Math.min(base.x+base.w,block.x+block.w)-Math.max(base.x,block.x));if(overlap<20){setScore(['Sập tháp!',`Tầng: ${level}`]);cancelAnimationFrame(loop);return}base={x:Math.max(base.x,block.x),w:overlap};block={x:0,w:overlap,dir:3+level*.2};level++};draw();currentCleanup=()=>cancelAnimationFrame(loop)}
+function breath(){let t=0,loop;area.innerHTML=`<div style="height:260px;display:grid;place-items:center"><div id="breathCircle" style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#34d399);display:grid;place-items:center;font-weight:900">Thở</div></div><p class="note" id="breathText">Hít vào... thở ra... dùng để thư giãn khi bay.</p>`;function frame(){t+=.03;let s=1+Math.sin(t)*.35;$('#breathCircle').style.transform=`scale(${s})`;$('#breathText').textContent=Math.sin(t)>0?'Hít vào chậm...':'Thở ra nhẹ...';setScore(['Thư giãn']);loop=requestAnimationFrame(frame)}frame();currentCleanup=()=>cancelAnimationFrame(loop)}
+function placeholder(){area.innerHTML='<p class="note">Game đang được tải.</p>'}
 
-function memory(){
-  let icons=['🍎','🍌','🍇','🍉','⭐','🚗','🐱','🎲']; let deck=[...icons,...icons].sort(()=>Math.random()-.5);
-  let open=[], done=0, moves=0;
-  area.innerHTML=`<div class="memory">${deck.map((_,i)=>`<button class="mem-card" data-i="${i}">?</button>`).join('')}</div><button class="small-btn wide" onclick="memory()" style="margin-top:12px">Chơi lại</button>`;
-  setScore([`Lượt: ${moves}`, `Đã tìm: ${done}/8`]);
-  document.querySelectorAll('.mem-card').forEach(btn=>btn.onclick=()=>{
-    let i=+btn.dataset.i; if(open.includes(i)||btn.classList.contains('done')||open.length===2)return;
-    btn.textContent=deck[i]; open.push(i);
-    if(open.length===2){ moves++; let [a,b]=open; if(deck[a]===deck[b]){document.querySelectorAll('.mem-card')[a].classList.add('done');document.querySelectorAll('.mem-card')[b].classList.add('done');done++;open=[];} else setTimeout(()=>{document.querySelectorAll('.mem-card')[a].textContent='?';document.querySelectorAll('.mem-card')[b].textContent='?';open=[];},650); setScore([`Lượt: ${moves}`, done===8?'Hoàn thành!':`Đã tìm: ${done}/8`]);}
-  });
-}
+const handlers={tictactoe,snake,memory,mole,reaction,rps,math,target,pong,g2048,
+ idleMine:()=>idleGame('idleMine'),idleFarm:()=>idleGame('idleFarm'),idleCafe:()=>idleGame('idleCafe'),idleSpace:()=>idleGame('idleSpace'),idleDragon:()=>idleGame('idleDragon'),
+ guessNumber,wordScramble,colorMatch,tapRace,diceDuel,coinFlip,blackjack,simon,mines,maze,flappy,runner,slider,tower,breath};
 
-function mole(){
-  let score=0,time=30, active=-1, loop, tick;
-  area.innerHTML=`<div class="moles">${Array.from({length:9},(_,i)=>`<button class="hole" data-i="${i}"></button>`).join('')}</div>`;
-  document.querySelectorAll('.hole').forEach(h=>h.onclick=()=>{ if(+h.dataset.i===active){score++; active=-1; h.classList.remove('up'); h.textContent='';} });
-  function pop(){document.querySelectorAll('.hole').forEach(h=>{h.classList.remove('up');h.textContent=''}); active=Math.floor(Math.random()*9); let h=document.querySelectorAll('.hole')[active]; h.classList.add('up'); h.textContent='🐭';}
-  loop=setInterval(pop,700); tick=setInterval(()=>{time--;setScore([`Điểm: ${score}`, `Còn: ${time}s`]); if(time<=0){clearInterval(loop);clearInterval(tick);active=-1;setScore([`Kết thúc`, `Điểm: ${score}`]);}},1000);
-  setScore([`Điểm: ${score}`, `Còn: ${time}s`]); currentCleanup=()=>{clearInterval(loop);clearInterval(tick)};
-}
-
-function reaction(){
-  let ready=false,start=0,timer=null,best=localStorage.bestReaction||'-';
-  area.innerHTML=`<button id="reactBtn" class="choice-btn wide" style="width:100%;height:220px;font-size:22px">Bấm để bắt đầu</button><p class="note">Đừng bấm khi còn màu tối. Chờ nút chuyển xanh rồi bấm thật nhanh.</p>`;
-  setScore([`Kỷ lục: ${best} ms`]);
-  $('#reactBtn').onclick=()=>{
-    const b=$('#reactBtn');
-    if(!timer && !ready){b.textContent='Chờ màu xanh...';b.style.background='rgba(251,191,36,.18)';timer=setTimeout(()=>{ready=true;start=performance.now();b.textContent='BẤM NGAY!';b.style.background='rgba(52,211,153,.35)'},1000+Math.random()*2500);return;}
-    if(timer && !ready){clearTimeout(timer);timer=null;b.textContent='Bấm sớm quá! Bấm để thử lại';b.style.background='rgba(251,113,133,.25)';return;}
-    if(ready){let ms=Math.round(performance.now()-start); if(best==='-'||ms<+best){localStorage.bestReaction=ms;best=ms;} setScore([`Kết quả: ${ms} ms`,`Kỷ lục: ${best} ms`]); ready=false;timer=null;b.textContent='Bấm để chơi lại';b.style.background='rgba(255,255,255,.08)';}
-  };
-  currentCleanup=()=> timer&&clearTimeout(timer);
-}
-
-function rps(){
-  let score=0;
-  area.innerHTML=`<div class="rps"><button>✊</button><button>✌️</button><button>✋</button></div><p class="note" id="rpsMsg">Chọn một biểu tượng.</p>`;
-  const arr=['✊','✌️','✋'];
-  document.querySelectorAll('.rps button').forEach((b,i)=>b.onclick=()=>{
-    let ai=Math.floor(Math.random()*3), res='Hòa';
-    if((i===0&&ai===1)||(i===1&&ai===2)||(i===2&&ai===0)){res='Bạn thắng';score++}
-    else if(i!==ai){res='Máy thắng';score--}
-    $('#rpsMsg').textContent=`Bạn ${arr[i]} - Máy ${arr[ai]} → ${res}`;
-    setScore([`Điểm: ${score}`]);
-  });
-  setScore([`Điểm: ${score}`]);
-}
-
-function math(){
-  let score=0,time=60,ans=0,tick;
-  area.innerHTML=`<h3 id="q" style="font-size:34px;margin:8px 0 14px"></h3><input id="mathInput" type="number" inputmode="numeric" placeholder="Nhập đáp án..." /><p class="note">Bấm Enter hoặc nhập đúng để sang câu mới.</p>`;
-  function next(){let a=Math.floor(Math.random()*20)+1,b=Math.floor(Math.random()*20)+1,ops=['+','-','×'];let op=ops[Math.floor(Math.random()*ops.length)];ans=op==='+'?a+b:op==='-'?a-b:a*b;$('#q').textContent=`${a} ${op} ${b} = ?`;$('#mathInput').value='';}
-  $('#mathInput').oninput=()=>{if(+$('#mathInput').value===ans){score++;setScore([`Điểm: ${score}`,`Còn: ${time}s`]);next();}};
-  tick=setInterval(()=>{time--;setScore([`Điểm: ${score}`,time>0?`Còn: ${time}s`:'Hết giờ']); if(time<=0){clearInterval(tick);$('#mathInput').disabled=true;}},1000);
-  next();setScore([`Điểm: ${score}`,`Còn: ${time}s`]); currentCleanup=()=>clearInterval(tick);
-}
-
-function target(){
-  let score=0,time=30,tick;
-  area.innerHTML=`<div class="target-wrap" id="targetWrap"><button class="target" id="targetBtn">+1</button></div>`;
-  const wrap=$('#targetWrap'), btn=$('#targetBtn');
-  function move(){btn.style.left=Math.random()*(wrap.clientWidth-64)+'px';btn.style.top=Math.random()*(wrap.clientHeight-64)+'px';}
-  btn.onclick=()=>{score++;move();setScore([`Điểm: ${score}`,`Còn: ${time}s`]);};
-  tick=setInterval(()=>{time--;move();setScore([`Điểm: ${score}`,time>0?`Còn: ${time}s`:'Kết thúc']);if(time<=0){clearInterval(tick);btn.disabled=true;}},1000);
-  move();setScore([`Điểm: ${score}`,`Còn: ${time}s`]); currentCleanup=()=>clearInterval(tick);
-}
-
-function pong(){
-  area.innerHTML=`<canvas id="pongCanvas" width="360" height="420"></canvas><p class="note">Kéo thanh ngang bằng tay để đỡ bóng.</p>`;
-  let c=$('#pongCanvas'),ctx=c.getContext('2d'),x=180,y=120,dx=3,dy=3,pad=140,score=0,loop;
-  function setPad(clientX){let r=c.getBoundingClientRect();pad=(clientX-r.left)/r.width*360-45;pad=Math.max(0,Math.min(270,pad));}
-  c.onpointermove=e=>setPad(e.clientX); c.onpointerdown=e=>setPad(e.clientX);
-  function frame(){
-    ctx.clearRect(0,0,360,420);ctx.fillStyle='#111827';ctx.fillRect(0,0,360,420);
-    x+=dx;y+=dy;if(x<8||x>352)dx*=-1;if(y<8)dy*=-1;
-    if(y>382&&x>pad&&x<pad+90){dy=-Math.abs(dy)-.08;score++;}
-    if(y>430){x=180;y=120;dy=3;score=0}
-    ctx.fillStyle='#60a5fa';ctx.fillRect(pad,390,90,12);ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(x,y,8,0,7);ctx.fill();
-    setScore([`Điểm: ${score}`]); loop=requestAnimationFrame(frame);
-  }
-  frame(); currentCleanup=()=>cancelAnimationFrame(loop);
-}
-
-function g2048(){
-  let grid=Array(16).fill(0), score=0;
-  function add(){let e=grid.map((v,i)=>v?null:i).filter(v=>v!==null); if(e.length) grid[e[Math.floor(Math.random()*e.length)]]=Math.random()<.9?2:4;}
-  function draw(){area.innerHTML=`<div class="num-grid">${grid.map(v=>`<div class="tile ${v?'v'+v:''}">${v||''}</div>`).join('')}</div><div class="controls"><div></div><button onclick="move2048('up')">↑</button><div></div><button onclick="move2048('left')">←</button><button onclick="move2048('down')">↓</button><button onclick="move2048('right')">→</button></div><p class="note">Gộp các số giống nhau. Mục tiêu: 2048.</p>`;setScore([`Điểm: ${score}`,`Cao nhất: ${Math.max(...grid)}`]);}
-  function merge(line){line=line.filter(Boolean);for(let i=0;i<line.length-1;i++)if(line[i]===line[i+1]){line[i]*=2;score+=line[i];line.splice(i+1,1)}while(line.length<4)line.push(0);return line;}
-  window.move2048 = dir => {
-    let old=grid.join(',');
-    for(let i=0;i<4;i++){
-      let line=[];
-      for(let j=0;j<4;j++){let idx=dir==='left'||dir==='right'?i*4+j:j*4+i;line.push(grid[idx]);}
-      if(dir==='right'||dir==='down')line.reverse(); line=merge(line); if(dir==='right'||dir==='down')line.reverse();
-      for(let j=0;j<4;j++){let idx=dir==='left'||dir==='right'?i*4+j:j*4+i;grid[idx]=line[j];}
-    }
-    if(grid.join(',')!==old)add(); draw();
-  }
-  let sx=0,sy=0; area.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY}; area.ontouchend=e=>{let dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>25||Math.abs(dy)>25) move2048(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'))};
-  add();add();draw(); currentCleanup=()=>{area.ontouchstart=null;area.ontouchend=null};
-}
-
-renderGames();
+renderFilters();renderGames();
 </script>
 </body>
 </html>
