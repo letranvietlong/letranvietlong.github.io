@@ -8,10 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Hà Nội Trip">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="manifest" href="manifest.webmanifest">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   :root {
@@ -466,7 +465,7 @@
     <section class="home-screen">
       <div class="home-hero">
         <div class="home-top">
-          <img class="home-logo" src="icons/icon-180.png" alt="Hà Nội Trip logo">
+          <img class="home-logo" src="icon-180.png" alt="Hà Nội Trip logo">
           <div>
             <div class="home-kicker">Viết Long & Minh Thư</div>
             <div class="home-title">Hà Nội Trip</div>
@@ -1280,7 +1279,7 @@ if (noteEl) noteEl.addEventListener('input', scheduleAutoSave);
 // ── PWA / OFFLINE ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
       // PWA cache is optional; website vẫn chạy bình thường nếu trình duyệt chặn service worker.
     });
   });
