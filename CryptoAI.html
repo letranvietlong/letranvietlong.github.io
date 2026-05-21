@@ -339,7 +339,7 @@
       <div id="newsList" class="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
     </section>
 
-    <div class="footer-note">Single file index.html · GitHub Pages · Auto refresh 30s · <button onclick="showVersionHistory()">Version history</button></div>
+    <div class="footer-note">Single file index.html · GitHub Pages · WebSocket realtime · <button onclick="showVersionHistory()">Version history</button></div>
   </main>
 
   <nav class="tabs">
@@ -358,17 +358,18 @@
   </div>
 
 <script>
-const APP_VERSION='2.0.3';
+const APP_VERSION='2.1.0';
 const VERSION_HISTORY=[
   {v:'1.0.0',date:'Khởi tạo',items:['Website 1 file HTML deploy GitHub Pages','Trang chủ, Thị trường Spot/Future, AI đề xuất, Đánh giá coin, Tin tức']},
   {v:'1.1.0',date:'UI mobile',items:['Tối ưu giao diện iPhone 14 Pro Max','Card coin hiện đại hơn','Logo coin thực tế với fallback CDN']},
   {v:'1.2.0',date:'AI tín hiệu',items:['AI đề xuất MUA / MUA NHỎ / CHỜ / BÁN / TRÁNH','Thêm điểm tin cậy và cảnh báo rủi ro']},
   {v:'1.3.0',date:'Đánh giá chi tiết',items:['Phân tích luận điểm nên mua / nên bán','Vùng hành động, cắt lỗ, chốt lời, quản trị Spot/Future']},
-  {v:'1.4.0',date:'Realtime UI',items:['Giao diện trading dashboard hiện đại','Auto refresh 30 giây','Lọc theo rủi ro, AI score, volume']},
+  {v:'1.4.0',date:'Realtime UI',items:['Giao diện trading dashboard hiện đại','Realtime WebSocket','Lọc theo rủi ro, AI score, volume']},
   {v:'2.0.0',date:'Bản nâng cấp toàn diện',items:['Watchlist cá nhân lưu localStorage','AI giải thích dễ hiểu','Heatmap thị trường','Top cơ hội / Top rủi ro','Pull-to-refresh giả lập','Lưu cài đặt người dùng','Tin tức theo coin','AI tóm tắt tin tức','Chỉ số tâm lý thị trường','Mini chart cho từng coin']},
   {v:'2.0.1',date:'Tối ưu tab Đánh giá',items:['Sửa layout bị chật và text dễ đè nhau','Chuyển các khối tín hiệu dài sang dạng danh sách dễ đọc','Tối ưu vùng giá, cắt lỗ, chốt lời cho màn hình iPhone','Cho text tự xuống dòng và tăng khoảng cách giữa các card']},
   {v:'2.0.2',date:'Nâng cấp logo',items:['Thiết kế lại logo website theo phong cách hiện đại','Thêm favicon/logo browser bằng SVG nhúng trực tiếp trong file','Đồng bộ nhận diện logo giữa topbar và browser icon']},
-  {v:'2.0.3',date:'Điều chỉnh logo fit khung',items:['Căn giữa lại logo trong topbar','Tối ưu kích thước SVG để không bị cắt hoặc lệch','Làm lại favicon/browser icon gọn hơn ở kích thước nhỏ']}
+  {v:'2.0.3',date:'Điều chỉnh logo fit khung',items:['Căn giữa lại logo trong topbar','Tối ưu kích thước SVG để không bị cắt hoặc lệch','Làm lại favicon/browser icon gọn hơn ở kích thước nhỏ']},
+  {v:'2.1.0',date:'Realtime tốc độ cao',items:['Nâng cấp từ polling 30 giây sang WebSocket realtime','Giá và % 24h cập nhật gần như liên tục khi website đang mở','REST API vẫn giữ làm fallback nếu WebSocket bị chặn','Giảm tải mini chart để tránh lag trên iPhone']}
 ];
 
 const SPOT_URL='https://data-api.binance.vision/api/v3/ticker/24hr';
@@ -376,7 +377,13 @@ const FUTURE_URL='https://fapi.binance.com/fapi/v1/ticker/24hr';
 const FUNDING_URL='https://fapi.binance.com/fapi/v1/premiumIndex';
 const NEWS_URL='https://min-api.cryptocompare.com/data/v2/news/?lang=EN';
 
-let spotData=[],futureData=[],fundingMap={},coinLogoMap={},miniChartMap={},allNews=[],refreshTimer=null,isRefreshing=false,currentCoin='';
+const SPOT_WS='wss://stream.binance.com:9443/ws/!ticker@arr';
+const FUTURE_WS='wss://fstream.binance.com/ws/!ticker@arr';
+const WS_RENDER_INTERVAL=900;
+const REST_FALLBACK_INTERVAL=15000;
+
+
+let spotData=[],futureData=[],fundingMap={},coinLogoMap={},miniChartMap={},allNews=[],refreshTimer=null,isRefreshing=false,currentCoin='',spotSocket=null,futureSocket=null,lastWsRender=0,wsHealthy=false;
 let settings={watchlist:[],marketType:'spot',sortBy:'volume',riskFilter:'all',lastTab:'home'};
 
 const major=['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT','TONUSDT','TRXUSDT','MATICUSDT','LTCUSDT','BCHUSDT','UNIUSDT','APTUSDT','ARBUSDT','OPUSDT','NEARUSDT','INJUSDT','SUIUSDT','SEIUSDT','WIFUSDT','PEPEUSDT'];
@@ -401,7 +408,68 @@ function getDecisionDetail(x,ai,isFuture=false){const pct=Number(x.priceChangePe
 
 function setStatus(type,text){const s=document.getElementById('netStatus');s.className='status '+(type||'');s.innerHTML=`<span class="dot"></span><span>${text}</span>`}
 async function loadCoinLogos(){try{const json=await fetchJson('https://min-api.cryptocompare.com/data/all/coinlist',7000);if(json&&json.Data)Object.values(json.Data).forEach(c=>{if(c.Symbol&&c.ImageUrl)coinLogoMap[c.Symbol.toUpperCase()]='https://www.cryptocompare.com'+c.ImageUrl})}catch(e){}}
-async function refreshAll(manual=false){if(isRefreshing)return;isRefreshing=true;setStatus('',manual?'Đang làm mới':'Đang tải');try{const[spot,fut,funding]=await Promise.allSettled([fetchJson(SPOT_URL),fetchJson(FUTURE_URL),fetchJson(FUNDING_URL)]);if(spot.status==='fulfilled')spotData=cleanRows(spot.value);if(fut.status==='fulfilled')futureData=cleanRows(fut.value);if(funding.status==='fulfilled'&&Array.isArray(funding.value)){fundingMap={};funding.value.forEach(f=>{if(f.symbol)fundingMap[f.symbol]=f})}if(!spotData.length&&!futureData.length)throw new Error('No market data');setStatus('ok','Live');document.getElementById('lastUpdate').textContent='v'+APP_VERSION+' · Cập nhật '+new Date().toLocaleTimeString('vi-VN')+' · Auto 30s';renderAll();loadMiniCharts();}catch(e){setStatus('err','Offline');if(!spotData.length)loadFallback()}finally{isRefreshing=false}}
+
+function mergeTickerRow(target,row){
+  if(!row || !row.s || !row.s.endsWith('USDT') || row.s.includes('_')) return;
+  const symbol=row.s;
+  const next={
+    symbol,
+    lastPrice:row.c,
+    priceChangePercent:row.P,
+    quoteVolume:row.q,
+    highPrice:row.h,
+    lowPrice:row.l
+  };
+  const idx=target.findIndex(x=>x.symbol===symbol);
+  if(idx>=0) target[idx]={...target[idx],...next};
+  else if(major.includes(symbol) || Number(next.quoteVolume||0)>10000000) target.push(next);
+}
+function scheduleRealtimeRender(){
+  const now=Date.now();
+  if(now-lastWsRender<WS_RENDER_INTERVAL) return;
+  lastWsRender=now;
+  requestAnimationFrame(()=>{
+    renderAll();
+    if(currentCoin){
+      const input=document.getElementById('coinInput');
+      if(input && input.value.trim()) analyzeCoin(false);
+    }
+  });
+}
+function openMarketStreams(){
+  if(!('WebSocket' in window)) return;
+  try{ if(spotSocket) spotSocket.close(); }catch(e){}
+  try{ if(futureSocket) futureSocket.close(); }catch(e){}
+
+  spotSocket=new WebSocket(SPOT_WS);
+  spotSocket.onopen=()=>{wsHealthy=true;setStatus('ok','Realtime');};
+  spotSocket.onmessage=(ev)=>{
+    try{
+      const arr=JSON.parse(ev.data);
+      if(Array.isArray(arr)){
+        arr.forEach(t=>mergeTickerRow(spotData,t));
+        wsHealthy=true;
+        document.getElementById('lastUpdate').textContent='v'+APP_VERSION+' · Realtime '+new Date().toLocaleTimeString('vi-VN');
+        scheduleRealtimeRender();
+      }
+    }catch(e){}
+  };
+  spotSocket.onerror=()=>{wsHealthy=false;setStatus('', 'REST fallback');};
+  spotSocket.onclose=()=>{wsHealthy=false;setTimeout(openMarketStreams,3500);};
+
+  futureSocket=new WebSocket(FUTURE_WS);
+  futureSocket.onmessage=(ev)=>{
+    try{
+      const arr=JSON.parse(ev.data);
+      if(Array.isArray(arr)){
+        arr.forEach(t=>mergeTickerRow(futureData,t));
+        scheduleRealtimeRender();
+      }
+    }catch(e){}
+  };
+}
+
+async function refreshAll(manual=false){if(isRefreshing)return;isRefreshing=true;setStatus('',manual?'Đang làm mới':'Đang tải');try{const[spot,fut,funding]=await Promise.allSettled([fetchJson(SPOT_URL),fetchJson(FUTURE_URL),fetchJson(FUNDING_URL)]);if(spot.status==='fulfilled')spotData=cleanRows(spot.value);if(fut.status==='fulfilled')futureData=cleanRows(fut.value);if(funding.status==='fulfilled'&&Array.isArray(funding.value)){fundingMap={};funding.value.forEach(f=>{if(f.symbol)fundingMap[f.symbol]=f})}if(!spotData.length&&!futureData.length)throw new Error('No market data');setStatus('ok','Live');document.getElementById('lastUpdate').textContent='v'+APP_VERSION+' · Cập nhật '+new Date().toLocaleTimeString('vi-VN')+' · Realtime';renderAll();loadMiniCharts();}catch(e){setStatus('err','Offline');if(!spotData.length)loadFallback()}finally{isRefreshing=false}}
 function loadFallback(){spotData=[{symbol:'BTCUSDT',lastPrice:'67500',priceChangePercent:'1.2',quoteVolume:'26000000000',highPrice:'69000',lowPrice:'66000'},{symbol:'ETHUSDT',lastPrice:'3500',priceChangePercent:'0.4',quoteVolume:'12000000000',highPrice:'3600',lowPrice:'3420'},{symbol:'SOLUSDT',lastPrice:'160',priceChangePercent:'3.8',quoteVolume:'2500000000',highPrice:'166',lowPrice:'151'},{symbol:'BNBUSDT',lastPrice:'590',priceChangePercent:'-0.8',quoteVolume:'900000000',highPrice:'602',lowPrice:'582'},{symbol:'DOGEUSDT',lastPrice:'0.14',priceChangePercent:'6.5',quoteVolume:'700000000',highPrice:'0.149',lowPrice:'0.129'}];futureData=spotData.map(x=>({...x,quoteVolume:String(Number(x.quoteVolume)*1.5)}));renderAll()}
 function renderAll(){renderHome();renderMarket();renderAI();}
 
@@ -418,11 +486,11 @@ function coinCard(x,ai=null,isFuture=false){const pct=Number(x.priceChangePercen
 
 function renderMarket(){const type=document.getElementById('marketType').value,sort=document.getElementById('sortBy').value,riskFilter=document.getElementById('riskFilter').value;let q=document.getElementById('search').value.trim().toUpperCase();let data=type==='future'?futureData:spotData;if(q==='AI')data=data.filter(x=>aiTags.includes(x.symbol));else if(q==='MEME')data=data.filter(x=>memeTags.includes(x.symbol));else if(q==='L1')data=data.filter(x=>l1Tags.includes(x.symbol));else if(q)data=data.filter(x=>x.symbol.includes(q.replace('/','')));data=[...data];if(riskFilter!=='all'){data=data.filter(x=>{const ai=scoreCoin(x,type==='future');if(riskFilter==='low')return ai.risk!=='Cao';if(riskFilter==='high')return ai.risk==='Cao';if(riskFilter==='signal')return['MUA','MUA NHỎ','BÁN','TRÁNH'].includes(ai.action);if(riskFilter==='watchlist')return(settings.watchlist||[]).includes(x.symbol);return true})}if(sort==='volume')data.sort((a,b)=>volUsd(b)-volUsd(a));if(sort==='gainers')data.sort((a,b)=>Number(b.priceChangePercent)-Number(a.priceChangePercent));if(sort==='losers')data.sort((a,b)=>Number(a.priceChangePercent)-Number(b.priceChangePercent));if(sort==='symbol')data.sort((a,b)=>a.symbol.localeCompare(b.symbol));if(sort==='ai')data.sort((a,b)=>scoreCoin(b,type==='future').score-scoreCoin(a,type==='future').score);document.getElementById('marketList').innerHTML=data.slice(0,80).map(x=>coinCard(x,null,type==='future')).join('')||'<div class="empty">Không tìm thấy coin phù hợp</div>'}
 function quickFilter(q,btn){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));if(btn)btn.classList.add('active');document.getElementById('search').value=q;saveSettings();renderMarket()}
-function renderAI(){const data=spotData.slice(0,100);const s=getSentiment();document.getElementById('globalScore').innerHTML=`${s.score}<small>/100</small>`;document.getElementById('globalBar').style.width=s.score+'%';document.getElementById('globalLabel').innerHTML=`<span class="dot"></span><span>${s.label}</span>`;document.getElementById('globalReasons').innerHTML=s.reasons.concat(['Cập nhật realtime mỗi 30 giây khi website đang mở.']).map(x=>`<li>${x}</li>`).join('');renderHeatmap();const ranked=[...data].map(x=>({x,ai:scoreCoin(x)}));const opp=ranked.filter(o=>o.ai.action.includes('MUA')).sort((a,b)=>(b.ai.score+b.ai.confidence)-(a.ai.score+a.ai.confidence)).slice(0,8);const risk=ranked.filter(o=>o.ai.action==='TRÁNH'||o.ai.action==='BÁN'||o.ai.risk==='Cao').sort((a,b)=>Math.abs(Number(b.x.priceChangePercent))-Math.abs(Number(a.x.priceChangePercent))).slice(0,8);document.getElementById('topOpportunity').innerHTML=opp.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có cơ hội rõ.</div>';document.getElementById('topRisk').innerHTML=risk.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có rủi ro nổi bật.</div>'}
+function renderAI(){const data=spotData.slice(0,100);const s=getSentiment();document.getElementById('globalScore').innerHTML=`${s.score}<small>/100</small>`;document.getElementById('globalBar').style.width=s.score+'%';document.getElementById('globalLabel').innerHTML=`<span class="dot"></span><span>${s.label}</span>`;document.getElementById('globalReasons').innerHTML=s.reasons.concat(['Giá cập nhật realtime bằng WebSocket khi trình duyệt hỗ trợ.']).map(x=>`<li>${x}</li>`).join('');renderHeatmap();const ranked=[...data].map(x=>({x,ai:scoreCoin(x)}));const opp=ranked.filter(o=>o.ai.action.includes('MUA')).sort((a,b)=>(b.ai.score+b.ai.confidence)-(a.ai.score+a.ai.confidence)).slice(0,8);const risk=ranked.filter(o=>o.ai.action==='TRÁNH'||o.ai.action==='BÁN'||o.ai.risk==='Cao').sort((a,b)=>Math.abs(Number(b.x.priceChangePercent))-Math.abs(Number(a.x.priceChangePercent))).slice(0,8);document.getElementById('topOpportunity').innerHTML=opp.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có cơ hội rõ.</div>';document.getElementById('topRisk').innerHTML=risk.map(({x,ai})=>coinCard(x,ai,false)).join('')||'<div class="empty">Chưa có rủi ro nổi bật.</div>'}
 function renderHeatmap(){const data=[...spotData].sort((a,b)=>volUsd(b)-volUsd(a)).slice(0,24);document.getElementById('heatmap').innerHTML=data.map(x=>{const pct=Number(x.priceChangePercent||0),cls=pct>0?'heat-green':pct<0?'heat-red':'heat-neutral';return`<div class="heat-tile ${cls}" onclick="selectCoin('${x.symbol}')"><b>${baseSymbol(x.symbol)}</b><span>${fmtPct(pct)}</span><small>${shortVol(volUsd(x))}</small></div>`}).join('')}
 
 function selectCoin(symbol){currentCoin=symbol;document.getElementById('coinInput').value=baseSymbol(symbol);openTabById('coinai');analyzeCoin()}
-async function analyzeCoin(){let raw=document.getElementById('coinInput').value.trim().toUpperCase().replace('/','');if(!raw)return;if(!raw.endsWith('USDT'))raw+='USDT';currentCoin=raw;const spot=spotData.find(x=>x.symbol===raw),fut=futureData.find(x=>x.symbol===raw),x=fut||spot;if(!x){document.getElementById('coinResult').innerHTML=`<div class="empty">Không tìm thấy ${raw}. Hãy thử BTC, ETH, SOL...</div>`;return}const ai=scoreCoin(x,!!fut),detail=getDecisionDetail(x,ai,!!fut),cls=ai.score>=70?'up':ai.score<40?'down':'warn';document.getElementById('coinResult').innerHTML=`<div class="row"><div class="coin">${coinIcon(baseSymbol(x.symbol))}<div><div class="mini">${x.symbol} · ${fut?'Future ưu tiên':'Spot'}</div><div class="score ${cls}">${ai.score}<small>/100</small></div></div></div><span class="action-tag ${ai.actionClass}">${ai.actionIcon} ${ai.action}</span></div><div class="mini" style="margin-top:6px">${ai.label} · Độ tin cậy ${ai.confidence}%</div><div class="meter-line"><i style="width:${ai.score}%"></i></div><div class="decision-box"><div class="decision-title"><b>Kết luận AI</b><span class="action-tag ${ai.actionClass}">${detail.bias}</span></div><p class="mini">${detail.mainPlan}</p><div class="level-row"><div class="level"><b>${fmtPrice(detail.entryZoneLow)} - ${fmtPrice(detail.entryZoneHigh)}</b><span>Vùng hành động</span></div><div class="level"><b>${fmtPrice(detail.stopLoss)}</b><span>Cắt lỗ tham khảo</span></div><div class="level"><b>${fmtPrice(detail.takeProfit1)}</b><span>Chốt lời 1</span></div><div class="level"><b>${fmtPrice(detail.takeProfit2)}</b><span>Chốt lời 2</span></div></div></div><div class="analysis-card" style="margin-top:10px"><h4>AI giải thích dễ hiểu</h4><p>${simpleExplain(x,ai)}</p></div><div class="signal-grid"><div class="signal-mini"><b>${ai.action}</b><span>Tín hiệu</span></div><div class="signal-mini"><b>${ai.risk}</b><span>Rủi ro</span></div><div class="signal-mini"><b>${ai.confidence}%</b><span>Tin cậy</span></div></div><div class="timeframe-grid"><div class="tf"><b>Ngắn hạn</b><span>${detail.shortTerm}</span></div><div class="tf"><b>Trung hạn</b><span>${detail.midTerm}</span></div><div class="tf"><b>Future</b><span>${detail.futureView}</span></div></div><div class="two"><div class="metric"><b>${fmtPrice(x.lastPrice)}</b><span>Giá hiện tại</span></div><div class="metric"><b class="${Number(x.priceChangePercent)>=0?'up':'down'}">${fmtPct(x.priceChangePercent)}</b><span>24h</span></div><div class="metric"><b>${shortVol(detail.volume)}</b><span>Volume 24h</span></div><div class="metric"><b>${detail.range.toFixed(2)}%</b><span>Biên độ 24h</span></div></div><div class="analysis-panel"><div class="analysis-card"><h4>Luận điểm nên mua</h4><p>${detail.buyCase}</p></div><div class="analysis-card"><h4>Luận điểm nên bán</h4><p>${detail.sellCase}</p></div><div class="analysis-card"><h4>Quản trị vị thế Spot</h4><p>${detail.spotAction}</p></div><div class="analysis-card"><h4>Quản trị vị thế Future</h4><p>${detail.futureAction}</p></div><div class="analysis-card"><h4>Khi nào phân tích sai?</h4><p>${detail.invalidation}</p></div></div><ul class="reasons">${ai.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><div class="notice">Đây là phân tích tham khảo, không đảm bảo lợi nhuận. Luôn đặt cắt lỗ, giới hạn vốn mỗi lệnh, không dùng đòn bẩy cao, không all-in và kiểm tra tin tức trước khi quyết định.</div>`;await drawChart(raw);loadCoinNews()}
+async function analyzeCoin(loadExtra=true){let raw=document.getElementById('coinInput').value.trim().toUpperCase().replace('/','');if(!raw)return;if(!raw.endsWith('USDT'))raw+='USDT';currentCoin=raw;const spot=spotData.find(x=>x.symbol===raw),fut=futureData.find(x=>x.symbol===raw),x=fut||spot;if(!x){document.getElementById('coinResult').innerHTML=`<div class="empty">Không tìm thấy ${raw}. Hãy thử BTC, ETH, SOL...</div>`;return}const ai=scoreCoin(x,!!fut),detail=getDecisionDetail(x,ai,!!fut),cls=ai.score>=70?'up':ai.score<40?'down':'warn';document.getElementById('coinResult').innerHTML=`<div class="row"><div class="coin">${coinIcon(baseSymbol(x.symbol))}<div><div class="mini">${x.symbol} · ${fut?'Future ưu tiên':'Spot'}</div><div class="score ${cls}">${ai.score}<small>/100</small></div></div></div><span class="action-tag ${ai.actionClass}">${ai.actionIcon} ${ai.action}</span></div><div class="mini" style="margin-top:6px">${ai.label} · Độ tin cậy ${ai.confidence}%</div><div class="meter-line"><i style="width:${ai.score}%"></i></div><div class="decision-box"><div class="decision-title"><b>Kết luận AI</b><span class="action-tag ${ai.actionClass}">${detail.bias}</span></div><p class="mini">${detail.mainPlan}</p><div class="level-row"><div class="level"><b>${fmtPrice(detail.entryZoneLow)} - ${fmtPrice(detail.entryZoneHigh)}</b><span>Vùng hành động</span></div><div class="level"><b>${fmtPrice(detail.stopLoss)}</b><span>Cắt lỗ tham khảo</span></div><div class="level"><b>${fmtPrice(detail.takeProfit1)}</b><span>Chốt lời 1</span></div><div class="level"><b>${fmtPrice(detail.takeProfit2)}</b><span>Chốt lời 2</span></div></div></div><div class="analysis-card" style="margin-top:10px"><h4>AI giải thích dễ hiểu</h4><p>${simpleExplain(x,ai)}</p></div><div class="signal-grid"><div class="signal-mini"><b>${ai.action}</b><span>Tín hiệu</span></div><div class="signal-mini"><b>${ai.risk}</b><span>Rủi ro</span></div><div class="signal-mini"><b>${ai.confidence}%</b><span>Tin cậy</span></div></div><div class="timeframe-grid"><div class="tf"><b>Ngắn hạn</b><span>${detail.shortTerm}</span></div><div class="tf"><b>Trung hạn</b><span>${detail.midTerm}</span></div><div class="tf"><b>Future</b><span>${detail.futureView}</span></div></div><div class="two"><div class="metric"><b>${fmtPrice(x.lastPrice)}</b><span>Giá hiện tại</span></div><div class="metric"><b class="${Number(x.priceChangePercent)>=0?'up':'down'}">${fmtPct(x.priceChangePercent)}</b><span>24h</span></div><div class="metric"><b>${shortVol(detail.volume)}</b><span>Volume 24h</span></div><div class="metric"><b>${detail.range.toFixed(2)}%</b><span>Biên độ 24h</span></div></div><div class="analysis-panel"><div class="analysis-card"><h4>Luận điểm nên mua</h4><p>${detail.buyCase}</p></div><div class="analysis-card"><h4>Luận điểm nên bán</h4><p>${detail.sellCase}</p></div><div class="analysis-card"><h4>Quản trị vị thế Spot</h4><p>${detail.spotAction}</p></div><div class="analysis-card"><h4>Quản trị vị thế Future</h4><p>${detail.futureAction}</p></div><div class="analysis-card"><h4>Khi nào phân tích sai?</h4><p>${detail.invalidation}</p></div></div><ul class="reasons">${ai.reasons.map(r=>`<li>${r}</li>`).join('')}</ul><div class="notice">Đây là phân tích tham khảo, không đảm bảo lợi nhuận. Luôn đặt cắt lỗ, giới hạn vốn mỗi lệnh, không dùng đòn bẩy cao, không all-in và kiểm tra tin tức trước khi quyết định.</div>`;if(loadExtra){await drawChart(raw);loadCoinNews()}}
 async function drawChart(symbol){const el=document.getElementById('coinChart');el.innerHTML='<div class="empty">Đang tải chart 48 giờ...</div>';try{const data=await fetchJson(`https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=1h&limit=48`);const closes=data.map(k=>Number(k[4])).filter(Boolean);miniChartMap[symbol]=closes.slice(-24);if(closes.length<2)throw new Error('no chart');const w=500,h=168,pad=16,min=Math.min(...closes),max=Math.max(...closes);const pts=closes.map((p,i)=>`${(pad+i*(w-pad*2)/(closes.length-1)).toFixed(1)},${(h-pad-((p-min)/(max-min||1))*(h-pad*2)).toFixed(1)}`).join(' ');const up=closes[closes.length-1]>=closes[0],color=up?'#12d18e':'#ff5f7a';el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none"><defs><linearGradient id="gchart" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".34"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="${pts} ${w-pad},${h-pad} ${pad},${h-pad}" fill="url(#gchart)"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`}catch(e){el.innerHTML='<div class="empty">Không tải được chart. Có thể API bị giới hạn khu vực hoặc mất mạng.</div>'}}
 function summarizeNews(items,coin=''){if(!items.length)return{label:'Chưa có tin phù hợp',bullets:['Không có đủ dữ liệu tin tức để tóm tắt.']};const txt=items.map(n=>(n.title||'').toLowerCase()).join(' ');let pos=['etf','approval','partnership','upgrade','surge','rally','record','launch','bull','inflow'].filter(k=>txt.includes(k)).length;let neg=['hack','lawsuit','ban','exploit','crash','selloff','outflow','sec','risk','fraud'].filter(k=>txt.includes(k)).length;let label=pos>neg?'Tin nghiêng tích cực':neg>pos?'Tin nghiêng tiêu cực':'Tin trung tính / hỗn hợp';let bullets=[`${items.length} tin mới được quét${coin?' cho '+coin:''}.`,`Từ khóa tích cực: ${pos}; từ khóa rủi ro: ${neg}.`,pos>neg?'Có thể hỗ trợ tâm lý ngắn hạn, nhưng vẫn cần xác nhận bằng giá và volume.':neg>pos?'Nên thận trọng, tránh vào lệnh Future vội khi tin xấu đang xuất hiện.':'Tin chưa đủ rõ để tạo lợi thế giao dịch.'];return{label,bullets}}
 async function loadNews(){const box=document.getElementById('newsList'),sum=document.getElementById('newsSummary');box.innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';try{const json=await fetchJson(NEWS_URL);allNews=(json.Data||[]).slice(0,40);const s=summarizeNews(allNews);sum.innerHTML=`<div class="row"><b>${s.label}</b><span class="action-tag action-wait">AI Summary</span></div><ul class="reasons">${s.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;box.innerHTML=allNews.slice(0,18).map(n=>newsCard(n)).join('')||'<div class="empty">Chưa có tin tức</div>'}catch(e){sum.innerHTML='<div class="empty">Không tải được tin tức.</div>';box.innerHTML='<div class="empty">Kiểm tra mạng hoặc API tin tức.</div>'}}
@@ -434,8 +502,8 @@ function showVersionHistory(){document.getElementById('versionList').innerHTML=V
 function closeVersionHistory(){document.getElementById('versionModal').classList.remove('show')}
 
 let pullStart=0,pulling=false;window.addEventListener('touchstart',e=>{if(window.scrollY===0){pullStart=e.touches[0].clientY;pulling=true}}, {passive:true});window.addEventListener('touchmove',e=>{if(!pulling)return;const d=e.touches[0].clientY-pullStart;if(d>55)document.getElementById('pullIndicator').classList.add('show')},{passive:true});window.addEventListener('touchend',()=>{const ind=document.getElementById('pullIndicator');if(ind.classList.contains('show')){ind.textContent='↻ Đang làm mới...';refreshAll(true).then(()=>{ind.textContent='✓ Đã cập nhật';setTimeout(()=>{ind.classList.remove('show');ind.textContent='↻ Kéo để làm mới'},700)})}pulling=false});
-window.addEventListener('online',()=>refreshAll(true));window.addEventListener('offline',()=>setStatus('err','Offline'));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll()});
-(async function boot(){loadSettings();applySettings();await loadCoinLogos();await refreshAll();loadNews();if(settings.lastTab&&settings.lastTab!=='home')openTabById(settings.lastTab);if(refreshTimer)clearInterval(refreshTimer);refreshTimer=setInterval(()=>{if(!document.hidden)refreshAll()},30000)})();
+window.addEventListener('online',()=>refreshAll(true));window.addEventListener('offline',()=>setStatus('err','Offline'));document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshAll();openMarketStreams();}});
+(async function boot(){loadSettings();applySettings();await loadCoinLogos();await refreshAll();openMarketStreams();loadNews();if(settings.lastTab&&settings.lastTab!=='home')openTabById(settings.lastTab);if(refreshTimer)clearInterval(refreshTimer);refreshTimer=setInterval(()=>{if(!document.hidden&&!wsHealthy)refreshAll()},REST_FALLBACK_INTERVAL)})();
 </script>
 </body>
 </html>
