@@ -1,9 +1,14 @@
 <!DOCTYPE html>
+<!-- FULL_FEATURE_BUILD: 2026-05-21 | 30 games | XP/level | missions | themes | highscores | audio | saver | export-import -->
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1020" />
+  <meta name="description" content="GameHub Offline - 30 mini game chơi không cần internet, tối ưu cho điện thoại." />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="GameHub Offline" />
@@ -17,8 +22,8 @@
       --line:rgba(255,255,255,.12);--brand:#60a5fa;--brand2:#a78bfa;--good:#34d399;
       --bad:#fb7185;--warn:#fbbf24;--shadow:0 22px 60px rgba(0,0,0,.35);--radius:24px
     }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}button{font:inherit;touch-action:manipulation}body,.game-panel{user-select:none;-webkit-user-select:none}
+    html,body{margin:0;min-height:100%;overscroll-behavior:none;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
     body{
       background:radial-gradient(circle at top left,rgba(96,165,250,.38),transparent 34%),
       radial-gradient(circle at 95% 5%,rgba(167,139,250,.32),transparent 35%),
@@ -63,6 +68,44 @@
     .note{color:var(--muted);font-size:13px;line-height:1.45;margin:10px 0 0}.progress{height:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);overflow:hidden;margin:12px 0}.bar{height:100%;background:linear-gradient(90deg,var(--brand),var(--good));width:0%}
     .shop{display:grid;gap:8px;margin-top:12px}.shop button{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:16px;padding:12px;text-align:left;font-weight:800}.log{min-height:70px;color:var(--muted);font-size:14px;line-height:1.5}
     @media(max-width:390px){.hero h2{font-size:30px}.grid,.game-list{gap:10px}.game-card{min-height:120px}.memory{gap:7px}.mem-card{font-size:21px}}
+
+    @media (prefers-reduced-motion: reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+    button:focus-visible,input:focus-visible{outline:2px solid rgba(96,165,250,.9);outline-offset:2px}
+    .game-card{content-visibility:auto;contain-intrinsic-size:128px}
+    .modal-open{overflow:hidden;position:fixed;width:100%}
+    .mini-actions{display:flex;gap:8px;align-items:center}
+    .icon-btn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:14px;width:42px;height:42px;font-size:18px}
+    .toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);z-index:200;background:rgba(17,24,39,.94);border:1px solid var(--line);border-radius:999px;padding:10px 14px;color:white;font-weight:800;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.22s}
+    .toast.show{opacity:1}
+
+
+    .feature-stack{display:grid;gap:12px;margin-top:14px}
+    .feature-panel{border:1px solid var(--line);background:rgba(17,24,39,.72);border-radius:24px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.18)}
+    .feature-panel h3{margin:0 0 10px;font-size:17px}
+    .feature-panel p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .profile-row{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}
+    .avatar{width:64px;height:64px;border-radius:22px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:32px;box-shadow:0 14px 28px rgba(96,165,250,.2)}
+    .level-title{font-weight:900;font-size:18px;margin-bottom:5px}
+    .mini-list{display:grid;gap:8px;margin-top:10px}
+    .mini-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:rgba(255,255,255,.055);border-radius:16px;padding:10px 12px;color:var(--muted);font-size:13px}
+    .mini-item b{color:var(--text)}
+    .mini-item.done{background:rgba(52,211,153,.13);border-color:rgba(52,211,153,.35)}
+    .action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .tiny-btn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:14px;padding:10px 12px;font-weight:900;font-size:12px}
+    .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .theme-btn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:white;border-radius:16px;padding:12px 8px;font-weight:900;font-size:12px}
+    .theme-btn.active{outline:2px solid var(--good)}
+    .duration-chip{border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--muted);border-radius:999px;padding:10px 12px;font-weight:800;white-space:nowrap}
+    .duration-chip.active{background:rgba(52,211,153,.18);color:white;border-color:rgba(52,211,153,.38)}
+    .data-box{width:100%;min-height:110px;border:1px solid var(--line);background:rgba(0,0,0,.2);border-radius:16px;color:white;padding:12px;font-size:12px;resize:vertical}
+    body.theme-ocean{--brand:#38bdf8;--brand2:#0ea5e9;--good:#2dd4bf}
+    body.theme-sunset{--brand:#fb7185;--brand2:#f97316;--good:#fbbf24}
+    body.theme-forest{--brand:#34d399;--brand2:#22c55e;--good:#86efac}
+    body.theme-neon{--brand:#a78bfa;--brand2:#22d3ee;--good:#f0abfc}
+    body.battery-saver canvas{image-rendering:auto}
+    body.battery-saver .hero:after{display:none}
+    body.battery-saver *{box-shadow:none!important}
+
   </style>
 </head>
 <body>
@@ -70,14 +113,14 @@
     <header class="topbar">
       <div class="logo">
         <div class="logo-mark">🎮</div>
-        <div><h1>GameHub Offline</h1><p>30 trò chơi giải trí</p></div>
+        <div><h1>GameHub Offline</h1><p>30 trò chơi · offline · cảm ứng</p></div>
       </div>
       <div class="status" id="netStatus">Đang kiểm tra...</div>
     </header>
     <main id="home" class="screen active">
       <section class="hero">
-        <h2>Chơi game khi không có internet.</h2>
-        <p>Một file HTML duy nhất, phù hợp để lưu vào iPhone và chơi khi bật chế độ máy bay. Các game IDLE có lưu tiến trình bằng bộ nhớ trình duyệt.</p>
+        <h2>Game offline gọn nhẹ, mở là chơi.</h2>
+        <p>Một file HTML duy nhất, không cần CDN hay thư viện ngoài. Phù hợp để lưu vào điện thoại, bật chế độ máy bay và chơi trong lúc di chuyển.</p>
         <div class="cta-row"><button class="primary" onclick="switchTab('games')">Chơi ngay</button><button class="secondary" onclick="randomGame()">Game ngẫu nhiên</button></div>
       </section>
       <section class="grid">
@@ -85,7 +128,71 @@
         <div class="card"><h3>💾 Lưu tiến trình</h3><p>Một số game lưu điểm, level, tiền và nâng cấp offline.</p></div>
         <div class="card"><h3>🕹️ 30 mini game</h3><p>Arcade, trí tuệ, phản xạ, may mắn và IDLE.</p></div>
         <div class="card"><h3>📦 1 file duy nhất</h3><p>Không cần ảnh, font, CDN hay thư viện bên ngoài.</p></div>
+        <div class="card"><h3>🧹 Dọn dữ liệu</h3><p>Xóa điểm và tiến trình nếu muốn chơi lại từ đầu.</p><button class="small-btn" style="margin-top:10px" onclick="resetAllProgress()">Reset</button></div>
+        <div class="card"><h3>🔋 Tối ưu pin</h3><p>Game đang mở sẽ tự dừng khi bạn thoát màn chơi.</p></div>
       </section>
+    
+      <section class="feature-stack">
+        <div class="feature-panel">
+          <h3>👤 Hồ sơ người chơi</h3>
+          <div class="profile-row">
+            <div class="avatar" id="playerAvatar">🎮</div>
+            <div>
+              <div class="level-title" id="playerLevelText">Level 1</div>
+              <div class="progress"><div class="bar" id="playerXpBar"></div></div>
+              <p id="playerXpText">0 XP</p>
+            </div>
+          </div>
+          <div class="action-row">
+            <button class="tiny-btn" onclick="toggleSound()">Âm thanh: <span id="soundState">Bật</span></button>
+            <button class="tiny-btn" onclick="toggleBatterySaver()">Tiết kiệm pin: <span id="batteryState">Tắt</span></button>
+            <button class="tiny-btn" onclick="showHighScores()">Bảng điểm</button>
+          </div>
+        </div>
+
+        <div class="feature-panel">
+          <h3>📅 Nhiệm vụ hôm nay</h3>
+          <p>Hoàn thành nhiệm vụ để nhận XP. Tất cả lưu offline.</p>
+          <div class="mini-list" id="dailyMissions"></div>
+        </div>
+
+        <div class="feature-panel">
+          <h3>🏆 Huy hiệu</h3>
+          <p>Mở khóa khi chơi nhiều game, đạt XP hoặc cày IDLE.</p>
+          <div class="mini-list" id="achievementList"></div>
+        </div>
+
+        <div class="feature-panel">
+          <h3>🎨 Shop theme</h3>
+          <p>Dùng XP để mở khóa theme. Theme đã mở sẽ lưu offline.</p>
+          <div class="theme-grid" id="themeShop"></div>
+        </div>
+
+        <div class="feature-panel">
+          <h3>⏱️ Bộ sưu tập theo thời lượng</h3>
+          <p>Lọc nhanh game theo thời gian phù hợp khi đang bay.</p>
+          <div class="filter" id="durationFilters"></div>
+        </div>
+
+        <div class="feature-panel">
+          <h3>💾 Sao lưu tiến trình</h3>
+          <p>Export mã save để lưu lại, hoặc import để khôi phục trên máy khác.</p>
+          <div class="action-row">
+            <button class="tiny-btn" onclick="exportSave()">Export save</button>
+            <button class="tiny-btn" onclick="importSave()">Import save</button>
+          </div>
+          <textarea class="data-box" id="saveBox" placeholder="Mã save sẽ hiện ở đây..."></textarea>
+        </div>
+
+        <div class="feature-panel">
+          <h3>🚀 PWA nâng cao cho GitHub Pages</h3>
+          <p>File này vẫn là 1 HTML duy nhất. Với GitHub Pages, để có service worker chuẩn 100%, cần thêm 1 file phụ sw.js. Bản hiện tại vẫn chơi offline khi mở trực tiếp hoặc khi trình duyệt đã cache trang.</p>
+          <div class="action-row">
+            <button class="tiny-btn" onclick="showPwaGuide()">Xem hướng dẫn sw.js</button>
+          </div>
+        </div>
+      </section>
+
     </main>
     <main id="games" class="screen">
       <div class="filter" id="filters"></div>
@@ -93,42 +200,42 @@
     </main>
   </div>
   <nav class="tabs"><button id="tabHome" class="tab-btn active" onclick="switchTab('home')">🏠 Trang chủ</button><button id="tabGames" class="tab-btn" onclick="switchTab('games')">🎮 Trò chơi</button></nav>
-  <div class="modal" id="modal"><div class="game-panel"><div class="game-head"><h2 id="gameTitle">Game</h2><button class="xbtn" onclick="closeGame()">×</button></div><div class="scorebar" id="scorebar"></div><div class="game-area" id="gameArea"></div></div></div>
+  <div class="modal" id="modal"><div class="game-panel"><div class="game-head"><h2 id="gameTitle">Game</h2><div class="mini-actions"><button class="icon-btn" title="Toàn màn hình" onclick="toggleNativeFullscreen()">⛶</button><button class="xbtn" title="Đóng game" onclick="closeGame()">×</button></div></div><div class="scorebar" id="scorebar"></div><div class="game-area" id="gameArea"></div></div></div><div class="toast" id="toast"></div>
 
 <script>
 const games=[
-{id:'tictactoe',icon:'⭕',name:'Cờ caro 3x3',desc:'Đấu với máy đơn giản',cat:'Trí tuệ'},
-{id:'snake',icon:'🐍',name:'Rắn săn mồi',desc:'Ăn táo và tránh va chạm',cat:'Arcade'},
-{id:'memory',icon:'🧠',name:'Lật thẻ nhớ',desc:'Tìm các cặp biểu tượng',cat:'Trí tuệ'},
-{id:'mole',icon:'🔨',name:'Đập chuột',desc:'Chạm thật nhanh trong 30 giây',cat:'Phản xạ'},
-{id:'reaction',icon:'⚡',name:'Phản xạ nhanh',desc:'Chờ màu xanh rồi bấm',cat:'Phản xạ'},
-{id:'rps',icon:'✊',name:'Kéo búa bao',desc:'Đấu may mắn với máy',cat:'May mắn'},
-{id:'math',icon:'➕',name:'Tính nhanh',desc:'Trả lời phép tính trong 60 giây',cat:'Trí tuệ'},
-{id:'target',icon:'🎯',name:'Bắn mục tiêu',desc:'Chạm mục tiêu di chuyển',cat:'Phản xạ'},
-{id:'pong',icon:'🏓',name:'Pong mini',desc:'Giữ bóng không rơi',cat:'Arcade'},
-{id:'g2048',icon:'🔢',name:'2048 mini',desc:'Gộp số để đạt điểm cao',cat:'Trí tuệ'},
-{id:'idleMine',icon:'⛏️',name:'IDLE Đào mỏ',desc:'Đào quặng, nâng cấp, cày level',cat:'IDLE'},
-{id:'idleFarm',icon:'🌾',name:'IDLE Nông trại',desc:'Trồng lúa, bán hàng, mở rộng',cat:'IDLE'},
-{id:'idleCafe',icon:'☕',name:'IDLE Quán cà phê',desc:'Pha cà phê, thuê nhân viên',cat:'IDLE'},
-{id:'idleSpace',icon:'🚀',name:'IDLE Không gian',desc:'Thu năng lượng, nâng tàu',cat:'IDLE'},
-{id:'idleDragon',icon:'🐉',name:'IDLE Nuôi rồng',desc:'Cho ăn, luyện cấp, tiến hóa',cat:'IDLE'},
-{id:'guessNumber',icon:'🔮',name:'Đoán số',desc:'Tìm số bí mật từ 1 đến 100',cat:'Trí tuệ'},
-{id:'wordScramble',icon:'🔤',name:'Xếp chữ',desc:'Sắp xếp chữ cái tiếng Việt',cat:'Trí tuệ'},
-{id:'colorMatch',icon:'🌈',name:'Chọn màu đúng',desc:'Đọc chữ, chọn màu thật nhanh',cat:'Phản xạ'},
-{id:'tapRace',icon:'👆',name:'Tap Race',desc:'Chạm thật nhiều trong 10 giây',cat:'Phản xạ'},
-{id:'diceDuel',icon:'🎲',name:'Đấu xúc xắc',desc:'Đổ xúc xắc thắng máy',cat:'May mắn'},
-{id:'coinFlip',icon:'🪙',name:'Tung đồng xu',desc:'Đoán sấp hoặc ngửa',cat:'May mắn'},
-{id:'blackjack',icon:'🃏',name:'21 điểm mini',desc:'Rút bài gần 21 nhất',cat:'May mắn'},
-{id:'simon',icon:'💡',name:'Nhớ chuỗi màu',desc:'Lặp lại thứ tự đèn sáng',cat:'Trí tuệ'},
-{id:'mines',icon:'💣',name:'Dò mìn mini',desc:'Tránh bom trong lưới 5x5',cat:'Trí tuệ'},
-{id:'maze',icon:'🧭',name:'Mê cung',desc:'Đi đến đích bằng phím điều hướng',cat:'Arcade'},
-{id:'flappy',icon:'🐦',name:'Flappy mini',desc:'Bay qua cột đơn giản',cat:'Arcade'},
-{id:'runner',icon:'🏃',name:'Runner',desc:'Nhảy qua vật cản',cat:'Arcade'},
-{id:'slider',icon:'🧩',name:'Xếp hình 3x3',desc:'Sắp số theo thứ tự',cat:'Trí tuệ'},
-{id:'tower',icon:'🏗️',name:'Xếp tháp',desc:'Thả khối đúng nhịp',cat:'Arcade'},
-{id:'breath',icon:'🧘',name:'Thở thư giãn',desc:'Mini game thở theo nhịp',cat:'Thư giãn'}
+{id:'tictactoe',icon:'⭕',name:'Cờ caro 3x3',desc:'Đấu với máy đơn giản',cat:'Trí tuệ',dur:'5 phút'},
+{id:'snake',icon:'🐍',name:'Rắn săn mồi',desc:'Ăn táo và tránh va chạm',cat:'Arcade',dur:'5 phút'},
+{id:'memory',icon:'🧠',name:'Lật thẻ nhớ',desc:'Tìm các cặp biểu tượng',cat:'Trí tuệ',dur:'5 phút'},
+{id:'mole',icon:'🔨',name:'Đập chuột',desc:'Chạm thật nhanh trong 30 giây',cat:'Phản xạ',dur:'1 phút'},
+{id:'reaction',icon:'⚡',name:'Phản xạ nhanh',desc:'Chờ màu xanh rồi bấm',cat:'Phản xạ',dur:'1 phút'},
+{id:'rps',icon:'✊',name:'Kéo búa bao',desc:'Đấu may mắn với máy',cat:'May mắn',dur:'1 phút'},
+{id:'math',icon:'➕',name:'Tính nhanh',desc:'Trả lời phép tính trong 60 giây',cat:'Trí tuệ',dur:'1 phút'},
+{id:'target',icon:'🎯',name:'Bắn mục tiêu',desc:'Chạm mục tiêu di chuyển',cat:'Phản xạ',dur:'1 phút'},
+{id:'pong',icon:'🏓',name:'Pong mini',desc:'Giữ bóng không rơi',cat:'Arcade',dur:'5 phút'},
+{id:'g2048',icon:'🔢',name:'2048 mini',desc:'Gộp số để đạt điểm cao',cat:'Trí tuệ',dur:'15 phút'},
+{id:'idleMine',icon:'⛏️',name:'IDLE Đào mỏ',desc:'Đào quặng, nâng cấp, cày level',cat:'IDLE',dur:'IDLE'},
+{id:'idleFarm',icon:'🌾',name:'IDLE Nông trại',desc:'Trồng lúa, bán hàng, mở rộng',cat:'IDLE',dur:'IDLE'},
+{id:'idleCafe',icon:'☕',name:'IDLE Quán cà phê',desc:'Pha cà phê, thuê nhân viên',cat:'IDLE',dur:'IDLE'},
+{id:'idleSpace',icon:'🚀',name:'IDLE Không gian',desc:'Thu năng lượng, nâng tàu',cat:'IDLE',dur:'IDLE'},
+{id:'idleDragon',icon:'🐉',name:'IDLE Nuôi rồng',desc:'Cho ăn, luyện cấp, tiến hóa',cat:'IDLE',dur:'IDLE'},
+{id:'guessNumber',icon:'🔮',name:'Đoán số',desc:'Tìm số bí mật từ 1 đến 100',cat:'Trí tuệ',dur:'5 phút'},
+{id:'wordScramble',icon:'🔤',name:'Xếp chữ',desc:'Sắp xếp chữ cái tiếng Việt',cat:'Trí tuệ',dur:'5 phút'},
+{id:'colorMatch',icon:'🌈',name:'Chọn màu đúng',desc:'Đọc chữ, chọn màu thật nhanh',cat:'Phản xạ',dur:'1 phút'},
+{id:'tapRace',icon:'👆',name:'Tap Race',desc:'Chạm thật nhiều trong 10 giây',cat:'Phản xạ',dur:'1 phút'},
+{id:'diceDuel',icon:'🎲',name:'Đấu xúc xắc',desc:'Đổ xúc xắc thắng máy',cat:'May mắn',dur:'1 phút'},
+{id:'coinFlip',icon:'🪙',name:'Tung đồng xu',desc:'Đoán sấp hoặc ngửa',cat:'May mắn',dur:'1 phút'},
+{id:'blackjack',icon:'🃏',name:'21 điểm mini',desc:'Rút bài gần 21 nhất',cat:'May mắn',dur:'5 phút'},
+{id:'simon',icon:'💡',name:'Nhớ chuỗi màu',desc:'Lặp lại thứ tự đèn sáng',cat:'Trí tuệ',dur:'5 phút'},
+{id:'mines',icon:'💣',name:'Dò mìn mini',desc:'Tránh bom trong lưới 5x5',cat:'Trí tuệ',dur:'5 phút'},
+{id:'maze',icon:'🧭',name:'Mê cung',desc:'Đi đến đích bằng phím điều hướng',cat:'Arcade',dur:'5 phút'},
+{id:'flappy',icon:'🐦',name:'Flappy mini',desc:'Bay qua cột đơn giản',cat:'Arcade',dur:'1 phút'},
+{id:'runner',icon:'🏃',name:'Runner',desc:'Nhảy qua vật cản',cat:'Arcade',dur:'1 phút'},
+{id:'slider',icon:'🧩',name:'Xếp hình 3x3',desc:'Sắp số theo thứ tự',cat:'Trí tuệ',dur:'15 phút'},
+{id:'tower',icon:'🏗️',name:'Xếp tháp',desc:'Thả khối đúng nhịp',cat:'Arcade',dur:'5 phút'},
+{id:'breath',icon:'🧘',name:'Thở thư giãn',desc:'Mini game thở theo nhịp',cat:'Thư giãn',dur:'Thư giãn'}
 ];
-let currentCleanup=null, activeCat='Tất cả';
+let currentCleanup=null, activeCat=localStorage.getItem('activeCat')||'Tất cả', activeDur=localStorage.getItem('activeDur')||'Tất cả', currentGameId=null, gameStartAt=0, playTimer=null;
 const $=s=>document.querySelector(s), area=$('#gameArea'), scorebar=$('#scorebar');
 function bindSwipe(el, cb){
  let sx=0, sy=0, st=0;
@@ -139,14 +246,191 @@ function bindSwipe(el, cb){
   cb(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'), dx, dy, Date.now()-st);
  }, {passive:true});
 }
-function setScore(items){scorebar.innerHTML=items.map(x=>`<span>${x}</span>`).join('')}
+function setScore(items){scorebar.innerHTML=items.map(x=>`<span>${x}</span>`).join('');recordHighScoreFromScorebar(items)}
+function toast(msg){const t=$('#toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.classList.remove('show'),1600)}
 function switchTab(tab){$('#home').classList.toggle('active',tab==='home');$('#games').classList.toggle('active',tab==='games');$('#tabHome').classList.toggle('active',tab==='home');$('#tabGames').classList.toggle('active',tab==='games')}
-function renderFilters(){let cats=['Tất cả',...new Set(games.map(g=>g.cat))];$('#filters').innerHTML=cats.map(c=>`<button class="${c===activeCat?'active':''}" onclick="activeCat='${c}';renderFilters();renderGames()">${c}</button>`).join('')}
-function renderGames(){let list=activeCat==='Tất cả'?games:games.filter(g=>g.cat===activeCat);$('#gameList').innerHTML=list.map(g=>`<button class="game-card" onclick="openGame('${g.id}')"><span class="tag">${g.cat}</span><div class="emoji">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span></button>`).join('')}
+let __lastTouch=0; document.addEventListener('touchend', e=>{let now=Date.now(); if(now-__lastTouch<320)e.preventDefault(); __lastTouch=now}, {passive:false});
+function toggleNativeFullscreen(){const el=$('#modal'); if(!document.fullscreenElement && el.requestFullscreen){el.requestFullscreen().catch(()=>toast('Trình duyệt không hỗ trợ fullscreen.'))}else if(document.exitFullscreen){document.exitFullscreen()}}
+function renderFilters(){
+ let cats=['Tất cả',...new Set(games.map(g=>g.cat))];
+ $('#filters').innerHTML=cats.map(c=>`<button class="${c===activeCat?'active':''}" onclick="activeCat='${c}';localStorage.setItem('activeCat',activeCat);renderFilters();renderGames()">${c}</button>`).join('');
+ renderDurationFilters();
+}
+function renderDurationFilters(){
+ const el=$('#durationFilters'); if(!el) return;
+ let ds=['Tất cả','1 phút','5 phút','15 phút','IDLE','Thư giãn'];
+ el.innerHTML=ds.map(d=>`<button class="duration-chip ${d===activeDur?'active':''}" onclick="activeDur='${d}';localStorage.setItem('activeDur',activeDur);renderDurationFilters();renderGames();switchTab('games')">${d}</button>`).join('');
+}
+function renderGames(){
+ let list=games.filter(g=>(activeCat==='Tất cả'||g.cat===activeCat)&&(activeDur==='Tất cả'||g.dur===activeDur));
+ $('#gameList').innerHTML=list.map(g=>`<button class="game-card" onclick="openGame('${g.id}')"><span class="tag">${g.dur}</span><div class="emoji">${g.icon}</div><b>${g.name}</b><span>${g.desc}</span></button>`).join('') || '<div class="card" style="grid-column:1/-1"><h3>Không có game phù hợp</h3><p>Hãy đổi bộ lọc thể loại hoặc thời lượng.</p></div>';
+}
 function randomGame(){openGame(games[Math.floor(Math.random()*games.length)].id)}
-function openGame(id){closeGame(false);let g=games.find(x=>x.id===id);$('#gameTitle').textContent=`${g.icon} ${g.name}`;$('#modal').classList.add('show');(handlers[id]||placeholder)(id)}
-function closeGame(hide=true){if(currentCleanup)currentCleanup();currentCleanup=null;area.innerHTML='';scorebar.innerHTML='';if(hide)$('#modal').classList.remove('show')}
+function openGame(id){closeGame(false);currentGameId=id;let g=games.find(x=>x.id===id);$('#gameTitle').textContent=`${g.icon} ${g.name}`;$('#modal').classList.add('show');document.body.classList.add('modal-open');markGameOpened(id);playTone(420,.05);(handlers[id]||placeholder)(id)}
+function closeGame(hide=true){if(currentCleanup)currentCleanup();currentCleanup=null;stopGameTimer();currentGameId=null;area.innerHTML='';scorebar.innerHTML='';document.body.classList.remove('modal-open');if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});if(hide)$('#modal').classList.remove('show');updateProfileUI()}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeGame()});
+function resetAllProgress(){if(confirm('Xóa toàn bộ điểm và tiến trình đã lưu?')){Object.keys(localStorage).forEach(k=>{if(k.startsWith('save_')||k.startsWith('hs_')||k==='bestReaction'||k==='activeCat'||k==='activeDur'||k===PROFILE_KEY)localStorage.removeItem(k)});activeCat='Tất cả';
+const PROFILE_KEY='gamehub_profile_v2';
+const THEMES=[
+ {id:'default',name:'Mặc định',cost:0,cls:''},
+ {id:'ocean',name:'Ocean',cost:120,cls:'theme-ocean'},
+ {id:'sunset',name:'Sunset',cost:220,cls:'theme-sunset'},
+ {id:'forest',name:'Forest',cost:320,cls:'theme-forest'},
+ {id:'neon',name:'Neon',cost:500,cls:'theme-neon'}
+];
+const ACHIEVEMENTS=[
+ {id:'first_game',name:'🎮 Khởi động',desc:'Mở game đầu tiên'},
+ {id:'five_games',name:'🕹️ Người chơi mới',desc:'Mở 5 lượt game'},
+ {id:'xp_500',name:'⭐ 500 XP',desc:'Đạt 500 XP'},
+ {id:'idle_5',name:'⛏️ IDLE level 5',desc:'Có một game IDLE đạt level 5'},
+ {id:'high_50',name:'🔥 Điểm 50+',desc:'Có game đạt điểm cao từ 50'}
+];
+function loadProfile(){
+ let p=JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')||{xp:0,level:1,plays:0,seconds:0,theme:'default',unlockedThemes:['default'],sound:true,batterySaver:false,missions:{},achievements:{}};
+ return p;
+}
+function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p))}
+function xpNeed(level){return 100+level*55}
+function normalizeProfile(p){while(p.xp>=xpNeed(p.level)){p.xp-=xpNeed(p.level);p.level++; toast('Lên level '+p.level+'!')}} 
+function addXP(amount,reason=''){
+ let p=loadProfile(); p.xp+=amount; normalizeProfile(p); saveProfile(p); updateProfileUI(); if(reason) toast('+'+amount+' XP · '+reason); checkAchievements();
+}
+function applyTheme(){
+ let p=loadProfile(); THEMES.forEach(t=>{if(t.cls)document.body.classList.remove(t.cls)});
+ let t=THEMES.find(x=>x.id===p.theme)||THEMES[0]; if(t.cls)document.body.classList.add(t.cls);
+ document.body.classList.toggle('battery-saver', !!p.batterySaver);
+}
+function updateProfileUI(){
+ let p=loadProfile(); normalizeProfile(p); saveProfile(p);
+ const pct=Math.min(100,Math.round((p.xp/xpNeed(p.level))*100));
+ if($('#playerLevelText')) $('#playerLevelText').textContent='Level '+p.level;
+ if($('#playerXpBar')) $('#playerXpBar').style.width=pct+'%';
+ if($('#playerXpText')) $('#playerXpText').textContent=p.xp+' / '+xpNeed(p.level)+' XP · '+p.plays+' lượt chơi · '+Math.floor((p.seconds||0)/60)+' phút';
+ if($('#soundState')) $('#soundState').textContent=p.sound?'Bật':'Tắt';
+ if($('#batteryState')) $('#batteryState').textContent=p.batterySaver?'Bật':'Tắt';
+ renderThemeShop(); renderMissions(); renderAchievements(); applyTheme();
+}
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function missionState(){
+ let p=loadProfile(), day=todayKey();
+ if(!p.missions[day]) p.missions[day]={open3:false,play5:false,idleTap:false,claimed:{}};
+ saveProfile(p); return p.missions[day];
+}
+function renderMissions(){
+ const el=$('#dailyMissions'); if(!el)return; let p=loadProfile(), m=missionState();
+ const items=[
+  {id:'open3',title:'Mở 3 lượt game',done:p.plays>=3,reward:40},
+  {id:'play5',title:'Chơi tổng 5 phút',done:(p.seconds||0)>=300,reward:60},
+  {id:'idleTap',title:'Chơi một game IDLE',done:m.idleTap,reward:50}
+ ];
+ el.innerHTML=items.map(it=>`<div class="mini-item ${it.done?'done':''}"><span><b>${it.title}</b><br>${it.done?'Hoàn thành':'Chưa hoàn thành'} · +${it.reward} XP</span><button class="tiny-btn" onclick="claimMission('${it.id}',${it.reward})">${m.claimed[it.id]?'Đã nhận':'Nhận'}</button></div>`).join('');
+}
+function claimMission(id,reward){
+ let p=loadProfile(), m=missionState();
+ const done = id==='open3'?p.plays>=3:id==='play5'?(p.seconds||0)>=300:m[id];
+ if(!done) return toast('Chưa hoàn thành nhiệm vụ.');
+ if(m.claimed[id]) return toast('Đã nhận thưởng.');
+ m.claimed[id]=true; p.missions[todayKey()]=m; saveProfile(p); addXP(reward,'nhiệm vụ'); renderMissions();
+}
+function renderAchievements(){
+ const el=$('#achievementList'); if(!el)return; let p=loadProfile(); checkAchievements(false); p=loadProfile();
+ el.innerHTML=ACHIEVEMENTS.map(a=>`<div class="mini-item ${p.achievements[a.id]?'done':''}"><span><b>${a.name}</b><br>${a.desc}</span><span>${p.achievements[a.id]?'✅':'🔒'}</span></div>`).join('');
+}
+function maxHighScore(){
+ let max=0; Object.keys(localStorage).forEach(k=>{if(k.startsWith('hs_')) max=Math.max(max, +(localStorage.getItem(k)||0))}); return max;
+}
+function maxIdleLevel(){
+ let max=0; ['idleMine','idleFarm','idleCafe','idleSpace','idleDragon'].forEach(id=>{try{let s=JSON.parse(localStorage.getItem('save_'+id)||'{}'); max=Math.max(max, s.lvl||0)}catch(e){}});
+ return max;
+}
+function unlockAchievement(id,notify=true){
+ let p=loadProfile(); if(!p.achievements[id]){p.achievements[id]=Date.now(); saveProfile(p); if(notify){addXP(35,'huy hiệu'); toast('Mở khóa huy hiệu!')}} 
+}
+function checkAchievements(notify=true){
+ let p=loadProfile();
+ if(p.plays>=1) unlockAchievement('first_game',notify);
+ if(p.plays>=5) unlockAchievement('five_games',notify);
+ if(p.level>=5 || p.xp>=500) unlockAchievement('xp_500',notify);
+ if(maxIdleLevel()>=5) unlockAchievement('idle_5',notify);
+ if(maxHighScore()>=50) unlockAchievement('high_50',notify);
+}
+function renderThemeShop(){
+ const el=$('#themeShop'); if(!el)return; let p=loadProfile();
+ el.innerHTML=THEMES.map(t=>{
+  const unlocked=p.unlockedThemes.includes(t.id), active=p.theme===t.id;
+  return `<button class="theme-btn ${active?'active':''}" onclick="buyTheme('${t.id}')">${t.name}<br>${unlocked?'Đã mở':t.cost+' XP'}</button>`;
+ }).join('');
+}
+function buyTheme(id){
+ let p=loadProfile(), t=THEMES.find(x=>x.id===id); if(!t)return;
+ if(!p.unlockedThemes.includes(id)){
+  if(p.xp<t.cost) return toast('Chưa đủ XP.');
+  p.xp-=t.cost; p.unlockedThemes.push(id); toast('Đã mở theme '+t.name);
+ }
+ p.theme=id; saveProfile(p); updateProfileUI();
+}
+let audioCtx=null;
+function playTone(freq=420,dur=.06){
+ let p=loadProfile(); if(!p.sound)return;
+ try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);g.gain.value=.035;o.start();o.stop(audioCtx.currentTime+dur)}catch(e){}
+}
+function toggleSound(){let p=loadProfile();p.sound=!p.sound;saveProfile(p);updateProfileUI();playTone(520,.08)}
+function toggleBatterySaver(){let p=loadProfile();p.batterySaver=!p.batterySaver;saveProfile(p);updateProfileUI();toast(p.batterySaver?'Đã bật tiết kiệm pin':'Đã tắt tiết kiệm pin')}
+function markGameOpened(id){
+ let p=loadProfile(); p.plays=(p.plays||0)+1; saveProfile(p);
+ if(id&&id.startsWith('idle')){let m=missionState();m.idleTap=true;p=loadProfile();p.missions[todayKey()]=m;saveProfile(p)}
+ addXP(5,'mở game'); updateProfileUI();
+ clearInterval(playTimer); gameStartAt=Date.now();
+ playTimer=setInterval(()=>{let p=loadProfile();p.seconds=(p.seconds||0)+15;saveProfile(p);addXP(3,'thời gian chơi')},15000);
+}
+function stopGameTimer(){if(playTimer){clearInterval(playTimer);playTimer=null}}
+function recordHighScoreFromScorebar(items){
+ if(!currentGameId)return;
+ let joined=items.join(' ');
+ let m=joined.match(/Điểm:\s*(-?\d+)/);
+ if(!m)return;
+ let val=+m[1], key='hs_'+currentGameId, old=+(localStorage.getItem(key)||0);
+ if(val>old){localStorage.setItem(key,String(val)); if(val>=10) checkAchievements();}
+}
+function showHighScores(){
+ let rows=games.map(g=>({name:g.name,score:+(localStorage.getItem('hs_'+g.id)||0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,12);
+ area.innerHTML=`<div class="mini-list">${rows.length?rows.map(r=>`<div class="mini-item"><b>${r.name}</b><span>${r.score}</span></div>`).join(''):'<p class="note">Chưa có điểm cao nào.</p>'}</div>`;
+ $('#gameTitle').textContent='🏆 Bảng điểm cá nhân'; scorebar.innerHTML=''; $('#modal').classList.add('show'); document.body.classList.add('modal-open');
+}
+function exportSave(){
+ const data={profile:loadProfile(),local:{}};
+ Object.keys(localStorage).forEach(k=>{if(k.startsWith('save_')||k.startsWith('hs_')||['bestReaction','activeCat','activeDur'].includes(k))data.local[k]=localStorage.getItem(k)});
+ const raw=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+ $('#saveBox').value=raw; toast('Đã export save.');
+}
+function importSave(){
+ const raw=$('#saveBox').value.trim(); if(!raw)return toast('Hãy dán mã save trước.');
+ try{
+  const data=JSON.parse(decodeURIComponent(escape(atob(raw))));
+  if(data.profile) localStorage.setItem(PROFILE_KEY,JSON.stringify(data.profile));
+  if(data.local) Object.keys(data.local).forEach(k=>localStorage.setItem(k,data.local[k]));
+  activeCat=localStorage.getItem('activeCat')||'Tất cả'; activeDur=localStorage.getItem('activeDur')||'Tất cả';
+  applyTheme(); updateProfileUI(); renderFilters(); renderGames(); toast('Import thành công.');
+ }catch(e){toast('Mã save không hợp lệ.')}
+}
+function showPwaGuide(){
+ const sw=`const CACHE='gamehub-v1';\\nself.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']))));\\nself.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+ $('#saveBox').value='Tạo file sw.js cạnh file HTML trên GitHub Pages với nội dung:\\n\\n'+sw+'\\n\\nSau đó thêm đoạn register service worker nếu bạn cho phép dùng thêm file phụ.';
+ toast('Đã hiện hướng dẫn sw.js.');
+}
+
+renderFilters();renderGames();updateProfileUI();
+
+if(navigator.getBattery){
+ navigator.getBattery().then(b=>{
+  function batteryCheck(){
+   let p=loadProfile();
+   if(b.level<.2 && !b.charging && !p.batterySaver){p.batterySaver=true;saveProfile(p);updateProfileUI();toast('Pin yếu: đã bật tiết kiệm pin.')}
+  }
+  b.addEventListener('levelchange',batteryCheck); b.addEventListener('chargingchange',batteryCheck); batteryCheck();
+ }).catch(()=>{});
+}
+toast('Đã reset dữ liệu.')}}
 function updateNet(){
  const el = $('#netStatus');
  const online = navigator.onLine;
@@ -220,7 +504,168 @@ const handlers={tictactoe,snake,memory,mole,reaction,rps,math,target,pong,g2048,
  idleMine:()=>idleGame('idleMine'),idleFarm:()=>idleGame('idleFarm'),idleCafe:()=>idleGame('idleCafe'),idleSpace:()=>idleGame('idleSpace'),idleDragon:()=>idleGame('idleDragon'),
  guessNumber,wordScramble,colorMatch,tapRace,diceDuel,coinFlip,blackjack,simon,mines,maze,flappy,runner,slider,tower,breath};
 
-renderFilters();renderGames();
+
+const PROFILE_KEY='gamehub_profile_v2';
+const THEMES=[
+ {id:'default',name:'Mặc định',cost:0,cls:''},
+ {id:'ocean',name:'Ocean',cost:120,cls:'theme-ocean'},
+ {id:'sunset',name:'Sunset',cost:220,cls:'theme-sunset'},
+ {id:'forest',name:'Forest',cost:320,cls:'theme-forest'},
+ {id:'neon',name:'Neon',cost:500,cls:'theme-neon'}
+];
+const ACHIEVEMENTS=[
+ {id:'first_game',name:'🎮 Khởi động',desc:'Mở game đầu tiên'},
+ {id:'five_games',name:'🕹️ Người chơi mới',desc:'Mở 5 lượt game'},
+ {id:'xp_500',name:'⭐ 500 XP',desc:'Đạt 500 XP'},
+ {id:'idle_5',name:'⛏️ IDLE level 5',desc:'Có một game IDLE đạt level 5'},
+ {id:'high_50',name:'🔥 Điểm 50+',desc:'Có game đạt điểm cao từ 50'}
+];
+function loadProfile(){
+ let p=JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')||{xp:0,level:1,plays:0,seconds:0,theme:'default',unlockedThemes:['default'],sound:true,batterySaver:false,missions:{},achievements:{}};
+ return p;
+}
+function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p))}
+function xpNeed(level){return 100+level*55}
+function normalizeProfile(p){while(p.xp>=xpNeed(p.level)){p.xp-=xpNeed(p.level);p.level++; toast('Lên level '+p.level+'!')}} 
+function addXP(amount,reason=''){
+ let p=loadProfile(); p.xp+=amount; normalizeProfile(p); saveProfile(p); updateProfileUI(); if(reason) toast('+'+amount+' XP · '+reason); checkAchievements();
+}
+function applyTheme(){
+ let p=loadProfile(); THEMES.forEach(t=>{if(t.cls)document.body.classList.remove(t.cls)});
+ let t=THEMES.find(x=>x.id===p.theme)||THEMES[0]; if(t.cls)document.body.classList.add(t.cls);
+ document.body.classList.toggle('battery-saver', !!p.batterySaver);
+}
+function updateProfileUI(){
+ let p=loadProfile(); normalizeProfile(p); saveProfile(p);
+ const pct=Math.min(100,Math.round((p.xp/xpNeed(p.level))*100));
+ if($('#playerLevelText')) $('#playerLevelText').textContent='Level '+p.level;
+ if($('#playerXpBar')) $('#playerXpBar').style.width=pct+'%';
+ if($('#playerXpText')) $('#playerXpText').textContent=p.xp+' / '+xpNeed(p.level)+' XP · '+p.plays+' lượt chơi · '+Math.floor((p.seconds||0)/60)+' phút';
+ if($('#soundState')) $('#soundState').textContent=p.sound?'Bật':'Tắt';
+ if($('#batteryState')) $('#batteryState').textContent=p.batterySaver?'Bật':'Tắt';
+ renderThemeShop(); renderMissions(); renderAchievements(); applyTheme();
+}
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function missionState(){
+ let p=loadProfile(), day=todayKey();
+ if(!p.missions[day]) p.missions[day]={open3:false,play5:false,idleTap:false,claimed:{}};
+ saveProfile(p); return p.missions[day];
+}
+function renderMissions(){
+ const el=$('#dailyMissions'); if(!el)return; let p=loadProfile(), m=missionState();
+ const items=[
+  {id:'open3',title:'Mở 3 lượt game',done:p.plays>=3,reward:40},
+  {id:'play5',title:'Chơi tổng 5 phút',done:(p.seconds||0)>=300,reward:60},
+  {id:'idleTap',title:'Chơi một game IDLE',done:m.idleTap,reward:50}
+ ];
+ el.innerHTML=items.map(it=>`<div class="mini-item ${it.done?'done':''}"><span><b>${it.title}</b><br>${it.done?'Hoàn thành':'Chưa hoàn thành'} · +${it.reward} XP</span><button class="tiny-btn" onclick="claimMission('${it.id}',${it.reward})">${m.claimed[it.id]?'Đã nhận':'Nhận'}</button></div>`).join('');
+}
+function claimMission(id,reward){
+ let p=loadProfile(), m=missionState();
+ const done = id==='open3'?p.plays>=3:id==='play5'?(p.seconds||0)>=300:m[id];
+ if(!done) return toast('Chưa hoàn thành nhiệm vụ.');
+ if(m.claimed[id]) return toast('Đã nhận thưởng.');
+ m.claimed[id]=true; p.missions[todayKey()]=m; saveProfile(p); addXP(reward,'nhiệm vụ'); renderMissions();
+}
+function renderAchievements(){
+ const el=$('#achievementList'); if(!el)return; let p=loadProfile(); checkAchievements(false); p=loadProfile();
+ el.innerHTML=ACHIEVEMENTS.map(a=>`<div class="mini-item ${p.achievements[a.id]?'done':''}"><span><b>${a.name}</b><br>${a.desc}</span><span>${p.achievements[a.id]?'✅':'🔒'}</span></div>`).join('');
+}
+function maxHighScore(){
+ let max=0; Object.keys(localStorage).forEach(k=>{if(k.startsWith('hs_')) max=Math.max(max, +(localStorage.getItem(k)||0))}); return max;
+}
+function maxIdleLevel(){
+ let max=0; ['idleMine','idleFarm','idleCafe','idleSpace','idleDragon'].forEach(id=>{try{let s=JSON.parse(localStorage.getItem('save_'+id)||'{}'); max=Math.max(max, s.lvl||0)}catch(e){}});
+ return max;
+}
+function unlockAchievement(id,notify=true){
+ let p=loadProfile(); if(!p.achievements[id]){p.achievements[id]=Date.now(); saveProfile(p); if(notify){addXP(35,'huy hiệu'); toast('Mở khóa huy hiệu!')}} 
+}
+function checkAchievements(notify=true){
+ let p=loadProfile();
+ if(p.plays>=1) unlockAchievement('first_game',notify);
+ if(p.plays>=5) unlockAchievement('five_games',notify);
+ if(p.level>=5 || p.xp>=500) unlockAchievement('xp_500',notify);
+ if(maxIdleLevel()>=5) unlockAchievement('idle_5',notify);
+ if(maxHighScore()>=50) unlockAchievement('high_50',notify);
+}
+function renderThemeShop(){
+ const el=$('#themeShop'); if(!el)return; let p=loadProfile();
+ el.innerHTML=THEMES.map(t=>{
+  const unlocked=p.unlockedThemes.includes(t.id), active=p.theme===t.id;
+  return `<button class="theme-btn ${active?'active':''}" onclick="buyTheme('${t.id}')">${t.name}<br>${unlocked?'Đã mở':t.cost+' XP'}</button>`;
+ }).join('');
+}
+function buyTheme(id){
+ let p=loadProfile(), t=THEMES.find(x=>x.id===id); if(!t)return;
+ if(!p.unlockedThemes.includes(id)){
+  if(p.xp<t.cost) return toast('Chưa đủ XP.');
+  p.xp-=t.cost; p.unlockedThemes.push(id); toast('Đã mở theme '+t.name);
+ }
+ p.theme=id; saveProfile(p); updateProfileUI();
+}
+let audioCtx=null;
+function playTone(freq=420,dur=.06){
+ let p=loadProfile(); if(!p.sound)return;
+ try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);g.gain.value=.035;o.start();o.stop(audioCtx.currentTime+dur)}catch(e){}
+}
+function toggleSound(){let p=loadProfile();p.sound=!p.sound;saveProfile(p);updateProfileUI();playTone(520,.08)}
+function toggleBatterySaver(){let p=loadProfile();p.batterySaver=!p.batterySaver;saveProfile(p);updateProfileUI();toast(p.batterySaver?'Đã bật tiết kiệm pin':'Đã tắt tiết kiệm pin')}
+function markGameOpened(id){
+ let p=loadProfile(); p.plays=(p.plays||0)+1; saveProfile(p);
+ if(id&&id.startsWith('idle')){let m=missionState();m.idleTap=true;p=loadProfile();p.missions[todayKey()]=m;saveProfile(p)}
+ addXP(5,'mở game'); updateProfileUI();
+ clearInterval(playTimer); gameStartAt=Date.now();
+ playTimer=setInterval(()=>{let p=loadProfile();p.seconds=(p.seconds||0)+15;saveProfile(p);addXP(3,'thời gian chơi')},15000);
+}
+function stopGameTimer(){if(playTimer){clearInterval(playTimer);playTimer=null}}
+function recordHighScoreFromScorebar(items){
+ if(!currentGameId)return;
+ let joined=items.join(' ');
+ let m=joined.match(/Điểm:\s*(-?\d+)/);
+ if(!m)return;
+ let val=+m[1], key='hs_'+currentGameId, old=+(localStorage.getItem(key)||0);
+ if(val>old){localStorage.setItem(key,String(val)); if(val>=10) checkAchievements();}
+}
+function showHighScores(){
+ let rows=games.map(g=>({name:g.name,score:+(localStorage.getItem('hs_'+g.id)||0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,12);
+ area.innerHTML=`<div class="mini-list">${rows.length?rows.map(r=>`<div class="mini-item"><b>${r.name}</b><span>${r.score}</span></div>`).join(''):'<p class="note">Chưa có điểm cao nào.</p>'}</div>`;
+ $('#gameTitle').textContent='🏆 Bảng điểm cá nhân'; scorebar.innerHTML=''; $('#modal').classList.add('show'); document.body.classList.add('modal-open');
+}
+function exportSave(){
+ const data={profile:loadProfile(),local:{}};
+ Object.keys(localStorage).forEach(k=>{if(k.startsWith('save_')||k.startsWith('hs_')||['bestReaction','activeCat','activeDur'].includes(k))data.local[k]=localStorage.getItem(k)});
+ const raw=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+ $('#saveBox').value=raw; toast('Đã export save.');
+}
+function importSave(){
+ const raw=$('#saveBox').value.trim(); if(!raw)return toast('Hãy dán mã save trước.');
+ try{
+  const data=JSON.parse(decodeURIComponent(escape(atob(raw))));
+  if(data.profile) localStorage.setItem(PROFILE_KEY,JSON.stringify(data.profile));
+  if(data.local) Object.keys(data.local).forEach(k=>localStorage.setItem(k,data.local[k]));
+  activeCat=localStorage.getItem('activeCat')||'Tất cả'; activeDur=localStorage.getItem('activeDur')||'Tất cả';
+  applyTheme(); updateProfileUI(); renderFilters(); renderGames(); toast('Import thành công.');
+ }catch(e){toast('Mã save không hợp lệ.')}
+}
+function showPwaGuide(){
+ const sw=`const CACHE='gamehub-v1';\\nself.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']))));\\nself.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+ $('#saveBox').value='Tạo file sw.js cạnh file HTML trên GitHub Pages với nội dung:\\n\\n'+sw+'\\n\\nSau đó thêm đoạn register service worker nếu bạn cho phép dùng thêm file phụ.';
+ toast('Đã hiện hướng dẫn sw.js.');
+}
+
+renderFilters();renderGames();updateProfileUI();
+
+if(navigator.getBattery){
+ navigator.getBattery().then(b=>{
+  function batteryCheck(){
+   let p=loadProfile();
+   if(b.level<.2 && !b.charging && !p.batterySaver){p.batterySaver=true;saveProfile(p);updateProfileUI();toast('Pin yếu: đã bật tiết kiệm pin.')}
+  }
+  b.addEventListener('levelchange',batteryCheck); b.addEventListener('chargingchange',batteryCheck); batteryCheck();
+ }).catch(()=>{});
+}
+
 </script>
 </body>
 </html>
