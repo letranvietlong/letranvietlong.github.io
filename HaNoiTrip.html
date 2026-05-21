@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hà Nội Trip – Viết Long & Minh Thư</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: #eef2f7;
+    display: flex; justify-content: center;
+    padding: 28px 16px;
+  }
+  .page { width: 540px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(145deg, #1565C0 0%, #1B8C5E 100%);
+    border-radius: 18px; padding: 20px 22px 18px;
+    position: relative; overflow: hidden;
+  }
+  .header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.06); }
+  .hd-badge { font-size:10px; color:rgba(255,255,255,0.6); letter-spacing:2px; text-transform:uppercase; font-weight:600; margin-bottom:5px; }
+  .hd-title { font-size:24px; font-weight:800; color:white; letter-spacing:-0.5px; margin-bottom:3px; }
+  .hd-sub   { font-size:12px; color:rgba(255,255,255,0.75); margin-bottom:14px; }
+
+  /* flights side by side */
+  .flights-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .fc {
+    background:rgba(255,255,255,0.11); border:1px solid rgba(255,255,255,0.18);
+    border-radius:12px; padding:10px 12px;
+  }
+  .fc-label { font-size:9px; color:rgba(255,255,255,0.55); text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin-bottom:7px; }
+  .fc-route { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .fc-city  { font-size:17px; font-weight:800; color:white; line-height:1; }
+  .fc-time  { font-size:11px; font-weight:700; color:rgba(255,255,255,0.85); }
+  .fc-mid   { flex:1; text-align:center; }
+  .fc-arr   { display:flex; align-items:center; gap:3px; }
+  .fc-line  { flex:1; height:1px; background:rgba(255,255,255,0.25); }
+  .fc-plane { font-size:11px; color:rgba(255,255,255,0.7); }
+  .fc-num   { font-size:9px; color:rgba(255,255,255,0.5); text-align:center; margin-top:1px; }
+  .fc-tags  { display:flex; gap:4px; flex-wrap:wrap; }
+  .fc-tag   { font-size:9px; background:rgba(255,255,255,0.13); color:rgba(255,255,255,0.8); border-radius:5px; padding:2px 6px; }
+  .fc-tag.seat { background:rgba(255,255,255,0.22); color:white; font-weight:700; }
+  .fc-tag.pending { border:1px dashed rgba(255,255,255,0.3); background:transparent; color:rgba(255,255,255,0.45); }
+
+  /* ── HOTEL ── */
+  .hotel-card {
+    background:white; border-radius:14px; padding:12px 16px;
+    border:1px solid #dde3ed;
+    display:flex; align-items:center; gap:12px;
+  }
+  .hotel-icon { width:40px; height:40px; border-radius:11px; flex-shrink:0; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .hotel-name { font-size:13px; font-weight:700; color:#1a202c; margin-bottom:2px; }
+  .hotel-addr { font-size:10px; color:#718096; margin-bottom:6px; }
+  .hotel-times { display:flex; gap:12px; align-items:center; }
+  .ht-item { display:flex; align-items:center; gap:5px; }
+  .ht-label { font-size:9px; color:#a0aec0; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+  .ht-val   { font-size:13px; font-weight:800; }
+  .ht-val.in  { color:#2196F3; }
+  .ht-val.out { color:#F57C00; }
+  .ht-sep { color:#cbd5e0; }
+
+  /* ── DAY CARD ── */
+  .day-card { background:white; border-radius:14px; border:1px solid #dde3ed; overflow:hidden; }
+  .day-head { padding:10px 16px; display:flex; justify-content:space-between; align-items:center; }
+  .day-head.fri { background:linear-gradient(135deg,#2196F3,#1565C0); }
+  .day-head.sat { background:linear-gradient(135deg,#43A047,#1B5E20); }
+  .day-head.sun { background:linear-gradient(135deg,#F57C00,#BF360C); }
+  .dh-left { display:flex; align-items:baseline; gap:8px; }
+  .dh-weekday { font-size:10px; color:rgba(255,255,255,0.7); letter-spacing:1.5px; text-transform:uppercase; font-weight:600; }
+  .dh-date    { font-size:17px; font-weight:800; color:white; }
+  .dh-badge   { background:rgba(255,255,255,0.18); border-radius:7px; padding:3px 10px; font-size:10px; color:white; font-weight:600; }
+
+  /* compact 2-col activity grid */
+  .act-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+  .act-item {
+    display:flex; align-items:flex-start; gap:8px;
+    padding:9px 14px;
+    border-bottom:1px solid #f4f6f9;
+    border-right:1px solid #f4f6f9;
+  }
+  .act-item:nth-child(even) { border-right:none; }
+  /* last row — remove bottom border */
+  .act-item:nth-last-child(1),
+  .act-item:nth-last-child(2) { border-bottom:none; }
+  /* if odd total, last item spans full width */
+  .act-item.full { grid-column: 1 / -1; border-right:none; }
+  .act-item.full:last-child { border-bottom:none; }
+
+  .act-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .act-dot.fri { background:#2196F3; }
+  .act-dot.sat { background:#43A047; }
+  .act-dot.sun { background:#F57C00; }
+
+  .act-body { flex:1; min-width:0; }
+  .act-time { font-size:9px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:1px; }
+  .act-time.fri { color:#1565C0; }
+  .act-time.sat { color:#2E7D32; }
+  .act-time.sun { color:#E65100; }
+  .act-name   { font-size:12px; font-weight:600; color:#2d3748; margin-bottom:2px; line-height:1.3; }
+  .act-detail { font-size:10px; color:#a0aec0; line-height:1.4; }
+  .act-addr   { font-size:9px; color:#718096; background:#f7fafc; border-radius:4px; padding:1px 5px; display:inline-block; margin-top:2px; }
+
+  .tb { display:inline-flex; align-items:center; gap:3px; font-size:9px; font-weight:600; border-radius:4px; padding:1px 6px; margin-top:3px; }
+  .tb.car  { background:#EBF8FF; color:#2B6CB0; }
+  .tb.walk { background:#F0FFF4; color:#276749; }
+
+  .act-item.highlight      { background:#FFF8F0; border-left:2px solid #F57C00; padding-left:12px; }
+  .act-item.highlight-blue { background:#F0F7FF; border-left:2px solid #2196F3; padding-left:12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="hd-badge">Vietravel Airlines · PNR 7BYHBL</div>
+    <div class="hd-title">Hà Nội Trip ✈</div>
+    <div class="hd-sub">22 – 24 tháng 5, 2026 &nbsp;·&nbsp; Đà Nẵng ⇄ Hà Nội</div>
+
+    <div class="flights-row">
+      <!-- Chuyến đi -->
+      <div class="fc">
+        <div class="fc-label">✈ Chuyến đi · 22/05</div>
+        <div class="fc-route">
+          <div><div class="fc-city">DAD</div><div class="fc-time">18:55</div></div>
+          <div class="fc-mid">
+            <div class="fc-arr"><div class="fc-line"></div><div class="fc-plane">✈</div><div class="fc-line"></div></div>
+            <div class="fc-num">VU-658 · ~1h45m</div>
+          </div>
+          <div style="text-align:right"><div class="fc-city">HAN</div><div class="fc-time">~20:40</div></div>
+        </div>
+        <div class="fc-tags">
+          <span class="fc-tag seat">VL · 9E</span>
+          <span class="fc-tag seat">MT · 9F</span>
+          <span class="fc-tag">🎒 7kg</span>
+          <span class="fc-tag">🧳 15kg</span>
+        </div>
+      </div>
+      <!-- Chuyến về -->
+      <div class="fc">
+        <div class="fc-label">🏠 Chuyến về · 24/05</div>
+        <div class="fc-route">
+          <div><div class="fc-city">HAN</div><div class="fc-time">16:55</div></div>
+          <div class="fc-mid">
+            <div class="fc-arr"><div class="fc-line"></div><div class="fc-plane">✈</div><div class="fc-line"></div></div>
+            <div class="fc-num">VU-639 · ~1h25m</div>
+          </div>
+          <div style="text-align:right"><div class="fc-city">DAD</div><div class="fc-time">18:20</div></div>
+        </div>
+        <div class="fc-tags">
+          <span class="fc-tag pending">Chưa check-in</span>
+          <span class="fc-tag">🎒 7kg</span>
+          <span class="fc-tag">🧳 15kg</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOTEL -->
+  <div class="hotel-card">
+    <div class="hotel-icon">🏨</div>
+    <div style="flex:1">
+      <div class="hotel-name">The Chi Boutique Hotel</div>
+      <div class="hotel-addr">📍 13-15 P.Nhà Chung, Hoàn Kiếm, Hà Nội</div>
+      <div class="hotel-times">
+        <div class="ht-item"><div class="ht-label">Check-in</div>&nbsp;<div class="ht-val in">14:00</div></div>
+        <div class="ht-sep">·</div>
+        <div class="ht-item"><div class="ht-label">Check-out</div>&nbsp;<div class="ht-val out">12:00</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NGÀY 22 -->
+  <div class="day-card">
+    <div class="day-head fri">
+      <div class="dh-left"><div class="dh-weekday">Thứ Sáu</div><div class="dh-date">22/05</div></div>
+      <div class="dh-badge">Di chuyển & Ăn tối</div>
+    </div>
+    <div class="act-grid">
+
+      <div class="act-item highlight-blue">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">15:45</div>
+          <div class="act-name">🏠 Xuất phát từ nhà</div>
+          <div class="act-addr">06 Hoàng Công Chất, Đà Nẵng</div>
+          <div class="tb car">🚗 ~7km · 15 phút</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">16:00</div>
+          <div class="act-name">🛫 Sân bay Đà Nẵng</div>
+          <div class="act-detail">Làm thủ tục · Boarding 18:15</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">18:55</div>
+          <div class="act-name">✈ Bay · VU-658</div>
+          <div class="act-detail">Ghế 9E (Viết Long) · 9F (Minh Thư)</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">~20:40</div>
+          <div class="act-name">🛬 Đáp Nội Bài</div>
+          <div class="tb car">🚗 ~30km · 45–55 phút</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">~22:00</div>
+          <div class="act-name">🏨 Nhận phòng</div>
+          <div class="act-detail">The Chi Boutique Hotel</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot fri"></div>
+        <div class="act-body">
+          <div class="act-time fri">Tối</div>
+          <div class="act-name">🥩 Bò nướng gầm cầu</div>
+          <div class="act-detail">Đặc sản nhậu đêm Hà Nội</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NGÀY 23 -->
+  <div class="day-card">
+    <div class="day-head sat">
+      <div class="dh-left"><div class="dh-weekday">Thứ Bảy</div><div class="dh-date">23/05</div></div>
+      <div class="dh-badge">Khám phá Hà Nội</div>
+    </div>
+    <div class="act-grid">
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Sáng</div>
+          <div class="act-name">🍜 Bún chả que tre</div>
+          <div class="act-addr">📍 33 Hàng Giầy</div>
+          <div class="tb walk">🚶 700m · 9 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Sáng</div>
+          <div class="act-name">☕ Phê La Hồ Tây</div>
+          <div class="act-addr">📍 145 Trích Sài</div>
+          <div class="tb car">🚗 ~6km · 15 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Sáng</div>
+          <div class="act-name">🏛️ Lăng Bác</div>
+          <div class="act-addr">📍 Số 1 Hùng Vương, Ba Đình</div>
+          <div class="tb car">🚗 ~4.5km · 15 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Trưa</div>
+          <div class="act-name">⛩️ Chùa Một Cột</div>
+          <div class="act-addr">📍 Đội Cấn, Ba Đình</div>
+          <div class="tb walk">🚶 300m · 4 phút từ Lăng Bác</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Trưa</div>
+          <div class="act-name">🍲 Bún ngan · Miến ngan</div>
+          <div class="act-addr">📍 Cạnh Starbucks, Vincom LĐH</div>
+          <div class="tb car">🚗 ~2.5km · 8 phút</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sat"></div>
+        <div class="act-body">
+          <div class="act-time sat">Chiều tối</div>
+          <div class="act-name">🌅 Hồ Gươm</div>
+          <div class="act-detail">Đền Ngọc Sơn · Phố đi bộ</div>
+          <div class="tb car">🚗 ~2.5km · 10 phút về KS</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NGÀY 24 -->
+  <div class="day-card">
+    <div class="day-head sun">
+      <div class="dh-left"><div class="dh-weekday">Chủ Nhật</div><div class="dh-date">24/05</div></div>
+      <div class="dh-badge">Về nhà</div>
+    </div>
+    <div class="act-grid">
+
+      <div class="act-item">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">Sáng</div>
+          <div class="act-name">⛪ Nhà thờ Lớn HN</div>
+          <div class="act-addr">📍 P.Nhà Chung, HK</div>
+          <div class="tb walk">🚶 100m · 2 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">Sáng</div>
+          <div class="act-name">☕ Cafe Hồ Gươm</div>
+          <div class="tb walk">🚶 350m · 5 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">11:30</div>
+          <div class="act-name">🏨 Check-out</div>
+          <div class="act-detail">Trước 12:00</div>
+        </div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">Trưa</div>
+          <div class="act-name">🛍️ Mua quà · Ăn trưa</div>
+          <div class="act-addr">📍 Phố Hàng Gai</div>
+          <div class="tb walk">🚶 400m · 5 phút từ KS</div>
+        </div>
+      </div>
+
+      <div class="act-item highlight">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">15:00</div>
+          <div class="act-name">🚗 Ra sân bay Nội Bài</div>
+          <div class="tb car">🚗 ~30km · 45–55 phút</div>
+        </div>
+      </div>
+
+      <div class="act-item highlight">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">16:55</div>
+          <div class="act-name">✈ Bay về · VU-639</div>
+          <div class="act-detail">HAN → DAD · Đến 18:20</div>
+        </div>
+      </div>
+
+      <div class="act-item highlight full">
+        <div class="act-dot sun"></div>
+        <div class="act-body">
+          <div class="act-time sun">~18:35</div>
+          <div class="act-name">🏠 Về đến nhà 🎉</div>
+          <div class="act-addr">📍 06 Hoàng Công Chất, Ngũ Hành Sơn, Đà Nẵng</div>
+          <div class="tb car">🚗 ~7km · 15 phút từ sân bay</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
