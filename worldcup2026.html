@@ -1739,7 +1739,7 @@ function renderHomeDashboard(dataObj, visibleMatches){
   const dateTimeBlock=m=>{const dt=matchStartDate(m);return `<div class="home-mini-time"><div class="home-mini-date">${shortDateVN(dt)}</div><div class="home-mini-hm">${displayMatchTime(m)}</div></div>`;};
   const upcoming=all.filter(m=>{const s=matchStatus(m).status;return s==='soon'||s==='live';})
     .sort((a,b)=>matchStartDate(a)-matchStartDate(b)).slice(0,4);
-  const results=all.filter(m=>matchStatus(m).status==='done')
+  const results=all.filter(m=>matchStatus(m).status==='done'&&m.score&&m.score.ft)
     .sort((a,b)=>matchStartDate(b)-matchStartDate(a)).slice(0,4);
   if(upcomingEl)upcomingEl.innerHTML=upcoming.length?upcoming.map(m=>`<div class="home-mini-row">${dateTimeBlock(m)}<div class="home-mini-teams">${flagHtml(m.team1)}${escapeHTML(tn(m.team1))} vs ${escapeHTML(tn(m.team2))}${flagHtml(m.team2)}</div><div class="home-mini-grp">${m.group||m.round||''}</div></div>`).join('')
     :'<div class="home-empty">Chưa có trận sắp tới đã xác định đủ 2 đội.</div>';
