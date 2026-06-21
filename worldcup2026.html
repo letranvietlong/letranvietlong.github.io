@@ -446,20 +446,17 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 <!-- SCHEDULE -->
 <div id="pg-schedule" class="page">
   <div class="wrap">
-    <div class="ph">
-      <div>
-        <div class="ph-h1">Lịch <em>Thi Đấu</em></div>
-        <div id="dataSource" style="margin-top:4px;display:flex;align-items:center;gap:8px">
-          <div class="api-status"><span class="api-dot" id="apiDot"></span><span id="apiTxt">Đang tải dữ liệu...</span></div>
-        </div>
+    <div class="ph" style="display:block">
+      <div class="ph-h1">Lịch <em>Thi Đấu</em></div>
+      <div id="dataSource" style="margin-top:4px;display:flex;align-items:center;gap:8px">
+        <div class="api-status"><span class="api-dot" id="apiDot"></span><span id="apiTxt">Đang tải dữ liệu...</span></div>
       </div>
-      <div class="pills">
+      <div class="pills" style="margin-top:12px">
         <button class="pill on" onclick="filterMatches('all',this)">Tất Cả</button>
-        <button class="pill" onclick="filterMatches('live',this)">● Live</button>
         <button class="pill" onclick="filterMatches('done',this)">Kết Thúc</button>
         <button class="pill" onclick="filterMatches('soon',this)">Sắp Tới</button>
+        <button class="pill" id="hideDoneBtn" onclick="toggleDoneMatches(this)">Hiện trận đã đấu</button>
       </div>
-      <button class="mini-btn" id="hideDoneBtn" onclick="toggleDoneMatches(this)" style="margin-top:6px">Hiện trận đã đấu</button>
     </div>
     <div id="matchesContainer"><div class="loading-state"><div class="spinner"></div><div class="loading-txt">Đang tải lịch thi đấu thực tế...</div></div></div>
   </div>
