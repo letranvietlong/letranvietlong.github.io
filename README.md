@@ -12,7 +12,7 @@
 
 ## 📖 Giới thiệu
 
-Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập** — mỗi trang là một file HTML tự chứa (inline CSS/JS), không cần build step, deploy thẳng bằng GitHub Pages.
+Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập** — phần lớn là một file HTML tự chứa (inline CSS/JS), không cần build step, deploy thẳng bằng GitHub Pages. Các trang quy mô lớn được tách CSS/JS riêng vào `css/`/`js/` (xem [worldcup2026.html](worldcup2026.html) làm ví dụ), vẫn không cần build step.
 
 ## 🧩 Products
 
@@ -39,7 +39,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ## ⚙️ Tech Stack
 
 - **HTML5 / CSS3 / Vanilla JavaScript** — không framework, không build step.
-- Mỗi trang là **một file độc lập**, tự chứa toàn bộ style & logic.
+- Mỗi trang là **một sản phẩm độc lập** — phần lớn tự chứa style & logic inline; trang quy mô lớn tách CSS/JS riêng vào `css/`/`js/` (tên file giữ nguyên theo tên trang) để dễ maintain.
 - Deploy bằng **GitHub Pages**, không cần server hay CI/CD.
 
 ## 📁 Cấu trúc
@@ -57,9 +57,13 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── VietLongSocial.html      # Product
 ├── bingo.html                # Product
 ├── markdownpro.html          # Product
-├── worldcup2026.html         # Product
+├── worldcup2026.html         # Product (HTML — CSS/JS tách riêng, xem css/ và js/ dưới)
 ├── privacy.html              # Chính sách bảo mật (VietLong Creator)
 ├── terms.html                 # Điều khoản dịch vụ (VietLong Creator)
+├── css/
+│   └── worldcup2026.css      # Style cho worldcup2026.html
+├── js/
+│   └── worldcup2026.js       # Logic cho worldcup2026.html
 └── README.md
 ```
 
