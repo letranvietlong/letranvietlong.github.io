@@ -67,6 +67,37 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 └── README.md
 ```
 
+## 📊 Quy mô file (LOC & dung lượng)
+
+| File | LOC | Dung lượng | Base64 nhúng |
+|---|---|---|---|
+| VietLongCreator.html | 12,155 | 561 KB | 0 |
+| VietLongCrypto.html | 11,712 | 1.09 MB | 2 |
+| index.html | 4,343 | 374 KB | 7 |
+| bingo.html | 2,083 | 59 KB | 0 |
+| markdownpro.html | 1,276 | 54 KB | 0 |
+| ThanhThuFruit.html | 1,166 | 42 KB | 0 |
+| VietLongSocial.html | 1,149 | 68 KB | 0 |
+| CryptoAI.html | 1,025 | 86 KB | 0 |
+| KOL-VuThiMinhThu.html | 927 | **11.7 MB** | **39** |
+| MeetingTranslator.html | 684 | 34 KB | 0 |
+| MiniGameHub.html | 671 | 72 KB | 0 |
+| worldcup2026.html (+ css/js) | 280 + 331 + 1,372 | 42 + 33 + 84 KB | 3 |
+| privacy.html | 99 | 5 KB | 0 |
+| terms.html | 81 | 4 KB | 0 |
+
+*(Đo bằng `wc -l` + dung lượng file thật trên đĩa, không tính file đã nén/minify.)*
+
+### Đánh giá tách CSS/JS riêng
+
+Ngưỡng tham chiếu: `worldcup2026.html` được tách khi đạt ~1,987 LOC.
+
+- **Nên tách ngay**: `VietLongCreator.html` (12,155 LOC) và `VietLongCrypto.html` (11,712 LOC) — gấp ~6 lần ngưỡng, lớn nhất trong repo, tách sẽ giúp maintain dễ hơn rõ rệt.
+- **Nên tách**: `index.html` (4,343 LOC) — hơn gấp đôi ngưỡng, là trang chủ nên ưu tiên dễ đọc/sửa.
+- **Có thể tách, không gấp**: `bingo.html` (2,083 LOC) — xấp xỉ ngưỡng cũ.
+- **Chưa cần tách**: `markdownpro.html`, `ThanhThuFruit.html`, `VietLongSocial.html`, `CryptoAI.html` (1,000–1,300 LOC) — dưới ngưỡng, dung lượng nhỏ. `MeetingTranslator.html`, `MiniGameHub.html`, `privacy.html`, `terms.html` càng nhỏ hơn, không cần động tới.
+- **Vấn đề khác, không phải do CSS/JS**: `KOL-VuThiMinhThu.html` chỉ 927 LOC nhưng nặng **11.7 MB** do nhúng 39 ảnh base64 trực tiếp trong HTML — tách CSS/JS không giải quyết được vấn đề này. Nếu muốn cải thiện tốc độ tải, cần xuất ảnh base64 ra file `.jpg`/`.png`/`.webp` riêng và load qua `<img src>` — đây là việc khác, quy mô lớn hơn, nên xử lý riêng nếu cần.
+
 ## 🧑‍💻 Chạy local
 
 Không cần cài đặt gì — mở trực tiếp file `.html` bằng browser, hoặc dùng Live Server cho trải nghiệm gần giống production:
