@@ -224,7 +224,6 @@ a,.mc,.team-c{touch-action:manipulation}
 .bdg{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:8px;white-space:nowrap}
 .bdg-lv{background:var(--red3);color:var(--red);border:1px solid rgba(224,61,82,.25)}
 .bdg-ft{background:var(--green3);color:var(--green);border:1px solid rgba(43,181,108,.2)}
-.bdg-up{background:rgba(78,93,110,.15);color:var(--text3);border:1px solid var(--line)}
 .bdg-grp{background:var(--amber3);color:var(--amber);border:1px solid rgba(240,165,0,.2)}
 .mc-ven{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;color:var(--text3);text-align:right;line-height:1.3}
 
@@ -265,6 +264,9 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .sc-ast{font-family:'Be Vietnam Pro',sans-serif;font-size:11px;color:var(--text3);text-align:right}
 
 /* TEAMS */
+.team-search{width:100%;background:var(--ink2);border:1px solid var(--line2);border-radius:12px;color:var(--text);font-family:var(--font-vn);font-size:13px;padding:10px 14px;outline:none;margin:10px 0}
+.team-search:focus{border-color:var(--amber)}
+.team-search::placeholder{color:var(--text3)}
 .teams-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .team-c{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:18px 12px 14px;text-align:center;cursor:pointer;transition:border-color .18s,transform .18s}
 .team-c:hover{border-color:var(--line2);transform:translateY(-2px)}
@@ -320,6 +322,10 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 .squad-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .squad-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .squad-title{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.result-tag{flex-shrink:0;min-width:42px;text-align:center;font-size:10px;font-weight:800;padding:5px 6px;border-radius:7px}
+.result-tag.win{background:var(--green3);color:var(--green)}
+.result-tag.loss{background:var(--red3);color:var(--red)}
+.result-tag.draw{background:rgba(78,93,110,.15);color:var(--text3)}
 .squad-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .squad-source{font-size:10px;color:var(--text3);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:rgba(255,255,255,.03)}
 .squad-source:hover{border-color:var(--amber);color:var(--amber)}
@@ -350,7 +356,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
 
 /* FEATURE PACK — changelog (mobile) */
 .match-countdown{font-size:9px;color:var(--amber2);font-weight:700;white-space:nowrap;margin-top:2px}.mc-date-mini{font-size:9px;color:var(--text3);margin-top:2px;white-space:nowrap}.mc-actions{display:flex;gap:4px;margin-top:4px}.mini-btn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text3);border-radius:8px;padding:7px 10px;font-size:9.5px;font-weight:700;min-height:30px}.mini-btn:hover{border-color:var(--amber);color:var(--amber)}.mini-btn.analysis-btn{border-color:rgba(240,165,0,.4);color:var(--amber)}
-.compare-box,.road-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.compare-grid{display:grid;grid-template-columns:1fr;gap:10px}.compare-card{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:10px}.compare-name{font-size:13px;font-weight:800;color:var(--white)}.compare-stat{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}.compare-stat:last-child{border-bottom:none}.compare-vs{display:none}.share-note{font-size:10px;color:var(--green);text-align:center;margin-top:8px;display:none}.road-line{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.road-step{background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:8px 5px;text-align:center}.road-step strong{display:block;font-size:10px;color:var(--text);line-height:1.2}.road-step span{display:block;font-size:9px;color:var(--text3);margin-top:3px}.road-step.current{border-color:var(--amber);background:var(--amber3)}
+.compare-box,.road-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.compare-grid{display:grid;grid-template-columns:1fr;gap:10px}.compare-card{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:10px}.compare-name{font-size:13px;font-weight:800;color:var(--white)}.compare-stat{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}.compare-stat:last-child{border-bottom:none}.share-note{font-size:10px;color:var(--green);text-align:center;margin-top:8px;display:none}.road-line{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.road-step{background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:8px 5px;text-align:center}.road-step strong{display:block;font-size:10px;color:var(--text);line-height:1.2}.road-step span{display:block;font-size:9px;color:var(--text3);margin-top:3px}.road-step.current{border-color:var(--amber);background:var(--amber3)}
 .changelog-modal{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);align-items:flex-end;justify-content:center}.changelog-modal.on{display:flex;animation:fadeIn .2s}.change-box{background:var(--ink2);border:1px solid var(--line2);border-bottom:none;border-radius:20px 20px 0 0;width:100%;max-width:430px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.5)}.change-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--ink3);position:relative;flex-shrink:0}.change-head::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:3px;background:var(--line2)}.change-title{font-size:16px;font-weight:900;color:var(--white)}.change-body{padding:14px 18px max(16px,env(safe-area-inset-bottom));overflow-y:auto;flex:1}.change-item{display:grid;grid-template-columns:1fr;gap:4px;padding:10px 0;border-bottom:1px solid var(--line)}.change-item:last-child{border-bottom:none}.change-ver{font-family:var(--font-num);font-size:14px;font-weight:900;color:var(--amber)}.change-text{font-size:12px;color:var(--text2);line-height:1.6}.close-lite{background:var(--ink2);border:1px solid var(--line2);color:var(--text2);border-radius:9px;width:36px;height:36px;flex-shrink:0;cursor:pointer;display:grid;place-items:center;font-size:15px}.close-lite:hover{border-color:var(--amber);color:var(--amber)}
 
 /* ANALYSIS SHEET (match win-probability — bottom sheet) */
@@ -450,6 +456,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
       <div class="ph-h1">Lịch <em>Thi Đấu</em></div>
       <div id="dataSource" style="margin-top:4px;display:flex;align-items:center;gap:8px">
         <div class="api-status"><span class="api-dot" id="apiDot"></span><span id="apiTxt">Đang tải dữ liệu...</span></div>
+        <button class="mini-btn" id="retryBtn" onclick="manualRetryFetch(this)" title="Tải lại dữ liệu">⟳ Thử lại</button>
       </div>
       <div class="pills" style="margin-top:12px">
         <button class="pill on" onclick="filterMatches('all',this)">Tất Cả</button>
@@ -477,6 +484,7 @@ table.sgt{width:100%;border-collapse:collapse;font-size:12px}
   <div class="wrap">
     <div class="ph">
       <div class="ph-h1">48 <em>Đội Tuyển</em></div>
+      <input class="team-search" type="text" placeholder="🔍 Tìm đội tuyển..." oninput="filterTeamSearch(this.value)">
       <div class="pills">
         <button class="pill on" onclick="filterTeam('all',this)">Tất Cả</button>
         <button class="pill" onclick="filterTeam('EU',this)">Châu Âu</button>
@@ -1177,10 +1185,25 @@ const TEAMS_STATIC=[
   {n:'Panama',g:'L',r:72,c:'NA',cc:'pa',coach:'Thomas Christiansen',cap:'Blas Pérez',form:'4-4-2',
    players:['Blas Pérez','Rómulo Otero','Édgar Bárcenas','Abdiel Arroyo','Anibal Godoy','Felipe Baloy','Luis Mejía','Fidel Escobar','Adalberto Carrasquilla','Alberto Quintero','Cecilio Waterman']},
 ];
+let LAST_TEAM_CONTINENT='all';
+let TEAM_SEARCH_Q='';
+function filterTeamSearch(q){
+  TEAM_SEARCH_Q=q;
+  buildTeams(LAST_TEAM_CONTINENT);
+}
 function buildTeams(filter='all'){
-  const data=filter==='all'?TEAMS_STATIC:TEAMS_STATIC.filter(t=>t.c===filter);
+  LAST_TEAM_CONTINENT=filter;
+  let data=filter==='all'?TEAMS_STATIC:TEAMS_STATIC.filter(t=>t.c===filter);
+  if(TEAM_SEARCH_Q.trim()){
+    const nq=normalizeText(TEAM_SEARCH_Q);
+    data=data.filter(t=>normalizeText(t.n).includes(nq));
+  }
   const el=document.getElementById('teamsGrid');
   el.innerHTML='';
+  if(!data.length){
+    el.innerHTML='<div class="home-empty" style="grid-column:1/-1">Không tìm thấy đội tuyển phù hợp.</div>';
+    return;
+  }
   data.forEach(t=>{
     const c=document.createElement('div');
     c.className='team-c';
@@ -1478,6 +1501,11 @@ async function refreshData(){
     setApiStatus('error','API lỗi · Dùng dữ liệu dự phòng');
   }
 }
+async function manualRetryFetch(btn){
+  if(btn){btn.disabled=true;btn.textContent='⟳ Đang tải...';}
+  try{await refreshData();}
+  finally{if(btn){btn.disabled=false;btn.textContent='⟳ Thử lại';}}
+}
 
 
 // =========================================================
@@ -1513,10 +1541,8 @@ const WC_CHANGELOG=[
 ];
 
 const WC_FEATURE_STATE={
-  filters:{text:'',team:'all',group:'all',round:'all',status:'all'},
-  timezone:'vn',
+  filters:{status:'all'},
   lastData:null,
-  lastMatches:[],
   hideDone:true
 };
 // Một trận được coi là "cũ" nếu đã đấu xong VÀ ngày diễn ra (giờ VN) không phải hôm nay —
@@ -1624,7 +1650,6 @@ function countdownText(match){
   if(h>0)return `Còn ${h} giờ ${m} phút`;
   return `Còn ${Math.max(1,m)} phút`;
 }
-function roundLabel(match){return match.group?'Vòng bảng':(match.round||'Knockout');}
 
 // v1.20.0 — Chỉ hiển thị trận đã xác định đủ 2 đội.
 // v1.21.0 — Múi giờ mặc định và duy nhất: Giờ Việt Nam (UTC+7).
@@ -1704,15 +1729,8 @@ function getVisibleScheduleMatches(data){
 function matchPassesFilters(match){
   const f=WC_FEATURE_STATE.filters;
   const status=matchStatus(match).status;
-  const groupId=(match.group||'').replace('Group ','');
-  const round=roundLabel(match);
-  const hay=normalizeText([tn(match.team1),tn(match.team2),match.team1,match.team2,match.ground,match.group,match.round].join(' '));
   if(f.status!=='all'&&f.status!==status)return false;
   if(WC_FEATURE_STATE.hideDone&&isOldDoneMatch(match))return false;
-  if(f.group!=='all'&&f.group!==groupId)return false;
-  if(f.team!=='all'&&normalizeText(f.team)!==normalizeText(tn(match.team1))&&normalizeText(f.team)!==normalizeText(tn(match.team2)))return false;
-  if(f.round!=='all'&&normalizeText(f.round)!==normalizeText(round))return false;
-  if(f.text&& !hay.includes(normalizeText(f.text)))return false;
   return true;
 }
 function getFilteredMatches(){
@@ -1763,7 +1781,6 @@ renderSchedule=function(data){
   renderHomeDashboard(dataObj, visibleAll);
   const hiddenCount=Math.max(0,(dataObj.matches||[]).length-visibleAll.length);
   const matches=getFilteredMatches().sort((a,b)=>matchStartDate(a)-matchStartDate(b));
-  WC_FEATURE_STATE.lastMatches=matches;
   const hiddenNote=hiddenCount?`<div class="note-banner">🧩 Đã tạm ẩn ${hiddenCount} trận chưa xác định đủ 2 đội. Khi dữ liệu cập nhật đội thắng, nhất bảng hoặc nhì bảng, các trận này sẽ tự động hiển thị.</div>`:'';
   if(!matches.length){container.innerHTML=hiddenNote+'<div class="error-state">⚠ Không có trận đã xác định đủ 2 đội khớp bộ lọc hiện tại</div>';return;}
   const byDate=groupMatchesByDate(matches);
@@ -1809,7 +1826,7 @@ openMatchModal=function(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime){
   originalOpenMatchModal_v115(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime);
   const body=document.getElementById('mm-body');if(!body)return;
   const a=getTeamMeta(t1),b=getTeamMeta(t2);
-  body.innerHTML+=`<div class="compare-box"><div class="mm-glbl">⚖️ So sánh trước trận</div><div class="compare-grid"><div class="compare-card"><div class="compare-name">${t1}</div>${teamCompareRows(a)}</div><div class="compare-vs">VS</div><div class="compare-card"><div class="compare-name">${t2}</div>${teamCompareRows(b)}</div></div></div><div class="share-note" id="shareNote">Đã copy link trận đấu</div>`;
+  body.innerHTML+=`<div class="compare-box"><div class="mm-glbl">⚖️ So sánh trước trận</div><div class="compare-grid"><div class="compare-card"><div class="compare-name">${t1}</div>${teamCompareRows(a)}</div><div class="compare-card"><div class="compare-name">${t2}</div>${teamCompareRows(b)}</div></div></div><div class="share-note" id="shareNote">Đã copy link trận đấu</div>`;
   const foot=document.querySelector('#mModal .mm-foot');
   if(foot&&!document.getElementById('matchShareBtn')){
     const btn=document.createElement('button');btn.id='matchShareBtn';btn.className='mmbtn s';btn.textContent='Chia sẻ';btn.onclick=()=>shareCurrentMatch();foot.insertBefore(btn,foot.firstChild);
@@ -1830,12 +1847,28 @@ async function shareCurrentMatch(){
   const note=document.getElementById('shareNote');if(note){note.style.display='block';setTimeout(()=>note.style.display='none',1800);}
 }
 
+// Trả về HTML danh sách kết quả các trận ĐÃ HOÀN THÀNH của đội t tại giải này.
+function teamMatchResultsHtml(t){
+  const data=WC_FEATURE_STATE.lastData;
+  const matches=(data&&data.matches?data.matches:[]).filter(m=>m.score&&m.score.ft&&(tn(m.team1)===t.n||tn(m.team2)===t.n))
+    .sort((a,b)=>matchStartDate(b)-matchStartDate(a));
+  const flagHtml=name=>`<span class="fl xs"><img src="${FB}w20/${getCC(name)}.png" onerror="this.style.display='none'" loading="lazy" alt=""></span>`;
+  const body=matches.length?matches.map(m=>{
+    const isTeam1=tn(m.team1)===t.n;
+    const opp=isTeam1?m.team2:m.team1;
+    const myScore=isTeam1?m.score.ft[0]:m.score.ft[1];
+    const oppScore=isTeam1?m.score.ft[1]:m.score.ft[0];
+    const result=myScore>oppScore?{lbl:'Thắng',cls:'win'}:myScore<oppScore?{lbl:'Thua',cls:'loss'}:{lbl:'Hòa',cls:'draw'};
+    return `<div class="home-mini-row"><span class="result-tag ${result.cls}">${result.lbl}</span><div class="home-mini-teams">${flagHtml(opp)}${escapeHTML(tn(opp))} <span class="home-mini-score">${myScore}-${oppScore}</span></div><div class="home-mini-grp">${shortDateVN(matchStartDate(m))}</div></div>`;
+  }).join(''):'<div class="home-empty">Đội chưa có trận nào hoàn thành tại giải này.</div>';
+  return `<div class="squad-box"><div class="squad-title">⚽ Kết quả tại World Cup 2026 (${matches.length} trận)</div><div class="home-mini-list" style="margin-top:10px">${body}</div></div>`;
+}
 const originalOpenTeamModal_v115=openTeamModal;
 openTeamModal=function(t){
   originalOpenTeamModal_v115(t);
   const body=document.getElementById('tm-body');if(!body)return;
   const score=teamStrengthScore(t),tier=strengthTier(score);
-  body.innerHTML+=`<div class="tm-row"><span class="tm-key">Đánh giá tổng quan</span><span class="tm-val amber">${score}/100 · ${tier.label}</span></div><div class="road-box"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🛣 Road to Final</div><div class="road-line"><div class="road-step current"><strong>Vòng bảng</strong><span>Bảng ${t.g}</span></div><div class="road-step"><strong>1/32</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>1/8</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Tứ kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Bán kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Chung kết</strong><span>19/07</span></div></div><div class="analysis-foot">⚠️ Đánh giá tham khảo dựa trên xếp hạng FIFA trong dữ liệu nội bộ, không phải xếp hạng chính thức.</div></div>`;
+  body.innerHTML+=`<div class="tm-row"><span class="tm-key">Đánh giá tổng quan</span><span class="tm-val amber">${score}/100 · ${tier.label}</span></div>${teamMatchResultsHtml(t)}<div class="road-box"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🛣 Road to Final</div><div class="road-line"><div class="road-step current"><strong>Vòng bảng</strong><span>Bảng ${t.g}</span></div><div class="road-step"><strong>1/32</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>1/8</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Tứ kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Bán kết</strong><span>Chờ kết quả</span></div><div class="road-step"><strong>Chung kết</strong><span>19/07</span></div></div><div class="analysis-foot">⚠️ Đánh giá tham khảo dựa trên xếp hạng FIFA trong dữ liệu nội bộ, không phải xếp hạng chính thức.</div></div>`;
 };
 
 function setupPWA(){
