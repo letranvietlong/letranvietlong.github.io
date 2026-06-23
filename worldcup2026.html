@@ -95,7 +95,7 @@
 
 <!-- STRUCTURED DATA: BreadcrumbList -->
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"World Cup 2026","item":"https://worldcup2026.fan/"},{"@type":"ListItem","position":2,"name":"Lịch Thi Đấu","item":"https://worldcup2026.fan/#schedule"},{"@type":"ListItem","position":3,"name":"Bảng Đấu","item":"https://worldcup2026.fan/#groups"},{"@type":"ListItem","position":4,"name":"Nhánh Đấu","item":"https://worldcup2026.fan/#bracket"}]}
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"World Cup 2026","item":"https://worldcup2026.fan/"},{"@type":"ListItem","position":2,"name":"Lịch Thi Đấu","item":"https://worldcup2026.fan/#schedule"},{"@type":"ListItem","position":3,"name":"Bảng Đấu","item":"https://worldcup2026.fan/#groups"},{"@type":"ListItem","position":4,"name":"Đội Tuyển","item":"https://worldcup2026.fan/#teams"}]}
 </script>
 
 <!-- PERFORMANCE -->
@@ -129,7 +129,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối">🌙</button>
-    <div class="build-chip" id="buildChip" role="button" tabindex="0" title="Bấm để xem lịch sử version"><span id="appVersionLabel">v2.0.0</span><small id="appBuildDate">Build 2026-06-21</small></div>
+    <div class="build-chip" id="buildChip" role="button" tabindex="0" title="Bấm để xem lịch sử version"><span id="appVersionLabel">v2.6.0</span><small id="appBuildDate">Build 2026-06-23</small></div>
   </div>
 </header>
 
@@ -149,7 +149,7 @@
       <aside class="home-panel">
         <div class="home-panel-top">
           <div><div class="home-panel-title">Bảng điều khiển World Cup</div><div class="home-panel-sub">11/06 – 19/07/2026 · Giờ Việt Nam UTC+7</div></div>
-          <div class="home-live-pill">LIVE</div>
+          <div class="home-live-pill" id="homeLivePill" style="display:none">LIVE</div>
         </div>
         <div class="home-kpis">
           <div class="home-kpi"><div class="kpi-val" id="kpi-goals">—</div><div class="kpi-lbl">Bàn thắng</div></div>
