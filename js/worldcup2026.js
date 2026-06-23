@@ -533,7 +533,7 @@ function buildStats(data){
     });
   }
 
-  const topScorers=Object.values(scorers).sort((a,b)=>b.goals-a.goals).slice(0,8);
+  const topScorers=Object.values(scorers).sort((a,b)=>b.goals-a.goals).slice(0,10);
   // Đồng hạng khi bằng số bàn (giống bảng thống kê thật: 2 người cùng 4 bàn thì cùng hạng 2).
   let lastGoals=null,lastRank=0;
   const ranked=topScorers.map((s,i)=>{
@@ -553,6 +553,7 @@ function buildStats(data){
       </div>`).join('')
     :`<div class="home-empty">Dữ liệu vua phá lưới sẽ cập nhật sau khi các trận đầu tiên kết thúc.</div>`;
   if(ranked.length)loadScorerAvatars(ranked);
+  loadTeamShotStats(data);
 }
 // Tải avatar cầu thủ — cache + dedup theo TÊN (không theo index) trong session, vì buildStats() có thể
 // chạy lại nhiều lần (render từ cache rồi render lại từ data thật, refreshData() mỗi 60s...) — nếu dùng
@@ -1265,6 +1266,89 @@ async function fetchHistoricalMatches(){
   H2H_DATA=all;
   try{localStorage.setItem(H2H_CACHE_KEY,JSON.stringify({savedAt:Date.now(),value:all}));}catch(e){}
   return all;
+}
+// ═══════════════════════════════════════════
+// THỐNG KÊ SÚT BÓNG THEO ĐỘI (cả giải) — nguồn TheSportsDB (miễn phí, có CORS). openfootball không có
+// số liệu sút bóng nên phải khớp từng trận đã đấu sang event TheSportsDB theo NGÀY + TÊN ĐỘI (2 nguồn
+// đặt tên đội hơi khác nhau, vd "Bosnia & Herzegovina" vs "Bosnia-Herzegovina" — phải chuẩn hóa bỏ hết
+// ký tự không phải chữ/số rồi so khớp gần đúng). TheSportsDB bản miễn phí giới hạn số trận trả về khi
+// truy vấn theo giải/mùa nên phải dò theo từng NGÀY có trận thay vì lấy 1 lần cho cả giải.
+// Cache 6h (ngắn hơn H2H vì giải đang diễn ra, có thêm trận đã đấu mỗi ngày).
+const SHOTS_CACHE_KEY='wc2026:shots:v1';
+const SHOTS_CACHE_TTL=1000*60*60*6;
+let SHOTS_DATA=null;
+let SHOTS_INFLIGHT=null;
+function teamMatchKey(s){return normalizeText(s||'').replace(/[^a-z0-9]+/g,'');}
+async function fetchTeamShotStats(data){
+  if(SHOTS_DATA)return SHOTS_DATA;
+  if(SHOTS_INFLIGHT)return SHOTS_INFLIGHT;
+  try{
+    const cached=localStorage.getItem(SHOTS_CACHE_KEY);
+    if(cached){const p=JSON.parse(cached);if(Date.now()-p.savedAt<SHOTS_CACHE_TTL){SHOTS_DATA=p.value;return SHOTS_DATA;}}
+  }catch(e){}
+  SHOTS_INFLIGHT=(async()=>{
+    // Giới hạn 24 trận gần nhất (không phải toàn bộ trận đã đấu) — TheSportsDB free tier có rate-limit,
+    // nếu giải đi càng xa số trận đã đấu càng tăng, lấy hết sẽ ngày càng nhiều request mỗi lần cache hết hạn.
+    const allDone=(data&&data.matches?data.matches:[]).filter(m=>m.score&&m.score.ft);
+    const done=allDone.slice().sort((a,b)=>matchStartDate(b)-matchStartDate(a)).slice(0,24);
+    if(!done.length){const empty={byTeam:{},updatedAt:Date.now(),coveredMatches:0,totalDoneMatches:0};SHOTS_DATA=empty;return empty;}
+    const dates=[...new Set(done.map(m=>m.date))];
+    const dayEvents={};
+    await Promise.allSettled(dates.map(async d=>{
+      try{
+        const res=await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${d}&s=Soccer`);
+        if(!res.ok)return;
+        const j=await res.json();
+        dayEvents[d]=(j.events||[]).filter(e=>e.strLeague==='FIFA World Cup');
+      }catch(e){}
+    }));
+    const matched=[];
+    done.forEach(m=>{
+      const evs=dayEvents[m.date]||[];
+      const k1=teamMatchKey(m.team1),k2=teamMatchKey(m.team2);
+      const ev=evs.find(e=>{
+        const h=teamMatchKey(e.strHomeTeam),a=teamMatchKey(e.strAwayTeam);
+        return ((h.includes(k1)||k1.includes(h))&&(a.includes(k2)||k2.includes(a)))||((h.includes(k2)||k2.includes(h))&&(a.includes(k1)||k1.includes(a)));
+      });
+      if(ev)matched.push({id:ev.idEvent,team1:m.team1,team2:m.team2,homeIsTeam1:teamMatchKey(ev.strHomeTeam).includes(k1)||k1.includes(teamMatchKey(ev.strHomeTeam))});
+    });
+    const byTeam={};
+    const add=(team,key,val)=>{if(!byTeam[team])byTeam[team]={shotsOn:0,shotsTotal:0,shotsBox:0,matches:0};byTeam[team][key]+=val;};
+    await Promise.allSettled(matched.map(async mi=>{
+      try{
+        const res=await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupeventstats.php?id=${mi.id}`);
+        if(!res.ok)return;
+        const j=await res.json();
+        const stats=j.eventstats||[];
+        const get=name=>{const s=stats.find(x=>x.strStat===name);return s?{home:Number(s.intHome)||0,away:Number(s.intAway)||0}:null;};
+        const onGoal=get('Shots on Goal'),totalShots=get('Total Shots'),insideBox=get('Shots insidebox');
+        if(!onGoal&&!totalShots)return;
+        const t1Key=tn(mi.team1),t2Key=tn(mi.team2);
+        if(onGoal){add(t1Key,'shotsOn',mi.homeIsTeam1?onGoal.home:onGoal.away);add(t2Key,'shotsOn',mi.homeIsTeam1?onGoal.away:onGoal.home);}
+        if(totalShots){add(t1Key,'shotsTotal',mi.homeIsTeam1?totalShots.home:totalShots.away);add(t2Key,'shotsTotal',mi.homeIsTeam1?totalShots.away:totalShots.home);}
+        if(insideBox){add(t1Key,'shotsBox',mi.homeIsTeam1?insideBox.home:insideBox.away);add(t2Key,'shotsBox',mi.homeIsTeam1?insideBox.away:insideBox.home);}
+        add(t1Key,'matches',1);add(t2Key,'matches',1);
+      }catch(e){}
+    }));
+    const value={byTeam,updatedAt:Date.now(),coveredMatches:matched.length,totalDoneMatches:done.length};
+    SHOTS_DATA=value;
+    try{localStorage.setItem(SHOTS_CACHE_KEY,JSON.stringify({savedAt:Date.now(),value}));}catch(e){}
+    return value;
+  })();
+  try{return await SHOTS_INFLIGHT;}finally{SHOTS_INFLIGHT=null;}
+}
+async function loadTeamShotStats(data){
+  const el=document.getElementById('homeShotStats');
+  if(!el)return;
+  if(!SHOTS_DATA)el.innerHTML='<div class="loading-state" style="padding:18px"><div class="spinner"></div><div class="loading-txt">Đang tổng hợp thống kê sút bóng...</div></div>';
+  try{
+    const shots=await fetchTeamShotStats(data);
+    const teams=Object.entries(shots.byTeam).map(([name,s])=>({name,...s})).filter(t=>t.matches>0);
+    if(!teams.length){el.innerHTML='<div class="home-empty">Chưa tổng hợp được dữ liệu sút bóng (nguồn phụ chưa khớp được trận nào).</div>';return;}
+    const top=teams.sort((a,b)=>b.shotsTotal-a.shotsTotal).slice(0,10);
+    el.innerHTML=`<div class="shot-coverage-note">Tổng hợp ${shots.coveredMatches}/${shots.totalDoneMatches} trận gần nhất có dữ liệu · nguồn TheSportsDB</div>
+      ${top.map((t,i)=>`<div class="sc-row" style="cursor:default"><span class="sc-rank">${i+1}</span><span class="fl xs"><img src="${FB}w20/${getCC(t.name)}.png" onerror="this.style.display='none'" loading="lazy" alt=""></span><div class="sc-info"><div class="sc-nm">${escapeHTML(t.name)}</div><div class="sc-tm">${t.shotsOn} trúng đích · ${t.shotsBox} trong vòng cấm · ${t.matches} trận</div></div><div class="sc-goals">${t.shotsTotal}</div></div>`).join('')}`;
+  }catch(e){console.warn('Shot stats failed',e);el.innerHTML='<div class="home-empty">Không tải được thống kê sút bóng lúc này.</div>';}
 }
 function findHeadToHead(t1,t2){
   const wc2026=((WC_FEATURE_STATE.lastData&&WC_FEATURE_STATE.lastData.matches)||[]).map(m=>({...m,year:2026}));
