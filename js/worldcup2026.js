@@ -2,8 +2,8 @@
 // BUILD VERSION
 // Cập nhật số version này sau mỗi lần build để dễ phân biệt bản đang deploy.
 // ═══════════════════════════════════════════
-const APP_VERSION='v2.0.0';
-const APP_BUILD_DATE='2026-06-21';
+const APP_VERSION='v2.6.0';
+const APP_BUILD_DATE='2026-06-23';
 const APP_BUILD_TARGET='github-pages-single-file';
 window.WC2026_BUILD={version:APP_VERSION,buildDate:APP_BUILD_DATE,target:APP_BUILD_TARGET};
 
@@ -19,6 +19,21 @@ function applyTheme(mode){
 }
 function toggleTheme(){
   applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
+}
+
+// ═══════════════════════════════════════════
+// KHÓA SCROLL NỀN KHI CÓ POPUP MỞ (match/team modal, sheet phân tích/cầu thủ, changelog)
+// Dùng MutationObserver theo dõi class .on trên toàn bộ body — không cần sửa từng nơi
+// mở/đóng popup rải rác trong HTML/JS, tự bắt được cả changelogModal được tạo động sau này.
+// ═══════════════════════════════════════════
+function setupModalScrollLock(){
+  const overlayIds=['mModal','tmModal','analysisSheet','changelogModal'];
+  const updateLock=()=>{
+    const anyOpen=overlayIds.some(id=>document.getElementById(id)?.classList.contains('on'));
+    document.documentElement.style.overflow=anyOpen?'hidden':'';
+  };
+  new MutationObserver(updateLock).observe(document.body,{attributes:true,attributeFilter:['class'],subtree:true});
+  updateLock();
 }
 function renderBuildVersion(){
   const versionEl=document.getElementById('appVersionLabel');
@@ -250,6 +265,9 @@ const EN_VN={
   'Democratic Republic of Congo':'CH Congo',
 };
 function tn(name){return EN_VN[name]||name;}
+// Vị trí cầu thủ (từ cột Pos. squad Wikipedia) — dịch sang tiếng Việt, giữ lại mã gốc trong dấu ngoặc cho người quen thuật ngữ quốc tế.
+const POS_VN={GK:'Thủ môn',DF:'Hậu vệ',MF:'Tiền vệ',FW:'Tiền đạo',CB:'Trung vệ',RB:'Hậu vệ phải',LB:'Hậu vệ trái',CM:'Tiền vệ trung tâm',DM:'Tiền vệ trụ',AM:'Tiền vệ tấn công',RW:'Tiền vệ cánh phải',LW:'Tiền vệ cánh trái',ST:'Tiền đạo cắm'};
+function posVN(code){const c=String(code||'').trim().toUpperCase();return POS_VN[c]?POS_VN[c]+' ('+c+')':code;}
 
 function renderSchedule(data){
   const container=document.getElementById('matchesContainer');
@@ -363,18 +381,18 @@ function buildMatchCard(m,st,extraCls){
     scoreHtml=`<div class="mc-sv"><span class="mc-s">${s1}</span><span class="mc-dash">–</span><span class="mc-s">${s2}</span></div>`;
     bdg=`<span class="bdg bdg-lv">● Live</span>`;
   }else if(st.status==='done'){
-    timeHtml=`<div class="mc-time">FT</div>`;
+    timeHtml=`<div class="mc-time">✓</div>`;
     scoreHtml=s1!==''
       ?`<div class="mc-sv"><span class="mc-s">${s1}</span><span class="mc-dash">–</span><span class="mc-s">${s2}</span></div>`
-      :`<div class="mc-sv"><span class="mc-s" style="font-size:14px;color:var(--text3)">FT</span></div>`;
-    bdg=`<span class="bdg bdg-ft">FT</span>`;
+      :`<div class="mc-sv"><span class="mc-s" style="font-size:14px;color:var(--text3)">—</span></div>`;
+    bdg='';
   }else{
     timeHtml=`<div class="mc-time">${vnTime}</div>`;
     scoreHtml=`<div class="mc-sv"><span class="mc-vs">VS</span></div>`;
     bdg=`<span class="bdg bdg-grp">${grp}</span>`;
   }
   // Store computed VN time for use in modal
-  const modalStatus=st.status==='done'?'Kết thúc (FT)':st.status==='live'?'● Đang live: '+st.label:'Giờ VN: '+vnTime;
+  const modalStatus=st.status==='done'?'Đã kết thúc':st.status==='live'?'● Đang live: '+st.label:'Giờ VN: '+vnTime;
 
   return `<div class="mc ${extraCls}"
     data-team1="${tn(m.team1)}" data-team2="${tn(m.team2)}"
@@ -456,7 +474,7 @@ function buildGroups(data){
         <td><div class="sgt-team">
           <span class="fl sm"><img src="${FB}w40/${t.cc}.png"
             onerror="this.style.display='none'" loading="lazy" alt="${t.n}"></span>
-          ${t.n}
+          <span class="sgt-nm">${t.n}</span>
         </div></td>
         <td>${t.w+t.d+t.l}</td>
         <td>${t.w}</td>
@@ -475,8 +493,8 @@ function buildGroups(data){
       </div>
       <table class="sgt">
         <thead><tr>
-          <th>Đội</th><th>ST</th><th>T</th><th>H</th><th>B</th>
-          <th>BT</th><th>BB</th><th>HS</th><th>Đ</th>
+          <th>Đội</th><th>Trận</th><th>Thắng</th><th>Hòa</th><th>Thua</th>
+          <th>Bàn thắng</th><th>Bàn thua</th><th>Hiệu số</th><th>Điểm</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -497,15 +515,16 @@ function buildStats(data){
         doneCount++;
       }
       // Count goals from goals1/goals2 arrays if available, ghi nhận luôn đội của cầu thủ để hiện cờ
+      const mKey=m.date+'|'+m.team1+'|'+m.team2;
       (m.goals1||[]).forEach(g=>{
         const k=g.name;
-        if(!scorers[k])scorers[k]={name:k,goals:0,team:m.team1};
-        scorers[k].goals++;
+        if(!scorers[k])scorers[k]={name:k,goals:0,team:m.team1,matches:new Set()};
+        scorers[k].goals++;scorers[k].matches.add(mKey);
       });
       (m.goals2||[]).forEach(g=>{
         const k=g.name;
-        if(!scorers[k])scorers[k]={name:k,goals:0,team:m.team2};
-        scorers[k].goals++;
+        if(!scorers[k])scorers[k]={name:k,goals:0,team:m.team2,matches:new Set()};
+        scorers[k].goals++;scorers[k].matches.add(mKey);
       });
     });
   }
@@ -513,13 +532,41 @@ function buildStats(data){
   const topScorers=Object.values(scorers).sort((a,b)=>b.goals-a.goals).slice(0,8);
   const el=document.getElementById('homeTopScorers');
   if(el)el.innerHTML=topScorers.length?topScorers.map((s,i)=>`
-      <div class="sc-row">
+      <div class="sc-row" onclick="openPlayerSheet('${encodeURIComponent(s.name)}','${encodeURIComponent(s.team)}')">
         <span class="sc-rank ${i===0?'g1':i===1?'g2':i===2?'g3':''}">${i+1}</span>
+        <span class="sc-avatar" id="scAvatar-${i}">👤</span>
         <span class="fl xs"><img src="${FB}w20/${getCC(s.team)}.png" onerror="this.style.display='none'" loading="lazy" alt=""></span>
-        <div class="sc-info"><div class="sc-nm">${escapeHTML(s.name)}</div></div>
+        <div class="sc-info"><div class="sc-nm">${escapeHTML(s.name)}</div><div class="sc-tm">Lập công ${s.matches.size} trận</div></div>
         <div style="text-align:right"><div class="sc-goals">${s.goals} ⚽</div></div>
       </div>`).join('')
     :`<div class="home-empty">Dữ liệu vua phá lưới sẽ cập nhật sau khi các trận đầu tiên kết thúc.</div>`;
+  if(topScorers.length)loadScorerAvatars(topScorers);
+}
+// Tải avatar cho top Vua phá lưới (tối đa 8 người) — cache theo tên trong session để không tải lại
+// liên tục khi buildStats() chạy lại mỗi 60s (refreshData) hay khi đổi tab.
+const PLAYER_AVATAR_CACHE={};
+async function loadScorerAvatars(topScorers){
+  try{await fetchSquadData();}catch(e){return;}
+  topScorers.forEach(async(s,i)=>{
+    const slot=document.getElementById(`scAvatar-${i}`);
+    if(!slot)return;
+    if(PLAYER_AVATAR_CACHE[s.name]!==undefined){
+      if(PLAYER_AVATAR_CACHE[s.name])slot.innerHTML=`<img src="${PLAYER_AVATAR_CACHE[s.name]}" alt="" loading="lazy">`;
+      return;
+    }
+    const team=getTeamMeta(s.team);
+    const squadMatch=team?findSquadForTeam(team):null;
+    const info=squadMatch?.players?.find(p=>normalizeSquadKey(p.name)===normalizeSquadKey(s.name));
+    if(!info?.wikiSlug){PLAYER_AVATAR_CACHE[s.name]=null;return;}
+    try{
+      const res=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${info.wikiSlug}`);
+      if(!res.ok){PLAYER_AVATAR_CACHE[s.name]=null;return;}
+      const j=await res.json();
+      const src=j?.thumbnail?.source||null;
+      PLAYER_AVATAR_CACHE[s.name]=src;
+      if(src){const slot2=document.getElementById(`scAvatar-${i}`);if(slot2)slot2.innerHTML=`<img src="${src}" alt="" loading="lazy">`;}
+    }catch(e){PLAYER_AVATAR_CACHE[s.name]=null;}
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -708,16 +755,41 @@ function filterTeam(f,btn){
   btn.classList.add('on');buildTeams(f);
 }
 // goals = {goals1:[{name,min}],goals2:[{name,min}]} của trận (nếu có), lấy từ data-goals1/2 trên thẻ trận.
-// Phạt góc / thẻ vàng / thẻ đỏ KHÔNG có trong nguồn dữ liệu openfootball/worldcup.json nên không hiển thị
-// số liệu giả — chỉ ghi rõ "chưa có dữ liệu" để tránh hiển thị thông tin sai.
+// Phút ghi bàn trong dữ liệu có dạng chuỗi như "90+4" (bù giờ) — không dùng Number() trực tiếp vì sẽ ra NaN.
+function goalMinuteSortKey(v){
+  const m=String(v||'0').match(/^(\d+)(?:\+(\d+))?$/);
+  if(!m)return 0;
+  return Number(m[1])+(m[2]?Number(m[2])/100:0);
+}
+function formatGoalMinute(v){return String(v||'0').trim()||'0';}
 function renderGoalEvents(t1,t2,s1,s2,goals){
   if(s1===''||s2==='')return'';
   const g1=(goals&&goals.goals1)||[];
   const g2=(goals&&goals.goals2)||[];
   const merged=[...g1.map(g=>({...g,team:t1})),...g2.map(g=>({...g,team:t2}))]
-    .sort((a,b)=>(Number(a.min||a.minute||0))-(Number(b.min||b.minute||0)));
-  const goalsHtml=merged.length?`<div class="mm-glbl">⚽ Diễn biến bàn thắng</div>${merged.map(g=>`<div class="mm-goal"><span class="mm-gmin">${Number(g.min||g.minute||0)}'</span><span>⚽ ${escapeHTML(g.name||'Chưa rõ cầu thủ')}</span><span style="margin-left:auto;color:var(--text3);font-size:10px">${escapeHTML(g.team)}</span></div>`).join('')}`:'';
-  return `${goalsHtml}<div class="mm-nodata">ℹ️ Nguồn dữ liệu hiện chưa cung cấp số liệu phạt góc, thẻ vàng, thẻ đỏ cho trận này.</div>`;
+    .sort((a,b)=>goalMinuteSortKey(a.min||a.minute)-goalMinuteSortKey(b.min||b.minute));
+  const goalsHtml=merged.length?`<div class="mm-glbl">⚽ Diễn biến bàn thắng</div>${merged.map(g=>`<div class="mm-goal"><span class="mm-gmin">${formatGoalMinute(g.min||g.minute)}'</span><span>⚽ ${escapeHTML(g.name||'Chưa rõ cầu thủ')}</span><span style="margin-left:auto;color:var(--text3);font-size:10px">${escapeHTML(g.team)}</span></div>`).join('')}`:'';
+  return goalsHtml;
+}
+// Tìm lại match object gốc theo tên đội + ngày — dùng cho các nơi chỉ có sẵn m khi render (Trang chủ, lịch sử đối đầu trong modal đội)
+// thay vì phải nhúng cả object vào onclick string.
+function findMatchByTeamsDate(t1,t2,dateStr){
+  const all=(WC_FEATURE_STATE.lastData&&WC_FEATURE_STATE.lastData.matches)||[];
+  return all.find(m=>m.date===dateStr&&((tn(m.team1)===t1&&tn(m.team2)===t2)||(tn(m.team1)===t2&&tn(m.team2)===t1)));
+}
+function openMatchModalForMatch(m){
+  if(!m)return;
+  const st=matchStatus(m);
+  const s1=m.score&&m.score.ft?String(m.score.ft[0]):'';
+  const s2=m.score&&m.score.ft?String(m.score.ft[1]):'';
+  const grp=m.group||m.round||'';
+  const ven=m.ground||'';
+  const vnTime=formatVNTime(null,m.date,m.time);
+  const modalStatus=st.status==='done'?'Đã kết thúc':st.status==='live'?'● Đang live: '+st.label:'Giờ VN: '+vnTime;
+  openMatchModal(tn(m.team1),tn(m.team2),s1,s2,getCC(m.team1),getCC(m.team2),modalStatus,grp,ven,{goals1:m.goals1||[],goals2:m.goals2||[]},vnTime);
+}
+function openMatchModalByTeamsDate(t1Raw,t2Raw,dateStr){
+  openMatchModalForMatch(findMatchByTeamsDate(decodeURIComponent(t1Raw),decodeURIComponent(t2Raw),dateStr));
 }
 function openMatchModal(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime){
   const FB='https://flagcdn.com/';
@@ -776,7 +848,7 @@ function openTeamModal(t){
 // ═══════════════════════════════════════════
 // LATEST SQUADS — Dynamic fetch from public squad page
 // ═══════════════════════════════════════════
-const SQUAD_CACHE_KEY='wc2026:squads:v1';
+const SQUAD_CACHE_KEY='wc2026:squads:v2';
 const SQUAD_CACHE_TTL=1000*60*60*12;
 const SQUAD_API='https://en.wikipedia.org/w/api.php?action=parse&page=2026_FIFA_World_Cup_squads&prop=text&format=json&origin=*';
 let SQUAD_DATA=null;
@@ -811,6 +883,47 @@ function findSquadForTeam(team){
   }
   return null;
 }
+function isSquadHeadingNode(n){return !!n&&(/^H[234]$/i.test(n.tagName)||(n.classList&&n.classList.contains('mw-heading')));}
+function extractTableAfterHeading(h){
+  // Wikipedia (2024+) bọc heading trong <div class="mw-heading">, làm h.nextElementSibling không còn trỏ tới nội dung/bảng kế tiếp — phải dò từ div bọc ngoài.
+  const startNode=h.closest('.mw-heading')||h;
+  let node=startNode.nextElementSibling,table=null;
+  while(node&&!isSquadHeadingNode(node)){
+    if(node.matches&&node.matches('table.wikitable')){table=node;break;}
+    table=node.querySelector&&node.querySelector('table.wikitable');
+    if(table)break;
+    node=node.nextElementSibling;
+  }
+  return table;
+}
+function extractPlayersFromTable(table){
+  const rows=[...table.querySelectorAll('tr')];
+  const headerCells=[...rows[0]?.querySelectorAll('th,td')||[]].map(x=>cleanSquadText(x.textContent));
+  const idxPlayer=headerCells.findIndex(x=>/player|name/i.test(x));
+  if(idxPlayer<0)return []; // không có cột Player => không phải bảng danh sách cầu thủ (vd: bảng thống kê HLV)
+  const idxNo=headerCells.findIndex(x=>/^no\.?|number/i.test(x));
+  const idxPos=headerCells.findIndex(x=>/pos|position/i.test(x));
+  const idxClub=headerCells.findIndex(x=>/club/i.test(x));
+  const idxDob=headerCells.findIndex(x=>/date of birth|born/i.test(x));
+  const idxCaps=headerCells.findIndex(x=>/^caps/i.test(x));
+  const idxCareerGoals=headerCells.findIndex(x=>/^goals/i.test(x));
+  const players=[];
+  rows.slice(1).forEach(r=>{
+    const cells=[...r.querySelectorAll('td,th')];
+    if(cells.length<2)return;
+    const get=i=>i>=0&&cells[i]?cleanSquadText(cells[i].textContent):'';
+    let player=get(idxPlayer).replace(/^\d+\s*/,'').replace(/\s*\(captain\)$/i,'');
+    if(!player||/coach|manager|player/i.test(player))return;
+    // Lấy slug Wikipedia chính xác từ href của tên cầu thủ (nếu có) để tra ảnh/tiểu sử không bị nhầm người trùng tên.
+    const playerCell=cells[idxPlayer];
+    const link=playerCell&&playerCell.querySelector('a[href^="/wiki/"]');
+    const wikiSlug=link?link.getAttribute('href').replace(/^\/wiki\//,''):'';
+    // Cột ngày sinh có span ẩn chứa ngày dạng ISO (vd "(2000-02-25)") lẫn vào textContent — bỏ phần đó đi.
+    const dob=get(idxDob).replace(/^\([^)]*\)\s*/,'');
+    players.push({no:get(idxNo)||'—',pos:get(idxPos).replace(/^\d+/,'')||'',name:player,club:get(idxClub)||'',dob,caps:get(idxCaps)||'',careerGoals:get(idxCareerGoals)||'',wikiSlug});
+  });
+  return players;
+}
 async function fetchSquadData(force=false){
   if(SQUAD_DATA&&!force)return SQUAD_DATA;
   const cached=!force?squadCacheRead():null;
@@ -827,35 +940,35 @@ async function fetchSquadData(force=false){
     const headline=h.querySelector('.mw-headline');
     const name=cleanSquadText(headline?headline.textContent:h.textContent);
     if(!name||/Group [A-L]/i.test(name)||/Notes|References|External links/i.test(name))return;
-    let node=h.nextElementSibling,table=null;
-    while(node&&!/^H[234]$/i.test(node.tagName)){
-      if(node.matches&&node.matches('table.wikitable')){table=node;break;}
-      table=node.querySelector&&node.querySelector('table.wikitable');
-      if(table)break;
-      node=node.nextElementSibling;
-    }
+    const table=extractTableAfterHeading(h);
     if(!table)return;
-    const rows=[...table.querySelectorAll('tr')];
-    const headerCells=[...rows[0]?.querySelectorAll('th,td')||[]].map(x=>cleanSquadText(x.textContent));
-    const idxPlayer=Math.max(0,headerCells.findIndex(x=>/player|name/i.test(x)));
-    const idxNo=headerCells.findIndex(x=>/^no\.?|number/i.test(x));
-    const idxPos=headerCells.findIndex(x=>/pos|position/i.test(x));
-    const idxClub=headerCells.findIndex(x=>/club/i.test(x));
-    const players=[];
-    rows.slice(1).forEach(r=>{
-      const cells=[...r.querySelectorAll('td,th')];
-      if(cells.length<2)return;
-      const get=i=>i>=0&&cells[i]?cleanSquadText(cells[i].textContent):'';
-      let player=get(idxPlayer);
-      if(!player&&cells.length>=3)player=cleanSquadText(cells[2].textContent);
-      player=player.replace(/^\d+\s*/,'').replace(/\s*\(captain\)$/i,'');
-      if(!player||/coach|manager|player/i.test(player))return;
-      players.push({no:get(idxNo)||'—',pos:get(idxPos)||'',name:player,club:get(idxClub)||''});
-    });
+    const players=extractPlayersFromTable(table);
     if(players.length)teams[name]=players.slice(0,30);
   });
   const value={updatedAt:Date.now(),teams};
   SQUAD_DATA=value;squadCacheSave(value);return value;
+}
+// Nguồn dự phòng: trang Wikipedia riêng của từng ĐTQG (mục "Current squad") — dùng khi trang tổng hợp
+// không có/chưa cập nhật đội đó. Chỉ gọi khi cần (lazy), không tốn thêm request lúc tải trang.
+async function fetchSquadFromTeamPage(wikiName){
+  const page=`${wikiName} national football team`;
+  const url=`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(page)}&prop=text&format=json&origin=*`;
+  const res=await fetch(url);
+  if(!res.ok)return null;
+  const json=await res.json();
+  const html=json?.parse?.text?.['*'];
+  if(!html)return null;
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const headings=[...doc.querySelectorAll('h2,h3,h4')];
+  const h=headings.find(x=>{
+    const headline=x.querySelector('.mw-headline');
+    const t=cleanSquadText(headline?headline.textContent:x.textContent);
+    return /current squad|^squad$/i.test(t);
+  });
+  if(!h)return null;
+  const table=extractTableAfterHeading(h);
+  if(!table)return null;
+  return extractPlayersFromTable(table);
 }
 function renderSquadPlayers(match){
   const box=document.getElementById('teamSquadContent');if(!box)return;
@@ -866,15 +979,49 @@ function renderSquadPlayers(match){
   }
   box.className='';
   const count=match.players.length;
-  const time=SQUAD_DATA?.updatedAt?new Date(SQUAD_DATA.updatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
-  box.innerHTML=`<div class="squad-note">Đội: <b style="color:var(--amber)">${escapeHTML(match.sourceName)}</b> · ${count} cầu thủ · Cập nhật cache: ${escapeHTML(time)} GMT+7</div>
-    <div class="squad-list">${match.players.map(p=>`<div class="squad-player"><div class="squad-no">${escapeHTML(p.no||'—')}</div><div><div class="squad-name" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</div><div class="squad-meta">${escapeHTML([p.pos,p.club].filter(Boolean).join(' · ')||'Thông tin đang cập nhật')}</div></div></div>`).join('')}</div>`;
+  const time=match.updatedAt?new Date(match.updatedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
+  const srcNote=match.fallback?' · nguồn dự phòng: trang ĐTQG':'';
+  box.innerHTML=`<div class="squad-note">Đội: <b style="color:var(--amber)">${escapeHTML(match.sourceName)}</b> · ${count} cầu thủ · Cập nhật: ${escapeHTML(time)} GMT+7${srcNote}</div>
+    <div class="squad-list">${match.players.map((p,i)=>`<div class="squad-player"><span class="squad-avatar" id="sqAvatar-${i}">👤</span><div class="squad-no">${escapeHTML(p.no||'—')}</div><div><div class="squad-name" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</div><div class="squad-meta">${escapeHTML([p.pos?posVN(p.pos):'',p.club].filter(Boolean).join(' · ')||'Thông tin đang cập nhật')}</div></div></div>`).join('')}</div>`;
+  loadSquadAvatars(match.players);
+}
+// Tải avatar cho danh sách cầu thủ đầy đủ trong modal đội tuyển — cùng cơ chế cache với loadScorerAvatars.
+async function loadSquadAvatars(players){
+  players.forEach(async(p,i)=>{
+    const slot=document.getElementById(`sqAvatar-${i}`);
+    if(!slot)return;
+    if(PLAYER_AVATAR_CACHE[p.name]!==undefined){
+      if(PLAYER_AVATAR_CACHE[p.name])slot.innerHTML=`<img src="${PLAYER_AVATAR_CACHE[p.name]}" alt="" loading="lazy">`;
+      return;
+    }
+    if(!p.wikiSlug){PLAYER_AVATAR_CACHE[p.name]=null;return;}
+    try{
+      const res=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${p.wikiSlug}`);
+      if(!res.ok){PLAYER_AVATAR_CACHE[p.name]=null;return;}
+      const j=await res.json();
+      const src=j?.thumbnail?.source||null;
+      PLAYER_AVATAR_CACHE[p.name]=src;
+      if(src){const slot2=document.getElementById(`sqAvatar-${i}`);if(slot2)slot2.innerHTML=`<img src="${src}" alt="" loading="lazy">`;}
+    }catch(e){PLAYER_AVATAR_CACHE[p.name]=null;}
+  });
 }
 async function renderTeamSquad(team,force=false){
   CURRENT_TEAM_FOR_SQUAD=team;
   const box=document.getElementById('teamSquadContent');if(!box)return;
   box.className='squad-loading';box.textContent=force?'Đang làm mới danh sách cầu thủ...':'Đang tải danh sách cầu thủ mới nhất...';
-  try{await fetchSquadData(force);renderSquadPlayers(findSquadForTeam(team));}
+  try{
+    await fetchSquadData(force);
+    let match=findSquadForTeam(team);
+    if(match)match={...match,updatedAt:SQUAD_DATA?.updatedAt};
+    if(!match||!match.players.length){
+      const wikiName=TEAM_WIKI_MAP[team.n]||team.n;
+      try{
+        const players=await fetchSquadFromTeamPage(wikiName);
+        if(players&&players.length)match={sourceName:wikiName,players,updatedAt:Date.now(),fallback:true};
+      }catch(e){console.warn('Squad fallback fetch failed',e);}
+    }
+    renderSquadPlayers(match);
+  }
   catch(e){console.warn('Squad fetch failed',e);box.className='squad-empty';box.innerHTML='Không tải được danh sách cầu thủ online lúc này. Hãy thử lại sau hoặc mở link nguồn squad ở phía trên.';}
 }
 function refreshTeamSquadFromButton(){if(CURRENT_TEAM_FOR_SQUAD)renderTeamSquad(CURRENT_TEAM_FOR_SQUAD,true);}
@@ -998,7 +1145,13 @@ const WC_CHANGELOG=[
   ['v1.28.0','Xóa thanh LIVE ticker chạy ngang ở đầu website; thiết kế lại Trang Chủ thành dashboard gọn trong một màn hình desktop, hạn chế scroll và ẩn footer ở trang chủ.'],
   ['v1.25.0','Thiết kế lại layout thẻ Lịch thi đấu: chống tràn text, bố cục đội/trạng thái rõ hơn và responsive tốt trên màn hình hẹp.'],
   ['v1.29.0','Cập nhật danh sách cầu thủ mới nhất trong popup đội tuyển: tải động từ nguồn squad online, có cache và nút làm mới.'],
-  ['v2.0.0','Thiết kế lại toàn bộ giao diện cho mobile (iPhone 14 Pro Max): rút gọn về 4 tab chính (Trang chủ, Lịch đấu, Bảng đấu, Đội tuyển), bỏ Nhánh đấu/Highlights/Tin tức/Sân vận động. Thêm nút Ẩn/hiện trận đã đấu, nút Phân tích trận đấu (tỷ lệ thắng tham khảo dựa trên xếp hạng FIFA) và mục Đánh giá tổng quan cho từng đội tuyển.']
+  ['v2.0.0','Thiết kế lại toàn bộ giao diện cho mobile (iPhone 14 Pro Max): rút gọn về 4 tab chính (Trang chủ, Lịch đấu, Bảng đấu, Đội tuyển), bỏ Nhánh đấu/Highlights/Tin tức/Sân vận động. Thêm nút Ẩn/hiện trận đã đấu, phân tích trận đấu (tỷ lệ thắng tham khảo dựa trên xếp hạng FIFA) và mục Đánh giá tổng quan cho từng đội tuyển.'],
+  ['v2.1.0','Thêm chế độ Sáng/Tối (dark/light mode): nút chuyển đổi trên header, tự nhận theme hệ thống lần đầu mở, lưu lựa chọn cho lần sau.'],
+  ['v2.2.0','Bổ sung hiệu ứng: thẻ trận đấu xuất hiện theo hiệu ứng cuốn, hiệu ứng "ping" cho chỉ báo LIVE, khung chờ dạng shimmer khi tải lịch thi đấu, ánh sáng nền Trang chủ chuyển động nhẹ. Đồng thời khôi phục animation nhấp nháy cho dot LIVE/trạng thái API bị thiếu từ trước.'],
+  ['v2.3.0','Tối ưu cấu trúc mã nguồn: tách CSS và JavaScript ra file riêng (css/worldcup2026.css, js/worldcup2026.js) để dễ bảo trì khi file đã lớn.'],
+  ['v2.4.0','Sửa lỗi danh sách cầu thủ từng đội tuyển không hiển thị do Wikipedia đổi cấu trúc HTML; bổ sung nguồn dữ liệu dự phòng (trang Wikipedia riêng của từng ĐTQG) khi nguồn chính thiếu dữ liệu.'],
+  ['v2.5.0','Nâng cấp hiển thị: thêm độ nổi (shadow) cho thẻ trận đấu/đội tuyển/bảng đấu, huy chương vàng-bạc-đồng cho top 3 Vua phá lưới.'],
+  ['v2.6.0','Trang chủ: bấm vào lịch/kết quả trận đấu hoặc cầu thủ ghi bàn để xem chi tiết (số trận lập công, vị trí, CLB, ngày sinh, số liệu sự nghiệp). Gộp "So sánh trước trận" và "Phân tích" thành 1 popup duy nhất, bổ sung lịch sử đối đầu thật tại các kỳ World Cup 1998–2026, bỏ nút Phân tích riêng và chức năng Chia sẻ. Dịch vị trí cầu thủ (GK/DF/MF/FW) sang tiếng Việt. Bảng đấu ghi rõ tên cột thay viết tắt. Sửa lỗi hiển thị NaN ở bàn thắng phút bù giờ và lỗi bo góc ở popup lịch sử phiên bản.']
 ];
 
 const WC_FEATURE_STATE={
@@ -1057,44 +1210,139 @@ function matchWinProbability(teamA,teamB){
   let winB=100-winA-draw;
   return{winA,draw,winB};
 }
-function openAnalysisSheet(t1Raw,t2Raw){
-  const t1=decodeURIComponent(t1Raw),t2=decodeURIComponent(t2Raw);
-  const a=getTeamMeta(t1),b=getTeamMeta(t2);
-  const prob=matchWinProbability(a,b);
-  const scoreA=teamStrengthScore(a),scoreB=teamStrengthScore(b);
-  const ccA=getCC(t1),ccB=getCC(t2);
-  document.getElementById('analysisTitle').textContent=`${t1} vs ${t2}`;
-  document.getElementById('analysisBody').innerHTML=`
-    <div class="prob-labels"><span>${escapeHTML(t1)}</span><span>Hòa</span><span>${escapeHTML(t2)}</span></div>
-    <div class="prob-bar">
-      <div class="prob-seg a" style="flex:${Math.max(prob.winA,6)}">${prob.winA}%</div>
-      <div class="prob-seg d" style="flex:${Math.max(prob.draw,6)}">${prob.draw}%</div>
-      <div class="prob-seg b" style="flex:${Math.max(prob.winB,6)}">${prob.winB}%</div>
-    </div>
-    <div class="compare-box">
-      <div class="compare-grid">
-        <div class="compare-card"><div class="compare-name"><span class="fl sm"><img src="${FB}w40/${ccA}.png" loading="lazy" alt=""></span> ${escapeHTML(t1)}</div>
-          <div class="compare-stat"><span>Hạng FIFA</span><strong>#${a?a.r:'—'}</strong></div>
-          <div class="compare-stat"><span>Điểm sức mạnh</span><strong>${scoreA}/100</strong></div>
-          <div class="compare-stat"><span>Liên đoàn</span><strong>${a?a.c:'—'}</strong></div>
-        </div>
-        <div class="compare-card"><div class="compare-name"><span class="fl sm"><img src="${FB}w40/${ccB}.png" loading="lazy" alt=""></span> ${escapeHTML(t2)}</div>
-          <div class="compare-stat"><span>Hạng FIFA</span><strong>#${b?b.r:'—'}</strong></div>
-          <div class="compare-stat"><span>Điểm sức mạnh</span><strong>${scoreB}/100</strong></div>
-          <div class="compare-stat"><span>Liên đoàn</span><strong>${b?b.c:'—'}</strong></div>
-        </div>
-      </div>
-    </div>
-    <div class="analysis-foot">⚠️ Phân tích tham khảo dựa trên xếp hạng FIFA có trong dữ liệu nội bộ, qua hàm logistic trên chênh lệch điểm sức mạnh — không dùng dữ liệu đối đầu lịch sử hoặc cá cược, không phải dự đoán chính thức từ FIFA.</div>
-  `;
-  document.getElementById('analysisSheet').classList.add('on');
+// Tỷ số dự đoán tham khảo — cùng cơ sở điểm sức mạnh (FIFA rank) với tỷ lệ thắng phía trên,
+// KHÔNG phải dự đoán chính thức, chỉ là quy đổi đơn giản từ chênh lệch điểm sang số bàn kỳ vọng.
+function predictScoreline(teamA,teamB){
+  const diff=teamStrengthScore(teamA)-teamStrengthScore(teamB);
+  const base=1.35;
+  const adj=Math.max(-1.2,Math.min(1.2,diff/100*1.6));
+  return{ga:Math.max(0,Math.round(base+adj)),gb:Math.max(0,Math.round(base-adj))};
+}
+// ═══════════════════════════════════════════
+// LỊCH SỬ ĐỐI ĐẦU (HEAD-TO-HEAD) — dữ liệu thật từ các kỳ World Cup trước,
+// cùng nguồn openfootball/worldcup.json (chỉ khác năm). Cache dài hạn vì dữ liệu lịch sử không đổi.
+// ═══════════════════════════════════════════
+const H2H_CACHE_KEY='wc2026:h2h:v1';
+const H2H_CACHE_TTL=1000*60*60*24*30;
+const H2H_YEARS=[1998,2002,2006,2010,2014,2018,2022];
+let H2H_DATA=null;
+async function fetchHistoricalMatches(){
+  if(H2H_DATA)return H2H_DATA;
+  try{
+    const cached=localStorage.getItem(H2H_CACHE_KEY);
+    if(cached){const p=JSON.parse(cached);if(Date.now()-p.savedAt<H2H_CACHE_TTL){H2H_DATA=p.value;return H2H_DATA;}}
+  }catch(e){}
+  const results=await Promise.allSettled(H2H_YEARS.map(y=>
+    fetch(`https://raw.githubusercontent.com/openfootball/worldcup.json/master/${y}/worldcup.json`).then(r=>r.ok?r.json():null)
+  ));
+  const all=[];
+  results.forEach((r,i)=>{
+    if(r.status==='fulfilled'&&r.value&&r.value.matches){
+      r.value.matches.forEach(m=>all.push({...m,year:H2H_YEARS[i]}));
+    }
+  });
+  H2H_DATA=all;
+  try{localStorage.setItem(H2H_CACHE_KEY,JSON.stringify({savedAt:Date.now(),value:all}));}catch(e){}
+  return all;
+}
+function findHeadToHead(t1,t2){
+  const wc2026=((WC_FEATURE_STATE.lastData&&WC_FEATURE_STATE.lastData.matches)||[]).map(m=>({...m,year:2026}));
+  const all=[...(H2H_DATA||[]),...wc2026];
+  return all.filter(m=>m.score&&m.score.ft)
+    .filter(m=>{const a=tn(m.team1),b=tn(m.team2);return (a===t1&&b===t2)||(a===t2&&b===t1);})
+    .sort((x,y)=>y.year-x.year);
+}
+function renderH2HSection(t1,t2,meetings){
+  if(!meetings.length){
+    return `<div class="h2h-box"><div class="compare-card-title">🤝 Lịch sử đối đầu tại World Cup</div><div class="home-empty">${escapeHTML(t1)} và ${escapeHTML(t2)} chưa từng gặp nhau tại World Cup (dữ liệu từ 1998–2026).</div></div>`;
+  }
+  let w1=0,w2=0,d=0;
+  const rows=meetings.map(m=>{
+    const isT1Home=tn(m.team1)===t1;
+    const s1=isT1Home?m.score.ft[0]:m.score.ft[1];
+    const s2=isT1Home?m.score.ft[1]:m.score.ft[0];
+    if(s1>s2)w1++;else if(s2>s1)w2++;else d++;
+    return `<div class="home-mini-row" style="cursor:default"><div class="home-mini-grp" style="width:38px;flex-shrink:0">${m.year}</div><div class="home-mini-teams">${escapeHTML(t1)} <span class="home-mini-score">${s1}-${s2}</span> ${escapeHTML(t2)}</div></div>`;
+  }).join('');
+  return `<div class="h2h-box">
+    <div class="compare-card-title">🤝 Lịch sử đối đầu tại World Cup (${meetings.length} lần, 1998–2026)</div>
+    <div class="h2h-summary"><span>${escapeHTML(t1)} thắng <b>${w1}</b></span><span>Hòa <b>${d}</b></span><span>${escapeHTML(t2)} thắng <b>${w2}</b></span></div>
+    <div class="home-mini-list" style="margin-top:8px">${rows}</div>
+  </div>`;
 }
 function closeAnalysisSheet(){document.getElementById('analysisSheet').classList.remove('on');}
+// Popup thông tin cầu thủ — dùng chung sheet với Phân tích trận đấu (chỉ hiện 1 trong 2 cùng lúc).
+async function openPlayerSheet(nameRaw,teamRaw){
+  const name=decodeURIComponent(nameRaw),teamName=decodeURIComponent(teamRaw);
+  const team=getTeamMeta(teamName);
+  const cc=getCC(teamName);
+  document.getElementById('analysisTitle').textContent=name;
+  const body=document.getElementById('analysisBody');
+  body.innerHTML='<div class="loading-state"><div class="spinner"></div><div class="loading-txt">Đang tải thông tin cầu thủ...</div></div>';
+  document.getElementById('analysisSheet').classList.add('on');
+
+  const data=WC_FEATURE_STATE.lastData;
+  const all=(data&&data.matches)||[];
+  let goalsWC=0;const matchKeys=new Set();
+  all.forEach(m=>{
+    (m.goals1||[]).forEach(g=>{if(g.name===name){goalsWC++;matchKeys.add(m.date+'|'+m.team1+'|'+m.team2);}});
+    (m.goals2||[]).forEach(g=>{if(g.name===name){goalsWC++;matchKeys.add(m.date+'|'+m.team1+'|'+m.team2);}});
+  });
+
+  let info=null;
+  try{
+    await fetchSquadData();
+    let squadMatch=team?findSquadForTeam(team):null;
+    if((!squadMatch||!squadMatch.players.length)&&team){
+      const wikiName=TEAM_WIKI_MAP[team.n]||team.n;
+      try{const players=await fetchSquadFromTeamPage(wikiName);if(players&&players.length)squadMatch={players};}catch(e){}
+    }
+    if(squadMatch)info=squadMatch.players.find(p=>normalizeSquadKey(p.name)===normalizeSquadKey(name));
+  }catch(e){console.warn('Player info fetch failed',e);}
+
+  // Ảnh đại diện + tiểu sử ngắn từ Wikipedia REST API, tra đúng theo wikiSlug lấy được từ link cầu thủ trong squad
+  // (tránh nhầm người trùng tên) — nếu không có slug thì bỏ qua, không đoán URL để tránh lấy nhầm ảnh người khác.
+  let summary=null;
+  if(info?.wikiSlug){
+    try{
+      const res=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${info.wikiSlug}`);
+      if(res.ok){const j=await res.json();if(!j.type||j.type!=='disambiguation')summary=j;}
+    }catch(e){console.warn('Player summary fetch failed',e);}
+  }
+
+  const rows=[];
+  rows.push(`<div class="compare-stat"><span>Bàn tại World Cup 2026</span><strong style="color:var(--amber)">${goalsWC} ⚽</strong></div>`);
+  rows.push(`<div class="compare-stat"><span>Lập công trong</span><strong>${matchKeys.size} trận đã đấu</strong></div>`);
+  if(info?.pos)rows.push(`<div class="compare-stat"><span>Vị trí</span><strong>${escapeHTML(posVN(info.pos))}</strong></div>`);
+  if(info?.club)rows.push(`<div class="compare-stat"><span>CLB hiện tại</span><strong>${escapeHTML(info.club)}</strong></div>`);
+  if(info?.dob)rows.push(`<div class="compare-stat"><span>Ngày sinh</span><strong>${escapeHTML(info.dob)}</strong></div>`);
+  if(info?.caps)rows.push(`<div class="compare-stat"><span>Số lần khoác áo ĐTQG (sự nghiệp)</span><strong>${escapeHTML(info.caps)}</strong></div>`);
+  if(info?.careerGoals)rows.push(`<div class="compare-stat"><span>Bàn thắng ĐTQG (sự nghiệp)</span><strong>${escapeHTML(info.careerGoals)}</strong></div>`);
+
+  const avatarHtml=summary?.thumbnail?.source
+    ?`<img class="player-avatar" src="${escapeHTML(summary.thumbnail.source)}" alt="${escapeHTML(name)}" loading="lazy" onerror="this.style.display='none'">`
+    :`<div class="player-avatar player-avatar-ph">👤</div>`;
+  const descHtml=summary?.description?`<div class="player-desc">${escapeHTML(summary.description)}</div>`:'';
+  const extractHtml=summary?.extract?`<div class="player-extract">${escapeHTML(summary.extract)}</div>`:'';
+
+  document.getElementById('analysisBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      ${avatarHtml}
+      <div style="min-width:0">
+        <div style="display:flex;align-items:center;gap:6px"><span class="fl xs"><img src="${FB}w20/${cc}.png" loading="lazy" alt=""></span><span style="font-size:12.5px;font-weight:700;color:var(--text)">${escapeHTML(team?team.n:teamName)}</span></div>
+        ${descHtml}
+      </div>
+    </div>
+    <div class="compare-card">${rows.join('')}</div>
+    ${extractHtml}
+    <div class="analysis-foot">⚠️ Số trận/bàn thắng tại World Cup 2026 tính từ dữ liệu trận đấu thực tế. Số liệu "sự nghiệp"/ảnh/tiểu sử lấy từ Wikipedia, không phải số liệu riêng cho giải này vì nguồn mở hiện chưa công khai dữ liệu ra sân theo từng trận.</div>
+  `;
+}
 function normalizeText(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function matchStartDate(match){return parseMatchTime(match.date,match.time)||new Date((match.date||'')+'T00:00:00');}
 function formatMatchDateTime(match){
   const dt=matchStartDate(match);
-  return dt.toLocaleString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:APP_TIME_ZONE}) + ' · GMT+7';
+  return dt.toLocaleString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:APP_TIME_ZONE});
 }
 function displayMatchTime(match){
   const dt=matchStartDate(match);
@@ -1200,8 +1448,7 @@ function getFilteredMatches(){
 }
 function buildEnhancedMatchCard(m,st,extraCls){
   const base=buildMatchCard(m,st,extraCls);
-  const analysisBtn=st.status==='soon'?`<button class="mini-btn analysis-btn" onclick="event.stopPropagation();openAnalysisSheet('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}')">📊 Phân tích</button>`:'';
-  const extra=`<div class="match-countdown">${countdownText(m)}</div><div class="mc-date-mini">${formatMatchDateTime(m)}</div><div class="mc-actions"><button class="mini-btn" onclick="event.stopPropagation();shareMatchFromData('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}')">Chia sẻ</button>${analysisBtn}</div>`;
+  const extra=`<div class="match-countdown">${countdownText(m)}</div><div class="mc-date-mini">${formatMatchDateTime(m)}</div>`;
   return base.replace('<span class="mc-ven">',''+extra+'<span class="mc-ven">');
 }
 
@@ -1220,9 +1467,10 @@ function renderHomeDashboard(dataObj, visibleMatches){
     .sort((a,b)=>matchStartDate(a)-matchStartDate(b)).slice(0,4);
   const results=all.filter(m=>matchStatus(m).status==='done'&&m.score&&m.score.ft)
     .sort((a,b)=>matchStartDate(b)-matchStartDate(a)).slice(0,4);
-  if(upcomingEl)upcomingEl.innerHTML=upcoming.length?upcoming.map(m=>`<div class="home-mini-row">${dateTimeBlock(m)}<div class="home-mini-teams">${flagHtml(m.team1)}${escapeHTML(tn(m.team1))} vs ${escapeHTML(tn(m.team2))}${flagHtml(m.team2)}</div><div class="home-mini-grp">${m.group||m.round||''}</div></div>`).join('')
+  const rowClick=m=>`onclick="openMatchModalByTeamsDate('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}','${m.date}')"`;
+  if(upcomingEl)upcomingEl.innerHTML=upcoming.length?upcoming.map(m=>`<div class="home-mini-row" ${rowClick(m)}>${dateTimeBlock(m)}<div class="home-mini-teams">${flagHtml(m.team1)}${escapeHTML(tn(m.team1))} vs ${escapeHTML(tn(m.team2))}${flagHtml(m.team2)}</div><div class="home-mini-grp">${m.group||m.round||''}</div></div>`).join('')
     :'<div class="home-empty">Chưa có trận sắp tới đã xác định đủ 2 đội.</div>';
-  if(resultsEl)resultsEl.innerHTML=results.length?results.map(m=>`<div class="home-mini-row">${dateTimeBlock(m)}<div class="home-mini-teams">${flagHtml(m.team1)}${escapeHTML(tn(m.team1))} <span class="home-mini-score">${m.score.ft[0]}-${m.score.ft[1]}</span> ${escapeHTML(tn(m.team2))}${flagHtml(m.team2)}</div><div class="home-mini-grp">${m.group||m.round||''}</div></div>`).join('')
+  if(resultsEl)resultsEl.innerHTML=results.length?results.map(m=>`<div class="home-mini-row" ${rowClick(m)}>${dateTimeBlock(m)}<div class="home-mini-teams">${flagHtml(m.team1)}${escapeHTML(tn(m.team1))} <span class="home-mini-score">${m.score.ft[0]}-${m.score.ft[1]}</span> ${escapeHTML(tn(m.team2))}${flagHtml(m.team2)}</div><div class="home-mini-grp">${m.group||m.round||''}</div></div>`).join('')
     :'<div class="home-empty">Chưa có kết quả trận đấu.</div>';
 }
 
@@ -1288,25 +1536,35 @@ openMatchModal=function(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime){
   originalOpenMatchModal_v115(t1,t2,s1,s2,cc1,cc2,status,grp,venue,goals,vnTime);
   const body=document.getElementById('mm-body');if(!body)return;
   const a=getTeamMeta(t1),b=getTeamMeta(t2);
-  body.innerHTML+=`<div class="compare-box"><div class="mm-glbl">⚖️ So sánh trước trận</div><div class="compare-grid"><div class="compare-card"><div class="compare-name">${t1}</div>${teamCompareRows(a)}</div><div class="compare-card"><div class="compare-name">${t2}</div>${teamCompareRows(b)}</div></div></div><div class="share-note" id="shareNote">Đã copy link trận đấu</div>`;
-  const foot=document.querySelector('#mModal .mm-foot');
-  if(foot&&!document.getElementById('matchShareBtn')){
-    const btn=document.createElement('button');btn.id='matchShareBtn';btn.className='mmbtn s';btn.textContent='Chia sẻ';btn.onclick=()=>shareCurrentMatch();foot.insertBefore(btn,foot.firstChild);
+  let html=`<div class="compare-box"><div class="mm-glbl">⚖️ So sánh trước trận</div><div class="compare-grid"><div class="compare-card"><div class="compare-name">${t1}</div>${teamCompareRows(a)}</div><div class="compare-card"><div class="compare-name">${t2}</div>${teamCompareRows(b)}</div></div></div>`;
+  const isUpcoming=s1===''||s2==='';
+  if(isUpcoming){
+    const prob=matchWinProbability(a,b);
+    const score=predictScoreline(a,b);
+    html+=`<div class="compare-box"><div class="mm-glbl">📊 Tỷ lệ thắng tham khảo</div>
+      <div class="prob-labels"><span>${escapeHTML(t1)}</span><span>Hòa</span><span>${escapeHTML(t2)}</span></div>
+      <div class="prob-bar">
+        <div class="prob-seg a" style="flex:${Math.max(prob.winA,6)}">${prob.winA}%</div>
+        <div class="prob-seg d" style="flex:${Math.max(prob.draw,6)}">${prob.draw}%</div>
+        <div class="prob-seg b" style="flex:${Math.max(prob.winB,6)}">${prob.winB}%</div>
+      </div>
+      <div class="predicted-score"><span>${escapeHTML(t1)}</span><strong>${score.ga} - ${score.gb}</strong><span>${escapeHTML(t2)}</span></div>
+      <div class="analysis-foot">⚠️ Tỷ lệ và tỷ số phía trên chỉ là quy đổi tham khảo từ xếp hạng FIFA qua hàm logistic, không dùng lịch sử đối đầu hay cá cược, không phải dự đoán chính thức từ FIFA.</div>
+    </div>`;
   }
-  window.__currentShareMatch={t1,t2,grp,venue};
+  html+=`<div id="mmH2H"><div class="loading-state" style="padding:18px"><div class="spinner"></div><div class="loading-txt">Đang tải lịch sử đối đầu...</div></div></div>`;
+  body.innerHTML+=html;
+  fetchHistoricalMatches().then(()=>{
+    const slot=document.getElementById('mmH2H');
+    if(slot)slot.innerHTML=renderH2HSection(t1,t2,findHeadToHead(t1,t2));
+  }).catch(()=>{
+    const slot=document.getElementById('mmH2H');
+    if(slot)slot.innerHTML='<div class="home-empty">Không tải được lịch sử đối đầu lúc này.</div>';
+  });
 };
 function teamCompareRows(t){
   if(!t)return '<div class="compare-stat"><span>Dữ liệu</span><strong>Đang cập nhật</strong></div>';
   return `<div class="compare-stat"><span>Bảng</span><strong>${t.g}</strong></div><div class="compare-stat"><span>FIFA</span><strong>#${t.r}</strong></div><div class="compare-stat"><span>HLV</span><strong>${t.coach||'—'}</strong></div><div class="compare-stat"><span>Đội trưởng</span><strong>${t.cap||'—'}</strong></div><div class="compare-stat"><span>Ngôi sao</span><strong>${(t.players&&t.players[0])||'—'}</strong></div>`;
-}
-function shareMatchFromData(t1,t2){window.__currentShareMatch={t1:decodeURIComponent(t1),t2:decodeURIComponent(t2)};shareCurrentMatch();}
-async function shareCurrentMatch(){
-  const m=window.__currentShareMatch||{};
-  const text=`${m.t1||'World Cup 2026'} vs ${m.t2||''}`.trim();
-  const url=location.origin+location.pathname+'#schedule';
-  try{if(navigator.share){await navigator.share({title:text,text:`Theo dõi ${text} trên World Cup 2026 Fan Site`,url});}else{await navigator.clipboard.writeText(url+' · '+text);}}
-  catch(e){try{await navigator.clipboard.writeText(url+' · '+text);}catch(_){}}
-  const note=document.getElementById('shareNote');if(note){note.style.display='block';setTimeout(()=>note.style.display='none',1800);}
 }
 
 // Trả về HTML danh sách kết quả các trận ĐÃ HOÀN THÀNH của đội t tại giải này.
@@ -1321,7 +1579,7 @@ function teamMatchResultsHtml(t){
     const myScore=isTeam1?m.score.ft[0]:m.score.ft[1];
     const oppScore=isTeam1?m.score.ft[1]:m.score.ft[0];
     const result=myScore>oppScore?{lbl:'Thắng',cls:'win'}:myScore<oppScore?{lbl:'Thua',cls:'loss'}:{lbl:'Hòa',cls:'draw'};
-    return `<div class="home-mini-row"><span class="result-tag ${result.cls}">${result.lbl}</span><div class="home-mini-teams">${flagHtml(opp)}${escapeHTML(tn(opp))} <span class="home-mini-score">${myScore}-${oppScore}</span></div><div class="home-mini-grp">${shortDateVN(matchStartDate(m))}</div></div>`;
+    return `<div class="home-mini-row" onclick="openMatchModalByTeamsDate('${encodeURIComponent(tn(m.team1))}','${encodeURIComponent(tn(m.team2))}','${m.date}')"><span class="result-tag ${result.cls}">${result.lbl}</span><div class="home-mini-teams">${flagHtml(opp)}${escapeHTML(tn(opp))} <span class="home-mini-score">${myScore}-${oppScore}</span></div><div class="home-mini-grp">${shortDateVN(matchStartDate(m))}</div></div>`;
   }).join(''):'<div class="home-empty">Đội chưa có trận nào hoàn thành tại giải này.</div>';
   return `<div class="squad-box"><div class="squad-title">⚽ Kết quả tại World Cup 2026 (${matches.length} trận)</div><div class="home-mini-list" style="margin-top:10px">${body}</div></div>`;
 }
@@ -1359,6 +1617,7 @@ function setupFeaturePack(){
 
 (async()=>{
   applyTheme(document.documentElement.getAttribute('data-theme')||'dark');
+  setupModalScrollLock();
   renderBuildVersion();
   setupFeaturePack();
   // Render ngay lập tức từ dữ liệu tĩnh — phù hợp GitHub Pages, không cần backend
