@@ -1,8 +1,10 @@
 /**
  * Thubee Farmery — Quản lý Doanh thu
- * Dashboard nội bộ: yêu cầu đăng nhập (client-side gate), dữ liệu lưu localStorage.
- * Đây KHÔNG phải bảo mật thật (không có backend) — chỉ ngăn người xem thường truy cập.
- * Đổi mật khẩu: mở Console, gọi `ThubeeAuth.hashPassword("user","pass")` rồi thay AUTH_PASSWORD_HASH.
+ * Thiết kế riêng cho iPhone 14 Pro Max — không hỗ trợ desktop.
+ * Đăng nhập là client-side password gate (không có backend) — chỉ ngăn người xem thường, không chống người cố tình đọc source.
+ * Đổi mật khẩu: mở Console, gọi `ThubeeAuth.hashPassword("user","pass")` rồi thay AUTH_PASSWORD_HASH + AUTH_USERNAME.
+ * Dữ liệu: json/*.json là dữ liệu khởi tạo (seed) + nguồn combobox; mọi thêm/sửa/xoá lưu vào localStorage của trình duyệt
+ * (không đồng bộ nhiều thiết bị, không ghi ngược lại file json — đây là giới hạn của site tĩnh không backend).
  */
 
 // ===================== Types =====================
@@ -10,6 +12,7 @@
 type OrderStatus = 'completed' | 'pending' | 'cancelled';
 type PaymentMethod = 'cash' | 'transfer' | 'cod';
 type RangePreset = '7d' | '30d' | '90d' | '180d' | 'all' | 'custom';
+type TabId = 'overview' | 'orders' | 'products' | 'customers' | 'sellers';
 
 interface Product {
   id: string;
@@ -21,10 +24,23 @@ interface Product {
   stock: number;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface Seller {
+  id: string;
+  name: string;
+  phone: string;
+}
+
 interface Order {
   id: string;
   date: string; // ISO yyyy-mm-dd
-  customer: string;
+  customerId: string;
+  sellerId: string; // '' = chưa gán
   productId: string;
   quantity: number;
   status: OrderStatus;
@@ -38,6 +54,8 @@ interface OrderRow extends Order {
   total: number;
   cost: number;
   profit: number;
+  customerName: string;
+  sellerName: string;
 }
 
 interface DateRange {
@@ -48,8 +66,17 @@ interface DateRange {
 // ===================== Constants =====================
 
 const STORAGE_PRODUCTS = 'thubee_farmery_products';
+const STORAGE_CUSTOMERS = 'thubee_farmery_customers';
+const STORAGE_SELLERS = 'thubee_farmery_sellers';
 const STORAGE_ORDERS = 'thubee_farmery_orders';
 const STORAGE_SESSION = 'thubee_farmery_session';
+
+const JSON_PATHS = {
+  products: 'json/products.json',
+  customers: 'json/customers.json',
+  sellers: 'json/sellers.json',
+  orders: 'json/orders.json',
+};
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   completed: 'Hoàn thành',
@@ -64,14 +91,15 @@ const PAYMENT_LABEL: Record<PaymentMethod, string> = {
 };
 
 const CATEGORY_COLOR: Record<string, string> = {
-  'Mật ong': '#e8a33d',
-  'Trái cây sấy': '#e8633d',
-  'Rau củ organic': '#5a8f3c',
-  'Trà thảo mộc': '#3d8f7a',
-  'Nông sản tươi': '#8f6a3d',
+  'Mật ong': '#c5963a',
+  'Trái cây sấy': '#df7a35',
+  'Rau củ organic': '#6f9c3c',
+  'Trà thảo mộc': '#8a5a3a',
+  'Nông sản tươi': '#2b4424',
 };
 
-const DEFAULT_PRODUCTS: Product[] = [
+// Dùng khi fetch json/products.json thất bại (ví dụ mở file trực tiếp bằng file://), để app vẫn dùng được.
+const FALLBACK_PRODUCTS: Product[] = [
   { id: 'p01', name: 'Mật ong rừng nguyên chất 500ml', category: 'Mật ong', unit: 'chai', price: 180000, cost: 110000, stock: 64 },
   { id: 'p02', name: 'Mật ong hoa nhãn 500ml', category: 'Mật ong', unit: 'chai', price: 165000, cost: 100000, stock: 52 },
   { id: 'p03', name: 'Mật ong bạc hà 250ml', category: 'Mật ong', unit: 'chai', price: 95000, cost: 58000, stock: 40 },
@@ -86,12 +114,6 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: 'p12', name: 'Trà atiso túi lọc', category: 'Trà thảo mộc', unit: 'hộp', price: 42000, cost: 22000, stock: 65 },
   { id: 'p13', name: 'Trứng gà ta organic (chục)', category: 'Nông sản tươi', unit: 'chục', price: 55000, cost: 38000, stock: 48 },
   { id: 'p14', name: 'Gạo lứt hữu cơ 2kg', category: 'Nông sản tươi', unit: 'túi', price: 78000, cost: 50000, stock: 70 },
-];
-
-const CUSTOMER_NAMES: string[] = [
-  'Nguyễn Thị Hoa', 'Trần Văn Minh', 'Lê Thị Lan', 'Phạm Văn Hùng', 'Hoàng Thị Mai',
-  'Vũ Văn Đức', 'Đặng Thị Thu', 'Bùi Văn Sơn', 'Đỗ Thị Hằng', 'Ngô Văn Tài',
-  'Dương Thị Nga', 'Lý Văn Phúc', 'Trịnh Thị Yến', 'Phan Văn Khoa', 'Tô Thị Loan', 'Mai Văn Quân',
 ];
 
 // ===================== Auth =====================
@@ -201,111 +223,64 @@ function handleLogout(): void {
 }
 
 function showApp(): void {
+  document.getElementById('loadingScreen')?.remove();
   document.getElementById('authScreen')?.classList.remove('visible');
   document.getElementById('appShell')?.classList.add('visible');
   renderAll();
 }
 
 function showLogin(): void {
+  document.getElementById('loadingScreen')?.remove();
   document.getElementById('appShell')?.classList.remove('visible');
   document.getElementById('authScreen')?.classList.add('visible');
 }
 
-// ===================== PRNG seed data =====================
-
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return function (): number {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function generateSeedOrders(products: Product[]): Order[] {
-  const rand = mulberry32(20260627);
-  const orders: Order[] = [];
-  const days = 150;
-  const today = new Date();
-  let counter = 1;
-
-  for (let i = days; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    const iso = toISODate(date);
-    const ordersToday = Math.floor(rand() * 4) + (rand() > 0.5 ? 1 : 0); // 0-4
-    for (let j = 0; j < ordersToday; j++) {
-      const product = products[Math.floor(rand() * products.length)];
-      const customer = CUSTOMER_NAMES[Math.floor(rand() * CUSTOMER_NAMES.length)];
-      const quantity = Math.floor(rand() * 4) + 1;
-      const statusRoll = rand();
-      let status: OrderStatus = 'completed';
-      if (i <= 7 && statusRoll > 0.7) status = 'pending';
-      else if (statusRoll > 0.95) status = 'cancelled';
-      const paymentRoll = rand();
-      const payment: PaymentMethod = paymentRoll < 0.4 ? 'cash' : paymentRoll < 0.8 ? 'transfer' : 'cod';
-      orders.push({
-        id: `DH${String(counter).padStart(4, '0')}`,
-        date: iso,
-        customer,
-        productId: product.id,
-        quantity,
-        status,
-        payment,
-      });
-      counter += 1;
-    }
-  }
-  return orders;
-}
-
-// ===================== State =====================
+// ===================== Data loading =====================
 
 let products: Product[] = [];
+let customers: Customer[] = [];
+let sellers: Seller[] = [];
 let orders: Order[] = [];
-let currentRange: DateRange = { from: '', to: '' };
-let currentPreset: RangePreset = '30d';
-let orderSearchText = '';
-let orderStatusFilter = '';
-let orderCategoryFilter = '';
-let editingOrderId: string | null = null;
 
-function loadState(): void {
-  const storedProducts = localStorage.getItem(STORAGE_PRODUCTS);
-  if (storedProducts) {
+async function loadEntity<T>(storageKey: string, jsonPath: string, fallback: T): Promise<T> {
+  const stored = localStorage.getItem(storageKey);
+  if (stored) {
     try {
-      products = JSON.parse(storedProducts) as Product[];
+      return JSON.parse(stored) as T;
     } catch {
-      products = DEFAULT_PRODUCTS.slice();
+      // fall through to re-seed
     }
-  } else {
-    products = DEFAULT_PRODUCTS.slice();
-    localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(products));
   }
+  try {
+    const res = await fetch(jsonPath);
+    if (!res.ok) throw new Error(`fetch ${jsonPath} failed`);
+    const data = (await res.json()) as T;
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    return data;
+  } catch {
+    localStorage.setItem(storageKey, JSON.stringify(fallback));
+    return fallback;
+  }
+}
 
-  const storedOrders = localStorage.getItem(STORAGE_ORDERS);
-  if (storedOrders) {
-    try {
-      orders = JSON.parse(storedOrders) as Order[];
-    } catch {
-      orders = generateSeedOrders(products);
-    }
-  } else {
-    orders = generateSeedOrders(products);
-    localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
-  }
+async function loadState(): Promise<void> {
+  [products, customers, sellers, orders] = await Promise.all([
+    loadEntity<Product[]>(STORAGE_PRODUCTS, JSON_PATHS.products, FALLBACK_PRODUCTS),
+    loadEntity<Customer[]>(STORAGE_CUSTOMERS, JSON_PATHS.customers, []),
+    loadEntity<Seller[]>(STORAGE_SELLERS, JSON_PATHS.sellers, []),
+    loadEntity<Order[]>(STORAGE_ORDERS, JSON_PATHS.orders, []),
+  ]);
 }
 
 function persistProducts(): void {
   localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(products));
 }
-
+function persistCustomers(): void {
+  localStorage.setItem(STORAGE_CUSTOMERS, JSON.stringify(customers));
+}
+function persistSellers(): void {
+  localStorage.setItem(STORAGE_SELLERS, JSON.stringify(sellers));
+}
 function persistOrders(): void {
   localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
 }
@@ -330,15 +305,43 @@ function formatDateShort(iso: string): string {
   return `${d}/${m}`;
 }
 
-// ===================== Data helpers =====================
+function toISODate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ===================== Lookup helpers =====================
 
 function getProduct(id: string): Product | undefined {
   return products.find((p) => p.id === id);
+}
+function getCustomer(id: string): Customer | undefined {
+  return customers.find((c) => c.id === id);
+}
+function getSeller(id: string): Seller | undefined {
+  return sellers.find((s) => s.id === id);
+}
+
+function resolveCustomerId(name: string): string {
+  const trimmed = name.trim();
+  const existing = customers.find((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+  if (existing) return existing.id;
+  const created: Customer = { id: `c${Date.now()}`, name: trimmed, phone: '' };
+  customers.push(created);
+  persistCustomers();
+  return created.id;
 }
 
 function toRow(order: Order): OrderRow | null {
   const product = getProduct(order.productId);
   if (!product) return null;
+  const customer = getCustomer(order.customerId);
+  const seller = order.sellerId ? getSeller(order.sellerId) : undefined;
   const unitPrice = product.price;
   const total = unitPrice * order.quantity;
   const cost = product.cost * order.quantity;
@@ -350,8 +353,12 @@ function toRow(order: Order): OrderRow | null {
     total,
     cost,
     profit: total - cost,
+    customerName: customer ? customer.name : '(Khách lẻ)',
+    sellerName: seller ? seller.name : '',
   };
 }
+
+// ===================== Date range =====================
 
 function rangeForPreset(preset: RangePreset, customFrom?: string, customTo?: string): DateRange {
   const today = new Date();
@@ -381,16 +388,25 @@ function inRange(dateIso: string, range: DateRange): boolean {
   return dateIso >= range.from && dateIso <= range.to;
 }
 
-function getRows(range: DateRange, opts?: { excludeCancelled?: boolean }): OrderRow[] {
+function getRows(range: DateRange): OrderRow[] {
   const rows: OrderRow[] = [];
   for (const order of orders) {
     if (!inRange(order.date, range)) continue;
-    if (opts?.excludeCancelled && order.status === 'cancelled') continue;
     const row = toRow(order);
     if (row) rows.push(row);
   }
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
+
+// ===================== State =====================
+
+let currentRange: DateRange = { from: '', to: '' };
+let currentPreset: RangePreset = '30d';
+let orderSearchText = '';
+let orderStatusFilter = '';
+let orderCategoryFilter = '';
+let orderSellerFilter = '';
+let editingOrderId: string | null = null;
 
 // ===================== KPIs =====================
 
@@ -408,6 +424,11 @@ function deltaPercent(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
+function setText(id: string, value: string): void {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
 function renderDelta(elId: string, delta: number): void {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -419,8 +440,7 @@ function renderDelta(elId: string, delta: number): void {
 function renderKPIs(rows: OrderRow[]): void {
   const current = computeKPIs(rows);
   const prevRange = previousRange(currentRange);
-  const prevRows = getRows(prevRange);
-  const previous = computeKPIs(prevRows);
+  const previous = computeKPIs(getRows(prevRange));
 
   setText('kpiRevenue', formatCurrency(current.revenue));
   setText('kpiOrders', formatNumber(current.orderCount));
@@ -431,11 +451,6 @@ function renderKPIs(rows: OrderRow[]): void {
   renderDelta('kpiOrdersDelta', deltaPercent(current.orderCount, previous.orderCount));
   renderDelta('kpiProfitDelta', deltaPercent(current.profit, previous.profit));
   renderDelta('kpiAovDelta', deltaPercent(current.aov, previous.aov));
-}
-
-function setText(id: string, value: string): void {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
 }
 
 // ===================== Canvas chart: revenue trend =====================
@@ -454,8 +469,6 @@ function setupHiDPICanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   return ctx;
 }
-
-let revenueChartPoints: ChartPoint[] = [];
 
 function buildRevenueTrend(rows: OrderRow[], range: DateRange): ChartPoint[] {
   const valid = rows.filter((r) => r.status !== 'cancelled');
@@ -478,12 +491,9 @@ function buildRevenueTrend(rows: OrderRow[], range: DateRange): ChartPoint[] {
     return points;
   }
 
-  // group by week for longer ranges
   const points: ChartPoint[] = [];
   let cursor = new Date(from);
   while (cursor <= to) {
-    const weekEnd = new Date(cursor);
-    weekEnd.setDate(cursor.getDate() + 6);
     let sum = 0;
     for (let i = 0; i < 7; i++) {
       const d = new Date(cursor);
@@ -497,96 +507,13 @@ function buildRevenueTrend(rows: OrderRow[], range: DateRange): ChartPoint[] {
   return points;
 }
 
-function drawLineChart(canvas: HTMLCanvasElement, points: ChartPoint[]): void {
-  const ctx = setupHiDPICanvas(canvas);
-  const rect = canvas.getBoundingClientRect();
-  const w = rect.width;
-  const h = rect.height;
-  ctx.clearRect(0, 0, w, h);
-  if (w < 40 || h < 40) return;
-
-  const padL = 56;
-  const padR = 16;
-  const padT = 16;
-  const padB = 28;
-  const plotW = w - padL - padR;
-  const plotH = h - padT - padB;
-
-  const maxVal = Math.max(1, ...points.map((p) => p.value));
-  const niceMax = maxVal === 0 ? 10 : Math.ceil(maxVal / Math.pow(10, Math.floor(Math.log10(maxVal)))) * Math.pow(10, Math.floor(Math.log10(maxVal)));
-
-  ctx.font = '11px Inter, sans-serif';
-  ctx.fillStyle = '#8a9a8a';
-  ctx.strokeStyle = 'rgba(45,80,22,0.08)';
-  ctx.lineWidth = 1;
-
-  const gridLines = 4;
-  for (let i = 0; i <= gridLines; i++) {
-    const y = padT + (plotH * i) / gridLines;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(w - padR, y);
-    ctx.stroke();
-    const val = niceMax - (niceMax * i) / gridLines;
-    ctx.textAlign = 'right';
-    ctx.fillText(formatCompactNumber(val), padL - 8, y + 4);
-  }
-
-  if (points.length === 0) return;
-
-  const stepX = points.length > 1 ? plotW / (points.length - 1) : 0;
-  const coords = points.map((p, i) => ({
-    x: padL + stepX * i,
-    y: padT + plotH - (p.value / niceMax) * plotH,
-  }));
-
-  // area fill
-  const gradient = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  gradient.addColorStop(0, 'rgba(232,163,61,0.32)');
-  gradient.addColorStop(1, 'rgba(232,163,61,0.02)');
-  ctx.beginPath();
-  ctx.moveTo(coords[0].x, padT + plotH);
-  coords.forEach((c) => ctx.lineTo(c.x, c.y));
-  ctx.lineTo(coords[coords.length - 1].x, padT + plotH);
-  ctx.closePath();
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // line
-  ctx.beginPath();
-  coords.forEach((c, i) => (i === 0 ? ctx.moveTo(c.x, c.y) : ctx.lineTo(c.x, c.y)));
-  ctx.strokeStyle = '#e8a33d';
-  ctx.lineWidth = 2.5;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-
-  // x labels (sparse)
-  ctx.fillStyle = '#8a9a8a';
-  ctx.textAlign = 'center';
-  const labelEvery = Math.max(1, Math.ceil(points.length / 7));
-  points.forEach((p, i) => {
-    if (i % labelEvery === 0 || i === points.length - 1) {
-      ctx.fillText(p.label, coords[i].x, h - 8);
-    }
-  });
-
-  setupChartTooltip(canvas, coords, points, padT, plotH);
-}
-
 function formatCompactNumber(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}tr`;
   if (n >= 1000) return `${Math.round(n / 1000)}k`;
   return String(Math.round(n));
 }
 
-let chartTooltipBound = false;
-function setupChartTooltip(
-  canvas: HTMLCanvasElement,
-  coords: { x: number; y: number }[],
-  points: ChartPoint[],
-  padT: number,
-  plotH: number
-): void {
+function setupChartTooltip(canvas: HTMLCanvasElement, coords: { x: number; y: number }[], points: ChartPoint[]): void {
   const tooltip = document.getElementById('chartTooltip');
   if (!tooltip) return;
 
@@ -614,15 +541,94 @@ function setupChartTooltip(
     tooltip.style.display = 'none';
   };
 
+  canvas.ontouchstart = (e) => handleMove(e.touches[0] as unknown as MouseEvent);
+  canvas.ontouchmove = (e) => {
+    e.preventDefault();
+    handleMove(e.touches[0] as unknown as MouseEvent);
+  };
+  canvas.ontouchend = handleLeave;
   canvas.onmousemove = handleMove;
   canvas.onmouseleave = handleLeave;
+}
+
+function drawLineChart(canvas: HTMLCanvasElement, points: ChartPoint[]): void {
+  const ctx = setupHiDPICanvas(canvas);
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+  if (w < 40 || h < 40) return;
+
+  const padL = 48;
+  const padR = 12;
+  const padT = 16;
+  const padB = 26;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const realMax = Math.max(0, ...points.map((p) => p.value));
+  const maxVal = realMax > 0 ? realMax : 100000;
+  const niceMax = Math.ceil(maxVal / Math.pow(10, Math.floor(Math.log10(maxVal)))) * Math.pow(10, Math.floor(Math.log10(maxVal)));
+
+  ctx.font = "11px 'Be Vietnam Pro', sans-serif";
+  ctx.fillStyle = '#8a9a8a';
+  ctx.strokeStyle = 'rgba(45,80,22,0.08)';
+  ctx.lineWidth = 1;
+
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padT + (plotH * i) / gridLines;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(w - padR, y);
+    ctx.stroke();
+    const val = niceMax - (niceMax * i) / gridLines;
+    ctx.textAlign = 'right';
+    ctx.fillText(formatCompactNumber(val), padL - 8, y + 4);
+  }
+
+  if (points.length === 0) return;
+
+  const stepX = points.length > 1 ? plotW / (points.length - 1) : 0;
+  const coords = points.map((p, i) => ({
+    x: padL + stepX * i,
+    y: padT + plotH - (p.value / niceMax) * plotH,
+  }));
+
+  const gradient = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  gradient.addColorStop(0, 'rgba(197,150,58,0.32)');
+  gradient.addColorStop(1, 'rgba(197,150,58,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(coords[0].x, padT + plotH);
+  coords.forEach((c) => ctx.lineTo(c.x, c.y));
+  ctx.lineTo(coords[coords.length - 1].x, padT + plotH);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.beginPath();
+  coords.forEach((c, i) => (i === 0 ? ctx.moveTo(c.x, c.y) : ctx.lineTo(c.x, c.y)));
+  ctx.strokeStyle = '#c5963a';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  ctx.fillStyle = '#8a9a8a';
+  ctx.textAlign = 'center';
+  const labelEvery = Math.max(1, Math.ceil(points.length / 5));
+  points.forEach((p, i) => {
+    if (i % labelEvery === 0 || i === points.length - 1) {
+      ctx.fillText(p.label, coords[i].x, h - 8);
+    }
+  });
+
+  setupChartTooltip(canvas, coords, points);
 }
 
 function renderRevenueChart(rows: OrderRow[]): void {
   const canvas = document.getElementById('revenueChart') as HTMLCanvasElement | null;
   if (!canvas) return;
-  revenueChartPoints = buildRevenueTrend(rows, currentRange);
-  drawLineChart(canvas, revenueChartPoints);
+  drawLineChart(canvas, buildRevenueTrend(rows, currentRange));
 }
 
 // ===================== Canvas chart: category donut =====================
@@ -677,11 +683,11 @@ function renderCategoryDonut(rows: OrderRow[]): void {
     ctx.fill();
   }
 
-  ctx.fillStyle = '#2d5016';
+  ctx.fillStyle = '#2b4424';
   ctx.textAlign = 'center';
-  ctx.font = '700 15px Inter, sans-serif';
+  ctx.font = "700 15px 'Be Vietnam Pro', sans-serif";
   ctx.fillText(formatCompactNumber(grandTotal), cx, cy - 2);
-  ctx.font = '11px Inter, sans-serif';
+  ctx.font = "11px 'Be Vietnam Pro', sans-serif";
   ctx.fillStyle = '#8a9a8a';
   ctx.fillText('Tổng doanh thu', cx, cy + 16);
 
@@ -697,7 +703,7 @@ function renderCategoryDonut(rows: OrderRow[]): void {
     .join('');
 }
 
-// ===================== Top products bar list =====================
+// ===================== Top products rank list =====================
 
 function renderTopProducts(rows: OrderRow[]): void {
   const container = document.getElementById('topProductsList');
@@ -727,7 +733,7 @@ function renderTopProducts(rows: OrderRow[]): void {
       const color = CATEGORY_COLOR[item.category] ?? '#999';
       return `<div class="rank-row">
         <div class="rank-info">
-          <span class="rank-name">${item.name}</span>
+          <span class="rank-name">${escapeHtml(item.name)}</span>
           <span class="rank-meta">${formatNumber(item.qty)} sản phẩm bán ra</span>
         </div>
         <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${pct}%;background:${color}"></div></div>
@@ -737,62 +743,57 @@ function renderTopProducts(rows: OrderRow[]): void {
     .join('');
 }
 
-// ===================== Orders table =====================
+// ===================== Card-list renderers =====================
 
-function renderOrdersTable(rows: OrderRow[]): void {
-  const tbody = document.getElementById('ordersTableBody');
-  if (!tbody) return;
+function renderOrdersCards(rows: OrderRow[]): void {
+  const container = document.getElementById('ordersList');
+  if (!container) return;
 
   let filtered = rows;
   if (orderSearchText) {
     const q = orderSearchText.toLowerCase();
-    filtered = filtered.filter((r) => r.customer.toLowerCase().includes(q) || r.productName.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
+    filtered = filtered.filter((r) => r.customerName.toLowerCase().includes(q) || r.productName.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
   }
-  if (orderStatusFilter) {
-    filtered = filtered.filter((r) => r.status === orderStatusFilter);
-  }
-  if (orderCategoryFilter) {
-    filtered = filtered.filter((r) => r.category === orderCategoryFilter);
-  }
+  if (orderStatusFilter) filtered = filtered.filter((r) => r.status === orderStatusFilter);
+  if (orderCategoryFilter) filtered = filtered.filter((r) => r.category === orderCategoryFilter);
+  if (orderSellerFilter) filtered = filtered.filter((r) => r.sellerId === orderSellerFilter);
 
   setText('ordersCount', `${filtered.length} đơn hàng`);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-hint">Không tìm thấy đơn hàng phù hợp.</td></tr>`;
+    container.innerHTML = '<p class="empty-hint">Không tìm thấy đơn hàng phù hợp.</p>';
     return;
   }
 
-  tbody.innerHTML = filtered
+  container.innerHTML = filtered
     .map(
-      (r) => `<tr>
-        <td>${r.id}</td>
-        <td>${formatDateVN(r.date)}</td>
-        <td>${escapeHtml(r.customer)}</td>
-        <td>${escapeHtml(r.productName)}</td>
-        <td>${r.quantity}</td>
-        <td>${formatCurrency(r.unitPrice)}</td>
-        <td class="cell-strong">${formatCurrency(r.total)}</td>
-        <td><span class="badge badge-${r.status}">${STATUS_LABEL[r.status]}</span></td>
-        <td class="cell-actions">
-          <button class="icon-btn" title="Sửa" onclick="openOrderModal('${r.id}')">✎</button>
-          <button class="icon-btn icon-btn-danger" title="Xoá" onclick="deleteOrder('${r.id}')">🗑</button>
-        </td>
-      </tr>`
+      (r) => `<div class="data-card">
+        <div class="data-card-top">
+          <span class="data-card-id">${r.id}</span>
+          <span class="badge badge-${r.status}">${STATUS_LABEL[r.status]}</span>
+        </div>
+        <div class="data-card-title">${escapeHtml(r.customerName)}</div>
+        <div class="data-card-subtitle">${escapeHtml(r.productName)} × ${r.quantity}</div>
+        <div class="data-card-row">
+          <span class="data-card-label">${formatDateVN(r.date)}</span>
+          <span class="data-card-amount">${formatCurrency(r.total)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">${r.sellerName ? '👤 ' + escapeHtml(r.sellerName) : '— Chưa gán người bán'}</span>
+          <span class="data-card-label">${PAYMENT_LABEL[r.payment]}</span>
+        </div>
+        <div class="data-card-actions">
+          <button class="icon-btn" onclick="openOrderModal('${r.id}')">✎ Sửa</button>
+          <button class="icon-btn icon-btn-danger" onclick="deleteOrder('${r.id}')">🗑 Xoá</button>
+        </div>
+      </div>`
     )
     .join('');
 }
 
-function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ===================== Products tab =====================
-
-function renderProductsTable(rows: OrderRow[]): void {
-  const tbody = document.getElementById('productsTableBody');
-  if (!tbody) return;
+function renderProductsCards(rows: OrderRow[]): void {
+  const container = document.getElementById('productsList');
+  if (!container) return;
   const valid = rows.filter((r) => r.status !== 'cancelled');
   const soldMap = new Map<string, { qty: number; revenue: number }>();
   for (const row of valid) {
@@ -807,59 +808,139 @@ function renderProductsTable(rows: OrderRow[]): void {
 
   const sorted = products.slice().sort((a, b) => (soldMap.get(b.id)?.revenue ?? 0) - (soldMap.get(a.id)?.revenue ?? 0));
 
-  tbody.innerHTML = sorted
+  if (sorted.length === 0) {
+    container.innerHTML = '<p class="empty-hint">Chưa có sản phẩm nào. Bấm "+ Thêm sản phẩm" để bắt đầu.</p>';
+    return;
+  }
+
+  container.innerHTML = sorted
     .map((p) => {
       const sold = soldMap.get(p.id) ?? { qty: 0, revenue: 0 };
       const margin = p.price > 0 ? (((p.price - p.cost) / p.price) * 100).toFixed(0) : '0';
       const lowStock = p.stock <= 20;
-      return `<tr>
-        <td>${escapeHtml(p.name)}</td>
-        <td><span class="tag-pill" style="background:${CATEGORY_COLOR[p.category] ?? '#999'}1a;color:${CATEGORY_COLOR[p.category] ?? '#999'}">${p.category}</span></td>
-        <td>${formatCurrency(p.price)} / ${p.unit}</td>
-        <td>${margin}%</td>
-        <td>${formatNumber(sold.qty)}</td>
-        <td class="cell-strong">${formatCurrency(sold.revenue)}</td>
-        <td class="${lowStock ? 'cell-warning' : ''}">${formatNumber(p.stock)} ${p.unit}${lowStock ? ' ⚠' : ''}</td>
-        <td class="cell-actions"><button class="icon-btn" title="Sửa" onclick="openProductModal('${p.id}')">✎</button></td>
-      </tr>`;
+      return `<div class="data-card">
+        <div class="data-card-top">
+          <span class="data-card-title" style="margin:0">${escapeHtml(p.name)}</span>
+          <span class="tag-pill" style="background:${CATEGORY_COLOR[p.category] ?? '#999'}1a;color:${CATEGORY_COLOR[p.category] ?? '#999'}">${escapeHtml(p.category)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Giá bán</span>
+          <span class="data-card-value">${formatCurrency(p.price)} / ${escapeHtml(p.unit)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Biên lợi nhuận</span>
+          <span class="data-card-value">${margin}%</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Đã bán / Doanh thu</span>
+          <span class="data-card-amount">${formatNumber(sold.qty)} · ${formatCurrency(sold.revenue)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Tồn kho</span>
+          <span class="${lowStock ? 'cell-warning' : 'data-card-value'}">${formatNumber(p.stock)} ${escapeHtml(p.unit)}${lowStock ? ' ⚠' : ''}</span>
+        </div>
+        <div class="data-card-actions">
+          <button class="icon-btn" onclick="openProductModal('${p.id}')">✎ Sửa</button>
+          <button class="icon-btn icon-btn-danger" onclick="deleteProduct('${p.id}')">🗑 Xoá</button>
+        </div>
+      </div>`;
     })
     .join('');
 }
 
-// ===================== Customers tab =====================
-
-function renderCustomersTable(rows: OrderRow[]): void {
-  const tbody = document.getElementById('customersTableBody');
-  if (!tbody) return;
+function renderCustomersCards(rows: OrderRow[]): void {
+  const container = document.getElementById('customersList');
+  if (!container) return;
   const valid = rows.filter((r) => r.status !== 'cancelled');
-  const map = new Map<string, { orders: number; revenue: number; lastDate: string }>();
+  const map = new Map<string, { name: string; orders: number; revenue: number; lastDate: string }>();
   for (const row of valid) {
-    const existing = map.get(row.customer);
+    const existing = map.get(row.customerId);
     if (existing) {
       existing.orders += 1;
       existing.revenue += row.total;
       if (row.date > existing.lastDate) existing.lastDate = row.date;
     } else {
-      map.set(row.customer, { orders: 1, revenue: row.total, lastDate: row.date });
+      map.set(row.customerId, { name: row.customerName, orders: 1, revenue: row.total, lastDate: row.date });
     }
   }
-  const sorted = Array.from(map.entries()).sort((a, b) => b[1].revenue - a[1].revenue);
+  const sorted = Array.from(map.values()).sort((a, b) => b.revenue - a.revenue);
 
   if (sorted.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-hint">Chưa có khách hàng trong khoảng thời gian này.</td></tr>`;
+    container.innerHTML = '<p class="empty-hint">Chưa có khách hàng trong khoảng thời gian này.</p>';
     return;
   }
 
-  tbody.innerHTML = sorted
-    .map(([name, data], idx) => {
-      const aov = data.revenue / data.orders;
-      return `<tr>
-        <td>${idx + 1}</td>
-        <td>${escapeHtml(name)}</td>
-        <td>${formatNumber(data.orders)}</td>
-        <td class="cell-strong">${formatCurrency(data.revenue)}</td>
-        <td>${formatDateVN(data.lastDate)}</td>
-      </tr>`;
+  container.innerHTML = sorted
+    .map(
+      (c, idx) => `<div class="data-card">
+        <div class="data-card-top">
+          <span class="data-card-rank">#${idx + 1}</span>
+          <span class="data-card-title" style="margin:0">${escapeHtml(c.name)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Số đơn</span>
+          <span class="data-card-value">${formatNumber(c.orders)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Tổng chi tiêu</span>
+          <span class="data-card-amount">${formatCurrency(c.revenue)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Mua gần nhất</span>
+          <span class="data-card-value">${formatDateVN(c.lastDate)}</span>
+        </div>
+      </div>`
+    )
+    .join('');
+}
+
+function renderSellersCards(rows: OrderRow[]): void {
+  const container = document.getElementById('sellersList');
+  if (!container) return;
+  const valid = rows.filter((r) => r.status !== 'cancelled' && r.sellerId);
+  const statsMap = new Map<string, { orders: number; revenue: number }>();
+  for (const row of valid) {
+    const existing = statsMap.get(row.sellerId);
+    if (existing) {
+      existing.orders += 1;
+      existing.revenue += row.total;
+    } else {
+      statsMap.set(row.sellerId, { orders: 1, revenue: row.total });
+    }
+  }
+
+  const sorted = sellers.slice().sort((a, b) => (statsMap.get(b.id)?.revenue ?? 0) - (statsMap.get(a.id)?.revenue ?? 0));
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<p class="empty-hint">Chưa có người bán hàng nào. Bấm "+ Thêm người bán" để bắt đầu.</p>';
+    return;
+  }
+
+  container.innerHTML = sorted
+    .map((s, idx) => {
+      const stat = statsMap.get(s.id) ?? { orders: 0, revenue: 0 };
+      return `<div class="data-card">
+        <div class="data-card-top">
+          <span class="data-card-rank">#${idx + 1}</span>
+          <span class="data-card-title" style="margin:0">${escapeHtml(s.name)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Điện thoại</span>
+          <span class="data-card-value">${escapeHtml(s.phone || '—')}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Số đơn</span>
+          <span class="data-card-value">${formatNumber(stat.orders)}</span>
+        </div>
+        <div class="data-card-row">
+          <span class="data-card-label">Doanh thu</span>
+          <span class="data-card-amount">${formatCurrency(stat.revenue)}</span>
+        </div>
+        <div class="data-card-actions">
+          <button class="icon-btn" onclick="openSellerModal('${s.id}')">✎ Sửa</button>
+          <button class="icon-btn icon-btn-danger" onclick="deleteSeller('${s.id}')">🗑 Xoá</button>
+        </div>
+      </div>`;
     })
     .join('');
 }
@@ -870,7 +951,31 @@ function populateCategoryFilter(): void {
   const select = document.getElementById('orderCategoryFilter') as HTMLSelectElement | null;
   if (!select) return;
   const categories = Array.from(new Set(products.map((p) => p.category)));
-  select.innerHTML = '<option value="">Tất cả danh mục</option>' + categories.map((c) => `<option value="${c}">${c}</option>`).join('');
+  select.innerHTML = '<option value="">Tất cả danh mục</option>' + categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function populateSellerFilter(): void {
+  const select = document.getElementById('orderSellerFilter') as HTMLSelectElement | null;
+  if (!select) return;
+  select.innerHTML = '<option value="">Tất cả người bán</option>' + sellers.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+}
+
+function populateCustomerDatalist(): void {
+  const list = document.getElementById('customerDatalist');
+  if (!list) return;
+  list.innerHTML = customers.map((c) => `<option value="${escapeHtml(c.name)}"></option>`).join('');
+}
+
+function populateSellerSelect(): void {
+  const select = document.getElementById('orderSellerSelect') as HTMLSelectElement | null;
+  if (!select) return;
+  select.innerHTML = '<option value="">— Không chọn —</option>' + sellers.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+}
+
+function populateProductSelect(): void {
+  const select = document.getElementById('orderProductSelect') as HTMLSelectElement | null;
+  if (!select) return;
+  select.innerHTML = products.map((p) => `<option value="${p.id}">${escapeHtml(p.name)} — ${formatCurrency(p.price)}</option>`).join('');
 }
 
 // ===================== Master render =====================
@@ -881,9 +986,10 @@ function renderAll(): void {
   renderRevenueChart(rows);
   renderCategoryDonut(rows);
   renderTopProducts(rows);
-  renderOrdersTable(rows);
-  renderProductsTable(rows);
-  renderCustomersTable(rows);
+  renderOrdersCards(rows);
+  renderProductsCards(rows);
+  renderCustomersCards(rows);
+  renderSellersCards(rows);
   renderRangeLabel();
 }
 
@@ -916,7 +1022,7 @@ function applyCustomRange(): void {
   renderAll();
 }
 
-// ===================== Tabs & sidebar =====================
+// ===================== Tabs =====================
 
 function switchTab(tabId: string): void {
   document.querySelectorAll('.tab-panel').forEach((el) => el.classList.toggle('active', el.id === `tab-${tabId}`));
@@ -941,12 +1047,6 @@ function showToast(message: string, type: 'success' | 'error' = 'success'): void
 
 // ===================== Order modal =====================
 
-function populateProductSelect(): void {
-  const select = document.getElementById('orderProductSelect') as HTMLSelectElement | null;
-  if (!select) return;
-  select.innerHTML = products.map((p) => `<option value="${p.id}">${p.name} — ${formatCurrency(p.price)}</option>`).join('');
-}
-
 function openOrderModal(orderId?: string): void {
   editingOrderId = orderId ?? null;
   const modal = document.getElementById('orderModal');
@@ -955,18 +1055,22 @@ function openOrderModal(orderId?: string): void {
   if (!modal || !form) return;
 
   populateProductSelect();
+  populateSellerSelect();
+  populateCustomerDatalist();
   form.reset();
 
   if (orderId) {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
     if (title) title.textContent = `Sửa đơn hàng ${order.id}`;
-    (document.getElementById('orderCustomer') as HTMLInputElement).value = order.customer;
+    const customer = getCustomer(order.customerId);
+    (document.getElementById('orderCustomer') as HTMLInputElement).value = customer ? customer.name : '';
     (document.getElementById('orderDate') as HTMLInputElement).value = order.date;
     (document.getElementById('orderProductSelect') as HTMLSelectElement).value = order.productId;
     (document.getElementById('orderQuantity') as HTMLInputElement).value = String(order.quantity);
     (document.getElementById('orderStatusSelect') as HTMLSelectElement).value = order.status;
     (document.getElementById('orderPaymentSelect') as HTMLSelectElement).value = order.payment;
+    (document.getElementById('orderSellerSelect') as HTMLSelectElement).value = order.sellerId;
   } else {
     if (title) title.textContent = 'Thêm đơn hàng mới';
     (document.getElementById('orderDate') as HTMLInputElement).value = toISODate(new Date());
@@ -983,37 +1087,42 @@ function closeOrderModal(): void {
 
 function handleOrderFormSubmit(e: Event): void {
   e.preventDefault();
-  const customer = (document.getElementById('orderCustomer') as HTMLInputElement).value.trim();
+  const customerName = (document.getElementById('orderCustomer') as HTMLInputElement).value.trim();
   const date = (document.getElementById('orderDate') as HTMLInputElement).value;
   const productId = (document.getElementById('orderProductSelect') as HTMLSelectElement).value;
   const quantity = parseInt((document.getElementById('orderQuantity') as HTMLInputElement).value, 10);
   const status = (document.getElementById('orderStatusSelect') as HTMLSelectElement).value as OrderStatus;
   const payment = (document.getElementById('orderPaymentSelect') as HTMLSelectElement).value as PaymentMethod;
+  const sellerId = (document.getElementById('orderSellerSelect') as HTMLSelectElement).value;
 
-  if (!customer || !date || !productId || !quantity || quantity < 1) {
+  if (!customerName || !date || !productId || !quantity || quantity < 1) {
     showToast('Vui lòng điền đầy đủ thông tin hợp lệ.', 'error');
     return;
   }
 
+  const customerId = resolveCustomerId(customerName);
+
   if (editingOrderId) {
     const order = orders.find((o) => o.id === editingOrderId);
     if (order) {
-      order.customer = customer;
+      order.customerId = customerId;
       order.date = date;
       order.productId = productId;
       order.quantity = quantity;
       order.status = status;
       order.payment = payment;
+      order.sellerId = sellerId;
     }
     showToast(`Đã cập nhật đơn hàng ${editingOrderId}.`);
   } else {
     const nextId = `DH${String(orders.length + 1).padStart(4, '0')}`;
-    orders.push({ id: nextId, customer, date, productId, quantity, status, payment });
+    orders.push({ id: nextId, customerId, date, productId, quantity, status, payment, sellerId });
     showToast(`Đã thêm đơn hàng ${nextId}.`);
   }
 
   persistOrders();
   closeOrderModal();
+  populateCustomerDatalist();
   renderAll();
 }
 
@@ -1027,16 +1136,29 @@ function deleteOrder(orderId: string): void {
 
 // ===================== Product modal =====================
 
-function openProductModal(productId: string): void {
-  const product = getProduct(productId);
-  if (!product) return;
+function openProductModal(productId?: string): void {
   const modal = document.getElementById('productModal');
-  if (!modal) return;
-  (document.getElementById('productModalName') as HTMLElement).textContent = product.name;
-  (document.getElementById('productIdField') as HTMLInputElement).value = product.id;
-  (document.getElementById('productPriceField') as HTMLInputElement).value = String(product.price);
-  (document.getElementById('productCostField') as HTMLInputElement).value = String(product.cost);
-  (document.getElementById('productStockField') as HTMLInputElement).value = String(product.stock);
+  const title = document.getElementById('productModalTitle');
+  const form = document.getElementById('productForm') as HTMLFormElement | null;
+  if (!modal || !form) return;
+  form.reset();
+
+  if (productId) {
+    const product = getProduct(productId);
+    if (!product) return;
+    if (title) title.textContent = 'Sửa sản phẩm';
+    (document.getElementById('productIdField') as HTMLInputElement).value = product.id;
+    (document.getElementById('productNameField') as HTMLInputElement).value = product.name;
+    (document.getElementById('productCategoryField') as HTMLInputElement).value = product.category;
+    (document.getElementById('productUnitField') as HTMLInputElement).value = product.unit;
+    (document.getElementById('productPriceField') as HTMLInputElement).value = String(product.price);
+    (document.getElementById('productCostField') as HTMLInputElement).value = String(product.cost);
+    (document.getElementById('productStockField') as HTMLInputElement).value = String(product.stock);
+  } else {
+    if (title) title.textContent = 'Thêm sản phẩm mới';
+    (document.getElementById('productIdField') as HTMLInputElement).value = '';
+  }
+
   modal.classList.add('show');
 }
 
@@ -1047,22 +1169,124 @@ function closeProductModal(): void {
 function handleProductFormSubmit(e: Event): void {
   e.preventDefault();
   const id = (document.getElementById('productIdField') as HTMLInputElement).value;
+  const name = (document.getElementById('productNameField') as HTMLInputElement).value.trim();
+  const category = (document.getElementById('productCategoryField') as HTMLInputElement).value.trim();
+  const unit = (document.getElementById('productUnitField') as HTMLInputElement).value.trim();
   const price = parseFloat((document.getElementById('productPriceField') as HTMLInputElement).value);
   const cost = parseFloat((document.getElementById('productCostField') as HTMLInputElement).value);
   const stock = parseInt((document.getElementById('productStockField') as HTMLInputElement).value, 10);
 
-  const product = getProduct(id);
-  if (!product || isNaN(price) || isNaN(cost) || isNaN(stock) || price < 0 || cost < 0 || stock < 0) {
-    showToast('Vui lòng nhập giá trị hợp lệ.', 'error');
+  if (!name || !category || !unit || isNaN(price) || isNaN(cost) || isNaN(stock) || price < 0 || cost < 0 || stock < 0) {
+    showToast('Vui lòng nhập đầy đủ thông tin hợp lệ.', 'error');
     return;
   }
 
-  product.price = price;
-  product.cost = cost;
-  product.stock = stock;
+  if (id) {
+    const product = getProduct(id);
+    if (product) {
+      product.name = name;
+      product.category = category;
+      product.unit = unit;
+      product.price = price;
+      product.cost = cost;
+      product.stock = stock;
+    }
+    showToast(`Đã cập nhật sản phẩm "${name}".`);
+  } else {
+    products.push({ id: `p${Date.now()}`, name, category, unit, price, cost, stock });
+    showToast(`Đã thêm sản phẩm "${name}".`);
+  }
+
   persistProducts();
   closeProductModal();
-  showToast(`Đã cập nhật sản phẩm "${product.name}".`);
+  populateCategoryFilter();
+  renderAll();
+}
+
+function deleteProduct(productId: string): void {
+  const inUse = orders.some((o) => o.productId === productId);
+  if (inUse) {
+    showToast('Không thể xoá — sản phẩm đang có trong đơn hàng.', 'error');
+    return;
+  }
+  const product = getProduct(productId);
+  if (!confirm(`Xoá sản phẩm "${product?.name ?? ''}"?`)) return;
+  products = products.filter((p) => p.id !== productId);
+  persistProducts();
+  showToast('Đã xoá sản phẩm.');
+  populateCategoryFilter();
+  renderAll();
+}
+
+// ===================== Seller modal =====================
+
+function openSellerModal(sellerId?: string): void {
+  const modal = document.getElementById('sellerModal');
+  const title = document.getElementById('sellerModalTitle');
+  const form = document.getElementById('sellerForm') as HTMLFormElement | null;
+  if (!modal || !form) return;
+  form.reset();
+
+  if (sellerId) {
+    const seller = getSeller(sellerId);
+    if (!seller) return;
+    if (title) title.textContent = 'Sửa người bán hàng';
+    (document.getElementById('sellerIdField') as HTMLInputElement).value = seller.id;
+    (document.getElementById('sellerNameField') as HTMLInputElement).value = seller.name;
+    (document.getElementById('sellerPhoneField') as HTMLInputElement).value = seller.phone;
+  } else {
+    if (title) title.textContent = 'Thêm người bán hàng';
+    (document.getElementById('sellerIdField') as HTMLInputElement).value = '';
+  }
+
+  modal.classList.add('show');
+}
+
+function closeSellerModal(): void {
+  document.getElementById('sellerModal')?.classList.remove('show');
+}
+
+function handleSellerFormSubmit(e: Event): void {
+  e.preventDefault();
+  const id = (document.getElementById('sellerIdField') as HTMLInputElement).value;
+  const name = (document.getElementById('sellerNameField') as HTMLInputElement).value.trim();
+  const phone = (document.getElementById('sellerPhoneField') as HTMLInputElement).value.trim();
+
+  if (!name) {
+    showToast('Vui lòng nhập tên người bán hàng.', 'error');
+    return;
+  }
+
+  if (id) {
+    const seller = getSeller(id);
+    if (seller) {
+      seller.name = name;
+      seller.phone = phone;
+    }
+    showToast(`Đã cập nhật "${name}".`);
+  } else {
+    sellers.push({ id: `s${Date.now()}`, name, phone });
+    showToast(`Đã thêm người bán hàng "${name}".`);
+  }
+
+  persistSellers();
+  closeSellerModal();
+  populateSellerFilter();
+  renderAll();
+}
+
+function deleteSeller(sellerId: string): void {
+  const inUse = orders.some((o) => o.sellerId === sellerId);
+  if (inUse) {
+    showToast('Không thể xoá — người bán này đang gắn với đơn hàng.', 'error');
+    return;
+  }
+  const seller = getSeller(sellerId);
+  if (!confirm(`Xoá người bán hàng "${seller?.name ?? ''}"?`)) return;
+  sellers = sellers.filter((s) => s.id !== sellerId);
+  persistSellers();
+  showToast('Đã xoá người bán hàng.');
+  populateSellerFilter();
   renderAll();
 }
 
@@ -1070,13 +1294,14 @@ function handleProductFormSubmit(e: Event): void {
 
 function exportOrdersCSV(): void {
   const rows = getRows(currentRange);
-  const header = ['Mã đơn', 'Ngày', 'Khách hàng', 'Sản phẩm', 'Danh mục', 'Số lượng', 'Đơn giá', 'Thành tiền', 'Trạng thái', 'Thanh toán'];
+  const header = ['Mã đơn', 'Ngày', 'Khách hàng', 'Người bán', 'Sản phẩm', 'Danh mục', 'Số lượng', 'Đơn giá', 'Thành tiền', 'Trạng thái', 'Thanh toán'];
   const lines = [header.join(',')];
   for (const r of rows) {
     const fields = [
       r.id,
       formatDateVN(r.date),
-      `"${r.customer.replace(/"/g, '""')}"`,
+      `"${r.customerName.replace(/"/g, '""')}"`,
+      `"${r.sellerName.replace(/"/g, '""')}"`,
       `"${r.productName.replace(/"/g, '""')}"`,
       r.category,
       String(r.quantity),
@@ -1129,6 +1354,7 @@ function bindEvents(): void {
     if (e.target === e.currentTarget) closeOrderModal();
   });
 
+  document.getElementById('addProductBtn')?.addEventListener('click', () => openProductModal());
   document.getElementById('productForm')?.addEventListener('submit', handleProductFormSubmit);
   document.getElementById('closeProductModal')?.addEventListener('click', closeProductModal);
   document.getElementById('cancelProductModal')?.addEventListener('click', closeProductModal);
@@ -1136,24 +1362,38 @@ function bindEvents(): void {
     if (e.target === e.currentTarget) closeProductModal();
   });
 
+  document.getElementById('addSellerBtn')?.addEventListener('click', () => openSellerModal());
+  document.getElementById('sellerForm')?.addEventListener('submit', handleSellerFormSubmit);
+  document.getElementById('closeSellerModal')?.addEventListener('click', closeSellerModal);
+  document.getElementById('cancelSellerModal')?.addEventListener('click', closeSellerModal);
+  document.getElementById('sellerModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSellerModal();
+  });
+
   document.getElementById('exportCsvBtn')?.addEventListener('click', exportOrdersCSV);
 
   const searchInput = document.getElementById('orderSearchInput') as HTMLInputElement | null;
   searchInput?.addEventListener('input', () => {
     orderSearchText = searchInput.value;
-    renderOrdersTable(getRows(currentRange));
+    renderOrdersCards(getRows(currentRange));
   });
 
   const statusFilter = document.getElementById('orderStatusFilter') as HTMLSelectElement | null;
   statusFilter?.addEventListener('change', () => {
     orderStatusFilter = statusFilter.value;
-    renderOrdersTable(getRows(currentRange));
+    renderOrdersCards(getRows(currentRange));
   });
 
   const categoryFilter = document.getElementById('orderCategoryFilter') as HTMLSelectElement | null;
   categoryFilter?.addEventListener('change', () => {
     orderCategoryFilter = categoryFilter.value;
-    renderOrdersTable(getRows(currentRange));
+    renderOrdersCards(getRows(currentRange));
+  });
+
+  const sellerFilter = document.getElementById('orderSellerFilter') as HTMLSelectElement | null;
+  sellerFilter?.addEventListener('change', () => {
+    orderSellerFilter = sellerFilter.value;
+    renderOrdersCards(getRows(currentRange));
   });
 
   window.addEventListener('resize', () => {
@@ -1162,9 +1402,10 @@ function bindEvents(): void {
   });
 }
 
-function init(): void {
-  loadState();
+async function init(): Promise<void> {
+  await loadState();
   populateCategoryFilter();
+  populateSellerFilter();
   currentRange = rangeForPreset(currentPreset);
   bindEvents();
 
@@ -1175,9 +1416,14 @@ function init(): void {
   }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+});
 
-// expose handlers used via inline onclick in table rows
+// expose handlers used via inline onclick in card actions
 (window as any).openOrderModal = openOrderModal;
 (window as any).deleteOrder = deleteOrder;
 (window as any).openProductModal = openProductModal;
+(window as any).deleteProduct = deleteProduct;
+(window as any).openSellerModal = openSellerModal;
+(window as any).deleteSeller = deleteSeller;
