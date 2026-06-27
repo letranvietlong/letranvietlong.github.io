@@ -24,6 +24,7 @@ Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt 
 | **MarkdownPro** | Trình soạn thảo Markdown online — preview real-time, export PDF/HTML. | [markdownpro.html](markdownpro.html) |
 | **Crypto AI Market Pro** | Phân tích kỹ thuật & tín hiệu giao dịch crypto bằng AI. | [CryptoAI.html](CryptoAI.html) |
 | **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [ThanhThuFruit.html](ThanhThuFruit.html) |
+| **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ — thống kê, đơn hàng, sản phẩm, khách hàng. Yêu cầu đăng nhập. | [ThubeeFarmery.html](ThubeeFarmery.html) |
 | **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [VietLongCreator.html](VietLongCreator.html) |
 | **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [VietLongSocial.html](VietLongSocial.html) |
 | **Bingo by LongLTV** | Quay số Bingo 1–75 trực tuyến, có chế độ tự động cho sự kiện. | [bingo.html](bingo.html) |
@@ -52,6 +53,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── MeetingTranslator.html   # Product
 ├── MiniGameHub.html         # Product
 ├── ThanhThuFruit.html       # Product
+├── ThubeeFarmery.html       # Product (đăng nhập nội bộ — HTML/CSS/JS riêng, xem css/ và js/ dưới)
 ├── VietLongCreator.html     # Product
 ├── VietLongCrypto.html      # Product
 ├── VietLongSocial.html      # Product
@@ -61,11 +63,26 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── privacy.html              # Chính sách bảo mật (VietLong Creator)
 ├── terms.html                 # Điều khoản dịch vụ (VietLong Creator)
 ├── css/
+│   ├── ThubeeFarmery.css     # Style cho ThubeeFarmery.html
 │   └── worldcup2026.css      # Style cho worldcup2026.html
 ├── js/
+│   ├── ThubeeFarmery.ts      # Source TypeScript cho ThubeeFarmery.html
+│   ├── ThubeeFarmery.js      # Bản compile từ ThubeeFarmery.ts (file thực sự được load)
 │   └── worldcup2026.js       # Logic cho worldcup2026.html
+├── img/
+│   ├── thubee-icon.svg       # Logo mascot (favicon SVG)
+│   └── thubee-icon-*.png     # Icon PNG (32/180/192/512) cho favicon, apple-touch-icon, manifest
+├── thubee-farmery.webmanifest # Web app manifest — cho phép "Add to Home Screen" trên iOS/Android
 └── README.md
 ```
+
+### 🔐 Thubee Farmery — lưu ý vận hành
+
+`ThubeeFarmery.html` là dashboard nội bộ, có màn hình đăng nhập chặn người ngoài. Vì site không có backend, đây là **client-side password gate** (so khớp SHA-256 hash trong `js/ThubeeFarmery.ts`), không phải bảo mật thật — đủ để chặn người xem thông thường, không chống được người cố tình đọc source.
+
+- Đổi mật khẩu: mở Console trên `ThubeeFarmery.html`, gọi `ThubeeAuth.hashPassword("user_moi", "mat_khau_moi")`, copy hash in ra và thay vào hằng `AUTH_PASSWORD_HASH` + `AUTH_USERNAME` trong `js/ThubeeFarmery.ts`, sau đó compile lại ra `js/ThubeeFarmery.js` (`tsc js/ThubeeFarmery.ts --target ES2017 --lib dom,es2017 --module none --outDir js`).
+- Dữ liệu đơn hàng/sản phẩm lưu trong `localStorage` của browser (không đồng bộ giữa nhiều máy).
+- Giao diện mobile (≤860px) dùng bottom tab bar + modal kiểu bottom-sheet, tối ưu cho iPhone 14 Pro Max (safe-area cho Dynamic Island/home indicator). Có thể "Add to Home Screen" trên iOS/Android nhờ `thubee-farmery.webmanifest` + `apple-touch-icon`.
 
 ## 📊 Quy mô file (LOC & dung lượng)
 

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Thubee Farmery — Quản lý Doanh thu</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2d5016">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Thubee Farmery">
+<link rel="manifest" href="thubee-farmery.webmanifest">
+<link rel="icon" type="image/svg+xml" href="img/thubee-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="img/thubee-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/thubee-icon-180.png">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/ThubeeFarmery.css">
+</head>
+<body>
+
+<!-- ============ SHARED SVG MARK (used via <use>) ============ -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <symbol id="thubeeMark" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="94" fill="#fbf8f0" stroke="#2d5016" stroke-width="6"/>
+      <g opacity="0.9">
+        <ellipse cx="58" cy="48" rx="24" ry="34" fill="#ffffff" stroke="#cfe0c0" stroke-width="1.5" transform="rotate(-25 58 48)"/>
+        <ellipse cx="142" cy="48" rx="24" ry="34" fill="#ffffff" stroke="#cfe0c0" stroke-width="1.5" transform="rotate(25 142 48)"/>
+      </g>
+      <path d="M118,26 C124,16 132,12 138,14 C136,22 128,28 118,30 Z" fill="#4a7c2a"/>
+      <path d="M120,28 L134,16" stroke="#2d5016" stroke-width="1" fill="none"/>
+      <path d="M90,31 Q82,22 78,16" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M110,31 Q118,22 122,16" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="78" cy="16" r="3.5" fill="#1a1a1a"/>
+      <circle cx="122" cy="16" r="3.5" fill="#1a1a1a"/>
+      <path d="M100,30 C86,30 73,41 73,57 C73,71 64,78 62,91 C60,105 75,114 100,114 C125,114 140,105 138,91 C136,78 127,71 127,57 C127,41 114,30 100,30 Z" fill="#5a8f3c" stroke="#2d5016" stroke-width="2"/>
+      <defs>
+        <clipPath id="fleshClip">
+          <path d="M100,37 C89,37 80,46 80,59 C80,71 71,77 69,89 C67,101 80,108 100,108 C120,108 133,101 131,89 C129,77 120,71 120,59 C120,46 111,37 100,37 Z"/>
+        </clipPath>
+      </defs>
+      <path d="M100,37 C89,37 80,46 80,59 C80,71 71,77 69,89 C67,101 80,108 100,108 C120,108 133,101 131,89 C129,77 120,71 120,59 C120,46 111,37 100,37 Z" fill="#dfe9a6"/>
+      <g clip-path="url(#fleshClip)">
+        <rect x="60" y="90" width="80" height="5" fill="#1f1f1f"/>
+        <rect x="58" y="98" width="84" height="5" fill="#1f1f1f"/>
+        <rect x="60" y="105" width="80" height="5" fill="#1f1f1f"/>
+      </g>
+      <circle cx="100" cy="74" r="16" fill="#6b4226"/>
+      <ellipse cx="94" cy="67" rx="5.5" ry="7" fill="#8a5a35" opacity="0.6"/>
+      <circle cx="90" cy="52" r="3.2" fill="#1a1a1a"/>
+      <circle cx="110" cy="52" r="3.2" fill="#1a1a1a"/>
+      <path d="M91,59 Q100,64 109,59" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="78" cy="57" rx="5" ry="3.4" fill="#ff9b9b" opacity="0.5"/>
+      <ellipse cx="122" cy="57" rx="5" ry="3.4" fill="#ff9b9b" opacity="0.5"/>
+      <path d="M52,114 C46,108 38,108 34,112 C40,116 46,118 52,114 Z" fill="#5a8f3c"/>
+      <path d="M148,114 C154,108 162,108 166,112 C160,116 154,118 148,114 Z" fill="#5a8f3c"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-badge">
+      <svg viewBox="0 0 200 200" width="120" height="120">
+        <use href="#thubeeMark"/>
+        <text x="100" y="140" text-anchor="middle" font-family="'Pacifico', cursive" font-size="30" fill="#2d5016">Thubee</text>
+        <text x="100" y="158" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="3" fill="#3a6620">FARMERY</text>
+        <line x1="78" y1="165" x2="90" y2="165" stroke="#5a8f3c" stroke-width="1"/>
+        <circle cx="100" cy="165" r="2" fill="#e8a33d"/>
+        <line x1="110" y1="165" x2="122" y2="165" stroke="#5a8f3c" stroke-width="1"/>
+        <path id="authTaglinePath" d="M 35,160 Q 100,184 165,160" fill="none"/>
+        <text font-family="Inter, sans-serif" font-size="6" letter-spacing="1" fill="#6b7a64">
+          <textPath href="#authTaglinePath" startOffset="50%" text-anchor="middle">FRESH FROM OUR FARM TO YOU</textPath>
+        </text>
+      </svg>
+    </div>
+    <div class="auth-title" style="text-align:center">Đăng nhập nội bộ</div>
+    <p class="auth-subtitle" style="text-align:center">Trang dành riêng cho chủ cửa hàng &amp; nhân viên quản lý. Vui lòng đăng nhập để xem báo cáo doanh thu.</p>
+
+    <div class="auth-error" id="loginError"></div>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="field-group">
+        <label class="field-label" for="loginUsername">Tài khoản</label>
+        <input class="field-input" type="text" id="loginUsername" name="username" placeholder="Nhập tài khoản" autocomplete="username" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="loginPassword">Mật khẩu</label>
+        <input class="field-input" type="password" id="loginPassword" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+      </div>
+      <button class="btn-primary" type="submit" id="loginSubmitBtn">Đăng nhập</button>
+    </form>
+
+    <p class="auth-note">Phiên đăng nhập chỉ tồn tại trong tab này. Đây là lớp bảo vệ phía client cho dữ liệu nội bộ, không thay thế hệ thống bảo mật backend.</p>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app-shell" id="appShell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon"><svg viewBox="0 0 200 200" width="36" height="36"><use href="#thubeeMark"/></svg></div>
+      <div>
+        <div class="sidebar-brand-name">Thubee Farmery</div>
+        <div class="sidebar-brand-sub">Quản lý doanh thu</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="overview"><span class="nav-icon">📊</span> Tổng quan</button>
+      <button class="nav-item" data-tab="orders"><span class="nav-icon">🧾</span> Đơn hàng</button>
+      <button class="nav-item" data-tab="products"><span class="nav-icon">🍯</span> Sản phẩm</button>
+      <button class="nav-item" data-tab="customers"><span class="nav-icon">👥</span> Khách hàng</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="logoutBtn">⎋ Đăng xuất</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div>
+          <div class="topbar-title">Quản lý Doanh thu</div>
+          <div class="topbar-sub">Thubee Farmery — Nông sản &amp; Mật ong sạch</div>
+        </div>
+      </div>
+      <div>
+        <div class="range-controls">
+          <button class="range-btn" data-preset="7d">7 ngày</button>
+          <button class="range-btn active" data-preset="30d">30 ngày</button>
+          <button class="range-btn" data-preset="90d">3 tháng</button>
+          <button class="range-btn" data-preset="180d">6 tháng</button>
+          <button class="range-btn" data-preset="all">Tất cả</button>
+          <button class="range-btn" data-preset="custom">Tùy chọn</button>
+          <span class="range-label" id="rangeLabel"></span>
+        </div>
+        <div class="custom-range-row" id="customRangeRow">
+          <input type="date" id="customFrom">
+          <span>—</span>
+          <input type="date" id="customTo">
+          <button class="btn-small" id="applyCustomRange">Áp dụng</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ===== TAB: OVERVIEW ===== -->
+      <section class="tab-panel active" id="tab-overview">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Tổng doanh thu</span>
+              <span class="kpi-icon" style="background:rgba(232,163,61,.15);color:#c9842a">💰</span>
+            </div>
+            <div class="kpi-value" id="kpiRevenue">—</div>
+            <div class="kpi-delta" id="kpiRevenueDelta"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Tổng đơn hàng</span>
+              <span class="kpi-icon" style="background:rgba(61,143,122,.15);color:#3d8f7a">🧾</span>
+            </div>
+            <div class="kpi-value" id="kpiOrders">—</div>
+            <div class="kpi-delta" id="kpiOrdersDelta"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Lợi nhuận gộp</span>
+              <span class="kpi-icon" style="background:rgba(61,143,90,.15);color:#3d8f5a">📈</span>
+            </div>
+            <div class="kpi-value" id="kpiProfit">—</div>
+            <div class="kpi-delta" id="kpiProfitDelta"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Giá trị đơn TB</span>
+              <span class="kpi-icon" style="background:rgba(45,80,22,.12);color:#2d5016">🛒</span>
+            </div>
+            <div class="kpi-value" id="kpiAov">—</div>
+            <div class="kpi-delta" id="kpiAovDelta"></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="panel-card">
+            <div class="panel-card-title">Xu hướng doanh thu</div>
+            <div class="chart-canvas-wrap">
+              <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Doanh thu theo danh mục</div>
+            <div class="donut-wrap">
+              <div class="donut-canvas-wrap">
+                <canvas id="categoryDonut"></canvas>
+              </div>
+              <div class="legend-list" id="categoryLegend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-title">Sản phẩm bán chạy nhất</div>
+          <div id="topProductsList"></div>
+        </div>
+      </section>
+
+      <!-- ===== TAB: ORDERS ===== -->
+      <section class="tab-panel" id="tab-orders">
+        <div class="panel-header">
+          <div class="panel-title">Đơn hàng</div>
+          <button class="btn-add" id="addOrderBtn">+ Thêm đơn hàng</button>
+        </div>
+        <div class="table-toolbar">
+          <input class="search-box" id="orderSearchInput" type="text" placeholder="🔍 Tìm theo khách hàng, sản phẩm, mã đơn...">
+          <select class="filter-select" id="orderStatusFilter">
+            <option value="">Tất cả trạng thái</option>
+            <option value="completed">Hoàn thành</option>
+            <option value="pending">Đang xử lý</option>
+            <option value="cancelled">Đã hủy</option>
+          </select>
+          <select class="filter-select" id="orderCategoryFilter"></select>
+          <button class="btn-outline" id="exportCsvBtn">⭳ Xuất CSV</button>
+          <span id="ordersCount"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã đơn</th><th>Ngày</th><th>Khách hàng</th><th>Sản phẩm</th>
+                <th>SL</th><th>Đơn giá</th><th>Thành tiền</th><th>Trạng thái</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: PRODUCTS ===== -->
+      <section class="tab-panel" id="tab-products">
+        <div class="panel-header">
+          <div class="panel-title">Sản phẩm</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sản phẩm</th><th>Danh mục</th><th>Giá bán</th><th>Biên LN</th>
+                <th>Đã bán</th><th>Doanh thu</th><th>Tồn kho</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: CUSTOMERS ===== -->
+      <section class="tab-panel" id="tab-customers">
+        <div class="panel-header">
+          <div class="panel-title">Khách hàng</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Khách hàng</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Mua gần nhất</th></tr>
+            </thead>
+            <tbody id="customersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===== MOBILE BOTTOM TAB BAR ===== -->
+    <nav class="bottom-tabbar" id="bottomTabbar">
+      <button class="nav-item bottom-tab-item active" data-tab="overview">
+        <svg class="bottom-tab-icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="13" width="4" height="7" rx="1" fill="currentColor"/><rect x="10" y="9" width="4" height="11" rx="1" fill="currentColor"/><rect x="16" y="5" width="4" height="15" rx="1" fill="currentColor"/></svg>
+        <span class="bottom-tab-label">Tổng quan</span>
+      </button>
+      <button class="nav-item bottom-tab-item" data-tab="orders">
+        <svg class="bottom-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
+        <span class="bottom-tab-label">Đơn hàng</span>
+      </button>
+      <button class="nav-item bottom-tab-item" data-tab="products">
+        <svg class="bottom-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.4 10.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="bottom-tab-label">Sản phẩm</span>
+      </button>
+      <button class="nav-item bottom-tab-item" data-tab="customers">
+        <svg class="bottom-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15 19c.2-2.2 1.6-3.8 3.6-4.3"/></svg>
+        <span class="bottom-tab-label">Khách hàng</span>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ============ ORDER MODAL ============ -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="orderModalTitle">Thêm đơn hàng mới</div>
+      <button class="modal-close" id="closeOrderModal">✕</button>
+    </div>
+    <form id="orderForm">
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label" for="orderCustomer">Khách hàng</label>
+          <input class="field-input" type="text" id="orderCustomer" placeholder="Tên khách hàng" required>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="orderDate">Ngày đặt</label>
+            <input class="field-input" type="date" id="orderDate" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="orderQuantity">Số lượng</label>
+            <input class="field-input" type="number" inputmode="numeric" id="orderQuantity" min="1" value="1" required>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="orderProductSelect">Sản phẩm</label>
+          <select class="field-input" id="orderProductSelect"></select>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="orderStatusSelect">Trạng thái</label>
+            <select class="field-input" id="orderStatusSelect">
+              <option value="completed">Hoàn thành</option>
+              <option value="pending">Đang xử lý</option>
+              <option value="cancelled">Đã hủy</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="orderPaymentSelect">Thanh toán</label>
+            <select class="field-input" id="orderPaymentSelect">
+              <option value="cash">Tiền mặt</option>
+              <option value="transfer">Chuyển khoản</option>
+              <option value="cod">COD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="cancelOrderModal">Hủy</button>
+        <button type="submit" class="btn-add">Lưu đơn hàng</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ PRODUCT MODAL ============ -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Cập nhật sản phẩm</div>
+      <button class="modal-close" id="closeProductModal">✕</button>
+    </div>
+    <form id="productForm">
+      <div class="modal-body">
+        <p style="font-weight:700;margin-bottom:16px;color:var(--tf-green)" id="productModalName"></p>
+        <input type="hidden" id="productIdField">
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="productPriceField">Giá bán (₫)</label>
+            <input class="field-input" type="number" inputmode="numeric" id="productPriceField" min="0" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="productCostField">Giá vốn (₫)</label>
+            <input class="field-input" type="number" inputmode="numeric" id="productCostField" min="0" required>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="productStockField">Tồn kho</label>
+          <input class="field-input" type="number" inputmode="numeric" id="productStockField" min="0" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" id="cancelProductModal">Hủy</button>
+        <button type="submit" class="btn-add">Lưu thay đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="chart-tooltip" id="chartTooltip"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/ThubeeFarmery.js"></script>
+</body>
+</html>
