@@ -2,7 +2,8 @@ name: Update gold price
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Off the :00/:30 marks on purpose — GitHub queues those slots heavily and often skips them.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:

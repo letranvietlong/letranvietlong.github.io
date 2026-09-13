@@ -15,9 +15,11 @@ import re
 import ssl
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import certifi
+
+VN_TZ = timezone(timedelta(hours=7))  # Vietnam has no DST, so a fixed offset is exact and needs no tzdata
 
 NGOCTHINH_URL = "https://ngocthinh-jewelry.vn/pages/bang-gia-vang"
 NGOCTHINH_ROW_PATTERN = re.compile(
@@ -84,14 +86,35 @@ def main():
     history = load_json(HISTORY_FILE, [])
     if not isinstance(history, list):
         history = []
-    history.append({"buy": item["buy"], "sell": item["sell"], "at": now})
-    history = history[-HISTORY_MAX:]
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
-        f.write("\n")
 
-    print("OK: buy=%d sell=%d fetchedAt=%s" % (item["buy"], item["sell"], now))
+    # Only record a history point when the price actually moved or a new
+    # Vietnam-local day started; otherwise every 30-minute run would add a
+    # duplicate that makes the trend chart and "vs previous" comparison
+    # meaningless. gold-price.json's fetchedAt still updates on every run so
+    # the app can tell how fresh the last check was.
+    last = history[-1] if history else None
+    changed = (not last) or last.get("buy") != item["buy"] or last.get("sell") != item["sell"]
+    new_day = (not last) or vn_day(last.get("at", "")) != vn_day(now)
+    appended = False
+    if changed or new_day:
+        history.append({"buy": item["buy"], "sell": item["sell"], "at": now})
+        history = history[-HISTORY_MAX:]
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        appended = True
+
+    print("OK: buy=%d sell=%d fetchedAt=%s history=%s" % (
+        item["buy"], item["sell"], now, "appended" if appended else "unchanged"))
     return 0
+
+
+def vn_day(iso):
+    """Calendar date in Vietnam for an ISO timestamp (any offset)."""
+    try:
+        return datetime.fromisoformat(iso).astimezone(VN_TZ).date()
+    except (ValueError, TypeError):
+        return None
 
 
 if __name__ == "__main__":

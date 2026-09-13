@@ -66,13 +66,24 @@
   .version-badge{border:none;background:var(--glass);border:1px solid var(--line);color:var(--muted);font-size:.68rem;font-weight:700;padding:6px 11px;border-radius:100px;flex:none;transition:background .2s,color .2s,border-color .2s}
   .version-badge:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
   .version-badge:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+  .header-actions{display:flex;align-items:center;gap:8px;flex:none}
+  .privacy-toggle{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s,color .2s,border-color .2s}
+  .privacy-toggle:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
+  .privacy-toggle.active{color:var(--gold2);border-color:rgba(245,158,11,.4);background:var(--gold-soft)}
+  .privacy-toggle:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+  .privacy-on .money{filter:blur(6px);user-select:none}
 
   /* ---------- Cards ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
   .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;filter:blur(40px);opacity:.35;pointer-events:none}
 
   .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
+  .live-dot.stale{background:var(--muted2);box-shadow:0 0 0 3px rgba(124,136,166,.18)}
   .price-updated{font-size:.68rem;color:var(--muted2);white-space:nowrap}
+  .price-updated.stale{color:var(--red)}
+  .spread-line{font-size:.72rem;color:var(--muted);margin:2px 0 4px}
+  .spread-line b{color:var(--text);font-weight:700}
+  .btn-ghost.btn-active{border-color:rgba(245,158,11,.5);color:var(--gold2);background:var(--gold-soft)}
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
   .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
@@ -144,6 +155,7 @@
   .tx-cell-val{font-size:.84rem;font-weight:600}
   .tx-cell-val.up{color:var(--green)}
   .tx-cell-val.down{color:var(--red)}
+  .tx-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);font-style:italic}
 
   .empty-state{text-align:center;padding:34px 14px;color:var(--muted)}
   .empty-state .icon-lg{margin:0 auto 10px;color:var(--muted2)}
@@ -210,7 +222,7 @@
   .confirm-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(320px, calc(100% - 48px));background:#131D33;border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5);z-index:71;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   .confirm-dialog.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
   .confirm-title{font-size:1.05rem;font-weight:800;margin-bottom:8px;text-align:center}
-  .confirm-message{font-size:.86rem;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px}
+  .confirm-message{font-size:.86rem;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px;white-space:pre-line}
   .confirm-actions{display:flex;gap:10px}
   .confirm-actions .btn{flex:1}
 
@@ -270,7 +282,12 @@
         <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
       </div>
     </div>
-    <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
+    <div class="header-actions">
+      <button class="privacy-toggle" id="btnPrivacy" type="button" aria-label="Ẩn/hiện số tiền" aria-pressed="false">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path id="privacyEyeShape" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path id="privacyEyeSlash" d="M4 4l16 16" hidden/></svg>
+      </button>
+      <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
+    </div>
   </div>
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
@@ -288,12 +305,7 @@
             <div class="summary-sub">Tự động cập nhật mỗi 30 phút</div>
           </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
-          </button>
-          <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
-        </div>
+        <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
       </div>
       <div id="priceContent"></div>
     </div>
@@ -325,6 +337,15 @@
         </button>
       </div>
     </div>
+
+    <div id="storeSummary" hidden></div>
+
+    <div class="segmented" id="txFilter" role="group" aria-label="Lọc theo loại giao dịch" style="margin-bottom:14px">
+      <button type="button" class="active" data-filter="all">Tất cả</button>
+      <button type="button" data-filter="buy">Mua</button>
+      <button type="button" data-filter="sell">Bán</button>
+    </div>
+
     <div id="txList"></div>
   </div>
 
@@ -431,6 +452,10 @@
       <label for="txDate" id="txDateLabel">Ngày mua</label>
       <input class="input" id="txDate" type="date" required>
     </div>
+    <div class="field">
+      <label for="txNote">Ghi chú (tuỳ chọn)</label>
+      <input class="input" id="txNote" inputmode="text" placeholder="Ví dụ: mua tặng mẹ, bán để đóng học..." autocomplete="off" maxlength="200">
+    </div>
     <div class="sheet-actions">
       <button type="button" class="btn btn-ghost" id="txDeleteBtn" hidden>Xoá</button>
       <button type="submit" class="btn btn-gold btn-block">Lưu giao dịch</button>
@@ -448,7 +473,7 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
-  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng 9999 được tự động cập nhật mỗi 30 phút. Chỉ ghi đè nếu bạn muốn dùng một mức giá khác.</p>
+  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng 9999 được tự động cập nhật mỗi 30 phút. Giá ghi đè sẽ được dùng thay cho giá tự động cho đến khi bạn bấm "Dùng giá tự động".</p>
   <form id="priceForm">
     <div class="field">
       <label for="priceBuy">Giá mua vào (VNĐ / chỉ)</label>
@@ -520,6 +545,9 @@
 
   // ---------- helpers ----------
   function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
+  // For innerHTML display only (never for input.value — it emits markup).
+  // Lets the "hide amounts" toggle blur just the figure via CSS, unit labels stay legible.
+  function moneyHtml(n){ return '<span class="money">'+fmtVND(n)+'</span>'; }
   function fmtAmount(n){
     var r = Math.round(n*100)/100;
     return (r % 1 === 0) ? String(r) : r.toLocaleString('vi-VN',{maximumFractionDigits:2});
@@ -539,10 +567,15 @@
     var mm = String(d.getMonth()+1).padStart(2,'0');
     return dd+"/"+mm+"/"+d.getFullYear();
   }
-  function todayISO(){
-    var d = new Date();
-    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  // Calendar day in the device's own timezone. Timestamps from the bot are
+  // UTC; slicing those directly would put anything before 07:00 VN time on
+  // the previous day.
+  function localDayKey(dateOrIso){
+    var d = dateOrIso instanceof Date ? dateOrIso : new Date(dateOrIso);
+    return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
   }
+  function todayISO(){ return localDayKey(new Date()); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -802,6 +835,22 @@
     openSheet('versionSheet','versionBackdrop');
   });
 
+  // ---------- privacy toggle (hide monetary figures) ----------
+  var PRIVACY_KEY = "goldtrack_privacy_v1";
+  var btnPrivacy = document.getElementById('btnPrivacy');
+  function applyPrivacy(on){
+    document.body.classList.toggle('privacy-on', on);
+    btnPrivacy.classList.toggle('active', on);
+    btnPrivacy.setAttribute('aria-pressed', on ? 'true' : 'false');
+    document.getElementById('privacyEyeSlash').hidden = !on;
+  }
+  applyPrivacy(localStorage.getItem(PRIVACY_KEY) === '1');
+  btnPrivacy.addEventListener('click', function(){
+    var next = !document.body.classList.contains('privacy-on');
+    localStorage.setItem(PRIVACY_KEY, next ? '1' : '0');
+    applyPrivacy(next);
+  });
+
   // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
   var liveData = null;
   var liveHistory = [];
@@ -809,7 +858,9 @@
 
   function getEffectivePrice(){
     // Both the live feed and manual override are always VNĐ per chỉ.
-    if(state.manualPrice && (!liveData || new Date(state.manualPrice.updatedAt) > new Date(liveData.fetchedAt))){
+    // A manual override stays in force until the user explicitly clears it —
+    // silently expiring it on the next automatic fetch surprised people.
+    if(state.manualPrice){
       return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
     }
     if(liveData){
@@ -840,11 +891,13 @@
     clearFieldError('priceBuy'); clearFieldError('priceSell');
     openSheet('priceSheet','priceBackdrop');
   });
-  document.getElementById('btnRefreshPrice').addEventListener('click', function(){
-    loadLiveData().then(function(ok){
-      showToast(ok ? 'Đã làm mới giá' : 'Không tải được giá mới, thử lại sau', ok ? 'ok' : 'err');
-    });
+  // The old "Làm mới" button only re-read the committed JSON, which read as
+  // "fetch a fresh price" and misled people. Instead, quietly re-read it
+  // whenever the app comes back to the foreground.
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible') loadLiveData();
   });
+  window.addEventListener('pageshow', function(e){ if(e.persisted) loadLiveData(); });
   document.getElementById('priceClearOverride').addEventListener('click', function(){
     state.manualPrice = null;
     saveState();
@@ -949,6 +1002,7 @@
     document.getElementById('txAmount').value = '';
     document.getElementById('txPrice').value = '';
     document.getElementById('txStore').value = '';
+    document.getElementById('txNote').value = '';
     document.getElementById('txDate').value = todayISO();
     document.getElementById('txDate').max = todayISO();
     setType('buy');
@@ -962,6 +1016,7 @@
     document.getElementById('txAmount').value = fmtAmount(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
     document.getElementById('txStore').value = tx.store || '';
+    document.getElementById('txNote').value = tx.note || '';
     document.getElementById('txDate').value = tx.date;
     document.getElementById('txDate').max = todayISO();
     setType(txType(tx));
@@ -976,6 +1031,7 @@
     var amount = parseDecimal(document.getElementById('txAmount').value);
     var price = parseDigits(document.getElementById('txPrice').value);
     var store = document.getElementById('txStore').value.trim();
+    var note = document.getElementById('txNote').value.trim();
     var date = document.getElementById('txDate').value;
     var ok = true;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
@@ -992,9 +1048,9 @@
     document.getElementById('txAmountError').textContent = 'Nhập số lượng lớn hơn 0.';
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
-      tx.amount = amount; tx.price = price; tx.store = store; tx.date = date; tx.type = selectedType;
+      tx.amount = amount; tx.price = price; tx.store = store; tx.note = note; tx.date = date; tx.type = selectedType;
     } else {
-      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, date: date, createdAt: Date.now() });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, note: note, date: date, createdAt: Date.now() });
     }
     saveState();
     renderAll();
@@ -1027,27 +1083,59 @@
   document.getElementById('btnImport').addEventListener('click', function(){
     document.getElementById('fileImport').click();
   });
+  function isValidTx(t){
+    return t && typeof t === 'object' &&
+      typeof t.id === 'string' && t.id &&
+      (t.type === 'buy' || t.type === 'sell') &&
+      typeof t.amount === 'number' && isFinite(t.amount) && t.amount > 0 &&
+      typeof t.price === 'number' && isFinite(t.price) && t.price > 0 &&
+      typeof t.date === 'string' && !isNaN(new Date(t.date+"T00:00:00"));
+  }
+  function isValidManualPrice(m){
+    return m && typeof m === 'object' &&
+      typeof m.buy === 'number' && isFinite(m.buy) && m.buy > 0 &&
+      typeof m.sell === 'number' && isFinite(m.sell) && m.sell > 0 &&
+      typeof m.updatedAt === 'string' && !isNaN(new Date(m.updatedAt));
+  }
+
   document.getElementById('fileImport').addEventListener('change', function(e){
     var file = e.target.files[0];
     if(!file) return;
     var reader = new FileReader();
     reader.onload = function(){
+      var data;
       try{
-        var data = JSON.parse(reader.result);
+        data = JSON.parse(reader.result);
         if(!data || typeof data !== 'object') throw new Error('bad');
-        state = {
-          manualPrice: data.manualPrice || null,
-          transactions: Array.isArray(data.transactions) ? data.transactions : []
-        };
+      }catch(err){
+        showToast('File không đúng định dạng JSON', 'err');
+        e.target.value = '';
+        return;
+      }
+
+      var rawTx = Array.isArray(data.transactions) ? data.transactions : [];
+      var validTx = rawTx.filter(isValidTx);
+      var skipped = rawTx.length - validTx.length;
+      var manualPrice = isValidManualPrice(data.manualPrice) ? data.manualPrice : null;
+
+      if(rawTx.length > 0 && validTx.length === 0){
+        showToast('File không chứa giao dịch hợp lệ nào — có thể sai file', 'err');
+        e.target.value = '';
+        return;
+      }
+
+      var msg = 'Nhập ' + validTx.length + ' giao dịch từ file này sẽ THAY THẾ toàn bộ dữ liệu hiện có trên máy (' + state.transactions.length + ' giao dịch). Tiếp tục?';
+      if(skipped > 0) msg += '\n(' + skipped + ' dòng trong file bị bỏ qua vì thiếu dữ liệu hoặc sai định dạng.)';
+      showConfirm(msg, { title: 'Nhập dữ liệu', confirmText: 'Nhập, ghi đè', danger: true }).then(function(ok){
+        e.target.value = '';
+        if(!ok) return;
+        state = { manualPrice: manualPrice, transactions: validTx };
         saveState();
         renderAll();
-        showToast('Đã nhập dữ liệu thành công', 'ok');
-      }catch(err){
-        showToast('File không hợp lệ', 'err');
-      }
+        showToast(skipped > 0 ? 'Đã nhập ' + validTx.length + ' giao dịch, bỏ qua ' + skipped + ' dòng lỗi' : 'Đã nhập dữ liệu thành công', 'ok');
+      });
     };
     reader.readAsText(file);
-    e.target.value = '';
   });
   document.getElementById('btnClearAll').addEventListener('click', function(){
     showConfirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.', { title: 'Xoá toàn bộ dữ liệu', confirmText: 'Xoá hết', danger: true }).then(function(ok){
@@ -1075,30 +1163,48 @@
     }
     liveDot.hidden = false;
     var d = new Date(eff.at);
-    var updatedTxt = "Cập nhật " + fmtDate(d.toISOString().slice(0,10)) + " lúc " + String(d.getHours()).padStart(2,'0') + ":" + String(d.getMinutes()).padStart(2,'0');
-    var sourceTxt = eff.isManual ? "Đã ghi đè thủ công · " : "";
+    var whenTxt = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+    var STALE_MIN = 90; // bot runs every 30 min; anything older than this means the schedule isn't firing
+    var isStale = !eff.isManual && (Date.now() - d.getTime()) / 60000 > STALE_MIN;
+    liveDot.classList.toggle('stale', isStale);
+    document.getElementById('btnUpdatePrice').classList.toggle('btn-active', !!eff.isManual);
+    var updatedTxt = eff.isManual
+      ? 'Đã ghi đè thủ công · ' + whenTxt
+      : (isStale ? 'Chưa có cập nhật mới từ ' + whenTxt : 'Cập nhật ' + whenTxt);
 
+    // Compare against the previous local day's last reading, not the previous
+    // 30-minute poll — the bot only records real changes now, but a day-over-
+    // day figure is what actually answers "is gold up or down?".
     var deltaHtml = '';
-    if(!eff.isManual && liveHistory.length >= 2){
-      // Compare raw source-unit values (both sides same scale) — the ratio is unit-independent.
-      var prev = liveHistory[liveHistory.length-2].buy;
-      var diff = liveData.buy - prev;
-      var pct = prev ? (diff/prev*100) : 0;
-      var bg = diff > 0 ? 'var(--green-soft)' : (diff < 0 ? 'var(--red-soft)' : 'var(--glass)');
-      var color = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--muted)');
-      var arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '→');
-      deltaHtml = '<span class="price-delta" style="background:'+bg+';color:'+color+'">'+arrow+' '+(pct>=0?'+':'')+pct.toFixed(2)+'% so với lần trước</span>';
+    if(!eff.isManual){
+      var daily = aggregateDailyHistory(liveHistory, 2);
+      var todayKey = localDayKey(new Date());
+      if(daily.length === 2 && daily[1].day === todayKey){
+        var prevDay = daily[0];
+        var diff = liveData.buy - prevDay.buy;
+        var pct = prevDay.buy ? (diff/prevDay.buy*100) : 0;
+        var bg = diff > 0 ? 'var(--green-soft)' : (diff < 0 ? 'var(--red-soft)' : 'var(--glass)');
+        var color = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--muted)');
+        var arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '→');
+        var yesterdayKey = localDayKey(new Date(Date.now() - 86400000));
+        var vsTxt = prevDay.day === yesterdayKey ? 'so với hôm qua' : 'so với ' + fmtDate(prevDay.day).slice(0,5);
+        deltaHtml = '<span class="price-delta" style="background:'+bg+';color:'+color+'">'+arrow+' '+(diff>=0?'+':'')+moneyHtml(diff)+' đ ('+(pct>=0?'+':'')+pct.toFixed(2)+'%) '+vsTxt+'</span>';
+      }
     }
+
+    var spread = eff.sell - eff.buy;
+    var spreadPct = eff.buy ? spread / eff.buy * 100 : 0;
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+moneyHtml(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+moneyHtml(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
       '</div>' +
+      '<div class="spread-line">Chênh lệch mua–bán: <b>'+moneyHtml(spread)+' đ</b> ('+spreadPct.toFixed(2)+'%) — mua xong bán lại ngay sẽ lỗ khoản này</div>' +
       deltaHtml +
       '<div class="chart-head">' +
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
-        '<span class="price-updated">'+sourceTxt+updatedTxt+'</span>' +
+        '<span class="price-updated'+(isStale?' stale':'')+'">'+updatedTxt+'</span>' +
       '</div>' +
       '<div class="chart-wrap">' + renderChart(liveHistory) + '</div>';
   }
@@ -1106,7 +1212,7 @@
   var CHART_DAYS = 5;
   function aggregateDailyHistory(hist, days){
     var byDay = {};
-    hist.forEach(function(p){ byDay[p.at.slice(0,10)] = p; }); // last entry of each day wins (chronological order)
+    hist.forEach(function(p){ byDay[localDayKey(p.at)] = p; }); // last entry of each local day wins (chronological order)
     return Object.keys(byDay).sort().slice(-days).map(function(day){
       return { buy: byDay[day].buy, sell: byDay[day].sell, day: day };
     });
@@ -1170,32 +1276,72 @@
 
     content.innerHTML =
       '<div class="summary-row"><span class="summary-label">Đang nắm giữ</span><span class="summary-val">'+fmtAmount(p.holdingAmount)+' chỉ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? fmtVND(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(p.holdingCost)+' đ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
-      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+fmtVND(p.realizedPL)+' đ</span></div>' : '') +
+      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? moneyHtml(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+moneyHtml(p.holdingCost)+' đ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? moneyHtml(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
+      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+moneyHtml(p.realizedPL)+' đ</span></div>' : '') +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
+          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+moneyHtml(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
         (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>';
   }
 
+  // ---------- store breakdown ----------
+  function renderStoreSummary(){
+    var el = document.getElementById('storeSummary');
+    var buys = state.transactions.filter(function(t){ return txType(t) === 'buy' && t.store; });
+    var byStore = {};
+    var storeNames = [];
+    buys.forEach(function(t){
+      if(!byStore[t.store]){ byStore[t.store] = { amount: 0, cost: 0 }; storeNames.push(t.store); }
+      byStore[t.store].amount += t.amount;
+      byStore[t.store].cost += t.amount * t.price;
+    });
+    if(storeNames.length === 0){ el.hidden = true; return; }
+    storeNames.sort(function(a,b){ return byStore[b].cost - byStore[a].cost; });
+    el.hidden = false;
+    el.innerHTML =
+      '<div class="card" style="padding:14px 18px">' +
+        '<div class="settings-row-title" style="margin-bottom:8px">Theo cửa hàng</div>' +
+        storeNames.map(function(name){
+          var s = byStore[name];
+          var avg = s.amount ? s.cost / s.amount : 0;
+          return '<div class="summary-row"><span class="summary-label">'+escapeHtml(name)+' · '+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+moneyHtml(avg)+' đ/chỉ TB</span></div>';
+        }).join('') +
+      '</div>';
+  }
+
   // ---------- render: transactions ----------
+  var txFilter = 'all';
+  document.querySelectorAll('#txFilter button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#txFilter button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      txFilter = btn.getAttribute('data-filter');
+      renderTx();
+    });
+  });
+
   function renderTx(){
     var list = document.getElementById('txList');
     var count = document.getElementById('txCount');
     var eff = getEffectivePrice();
     var p = computePortfolio();
-    var txs = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
-    count.textContent = txs.length;
+    renderStoreSummary();
+    var all = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
+    count.textContent = all.length;
+    var txs = txFilter === 'all' ? all : all.filter(function(t){ return txType(t) === txFilter; });
     if(txs.length === 0){
+      var emptyMsg = all.length === 0
+        ? 'Chưa có giao dịch nào. Nhấn nút + để thêm giao dịch mua vàng đầu tiên.'
+        : 'Không có giao dịch nào khớp bộ lọc này.';
       list.innerHTML =
         '<div class="empty-state">' +
           '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
-          '<p>Chưa có giao dịch nào. Nhấn nút + để thêm giao dịch mua vàng đầu tiên.</p>' +
+          '<p>'+emptyMsg+'</p>' +
         '</div>';
       return;
     }
@@ -1203,6 +1349,7 @@
       var isSell = txType(tx) === 'sell';
       var badge = '<span class="tx-badge '+(isSell?'sell':'buy')+'">'+(isSell?'BÁN':'MUA')+'</span>';
       var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (tx.store ? ' · '+escapeHtml(tx.store) : '');
+      var noteHtml = tx.note ? '<div class="tx-note">'+escapeHtml(tx.note)+'</div>' : '';
 
       var grid;
       if(isSell){
@@ -1210,9 +1357,9 @@
         var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
         grid =
           '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+fmtVND(sellInfo.avgCostAtSale)+' đ</div></div>' +
-            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+moneyHtml(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+moneyHtml(sellInfo.avgCostAtSale)+' đ</div></div>' +
+            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+moneyHtml(sellInfo.pl)+' đ</div></div>' +
           '</div>';
       } else {
         var cost = tx.amount * tx.price;
@@ -1220,11 +1367,11 @@
         var pl = currentVal === null ? null : currentVal - cost;
         var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
         var plCls2 = pl === null ? '' : (pl > 0 ? 'up' : (pl < 0 ? 'down' : ''));
-        var plTxt = pl === null ? '—' : ((pl>=0?'+':'')+fmtVND(pl)+' đ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)');
+        var plTxt = pl === null ? '—' : ((pl>=0?'+':'')+moneyHtml(pl)+' đ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)');
         grid =
           '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(currentVal===null?'—':fmtVND(currentVal)+' đ')+'</div></div>' +
+            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+moneyHtml(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(currentVal===null?'—':moneyHtml(currentVal)+' đ')+'</div></div>' +
             '<div style="grid-column:1/-1"><div class="tx-cell-label">Lời/Lỗ chưa chốt</div><div class="tx-cell-val '+plCls2+'">'+plTxt+'</div></div>' +
           '</div>';
       }
@@ -1238,6 +1385,7 @@
             '</button>' +
           '</div>' +
           grid +
+          noteHtml +
         '</div>'
       );
     }).join('');
@@ -1270,6 +1418,15 @@
   loadChangelog();
   if(gistConfig){
     pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
+  }
+
+  // Offline support: caches this page + the live price/history/changelog JSON
+  // so the app still opens with last-known data with no network. See
+  // sw-goldtrack.js for why this file has to sit at the site root.
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw-goldtrack.js').catch(function(){ /* offline support just won't be available */ });
+    });
   }
 })();
 </script>
