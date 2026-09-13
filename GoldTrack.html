@@ -69,7 +69,7 @@
   .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;filter:blur(40px);opacity:.35;pointer-events:none}
 
   .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
-  .price-updated{font-size:.68rem;color:var(--muted2)}
+  .price-updated{font-size:.68rem;color:var(--muted2);white-space:nowrap}
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
   .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
@@ -79,8 +79,9 @@
   .price-empty{padding:22px 4px;text-align:center;color:var(--muted)}
   .price-empty p{font-size:.86rem;margin-bottom:12px}
 
-  .chart-wrap{margin-top:10px}
-  .chart-title{font-size:.72rem;color:var(--muted2);font-weight:600;margin-bottom:6px}
+  .chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .chart-wrap{margin-top:6px}
+  .chart-title{font-size:.72rem;color:var(--muted2);font-weight:600}
   .chart-svg{width:100%;height:64px;display:block}
   .chart-empty{font-size:.76rem;color:var(--muted2);padding:14px 0;text-align:center}
 
@@ -1034,17 +1035,25 @@
       deltaHtml = '<span class="price-delta" style="background:'+bg+';color:'+color+'">'+arrow+' '+(pct>=0?'+':'')+pct.toFixed(2)+'% so với lần trước</span>';
     }
 
+    var chartRangeTxt = '';
+    if(liveHistory.length >= 2){
+      var fmtShort = function(dt){ return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'); };
+      var firstD = new Date(liveHistory[0].at);
+      var lastD = new Date(liveHistory[liveHistory.length-1].at);
+      chartRangeTxt = ' (' + fmtShort(firstD) + ' – ' + fmtShort(lastD) + ')';
+    }
+
     el.innerHTML =
       '<div class="price-grid">' +
         '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
         '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
       '</div>' +
       deltaHtml +
-      '<div class="price-updated" style="margin-top:10px">'+sourceTxt+updatedTxt+'</div>' +
-      '<div class="chart-wrap">' +
-        '<div class="chart-title">Xu hướng giá mua vào (tự động)</div>' +
-        renderChart(liveHistory) +
-      '</div>';
+      '<div class="chart-head">' +
+        '<span class="chart-title">Xu hướng giá mua vào'+chartRangeTxt+'</span>' +
+        '<span class="price-updated">'+sourceTxt+updatedTxt+'</span>' +
+      '</div>' +
+      '<div class="chart-wrap">' + renderChart(liveHistory) + '</div>';
   }
 
   function renderChart(hist){
