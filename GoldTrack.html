@@ -32,9 +32,9 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;height:100%}
   body{
-    margin:0;min-height:100vh;min-height:100dvh;color:var(--text);font-family:var(--font);
+    margin:0;min-height:100%;min-height:100vh;min-height:-webkit-fill-available;min-height:100dvh;color:var(--text);font-family:var(--font);
     background:
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
@@ -85,7 +85,7 @@
   .chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
   .chart-wrap{margin-top:6px}
   .chart-title{font-size:.72rem;color:var(--muted2);font-weight:600}
-  .chart-svg{width:100%;height:64px;display:block}
+  .chart-svg{width:100%;height:auto;display:block}
   .chart-empty{font-size:.76rem;color:var(--muted2);padding:14px 0;text-align:center}
 
   .btn{border:none;border-radius:100px;padding:11px 18px;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;transition:transform .15s,opacity .15s,background .2s}
@@ -1090,14 +1090,6 @@
       deltaHtml = '<span class="price-delta" style="background:'+bg+';color:'+color+'">'+arrow+' '+(pct>=0?'+':'')+pct.toFixed(2)+'% so với lần trước</span>';
     }
 
-    var chartRangeTxt = '';
-    if(liveHistory.length >= 2){
-      var fmtShort = function(dt){ return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'); };
-      var firstD = new Date(liveHistory[0].at);
-      var lastD = new Date(liveHistory[liveHistory.length-1].at);
-      chartRangeTxt = ' (' + fmtShort(firstD) + ' – ' + fmtShort(lastD) + ')';
-    }
-
     el.innerHTML =
       '<div class="price-grid">' +
         '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
@@ -1105,35 +1097,55 @@
       '</div>' +
       deltaHtml +
       '<div class="chart-head">' +
-        '<span class="chart-title">Xu hướng giá mua vào'+chartRangeTxt+'</span>' +
+        '<span class="chart-title">Xu hướng giá mua vào</span>' +
         '<span class="price-updated">'+sourceTxt+updatedTxt+'</span>' +
       '</div>' +
       '<div class="chart-wrap">' + renderChart(liveHistory) + '</div>';
   }
 
+  var CHART_DAYS = 5;
+  function aggregateDailyHistory(hist, days){
+    var byDay = {};
+    hist.forEach(function(p){ byDay[p.at.slice(0,10)] = p; }); // last entry of each day wins (chronological order)
+    return Object.keys(byDay).sort().slice(-days).map(function(day){
+      return { buy: byDay[day].buy, sell: byDay[day].sell, day: day };
+    });
+  }
+
   function renderChart(hist){
-    if(hist.length < 2){
-      return '<div class="chart-empty">Cập nhật giá thêm vài lần để xem biểu đồ xu hướng</div>';
+    var daily = aggregateDailyHistory(hist, CHART_DAYS);
+    if(daily.length < 2){
+      return '<div class="chart-empty">Cần thêm dữ liệu qua nhiều ngày hơn để xem xu hướng</div>';
     }
-    var w = 300, h = 64, pad = 6;
-    var vals = hist.map(function(p){ return p.buy; });
+    var w = 300, h = 92, padTop = 8, padBottom = 24, padX = 20;
+    var plotH = h - padTop - padBottom;
+    var vals = daily.map(function(p){ return p.buy; });
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
     if(min === max){ min -= 1; max += 1; }
-    var pts = vals.map(function(v, i){
-      var x = pad + (i/(vals.length-1)) * (w - pad*2);
-      var y = h - pad - ((v-min)/(max-min)) * (h - pad*2);
-      return [x,y];
+    var n = daily.length;
+    var pts = daily.map(function(p, i){
+      var x = n === 1 ? w/2 : padX + (i/(n-1)) * (w - padX*2);
+      var y = padTop + plotH - ((p.buy-min)/(max-min)) * plotH;
+      return { x: x, y: y, day: p.day };
     });
-    var line = pts.map(function(p,i){ return (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
-    var area = line + ' L'+pts[pts.length-1][0].toFixed(1)+','+(h-pad)+' L'+pts[0][0].toFixed(1)+','+(h-pad)+' Z';
-    var last = pts[pts.length-1];
-    return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">' +
+    var line = pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+    var area = line + ' L'+pts[pts.length-1].x.toFixed(1)+','+(padTop+plotH)+' L'+pts[0].x.toFixed(1)+','+(padTop+plotH)+' Z';
+    var lastIdx = pts.length - 1;
+    var dots = pts.map(function(p,i){
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(i===lastIdx?3:2)+'" fill="'+(i===lastIdx?'#FDE68A':'#F59E0B')+'"/>';
+    }).join('');
+    var labels = pts.map(function(p){
+      var d = new Date(p.day+"T00:00:00");
+      var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+      return '<text x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" fill="#7C88A6" text-anchor="middle">'+lbl+'</text>';
+    }).join('');
+    return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'">' +
       '<defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="#F59E0B" stop-opacity="0.35"/><stop offset="1" stop-color="#F59E0B" stop-opacity="0"/>' +
       '</linearGradient></defs>' +
       '<path d="'+area+'" fill="url(#chartFill)"/>' +
       '<path d="'+line+'" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
-      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3" fill="#FDE68A"/>' +
+      dots + labels +
     '</svg>';
   }
 
