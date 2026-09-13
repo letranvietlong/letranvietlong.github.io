@@ -68,9 +68,7 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
   .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;filter:blur(40px);opacity:.35;pointer-events:none}
 
-  .price-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-  .price-label{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
-  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
   .price-updated{font-size:.68rem;color:var(--muted2)}
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
@@ -98,7 +96,7 @@
   /* ---------- Summary ---------- */
   .summary-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
   .summary-head-icon{width:36px;height:36px;border-radius:10px;background:rgba(52,211,153,.16);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
-  .summary-title{font-size:.98rem;font-weight:800}
+  .summary-title{font-size:.98rem;font-weight:800;display:flex;align-items:center;gap:6px}
   .summary-sub{font-size:.68rem;color:var(--muted2);margin-top:1px}
   .summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0}
   .summary-row + .summary-row{border-top:1px solid var(--line)}
@@ -249,25 +247,34 @@
     </defs>
   </svg>
 
-  <!-- ============ TAB: TỔNG QUAN ============ -->
-  <div class="tab-view" id="viewOverview">
-    <div class="page-title">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
-        </div>
-        <div class="brand-text">
-          <h1>GoldTrack</h1>
-          <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
-        </div>
+  <!-- ============ BRAND HEADER (persistent across all tabs) ============ -->
+  <div class="page-title">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>GoldTrack</h1>
+        <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
       </div>
     </div>
+  </div>
 
+  <!-- ============ TAB: TỔNG QUAN ============ -->
+  <div class="tab-view" id="viewOverview">
     <!-- Current price card -->
     <div class="card" id="priceCard">
       <div class="card-glow" style="background:var(--gold)"></div>
-      <div class="price-head">
-        <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</span>
+      <div class="summary-head" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="summary-head-icon" style="background:var(--gold-soft);color:var(--gold2)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+          </div>
+          <div>
+            <div class="summary-title"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</div>
+            <div class="summary-sub">Tự động cập nhật mỗi 30 phút</div>
+          </div>
+        </div>
         <div style="display:flex;gap:6px">
           <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
