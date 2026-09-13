@@ -38,4 +38,15 @@ jobs:
           BUY=$(python -c "import json;print(f'{json.load(open(\"data/gold-price.json\"))[\"buy\"]:,}'.replace(',', '.'))")
           SELL=$(python -c "import json;print(f'{json.load(open(\"data/gold-price.json\"))[\"sell\"]:,}'.replace(',', '.'))")
           git commit -m "Auto-update gold price: mua ${BUY} / ban ${SELL}"
-          git push
+
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $i failed (branch likely moved), retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Giving up after 5 push attempts."
+          exit 1
