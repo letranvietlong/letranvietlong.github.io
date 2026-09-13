@@ -352,6 +352,21 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
+  <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px">
+    <div class="settings-row-text">
+      <span class="settings-row-title">Đồng bộ GitHub Gist</span>
+      <span class="settings-row-desc" id="gistStatusText">Chưa kết nối — dữ liệu chỉ lưu trên máy này</span>
+    </div>
+    <div id="gistConnectForm">
+      <div class="field" style="margin-bottom:8px">
+        <label for="gistToken">Personal Access Token (quyền "gist")</label>
+        <input class="input" id="gistToken" type="password" style="font-family:var(--font)" placeholder="ghp_..." autocomplete="off">
+      </div>
+      <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
+      <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnGistDisconnect" type="button" hidden>Ngắt kết nối</button>
+  </div>
   <div class="settings-row">
     <div class="settings-row-text">
       <span class="settings-row-title">Xuất dữ liệu</span>
@@ -374,7 +389,7 @@
     </div>
     <button class="btn btn-danger btn-sm" id="btnClearAll" type="button">Xoá hết</button>
   </div>
-  <p class="field-hint" style="margin-top:14px;text-align:center">Dữ liệu chỉ lưu trên trình duyệt này (localStorage), không gửi lên máy chủ nào.</p>
+  <p class="field-hint" style="margin-top:14px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
 </div>
 
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
@@ -396,7 +411,10 @@
       };
     }catch(e){ return { manualPrice:null, transactions:[] }; }
   }
-  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    syncToGist();
+  }
 
   var state = loadState();
 
@@ -440,6 +458,137 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ toastEl.className = 'toast'; }, 2400);
   }
+
+  // ---------- GitHub Gist sync (personal, private backup + cross-device sync) ----------
+  var GIST_CONFIG_KEY = "goldtrack_gist_v1";
+  var GIST_FILENAME = "goldtrack-data.json";
+  var GIST_DESCRIPTION = "GoldTrack backup data — managed automatically, do not edit manually";
+
+  function loadGistConfig(){
+    try{ return JSON.parse(localStorage.getItem(GIST_CONFIG_KEY)) || null; }catch(e){ return null; }
+  }
+  function saveGistConfig(cfg){
+    if(cfg) localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(cfg));
+    else localStorage.removeItem(GIST_CONFIG_KEY);
+    gistConfig = cfg;
+  }
+  var gistConfig = loadGistConfig();
+
+  function githubApi(path, token, method, body){
+    return fetch("https://api.github.com" + path, {
+      method: method || "GET",
+      headers: {
+        "Authorization": "token " + token,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function(res){
+      return res.json().catch(function(){ return null; }).then(function(json){
+        if(!res.ok) throw new Error((json && json.message) || ("GitHub API lỗi " + res.status));
+        return json;
+      });
+    });
+  }
+
+  function buildGistFiles(){
+    var content = JSON.stringify({ transactions: state.transactions, manualPrice: state.manualPrice }, null, 2);
+    var files = {};
+    files[GIST_FILENAME] = { content: content };
+    return files;
+  }
+
+  var lastGistStatus = null; // remembered so reopening Settings doesn't clobber the real sync state
+  function setGistStatus(kind, detail){
+    if(kind !== 'disconnected') lastGistStatus = { kind: kind, detail: detail };
+    var el = document.getElementById('gistStatusText');
+    if(!el) return;
+    el.style.color = '';
+    if(kind === 'synced'){
+      el.textContent = "Đã đồng bộ lúc " + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    } else if(kind === 'syncing'){
+      el.textContent = "Đang đồng bộ…";
+    } else if(kind === 'error'){
+      el.textContent = "Lỗi đồng bộ: " + detail;
+      el.style.color = 'var(--red)';
+    } else if(kind === 'connected'){
+      el.textContent = "Đã kết nối GitHub Gist";
+    } else {
+      el.textContent = "Chưa kết nối — dữ liệu chỉ lưu trên máy này";
+    }
+  }
+
+  var gistSyncTimer = null;
+  function syncToGist(){
+    if(!gistConfig) return;
+    clearTimeout(gistSyncTimer);
+    gistSyncTimer = setTimeout(function(){
+      setGistStatus('syncing');
+      githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'PATCH', { files: buildGistFiles() })
+        .then(function(){ setGistStatus('synced'); })
+        .catch(function(e){ setGistStatus('error', e.message); });
+    }, 400);
+  }
+
+  function refreshGistUI(){
+    var connected = !!gistConfig;
+    document.getElementById('gistConnectForm').hidden = connected;
+    document.getElementById('btnGistDisconnect').hidden = !connected;
+    if(!connected){ setGistStatus('disconnected'); return; }
+    if(lastGistStatus) setGistStatus(lastGistStatus.kind, lastGistStatus.detail);
+    else setGistStatus('connected');
+  }
+
+  function pullFromGist(){
+    if(!gistConfig) return Promise.resolve(false);
+    return githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'GET').then(function(gist){
+      var file = gist.files && gist.files[GIST_FILENAME];
+      if(!file || !file.content) return false;
+      var data = JSON.parse(file.content);
+      state.transactions = Array.isArray(data.transactions) ? data.transactions : [];
+      state.manualPrice = data.manualPrice || null;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
+    });
+  }
+
+  document.getElementById('btnGistConnect').addEventListener('click', function(){
+    var token = document.getElementById('gistToken').value.trim();
+    if(!token){ showToast('Nhập Personal Access Token trước', 'err'); return; }
+    var btn = document.getElementById('btnGistConnect');
+    btn.disabled = true; btn.textContent = 'Đang kết nối…';
+    githubApi('/gists', token, 'GET').then(function(gists){
+      var existing = (gists || []).find(function(g){ return g.description === GIST_DESCRIPTION; });
+      if(existing) return { gistId: existing.id, isExisting: true };
+      return githubApi('/gists', token, 'POST', { description: GIST_DESCRIPTION, public: false, files: buildGistFiles() })
+        .then(function(g){ return { gistId: g.id, isExisting: false }; });
+    }).then(function(result){
+      var proceed = true;
+      if(result.isExisting && state.transactions.length > 0){
+        proceed = confirm('Tìm thấy dữ liệu sao lưu sẵn có trên GitHub. Tải về sẽ THAY THẾ dữ liệu hiện có trên máy này. Tiếp tục?');
+      }
+      saveGistConfig({ token: token, gistId: result.gistId });
+      if(result.isExisting && proceed){
+        return pullFromGist().then(function(){ renderAll(); });
+      }
+    }).then(function(){
+      document.getElementById('gistToken').value = '';
+      refreshGistUI();
+      showToast('Đã kết nối đồng bộ GitHub Gist', 'ok');
+    }).catch(function(e){
+      showToast('Kết nối thất bại: ' + e.message, 'err');
+    }).finally(function(){
+      btn.disabled = false; btn.textContent = 'Kết nối';
+    });
+  });
+
+  document.getElementById('btnGistDisconnect').addEventListener('click', function(){
+    if(!confirm('Ngắt đồng bộ? Dữ liệu trên máy này vẫn được giữ, bản sao lưu trên GitHub Gist cũng không bị xoá.')) return;
+    saveGistConfig(null);
+    lastGistStatus = null;
+    refreshGistUI();
+    showToast('Đã ngắt kết nối đồng bộ', 'ok');
+  });
 
   // ---------- live-format inputs ----------
   function bindThousandFormat(input){
@@ -606,6 +755,7 @@
 
   // ---------- settings ----------
   document.getElementById('btnSettings').addEventListener('click', function(){
+    refreshGistUI();
     openSheet('settingsSheet','settingsBackdrop');
   });
   document.getElementById('btnExport').addEventListener('click', function(){
@@ -823,6 +973,9 @@
   function renderAll(){ renderPrice(); renderSummary(); renderTx(); }
   renderAll();
   loadLiveData();
+  if(gistConfig){
+    pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(){ /* stay on local cache */ });
+  }
 })();
 </script>
 </body>
