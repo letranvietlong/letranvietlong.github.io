@@ -63,6 +63,9 @@
   /* ---------- Page title (History / Settings tabs) ---------- */
   .page-title{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 18px}
   .page-title h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .version-badge{border:none;background:var(--glass);border:1px solid var(--line);color:var(--muted);font-size:.68rem;font-weight:700;padding:6px 11px;border-radius:100px;flex:none;transition:background .2s,color .2s,border-color .2s}
+  .version-badge:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
+  .version-badge:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
 
   /* ---------- Cards ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
@@ -193,6 +196,14 @@
   .settings-row-title{font-size:.88rem;font-weight:700}
   .settings-row-desc{font-size:.72rem;color:var(--muted2)}
 
+  /* ---------- Update history sheet ---------- */
+  .version-entry{padding:14px 0;border-bottom:1px solid var(--line)}
+  .version-entry:last-child{border-bottom:none;padding-bottom:4px}
+  .version-entry-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .version-num{font-family:var(--font);font-weight:800;font-size:.88rem;color:var(--gold2)}
+  .version-date{font-size:.68rem;color:var(--muted2)}
+  .version-changes{margin:0;padding-left:18px;color:var(--muted);font-size:.82rem;line-height:1.6}
+
   /* ---------- Confirm dialog ---------- */
   .confirm-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.62);backdrop-filter:blur(2px);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
   .confirm-backdrop.open{opacity:1;pointer-events:auto}
@@ -259,6 +270,7 @@
         <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
       </div>
     </div>
+    <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
   </div>
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
@@ -455,6 +467,19 @@
       <button type="submit" class="btn btn-gold btn-block">Lưu giá ghi đè</button>
     </div>
   </form>
+</div>
+
+<!-- ============ SHEET: UPDATE HISTORY ============ -->
+<div class="sheet-backdrop" id="versionBackdrop"></div>
+<div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="versionSheetTitle">Lịch sử cập nhật</h3>
+    <button class="icon-btn" id="versionClose" aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div id="versionContent"></div>
 </div>
 
 <!-- ============ CONFIRM DIALOG ============ -->
@@ -746,6 +771,36 @@
   }
   wireSheet('txSheet','txBackdrop','txClose');
   wireSheet('priceSheet','priceBackdrop','priceClose');
+  wireSheet('versionSheet','versionBackdrop','versionClose');
+
+  // ---------- version / update history ----------
+  var changelogData = null;
+  function loadChangelog(){
+    return fetch('data/changelog.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+      if(!data || !Array.isArray(data.entries)) return;
+      changelogData = data;
+      document.getElementById('btnVersion').textContent = 'v' + data.version;
+    }).catch(function(){ /* keep placeholder badge */ });
+  }
+  function renderChangelog(){
+    var el = document.getElementById('versionContent');
+    if(!changelogData){
+      el.innerHTML = '<p class="field-hint">Không tải được lịch sử cập nhật.</p>';
+      return;
+    }
+    el.innerHTML = changelogData.entries.map(function(entry){
+      return (
+        '<div class="version-entry">' +
+          '<div class="version-entry-head"><span class="version-num">v'+entry.version+'</span><span class="version-date">'+fmtDate(entry.date)+'</span></div>' +
+          '<ul class="version-changes">' + entry.changes.map(function(c){ return '<li>'+escapeHtml(c)+'</li>'; }).join('') + '</ul>' +
+        '</div>'
+      );
+    }).join('');
+  }
+  document.getElementById('btnVersion').addEventListener('click', function(){
+    renderChangelog();
+    openSheet('versionSheet','versionBackdrop');
+  });
 
   // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
   var liveData = null;
@@ -1200,6 +1255,7 @@
   function renderAll(){ renderPrice(); renderSummary(); renderTx(); }
   renderAll();
   loadLiveData();
+  loadChangelog();
   if(gistConfig){
     pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
   }
