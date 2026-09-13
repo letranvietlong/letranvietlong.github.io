@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="GoldTrack" />
 <meta name="robots" content="noindex, nofollow" />
-<meta name="description" content="Theo dõi giá vàng SJC và tính lời/lỗ danh mục vàng đã mua." />
+<meta name="description" content="Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua." />
 <title>GoldTrack — Theo dõi giá vàng</title>
 <link rel="icon" type="image/svg+xml" href="img/goldtrack-icon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/goldtrack-icon-32.png">
@@ -244,7 +244,7 @@
   <div class="card" id="priceCard">
     <div class="card-glow" style="background:var(--gold)"></div>
     <div class="price-head">
-      <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng SJC</span>
+      <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</span>
       <div style="display:flex;gap:6px">
         <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
@@ -286,22 +286,19 @@
   </div>
   <form id="txForm">
     <div class="field">
-      <label for="txAmount">Số lượng vàng</label>
+      <label for="txAmount">Số lượng vàng (chỉ)</label>
       <input class="input" id="txAmount" inputmode="decimal" placeholder="Ví dụ: 2" autocomplete="off" required>
       <div class="field-error">Nhập số lượng lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label id="txUnitLabel">Đơn vị</label>
-      <div class="segmented" role="group" aria-labelledby="txUnitLabel">
-        <button type="button" class="active" data-unit="chi">Chỉ (3.75g)</button>
-        <button type="button" data-unit="luong">Lượng (37.5g)</button>
-      </div>
+      <label for="txPrice">Giá mua (VNĐ / chỉ)</label>
+      <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
+      <div class="field-hint">Nhập theo giá bạn đã trả tại thời điểm mua, tính theo 1 chỉ.</div>
+      <div class="field-error">Nhập giá lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label for="txPrice">Giá mua (VNĐ / lượng)</label>
-      <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 87.500.000" autocomplete="off" required>
-      <div class="field-hint">Nhập theo giá bán ra tại thời điểm bạn mua.</div>
-      <div class="field-error">Nhập giá lớn hơn 0.</div>
+      <label for="txStore">Cửa hàng</label>
+      <input class="input" id="txStore" style="font-family:var(--font)" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, BTMC, tiệm vàng..." autocomplete="off">
     </div>
     <div class="field">
       <label for="txDate">Ngày mua</label>
@@ -324,17 +321,17 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
-  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng SJC được tự động cập nhật mỗi 30 phút. Chỉ ghi đè nếu bạn muốn dùng một mức giá khác.</p>
+  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng 9999 được tự động cập nhật mỗi 30 phút. Chỉ ghi đè nếu bạn muốn dùng một mức giá khác.</p>
   <form id="priceForm">
     <div class="field">
-      <label for="priceBuy">Giá mua vào (VNĐ / lượng)</label>
-      <input class="input" id="priceBuy" inputmode="numeric" placeholder="Ví dụ: 87.000.000" autocomplete="off" required>
+      <label for="priceBuy">Giá mua vào (VNĐ / chỉ)</label>
+      <input class="input" id="priceBuy" inputmode="numeric" placeholder="Ví dụ: 8.700.000" autocomplete="off" required>
       <div class="field-hint">Giá cửa hàng trả cho bạn khi bạn bán vàng.</div>
       <div class="field-error">Nhập giá lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label for="priceSell">Giá bán ra (VNĐ / lượng)</label>
-      <input class="input" id="priceSell" inputmode="numeric" placeholder="Ví dụ: 87.500.000" autocomplete="off" required>
+      <label for="priceSell">Giá bán ra (VNĐ / chỉ)</label>
+      <input class="input" id="priceSell" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
       <div class="field-hint">Giá bạn phải trả khi mua vàng mới.</div>
       <div class="field-error">Giá bán ra phải ≥ giá mua vào.</div>
     </div>
@@ -386,7 +383,7 @@
 (function(){
   "use strict";
   var STORAGE_KEY = "goldtrack_v1";
-  var LUONG_IN_CHI = 10;
+  var CHI_PER_LUONG = 10; // gold-price.json quotes VNĐ/lượng; the whole UI works in chỉ
 
   function loadState(){
     try{
@@ -409,7 +406,6 @@
     var r = Math.round(n*100)/100;
     return (r % 1 === 0) ? String(r) : r.toLocaleString('vi-VN',{maximumFractionDigits:2});
   }
-  function toLuong(amount, unit){ return unit === 'luong' ? amount : amount / LUONG_IN_CHI; }
   function parseDigits(str){
     var d = String(str||'').replace(/[^\d]/g,'');
     return d ? parseInt(d,10) : NaN;
@@ -430,6 +426,11 @@
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
   }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
 
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
@@ -476,11 +477,12 @@
   var liveLoading = true;
 
   function getEffectivePrice(){
+    // Returned buy/sell are always VNĐ per chỉ, regardless of the source's unit.
     if(state.manualPrice && (!liveData || new Date(state.manualPrice.updatedAt) > new Date(liveData.fetchedAt))){
       return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
     }
     if(liveData){
-      return { buy: liveData.buy, sell: liveData.sell, isManual: false, at: liveData.fetchedAt, source: liveData.source };
+      return { buy: liveData.buy / CHI_PER_LUONG, sell: liveData.sell / CHI_PER_LUONG, isManual: false, at: liveData.fetchedAt, source: liveData.source };
     }
     return null;
   }
@@ -543,15 +545,6 @@
 
   // ---------- transaction sheet ----------
   var editingTxId = null;
-  var selectedUnit = 'chi';
-  var segButtons = document.querySelectorAll('#txForm .segmented button');
-  segButtons.forEach(function(btn){
-    btn.addEventListener('click', function(){
-      segButtons.forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      selectedUnit = btn.getAttribute('data-unit');
-    });
-  });
 
   function openAddTx(){
     editingTxId = null;
@@ -559,10 +552,9 @@
     document.getElementById('txDeleteBtn').hidden = true;
     document.getElementById('txAmount').value = '';
     document.getElementById('txPrice').value = '';
+    document.getElementById('txStore').value = '';
     document.getElementById('txDate').value = todayISO();
     document.getElementById('txDate').max = todayISO();
-    selectedUnit = 'chi';
-    segButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-unit')==='chi'); });
     clearFieldError('txAmount'); clearFieldError('txPrice');
     openSheet('txSheet','txBackdrop');
   }
@@ -572,10 +564,9 @@
     document.getElementById('txDeleteBtn').hidden = false;
     document.getElementById('txAmount').value = fmtAmount(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
+    document.getElementById('txStore').value = tx.store || '';
     document.getElementById('txDate').value = tx.date;
     document.getElementById('txDate').max = todayISO();
-    selectedUnit = tx.unit;
-    segButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-unit')===tx.unit); });
     clearFieldError('txAmount'); clearFieldError('txPrice');
     openSheet('txSheet','txBackdrop');
   }
@@ -585,6 +576,7 @@
     e.preventDefault();
     var amount = parseDecimal(document.getElementById('txAmount').value);
     var price = parseDigits(document.getElementById('txPrice').value);
+    var store = document.getElementById('txStore').value.trim();
     var date = document.getElementById('txDate').value;
     var ok = true;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
@@ -592,9 +584,9 @@
     if(!ok) return;
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
-      tx.amount = amount; tx.unit = selectedUnit; tx.price = price; tx.date = date;
+      tx.amount = amount; tx.price = price; tx.store = store; tx.date = date;
     } else {
-      state.transactions.push({ id: uid(), amount: amount, unit: selectedUnit, price: price, date: date, createdAt: Date.now() });
+      state.transactions.push({ id: uid(), amount: amount, price: price, store: store, date: date, createdAt: Date.now() });
     }
     saveState();
     renderAll();
@@ -681,8 +673,9 @@
 
     var deltaHtml = '';
     if(!eff.isManual && liveHistory.length >= 2){
+      // Compare raw source-unit values (both sides same scale) — the ratio is unit-independent.
       var prev = liveHistory[liveHistory.length-2].buy;
-      var diff = eff.buy - prev;
+      var diff = liveData.buy - prev;
       var pct = prev ? (diff/prev*100) : 0;
       var bg = diff > 0 ? 'var(--green-soft)' : (diff < 0 ? 'var(--red-soft)' : 'var(--glass)');
       var color = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--muted)');
@@ -692,8 +685,8 @@
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/lượng</span></div></div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/lượng</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
       '</div>' +
       deltaHtml +
       '<div class="price-updated" style="margin-top:10px">'+sourceTxt+' · '+updatedTxt+'</div>' +
@@ -731,13 +724,12 @@
 
   // ---------- render: summary ----------
   function computeTx(tx){
-    var luong = toLuong(tx.amount, tx.unit);
-    var cost = luong * tx.price;
+    var cost = tx.amount * tx.price;
     var eff = getEffectivePrice();
-    var currentVal = eff ? luong * eff.buy : null;
+    var currentVal = eff ? tx.amount * eff.buy : null;
     var pl = currentVal === null ? null : currentVal - cost;
     var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
-    return { luong: luong, cost: cost, currentVal: currentVal, pl: pl, plPct: plPct };
+    return { cost: cost, currentVal: currentVal, pl: pl, plPct: plPct };
   }
 
   function renderSummary(){
@@ -746,10 +738,10 @@
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
 
-    var totalLuong = 0, totalCost = 0, totalVal = 0, hasVal = !!getEffectivePrice();
+    var totalChi = 0, totalCost = 0, totalVal = 0, hasVal = !!getEffectivePrice();
     state.transactions.forEach(function(tx){
       var c = computeTx(tx);
-      totalLuong += c.luong; totalCost += c.cost;
+      totalChi += tx.amount; totalCost += c.cost;
       if(c.currentVal !== null) totalVal += c.currentVal;
     });
     var totalPl = totalVal - totalCost;
@@ -760,7 +752,7 @@
       : '<path d="M6 9l6 6 6-6"/>';
 
     content.innerHTML =
-      '<div class="summary-row"><span class="summary-label">Tổng số lượng vàng</span><span class="summary-val">'+fmtAmount(totalLuong)+' lượng</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Tổng số lượng vàng</span><span class="summary-val">'+fmtAmount(totalChi)+' chỉ</span></div>' +
       '<div class="summary-row"><span class="summary-label">Tổng vốn đã mua</span><span class="summary-val">'+fmtVND(totalCost)+' đ</span></div>' +
       '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(totalVal)+' đ' : '—')+'</span></div>' +
       '<div class="pl-banner '+bannerCls+'">' +
@@ -788,13 +780,13 @@
     }
     list.innerHTML = txs.map(function(tx){
       var c = computeTx(tx);
-      var unitLabel = tx.unit === 'luong' ? 'lượng' : 'chỉ';
       var plCls = c.pl === null ? '' : (c.pl > 0 ? 'up' : (c.pl < 0 ? 'down' : ''));
       var plTxt = c.pl === null ? '—' : ((c.pl>=0?'+':'')+fmtVND(c.pl)+' đ ('+(c.plPct>=0?'+':'')+c.plPct.toFixed(1)+'%)');
+      var metaTxt = 'Mua ngày '+fmtDate(tx.date)+(tx.store ? ' · '+escapeHtml(tx.store) : '');
       return (
         '<div class="tx-item" data-id="'+tx.id+'">' +
           '<div class="tx-top">' +
-            '<div><div class="tx-amount">'+fmtAmount(tx.amount)+' '+unitLabel+'</div><div class="tx-date">Mua ngày '+fmtDate(tx.date)+'</div></div>' +
+            '<div><div class="tx-amount">'+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
             '<button class="tx-del" data-del="'+tx.id+'" aria-label="Xoá giao dịch" type="button">' +
               '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12"/></svg>' +
             '</button>' +

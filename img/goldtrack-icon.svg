@@ -1,32 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="gtBg" x1="4" y1="62" x2="62" y2="2" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0B1220"/>
-      <stop offset="1" stop-color="#182848"/>
+      <stop offset="0" stop-color="#0A0F1E"/>
+      <stop offset="1" stop-color="#1A2A52"/>
     </linearGradient>
-    <linearGradient id="gtBarFront" x1="14" y1="30" x2="43" y2="49" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FDE68A"/>
-      <stop offset="0.55" stop-color="#F59E0B"/>
-      <stop offset="1" stop-color="#B45309"/>
+    <radialGradient id="gtGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#F59E0B" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gtRing" x1="17" y1="17" x2="47" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF6D8"/>
+      <stop offset="0.32" stop-color="#FDD65C"/>
+      <stop offset="0.66" stop-color="#F2A70F"/>
+      <stop offset="1" stop-color="#9A5B0A"/>
     </linearGradient>
-    <linearGradient id="gtBarTop" x1="19" y1="24" x2="43" y2="30" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FEF9E7"/>
-      <stop offset="1" stop-color="#FCD34D"/>
-    </linearGradient>
-    <linearGradient id="gtBadge" x1="37" y1="30" x2="59" y2="7" gradientUnits="userSpaceOnUse">
+    <linearGradient id="gtBadge" x1="38" y1="29" x2="58" y2="9" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#34D399"/>
       <stop offset="1" stop-color="#059669"/>
     </linearGradient>
   </defs>
 
-  <rect x="0" y="0" width="64" height="64" rx="14" fill="url(#gtBg)"/>
-  <ellipse cx="18" cy="12" rx="26" ry="14" fill="#FFFFFF" opacity="0.05"/>
+  <rect x="0" y="0" width="64" height="64" rx="15" fill="url(#gtBg)"/>
+  <circle cx="31" cy="33" r="22" fill="url(#gtGlow)"/>
 
-  <polygon points="13,49 43,49 38,30 18,30" fill="url(#gtBarFront)"/>
-  <polygon points="18,30 38,30 43,24 23,24" fill="url(#gtBarTop)"/>
-  <rect x="21.5" y="37" width="15" height="6.4" rx="1.4" fill="none" stroke="#8A4E12" stroke-width="1.1" opacity="0.5"/>
+  <circle cx="31" cy="33" r="14.5" fill="none" stroke="url(#gtRing)" stroke-width="8.6"/>
+  <path d="M20.2 24.6 A14.5 14.5 0 0 1 38.3 21.1" fill="none" stroke="#FFFDF2" stroke-opacity="0.65" stroke-width="2.6" stroke-linecap="round"/>
 
-  <circle cx="48" cy="19" r="11.5" fill="#0B1220"/>
-  <circle cx="48" cy="19" r="10" fill="url(#gtBadge)"/>
-  <path d="M48 25 V13.5 M42.8 18.6 L48 13.4 L53.2 18.6" fill="none" stroke="#F0FDF4" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47" cy="18" r="11.5" fill="#0A0F1E"/>
+  <circle cx="47" cy="18" r="10" fill="url(#gtBadge)"/>
+  <path d="M47 24 V12.5 M41.8 17.6 L47 12.4 L52.2 17.6" fill="none" stroke="#F0FDF4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

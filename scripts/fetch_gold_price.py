@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Fetch the current SJC gold bar price from BTMC's public price feed and
-write it as static JSON that GoldTrack.html reads same-origin (no CORS).
+"""Fetch the current gold ring 9999 (nhẫn tròn trơn) price from BTMC's
+public price feed and write it as static JSON that GoldTrack.html reads
+same-origin (no CORS).
 
 api.btmc.vn's server does not send its intermediate certificate, so
 standard TLS clients (including GitHub Actions runners) fail verification
@@ -20,7 +21,7 @@ import certifi
 
 BTMC_URL = "https://api.btmc.vn/api/BTMCAPI/getpricebtmc?key=3kd8ub1llcg9t45hnoh8hmn7t8hzlong"
 INTERMEDIATE_AIA_URL = "http://crt.sectigo.com/SectigoPublicServerAuthenticationCADVR36.crt"
-SJC_NAME_MARKER = "SJC"
+PRODUCT_NAME_MARKER = "NHẪN TRÒN TRƠN"
 HISTORY_MAX = 500
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,13 +52,13 @@ def fetch_btmc(ctx):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def extract_sjc(payload):
+def extract_price_row(payload):
     rows = payload.get("DataList", {}).get("Data", [])
     for row in rows:
         for key, name in row.items():
             if not key.startswith("@n_"):
                 continue
-            if SJC_NAME_MARKER not in name.upper():
+            if PRODUCT_NAME_MARKER not in name.upper():
                 continue
             idx = key.split("_", 1)[1]
             buy = row.get("@pb_" + idx)
@@ -89,18 +90,18 @@ def main():
         except OSError:
             pass
 
-    sjc = extract_sjc(payload)
-    if not sjc:
-        print("error: could not find an SJC price row in BTMC response", file=sys.stderr)
+    item = extract_price_row(payload)
+    if not item:
+        print("error: could not find the gold ring 9999 price row in BTMC response", file=sys.stderr)
         return 1
 
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     price_doc = {
-        "buy": sjc["buy"],
-        "sell": sjc["sell"],
+        "buy": item["buy"],
+        "sell": item["sell"],
         "unit": "luong",
-        "product": sjc["product"],
-        "source": "Bảo Tín Minh Châu (BTMC) — giá vàng miếng SJC",
+        "product": item["product"],
+        "source": "Bảo Tín Minh Châu (BTMC) — giá vàng nhẫn tròn trơn 9999",
         "sourceUrl": "https://btmc.vn",
         "fetchedAt": now,
     }
@@ -113,13 +114,13 @@ def main():
     history = load_json(HISTORY_FILE, [])
     if not isinstance(history, list):
         history = []
-    history.append({"buy": sjc["buy"], "sell": sjc["sell"], "at": now})
+    history.append({"buy": item["buy"], "sell": item["sell"], "at": now})
     history = history[-HISTORY_MAX:]
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
-    print("OK: buy=%d sell=%d fetchedAt=%s" % (sjc["buy"], sjc["sell"], now))
+    print("OK: buy=%d sell=%d fetchedAt=%s" % (item["buy"], item["sell"], now))
     return 0
 
 
