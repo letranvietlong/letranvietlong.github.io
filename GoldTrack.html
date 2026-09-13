@@ -13,9 +13,6 @@
 <link rel="icon" type="image/svg+xml" href="img/goldtrack-icon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/goldtrack-icon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="img/goldtrack-icon-180.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0B1220;--bg2:#0F1A30;
@@ -30,8 +27,7 @@
     --radius:22px;--radius-sm:14px;
     --shadow:0 20px 60px rgba(0,0,0,.4);
     --safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom);
-    --font:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
-    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --font:Cambria,Georgia,'Times New Roman',Times,serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
@@ -43,7 +39,7 @@
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
       radial-gradient(circle at 40% 115%, rgba(245,158,11,.09), transparent 40%),
       linear-gradient(180deg,var(--bg) 0%,#0A0F1D 50%,var(--bg) 100%);
-    overflow-x:hidden;padding:calc(14px + var(--safe-top)) 14px calc(96px + var(--safe-bottom));
+    overflow-x:hidden;padding:calc(14px + var(--safe-top)) 14px calc(84px + var(--safe-bottom));
   }
   body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
   button,input,select{font:inherit;color:inherit}
@@ -54,13 +50,11 @@
   .icon-lg{width:26px;height:26px}
 
   /* ---------- Topbar ---------- */
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 16px;padding:2px 2px 2px 4px}
   .brand{display:flex;align-items:center;gap:10px}
-  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25)}
+  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none}
   .brand-mark svg{width:100%;height:100%;display:block}
-  .brand-text{display:flex;flex-direction:column;line-height:1.15}
-  .brand-name{font-weight:800;font-size:1.05rem;letter-spacing:-.01em}
-  .brand-sub{font-size:.68rem;color:var(--muted2);font-weight:500}
+  .brand-text{display:flex;flex-direction:column;line-height:1.2;gap:2px}
+  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
@@ -80,7 +74,7 @@
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
   .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
-  .price-box .pb-val{font-family:var(--mono);font-size:1.14rem;font-weight:700;color:var(--gold2);letter-spacing:-.01em}
+  .price-box .pb-val{font-family:var(--font);font-size:1.14rem;font-weight:700;color:var(--gold2);letter-spacing:-.01em}
   .price-box .pb-unit{font-size:.66rem;color:var(--muted2);margin-left:2px;font-weight:500}
   .price-delta{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:100px;margin-top:8px}
   .price-empty{padding:22px 4px;text-align:center;color:var(--muted)}
@@ -108,7 +102,7 @@
   .summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0}
   .summary-row + .summary-row{border-top:1px solid var(--line)}
   .summary-label{font-size:.82rem;color:var(--muted)}
-  .summary-val{font-family:var(--mono);font-weight:700;font-size:.94rem}
+  .summary-val{font-family:var(--font);font-weight:700;font-size:.94rem}
   .summary-val.up{color:var(--green)}
   .summary-val.down{color:var(--red)}
   .pl-banner{margin-top:12px;border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -121,17 +115,15 @@
   .pl-banner.down .pl-badge{background:rgba(251,113,133,.22);color:var(--red)}
   .pl-banner.flat .pl-badge{background:var(--glass2);color:var(--muted)}
   .pl-title{font-size:.7rem;color:var(--muted);font-weight:600}
-  .pl-amount{font-family:var(--mono);font-weight:800;font-size:1.02rem}
+  .pl-amount{font-family:var(--font);font-weight:800;font-size:1.02rem}
   .pl-banner.up .pl-amount{color:var(--green)}
   .pl-banner.down .pl-amount{color:var(--red)}
-  .pl-pct{font-family:var(--mono);font-weight:700;font-size:.86rem;padding:5px 10px;border-radius:100px}
+  .pl-pct{font-family:var(--font);font-weight:700;font-size:.86rem;padding:5px 10px;border-radius:100px}
   .pl-banner.up .pl-pct{background:rgba(52,211,153,.18);color:var(--green)}
   .pl-banner.down .pl-pct{background:rgba(251,113,133,.18);color:var(--red)}
   .pl-banner.flat .pl-pct{background:var(--glass2);color:var(--muted)}
 
-  /* ---------- Section header ---------- */
-  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 12px}
-  .sec-count{font-family:var(--mono);font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
+  .sec-count{font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
 
   /* ---------- Transactions ---------- */
   .tx-item{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,background .2s}
@@ -144,7 +136,7 @@
   .tx-date{font-size:.72rem;color:var(--muted2);margin-top:2px}
   .tx-del{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--muted2);flex:none}
   .tx-del:hover{color:var(--red);border-color:rgba(251,113,133,.35);background:var(--red-soft)}
-  .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono)}
+  .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font)}
   .tx-cell-label{font-size:.64rem;color:var(--muted2);font-family:var(--font);font-weight:600;margin-bottom:2px}
   .tx-cell-val{font-size:.84rem;font-weight:600}
   .tx-cell-val.up{color:var(--green)}
@@ -154,10 +146,10 @@
   .empty-state .icon-lg{margin:0 auto 10px;color:var(--muted2)}
   .empty-state p{font-size:.86rem}
 
-  /* ---------- FAB ---------- */
-  .fab{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(78px + var(--safe-bottom));width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;border:none;box-shadow:0 12px 30px rgba(245,158,11,.45);display:flex;align-items:center;justify-content:center;z-index:30;transition:transform .18s}
-  .fab:active{transform:scale(.92)}
-  .fab:focus-visible{outline:2px solid #fff;outline-offset:3px}
+  /* ---------- Header add button ---------- */
+  .icon-btn-gold{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(245,158,11,.35);transition:transform .15s}
+  .icon-btn-gold:active{transform:scale(.92)}
+  .icon-btn-gold:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
   /* ---------- Bottom tab bar (iOS style) ---------- */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:rgba(9,13,24,.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom))}
@@ -178,7 +170,7 @@
 
   .field{margin-bottom:14px}
   .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px}
-  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:.95rem;min-height:44px;font-family:var(--mono)}
+  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:.95rem;min-height:44px;font-family:var(--font)}
   .input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
   .input:focus-visible{outline:2px solid var(--gold2);outline-offset:1px}
   .field-hint{font-size:.7rem;color:var(--muted2);margin-top:5px}
@@ -202,7 +194,7 @@
   .settings-row-desc{font-size:.72rem;color:var(--muted2)}
 
   /* ---------- Toast ---------- */
-  .toast-wrap{position:fixed;left:0;right:0;bottom:calc(150px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
+  .toast-wrap{position:fixed;left:0;right:0;bottom:calc(90px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
   .toast{background:#111a2f;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:100px;font-size:.82rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;transform:translateY(20px);opacity:0;transition:transform .25s,opacity .25s}
   .toast.show{transform:translateY(0);opacity:1}
   .toast.ok{color:var(--green)}
@@ -248,13 +240,13 @@
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
   <div class="tab-view" id="viewOverview">
-    <div class="topbar">
+    <div class="page-title">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
         </div>
         <div class="brand-text">
-          <span class="brand-name">GoldTrack</span>
+          <h1>GoldTrack</h1>
           <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
         </div>
       </div>
@@ -295,7 +287,12 @@
   <div class="tab-view" id="viewHistory" hidden>
     <div class="page-title">
       <h1>Lịch sử giao dịch</h1>
-      <span class="sec-count" id="txCount">0</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sec-count" id="txCount">0</span>
+        <button class="icon-btn-gold" id="fabAdd" aria-label="Thêm giao dịch" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
     </div>
     <div id="txList"></div>
   </div>
@@ -313,7 +310,7 @@
         <div id="gistConnectForm">
           <div class="field" style="margin-bottom:8px">
             <label for="gistToken">Personal Access Token (quyền "gist")</label>
-            <input class="input" id="gistToken" type="password" style="font-family:var(--font)" placeholder="ghp_..." autocomplete="off">
+            <input class="input" id="gistToken" type="password" placeholder="ghp_..." autocomplete="off">
           </div>
           <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
           <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
@@ -348,10 +345,6 @@
     </div>
     <p class="field-hint" style="margin-top:2px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
   </div>
-
-  <button class="fab" id="fabAdd" aria-label="Thêm giao dịch" type="button">
-    <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-  </button>
 </div>
 
 <!-- ============ BOTTOM TAB BAR ============ -->
@@ -401,7 +394,7 @@
     </div>
     <div class="field">
       <label for="txStore" id="txStoreLabel">Cửa hàng</label>
-      <input class="input" id="txStore" style="font-family:var(--font)" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, tiệm vàng..." autocomplete="off">
+      <input class="input" id="txStore" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, tiệm vàng..." autocomplete="off">
     </div>
     <div class="field">
       <label for="txDate" id="txDateLabel">Ngày mua</label>
@@ -451,7 +444,6 @@
 (function(){
   "use strict";
   var STORAGE_KEY = "goldtrack_v1";
-  var CHI_PER_LUONG = 10; // gold-price.json is normalized to VNĐ/chỉ; this only covers an older/unnormalized feed
 
   function loadState(){
     try{
@@ -522,7 +514,6 @@
     document.querySelectorAll('.tabbar-btn').forEach(function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
     });
-    document.getElementById('fabAdd').hidden = (tab === 'settings');
     if(tab === 'settings') refreshGistUI();
     window.scrollTo(0,0);
   }
@@ -696,13 +687,12 @@
   var liveLoading = true;
 
   function getEffectivePrice(){
-    // Returned buy/sell are always VNĐ per chỉ, regardless of the source's unit.
+    // Both the live feed and manual override are always VNĐ per chỉ.
     if(state.manualPrice && (!liveData || new Date(state.manualPrice.updatedAt) > new Date(liveData.fetchedAt))){
       return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
     }
     if(liveData){
-      var div = liveData.unit === 'luong' ? CHI_PER_LUONG : 1;
-      return { buy: liveData.buy / div, sell: liveData.sell / div, isManual: false, at: liveData.fetchedAt };
+      return { buy: liveData.buy, sell: liveData.sell, isManual: false, at: liveData.fetchedAt };
     }
     return null;
   }
