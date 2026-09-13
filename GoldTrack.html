@@ -26,6 +26,7 @@
     --gold:#F59E0B;--gold2:#FBBF24;--gold-soft:rgba(245,158,11,.14);
     --green:#34D399;--green-soft:rgba(52,211,153,.14);
     --red:#FB7185;--red-soft:rgba(251,113,133,.14);
+    --blue:#60A5FA;--blue-soft:rgba(96,165,250,.14);
     --radius:22px;--radius-sm:14px;
     --shadow:0 20px 60px rgba(0,0,0,.4);
     --safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom);
@@ -33,6 +34,7 @@
     --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none !important}
   html{scroll-behavior:smooth}
   body{
     margin:0;min-height:100svh;color:var(--text);font-family:var(--font);
@@ -41,7 +43,7 @@
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
       radial-gradient(circle at 40% 115%, rgba(245,158,11,.09), transparent 40%),
       linear-gradient(180deg,var(--bg) 0%,#0A0F1D 50%,var(--bg) 100%);
-    overflow-x:hidden;padding:calc(14px + var(--safe-top)) 14px calc(110px + var(--safe-bottom));
+    overflow-x:hidden;padding:calc(14px + var(--safe-top)) 14px calc(96px + var(--safe-bottom));
   }
   body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
   button,input,select{font:inherit;color:inherit}
@@ -62,6 +64,10 @@
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+  /* ---------- Page title (History / Settings tabs) ---------- */
+  .page-title{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 18px}
+  .page-title h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
 
   /* ---------- Cards ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
@@ -95,10 +101,16 @@
   .btn-sm{padding:8px 14px;font-size:.76rem;min-height:38px}
 
   /* ---------- Summary ---------- */
+  .summary-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .summary-head-icon{width:36px;height:36px;border-radius:10px;background:rgba(52,211,153,.16);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
+  .summary-title{font-size:.98rem;font-weight:800}
+  .summary-sub{font-size:.68rem;color:var(--muted2);margin-top:1px}
   .summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0}
   .summary-row + .summary-row{border-top:1px solid var(--line)}
   .summary-label{font-size:.82rem;color:var(--muted)}
   .summary-val{font-family:var(--mono);font-weight:700;font-size:.94rem}
+  .summary-val.up{color:var(--green)}
+  .summary-val.down{color:var(--red)}
   .pl-banner{margin-top:12px;border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
   .pl-banner.up{background:var(--green-soft);border:1px solid rgba(52,211,153,.3)}
   .pl-banner.down{background:var(--red-soft);border:1px solid rgba(251,113,133,.3)}
@@ -118,8 +130,7 @@
   .pl-banner.flat .pl-pct{background:var(--glass2);color:var(--muted)}
 
   /* ---------- Section header ---------- */
-  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}
-  .sec-title{font-size:1rem;font-weight:800}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 12px}
   .sec-count{font-family:var(--mono);font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
 
   /* ---------- Transactions ---------- */
@@ -127,6 +138,9 @@
   .tx-item:hover{border-color:var(--line2)}
   .tx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
   .tx-amount{font-weight:700;font-size:.94rem}
+  .tx-badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
+  .tx-badge.buy{background:var(--gold-soft);color:var(--gold2)}
+  .tx-badge.sell{background:var(--blue-soft);color:var(--blue)}
   .tx-date{font-size:.72rem;color:var(--muted2);margin-top:2px}
   .tx-del{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--muted2);flex:none}
   .tx-del:hover{color:var(--red);border-color:rgba(251,113,133,.35);background:var(--red-soft)}
@@ -141,9 +155,17 @@
   .empty-state p{font-size:.86rem}
 
   /* ---------- FAB ---------- */
-  .fab{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(24px + var(--safe-bottom));width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;border:none;box-shadow:0 12px 30px rgba(245,158,11,.45);display:flex;align-items:center;justify-content:center;z-index:30;transition:transform .18s}
+  .fab{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(78px + var(--safe-bottom));width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;border:none;box-shadow:0 12px 30px rgba(245,158,11,.45);display:flex;align-items:center;justify-content:center;z-index:30;transition:transform .18s}
   .fab:active{transform:scale(.92)}
   .fab:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+  /* ---------- Bottom tab bar (iOS style) ---------- */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:rgba(9,13,24,.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom))}
+  .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;color:var(--muted2);padding:6px 0;min-height:48px;border-radius:12px;transition:color .2s}
+  .tabbar-btn .icon{width:23px;height:23px}
+  .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
+  .tabbar-btn.active{color:var(--gold2)}
+  .tabbar-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:-2px}
 
   /* ---------- Sheet ---------- */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
@@ -167,11 +189,12 @@
   .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px}
   .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:background .2s,color .2s}
   .segmented button.active{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204}
+  .segmented button.active[data-type="sell"]{background:linear-gradient(135deg,#93C5FD,var(--blue));color:#08213F}
 
   .sheet-actions{display:flex;gap:10px;margin-top:6px}
   .sheet-actions .btn{flex:1}
 
-  /* ---------- Settings sheet ---------- */
+  /* ---------- Settings tab ---------- */
   .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 2px;border-bottom:1px solid var(--line)}
   .settings-row:last-child{border-bottom:none}
   .settings-row-text{display:flex;flex-direction:column;gap:2px}
@@ -179,7 +202,7 @@
   .settings-row-desc{font-size:.72rem;color:var(--muted2)}
 
   /* ---------- Toast ---------- */
-  .toast-wrap{position:fixed;left:0;right:0;bottom:calc(96px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
+  .toast-wrap{position:fixed;left:0;right:0;bottom:calc(150px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
   .toast{background:#111a2f;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:100px;font-size:.82rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;transform:translateY(20px);opacity:0;transition:transform .25s,opacity .25s}
   .toast.show{transform:translateY(0);opacity:1}
   .toast.ok{color:var(--green)}
@@ -193,22 +216,6 @@
 </head>
 <body>
 <div class="app">
-
-  <!-- ============ TOPBAR ============ -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
-      </div>
-      <div class="brand-text">
-        <span class="brand-name">GoldTrack</span>
-        <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
-      </div>
-    </div>
-    <button class="icon-btn" id="btnSettings" aria-label="Cài đặt dữ liệu" type="button">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></svg>
-    </button>
-  </div>
 
   <!-- Hidden shared logo symbol -->
   <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -239,68 +246,165 @@
     </defs>
   </svg>
 
-  <!-- ============ CURRENT PRICE CARD ============ -->
-  <div class="card" id="priceCard">
-    <div class="card-glow" style="background:var(--gold)"></div>
-    <div class="price-head">
-      <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</span>
-      <div style="display:flex;gap:6px">
-        <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
-        </button>
-        <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
+  <!-- ============ TAB: TỔNG QUAN ============ -->
+  <div class="tab-view" id="viewOverview">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">GoldTrack</span>
+          <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
+        </div>
       </div>
     </div>
-    <div id="priceContent"></div>
+
+    <!-- Current price card -->
+    <div class="card" id="priceCard">
+      <div class="card-glow" style="background:var(--gold)"></div>
+      <div class="price-head">
+        <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</span>
+        <div style="display:flex;gap:6px">
+          <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
+        </div>
+      </div>
+      <div id="priceContent"></div>
+    </div>
+
+    <!-- Portfolio summary -->
+    <div class="card" id="summaryCard" hidden>
+      <div class="card-glow" style="background:var(--green)"></div>
+      <div class="summary-head">
+        <div class="summary-head-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
+        </div>
+        <div>
+          <div class="summary-title">Tổng quan danh mục</div>
+          <div class="summary-sub">Tính theo giá vốn trung bình</div>
+        </div>
+      </div>
+      <div id="summaryContent"></div>
+    </div>
   </div>
 
-  <!-- ============ PORTFOLIO SUMMARY ============ -->
-  <div class="card" id="summaryCard" hidden>
-    <div class="card-glow" style="background:var(--green)"></div>
-    <span class="price-label">Tổng quan danh mục</span>
-    <div id="summaryContent"></div>
+  <!-- ============ TAB: LỊCH SỬ ============ -->
+  <div class="tab-view" id="viewHistory" hidden>
+    <div class="page-title">
+      <h1>Lịch sử giao dịch</h1>
+      <span class="sec-count" id="txCount">0</span>
+    </div>
+    <div id="txList"></div>
   </div>
 
-  <!-- ============ TRANSACTIONS ============ -->
-  <div class="sec-head">
-    <h2 class="sec-title">Lịch sử mua vàng</h2>
-    <span class="sec-count" id="txCount">0</span>
-  </div>
-  <div id="txList"></div>
+  <!-- ============ TAB: CÀI ĐẶT ============ -->
+  <div class="tab-view" id="viewSettings" hidden>
+    <div class="page-title"><h1>Cài đặt</h1></div>
 
-  <button class="fab" id="fabAdd" aria-label="Thêm giao dịch mua vàng" type="button">
+    <div class="card">
+      <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;border-bottom:none;padding-bottom:6px">
+        <div class="settings-row-text">
+          <span class="settings-row-title">Đồng bộ GitHub Gist</span>
+          <span class="settings-row-desc" id="gistStatusText">Chưa kết nối — dữ liệu chỉ lưu trên máy này</span>
+        </div>
+        <div id="gistConnectForm">
+          <div class="field" style="margin-bottom:8px">
+            <label for="gistToken">Personal Access Token (quyền "gist")</label>
+            <input class="input" id="gistToken" type="password" style="font-family:var(--font)" placeholder="ghp_..." autocomplete="off">
+          </div>
+          <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
+          <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnGistDisconnect" type="button" hidden>Ngắt kết nối</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title">Xuất dữ liệu</span>
+          <span class="settings-row-desc">Tải file .json sao lưu toàn bộ dữ liệu</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnExport" type="button">Xuất</button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title">Nhập dữ liệu</span>
+          <span class="settings-row-desc">Khôi phục từ file .json đã xuất trước đó</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnImport" type="button">Nhập</button>
+        <input type="file" id="fileImport" accept="application/json" hidden>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title">Xoá toàn bộ dữ liệu</span>
+          <span class="settings-row-desc">Không thể hoàn tác</span>
+        </div>
+        <button class="btn btn-danger btn-sm" id="btnClearAll" type="button">Xoá hết</button>
+      </div>
+    </div>
+    <p class="field-hint" style="margin-top:2px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
+  </div>
+
+  <button class="fab" id="fabAdd" aria-label="Thêm giao dịch" type="button">
     <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
   </button>
 </div>
+
+<!-- ============ BOTTOM TAB BAR ============ -->
+<nav class="tabbar">
+  <button class="tabbar-btn active" data-tab="overview" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
+    <span>Tổng quan</span>
+  </button>
+  <button class="tabbar-btn" data-tab="history" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span>Lịch sử</span>
+  </button>
+  <button class="tabbar-btn" data-tab="settings" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="#0B1220"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="#0B1220"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="#0B1220"/></svg>
+    <span>Cài đặt</span>
+  </button>
+</nav>
 
 <!-- ============ SHEET: ADD/EDIT TRANSACTION ============ -->
 <div class="sheet-backdrop" id="txBackdrop"></div>
 <div class="sheet" id="txSheet" role="dialog" aria-modal="true" aria-labelledby="txSheetTitle">
   <div class="sheet-handle"></div>
   <div class="sheet-head">
-    <h3 class="sheet-title" id="txSheetTitle">Thêm giao dịch mua vàng</h3>
+    <h3 class="sheet-title" id="txSheetTitle">Thêm giao dịch</h3>
     <button class="icon-btn" id="txClose" aria-label="Đóng" type="button">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
   <form id="txForm">
     <div class="field">
-      <label for="txAmount">Số lượng vàng (chỉ)</label>
-      <input class="input" id="txAmount" inputmode="decimal" placeholder="Ví dụ: 2" autocomplete="off" required>
-      <div class="field-error">Nhập số lượng lớn hơn 0.</div>
+      <label id="txTypeLabel">Loại giao dịch</label>
+      <div class="segmented" role="group" aria-labelledby="txTypeLabel">
+        <button type="button" class="active" data-type="buy">Mua vào</button>
+        <button type="button" data-type="sell">Bán ra</button>
+      </div>
     </div>
     <div class="field">
-      <label for="txPrice">Giá mua (VNĐ / chỉ)</label>
+      <label for="txAmount">Số lượng vàng (chỉ)</label>
+      <input class="input" id="txAmount" inputmode="decimal" placeholder="Ví dụ: 2" autocomplete="off" required>
+      <div class="field-hint" id="txAmountHint"></div>
+      <div class="field-error" id="txAmountError">Nhập số lượng lớn hơn 0.</div>
+    </div>
+    <div class="field">
+      <label for="txPrice" id="txPriceLabel">Giá mua (VNĐ / chỉ)</label>
       <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
-      <div class="field-hint">Nhập theo giá bạn đã trả tại thời điểm mua, tính theo 1 chỉ.</div>
       <div class="field-error">Nhập giá lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label for="txStore">Cửa hàng</label>
-      <input class="input" id="txStore" style="font-family:var(--font)" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, BTMC, tiệm vàng..." autocomplete="off">
+      <label for="txStore" id="txStoreLabel">Cửa hàng</label>
+      <input class="input" id="txStore" style="font-family:var(--font)" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, tiệm vàng..." autocomplete="off">
     </div>
     <div class="field">
-      <label for="txDate">Ngày mua</label>
+      <label for="txDate" id="txDateLabel">Ngày mua</label>
       <input class="input" id="txDate" type="date" required>
     </div>
     <div class="sheet-actions">
@@ -339,56 +443,6 @@
       <button type="submit" class="btn btn-gold btn-block">Lưu giá ghi đè</button>
     </div>
   </form>
-</div>
-
-<!-- ============ SHEET: SETTINGS ============ -->
-<div class="sheet-backdrop" id="settingsBackdrop"></div>
-<div class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsSheetTitle">
-  <div class="sheet-handle"></div>
-  <div class="sheet-head">
-    <h3 class="sheet-title" id="settingsSheetTitle">Cài đặt &amp; dữ liệu</h3>
-    <button class="icon-btn" id="settingsClose" aria-label="Đóng" type="button">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-  </div>
-  <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px">
-    <div class="settings-row-text">
-      <span class="settings-row-title">Đồng bộ GitHub Gist</span>
-      <span class="settings-row-desc" id="gistStatusText">Chưa kết nối — dữ liệu chỉ lưu trên máy này</span>
-    </div>
-    <div id="gistConnectForm">
-      <div class="field" style="margin-bottom:8px">
-        <label for="gistToken">Personal Access Token (quyền "gist")</label>
-        <input class="input" id="gistToken" type="password" style="font-family:var(--font)" placeholder="ghp_..." autocomplete="off">
-      </div>
-      <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
-      <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
-    </div>
-    <button class="btn btn-ghost btn-sm" id="btnGistDisconnect" type="button" hidden>Ngắt kết nối</button>
-  </div>
-  <div class="settings-row">
-    <div class="settings-row-text">
-      <span class="settings-row-title">Xuất dữ liệu</span>
-      <span class="settings-row-desc">Tải file .json sao lưu toàn bộ dữ liệu</span>
-    </div>
-    <button class="btn btn-ghost btn-sm" id="btnExport" type="button">Xuất</button>
-  </div>
-  <div class="settings-row">
-    <div class="settings-row-text">
-      <span class="settings-row-title">Nhập dữ liệu</span>
-      <span class="settings-row-desc">Khôi phục từ file .json đã xuất trước đó</span>
-    </div>
-    <button class="btn btn-ghost btn-sm" id="btnImport" type="button">Nhập</button>
-    <input type="file" id="fileImport" accept="application/json" hidden>
-  </div>
-  <div class="settings-row">
-    <div class="settings-row-text">
-      <span class="settings-row-title">Xoá toàn bộ dữ liệu</span>
-      <span class="settings-row-desc">Không thể hoàn tác</span>
-    </div>
-    <button class="btn btn-danger btn-sm" id="btnClearAll" type="button">Xoá hết</button>
-  </div>
-  <p class="field-hint" style="margin-top:14px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
 </div>
 
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
@@ -448,6 +502,7 @@
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
   }
+  function txType(tx){ return tx.type === 'sell' ? 'sell' : 'buy'; }
 
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
@@ -457,6 +512,23 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ toastEl.className = 'toast'; }, 2400);
   }
+
+  // ---------- tab navigation ----------
+  var TAB_VIEWS = { overview: 'viewOverview', history: 'viewHistory', settings: 'viewSettings' };
+  function switchTab(tab){
+    Object.keys(TAB_VIEWS).forEach(function(key){
+      document.getElementById(TAB_VIEWS[key]).hidden = (key !== tab);
+    });
+    document.querySelectorAll('.tabbar-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
+    document.getElementById('fabAdd').hidden = (tab === 'settings');
+    if(tab === 'settings') refreshGistUI();
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('.tabbar-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
+  });
 
   // ---------- GitHub Gist sync (personal, private backup + cross-device sync) ----------
   var GIST_CONFIG_KEY = "goldtrack_gist_v1";
@@ -617,7 +689,6 @@
   }
   wireSheet('txSheet','txBackdrop','txClose');
   wireSheet('priceSheet','priceBackdrop','priceClose');
-  wireSheet('settingsSheet','settingsBackdrop','settingsClose');
 
   // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
   var liveData = null;
@@ -692,30 +763,98 @@
     showToast('Đã lưu giá ghi đè', 'ok');
   });
 
+  // ---------- portfolio math (moving-average cost method, buy + sell aware) ----------
+  function computePortfolio(){
+    var chrono = state.transactions.slice().sort(function(a,b){
+      return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+    });
+    var holdingAmount = 0, holdingCost = 0, realizedPL = 0, totalBuyCost = 0;
+    var perTx = {};
+    chrono.forEach(function(tx){
+      if(txType(tx) === 'sell'){
+        var avgCost = holdingAmount > 0 ? holdingCost / holdingAmount : 0;
+        var sellAmt = Math.min(tx.amount, holdingAmount);
+        var costOfSold = avgCost * sellAmt;
+        var pl = tx.amount * tx.price - avgCost * tx.amount;
+        holdingCost -= costOfSold;
+        holdingAmount -= sellAmt;
+        if(holdingAmount < 1e-9){ holdingAmount = 0; holdingCost = 0; }
+        realizedPL += pl;
+        perTx[tx.id] = { avgCostAtSale: avgCost, pl: pl };
+      } else {
+        holdingCost += tx.amount * tx.price;
+        holdingAmount += tx.amount;
+        totalBuyCost += tx.amount * tx.price;
+      }
+    });
+    return {
+      holdingAmount: holdingAmount,
+      holdingCost: holdingCost,
+      avgCost: holdingAmount > 0 ? holdingCost / holdingAmount : 0,
+      realizedPL: realizedPL,
+      totalBuyCost: totalBuyCost,
+      perTx: perTx
+    };
+  }
+
+  function totalHoldingsExcluding(excludeId){
+    var amt = 0;
+    state.transactions.forEach(function(t){
+      if(t.id === excludeId) return;
+      amt += (txType(t) === 'sell' ? -t.amount : t.amount);
+    });
+    return Math.max(0, amt);
+  }
+
   // ---------- transaction sheet ----------
   var editingTxId = null;
+  var selectedType = 'buy';
+  var typeButtons = document.querySelectorAll('#txForm .segmented button');
+  typeButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      typeButtons.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      selectedType = btn.getAttribute('data-type');
+      updateTxFormLabels();
+    });
+  });
+  function updateTxFormLabels(){
+    var isSell = selectedType === 'sell';
+    document.getElementById('txPriceLabel').textContent = isSell ? 'Giá bán (VNĐ / chỉ)' : 'Giá mua (VNĐ / chỉ)';
+    document.getElementById('txDateLabel').textContent = isSell ? 'Ngày bán' : 'Ngày mua';
+    document.getElementById('txStoreLabel').textContent = isSell ? 'Nơi bán' : 'Cửa hàng';
+    document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : (isSell ? 'Thêm giao dịch bán vàng' : 'Thêm giao dịch mua vàng');
+    var holdings = totalHoldingsExcluding(editingTxId);
+    document.getElementById('txAmountHint').textContent = isSell ? ('Đang có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
+  }
+  function setType(type){
+    selectedType = type;
+    typeButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-type') === type); });
+  }
 
   function openAddTx(){
     editingTxId = null;
-    document.getElementById('txSheetTitle').textContent = 'Thêm giao dịch mua vàng';
     document.getElementById('txDeleteBtn').hidden = true;
     document.getElementById('txAmount').value = '';
     document.getElementById('txPrice').value = '';
     document.getElementById('txStore').value = '';
     document.getElementById('txDate').value = todayISO();
     document.getElementById('txDate').max = todayISO();
+    setType('buy');
+    updateTxFormLabels();
     clearFieldError('txAmount'); clearFieldError('txPrice');
     openSheet('txSheet','txBackdrop');
   }
   function openEditTx(tx){
     editingTxId = tx.id;
-    document.getElementById('txSheetTitle').textContent = 'Sửa giao dịch';
     document.getElementById('txDeleteBtn').hidden = false;
     document.getElementById('txAmount').value = fmtAmount(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
     document.getElementById('txStore').value = tx.store || '';
     document.getElementById('txDate').value = tx.date;
     document.getElementById('txDate').max = todayISO();
+    setType(txType(tx));
+    updateTxFormLabels();
     clearFieldError('txAmount'); clearFieldError('txPrice');
     openSheet('txSheet','txBackdrop');
   }
@@ -730,12 +869,21 @@
     var ok = true;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
     if(!(price > 0)){ setFieldError('txPrice', true); ok = false; } else clearFieldError('txPrice');
+    if(ok && selectedType === 'sell'){
+      var holdings = totalHoldingsExcluding(editingTxId);
+      if(amount > holdings + 1e-9){
+        setFieldError('txAmount', true);
+        document.getElementById('txAmountError').textContent = 'Số lượng bán vượt quá số vàng đang có (' + fmtAmount(holdings) + ' chỉ).';
+        ok = false;
+      }
+    }
     if(!ok) return;
+    document.getElementById('txAmountError').textContent = 'Nhập số lượng lớn hơn 0.';
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
-      tx.amount = amount; tx.price = price; tx.store = store; tx.date = date;
+      tx.amount = amount; tx.price = price; tx.store = store; tx.date = date; tx.type = selectedType;
     } else {
-      state.transactions.push({ id: uid(), amount: amount, price: price, store: store, date: date, createdAt: Date.now() });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, date: date, createdAt: Date.now() });
     }
     saveState();
     renderAll();
@@ -754,10 +902,6 @@
   });
 
   // ---------- settings ----------
-  document.getElementById('btnSettings').addEventListener('click', function(){
-    refreshGistUI();
-    openSheet('settingsSheet','settingsBackdrop');
-  });
   document.getElementById('btnExport').addEventListener('click', function(){
     var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -784,7 +928,6 @@
         };
         saveState();
         renderAll();
-        closeSheet('settingsSheet','settingsBackdrop');
         showToast('Đã nhập dữ liệu thành công', 'ok');
       }catch(err){
         showToast('File không hợp lệ', 'err');
@@ -798,7 +941,6 @@
     state = { manualPrice:null, transactions:[] };
     saveState();
     renderAll();
-    closeSheet('settingsSheet','settingsBackdrop');
     showToast('Đã xoá toàn bộ dữ liệu', 'ok');
   });
 
@@ -873,44 +1015,36 @@
   }
 
   // ---------- render: summary ----------
-  function computeTx(tx){
-    var cost = tx.amount * tx.price;
-    var eff = getEffectivePrice();
-    var currentVal = eff ? tx.amount * eff.buy : null;
-    var pl = currentVal === null ? null : currentVal - cost;
-    var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
-    return { cost: cost, currentVal: currentVal, pl: pl, plPct: plPct };
-  }
-
   function renderSummary(){
     var card = document.getElementById('summaryCard');
     var content = document.getElementById('summaryContent');
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
 
-    var totalChi = 0, totalCost = 0, totalVal = 0, hasVal = !!getEffectivePrice();
-    state.transactions.forEach(function(tx){
-      var c = computeTx(tx);
-      totalChi += tx.amount; totalCost += c.cost;
-      if(c.currentVal !== null) totalVal += c.currentVal;
-    });
-    var totalPl = totalVal - totalCost;
-    var totalPlPct = totalCost ? (totalPl/totalCost*100) : 0;
-    var bannerCls = !hasVal ? 'flat' : (totalPl > 0 ? 'up' : (totalPl < 0 ? 'down' : 'flat'));
-    var arrowPath = totalPl >= 0
+    var eff = getEffectivePrice();
+    var hasVal = !!eff;
+    var p = computePortfolio();
+    var unrealizedPL = hasVal ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
+    var totalPL = p.realizedPL + unrealizedPL;
+    var totalPlPct = p.totalBuyCost ? (totalPL / p.totalBuyCost * 100) : 0;
+    var bannerCls = !hasVal ? 'flat' : (totalPL > 0 ? 'up' : (totalPL < 0 ? 'down' : 'flat'));
+    var arrowPath = totalPL >= 0
       ? '<path d="M6 15l6-6 6 6"/>'
       : '<path d="M6 9l6 6 6-6"/>';
+    var realizedCls = p.realizedPL > 0 ? 'up' : (p.realizedPL < 0 ? 'down' : '');
 
     content.innerHTML =
-      '<div class="summary-row"><span class="summary-label">Tổng số lượng vàng</span><span class="summary-val">'+fmtAmount(totalChi)+' chỉ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Tổng vốn đã mua</span><span class="summary-val">'+fmtVND(totalCost)+' đ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(totalVal)+' đ' : '—')+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Đang nắm giữ</span><span class="summary-val">'+fmtAmount(p.holdingAmount)+' chỉ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? fmtVND(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(p.holdingCost)+' đ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
+      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+fmtVND(p.realizedPL)+' đ</span></div>' : '') +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':(totalPl>=0?'Lời':'Lỗ'))+'</div><div class="pl-amount">'+(hasVal ? (totalPl>=0?'+':'')+fmtVND(totalPl)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
+          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
-        (hasVal ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
+        (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>';
   }
 
@@ -918,6 +1052,8 @@
   function renderTx(){
     var list = document.getElementById('txList');
     var count = document.getElementById('txCount');
+    var eff = getEffectivePrice();
+    var p = computePortfolio();
     var txs = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = txs.length;
     if(txs.length === 0){
@@ -929,23 +1065,44 @@
       return;
     }
     list.innerHTML = txs.map(function(tx){
-      var c = computeTx(tx);
-      var plCls = c.pl === null ? '' : (c.pl > 0 ? 'up' : (c.pl < 0 ? 'down' : ''));
-      var plTxt = c.pl === null ? '—' : ((c.pl>=0?'+':'')+fmtVND(c.pl)+' đ ('+(c.plPct>=0?'+':'')+c.plPct.toFixed(1)+'%)');
-      var metaTxt = 'Mua ngày '+fmtDate(tx.date)+(tx.store ? ' · '+escapeHtml(tx.store) : '');
+      var isSell = txType(tx) === 'sell';
+      var badge = '<span class="tx-badge '+(isSell?'sell':'buy')+'">'+(isSell?'BÁN':'MUA')+'</span>';
+      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (tx.store ? ' · '+escapeHtml(tx.store) : '');
+
+      var grid;
+      if(isSell){
+        var sellInfo = p.perTx[tx.id] || { avgCostAtSale: 0, pl: 0 };
+        var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
+        grid =
+          '<div class="tx-grid">' +
+            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+fmtVND(sellInfo.avgCostAtSale)+' đ</div></div>' +
+            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>' +
+          '</div>';
+      } else {
+        var cost = tx.amount * tx.price;
+        var currentVal = eff ? tx.amount * eff.buy : null;
+        var pl = currentVal === null ? null : currentVal - cost;
+        var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
+        var plCls2 = pl === null ? '' : (pl > 0 ? 'up' : (pl < 0 ? 'down' : ''));
+        var plTxt = pl === null ? '—' : ((pl>=0?'+':'')+fmtVND(pl)+' đ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)');
+        grid =
+          '<div class="tx-grid">' +
+            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(currentVal===null?'—':fmtVND(currentVal)+' đ')+'</div></div>' +
+            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lời/Lỗ chưa chốt</div><div class="tx-cell-val '+plCls2+'">'+plTxt+'</div></div>' +
+          '</div>';
+      }
+
       return (
         '<div class="tx-item" data-id="'+tx.id+'">' +
           '<div class="tx-top">' +
-            '<div><div class="tx-amount">'+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
+            '<div><div class="tx-amount">'+badge+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
             '<button class="tx-del" data-del="'+tx.id+'" aria-label="Xoá giao dịch" type="button">' +
               '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12"/></svg>' +
             '</button>' +
           '</div>' +
-          '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(c.currentVal===null?'—':fmtVND(c.currentVal)+' đ')+'</div></div>' +
-            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lời/Lỗ</div><div class="tx-cell-val '+plCls+'">'+plTxt+'</div></div>' +
-          '</div>' +
+          grid +
         '</div>'
       );
     }).join('');
