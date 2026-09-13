@@ -244,8 +244,13 @@
   <div class="card" id="priceCard">
     <div class="card-glow" style="background:var(--gold)"></div>
     <div class="price-head">
-      <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng SJC hôm nay</span>
-      <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Cập nhật</button>
+      <span class="price-label"><span class="live-dot" id="liveDot" hidden></span> Giá vàng SJC</span>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" id="btnRefreshPrice" aria-label="Làm mới giá" type="button" style="width:38px;height:38px">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
+      </div>
     </div>
     <div id="priceContent"></div>
   </div>
@@ -314,11 +319,12 @@
 <div class="sheet" id="priceSheet" role="dialog" aria-modal="true" aria-labelledby="priceSheetTitle">
   <div class="sheet-handle"></div>
   <div class="sheet-head">
-    <h3 class="sheet-title" id="priceSheetTitle">Cập nhật giá vàng hôm nay</h3>
+    <h3 class="sheet-title" id="priceSheetTitle">Ghi đè giá vàng thủ công</h3>
     <button class="icon-btn" id="priceClose" aria-label="Đóng" type="button">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
+  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng SJC được tự động cập nhật mỗi 30 phút. Chỉ ghi đè nếu bạn muốn dùng một mức giá khác.</p>
   <form id="priceForm">
     <div class="field">
       <label for="priceBuy">Giá mua vào (VNĐ / lượng)</label>
@@ -333,7 +339,8 @@
       <div class="field-error">Giá bán ra phải ≥ giá mua vào.</div>
     </div>
     <div class="sheet-actions">
-      <button type="submit" class="btn btn-gold btn-block">Lưu giá hôm nay</button>
+      <button type="button" class="btn btn-ghost" id="priceClearOverride" hidden>Dùng giá tự động</button>
+      <button type="submit" class="btn btn-gold btn-block">Lưu giá ghi đè</button>
     </div>
   </form>
 </div>
@@ -384,14 +391,13 @@
   function loadState(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return { currentPrice:null, priceHistory:[], transactions:[] };
+      if(!raw) return { manualPrice:null, transactions:[] };
       var parsed = JSON.parse(raw);
       return {
-        currentPrice: parsed.currentPrice || null,
-        priceHistory: Array.isArray(parsed.priceHistory) ? parsed.priceHistory : [],
+        manualPrice: parsed.manualPrice || null,
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
       };
-    }catch(e){ return { currentPrice:null, priceHistory:[], transactions:[] }; }
+    }catch(e){ return { manualPrice:null, transactions:[] }; }
   }
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -464,12 +470,54 @@
   wireSheet('priceSheet','priceBackdrop','priceClose');
   wireSheet('settingsSheet','settingsBackdrop','settingsClose');
 
-  // ---------- price sheet ----------
+  // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
+  var liveData = null;
+  var liveHistory = [];
+  var liveLoading = true;
+
+  function getEffectivePrice(){
+    if(state.manualPrice && (!liveData || new Date(state.manualPrice.updatedAt) > new Date(liveData.fetchedAt))){
+      return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
+    }
+    if(liveData){
+      return { buy: liveData.buy, sell: liveData.sell, isManual: false, at: liveData.fetchedAt, source: liveData.source };
+    }
+    return null;
+  }
+
+  function loadLiveData(){
+    return Promise.all([
+      fetch('data/gold-price.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch('data/gold-price-history.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+    ]).then(function(results){
+      if(results[0]) liveData = results[0];
+      if(Array.isArray(results[1])) liveHistory = results[1];
+      liveLoading = false;
+      renderAll();
+      return !!results[0];
+    });
+  }
+
+  // ---------- price override sheet ----------
   document.getElementById('btnUpdatePrice').addEventListener('click', function(){
-    document.getElementById('priceBuy').value = state.currentPrice ? fmtVND(state.currentPrice.buy) : '';
-    document.getElementById('priceSell').value = state.currentPrice ? fmtVND(state.currentPrice.sell) : '';
+    var eff = getEffectivePrice();
+    document.getElementById('priceBuy').value = eff ? fmtVND(eff.buy) : '';
+    document.getElementById('priceSell').value = eff ? fmtVND(eff.sell) : '';
+    document.getElementById('priceClearOverride').hidden = !state.manualPrice;
     clearFieldError('priceBuy'); clearFieldError('priceSell');
     openSheet('priceSheet','priceBackdrop');
+  });
+  document.getElementById('btnRefreshPrice').addEventListener('click', function(){
+    loadLiveData().then(function(ok){
+      showToast(ok ? 'Đã làm mới giá' : 'Không tải được giá mới, thử lại sau', ok ? 'ok' : 'err');
+    });
+  });
+  document.getElementById('priceClearOverride').addEventListener('click', function(){
+    state.manualPrice = null;
+    saveState();
+    renderAll();
+    closeSheet('priceSheet','priceBackdrop');
+    showToast('Đã chuyển về dùng giá tự động', 'ok');
   });
 
   function setFieldError(inputId, on){
@@ -486,14 +534,11 @@
     if(!(buy > 0)){ setFieldError('priceBuy', true); ok = false; } else clearFieldError('priceBuy');
     if(!(sell > 0) || sell < buy){ setFieldError('priceSell', true); ok = false; } else clearFieldError('priceSell');
     if(!ok) return;
-    var now = new Date().toISOString();
-    state.currentPrice = { buy: buy, sell: sell, updatedAt: now };
-    state.priceHistory.push({ buy: buy, sell: sell, at: now });
-    if(state.priceHistory.length > 60) state.priceHistory = state.priceHistory.slice(-60);
+    state.manualPrice = { buy: buy, sell: sell, updatedAt: new Date().toISOString() };
     saveState();
-    renderPrice(); renderSummary();
+    renderAll();
     closeSheet('priceSheet','priceBackdrop');
-    showToast('Đã cập nhật giá vàng hôm nay', 'ok');
+    showToast('Đã lưu giá ghi đè', 'ok');
   });
 
   // ---------- transaction sheet ----------
@@ -592,8 +637,7 @@
         var data = JSON.parse(reader.result);
         if(!data || typeof data !== 'object') throw new Error('bad');
         state = {
-          currentPrice: data.currentPrice || null,
-          priceHistory: Array.isArray(data.priceHistory) ? data.priceHistory : [],
+          manualPrice: data.manualPrice || null,
           transactions: Array.isArray(data.transactions) ? data.transactions : []
         };
         saveState();
@@ -609,7 +653,7 @@
   });
   document.getElementById('btnClearAll').addEventListener('click', function(){
     if(!confirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.')) return;
-    state = { currentPrice:null, priceHistory:[], transactions:[] };
+    state = { manualPrice:null, transactions:[] };
     saveState();
     renderAll();
     closeSheet('settingsSheet','settingsBackdrop');
@@ -620,27 +664,26 @@
   function renderPrice(){
     var el = document.getElementById('priceContent');
     var liveDot = document.getElementById('liveDot');
-    if(!state.currentPrice){
+    var eff = getEffectivePrice();
+
+    if(!eff){
       liveDot.hidden = true;
       el.innerHTML =
         '<div class="price-empty">' +
-          '<p>Chưa có giá vàng hôm nay. Cập nhật để bắt đầu theo dõi.</p>' +
+          '<p>'+(liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động. Bạn có thể ghi đè giá thủ công.')+'</p>' +
         '</div>';
-      document.getElementById('priceUpdatedTxt') && 0;
       return;
     }
     liveDot.hidden = false;
-    var cp = state.currentPrice;
-    var d = new Date(cp.updatedAt);
+    var d = new Date(eff.at);
     var updatedTxt = "Cập nhật " + fmtDate(d.toISOString().slice(0,10)) + " lúc " + String(d.getHours()).padStart(2,'0') + ":" + String(d.getMinutes()).padStart(2,'0');
+    var sourceTxt = eff.isManual ? "Đã ghi đè thủ công" : "Tự động — " + (liveData && liveData.source ? liveData.source : "BTMC");
 
-    var hist = state.priceHistory;
     var deltaHtml = '';
-    if(hist.length >= 2){
-      var prev = hist[hist.length-2].buy;
-      var diff = cp.buy - prev;
+    if(!eff.isManual && liveHistory.length >= 2){
+      var prev = liveHistory[liveHistory.length-2].buy;
+      var diff = eff.buy - prev;
       var pct = prev ? (diff/prev*100) : 0;
-      var cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
       var bg = diff > 0 ? 'var(--green-soft)' : (diff < 0 ? 'var(--red-soft)' : 'var(--glass)');
       var color = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--muted)');
       var arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '→');
@@ -649,14 +692,14 @@
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(cp.buy)+'<span class="pb-unit">đ/lượng</span></div></div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(cp.sell)+'<span class="pb-unit">đ/lượng</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/lượng</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/lượng</span></div></div>' +
       '</div>' +
       deltaHtml +
-      '<div class="price-updated" style="margin-top:10px">'+updatedTxt+'</div>' +
+      '<div class="price-updated" style="margin-top:10px">'+sourceTxt+' · '+updatedTxt+'</div>' +
       '<div class="chart-wrap">' +
-        '<div class="chart-title">Xu hướng giá mua vào</div>' +
-        renderChart(hist) +
+        '<div class="chart-title">Xu hướng giá mua vào (tự động)</div>' +
+        renderChart(liveHistory) +
       '</div>';
   }
 
@@ -690,7 +733,8 @@
   function computeTx(tx){
     var luong = toLuong(tx.amount, tx.unit);
     var cost = luong * tx.price;
-    var currentVal = state.currentPrice ? luong * state.currentPrice.buy : null;
+    var eff = getEffectivePrice();
+    var currentVal = eff ? luong * eff.buy : null;
     var pl = currentVal === null ? null : currentVal - cost;
     var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
     return { luong: luong, cost: cost, currentVal: currentVal, pl: pl, plPct: plPct };
@@ -702,7 +746,7 @@
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
 
-    var totalLuong = 0, totalCost = 0, totalVal = 0, hasVal = !!state.currentPrice;
+    var totalLuong = 0, totalCost = 0, totalVal = 0, hasVal = !!getEffectivePrice();
     state.transactions.forEach(function(tx){
       var c = computeTx(tx);
       totalLuong += c.luong; totalCost += c.cost;
@@ -786,6 +830,7 @@
 
   function renderAll(){ renderPrice(); renderSummary(); renderTx(); }
   renderAll();
+  loadLiveData();
 })();
 </script>
 </body>
