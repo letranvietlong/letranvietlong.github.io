@@ -8,7 +8,16 @@ if git diff --cached --quiet; then
   exit 0
 fi
 
-if git commit -m "Update sourcecode" >/tmp/claude-auto-commit.log 2>&1; then
+MSG_FILE=".claude/hooks/.next-commit-message.txt"
+if [ -s "$MSG_FILE" ]; then
+  COMMIT_MSG="$(cat "$MSG_FILE")"
+else
+  CHANGED_FILES="$(git diff --cached --name-only | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')"
+  COMMIT_MSG="Update: ${CHANGED_FILES}"
+fi
+
+if git commit -m "$COMMIT_MSG" >/tmp/claude-auto-commit.log 2>&1; then
+  rm -f "$MSG_FILE"
   if git push origin main >/tmp/claude-auto-push.log 2>&1; then
     echo "Auto-committed and pushed to origin/main."
   else
