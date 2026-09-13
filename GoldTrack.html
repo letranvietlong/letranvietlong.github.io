@@ -193,6 +193,16 @@
   .settings-row-title{font-size:.88rem;font-weight:700}
   .settings-row-desc{font-size:.72rem;color:var(--muted2)}
 
+  /* ---------- Confirm dialog ---------- */
+  .confirm-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.62);backdrop-filter:blur(2px);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+  .confirm-backdrop.open{opacity:1;pointer-events:auto}
+  .confirm-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(320px, calc(100% - 48px));background:#131D33;border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5);z-index:71;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .confirm-dialog.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .confirm-title{font-size:1.05rem;font-weight:800;margin-bottom:8px;text-align:center}
+  .confirm-message{font-size:.86rem;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px}
+  .confirm-actions{display:flex;gap:10px}
+  .confirm-actions .btn{flex:1}
+
   /* ---------- Toast ---------- */
   .toast-wrap{position:fixed;left:0;right:0;bottom:calc(90px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
   .toast{background:#111a2f;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:100px;font-size:.82rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;transform:translateY(20px);opacity:0;transition:transform .25s,opacity .25s}
@@ -438,6 +448,17 @@
   </form>
 </div>
 
+<!-- ============ CONFIRM DIALOG ============ -->
+<div class="confirm-backdrop" id="confirmBackdrop"></div>
+<div class="confirm-dialog" id="confirmDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+  <div class="confirm-title" id="confirmTitle">Xác nhận</div>
+  <p class="confirm-message" id="confirmMessage"></p>
+  <div class="confirm-actions">
+    <button class="btn btn-ghost" id="confirmCancel" type="button">Huỷ</button>
+    <button class="btn btn-danger" id="confirmOk" type="button">Xoá</button>
+  </div>
+</div>
+
 <div class="toast-wrap"><div class="toast" id="toast"></div></div>
 
 <script>
@@ -503,6 +524,39 @@
     toastEl.className = 'toast show' + (type ? ' '+type : '');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ toastEl.className = 'toast'; }, 2400);
+  }
+
+  // ---------- in-app confirm dialog (replaces window.confirm) ----------
+  var confirmBackdrop = document.getElementById('confirmBackdrop');
+  var confirmDialog = document.getElementById('confirmDialog');
+  var confirmOkBtn = document.getElementById('confirmOk');
+  var confirmCancelBtn = document.getElementById('confirmCancel');
+  function showConfirm(message, opts){
+    opts = opts || {};
+    document.getElementById('confirmTitle').textContent = opts.title || 'Xác nhận';
+    document.getElementById('confirmMessage').textContent = message;
+    confirmOkBtn.textContent = opts.confirmText || 'Đồng ý';
+    confirmCancelBtn.textContent = opts.cancelText || 'Huỷ';
+    confirmOkBtn.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-gold');
+    confirmBackdrop.classList.add('open');
+    confirmDialog.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    return new Promise(function(resolve){
+      function cleanup(result){
+        confirmBackdrop.classList.remove('open');
+        confirmDialog.classList.remove('open');
+        document.body.style.overflow = '';
+        confirmOkBtn.removeEventListener('click', onOk);
+        confirmCancelBtn.removeEventListener('click', onCancel);
+        confirmBackdrop.removeEventListener('click', onCancel);
+        resolve(result);
+      }
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      confirmOkBtn.addEventListener('click', onOk);
+      confirmCancelBtn.addEventListener('click', onCancel);
+      confirmBackdrop.addEventListener('click', onCancel);
+    });
   }
 
   // ---------- tab navigation ----------
@@ -625,14 +679,15 @@
       return githubApi('/gists', token, 'POST', { description: GIST_DESCRIPTION, public: false, files: buildGistFiles() })
         .then(function(g){ return { gistId: g.id, isExisting: false }; });
     }).then(function(result){
-      var proceed = true;
-      if(result.isExisting && state.transactions.length > 0){
-        proceed = confirm('Tìm thấy dữ liệu sao lưu sẵn có trên GitHub. Tải về sẽ THAY THẾ dữ liệu hiện có trên máy này. Tiếp tục?');
-      }
-      saveGistConfig({ token: token, gistId: result.gistId });
-      if(result.isExisting && proceed){
-        return pullFromGist().then(function(){ renderAll(); });
-      }
+      var askProceed = (result.isExisting && state.transactions.length > 0)
+        ? showConfirm('Tìm thấy dữ liệu sao lưu sẵn có trên GitHub. Tải về sẽ THAY THẾ dữ liệu hiện có trên máy này. Tiếp tục?', { title: 'Khôi phục dữ liệu', confirmText: 'Tải về', cancelText: 'Giữ máy này' })
+        : Promise.resolve(true);
+      return askProceed.then(function(proceed){
+        saveGistConfig({ token: token, gistId: result.gistId });
+        if(result.isExisting && proceed){
+          return pullFromGist().then(function(){ renderAll(); });
+        }
+      });
     }).then(function(){
       document.getElementById('gistToken').value = '';
       refreshGistUI();
@@ -645,11 +700,13 @@
   });
 
   document.getElementById('btnGistDisconnect').addEventListener('click', function(){
-    if(!confirm('Ngắt đồng bộ? Dữ liệu trên máy này vẫn được giữ, bản sao lưu trên GitHub Gist cũng không bị xoá.')) return;
-    saveGistConfig(null);
-    lastGistStatus = null;
-    refreshGistUI();
-    showToast('Đã ngắt kết nối đồng bộ', 'ok');
+    showConfirm('Ngắt đồng bộ? Dữ liệu trên máy này vẫn được giữ, bản sao lưu trên GitHub Gist cũng không bị xoá.', { title: 'Ngắt kết nối đồng bộ', confirmText: 'Ngắt kết nối', danger: true }).then(function(ok){
+      if(!ok) return;
+      saveGistConfig(null);
+      lastGistStatus = null;
+      refreshGistUI();
+      showToast('Đã ngắt kết nối đồng bộ', 'ok');
+    });
   });
 
   // ---------- live-format inputs ----------
@@ -883,12 +940,14 @@
 
   document.getElementById('txDeleteBtn').addEventListener('click', function(){
     if(!editingTxId) return;
-    if(!confirm('Xoá giao dịch này?')) return;
-    state.transactions = state.transactions.filter(function(t){ return t.id !== editingTxId; });
-    saveState();
-    renderAll();
-    closeSheet('txSheet','txBackdrop');
-    showToast('Đã xoá giao dịch', 'ok');
+    showConfirm('Xoá giao dịch này?', { title: 'Xoá giao dịch', confirmText: 'Xoá', danger: true }).then(function(ok){
+      if(!ok) return;
+      state.transactions = state.transactions.filter(function(t){ return t.id !== editingTxId; });
+      saveState();
+      renderAll();
+      closeSheet('txSheet','txBackdrop');
+      showToast('Đã xoá giao dịch', 'ok');
+    });
   });
 
   // ---------- settings ----------
@@ -927,11 +986,13 @@
     e.target.value = '';
   });
   document.getElementById('btnClearAll').addEventListener('click', function(){
-    if(!confirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.')) return;
-    state = { manualPrice:null, transactions:[] };
-    saveState();
-    renderAll();
-    showToast('Đã xoá toàn bộ dữ liệu', 'ok');
+    showConfirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.', { title: 'Xoá toàn bộ dữ liệu', confirmText: 'Xoá hết', danger: true }).then(function(ok){
+      if(!ok) return;
+      state = { manualPrice:null, transactions:[] };
+      saveState();
+      renderAll();
+      showToast('Đã xoá toàn bộ dữ liệu', 'ok');
+    });
   });
 
   // ---------- render: price card ----------
@@ -1101,11 +1162,13 @@
       btn.addEventListener('click', function(e){
         e.stopPropagation();
         var id = btn.getAttribute('data-del');
-        if(!confirm('Xoá giao dịch này?')) return;
-        state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
-        saveState();
-        renderAll();
-        showToast('Đã xoá giao dịch', 'ok');
+        showConfirm('Xoá giao dịch này?', { title: 'Xoá giao dịch', confirmText: 'Xoá', danger: true }).then(function(ok){
+          if(!ok) return;
+          state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
+          saveState();
+          renderAll();
+          showToast('Đã xoá giao dịch', 'ok');
+        });
       });
     });
     list.querySelectorAll('.tx-item').forEach(function(item){
