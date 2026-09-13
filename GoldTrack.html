@@ -398,7 +398,7 @@
 (function(){
   "use strict";
   var STORAGE_KEY = "goldtrack_v1";
-  var CHI_PER_LUONG = 10; // gold-price.json quotes VNĐ/lượng; the whole UI works in chỉ
+  var CHI_PER_LUONG = 10; // gold-price.json is normalized to VNĐ/chỉ; this only covers an older/unnormalized feed
 
   function loadState(){
     try{
@@ -631,7 +631,8 @@
       return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
     }
     if(liveData){
-      return { buy: liveData.buy / CHI_PER_LUONG, sell: liveData.sell / CHI_PER_LUONG, isManual: false, at: liveData.fetchedAt, source: liveData.source };
+      var div = liveData.unit === 'luong' ? CHI_PER_LUONG : 1;
+      return { buy: liveData.buy / div, sell: liveData.sell / div, isManual: false, at: liveData.fetchedAt, source: liveData.source };
     }
     return null;
   }
