@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
-<meta name="theme-color" content="#0B1220" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F6F1E7" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1220" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -16,7 +17,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="img/goldtrack-icon-180.png">
 <style>
   :root{
-    --bg:#0B1220;--bg2:#0F1A30;
+    --bg:#0B1220;--bg2:#0F1A30;--bg3:#0A0F1D;
     --panel:rgba(17,27,49,.86);--panel2:rgba(21,32,58,.8);
     --glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);
     --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.15);
@@ -27,8 +28,29 @@
     --blue:#60A5FA;--blue-soft:rgba(96,165,250,.14);
     --radius:22px;--radius-sm:14px;
     --shadow:0 20px 60px rgba(0,0,0,.4);
+    --grid-line:rgba(255,255,255,.035);
+    --sheet-bg:#0E1526;--dialog-bg:#131D33;--tabbar-bg:rgba(9,13,24,.82);--panel2-solid:#141F38;
     --safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom);
     --font:Cambria,Georgia,'Times New Roman',Times,serif;
+  }
+  /* Dark is the app's native look; light only overrides what needs to flip
+     so the system's Light/Dark setting (Control Center) is followed
+     automatically — no in-app toggle. */
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F6F1E7;--bg2:#FFFFFF;--bg3:#EFE7D6;
+      --panel:rgba(255,255,255,.88);--panel2:rgba(255,255,255,.74);
+      --glass:rgba(15,23,42,.045);--glass2:rgba(15,23,42,.075);
+      --line:rgba(15,23,42,.09);--line2:rgba(15,23,42,.15);
+      --text:#171B2B;--muted:#5B6478;--muted2:#8890A0;
+      --gold:#B45309;--gold2:#D97706;--gold-soft:rgba(180,83,9,.14);
+      --green:#059669;--green-soft:rgba(5,150,105,.14);
+      --red:#DC2626;--red-soft:rgba(220,38,38,.13);
+      --blue:#2563EB;--blue-soft:rgba(37,99,235,.13);
+      --shadow:0 14px 36px rgba(15,23,42,.10);
+      --grid-line:rgba(15,23,42,.035);
+      --sheet-bg:#FFFFFF;--dialog-bg:#FFFFFF;--tabbar-bg:rgba(255,255,255,.78);--panel2-solid:#FFFFFF;
+    }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
@@ -39,10 +61,10 @@
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
       radial-gradient(circle at 40% 115%, rgba(245,158,11,.09), transparent 40%),
-      linear-gradient(180deg,var(--bg) 0%,#0A0F1D 50%,var(--bg) 100%);
+      linear-gradient(180deg,var(--bg) 0%,var(--bg3) 50%,var(--bg) 100%);
     overflow:hidden;overscroll-behavior:none;
   }
-  body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
+  body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
   button,input,select{font:inherit;color:inherit}
   button{cursor:pointer}
   h1,h2,h3,p{margin:0}
@@ -113,6 +135,8 @@
   .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted2)}
   .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
   .chart-legend-dash{width:14px;height:0;border-top:2px dashed var(--muted2);flex:none}
+  .chart-axis-label{fill:var(--muted2)}
+  .chart-cost-line{stroke:var(--muted2)}
 
   .btn{border:none;border-radius:100px;padding:11px 18px;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;transition:transform .15s,opacity .15s,background .2s}
   .btn:active{transform:scale(.97)}
@@ -155,7 +179,18 @@
   .sec-count{font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
 
   /* ---------- Transactions ---------- */
-  .tx-item{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,background .2s}
+  /* .tx-row clips to the rounded rect; .tx-swipe-action sits behind, fully
+     covered until .tx-item is dragged left (iOS Mail/Reminders pattern). */
+  .tx-row{position:relative;border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden}
+  .tx-swipe-action{position:absolute;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:var(--red)}
+  .tx-swipe-del{width:84px;border:none;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:.68rem;font-weight:700}
+  /* Opaque, not the translucent --panel2, so the red "Xoá" layer behind it
+     (see .tx-swipe-action) can't bleed through when at rest. No border-radius
+     of its own — .tx-row's overflow:hidden clip already rounds it, and a
+     second independent radius here would double-antialias the same edge and
+     leak a 1px fringe of the red layer around the card. */
+  .tx-item{position:relative;background:var(--panel2-solid);border:1px solid var(--line);padding:14px;margin-bottom:0;cursor:pointer;touch-action:pan-y;transition:border-color .2s,background .2s,transform .22s cubic-bezier(.32,.72,0,1)}
+  .tx-item.swiping{transition:none}
   .tx-item:hover{border-color:var(--line2)}
   .tx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
   .tx-amount{font-weight:700;font-size:.94rem}
@@ -163,8 +198,6 @@
   .tx-badge.buy{background:var(--gold-soft);color:var(--gold2)}
   .tx-badge.sell{background:var(--blue-soft);color:var(--blue)}
   .tx-date{font-size:.72rem;color:var(--muted2);margin-top:2px}
-  .tx-del{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--muted2);flex:none}
-  .tx-del:hover{color:var(--red);border-color:rgba(251,113,133,.35);background:var(--red-soft)}
   .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font)}
   .tx-cell-label{font-size:.64rem;color:var(--muted2);font-family:var(--font);font-weight:600;margin-bottom:2px}
   .tx-cell-val{font-size:.84rem;font-weight:600}
@@ -182,7 +215,7 @@
   .icon-btn-gold:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
   /* ---------- Bottom tab bar (iOS style) ---------- */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:rgba(9,13,24,.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom))}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom))}
   .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;color:var(--muted2);padding:6px 0;min-height:48px;border-radius:12px;transition:color .2s}
   .tabbar-btn .icon{width:23px;height:23px}
   .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
@@ -192,9 +225,10 @@
   /* ---------- Sheet ---------- */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
   .sheet-backdrop.open{opacity:1;pointer-events:auto}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#0E1526;border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(102%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(102%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto}
   .sheet.open{transform:translateY(0)}
-  .sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2);margin:6px auto 14px}
+  .sheet-handle-hit{padding:8px 0 16px;display:flex;justify-content:center;touch-action:none;cursor:grab}
+  .sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2)}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
   .sheet-title{font-size:1.02rem;font-weight:800}
 
@@ -234,7 +268,7 @@
   /* ---------- Confirm dialog ---------- */
   .confirm-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.62);backdrop-filter:blur(2px);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
   .confirm-backdrop.open{opacity:1;pointer-events:auto}
-  .confirm-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(320px, calc(100% - 48px));background:#131D33;border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5);z-index:71;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .confirm-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(320px, calc(100% - 48px));background:var(--dialog-bg);border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5);z-index:71;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   .confirm-dialog.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
   .confirm-title{font-size:1.05rem;font-weight:800;margin-bottom:8px;text-align:center}
   .confirm-message{font-size:.86rem;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px;white-space:pre-line}
@@ -247,6 +281,9 @@
   .toast.show{transform:translateY(0);opacity:1}
   .toast.ok{color:var(--green)}
   .toast.err{color:var(--red)}
+
+  @keyframes tabFadeIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .tab-view.tab-enter{ animation: tabFadeIn .22s cubic-bezier(.32,.72,0,1); }
 
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:.001ms !important;transition-duration:.001ms !important}
@@ -425,7 +462,7 @@
     <span>Lịch sử</span>
   </button>
   <button class="tabbar-btn" data-tab="settings" type="button">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="#0B1220"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="#0B1220"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="#0B1220"/></svg>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="var(--tabbar-bg)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="var(--tabbar-bg)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="var(--tabbar-bg)"/></svg>
     <span>Cài đặt</span>
   </button>
 </nav>
@@ -433,7 +470,7 @@
 <!-- ============ SHEET: ADD/EDIT TRANSACTION ============ -->
 <div class="sheet-backdrop" id="txBackdrop"></div>
 <div class="sheet" id="txSheet" role="dialog" aria-modal="true" aria-labelledby="txSheetTitle">
-  <div class="sheet-handle"></div>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
   <div class="sheet-head">
     <h3 class="sheet-title" id="txSheetTitle">Thêm giao dịch</h3>
     <button class="icon-btn" id="txClose" aria-label="Đóng" type="button">
@@ -481,7 +518,7 @@
 <!-- ============ SHEET: UPDATE PRICE ============ -->
 <div class="sheet-backdrop" id="priceBackdrop"></div>
 <div class="sheet" id="priceSheet" role="dialog" aria-modal="true" aria-labelledby="priceSheetTitle">
-  <div class="sheet-handle"></div>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
   <div class="sheet-head">
     <h3 class="sheet-title" id="priceSheetTitle">Ghi đè giá vàng thủ công</h3>
     <button class="icon-btn" id="priceClose" aria-label="Đóng" type="button">
@@ -512,7 +549,7 @@
 <!-- ============ SHEET: UPDATE HISTORY ============ -->
 <div class="sheet-backdrop" id="versionBackdrop"></div>
 <div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle">
-  <div class="sheet-handle"></div>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
   <div class="sheet-head">
     <h3 class="sheet-title" id="versionSheetTitle">Lịch sử cập nhật</h3>
     <button class="icon-btn" id="versionClose" aria-label="Đóng" type="button">
@@ -645,13 +682,18 @@
   var TAB_VIEWS = { overview: 'viewOverview', history: 'viewHistory', settings: 'viewSettings' };
   function switchTab(tab){
     Object.keys(TAB_VIEWS).forEach(function(key){
-      document.getElementById(TAB_VIEWS[key]).hidden = (key !== tab);
+      var el = document.getElementById(TAB_VIEWS[key]);
+      el.hidden = (key !== tab);
+      el.classList.remove('tab-enter');
     });
     document.querySelectorAll('.tabbar-btn').forEach(function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
     });
     if(tab === 'settings') refreshGistUI();
     document.querySelector('.app').scrollTop = 0;
+    var activeEl = document.getElementById(TAB_VIEWS[tab]);
+    void activeEl.offsetWidth; // restart the animation even if the class never left
+    activeEl.classList.add('tab-enter');
   }
   document.querySelectorAll('.tabbar-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
@@ -820,6 +862,38 @@
   wireSheet('txSheet','txBackdrop','txClose');
   wireSheet('priceSheet','priceBackdrop','priceClose');
   wireSheet('versionSheet','versionBackdrop','versionClose');
+
+  // Drag-to-dismiss via the handle only — the sheet body itself may scroll
+  // (long forms, changelog list) so dragging is scoped to the handle's own
+  // hit area rather than the whole sheet, avoiding a fight with that scroll.
+  function enableSheetDrag(sheetId, backdropId){
+    var sheet = document.getElementById(sheetId);
+    var handle = sheet.querySelector('.sheet-handle-hit');
+    var startY = 0, currentY = 0, dragging = false;
+    handle.addEventListener('pointerdown', function(e){
+      dragging = true; currentY = 0; startY = e.clientY;
+      sheet.style.transition = 'none';
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    handle.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      currentY = Math.max(0, e.clientY - startY);
+      sheet.style.transform = 'translateY(' + currentY + 'px)';
+    });
+    function endDrag(){
+      if(!dragging) return;
+      dragging = false;
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+      if(currentY > 120) closeSheet(sheetId, backdropId);
+      currentY = 0;
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+  enableSheetDrag('txSheet','txBackdrop');
+  enableSheetDrag('priceSheet','priceBackdrop');
+  enableSheetDrag('versionSheet','versionBackdrop');
 
   // ---------- version / update history ----------
   var changelogData = null;
@@ -1290,12 +1364,24 @@
     return idxs.filter(function(v,i,a){ return a.indexOf(v) === i; });
   }
 
+  // The bright yellow tuned for dark cards reads as a pale, low-contrast
+  // smudge on a light card, so the price line/dots pick a deeper amber when
+  // the system is in Light mode. Everything else on the chart already
+  // themes for free via CSS custom properties.
+  function isLightScheme(){
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+  }
   function renderChart(hist, rangeKey){
     var days = RANGE_DAYS[rangeKey] || 7;
     var daily = aggregateDailyHistory(hist, days);
     if(daily.length < 2){
       return '<div class="chart-empty">Cần thêm dữ liệu qua nhiều ngày hơn để xem xu hướng</div>';
     }
+    var light = isLightScheme();
+    var lineColor = light ? '#B45309' : '#FBBF24';
+    var fillColor = light ? '#B45309' : '#F59E0B';
+    var dotColor = light ? '#92400E' : '#F59E0B';
+    var lastDotColor = light ? '#B45309' : '#FDE68A';
     var w = 300, h = 92, padTop = 8, padBottom = 24, padX = 20;
     var n = daily.length;
     var pts = mapPointsToSvg(daily, 'buy', w, h, padTop, padBottom, padX);
@@ -1306,21 +1392,21 @@
     var dots = pts.map(function(p,i){
       if(!showAllDots && i!==0 && i!==n-1) return '';
       var isLast = i===n-1;
-      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+(isLast?'#FDE68A':'#F59E0B')+'"/>';
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+(isLast?lastDotColor:dotColor)+'"/>';
     }).join('');
     var labelIdxs = pickLabelIndices(n, 5);
     var labels = labelIdxs.map(function(i){
       var p = pts[i];
       var d = new Date(p.day+"T00:00:00");
       var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
-      return '<text x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" fill="#7C88A6" text-anchor="middle">'+lbl+'</text>';
+      return '<text class="chart-axis-label" x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" text-anchor="middle">'+lbl+'</text>';
     }).join('');
     return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'">' +
       '<defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0" stop-color="#F59E0B" stop-opacity="0.35"/><stop offset="1" stop-color="#F59E0B" stop-opacity="0"/>' +
+        '<stop offset="0" stop-color="'+fillColor+'" stop-opacity="0.35"/><stop offset="1" stop-color="'+fillColor+'" stop-opacity="0"/>' +
       '</linearGradient></defs>' +
       '<path d="'+area+'" fill="url(#chartFill)"/>' +
-      '<path d="'+line+'" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+      '<path d="'+line+'" fill="none" stroke="'+lineColor+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
       dots + labels +
     '</svg>';
   }
@@ -1396,7 +1482,8 @@
     var plotBottom = padTop + (h - padTop - padBottom);
     var lastVal = series[n-1].value, lastCost = series[n-1].cost;
     var up = lastVal >= lastCost;
-    var lineColor = up ? '#34D399' : '#FB7185';
+    var light = isLightScheme();
+    var lineColor = up ? (light ? '#059669' : '#34D399') : (light ? '#DC2626' : '#FB7185');
 
     var valueLine = valuePts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
     var area = valueLine + ' L'+valuePts[n-1].x.toFixed(1)+','+plotBottom+' L'+valuePts[0].x.toFixed(1)+','+plotBottom+' Z';
@@ -1414,7 +1501,7 @@
       var p = valuePts[i];
       var d = new Date(series[i].day+"T00:00:00");
       var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
-      return '<text x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" fill="#7C88A6" text-anchor="middle">'+lbl+'</text>';
+      return '<text class="chart-axis-label" x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" text-anchor="middle">'+lbl+'</text>';
     }).join('');
 
     return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'">' +
@@ -1422,7 +1509,7 @@
         '<stop offset="0" stop-color="'+lineColor+'" stop-opacity="0.30"/><stop offset="1" stop-color="'+lineColor+'" stop-opacity="0"/>' +
       '</linearGradient></defs>' +
       '<path d="'+area+'" fill="url(#pvChartFill)"/>' +
-      '<path d="'+costLine+'" fill="none" stroke="#7C88A6" stroke-width="1.6" stroke-dasharray="4 3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '<path class="chart-cost-line" d="'+costLine+'" fill="none" stroke-width="1.6" stroke-dasharray="4 3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
       '<path d="'+valueLine+'" fill="none" stroke="'+lineColor+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
       dots + labels +
     '</svg>' +
@@ -1559,40 +1646,118 @@
       }
 
       return (
-        '<div class="tx-item" data-id="'+tx.id+'">' +
-          '<div class="tx-top">' +
-            '<div><div class="tx-amount">'+badge+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
-            '<button class="tx-del" data-del="'+tx.id+'" aria-label="Xoá giao dịch" type="button">' +
+        '<div class="tx-row" data-row-id="'+tx.id+'">' +
+          '<div class="tx-swipe-action">' +
+            '<button class="tx-swipe-del" data-del="'+tx.id+'" aria-label="Xoá giao dịch" type="button">' +
               '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12"/></svg>' +
+              '<span>Xoá</span>' +
             '</button>' +
           '</div>' +
-          grid +
-          noteHtml +
+          '<div class="tx-item" data-id="'+tx.id+'">' +
+            '<div class="tx-top">' +
+              '<div><div class="tx-amount">'+badge+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
+            '</div>' +
+            grid +
+            noteHtml +
+          '</div>' +
         '</div>'
       );
     }).join('');
 
-    list.querySelectorAll('.tx-del').forEach(function(btn){
+    list.querySelectorAll('.tx-swipe-del').forEach(function(btn){
       btn.addEventListener('click', function(e){
         e.stopPropagation();
         var id = btn.getAttribute('data-del');
         showConfirm('Xoá giao dịch này?', { title: 'Xoá giao dịch', confirmText: 'Xoá', danger: true }).then(function(ok){
           if(!ok) return;
           state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
+          openSwipeRowId = null;
           saveState();
           renderAll();
           showToast('Đã xoá giao dịch', 'ok');
         });
       });
     });
-    list.querySelectorAll('.tx-item').forEach(function(item){
-      item.addEventListener('click', function(){
-        var id = item.getAttribute('data-id');
-        var tx = state.transactions.find(function(t){ return t.id === id; });
-        if(tx) openEditTx(tx);
-      });
+    list.querySelectorAll('.tx-row').forEach(function(row){
+      bindSwipeRow(row);
     });
   }
+
+  // ---------- swipe-to-delete (iOS list pattern) ----------
+  // touch-action:pan-y on .tx-item hands vertical drags straight to the
+  // browser's native scroll of `.app`; only horizontal drags reach here.
+  var SWIPE_ACTION_WIDTH = 84;
+  var openSwipeRowId = null;
+  function closeSwipeRow(row){
+    if(!row) return;
+    var item = row.querySelector('.tx-item');
+    item.classList.remove('swiping');
+    item.style.transform = '';
+    row.classList.remove('swipe-open');
+  }
+  function bindSwipeRow(row){
+    var id = row.getAttribute('data-row-id');
+    var item = row.querySelector('.tx-item');
+    var startX = 0, startY = 0, baseX = 0, dragging = false, axisLocked = null, suppressClick = false;
+
+    item.addEventListener('pointerdown', function(e){
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true; axisLocked = null;
+      startX = e.clientX; startY = e.clientY;
+      baseX = openSwipeRowId === id ? -SWIPE_ACTION_WIDTH : 0;
+      item.classList.add('swiping');
+    });
+    item.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if(axisLocked === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
+        axisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+        if(axisLocked === 'x'){ try{ item.setPointerCapture(e.pointerId); }catch(err){} }
+      }
+      if(axisLocked !== 'x') return;
+      var nx = baseX + dx;
+      if(nx > 0) nx = 0;
+      if(nx < -SWIPE_ACTION_WIDTH) nx = -SWIPE_ACTION_WIDTH;
+      item.style.transform = 'translateX(' + nx + 'px)';
+    });
+    function endDrag(e){
+      if(!dragging) return;
+      dragging = false;
+      item.classList.remove('swiping');
+      if(axisLocked === 'x'){
+        var dx = (typeof e.clientX === 'number' ? e.clientX : startX) - startX;
+        var finalX = baseX + dx;
+        var open = finalX < -SWIPE_ACTION_WIDTH/2;
+        item.style.transform = open ? 'translateX(-'+SWIPE_ACTION_WIDTH+'px)' : '';
+        row.classList.toggle('swipe-open', open);
+        if(open){ closeOpenSwipeExcept(id); openSwipeRowId = id; }
+        else if(openSwipeRowId === id) openSwipeRowId = null;
+        suppressClick = true;
+      } else {
+        item.style.transform = baseX ? 'translateX(-'+SWIPE_ACTION_WIDTH+'px)' : '';
+      }
+    }
+    item.addEventListener('pointerup', endDrag);
+    item.addEventListener('pointercancel', endDrag);
+    item.addEventListener('click', function(){
+      if(suppressClick){ suppressClick = false; return; }
+      if(row.classList.contains('swipe-open')){ closeSwipeRow(row); openSwipeRowId = null; return; }
+      var tx = state.transactions.find(function(t){ return t.id === id; });
+      if(tx) openEditTx(tx);
+    });
+  }
+  function closeOpenSwipeExcept(keepId){
+    if(openSwipeRowId && openSwipeRowId !== keepId){
+      closeSwipeRow(document.querySelector('.tx-row[data-row-id="'+openSwipeRowId+'"]'));
+    }
+  }
+  // Tapping anywhere outside the open row closes it, matching iOS list behavior.
+  document.addEventListener('pointerdown', function(e){
+    if(!openSwipeRowId) return;
+    if(e.target.closest && e.target.closest('.tx-row[data-row-id="'+openSwipeRowId+'"]')) return;
+    closeSwipeRow(document.querySelector('.tx-row[data-row-id="'+openSwipeRowId+'"]'));
+    openSwipeRowId = null;
+  });
 
   function renderAll(){ renderPrice(); renderSummary(); renderTx(); }
   renderAll();
