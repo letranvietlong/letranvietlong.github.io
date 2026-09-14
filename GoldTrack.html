@@ -178,6 +178,17 @@
 
   .sec-count{font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
 
+  /* ---------- Search & date filter (History tab) ---------- */
+  .search-row{display:flex;gap:8px;margin-bottom:10px}
+  .search-input-wrap{position:relative;flex:1}
+  .search-input-wrap .icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none}
+  .search-input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:11px 14px 11px 38px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
+  .search-input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
+  .icon-btn.active{color:var(--gold2);border-color:rgba(245,158,11,.4);background:var(--gold-soft)}
+  .date-filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .date-filter-row .input{flex:1;padding:10px 10px;font-size:.8rem;min-height:40px}
+  .date-filter-row span{color:var(--muted2);font-size:.8rem;flex:none}
+
   /* ---------- Transactions ---------- */
   /* .tx-row clips to the rounded rect; .tx-swipe-action sits behind, fully
      covered until .tx-item is dragged left (iOS Mail/Reminders pattern). */
@@ -281,6 +292,7 @@
   .toast.show{transform:translateY(0);opacity:1}
   .toast.ok{color:var(--green)}
   .toast.err{color:var(--red)}
+  .toast-action{background:none;border:none;color:var(--gold2);font-weight:800;font-size:.82rem;padding:2px 0 2px 6px;margin-left:2px;border-left:1px solid var(--line2)}
 
   @keyframes tabFadeIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
   .tab-view.tab-enter{ animation: tabFadeIn .22s cubic-bezier(.32,.72,0,1); }
@@ -391,6 +403,22 @@
     </div>
 
     <div id="storeSummary" hidden></div>
+
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="search" id="txSearch" class="search-input" placeholder="Tìm theo cửa hàng, ghi chú..." autocomplete="off" enterkeyhint="search">
+      </div>
+      <button class="icon-btn" id="btnDateFilter" aria-label="Lọc theo khoảng ngày" type="button">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      </button>
+    </div>
+    <div class="date-filter-row" id="dateFilterRow" hidden>
+      <input type="date" id="txDateFrom" class="input" aria-label="Từ ngày">
+      <span>—</span>
+      <input type="date" id="txDateTo" class="input" aria-label="Đến ngày">
+      <button type="button" class="btn btn-ghost btn-sm" id="btnClearDateFilter">Xoá</button>
+    </div>
 
     <div class="segmented" id="txFilter" role="group" aria-label="Lọc theo loại giao dịch" style="margin-bottom:14px">
       <button type="button" class="active" data-filter="all">Tất cả</button>
@@ -570,7 +598,7 @@
   </div>
 </div>
 
-<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+<div class="toast-wrap"><div class="toast" id="toast"><span id="toastMsg"></span><button class="toast-action" id="toastAction" type="button" hidden></button></div></div>
 
 <script>
 (function(){
@@ -637,12 +665,51 @@
   function txType(tx){ return tx.type === 'sell' ? 'sell' : 'buy'; }
 
   var toastEl = document.getElementById('toast');
+  var toastMsgEl = document.getElementById('toastMsg');
+  var toastActionEl = document.getElementById('toastAction');
   var toastTimer = null;
-  function showToast(msg, type){
-    toastEl.textContent = msg;
+  var toastActionHandler = null;
+  // action: { label, onClick } — shows an inline button (e.g. "Hoàn tác") and
+  // keeps the toast up longer so there's time to tap it.
+  function showToast(msg, type, action){
+    toastMsgEl.textContent = msg;
     toastEl.className = 'toast show' + (type ? ' '+type : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.className = 'toast'; }, 2400);
+    if(toastActionHandler){ toastActionEl.removeEventListener('click', toastActionHandler); toastActionHandler = null; }
+    if(action){
+      toastActionEl.textContent = action.label;
+      toastActionEl.hidden = false;
+      toastActionHandler = function(){
+        clearTimeout(toastTimer);
+        toastEl.className = 'toast';
+        action.onClick();
+      };
+      toastActionEl.addEventListener('click', toastActionHandler);
+    } else {
+      toastActionEl.hidden = true;
+    }
+    toastTimer = setTimeout(function(){ toastEl.className = 'toast'; toastActionEl.hidden = true; }, action ? 5000 : 2400);
+  }
+
+  // Deletes immediately (no confirm dialog) and offers a few seconds to undo
+  // via the toast — the iOS Mail/swipe-to-delete pattern: the swipe/tap is
+  // already a deliberate action, so a confirm dialog on top is redundant.
+  function deleteTxWithUndo(id){
+    var idx = state.transactions.findIndex(function(t){ return t.id === id; });
+    if(idx === -1) return;
+    var tx = state.transactions[idx];
+    state.transactions.splice(idx, 1);
+    saveState();
+    renderAll();
+    showToast('Đã xoá giao dịch', 'ok', {
+      label: 'Hoàn tác',
+      onClick: function(){
+        state.transactions.splice(idx, 0, tx);
+        saveState();
+        renderAll();
+        showToast('Đã khôi phục giao dịch', 'ok');
+      }
+    });
   }
 
   // ---------- in-app confirm dialog (replaces window.confirm) ----------
@@ -1180,14 +1247,8 @@
 
   document.getElementById('txDeleteBtn').addEventListener('click', function(){
     if(!editingTxId) return;
-    showConfirm('Xoá giao dịch này?', { title: 'Xoá giao dịch', confirmText: 'Xoá', danger: true }).then(function(ok){
-      if(!ok) return;
-      state.transactions = state.transactions.filter(function(t){ return t.id !== editingTxId; });
-      saveState();
-      renderAll();
-      closeSheet('txSheet','txBackdrop');
-      showToast('Đã xoá giao dịch', 'ok');
-    });
+    closeSheet('txSheet','txBackdrop');
+    deleteTxWithUndo(editingTxId);
   });
 
   // ---------- settings ----------
@@ -1585,6 +1646,9 @@
 
   // ---------- render: transactions ----------
   var txFilter = 'all';
+  var txSearchQuery = '';
+  var txDateFrom = '';
+  var txDateTo = '';
   document.querySelectorAll('#txFilter button').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.querySelectorAll('#txFilter button').forEach(function(b){ b.classList.remove('active'); });
@@ -1593,6 +1657,35 @@
       renderTx();
     });
   });
+  document.getElementById('txSearch').addEventListener('input', function(e){
+    txSearchQuery = e.target.value.trim().toLowerCase();
+    renderTx();
+  });
+  document.getElementById('btnDateFilter').addEventListener('click', function(){
+    var row = document.getElementById('dateFilterRow');
+    row.hidden = !row.hidden;
+    this.classList.toggle('active', !row.hidden);
+  });
+  document.getElementById('txDateFrom').addEventListener('change', function(e){
+    txDateFrom = e.target.value;
+    updateDateFilterBtn();
+    renderTx();
+  });
+  document.getElementById('txDateTo').addEventListener('change', function(e){
+    txDateTo = e.target.value;
+    updateDateFilterBtn();
+    renderTx();
+  });
+  document.getElementById('btnClearDateFilter').addEventListener('click', function(){
+    txDateFrom = ''; txDateTo = '';
+    document.getElementById('txDateFrom').value = '';
+    document.getElementById('txDateTo').value = '';
+    updateDateFilterBtn();
+    renderTx();
+  });
+  function updateDateFilterBtn(){
+    document.getElementById('btnDateFilter').classList.toggle('active', !!(txDateFrom || txDateTo));
+  }
 
   function renderTx(){
     var list = document.getElementById('txList');
@@ -1602,7 +1695,16 @@
     renderStoreSummary();
     var all = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = all.length;
-    var txs = txFilter === 'all' ? all : all.filter(function(t){ return txType(t) === txFilter; });
+    var txs = all.filter(function(t){
+      if(txFilter !== 'all' && txType(t) !== txFilter) return false;
+      if(txDateFrom && t.date < txDateFrom) return false;
+      if(txDateTo && t.date > txDateTo) return false;
+      if(txSearchQuery){
+        var haystack = ((t.store||'') + ' ' + (t.note||'')).toLowerCase();
+        if(haystack.indexOf(txSearchQuery) === -1) return false;
+      }
+      return true;
+    });
     if(txs.length === 0){
       var emptyMsg = all.length === 0
         ? 'Chưa có giao dịch nào. Nhấn nút + để thêm giao dịch mua vàng đầu tiên.'
@@ -1667,15 +1769,8 @@
     list.querySelectorAll('.tx-swipe-del').forEach(function(btn){
       btn.addEventListener('click', function(e){
         e.stopPropagation();
-        var id = btn.getAttribute('data-del');
-        showConfirm('Xoá giao dịch này?', { title: 'Xoá giao dịch', confirmText: 'Xoá', danger: true }).then(function(ok){
-          if(!ok) return;
-          state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
-          openSwipeRowId = null;
-          saveState();
-          renderAll();
-          showToast('Đã xoá giao dịch', 'ok');
-        });
+        openSwipeRowId = null;
+        deleteTxWithUndo(btn.getAttribute('data-del'));
       });
     });
     list.querySelectorAll('.tx-row').forEach(function(row){
