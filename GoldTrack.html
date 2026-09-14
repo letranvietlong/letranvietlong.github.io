@@ -694,6 +694,11 @@
   // Deletes immediately (no confirm dialog) and offers a few seconds to undo
   // via the toast — the iOS Mail/swipe-to-delete pattern: the swipe/tap is
   // already a deliberate action, so a confirm dialog on top is redundant.
+  // The toast can only show one undo action at a time, so a second delete
+  // within the window must join the same pending batch rather than replace
+  // it — otherwise the first transaction becomes unreachable and is lost
+  // for good once its own toast is gone, defeating the point of undo.
+  var pendingDeleteBatch = null;
   function deleteTxWithUndo(id){
     var idx = state.transactions.findIndex(function(t){ return t.id === id; });
     if(idx === -1) return;
@@ -701,13 +706,25 @@
     state.transactions.splice(idx, 1);
     saveState();
     renderAll();
-    showToast('Đã xoá giao dịch', 'ok', {
+
+    if(!pendingDeleteBatch) pendingDeleteBatch = { items: [] };
+    pendingDeleteBatch.items.push({ tx: tx, idx: idx });
+    clearTimeout(pendingDeleteBatch.timer);
+    pendingDeleteBatch.timer = setTimeout(function(){ pendingDeleteBatch = null; }, 5000);
+
+    var batch = pendingDeleteBatch;
+    var n = batch.items.length;
+    showToast(n > 1 ? ('Đã xoá ' + n + ' giao dịch') : 'Đã xoá giao dịch', 'ok', {
       label: 'Hoàn tác',
       onClick: function(){
-        state.transactions.splice(idx, 0, tx);
+        clearTimeout(batch.timer);
+        if(pendingDeleteBatch === batch) pendingDeleteBatch = null;
+        batch.items.slice().sort(function(a,b){ return a.idx - b.idx; }).forEach(function(item){
+          state.transactions.splice(Math.min(item.idx, state.transactions.length), 0, item.tx);
+        });
         saveState();
         renderAll();
-        showToast('Đã khôi phục giao dịch', 'ok');
+        showToast(batch.items.length > 1 ? ('Đã khôi phục ' + batch.items.length + ' giao dịch') : 'Đã khôi phục giao dịch', 'ok');
       }
     });
   }
@@ -1657,14 +1674,20 @@
       renderTx();
     });
   });
+  var txSearchTimer = null;
   document.getElementById('txSearch').addEventListener('input', function(e){
-    txSearchQuery = e.target.value.trim().toLowerCase();
-    renderTx();
+    var val = e.target.value;
+    clearTimeout(txSearchTimer);
+    txSearchTimer = setTimeout(function(){
+      txSearchQuery = val.trim().toLowerCase();
+      renderTx();
+    }, 150);
   });
   document.getElementById('btnDateFilter').addEventListener('click', function(){
-    var row = document.getElementById('dateFilterRow');
-    row.hidden = !row.hidden;
-    this.classList.toggle('active', !row.hidden);
+    document.getElementById('dateFilterRow').hidden = !document.getElementById('dateFilterRow').hidden;
+    // .active reflects whether a date filter is applied (updateDateFilterBtn),
+    // not whether the panel is open — collapsing it must not hide the fact
+    // that transactions are still being filtered out.
   });
   document.getElementById('txDateFrom').addEventListener('change', function(e){
     txDateFrom = e.target.value;
