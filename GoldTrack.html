@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#0B1220" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,21 +32,29 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
-  html{scroll-behavior:smooth;height:100%}
+  html{scroll-behavior:smooth;height:100%;overflow:hidden}
   body{
-    margin:0;min-height:100%;min-height:100vh;min-height:-webkit-fill-available;min-height:100dvh;color:var(--text);font-family:var(--font);
+    margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;color:var(--text);font-family:var(--font);
     background:
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
       radial-gradient(circle at 40% 115%, rgba(245,158,11,.09), transparent 40%),
       linear-gradient(180deg,var(--bg) 0%,#0A0F1D 50%,var(--bg) 100%);
-    overflow-x:hidden;padding:calc(14px + var(--safe-top)) 14px calc(84px + var(--safe-bottom));
+    overflow:hidden;overscroll-behavior:none;
   }
   body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
   button,input,select{font:inherit;color:inherit}
   button{cursor:pointer}
   h1,h2,h3,p{margin:0}
-  .app{max-width:480px;margin:0 auto;position:relative}
+  /* .app is the only scrolling region — body itself never scrolls, so fixed
+     elements (tabbar, sheets, toast) can't drift during rubber-band bounce
+     on iOS, and pinch/double-tap zoom stays off since nothing pans past the
+     fixed viewport frame. */
+  .app{
+    max-width:480px;margin:0 auto;position:relative;
+    height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+    padding:calc(14px + var(--safe-top)) 14px calc(84px + var(--safe-bottom));
+  }
   .icon{width:20px;height:20px;flex:none;display:block}
   .icon-lg{width:26px;height:26px}
 
@@ -98,6 +106,13 @@
   .chart-title{font-size:.72rem;color:var(--muted2);font-weight:600}
   .chart-svg{width:100%;height:auto;display:block}
   .chart-empty{font-size:.76rem;color:var(--muted2);padding:14px 0;text-align:center}
+  .range-tabs{display:flex;gap:6px;margin:10px 0 2px}
+  .range-tabs button{flex:1;border:1px solid var(--line);background:var(--glass);color:var(--muted);font-size:.66rem;font-weight:700;padding:6px 2px;border-radius:100px;min-height:28px;transition:background .2s,color .2s,border-color .2s}
+  .range-tabs button.active{background:var(--gold-soft);color:var(--gold2);border-color:rgba(245,158,11,.4)}
+  .chart-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+  .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted2)}
+  .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chart-legend-dash{width:14px;height:0;border-top:2px dashed var(--muted2);flex:none}
 
   .btn{border:none;border-radius:100px;padding:11px 18px;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;transition:transform .15s,opacity .15s,background .2s}
   .btn:active{transform:scale(.97)}
@@ -185,7 +200,7 @@
 
   .field{margin-bottom:14px}
   .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px}
-  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:.95rem;min-height:44px;font-family:var(--font)}
+  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
   .input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
   .input:focus-visible{outline:2px solid var(--gold2);outline-offset:1px}
   .field-hint{font-size:.7rem;color:var(--muted2);margin-top:5px}
@@ -636,7 +651,7 @@
       btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
     });
     if(tab === 'settings') refreshGistUI();
-    window.scrollTo(0,0);
+    document.querySelector('.app').scrollTop = 0;
   }
   document.querySelectorAll('.tabbar-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
@@ -855,6 +870,37 @@
   var liveData = null;
   var liveHistory = [];
   var liveLoading = true;
+
+  // ---------- chart range selection (shared markup, independent state per chart) ----------
+  var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
+  var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
+  var PRICE_RANGE_KEY = "goldtrack_price_range_v1";
+  var PORTFOLIO_RANGE_KEY = "goldtrack_portfolio_range_v1";
+  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || '7';
+  var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || 'all';
+  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = '7';
+  if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = 'all';
+  function renderRangeTabs(id, activeKey){
+    return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
+      Object.keys(RANGE_LABELS).map(function(key){
+        return '<button type="button" data-range="'+key+'" class="'+(activeKey===key?'active':'')+'">'+RANGE_LABELS[key]+'</button>';
+      }).join('') +
+    '</div>';
+  }
+  document.getElementById('priceCard').addEventListener('click', function(e){
+    var btn = e.target.closest('#priceRangeTabs button');
+    if(!btn) return;
+    priceChartRange = btn.getAttribute('data-range');
+    localStorage.setItem(PRICE_RANGE_KEY, priceChartRange);
+    renderPrice();
+  });
+  document.getElementById('summaryCard').addEventListener('click', function(e){
+    var btn = e.target.closest('#portfolioRangeTabs button');
+    if(!btn) return;
+    portfolioChartRange = btn.getAttribute('data-range');
+    localStorage.setItem(PORTFOLIO_RANGE_KEY, portfolioChartRange);
+    renderSummary();
+  });
 
   function getEffectivePrice(){
     // Both the live feed and manual override are always VNĐ per chỉ.
@@ -1206,41 +1252,65 @@
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
         '<span class="price-updated'+(isStale?' stale':'')+'">'+updatedTxt+'</span>' +
       '</div>' +
-      '<div class="chart-wrap">' + renderChart(liveHistory) + '</div>';
+      renderRangeTabs('priceRangeTabs', priceChartRange) +
+      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange) + '</div>';
   }
 
-  var CHART_DAYS = 5;
-  function aggregateDailyHistory(hist, days){
+  function buildDailyPriceSeries(hist){
     var byDay = {};
     hist.forEach(function(p){ byDay[localDayKey(p.at)] = p; }); // last entry of each local day wins (chronological order)
-    return Object.keys(byDay).sort().slice(-days).map(function(day){
+    return Object.keys(byDay).sort().map(function(day){
       return { buy: byDay[day].buy, sell: byDay[day].sell, day: day };
     });
   }
+  function aggregateDailyHistory(hist, days){
+    return buildDailyPriceSeries(hist).slice(-days);
+  }
 
-  function renderChart(hist){
-    var daily = aggregateDailyHistory(hist, CHART_DAYS);
+  // Maps a daily series to SVG coordinates. minOverride/maxOverride let two
+  // series (e.g. portfolio value + cost) share one Y axis.
+  function mapPointsToSvg(daily, key, w, h, padTop, padBottom, padX, minOverride, maxOverride){
+    var vals = daily.map(function(p){ return p[key]; });
+    var min = minOverride != null ? minOverride : Math.min.apply(null, vals);
+    var max = maxOverride != null ? maxOverride : Math.max.apply(null, vals);
+    if(min === max){ min -= 1; max += 1; }
+    var plotH = h - padTop - padBottom;
+    var n = daily.length;
+    return daily.map(function(p, i){
+      var x = n === 1 ? w/2 : padX + (i/(n-1)) * (w - padX*2);
+      var y = padTop + plotH - ((p[key]-min)/(max-min)) * plotH;
+      return { x: x, y: y, day: p.day };
+    });
+  }
+  // Evenly-spaced label indices so wide ranges (90d/all) don't overlap text.
+  function pickLabelIndices(n, maxLabels){
+    if(n <= maxLabels) return Array.from({length:n}, function(_,i){ return i; });
+    var idxs = [];
+    for(var i=0;i<maxLabels;i++){ idxs.push(Math.round(i*(n-1)/(maxLabels-1))); }
+    return idxs.filter(function(v,i,a){ return a.indexOf(v) === i; });
+  }
+
+  function renderChart(hist, rangeKey){
+    var days = RANGE_DAYS[rangeKey] || 7;
+    var daily = aggregateDailyHistory(hist, days);
     if(daily.length < 2){
       return '<div class="chart-empty">Cần thêm dữ liệu qua nhiều ngày hơn để xem xu hướng</div>';
     }
     var w = 300, h = 92, padTop = 8, padBottom = 24, padX = 20;
-    var plotH = h - padTop - padBottom;
-    var vals = daily.map(function(p){ return p.buy; });
-    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
-    if(min === max){ min -= 1; max += 1; }
     var n = daily.length;
-    var pts = daily.map(function(p, i){
-      var x = n === 1 ? w/2 : padX + (i/(n-1)) * (w - padX*2);
-      var y = padTop + plotH - ((p.buy-min)/(max-min)) * plotH;
-      return { x: x, y: y, day: p.day };
-    });
+    var pts = mapPointsToSvg(daily, 'buy', w, h, padTop, padBottom, padX);
+    var plotBottom = padTop + (h - padTop - padBottom);
     var line = pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
-    var area = line + ' L'+pts[pts.length-1].x.toFixed(1)+','+(padTop+plotH)+' L'+pts[0].x.toFixed(1)+','+(padTop+plotH)+' Z';
-    var lastIdx = pts.length - 1;
+    var area = line + ' L'+pts[n-1].x.toFixed(1)+','+plotBottom+' L'+pts[0].x.toFixed(1)+','+plotBottom+' Z';
+    var showAllDots = n <= 10;
     var dots = pts.map(function(p,i){
-      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(i===lastIdx?3:2)+'" fill="'+(i===lastIdx?'#FDE68A':'#F59E0B')+'"/>';
+      if(!showAllDots && i!==0 && i!==n-1) return '';
+      var isLast = i===n-1;
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+(isLast?'#FDE68A':'#F59E0B')+'"/>';
     }).join('');
-    var labels = pts.map(function(p){
+    var labelIdxs = pickLabelIndices(n, 5);
+    var labels = labelIdxs.map(function(i){
+      var p = pts[i];
       var d = new Date(p.day+"T00:00:00");
       var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
       return '<text x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" fill="#7C88A6" text-anchor="middle">'+lbl+'</text>';
@@ -1253,6 +1323,113 @@
       '<path d="'+line+'" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
       dots + labels +
     '</svg>';
+  }
+
+  // ---------- portfolio value over time (holding amount x historical price, day by day) ----------
+  function computePortfolioSeries(rangeKey){
+    if(state.transactions.length === 0) return [];
+    var priceSeries = buildDailyPriceSeries(liveHistory);
+    if(priceSeries.length === 0) return [];
+
+    var chrono = state.transactions.slice().sort(function(a,b){
+      return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+    });
+    var firstTxDay = chrono[0].date;
+    var firstPriceDay = priceSeries[0].day;
+    var startDay = firstTxDay > firstPriceDay ? firstTxDay : firstPriceDay; // before this we either have no price data or no holdings
+    var today = todayISO();
+    var days = RANGE_DAYS[rangeKey] || Infinity;
+    if(days !== Infinity){
+      var cutoff = localDayKey(new Date(Date.now() - (days-1)*86400000));
+      if(cutoff > startDay) startDay = cutoff;
+    }
+    if(startDay > today) return [];
+
+    var holdingAmount = 0, holdingCost = 0;
+    function applyTx(tx){
+      if(txType(tx) === 'sell'){
+        var avgCost = holdingAmount > 0 ? holdingCost / holdingAmount : 0;
+        var sellAmt = Math.min(tx.amount, holdingAmount);
+        holdingCost -= avgCost * sellAmt;
+        holdingAmount -= sellAmt;
+        if(holdingAmount < 1e-9){ holdingAmount = 0; holdingCost = 0; }
+      } else {
+        holdingCost += tx.amount * tx.price;
+        holdingAmount += tx.amount;
+      }
+    }
+    var txIdx = 0;
+    while(txIdx < chrono.length && chrono[txIdx].date < startDay){ applyTx(chrono[txIdx]); txIdx++; }
+
+    var priceIdx = 0, lastKnownBuy = null;
+    while(priceIdx < priceSeries.length && priceSeries[priceIdx].day <= startDay){ lastKnownBuy = priceSeries[priceIdx].buy; priceIdx++; }
+
+    var series = [];
+    var d = new Date(startDay+"T00:00:00");
+    var endD = new Date(today+"T00:00:00");
+    var guard = 0;
+    while(d <= endD && guard < 2000){
+      guard++;
+      var dayKey = localDayKey(d);
+      while(txIdx < chrono.length && chrono[txIdx].date === dayKey){ applyTx(chrono[txIdx]); txIdx++; }
+      while(priceIdx < priceSeries.length && priceSeries[priceIdx].day <= dayKey){ lastKnownBuy = priceSeries[priceIdx].buy; priceIdx++; }
+      if(lastKnownBuy != null){
+        series.push({ day: dayKey, value: holdingAmount * lastKnownBuy, cost: holdingCost });
+      }
+      d = new Date(d.getTime() + 86400000);
+    }
+    return series;
+  }
+
+  function renderPortfolioChart(rangeKey){
+    var series = computePortfolioSeries(rangeKey);
+    if(series.length < 2){
+      return '<div class="chart-empty">Cần thêm dữ liệu qua nhiều ngày hơn để xem giá trị danh mục theo thời gian</div>';
+    }
+    var w = 300, h = 110, padTop = 10, padBottom = 24, padX = 20;
+    var allVals = series.map(function(p){ return p.value; }).concat(series.map(function(p){ return p.cost; }));
+    var min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
+    if(min === max){ min -= 1; max += 1; }
+    var n = series.length;
+    var valuePts = mapPointsToSvg(series, 'value', w, h, padTop, padBottom, padX, min, max);
+    var costPts = mapPointsToSvg(series, 'cost', w, h, padTop, padBottom, padX, min, max);
+    var plotBottom = padTop + (h - padTop - padBottom);
+    var lastVal = series[n-1].value, lastCost = series[n-1].cost;
+    var up = lastVal >= lastCost;
+    var lineColor = up ? '#34D399' : '#FB7185';
+
+    var valueLine = valuePts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+    var area = valueLine + ' L'+valuePts[n-1].x.toFixed(1)+','+plotBottom+' L'+valuePts[0].x.toFixed(1)+','+plotBottom+' Z';
+    var costLine = costPts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+
+    var showAllDots = n <= 10;
+    var dots = valuePts.map(function(p,i){
+      if(!showAllDots && i!==0 && i!==n-1) return '';
+      var isLast = i===n-1;
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+lineColor+'"/>';
+    }).join('');
+
+    var labelIdxs = pickLabelIndices(n, 5);
+    var labels = labelIdxs.map(function(i){
+      var p = valuePts[i];
+      var d = new Date(series[i].day+"T00:00:00");
+      var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+      return '<text x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" fill="#7C88A6" text-anchor="middle">'+lbl+'</text>';
+    }).join('');
+
+    return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'">' +
+      '<defs><linearGradient id="pvChartFill" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="'+lineColor+'" stop-opacity="0.30"/><stop offset="1" stop-color="'+lineColor+'" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      '<path d="'+area+'" fill="url(#pvChartFill)"/>' +
+      '<path d="'+costLine+'" fill="none" stroke="#7C88A6" stroke-width="1.6" stroke-dasharray="4 3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '<path d="'+valueLine+'" fill="none" stroke="'+lineColor+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+      dots + labels +
+    '</svg>' +
+    '<div class="chart-legend">' +
+      '<span class="chart-legend-item"><span class="chart-legend-dot" style="background:'+lineColor+'"></span>Giá trị thị trường</span>' +
+      '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Vốn đã bỏ ra</span>' +
+    '</div>';
   }
 
   // ---------- render: summary ----------
@@ -1286,7 +1463,12 @@
           '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+moneyHtml(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
         (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
-      '</div>';
+      '</div>' +
+      '<div class="chart-head" style="margin-top:16px">' +
+        '<span class="chart-title">Giá trị danh mục theo thời gian</span>' +
+      '</div>' +
+      renderRangeTabs('portfolioRangeTabs', portfolioChartRange) +
+      '<div class="chart-wrap">' + renderPortfolioChart(portfolioChartRange) + '</div>';
   }
 
   // ---------- store breakdown ----------

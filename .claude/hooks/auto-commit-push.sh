@@ -16,7 +16,17 @@ else
   COMMIT_MSG="Update: ${CHANGED_FILES}"
 fi
 
-if git commit -m "$COMMIT_MSG" >/tmp/claude-auto-commit.log 2>&1; then
+# This machine has no git user.name/user.email configured (local or global),
+# so a plain `git commit` fails with "Author identity unknown". Rather than
+# touch the machine's git config, fall back to a per-commit -c override only
+# when no identity is already set, so a future `git config` on this machine
+# still takes precedence.
+IDENTITY_ARGS=()
+if [ -z "$(git config user.name 2>/dev/null)" ] || [ -z "$(git config user.email 2>/dev/null)" ]; then
+  IDENTITY_ARGS=(-c user.name="letranvietlong" -c user.email="letranvietlong@gmail.com")
+fi
+
+if git "${IDENTITY_ARGS[@]}" commit -m "$COMMIT_MSG" >/tmp/claude-auto-commit.log 2>&1; then
   rm -f "$MSG_FILE"
 
   PUSHED=0
