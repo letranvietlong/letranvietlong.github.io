@@ -17,6 +17,7 @@ var APP_SHELL_PATHS = [
 var DATA_PATHS = [
   "/data/gold-price.json",
   "/data/gold-price-history.json",
+  "/data/gold-news.json",
   "/data/changelog.json"
 ];
 var GOLDTRACK_PATHS = APP_SHELL_PATHS.concat(DATA_PATHS);
