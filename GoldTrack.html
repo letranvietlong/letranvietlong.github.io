@@ -54,8 +54,23 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}
-  html{scroll-behavior:smooth;height:100%;overflow:hidden}
+  /* Safari's own toolbar can collapse after render, revealing more of the
+     screen than our dvh-based layout accounted for. That sliver sits
+     outside body's box and shows html's own background — if left
+     transparent (default white), it shows as a white gap at the bottom,
+     and the fixed tabbar's backdrop-filter smears it into a dark blur
+     when sampling that undefined edge. Painting html the same base color
+     body's gradient starts/ends on makes that gap invisible either way. */
+  html{scroll-behavior:smooth;height:100%;overflow:hidden;background:var(--bg)}
   body{
+    /* Must stay a definite height (not min-height) — .app below depends on
+       height:100% to be clipped to exactly one viewport and scroll
+       internally; min-height here would make body's height indefinite,
+       which breaks that percentage resolution and lets .app grow to fit
+       all content instead of clipping+scrolling it (confirmed by testing:
+       .app stopped scrolling entirely). 100dvh is a *live* unit — modern
+       Safari recomputes it as its own toolbar collapses/expands, so this
+       tracks the real viewport without needing min-height's growth trick. */
     margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;color:var(--text);font-family:var(--font);
     background:
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
