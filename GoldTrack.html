@@ -708,7 +708,7 @@
     renderAll();
 
     if(!pendingDeleteBatch) pendingDeleteBatch = { items: [] };
-    pendingDeleteBatch.items.push({ tx: tx, idx: idx });
+    pendingDeleteBatch.items.push(tx);
     clearTimeout(pendingDeleteBatch.timer);
     pendingDeleteBatch.timer = setTimeout(function(){ pendingDeleteBatch = null; }, 5000);
 
@@ -719,9 +719,13 @@
       onClick: function(){
         clearTimeout(batch.timer);
         if(pendingDeleteBatch === batch) pendingDeleteBatch = null;
-        batch.items.slice().sort(function(a,b){ return a.idx - b.idx; }).forEach(function(item){
-          state.transactions.splice(Math.min(item.idx, state.transactions.length), 0, item.tx);
-        });
+        // Where restored items land in the array doesn't matter — every
+        // consumer (computePortfolio, renderTx, computePortfolioSeries,
+        // renderStoreSummary) re-sorts or aggregates independent of array
+        // order, so appending is sufficient and, unlike reconstructing
+        // original indices, can't reorder two restored items relative to
+        // each other.
+        batch.items.forEach(function(restoredTx){ state.transactions.push(restoredTx); });
         saveState();
         renderAll();
         showToast(batch.items.length > 1 ? ('Đã khôi phục ' + batch.items.length + ' giao dịch') : 'Đã khôi phục giao dịch', 'ok');
