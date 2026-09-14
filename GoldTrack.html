@@ -112,11 +112,6 @@
   .version-badge:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
   .version-badge:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
   .header-actions{display:flex;align-items:center;gap:8px;flex:none}
-  .privacy-toggle{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s,color .2s,border-color .2s}
-  .privacy-toggle:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
-  .privacy-toggle.active{color:var(--gold2);border-color:rgba(245,158,11,.4);background:var(--gold-soft)}
-  .privacy-toggle:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
-  .privacy-on .money{filter:blur(6px);user-select:none}
 
   /* ---------- Cards ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
@@ -124,17 +119,18 @@
 
   .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
   .live-dot.stale{background:var(--muted2);box-shadow:0 0 0 3px rgba(124,136,166,.18)}
-  .price-updated{font-size:.68rem;color:var(--muted2);white-space:nowrap}
+  .price-updated{font-size:.68rem;color:var(--muted2)}
   .price-updated.stale{color:var(--red)}
-  .spread-line{font-size:.72rem;color:var(--muted);margin:2px 0 4px}
-  .spread-line b{color:var(--text);font-weight:700}
-  .btn-ghost.btn-active{border-color:rgba(245,158,11,.5);color:var(--gold2);background:var(--gold-soft)}
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
   .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
   .price-box .pb-val{font-family:var(--font);font-size:1.14rem;font-weight:700;color:var(--gold2);letter-spacing:-.01em}
   .price-box .pb-unit{font-size:.66rem;color:var(--muted2);margin-left:2px;font-weight:500}
-  .price-delta{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:100px;margin-top:8px}
+  .pb-change{display:inline-flex;align-items:center;gap:3px;font-size:.72rem;font-weight:700;margin-top:5px}
+  .pb-change.up{color:var(--green)}
+  .pb-change.down{color:var(--red)}
+  .pb-change.flat{color:var(--muted)}
+  .pb-change .icon{width:13px;height:13px}
   .price-empty{padding:22px 4px;text-align:center;color:var(--muted)}
   .price-empty p{font-size:.86rem;margin-bottom:12px}
 
@@ -362,9 +358,6 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="privacy-toggle" id="btnPrivacy" type="button" aria-label="Ẩn/hiện số tiền" aria-pressed="false">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path id="privacyEyeShape" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path id="privacyEyeSlash" d="M4 4l16 16" hidden/></svg>
-      </button>
       <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
     </div>
   </div>
@@ -374,17 +367,16 @@
     <!-- Current price card -->
     <div class="card" id="priceCard">
       <div class="card-glow" style="background:var(--gold)"></div>
-      <div class="summary-head" style="justify-content:space-between">
+      <div class="summary-head">
         <div style="display:flex;align-items:center;gap:10px">
           <div class="summary-head-icon" style="background:var(--gold-soft);color:var(--gold2)">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
           </div>
           <div>
             <div class="summary-title"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</div>
-            <div class="summary-sub">Tự động cập nhật mỗi 30 phút</div>
+            <div class="summary-sub price-updated" id="priceUpdatedSub"></div>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btnUpdatePrice" type="button">Ghi đè</button>
       </div>
       <div id="priceContent"></div>
     </div>
@@ -558,36 +550,6 @@
   </form>
 </div>
 
-<!-- ============ SHEET: UPDATE PRICE ============ -->
-<div class="sheet-backdrop" id="priceBackdrop"></div>
-<div class="sheet" id="priceSheet" role="dialog" aria-modal="true" aria-labelledby="priceSheetTitle">
-  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
-  <div class="sheet-head">
-    <h3 class="sheet-title" id="priceSheetTitle">Ghi đè giá vàng thủ công</h3>
-    <button class="icon-btn" id="priceClose" aria-label="Đóng" type="button">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-  </div>
-  <p class="field-hint" style="margin:-6px 0 14px">Giá vàng 9999 được tự động cập nhật mỗi 30 phút. Giá ghi đè sẽ được dùng thay cho giá tự động cho đến khi bạn bấm "Dùng giá tự động".</p>
-  <form id="priceForm">
-    <div class="field">
-      <label for="priceBuy">Giá mua vào (VNĐ / chỉ)</label>
-      <input class="input" id="priceBuy" inputmode="numeric" placeholder="Ví dụ: 8.700.000" autocomplete="off" required>
-      <div class="field-hint">Giá cửa hàng trả cho bạn khi bạn bán vàng.</div>
-      <div class="field-error">Nhập giá lớn hơn 0.</div>
-    </div>
-    <div class="field">
-      <label for="priceSell">Giá bán ra (VNĐ / chỉ)</label>
-      <input class="input" id="priceSell" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
-      <div class="field-hint">Giá bạn phải trả khi mua vàng mới.</div>
-      <div class="field-error">Giá bán ra phải ≥ giá mua vào.</div>
-    </div>
-    <div class="sheet-actions">
-      <button type="button" class="btn btn-ghost" id="priceClearOverride" hidden>Dùng giá tự động</button>
-      <button type="submit" class="btn btn-gold btn-block">Lưu giá ghi đè</button>
-    </div>
-  </form>
-</div>
 
 <!-- ============ SHEET: UPDATE HISTORY ============ -->
 <div class="sheet-backdrop" id="versionBackdrop"></div>
@@ -623,13 +585,12 @@
   function loadState(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return { manualPrice:null, transactions:[] };
+      if(!raw) return { transactions:[] };
       var parsed = JSON.parse(raw);
       return {
-        manualPrice: parsed.manualPrice || null,
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
       };
-    }catch(e){ return { manualPrice:null, transactions:[] }; }
+    }catch(e){ return { transactions:[] }; }
   }
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -640,9 +601,7 @@
 
   // ---------- helpers ----------
   function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
-  // For innerHTML display only (never for input.value — it emits markup).
-  // Lets the "hide amounts" toggle blur just the figure via CSS, unit labels stay legible.
-  function moneyHtml(n){ return '<span class="money">'+fmtVND(n)+'</span>'; }
+  function moneyHtml(n){ return fmtVND(n); }
   function fmtAmount(n){
     var r = Math.round(n*100)/100;
     return (r % 1 === 0) ? String(r) : r.toLocaleString('vi-VN',{maximumFractionDigits:2});
@@ -835,7 +794,7 @@
   }
 
   function buildGistFiles(){
-    var content = JSON.stringify({ transactions: state.transactions, manualPrice: state.manualPrice }, null, 2);
+    var content = JSON.stringify({ transactions: state.transactions }, null, 2);
     var files = {};
     files[GIST_FILENAME] = { content: content };
     return files;
@@ -889,7 +848,6 @@
       if(!file || !file.content) return false;
       var data = JSON.parse(file.content);
       state.transactions = Array.isArray(data.transactions) ? data.transactions : [];
-      state.manualPrice = data.manualPrice || null;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       return true;
     });
@@ -944,8 +902,6 @@
     });
   }
   bindThousandFormat(document.getElementById('txPrice'));
-  bindThousandFormat(document.getElementById('priceBuy'));
-  bindThousandFormat(document.getElementById('priceSell'));
 
   // ---------- sheets ----------
   function openSheet(sheetId, backdropId){
@@ -963,7 +919,6 @@
     document.getElementById(backdropId).addEventListener('click', function(){ closeSheet(sheetId, backdropId); });
   }
   wireSheet('txSheet','txBackdrop','txClose');
-  wireSheet('priceSheet','priceBackdrop','priceClose');
   wireSheet('versionSheet','versionBackdrop','versionClose');
 
   // Drag-to-dismiss via the handle only — the sheet body itself may scroll
@@ -995,7 +950,6 @@
     handle.addEventListener('pointercancel', endDrag);
   }
   enableSheetDrag('txSheet','txBackdrop');
-  enableSheetDrag('priceSheet','priceBackdrop');
   enableSheetDrag('versionSheet','versionBackdrop');
 
   // ---------- version / update history ----------
@@ -1025,22 +979,6 @@
   document.getElementById('btnVersion').addEventListener('click', function(){
     renderChangelog();
     openSheet('versionSheet','versionBackdrop');
-  });
-
-  // ---------- privacy toggle (hide monetary figures) ----------
-  var PRIVACY_KEY = "goldtrack_privacy_v1";
-  var btnPrivacy = document.getElementById('btnPrivacy');
-  function applyPrivacy(on){
-    document.body.classList.toggle('privacy-on', on);
-    btnPrivacy.classList.toggle('active', on);
-    btnPrivacy.setAttribute('aria-pressed', on ? 'true' : 'false');
-    document.getElementById('privacyEyeSlash').hidden = !on;
-  }
-  applyPrivacy(localStorage.getItem(PRIVACY_KEY) === '1');
-  btnPrivacy.addEventListener('click', function(){
-    var next = !document.body.classList.contains('privacy-on');
-    localStorage.setItem(PRIVACY_KEY, next ? '1' : '0');
-    applyPrivacy(next);
   });
 
   // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
@@ -1080,14 +1018,8 @@
   });
 
   function getEffectivePrice(){
-    // Both the live feed and manual override are always VNĐ per chỉ.
-    // A manual override stays in force until the user explicitly clears it —
-    // silently expiring it on the next automatic fetch surprised people.
-    if(state.manualPrice){
-      return { buy: state.manualPrice.buy, sell: state.manualPrice.sell, isManual: true, at: state.manualPrice.updatedAt };
-    }
     if(liveData){
-      return { buy: liveData.buy, sell: liveData.sell, isManual: false, at: liveData.fetchedAt };
+      return { buy: liveData.buy, sell: liveData.sell, at: liveData.fetchedAt };
     }
     return null;
   }
@@ -1105,15 +1037,6 @@
     });
   }
 
-  // ---------- price override sheet ----------
-  document.getElementById('btnUpdatePrice').addEventListener('click', function(){
-    var eff = getEffectivePrice();
-    document.getElementById('priceBuy').value = eff ? fmtVND(eff.buy) : '';
-    document.getElementById('priceSell').value = eff ? fmtVND(eff.sell) : '';
-    document.getElementById('priceClearOverride').hidden = !state.manualPrice;
-    clearFieldError('priceBuy'); clearFieldError('priceSell');
-    openSheet('priceSheet','priceBackdrop');
-  });
   // The old "Làm mới" button only re-read the committed JSON, which read as
   // "fetch a fresh price" and misled people. Instead, quietly re-read it
   // whenever the app comes back to the foreground.
@@ -1121,34 +1044,12 @@
     if(document.visibilityState === 'visible') loadLiveData();
   });
   window.addEventListener('pageshow', function(e){ if(e.persisted) loadLiveData(); });
-  document.getElementById('priceClearOverride').addEventListener('click', function(){
-    state.manualPrice = null;
-    saveState();
-    renderAll();
-    closeSheet('priceSheet','priceBackdrop');
-    showToast('Đã chuyển về dùng giá tự động', 'ok');
-  });
 
   function setFieldError(inputId, on){
     var field = document.getElementById(inputId).closest('.field');
     field.classList.toggle('invalid', !!on);
   }
   function clearFieldError(inputId){ setFieldError(inputId, false); }
-
-  document.getElementById('priceForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    var buy = parseDigits(document.getElementById('priceBuy').value);
-    var sell = parseDigits(document.getElementById('priceSell').value);
-    var ok = true;
-    if(!(buy > 0)){ setFieldError('priceBuy', true); ok = false; } else clearFieldError('priceBuy');
-    if(!(sell > 0) || sell < buy){ setFieldError('priceSell', true); ok = false; } else clearFieldError('priceSell');
-    if(!ok) return;
-    state.manualPrice = { buy: buy, sell: sell, updatedAt: new Date().toISOString() };
-    saveState();
-    renderAll();
-    closeSheet('priceSheet','priceBackdrop');
-    showToast('Đã lưu giá ghi đè', 'ok');
-  });
 
   // ---------- portfolio math (moving-average cost method, buy + sell aware) ----------
   function computePortfolio(){
@@ -1308,13 +1209,6 @@
       typeof t.price === 'number' && isFinite(t.price) && t.price > 0 &&
       typeof t.date === 'string' && !isNaN(new Date(t.date+"T00:00:00"));
   }
-  function isValidManualPrice(m){
-    return m && typeof m === 'object' &&
-      typeof m.buy === 'number' && isFinite(m.buy) && m.buy > 0 &&
-      typeof m.sell === 'number' && isFinite(m.sell) && m.sell > 0 &&
-      typeof m.updatedAt === 'string' && !isNaN(new Date(m.updatedAt));
-  }
-
   document.getElementById('fileImport').addEventListener('change', function(e){
     var file = e.target.files[0];
     if(!file) return;
@@ -1333,7 +1227,6 @@
       var rawTx = Array.isArray(data.transactions) ? data.transactions : [];
       var validTx = rawTx.filter(isValidTx);
       var skipped = rawTx.length - validTx.length;
-      var manualPrice = isValidManualPrice(data.manualPrice) ? data.manualPrice : null;
 
       if(rawTx.length > 0 && validTx.length === 0){
         showToast('File không chứa giao dịch hợp lệ nào — có thể sai file', 'err');
@@ -1346,7 +1239,7 @@
       showConfirm(msg, { title: 'Nhập dữ liệu', confirmText: 'Nhập, ghi đè', danger: true }).then(function(ok){
         e.target.value = '';
         if(!ok) return;
-        state = { manualPrice: manualPrice, transactions: validTx };
+        state = { transactions: validTx };
         saveState();
         renderAll();
         showToast(skipped > 0 ? 'Đã nhập ' + validTx.length + ' giao dịch, bỏ qua ' + skipped + ' dòng lỗi' : 'Đã nhập dữ liệu thành công', 'ok');
@@ -1357,7 +1250,7 @@
   document.getElementById('btnClearAll').addEventListener('click', function(){
     showConfirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.', { title: 'Xoá toàn bộ dữ liệu', confirmText: 'Xoá hết', danger: true }).then(function(ok){
       if(!ok) return;
-      state = { manualPrice:null, transactions:[] };
+      state = { transactions:[] };
       saveState();
       renderAll();
       showToast('Đã xoá toàn bộ dữ liệu', 'ok');
@@ -1365,16 +1258,36 @@
   });
 
   // ---------- render: price card ----------
+  // Small up/down/flat % chip for a price box, comparing to the previous
+  // local day's last reading (not the previous 30-minute poll — the bot only
+  // records real changes now, but a day-over-day figure is what actually
+  // answers "is gold up or down?"). No VND amount, just direction + %.
+  function priceChangeHtml(key, current){
+    var daily = aggregateDailyHistory(liveHistory, 2);
+    var todayKey = localDayKey(new Date());
+    if(daily.length !== 2 || daily[1].day !== todayKey) return '';
+    var prevVal = daily[0][key];
+    if(!prevVal) return '';
+    var diff = current - prevVal;
+    var pct = diff / prevVal * 100;
+    var cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+    var arrowPath = diff > 0 ? '<path d="M12 19V6M6 12l6-6 6 6"/>' : (diff < 0 ? '<path d="M12 5v13M6 12l6 6 6-6"/>' : '<path d="M5 12h14"/>');
+    return '<div class="pb-change '+cls+'"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</div>';
+  }
+
   function renderPrice(){
     var el = document.getElementById('priceContent');
     var liveDot = document.getElementById('liveDot');
+    var subEl = document.getElementById('priceUpdatedSub');
     var eff = getEffectivePrice();
 
     if(!eff){
       liveDot.hidden = true;
+      subEl.classList.remove('stale');
+      subEl.textContent = liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động';
       el.innerHTML =
         '<div class="price-empty">' +
-          '<p>'+(liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động. Bạn có thể ghi đè giá thủ công.')+'</p>' +
+          '<p>'+(liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động.')+'</p>' +
         '</div>';
       return;
     }
@@ -1382,49 +1295,24 @@
     var d = new Date(eff.at);
     var whenTxt = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
     var STALE_MIN = 90; // bot runs every 30 min; anything older than this means the schedule isn't firing
-    var isStale = !eff.isManual && (Date.now() - d.getTime()) / 60000 > STALE_MIN;
+    var isStale = (Date.now() - d.getTime()) / 60000 > STALE_MIN;
     liveDot.classList.toggle('stale', isStale);
-    document.getElementById('btnUpdatePrice').classList.toggle('btn-active', !!eff.isManual);
-    var updatedTxt = eff.isManual
-      ? 'Đã ghi đè thủ công · ' + whenTxt
-      : (isStale ? 'Chưa có cập nhật mới từ ' + whenTxt : 'Cập nhật ' + whenTxt);
+    subEl.classList.toggle('stale', isStale);
+    subEl.textContent = isStale ? 'Chưa có cập nhật mới từ ' + whenTxt : 'Cập nhật ' + whenTxt;
 
-    // Compare against the previous local day's last reading, not the previous
-    // 30-minute poll — the bot only records real changes now, but a day-over-
-    // day figure is what actually answers "is gold up or down?".
-    var deltaHtml = '';
-    if(!eff.isManual){
-      var daily = aggregateDailyHistory(liveHistory, 2);
-      var todayKey = localDayKey(new Date());
-      if(daily.length === 2 && daily[1].day === todayKey){
-        var prevDay = daily[0];
-        var diff = liveData.buy - prevDay.buy;
-        var pct = prevDay.buy ? (diff/prevDay.buy*100) : 0;
-        var bg = diff > 0 ? 'var(--green-soft)' : (diff < 0 ? 'var(--red-soft)' : 'var(--glass)');
-        var color = diff > 0 ? 'var(--green)' : (diff < 0 ? 'var(--red)' : 'var(--muted)');
-        var arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '→');
-        var yesterdayKey = localDayKey(new Date(Date.now() - 86400000));
-        var vsTxt = prevDay.day === yesterdayKey ? 'so với hôm qua' : 'so với ' + fmtDate(prevDay.day).slice(0,5);
-        deltaHtml = '<span class="price-delta" style="background:'+bg+';color:'+color+'">'+arrow+' '+(diff>=0?'+':'')+moneyHtml(diff)+' đ ('+(pct>=0?'+':'')+pct.toFixed(2)+'%) '+vsTxt+'</span>';
-      }
-    }
-
-    var spread = eff.sell - eff.buy;
-    var spreadPct = eff.buy ? spread / eff.buy * 100 : 0;
+    var p = computePortfolio();
+    var avgCost = p.holdingAmount > 0 ? p.avgCost : null;
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+moneyHtml(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+moneyHtml(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div></div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+moneyHtml(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+moneyHtml(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell)+'</div>' +
       '</div>' +
-      '<div class="spread-line">Chênh lệch mua–bán: <b>'+moneyHtml(spread)+' đ</b> ('+spreadPct.toFixed(2)+'%) — mua xong bán lại ngay sẽ lỗ khoản này</div>' +
-      deltaHtml +
       '<div class="chart-head">' +
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
-        '<span class="price-updated'+(isStale?' stale':'')+'">'+updatedTxt+'</span>' +
       '</div>' +
       renderRangeTabs('priceRangeTabs', priceChartRange) +
-      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange) + '</div>';
+      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange, avgCost) + '</div>';
   }
 
   function buildDailyPriceSeries(hist){
@@ -1468,7 +1356,7 @@
   function isLightScheme(){
     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
   }
-  function renderChart(hist, rangeKey){
+  function renderChart(hist, rangeKey, avgCost){
     var days = RANGE_DAYS[rangeKey] || 7;
     var daily = aggregateDailyHistory(hist, days);
     if(daily.length < 2){
@@ -1481,7 +1369,17 @@
     var lastDotColor = light ? '#B45309' : '#FDE68A';
     var w = 300, h = 92, padTop = 8, padBottom = 24, padX = 20;
     var n = daily.length;
-    var pts = mapPointsToSvg(daily, 'buy', w, h, padTop, padBottom, padX);
+
+    // Extend the Y range to include the average cost so its reference line
+    // never falls off-chart even when the current price has moved well
+    // above or below it.
+    var hasAvgLine = typeof avgCost === 'number' && avgCost > 0;
+    var vals = daily.map(function(p){ return p.buy; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if(hasAvgLine){ min = Math.min(min, avgCost); max = Math.max(max, avgCost); }
+    if(min === max){ min -= 1; max += 1; }
+
+    var pts = mapPointsToSvg(daily, 'buy', w, h, padTop, padBottom, padX, min, max);
     var plotBottom = padTop + (h - padTop - padBottom);
     var line = pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
     var area = line + ' L'+pts[n-1].x.toFixed(1)+','+plotBottom+' L'+pts[0].x.toFixed(1)+','+plotBottom+' Z';
@@ -1498,14 +1396,29 @@
       var lbl = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
       return '<text class="chart-axis-label" x="'+p.x.toFixed(1)+'" y="'+(h-6)+'" font-size="9" text-anchor="middle">'+lbl+'</text>';
     }).join('');
+
+    var avgLineSvg = '';
+    if(hasAvgLine){
+      var plotH = h - padTop - padBottom;
+      var avgY = padTop + plotH - ((avgCost-min)/(max-min))*plotH;
+      avgLineSvg = '<line class="chart-cost-line" x1="'+padX+'" x2="'+(w-padX)+'" y1="'+avgY.toFixed(1)+'" y2="'+avgY.toFixed(1)+'" stroke-width="1.4" stroke-dasharray="4 3"/>';
+    }
+
     return '<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'">' +
       '<defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="'+fillColor+'" stop-opacity="0.35"/><stop offset="1" stop-color="'+fillColor+'" stop-opacity="0"/>' +
       '</linearGradient></defs>' +
       '<path d="'+area+'" fill="url(#chartFill)"/>' +
+      avgLineSvg +
       '<path d="'+line+'" fill="none" stroke="'+lineColor+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
       dots + labels +
-    '</svg>';
+    '</svg>' +
+    (hasAvgLine ?
+      '<div class="chart-legend">' +
+        '<span class="chart-legend-item"><span class="chart-legend-dot" style="background:'+lineColor+'"></span>Giá mua vào</span>' +
+        '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Giá vốn TB của bạn</span>' +
+      '</div>'
+    : '');
   }
 
   // ---------- portfolio value over time (holding amount x historical price, day by day) ----------
