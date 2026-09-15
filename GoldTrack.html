@@ -404,7 +404,7 @@
       </div>
       <div class="brand-text">
         <h1>GoldTrack</h1>
-        <span class="brand-sub">Theo dõi giá vàng &amp; lời/lỗ</span>
+        <span class="brand-sub">Made by LongLTV</span>
       </div>
     </div>
     <div class="header-actions">
@@ -1074,9 +1074,9 @@
   var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
   var PRICE_RANGE_KEY = "goldtrack_price_range_v1";
   var PORTFOLIO_RANGE_KEY = "goldtrack_portfolio_range_v1";
-  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || '7';
+  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || 'all';
   var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || 'all';
-  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = '7';
+  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = 'all';
   if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = 'all';
   function renderRangeTabs(id, activeKey){
     return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
