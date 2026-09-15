@@ -79,6 +79,12 @@ def parse_items(xml_bytes, source):
         link = (link_el.text or "").strip() if link_el is not None else ""
         if not title or not link:
             continue
+        # RSS <link> content is attacker-reachable if any upstream feed is
+        # ever compromised or poisoned; the client renders it straight into
+        # an href, so reject anything that isn't a plain http(s) URL here
+        # rather than trusting escapeHtml (entity-escaping) alone downstream.
+        if not (link.startswith("http://") or link.startswith("https://")):
+            continue
         dt = parse_date(date_el.text if date_el is not None else None)
         items.append({
             "title": title,

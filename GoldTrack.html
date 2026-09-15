@@ -280,7 +280,15 @@
   /* ---------- Sheet ---------- */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
   .sheet-backdrop.open{opacity:1;pointer-events:auto}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(102%);transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto}
+  /* translateY(100% + 100px), not just 102% — the box-shadow (offset -20px,
+     blur 60px, ~80px total reach) is anchored to the element's own box and
+     moves with it, but a plain 102% only clears the viewport by 2% of the
+     sheet's OWN height. For any sheet shorter than ~4000px that's under the
+     shadow's ~80px reach, so it bleeds back over the visible viewport as a
+     dark smear at the bottom edge on every page load (sheets stay in the
+     DOM, just transformed off-screen, even when "closed"). A fixed 100px
+     buffer guarantees clearance regardless of content height. */
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto}
   .sheet.open{transform:translateY(0)}
   .sheet-handle-hit{padding:8px 0 16px;display:flex;justify-content:center;touch-action:none;cursor:grab}
   .sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2)}
@@ -695,6 +703,14 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
+  }
+  // escapeHtml only entity-escapes — it does nothing to stop a
+  // javascript:/data: URI from executing on click. News article links come
+  // from third-party RSS feeds (fetch_gold_news.py already rejects
+  // non-http(s) links at the source, but this is a second, independent
+  // check before anything from that data ever lands in an href).
+  function safeUrl(u){
+    return /^https?:\/\//i.test(String(u||'')) ? u : '#';
   }
   function txType(tx){ return tx.type === 'sell' ? 'sell' : 'buy'; }
 
@@ -1150,7 +1166,7 @@
     }
     list.innerHTML = articles.map(function(a){
       return (
-        '<a class="news-item" href="'+escapeHtml(a.link)+'" target="_blank" rel="noopener">' +
+        '<a class="news-item" href="'+escapeHtml(safeUrl(a.link))+'" target="_blank" rel="noopener">' +
           '<div class="news-item-title">'+escapeHtml(a.title)+'</div>' +
           '<div class="news-item-meta">' +
             '<span class="news-item-source">'+escapeHtml(a.source||'')+'</span>' +
@@ -1168,11 +1184,19 @@
     var daily = buildDailyPriceSeries(hist);
     if(daily.length < 2) return null;
     var lastBuy = daily[daily.length-1].buy;
+    // Returns the actual date compared against, not just a percentage —
+    // "days" is a position N points back in a day-deduplicated array, which
+    // only equals N calendar days if the bot recorded every single day with
+    // no gap. Labeling this "N ngày qua" would assert a precision the data
+    // doesn't guarantee if a day was ever missed; showing the real date
+    // (same convention as the price card's day-over-day delta) is honest
+    // regardless of gaps.
     function changeFromDaysAgo(days){
       var idx = daily.length - 1 - days;
       if(idx < 0) return null;
       var base = daily[idx].buy;
-      return base ? (lastBuy - base) / base * 100 : null;
+      if(!base) return null;
+      return { pct: (lastBuy - base) / base * 100, day: daily[idx].day };
     }
     function movingAvg(days){
       var slice = daily.slice(-Math.min(days, daily.length));
@@ -1209,8 +1233,8 @@
     if(!trend){
       html += '<p class="field-hint">Cần thêm dữ liệu giá qua nhiều lần cập nhật hơn để phân tích xu hướng.</p>';
     } else {
-      if(trend.change7 !== null) html += trendRowHtml('~7 lần cập nhật gần nhất', trend.change7);
-      if(trend.change30 !== null) html += trendRowHtml('~30 lần cập nhật gần nhất', trend.change30);
+      if(trend.change7) html += trendRowHtml('So với ' + fmtDate(trend.change7.day).slice(0,5), trend.change7.pct);
+      if(trend.change30) html += trendRowHtml('So với ' + fmtDate(trend.change30.day).slice(0,5), trend.change30.pct);
       if(trend.ma7 !== null && eff){
         html += trendRowHtml('So với trung bình gần đây', (eff.buy - trend.ma7) / trend.ma7 * 100);
       }
@@ -1219,7 +1243,7 @@
     html += '</div>';
 
     html += '<div class="card"><div class="assistant-section-title">So với giá vốn của bạn</div>';
-    if(p.holdingAmount <= 0){
+    if(p.holdingAmount <= 0 || !(p.avgCost > 0)){
       html += '<p class="field-hint">Bạn chưa có vàng đang nắm giữ để so sánh với giá vốn.</p>';
     } else if(!eff){
       html += '<p class="field-hint">Chưa có giá hiện tại để so sánh.</p>';
@@ -1244,7 +1268,7 @@
       html += '<p class="field-hint">Chưa có tin tức để tham khảo.</p>';
     } else {
       html += articles.slice(0, 4).map(function(a){
-        return '<a class="mini-news-item" href="'+escapeHtml(a.link)+'" target="_blank" rel="noopener">' +
+        return '<a class="mini-news-item" href="'+escapeHtml(safeUrl(a.link))+'" target="_blank" rel="noopener">' +
           '<span class="mini-news-title">'+escapeHtml(a.title)+'</span>' +
           '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg>' +
         '</a>';
@@ -2019,7 +2043,14 @@
     openSwipeRowId = null;
   });
 
-  function renderAll(){ renderPrice(); renderSummary(); renderTx(); }
+  function renderAll(){
+    renderPrice(); renderSummary(); renderTx();
+    // Assistant reads liveData/liveHistory/computePortfolio() too, so it
+    // must refresh on every state or price change, not just when its own
+    // tab is switched into — otherwise it silently shows stale numbers
+    // after a background price refresh (loadLiveData) or portfolio edit.
+    if(!document.getElementById('viewAssistant').hidden) renderAssistant();
+  }
   renderAll();
   loadLiveData();
   loadChangelog();
