@@ -93,12 +93,42 @@
   .icon{width:20px;height:20px;flex:none;display:block}
   .icon-lg{width:26px;height:26px}
 
+  /* ---------- Pull-to-refresh ---------- */
+  /* Height is driven live by JS during the drag (no transition, tracks the
+     finger 1:1); .settling turns the transition back on for the snap-back
+     (or snap-to-spinner-height) once the finger lifts. */
+  /* overflow-anchor:none — without it, Chromium's scroll anchoring can
+     nudge .app.scrollTop above 0 to compensate for this element growing
+     (it sits first in .app's scroll flow, so everything below it shifts
+     down as it grows), and the drag handler's own `scrollTop > 0` guard
+     then reads that browser-driven nudge as "the user scrolled" and
+     cancels the pull mid-gesture. */
+  .ptr-indicator{height:0;overflow:hidden;overflow-anchor:none;display:flex;align-items:center;justify-content:center;color:var(--gold2)}
+  .ptr-indicator.settling{transition:height .25s ease}
+  .ptr-indicator.loading .ptr-spinner{animation:ptrSpin .7s linear infinite}
+  @keyframes ptrSpin{to{transform:rotate(360deg)}}
+
   /* ---------- Topbar ---------- */
   .brand{display:flex;align-items:center;gap:10px}
-  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none}
+  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none;transition:width .25s ease,height .25s ease}
   .brand-mark svg{width:100%;height:100%;display:block}
   .brand-text{display:flex;flex-direction:column;line-height:1.2;gap:2px}
-  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500}
+  .brand-text h1{transition:font-size .25s ease}
+  /* max-height, not height — the resting state has no explicit height
+     (content decides it, i.e. "auto"), and CSS can't transition to/from
+     auto, so collapsing would animate but re-expanding would just snap.
+     max-height:20px comfortably clears one line of .72rem text and gives
+     both directions a real number to interpolate between. */
+  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500;max-height:20px;transition:opacity .2s ease,max-height .2s ease,margin-top .2s ease;overflow:hidden}
+  /* Sticky "large title" nav bar — stays pinned at the top of .app's own
+     scroll (its containing block, since .app is the actual scroll container,
+     not body) and shrinks as content scrolls under it, iOS-Settings-app
+     style. Needs its own opaque background since .app itself has none. */
+  .app-header{position:sticky;top:0;z-index:30;background:var(--bg);transition:padding-bottom .25s ease}
+  .app-header.scrolled{padding-bottom:8px}
+  .app-header.scrolled .brand-mark{width:28px;height:28px}
+  .app-header.scrolled .brand-text h1{font-size:1.15rem}
+  .app-header.scrolled .brand-sub{opacity:0;max-height:0;margin-top:0}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
@@ -314,10 +344,21 @@
   .field.invalid .input{border-color:var(--red)}
   .field.invalid .field-error{display:block}
 
-  .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px}
-  .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:background .2s,color .2s}
-  .segmented button.active{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204}
-  .segmented button.active[data-type="sell"]{background:linear-gradient(135deg,#93C5FD,var(--blue));color:#08213F}
+  .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px;position:relative}
+  /* The pill is a separate absolutely-positioned layer that slides under the
+     buttons (JS sets width/transform to match the active button's own box),
+     instead of each button painting its own background on activation — this
+     is what gives the native UISegmentedControl "sliding capsule" motion
+     instead of an instant color swap. */
+  /* left:0, not 3px — JS sets transform:translateX(active.offsetLeft), and
+     offsetLeft is already measured from the container's padding edge (i.e.
+     already includes the 3px inset), so a static left:3px here would double
+     it, landing the pill 3px right of the button it's supposed to match. */
+  .segmented-indicator{position:absolute;top:3px;bottom:3px;left:0;border-radius:9px;background:linear-gradient(135deg,var(--gold2),var(--gold));transition:transform .28s cubic-bezier(.34,1.2,.64,1),width .28s cubic-bezier(.34,1.2,.64,1),background .2s;z-index:0;pointer-events:none}
+  .segmented-indicator.sell{background:linear-gradient(135deg,#93C5FD,var(--blue))}
+  .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
+  .segmented button.active{color:#1A1204}
+  .segmented button.active[data-type="sell"]{color:#08213F}
 
   .sheet-actions{display:flex;gap:10px;margin-top:6px}
   .sheet-actions .btn{flex:1}
@@ -367,6 +408,11 @@
 <body>
 <div class="app">
 
+  <!-- ============ PULL-TO-REFRESH INDICATOR ============ -->
+  <div class="ptr-indicator" id="ptrIndicator">
+    <svg class="icon ptr-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+  </div>
+
   <!-- Hidden shared logo symbol -->
   <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
     <defs>
@@ -397,7 +443,7 @@
   </svg>
 
   <!-- ============ BRAND HEADER (persistent across all tabs) ============ -->
-  <div class="page-title">
+  <div class="page-title app-header" id="appHeader">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 64 64"><use href="#gtLogo"/></svg>
@@ -478,6 +524,7 @@
     </div>
 
     <div class="segmented" id="txFilter" role="group" aria-label="Lọc theo loại giao dịch" style="margin-bottom:14px">
+      <div class="segmented-indicator"></div>
       <button type="button" class="active" data-filter="all">Tất cả</button>
       <button type="button" data-filter="buy">Mua</button>
       <button type="button" data-filter="sell">Bán</button>
@@ -589,6 +636,7 @@
     <div class="field">
       <label id="txTypeLabel">Loại giao dịch</label>
       <div class="segmented" role="group" aria-labelledby="txTypeLabel">
+        <div class="segmented-indicator"></div>
         <button type="button" class="active" data-type="buy">Mua vào</button>
         <button type="button" data-type="sell">Bán ra</button>
       </div>
@@ -695,6 +743,17 @@
     return dd+"/"+mm+"/"+d.getFullYear();
   }
   function pad2(n){ return String(n).padStart(2,'0'); }
+  // Measures the active button's own box and slides the indicator pill to
+  // match, rather than hardcoding a width per control — works for any
+  // number of equal-width segments without a separate CSS rule each time.
+  function positionSegmentedIndicator(segmentedEl){
+    var indicator = segmentedEl.querySelector('.segmented-indicator');
+    var active = segmentedEl.querySelector('button.active');
+    if(!indicator || !active) return;
+    indicator.style.width = active.offsetWidth + 'px';
+    indicator.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+    indicator.classList.toggle('sell', active.getAttribute('data-type') === 'sell');
+  }
   // Calendar day in the device's own timezone. Timestamps from the bot are
   // UTC; slicing those directly would put anything before 07:00 VN time on
   // the previous day.
@@ -835,7 +894,24 @@
     if(tab === 'settings') refreshGistUI();
     if(tab === 'news') renderNews();
     if(tab === 'assistant') renderAssistant();
+    // #txFilter lives inside a hidden tab-view (display:none), so its
+    // offsetWidth is 0 until the tab is actually shown — any earlier
+    // positioning attempt (e.g. at page load) would leave the pill at
+    // zero width. Position it fresh now that layout is measurable.
+    // Any .segmented living inside a hidden (display:none) tab-view has
+    // offsetWidth 0 until that tab is actually shown, so an earlier
+    // positioning attempt (e.g. at page load) would have left its pill at
+    // zero width. Generic re-check on every tab switch — not just
+    // hardcoded for #txFilter/history — so this doesn't quietly break again
+    // the next time a .segmented is added to some other tab.
+    document.querySelectorAll('.segmented').forEach(function(seg){
+      if(seg.offsetWidth > 0) positionSegmentedIndicator(seg);
+    });
     document.querySelector('.app').scrollTop = 0;
+    // The 'scroll' event (and the listener that clears this) fires
+    // asynchronously, so without this the small/collapsed header could
+    // flash for a frame on the newly-shown tab even though it's at the top.
+    document.getElementById('appHeader').classList.remove('scrolled');
     var activeEl = document.getElementById(TAB_VIEWS[tab]);
     void activeEl.offsetWidth; // restart the animation even if the class never left
     activeEl.classList.add('tab-enter');
@@ -1382,6 +1458,7 @@
       btn.classList.add('active');
       selectedType = btn.getAttribute('data-type');
       updateTxFormLabels();
+      positionSegmentedIndicator(btn.closest('.segmented'));
     });
   });
   function updateTxFormLabels(){
@@ -1396,6 +1473,7 @@
   function setType(type){
     selectedType = type;
     typeButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-type') === type); });
+    positionSegmentedIndicator(document.querySelector('#txForm .segmented'));
   }
 
   function openAddTx(){
@@ -1882,6 +1960,7 @@
       btn.classList.add('active');
       txFilter = btn.getAttribute('data-filter');
       renderTx();
+      positionSegmentedIndicator(document.getElementById('txFilter'));
     });
   });
   var txSearchTimer = null;
@@ -2099,6 +2178,147 @@
   loadLiveData();
   loadChangelog();
   loadNews();
+  // txForm's segmented control lives inside a sheet (hidden via transform,
+  // not display:none), so unlike #txFilter it's already measurable now.
+  positionSegmentedIndicator(document.querySelector('#txForm .segmented'));
+  var segmentedResizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(segmentedResizeTimer);
+    segmentedResizeTimer = setTimeout(function(){
+      document.querySelectorAll('.segmented').forEach(function(seg){
+        if(seg.offsetWidth > 0) positionSegmentedIndicator(seg);
+      });
+    }, 150);
+  });
+
+  // ---------- collapsing large-title header ----------
+  (function(){
+    var appHeaderEl = document.getElementById('appHeader');
+    var appScrollEl = document.querySelector('.app');
+    appScrollEl.addEventListener('scroll', function(){
+      appHeaderEl.classList.toggle('scrolled', appScrollEl.scrollTop > 24);
+    }, { passive: true });
+  })();
+
+  // ---------- pull-to-refresh ----------
+  // Custom, not native — .app already sets overscroll-behavior-y:contain
+  // (needed to stop the whole scroll-lock/rubber-band drift fix elsewhere),
+  // which also suppresses the browser's own pull-to-refresh, so this is the
+  // only way to offer it back as a deliberate, visible gesture.
+  (function(){
+    var ptr = document.getElementById('ptrIndicator');
+    var appEl = document.querySelector('.app');
+    var PTR_THRESHOLD = 60, PTR_MAX = 90;
+    // At non-integer browser/OS zoom levels scrollTop can rest a fraction of
+    // a pixel above 0 even when visually at the top — treat "at the top" as
+    // a tolerance, not a strict === 0, or the gesture silently never starts.
+    var PTR_TOP_EPSILON = 1;
+    var startX = 0, startY = 0, activePointerId = null, axisLocked = null, refreshing = false, startedOnRow = false, pullBaseHeight = 0;
+
+    appEl.addEventListener('pointerdown', function(e){
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
+      // Ignore a second touch mid-gesture (e.g. a resting thumb) rather than
+      // resilvering startX/startY out from under the first finger's drag.
+      if(activePointerId !== null) return;
+      if(refreshing || appEl.scrollTop > PTR_TOP_EPSILON) return;
+      activePointerId = e.pointerId; axisLocked = null;
+      startX = e.clientX; startY = e.clientY;
+      // A transaction row already claims vertical drags for itself:
+      // touch-action:pan-y on .tx-item hands native vertical panning
+      // straight to the browser (ignoring our preventDefault below), and
+      // bindSwipeRow runs its own pointer capture + drag lifecycle there —
+      // capturing the same pointer here too would steal its pointerup and
+      // leave that row's internal state stuck mid-gesture. So a gesture
+      // starting on a row is simply not eligible to become a pull here at
+      // all; it's the row's (or the native scroller's) to handle.
+      startedOnRow = !!(e.target.closest && e.target.closest('.tx-item'));
+      // Leave any in-flight .settling snap-back transition alone here — a
+      // new touch landing mid-animation (a quick re-pull) shouldn't rip the
+      // CSS transition away and start setting `height` inline from scratch,
+      // which would jump the indicator from wherever the snap-back had
+      // reached down to the new gesture's (still tiny) live value. It gets
+      // removed instead right when a new pull is actually confirmed below.
+    });
+    appEl.addEventListener('pointermove', function(e){
+      if(e.pointerId !== activePointerId) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      // iOS Safari decides whether a touch sequence is a native scroll on
+      // the very first touchmove — a preventDefault() called later, only
+      // once axis-lock confirms 'pull' a few pixels in, is frequently too
+      // late and gets ignored for the rest of the gesture. Suppress the
+      // default from the first movement for anything that could plausibly
+      // become a pull (still at the top, didn't start on a row), before
+      // axis-lock even resolves; it's a no-op for gestures that turn out
+      // horizontal or start elsewhere, since startedOnRow already excludes
+      // rows from this branch entirely.
+      if(!startedOnRow && appEl.scrollTop <= PTR_TOP_EPSILON) e.preventDefault();
+      if(axisLocked === null){
+        if(Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        // Vertical must dominate horizontal, same rule bindSwipeRow uses for
+        // its own axis lock — otherwise a diagonal drag on a transaction row
+        // (swiping to delete) also reads as a downward pull here, since both
+        // handlers see the same bubbled pointermove.
+        axisLocked = (!startedOnRow && Math.abs(dy) > Math.abs(dx) && dy > 0 && appEl.scrollTop <= PTR_TOP_EPSILON) ? 'pull' : 'none';
+        if(axisLocked === 'pull'){
+          try{ appEl.setPointerCapture(e.pointerId); }catch(err){}
+          // Freeze at wherever an in-flight .settling snap-back currently
+          // sits (not 0) before taking over live control, so a re-pull
+          // mid-animation continues smoothly instead of visibly jumping to
+          // this gesture's own (still small) dy-based height.
+          pullBaseHeight = parseFloat(getComputedStyle(ptr).height) || 0;
+          ptr.classList.remove('settling');
+        }
+      }
+      if(axisLocked !== 'pull') return;
+      if(appEl.scrollTop > PTR_TOP_EPSILON){ ptr.style.height = '0px'; pullBaseHeight = 0; axisLocked = 'none'; return; }
+      ptr.style.height = Math.max(0, Math.min(PTR_MAX, pullBaseHeight + dy * 0.5)) + 'px';
+    });
+    function endDrag(e){
+      if(e.pointerId !== activePointerId) return;
+      activePointerId = null;
+      var wasPulling = axisLocked === 'pull';
+      axisLocked = null;
+      if(!wasPulling) return;
+      var h = parseFloat(ptr.style.height) || 0;
+      ptr.classList.add('settling');
+      if(h >= PTR_THRESHOLD) doRefresh();
+      else ptr.style.height = '0px';
+    }
+    appEl.addEventListener('pointerup', endDrag);
+    appEl.addEventListener('pointercancel', endDrag);
+
+    function doRefresh(){
+      refreshing = true;
+      ptr.classList.add('loading');
+      ptr.style.height = '52px';
+      // loadLiveData/loadNews/loadChangelog each catch their own network
+      // errors internally and resolve anyway (so their callers don't need
+      // to special-case a failed background refresh) — meaning Promise.all
+      // here never actually rejects. loadLiveData is the only one of the
+      // three with a real success/failure return value (!!results[0]), so
+      // it's what decides which toast to show; the others are best-effort.
+      function settle(priceOk){
+        ptr.classList.remove('loading');
+        ptr.style.height = '0px';
+        refreshing = false;
+        showToast(priceOk ? 'Đã làm mới dữ liệu' : 'Không thể làm mới — kiểm tra kết nối mạng', priceOk ? 'ok' : 'err');
+      }
+      // The loaders shouldn't reject (they catch their own network errors),
+      // but they do call renderAll()/renderNews() synchronously inside their
+      // own .then — an unrelated throw there (e.g. a malformed JSON payload
+      // reaching a render function unguarded) would otherwise reject this
+      // Promise.all with no handler, leaving `refreshing` stuck true and the
+      // spinner frozen forever (the pointerdown guard above blocks every
+      // future pull while it's true). Catch defensively so a render bug
+      // degrades to a failed refresh instead of permanently wedging the
+      // gesture until a full page reload.
+      Promise.all([loadLiveData(), loadNews(), loadChangelog()]).then(function(results){
+        settle(results[0]);
+      }).catch(function(){
+        settle(false);
+      });
+    }
+  })();
   if(gistConfig){
     pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
   }
