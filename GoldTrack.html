@@ -242,9 +242,6 @@
   .news-skeleton-line:last-child{width:60%;margin-bottom:0}
 
   /* ---------- Assistant tab ---------- */
-  .disclaimer-card{background:var(--gold-soft);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
-  .disclaimer-card .icon{color:var(--gold2);flex:none;margin-top:1px}
-  .disclaimer-card p{font-size:.78rem;color:var(--text);line-height:1.5;margin:0}
   .assistant-section-title{font-size:.8rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:2px 0 10px}
   .trend-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0}
   .trend-row + .trend-row{border-top:1px solid var(--line)}
@@ -254,6 +251,18 @@
   .trend-val.down{color:var(--red)}
   .assistant-note{background:var(--glass);border-radius:var(--radius-sm);padding:12px 14px;margin-top:12px;font-size:.82rem;color:var(--muted);line-height:1.55}
   .assistant-note b{color:var(--text)}
+  .verdict-banner{border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:12px}
+  .verdict-banner.up{background:var(--green-soft);border:1px solid rgba(52,211,153,.3)}
+  .verdict-banner.down{background:var(--red-soft);border:1px solid rgba(251,113,133,.3)}
+  .verdict-banner.flat{background:var(--glass);border:1px solid var(--line)}
+  .verdict-badge{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .verdict-banner.up .verdict-badge{background:rgba(52,211,153,.22);color:var(--green)}
+  .verdict-banner.down .verdict-badge{background:rgba(251,113,133,.22);color:var(--red)}
+  .verdict-banner.flat .verdict-badge{background:var(--glass2);color:var(--muted)}
+  .verdict-title{font-size:1.02rem;font-weight:800}
+  .verdict-banner.up .verdict-title{color:var(--green)}
+  .verdict-banner.down .verdict-title{color:var(--red)}
+  .verdict-sub{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.4}
   .mini-news-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;text-decoration:none;color:inherit}
   .mini-news-item + .mini-news-item{border-top:1px solid var(--line)}
   .mini-news-title{font-size:.82rem;font-weight:600;line-height:1.4}
@@ -489,10 +498,6 @@
   <!-- ============ TAB: TRỢ LÝ ============ -->
   <div class="tab-view" id="viewAssistant" hidden>
     <div class="page-title"><h1>Trợ lý vàng</h1></div>
-    <div class="disclaimer-card">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
-      <p>Đây là <b>phân tích xu hướng tự động</b> dựa trên dữ liệu giá lịch sử của app, <b>không phải lời khuyên đầu tư hay dự đoán chính xác</b>. Giá vàng chịu ảnh hưởng bởi nhiều yếu tố khó lường (USD, lãi suất Fed, địa chính trị...). Hãy tự nghiên cứu kỹ hoặc tham khảo chuyên gia tài chính trước khi quyết định.</p>
-    </div>
     <div id="assistantContent"></div>
   </div>
 
@@ -1209,13 +1214,36 @@
       if(daily[i].buy > daily[i-1].buy) upDays++;
       else if(daily[i].buy < daily[i-1].buy) downDays++;
     }
+    // Volatility: how wide a band the price has moved in recently, as a %
+    // of the low — a flat +0.4% trend during a 5%-wide swing reads very
+    // differently than the same trend during a 0.5%-wide one.
+    var volSlice = daily.slice(-Math.min(14, daily.length));
+    var volVals = volSlice.map(function(p){ return p.buy; });
+    var volMin = Math.min.apply(null, volVals), volMax = Math.max.apply(null, volVals);
+    var ma7 = daily.length >= 3 ? movingAvg(7) : null;
+    var maDiffPct = (ma7 && lastBuy) ? (lastBuy - ma7) / ma7 * 100 : null;
+    // Verdict signal, best available first: current-vs-recent-average is the
+    // most stable read; fall back to the 7-point change, then to a plain
+    // up/down day tally when there's too little history for either.
+    var FLAT_THRESHOLD = 0.15; // %, below this reads as sideways rather than a real move
+    var verdictPct = maDiffPct !== null ? maDiffPct : (changeFromDaysAgo(7) ? changeFromDaysAgo(7).pct : null);
+    var verdict = 'flat';
+    if(verdictPct !== null){
+      verdict = verdictPct > FLAT_THRESHOLD ? 'up' : (verdictPct < -FLAT_THRESHOLD ? 'down' : 'flat');
+    } else if(upDays !== downDays){
+      verdict = upDays > downDays ? 'up' : 'down';
+    }
     return {
       change7: changeFromDaysAgo(7),
       change30: changeFromDaysAgo(30),
-      ma7: daily.length >= 3 ? movingAvg(7) : null,
+      ma7: ma7,
+      maDiffPct: maDiffPct,
+      volatilityPct: volMin ? (volMax - volMin) / volMin * 100 : null,
       upDays: upDays,
       downDays: downDays,
-      totalPoints: daily.length
+      totalPoints: daily.length,
+      verdict: verdict,
+      verdictPct: verdictPct
     };
   }
   function trendRowHtml(label, pct){
@@ -1229,14 +1257,30 @@
     var p = computePortfolio();
     var html = '';
 
-    html += '<div class="card"><div class="assistant-section-title">Xu hướng giá gần đây</div>';
+    if(trend){
+      var vIcon = trend.verdict === 'up' ? '<path d="M12 19V6M6 12l6-6 6 6"/>' : (trend.verdict === 'down' ? '<path d="M12 5v13M6 12l6 6 6-6"/>' : '<path d="M5 12h14"/>');
+      var vTitle = trend.verdict === 'up' ? 'Đang tăng' : (trend.verdict === 'down' ? 'Đang giảm' : 'Đi ngang');
+      var vSub = trend.verdictPct !== null
+        ? (trend.maDiffPct !== null ? 'So với trung bình gần đây: ' : 'So với ' + fmtDate(trend.change7.day).slice(0,5) + ': ') + (trend.verdictPct>=0?'+':'') + trend.verdictPct.toFixed(2) + '%'
+        : trend.upDays + ' lần tăng / ' + trend.downDays + ' lần giảm trong ' + trend.totalPoints + ' lần ghi nhận gần đây';
+      html += '<div class="card"><div class="assistant-section-title">Tổng quan xu hướng</div>' +
+        '<div class="verdict-banner ' + trend.verdict + '">' +
+          '<div class="verdict-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' + vIcon + '</svg></div>' +
+          '<div><div class="verdict-title">' + vTitle + '</div><div class="verdict-sub">' + vSub + '</div></div>' +
+        '</div></div>';
+    }
+
+    html += '<div class="card"><div class="assistant-section-title">Chi tiết xu hướng giá</div>';
     if(!trend){
       html += '<p class="field-hint">Cần thêm dữ liệu giá qua nhiều lần cập nhật hơn để phân tích xu hướng.</p>';
     } else {
       if(trend.change7) html += trendRowHtml('So với ' + fmtDate(trend.change7.day).slice(0,5), trend.change7.pct);
       if(trend.change30) html += trendRowHtml('So với ' + fmtDate(trend.change30.day).slice(0,5), trend.change30.pct);
-      if(trend.ma7 !== null && eff){
-        html += trendRowHtml('So với trung bình gần đây', (eff.buy - trend.ma7) / trend.ma7 * 100);
+      if(trend.maDiffPct !== null){
+        html += trendRowHtml('So với trung bình gần đây', trend.maDiffPct);
+      }
+      if(trend.volatilityPct !== null){
+        html += '<div class="trend-row"><span class="trend-label">Biên độ dao động</span><span class="trend-val">' + trend.volatilityPct.toFixed(2) + '%</span></div>';
       }
       html += '<div class="assistant-note">Trong '+trend.totalPoints+' lần ghi nhận gần đây: <b>'+trend.upDays+'</b> lần tăng, <b>'+trend.downDays+'</b> lần giảm so với lần trước đó.</div>';
     }
@@ -1252,9 +1296,9 @@
       html += trendRowHtml('Giá mua vào hiện tại', diffPct);
       var note;
       if(diffPct > 0){
-        note = 'Giá hiện tại đang <b>cao hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Nếu đang cân nhắc chốt lời một phần, đây là điều một số người sẽ xem xét — tuỳ khẩu vị rủi ro và mục tiêu tài chính riêng của bạn.';
+        note = 'Giá hiện tại <b>cao hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Đây thường là lúc nhiều người cân nhắc chốt lời một phần.';
       } else if(diffPct < 0){
-        note = 'Giá hiện tại đang <b>thấp hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Một số người chọn mua thêm khi giá dưới giá vốn để hạ giá vốn trung bình (chiến lược DCA) — đây chỉ là thông tin tham khảo, không phải khuyến nghị nên hay không nên mua.';
+        note = 'Giá hiện tại <b>thấp hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Đây thường là lúc nhiều người mua thêm để hạ giá vốn trung bình (DCA).';
       } else {
         note = 'Giá hiện tại đang bằng đúng giá vốn trung bình của bạn.';
       }
