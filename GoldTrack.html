@@ -69,7 +69,16 @@
        .app stopped scrolling entirely). 100dvh is a *live* unit — modern
        Safari recomputes it as its own toolbar collapses/expands, so this
        tracks the real viewport without needing min-height's growth trick. */
-    margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;color:var(--text);font-family:var(--font);
+    /* --app-height (set from window.visualViewport in JS) wins last when
+       present: 100dvh is known to get stuck stale on iOS right after the
+       on-screen keyboard closes — a text input in a sheet loses focus, the
+       keyboard dismisses, and body's rendered height stays at the
+       keyboard-open size until something else forces a reflow, which is
+       exactly why the fixed tab bar was intermittently sitting short of
+       the real bottom edge or floating high. visualViewport's own resize
+       event fires reliably for that exact transition, so reading its
+       height directly in JS is more trustworthy here than the CSS unit. */
+    margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;height:var(--app-height, 100dvh);color:var(--text);font-family:var(--font);
     background:
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
@@ -2225,6 +2234,21 @@
   loadLiveData();
   loadChangelog();
   loadNews();
+
+  // ---------- real viewport height (fixes the intermittent bottom tab bar gap) ----------
+  // See body's CSS comment: 100dvh can get stuck at the on-screen-keyboard-open
+  // size after an input in a sheet loses focus on iOS. visualViewport.resize
+  // fires reliably right when the keyboard actually dismisses, so re-reading
+  // its height there keeps body (and therefore the fixed tab bar's bottom:0)
+  // matched to the real screen instead of a stale cached viewport unit.
+  if(window.visualViewport){
+    var syncAppHeight = function(){
+      document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
+    };
+    syncAppHeight();
+    window.visualViewport.addEventListener('resize', syncAppHeight);
+    window.visualViewport.addEventListener('scroll', syncAppHeight);
+  }
   // txForm's segmented control lives inside a sheet (hidden via transform,
   // not display:none), so unlike #txFilter it's already measurable now.
   positionSegmentedIndicator(document.querySelector('#txForm .segmented'));
