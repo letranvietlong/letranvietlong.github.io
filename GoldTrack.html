@@ -88,7 +88,10 @@
   .app{
     max-width:480px;margin:0 auto;position:relative;
     height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
-    padding:calc(14px + var(--safe-top)) 14px calc(84px + var(--safe-bottom));
+    /* --header-h is measured live off #appHeader in JS (its real rendered
+       height, which depends on the device's safe-top) — the fallback here
+       only covers the first frame before that measurement runs. */
+    padding:var(--header-h, calc(70px + var(--safe-top))) 14px calc(84px + var(--safe-bottom));
   }
   .icon{width:20px;height:20px;flex:none;display:block}
   .icon-lg{width:26px;height:26px}
@@ -110,25 +113,25 @@
 
   /* ---------- Topbar ---------- */
   .brand{display:flex;align-items:center;gap:10px}
-  /* Shrinks via transform, not width/height — those affect .app-header's
-     layout box, which .app's own scrollHeight is measured from. Changing
-     it mid-scroll shortened the scrollable range while the user was still
-     dragging, fighting their finger (each frame's shrink ate into the very
-     distance being scrolled). transform is paint-only: the reserved layout
-     box — and .app's scrollHeight — never changes, only the pixels move. */
-  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none;transition:transform .25s ease}
+  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none}
   .brand-mark svg{width:100%;height:100%;display:block}
   .brand-text{display:flex;flex-direction:column;line-height:1.2;gap:2px}
-  .brand-text h1{transition:transform .25s ease;transform-origin:left top}
-  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500;transition:opacity .2s ease;overflow:hidden}
-  /* Sticky "large title" nav bar — stays pinned at the top of .app's own
-     scroll (its containing block, since .app is the actual scroll container,
-     not body) and shrinks as content scrolls under it, iOS-Settings-app
-     style. Needs its own opaque background since .app itself has none. */
-  .app-header{position:sticky;top:0;z-index:30;background:var(--bg)}
-  .app-header.scrolled .brand-mark{transform:scale(.7368)}
-  .app-header.scrolled .brand-text h1{transform:scale(.7667)}
-  .app-header.scrolled .brand-sub{opacity:0}
+  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500}
+  /* Fixed, not sticky — this app went through two failed shrink-on-scroll
+     attempts here: (1) animating width/height/font-size changed the
+     header's own layout box while it sat in .app's scroll flow, so .app's
+     scrollHeight shrank mid-gesture and fought the user's finger; (2) the
+     transform-only fix for that avoided the layout issue but hit a real
+     WebKit bug — a position:sticky ancestor with an animated-transform
+     descendant renders the sticky element detached, floating mid-content,
+     during active scroll on iOS Safari (reproduced live: the header
+     appeared stuck between the price card's range tabs and its chart).
+     A plain fixed header sidesteps both bug classes at the cost of the
+     shrink animation — content is offset below it via #app's padding-top,
+     kept in sync with this element's real rendered height in JS (safe-top
+     varies per device, so a hardcoded padding would drift). */
+  .app-header{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);max-width:480px;margin:0 auto}
+  .page-title.app-header{padding:calc(4px + var(--safe-top)) 16px 18px}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
@@ -908,10 +911,6 @@
       if(seg.offsetWidth > 0) positionSegmentedIndicator(seg);
     });
     document.querySelector('.app').scrollTop = 0;
-    // The 'scroll' event (and the listener that clears this) fires
-    // asynchronously, so without this the small/collapsed header could
-    // flash for a frame on the newly-shown tab even though it's at the top.
-    document.getElementById('appHeader').classList.remove('scrolled');
     var activeEl = document.getElementById(TAB_VIEWS[tab]);
     void activeEl.offsetWidth; // restart the animation even if the class never left
     activeEl.classList.add('tab-enter');
@@ -2201,13 +2200,20 @@
     }, 150);
   });
 
-  // ---------- collapsing large-title header ----------
+  // ---------- fixed header height sync ----------
+  // #appHeader is position:fixed (see its CSS comment for why), so .app's
+  // content needs padding-top matching its real rendered height or content
+  // would start underneath it. Measured live, not hardcoded, since
+  // safe-area-inset-top varies by device.
   (function(){
     var appHeaderEl = document.getElementById('appHeader');
-    var appScrollEl = document.querySelector('.app');
-    appScrollEl.addEventListener('scroll', function(){
-      appHeaderEl.classList.toggle('scrolled', appScrollEl.scrollTop > 24);
-    }, { passive: true });
+    function syncHeaderHeight(){
+      document.documentElement.style.setProperty('--header-h', appHeaderEl.getBoundingClientRect().height + 'px');
+    }
+    syncHeaderHeight();
+    window.addEventListener('resize', syncHeaderHeight);
+    window.addEventListener('orientationchange', syncHeaderHeight);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeight);
   })();
 
   // ---------- pull-to-refresh ----------
