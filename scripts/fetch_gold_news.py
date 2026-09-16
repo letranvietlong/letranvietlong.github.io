@@ -9,6 +9,7 @@ pulls broader finance/business feeds and filters by keyword instead.
 """
 import json
 import os
+import re
 import ssl
 import sys
 import urllib.request
@@ -35,6 +36,22 @@ KEYWORDS = [
     "fed", "usd", "đô la", "đồng đô la",
     "lạm phát", "trái phiếu mỹ", "ngân hàng nhà nước", "dự trữ ngoại hối",
 ]
+
+# "usd" alone false-positives on headlines that just quote a dollar-amount
+# price tag ("...siêu đô thị 10 tỷ USD, Vingroup đề xuất xây dựng", "Big Tech
+# ... nghìn tỷ USD của Mỹ" — neither has anything to do with currency/gold).
+# Real FX news says "tỷ giá USD", "đồng USD", "giá USD" — "tỷ"/"triệu"/"nghìn
+# tỷ" immediately before USD is always a magnitude, not FX news — so treat
+# that specific adjacency as a non-match for "usd" regardless of whether a
+# literal digit precedes it.
+USD_MONEY_AMOUNT_RE = re.compile(r"(nghìn\s+tỷ|tỷ|triệu)\s*usd\b", re.IGNORECASE)
+
+# Same class of false positive for "vàng" itself: "đất vàng" is a standard
+# Vietnamese real-estate idiom for a prime/valuable plot of land, unrelated
+# to gold prices (seen live: "SCIC muốn bán hết vốn doanh nghiệp nắm 'đất
+# vàng' Đồng Khởi"). Other "vàng"-as-golden idioms exist (giờ vàng, cơ hội
+# vàng...) but aren't excluded here without a confirmed false-positive case.
+VANG_IDIOM_RE = re.compile(r"đất\s+vàng\b", re.IGNORECASE)
 
 NEWS_MAX = 40
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -97,7 +114,15 @@ def parse_items(xml_bytes, source):
 
 def is_relevant(title):
     low = title.lower()
-    return any(kw in low for kw in KEYWORDS)
+    for kw in KEYWORDS:
+        if kw not in low:
+            continue
+        if kw == "usd" and USD_MONEY_AMOUNT_RE.search(low):
+            continue  # just a price tag in an unrelated story — keep checking other keywords
+        if kw == "vàng" and VANG_IDIOM_RE.search(low):
+            continue  # "đất vàng" etc. — idiom, not the metal
+        return True
+    return False
 
 
 def main():
