@@ -42,7 +42,7 @@
       --panel:rgba(255,255,255,.88);--panel2:rgba(255,255,255,.74);
       --glass:rgba(15,23,42,.045);--glass2:rgba(15,23,42,.075);
       --line:rgba(15,23,42,.09);--line2:rgba(15,23,42,.15);
-      --text:#171B2B;--muted:#5B6478;--muted2:#8890A0;
+      --text:#171B2B;--muted:#5B6478;--muted2:#6B7280;
       --gold:#B45309;--gold2:#D97706;--gold-soft:rgba(180,83,9,.14);
       --green:#059669;--green-soft:rgba(5,150,105,.14);
       --red:#DC2626;--red-soft:rgba(220,38,38,.13);
@@ -571,7 +571,10 @@
           <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
           <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btnGistDisconnect" type="button" hidden>Ngắt kết nối</button>
+        <div style="display:flex;gap:8px" id="gistConnectedActions" hidden>
+          <button class="btn btn-ghost btn-sm" id="btnGistSyncNow" type="button" style="flex:1">Đồng bộ ngay</button>
+          <button class="btn btn-ghost btn-sm" id="btnGistDisconnect" type="button" style="flex:1">Ngắt kết nối</button>
+        </div>
       </div>
     </div>
 
@@ -605,7 +608,7 @@
 
 <!-- ============ BOTTOM TAB BAR ============ -->
 <nav class="tabbar">
-  <button class="tabbar-btn active" data-tab="overview" type="button">
+  <button class="tabbar-btn active" data-tab="overview" type="button" aria-current="page">
     <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
     <span>Tổng quan</span>
   </button>
@@ -727,7 +730,6 @@
 
   // ---------- helpers ----------
   function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
-  function moneyHtml(n){ return fmtVND(n); }
   function fmtAmount(n){
     var r = Math.round(n*100)/100;
     return (r % 1 === 0) ? String(r) : r.toLocaleString('vi-VN',{maximumFractionDigits:2});
@@ -892,7 +894,10 @@
       el.classList.remove('tab-enter');
     });
     document.querySelectorAll('.tabbar-btn').forEach(function(btn){
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+      var isActive = btn.getAttribute('data-tab') === tab;
+      btn.classList.toggle('active', isActive);
+      if(isActive) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
     });
     if(tab === 'settings') refreshGistUI();
     if(tab === 'news') renderNews();
@@ -958,6 +963,14 @@
     return files;
   }
 
+  // Real last-sync time, persisted — setGistStatus('synced') used to just
+  // stamp new Date() at DISPLAY time, so reopening Settings hours after the
+  // last actual sync silently relabeled that stale sync as "just now".
+  var GIST_LAST_SYNC_KEY = "goldtrack_gist_last_sync_v1";
+  function markSynced(){
+    localStorage.setItem(GIST_LAST_SYNC_KEY, new Date().toISOString());
+    setGistStatus('synced');
+  }
   var lastGistStatus = null; // remembered so reopening Settings doesn't clobber the real sync state
   function setGistStatus(kind, detail){
     if(kind !== 'disconnected') lastGistStatus = { kind: kind, detail: detail };
@@ -965,7 +978,9 @@
     if(!el) return;
     el.style.color = '';
     if(kind === 'synced'){
-      el.textContent = "Đã đồng bộ lúc " + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+      var iso = localStorage.getItem(GIST_LAST_SYNC_KEY);
+      var d = iso ? new Date(iso) : new Date();
+      el.textContent = "Đã đồng bộ " + pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
     } else if(kind === 'syncing'){
       el.textContent = "Đang đồng bộ…";
     } else if(kind === 'error'){
@@ -978,24 +993,30 @@
     }
   }
 
+  function doGistPush(){
+    return githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'PATCH', { files: buildGistFiles() });
+  }
+
   var gistSyncTimer = null;
   function syncToGist(){
     if(!gistConfig) return;
     clearTimeout(gistSyncTimer);
     gistSyncTimer = setTimeout(function(){
       setGistStatus('syncing');
-      githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'PATCH', { files: buildGistFiles() })
-        .then(function(){ setGistStatus('synced'); })
-        .catch(function(e){ setGistStatus('error', e.message); });
+      doGistPush().then(markSynced).catch(function(e){ setGistStatus('error', e.message); });
     }, 400);
   }
 
   function refreshGistUI(){
     var connected = !!gistConfig;
     document.getElementById('gistConnectForm').hidden = connected;
-    document.getElementById('btnGistDisconnect').hidden = !connected;
+    document.getElementById('gistConnectedActions').hidden = !connected;
     if(!connected){ setGistStatus('disconnected'); return; }
     if(lastGistStatus) setGistStatus(lastGistStatus.kind, lastGistStatus.detail);
+    // lastGistStatus only lives in memory (this session) — on a fresh page
+    // load it's null even though we may well have synced before, so fall
+    // back to the persisted timestamp rather than the vague "connected".
+    else if(localStorage.getItem(GIST_LAST_SYNC_KEY)) setGistStatus('synced');
     else setGistStatus('connected');
   }
 
@@ -1007,6 +1028,7 @@
       var data = JSON.parse(file.content);
       state.transactions = Array.isArray(data.transactions) ? data.transactions : [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      markSynced();
       return true;
     });
   }
@@ -1042,11 +1064,29 @@
     });
   });
 
+  document.getElementById('btnGistSyncNow').addEventListener('click', function(){
+    if(!gistConfig) return;
+    clearTimeout(gistSyncTimer); // an auto-sync debounce firing right after would just repeat this
+    var btn = document.getElementById('btnGistSyncNow');
+    btn.disabled = true;
+    setGistStatus('syncing');
+    doGistPush().then(function(){
+      markSynced();
+      showToast('Đã đồng bộ lên GitHub Gist', 'ok');
+    }).catch(function(e){
+      setGistStatus('error', e.message);
+      showToast('Đồng bộ thất bại: ' + e.message, 'err');
+    }).finally(function(){
+      btn.disabled = false;
+    });
+  });
+
   document.getElementById('btnGistDisconnect').addEventListener('click', function(){
     showConfirm('Ngắt đồng bộ? Dữ liệu trên máy này vẫn được giữ, bản sao lưu trên GitHub Gist cũng không bị xoá.', { title: 'Ngắt kết nối đồng bộ', confirmText: 'Ngắt kết nối', danger: true }).then(function(ok){
       if(!ok) return;
       saveGistConfig(null);
       lastGistStatus = null;
+      localStorage.removeItem(GIST_LAST_SYNC_KEY);
       refreshGistUI();
       showToast('Đã ngắt kết nối đồng bộ', 'ok');
     });
@@ -1658,8 +1698,8 @@
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+moneyHtml(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy)+'</div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+moneyHtml(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell)+'</div>' +
       '</div>' +
       '<div class="chart-head">' +
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
@@ -1913,14 +1953,14 @@
 
     content.innerHTML =
       '<div class="summary-row"><span class="summary-label">Đang nắm giữ</span><span class="summary-val">'+fmtAmount(p.holdingAmount)+' chỉ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? moneyHtml(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+moneyHtml(p.holdingCost)+' đ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? moneyHtml(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
-      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+moneyHtml(p.realizedPL)+' đ</span></div>' : '') +
+      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? fmtVND(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(p.holdingCost)+' đ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
+      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+fmtVND(p.realizedPL)+' đ</span></div>' : '') +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+moneyHtml(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
+          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
         (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>' +
@@ -1951,7 +1991,7 @@
         storeNames.map(function(name){
           var s = byStore[name];
           var avg = s.amount ? s.cost / s.amount : 0;
-          return '<div class="summary-row"><span class="summary-label">'+escapeHtml(name)+' · '+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+moneyHtml(avg)+' đ/chỉ TB</span></div>';
+          return '<div class="summary-row"><span class="summary-label">'+escapeHtml(name)+' · '+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+fmtVND(avg)+' đ/chỉ TB</span></div>';
         }).join('') +
       '</div>';
   }
@@ -2047,9 +2087,9 @@
         var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
         grid =
           '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+moneyHtml(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+moneyHtml(sellInfo.avgCostAtSale)+' đ</div></div>' +
-            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+moneyHtml(sellInfo.pl)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+fmtVND(sellInfo.avgCostAtSale)+' đ</div></div>' +
+            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>' +
           '</div>';
       } else {
         var cost = tx.amount * tx.price;
@@ -2057,11 +2097,11 @@
         var pl = currentVal === null ? null : currentVal - cost;
         var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
         var plCls2 = pl === null ? '' : (pl > 0 ? 'up' : (pl < 0 ? 'down' : ''));
-        var plTxt = pl === null ? '—' : ((pl>=0?'+':'')+moneyHtml(pl)+' đ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)');
+        var plTxt = pl === null ? '—' : ((pl>=0?'+':'')+fmtVND(pl)+' đ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)');
         grid =
           '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+moneyHtml(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(currentVal===null?'—':moneyHtml(currentVal)+' đ')+'</div></div>' +
+            '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá trị hiện tại</div><div class="tx-cell-val">'+(currentVal===null?'—':fmtVND(currentVal)+' đ')+'</div></div>' +
             '<div style="grid-column:1/-1"><div class="tx-cell-label">Lời/Lỗ chưa chốt</div><div class="tx-cell-val '+plCls2+'">'+plTxt+'</div></div>' +
           '</div>';
       }
