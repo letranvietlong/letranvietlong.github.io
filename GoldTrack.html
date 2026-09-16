@@ -130,7 +130,7 @@
      shrink animation — content is offset below it via #app's padding-top,
      kept in sync with this element's real rendered height in JS (safe-top
      varies per device, so a hardcoded padding would drift). */
-  .app-header{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);max-width:480px;margin:0 auto}
+  .app-header{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);max-width:480px;margin:0 auto;transform:translateZ(0)}
   .page-title.app-header{padding:calc(4px + var(--safe-top)) 16px 18px}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
@@ -312,7 +312,12 @@
      compositing glitches in iOS standalone (home-screen) mode, rendering as
      a dark smear instead of a frosted-glass blur. A plain opaque color is
      guaranteed to render correctly everywhere, at the cost of the blur. */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom))}
+  /* transform:translateZ(0) forces its own compositing layer — without it,
+     position:fixed siblings of .app's -webkit-overflow-scrolling:touch
+     momentum scroll can visually lag/detach mid-scroll on iOS WebKit and
+     briefly render short of the real screen edge until scrolling fully
+     settles (long-documented WebKit behavior; this is the standard fix). */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:7px 6px calc(6px + var(--safe-bottom));transform:translateZ(0)}
   .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;color:var(--muted2);padding:6px 0;min-height:48px;border-radius:12px;transition:color .2s}
   .tabbar-btn .icon{width:23px;height:23px}
   .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
@@ -864,12 +869,10 @@
     confirmOkBtn.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-gold');
     confirmBackdrop.classList.add('open');
     confirmDialog.classList.add('open');
-    document.body.style.overflow = 'hidden';
     return new Promise(function(resolve){
       function cleanup(result){
         confirmBackdrop.classList.remove('open');
         confirmDialog.classList.remove('open');
-        document.body.style.overflow = '';
         confirmOkBtn.removeEventListener('click', onOk);
         confirmCancelBtn.removeEventListener('click', onCancel);
         confirmBackdrop.removeEventListener('click', onCancel);
@@ -1062,15 +1065,21 @@
   bindThousandFormat(document.getElementById('txPrice'));
 
   // ---------- sheets ----------
+  // No document.body.style.overflow toggle here — body is permanently
+  // overflow:hidden (see .app's CSS comment: it never scrolls, .app is the
+  // only scrollable region), so that toggle was a no-op read on background
+  // scroll-locking, and writing to body.style during a sheet open/close
+  // transition is exactly the kind of extra layout churn that can leave
+  // iOS Safari's dynamic viewport height (100dvh) stuck stale — a plausible
+  // cause of the bottom tab bar intermittently sitting short of the real
+  // bottom edge.
   function openSheet(sheetId, backdropId){
     document.getElementById(sheetId).classList.add('open');
     document.getElementById(backdropId).classList.add('open');
-    document.body.style.overflow = 'hidden';
   }
   function closeSheet(sheetId, backdropId){
     document.getElementById(sheetId).classList.remove('open');
     document.getElementById(backdropId).classList.remove('open');
-    document.body.style.overflow = '';
   }
   function wireSheet(sheetId, backdropId, closeBtnId){
     document.getElementById(closeBtnId).addEventListener('click', function(){ closeSheet(sheetId, backdropId); });
