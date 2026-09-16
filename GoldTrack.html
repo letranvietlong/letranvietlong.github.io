@@ -148,10 +148,7 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
   .card-glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;filter:blur(40px);opacity:.35;pointer-events:none}
 
-  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
-  .live-dot.stale{background:var(--muted2);box-shadow:0 0 0 3px rgba(124,136,166,.18)}
   .price-updated{font-size:.68rem;color:var(--muted2)}
-  .price-updated.stale{color:var(--red)}
   .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
   .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
   .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
@@ -477,7 +474,7 @@
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
           </div>
           <div>
-            <div class="summary-title"><span class="live-dot" id="liveDot" hidden></span> Giá vàng 9999</div>
+            <div class="summary-title">Giá vàng 9999</div>
             <div class="summary-sub price-updated" id="priceUpdatedSub"></div>
           </div>
         </div>
@@ -1641,13 +1638,10 @@
 
   function renderPrice(){
     var el = document.getElementById('priceContent');
-    var liveDot = document.getElementById('liveDot');
     var subEl = document.getElementById('priceUpdatedSub');
     var eff = getEffectivePrice();
 
     if(!eff){
-      liveDot.hidden = true;
-      subEl.classList.remove('stale');
       subEl.textContent = liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động';
       el.innerHTML =
         '<div class="price-empty">' +
@@ -1655,14 +1649,9 @@
         '</div>';
       return;
     }
-    liveDot.hidden = false;
     var d = new Date(eff.at);
     var whenTxt = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
-    var STALE_MIN = 90; // bot runs every 30 min; anything older than this means the schedule isn't firing
-    var isStale = (Date.now() - d.getTime()) / 60000 > STALE_MIN;
-    liveDot.classList.toggle('stale', isStale);
-    subEl.classList.toggle('stale', isStale);
-    subEl.textContent = isStale ? 'Chưa có cập nhật mới từ ' + whenTxt : 'Cập nhật ' + whenTxt;
+    subEl.textContent = 'Cập nhật lần cuối ' + whenTxt;
 
     var p = computePortfolio();
     var avgCost = p.holdingAmount > 0 ? p.avgCost : null;
