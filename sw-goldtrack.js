@@ -6,10 +6,18 @@
 // To make that harmless, every handler below checks GOLDTRACK_PATHS first
 // and does nothing at all for any request that isn't one of GoldTrack's own
 // files — other pages on the site see no behavior change whatsoever.
-var CACHE_NAME = "goldtrack-cache-v1";
+var CACHE_NAME = "goldtrack-cache-v2";
 
-var APP_SHELL_PATHS = [
-  "/GoldTrack.html",
+// GoldTrack.html is an actively-edited single file with no build hash in its
+// URL, so it must be network-first (see below) — cache-first on it meant
+// every visit kept re-serving whatever HTML happened to be cached at
+// install time, silently hiding every later fix/update behind a stale copy
+// (the exact "site still shows old source" bug this app has hit before,
+// this time self-inflicted by the service worker instead of the git race).
+var HTML_PATHS = ["/GoldTrack.html"];
+// Icon files are named by content/size and effectively never change, so
+// cache-first (instant, no network round trip) is safe for these.
+var ICON_PATHS = [
   "/img/goldtrack-icon.svg",
   "/img/goldtrack-icon-32.png",
   "/img/goldtrack-icon-180.png"
@@ -20,7 +28,8 @@ var DATA_PATHS = [
   "/data/gold-news.json",
   "/data/changelog.json"
 ];
-var GOLDTRACK_PATHS = APP_SHELL_PATHS.concat(DATA_PATHS);
+var NETWORK_FIRST_PATHS = HTML_PATHS.concat(DATA_PATHS);
+var GOLDTRACK_PATHS = HTML_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
 
 self.addEventListener("install", function(event){
   event.waitUntil(
@@ -30,8 +39,8 @@ self.addEventListener("install", function(event){
       // first successful network request either way, and a data endpoint
       // hiccup at install time shouldn't block offline support for the app
       // shell itself.
-      return cache.addAll(APP_SHELL_PATHS).then(function(){
-        return Promise.all(DATA_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
+      return cache.addAll(ICON_PATHS).then(function(){
+        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
       });
     })
   );
@@ -53,11 +62,12 @@ self.addEventListener("fetch", function(event){
   if(url.origin !== location.origin) return;
   if(GOLDTRACK_PATHS.indexOf(url.pathname) === -1) return; // not ours — let the browser handle it normally
 
-  var isData = DATA_PATHS.indexOf(url.pathname) !== -1;
+  var isNetworkFirst = NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1;
 
-  if(isData){
-    // Network-first: always show the freshest price/changelog when online,
-    // fall back to the last cached copy so the app still works offline.
+  if(isNetworkFirst){
+    // Network-first: always show the freshest HTML/price/changelog when
+    // online, fall back to the last cached copy so the app still works
+    // offline.
     event.respondWith(
       fetch(event.request).then(function(res){
         var copy = res.clone();
@@ -68,7 +78,7 @@ self.addEventListener("fetch", function(event){
       })
     );
   } else {
-    // Cache-first for the app shell: instant load offline, refreshed in the background.
+    // Cache-first for icons: instant load offline, refreshed in the background.
     event.respondWith(
       caches.match(event.request).then(function(cached){
         var fetchPromise = fetch(event.request).then(function(res){
