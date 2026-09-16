@@ -110,25 +110,25 @@
 
   /* ---------- Topbar ---------- */
   .brand{display:flex;align-items:center;gap:10px}
-  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none;transition:width .25s ease,height .25s ease}
+  /* Shrinks via transform, not width/height — those affect .app-header's
+     layout box, which .app's own scrollHeight is measured from. Changing
+     it mid-scroll shortened the scrollable range while the user was still
+     dragging, fighting their finger (each frame's shrink ate into the very
+     distance being scrolled). transform is paint-only: the reserved layout
+     box — and .app's scrollHeight — never changes, only the pixels move. */
+  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none;transition:transform .25s ease}
   .brand-mark svg{width:100%;height:100%;display:block}
   .brand-text{display:flex;flex-direction:column;line-height:1.2;gap:2px}
-  .brand-text h1{transition:font-size .25s ease}
-  /* max-height, not height — the resting state has no explicit height
-     (content decides it, i.e. "auto"), and CSS can't transition to/from
-     auto, so collapsing would animate but re-expanding would just snap.
-     max-height:20px comfortably clears one line of .72rem text and gives
-     both directions a real number to interpolate between. */
-  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500;max-height:20px;transition:opacity .2s ease,max-height .2s ease,margin-top .2s ease;overflow:hidden}
+  .brand-text h1{transition:transform .25s ease;transform-origin:left top}
+  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500;transition:opacity .2s ease;overflow:hidden}
   /* Sticky "large title" nav bar — stays pinned at the top of .app's own
      scroll (its containing block, since .app is the actual scroll container,
      not body) and shrinks as content scrolls under it, iOS-Settings-app
      style. Needs its own opaque background since .app itself has none. */
-  .app-header{position:sticky;top:0;z-index:30;background:var(--bg);transition:padding-bottom .25s ease}
-  .app-header.scrolled{padding-bottom:8px}
-  .app-header.scrolled .brand-mark{width:28px;height:28px}
-  .app-header.scrolled .brand-text h1{font-size:1.15rem}
-  .app-header.scrolled .brand-sub{opacity:0;max-height:0;margin-top:0}
+  .app-header{position:sticky;top:0;z-index:30;background:var(--bg)}
+  .app-header.scrolled .brand-mark{transform:scale(.7368)}
+  .app-header.scrolled .brand-text h1{transform:scale(.7667)}
+  .app-header.scrolled .brand-sub{opacity:0}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
