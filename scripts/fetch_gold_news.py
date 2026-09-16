@@ -53,6 +53,26 @@ USD_MONEY_AMOUNT_RE = re.compile(r"(nghìn\s+tỷ|tỷ|triệu)\s*usd\b", re.IGN
 # vàng...) but aren't excluded here without a confirmed false-positive case.
 VANG_IDIOM_RE = re.compile(r"đất\s+vàng\b", re.IGNORECASE)
 
+# CafeF's own recurring "Giá vàng miếng, vàng nhẫn trơn <khi> tại <danh sách
+# cửa hàng>,..." roundup headline is truncated with a literal "..." by CafeF
+# itself — verified against the article's own <title>/og:title/<h1>, all
+# three carry the identical truncated text, so there is no "full" title to
+# recover from the source. Since the store list isn't essential (the article
+# body has it), rewrite just this one recurring pattern down to its short,
+# complete lead-in instead of showing a dangling "...".
+GOLD_ROUNDUP_ELLIPSIS_RE = re.compile(r"^(Giá vàng miếng.*?)\s+tại\s+.+,\.\.\.(?::\s*(.+))?$")
+
+
+def clean_title(title):
+    m = GOLD_ROUNDUP_ELLIPSIS_RE.match(title)
+    if not m:
+        return title
+    clean = m.group(1)
+    if m.group(2):
+        clean += " — " + m.group(2)
+    return clean
+
+
 NEWS_MAX = 40
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_FILE = os.path.join(ROOT, "data", "gold-news.json")
@@ -93,6 +113,7 @@ def parse_items(xml_bytes, source):
         link_el = item.find("link")
         date_el = item.find("pubDate")
         title = (title_el.text or "").strip() if title_el is not None else ""
+        title = clean_title(title)
         link = (link_el.text or "").strip() if link_el is not None else ""
         if not title or not link:
             continue
