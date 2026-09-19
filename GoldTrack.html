@@ -758,6 +758,7 @@
   }
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    markGistDirty();
     syncToGist();
   }
 
@@ -1002,7 +1003,21 @@
   // stamp new Date() at DISPLAY time, so reopening Settings hours after the
   // last actual sync silently relabeled that stale sync as "just now".
   var GIST_LAST_SYNC_KEY = "goldtrack_gist_last_sync_v1";
+  // Survives app close, unlike an in-memory flag: a change made while
+  // offline (or with an expired token) used to sit only in localStorage,
+  // and the next launch's pull silently overwrote it with the older remote
+  // copy. While this is set, local is the newer truth and must be pushed
+  // up rather than pulled over.
+  var GIST_DIRTY_KEY = "goldtrack_gist_dirty_v1";
+  function markGistDirty(){
+    if(!gistConfig) return;
+    try{ localStorage.setItem(GIST_DIRTY_KEY, '1'); }catch(e){}
+  }
+  function hasUnsyncedChanges(){
+    try{ return localStorage.getItem(GIST_DIRTY_KEY) === '1'; }catch(e){ return false; }
+  }
   function markSynced(){
+    try{ localStorage.removeItem(GIST_DIRTY_KEY); }catch(e){}
     localStorage.setItem(GIST_LAST_SYNC_KEY, new Date().toISOString());
     setGistStatus('synced');
   }
@@ -1286,7 +1301,12 @@
   // sized to whatever height was last known before the screen turned off,
   // leaving a gap or offset until something else forced a recompute.
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible'){ syncAppHeight(); loadLiveData(); loadNews(); }
+    if(document.visibilityState === 'visible'){
+      syncAppHeight(); loadLiveData(); loadNews();
+      // A push that failed while offline is never retried on its own —
+      // coming back to the foreground is the natural moment to heal it.
+      if(gistConfig && hasUnsyncedChanges()) syncToGist();
+    }
   });
   window.addEventListener('pageshow', function(e){ syncAppHeight(); if(e.persisted){ loadLiveData(); loadNews(); } });
 
@@ -1503,7 +1523,11 @@
         var avgCost = holdingAmount > 0 ? holdingCost / holdingAmount : 0;
         var sellAmt = Math.min(tx.amount, holdingAmount);
         var costOfSold = avgCost * sellAmt;
-        var pl = tx.amount * tx.price - avgCost * tx.amount;
+        // Book the P&L on the clamped amount, same as the holdings/cost
+        // reduction. Using the raw tx.amount here meant an oversized sell
+        // (only reachable now via imported or Gist-synced data, since the
+        // form validates the timeline) invented profit on gold never held.
+        var pl = sellAmt * (tx.price - avgCost);
         holdingCost -= costOfSold;
         holdingAmount -= sellAmt;
         if(holdingAmount < 1e-9){ holdingAmount = 0; holdingCost = 0; }
@@ -1525,13 +1549,45 @@
     };
   }
 
-  function totalHoldingsExcluding(excludeId){
-    var amt = 0;
-    state.transactions.forEach(function(t){
-      if(t.id === excludeId) return;
-      amt += (txType(t) === 'sell' ? -t.amount : t.amount);
+  function chronoSort(list){
+    return list.slice().sort(function(a,b){
+      return a.date.localeCompare(b.date) || (a.createdAt||0) - (b.createdAt||0);
     });
-    return Math.max(0, amt);
+  }
+
+  // Gold actually held at the moment a transaction sits in the timeline —
+  // NOT the net total across all dates. A date-blind total let a sell dated
+  // before its matching buy pass validation, and computePortfolio (which
+  // does replay chronologically) then clamped that sell to zero: holdings
+  // never dropped, yet the full sale was still booked as realized profit.
+  function holdingsAsOf(dateStr, createdAt, excludeId){
+    var held = 0;
+    chronoSort(state.transactions).forEach(function(t){
+      if(t.id === excludeId) return;
+      var isBefore = t.date < dateStr || (t.date === dateStr && (t.createdAt||0) < createdAt);
+      if(!isBefore) return;
+      held += (txType(t) === 'sell' ? -t.amount : t.amount);
+    });
+    return Math.max(0, held);
+  }
+
+  // Replays a prospective ledger and returns the first sell that would run
+  // the balance negative, or null if the whole timeline stays consistent.
+  // Checks every point in time, so it also catches the reverse direction:
+  // backdating a sell (or shrinking an earlier buy) that starves a sell
+  // recorded later on.
+  function findLedgerViolation(txList){
+    var held = 0, chrono = chronoSort(txList);
+    for(var i=0;i<chrono.length;i++){
+      var t = chrono[i];
+      if(txType(t) === 'sell'){
+        if(t.amount > held + 1e-9) return { tx: t, available: held };
+        held -= t.amount;
+      } else {
+        held += t.amount;
+      }
+    }
+    return null;
   }
 
   // ---------- transaction sheet ----------
@@ -1547,14 +1603,24 @@
       positionSegmentedIndicator(btn.closest('.segmented'));
     });
   });
+  // The sellable-amount hint depends on the chosen date now, so it has to
+  // refresh when the date changes, not just when buy/sell is toggled.
+  document.getElementById('txDate').addEventListener('change', function(){
+    updateTxFormLabels();
+    clearFieldError('txAmount');
+  });
   function updateTxFormLabels(){
     var isSell = selectedType === 'sell';
     document.getElementById('txPriceLabel').textContent = isSell ? 'Giá bán (VNĐ / chỉ)' : 'Giá mua (VNĐ / chỉ)';
     document.getElementById('txDateLabel').textContent = isSell ? 'Ngày bán' : 'Ngày mua';
     document.getElementById('txStoreLabel').textContent = isSell ? 'Nơi bán' : 'Cửa hàng';
     document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : (isSell ? 'Thêm giao dịch bán vàng' : 'Thêm giao dịch mua vàng');
-    var holdings = totalHoldingsExcluding(editingTxId);
-    document.getElementById('txAmountHint').textContent = isSell ? ('Đang có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
+    // Holdings as of the date currently in the form, not the net total —
+    // picking an earlier date genuinely changes how much there is to sell.
+    var dateVal = document.getElementById('txDate').value || todayISO();
+    var editing = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
+    var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId);
+    document.getElementById('txAmountHint').textContent = isSell ? ('Ngày ' + fmtDate(dateVal) + ' có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
   }
   function setType(type){
     selectedType = type;
@@ -1605,11 +1671,25 @@
     var ok = true;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
     if(!(price > 0)){ setFieldError('txPrice', true); ok = false; } else clearFieldError('txPrice');
-    if(ok && selectedType === 'sell'){
-      var holdings = totalHoldingsExcluding(editingTxId);
-      if(amount > holdings + 1e-9){
+    // Validate the whole prospective timeline, not just this one row: a buy
+    // edited downwards (or a backdated sell) can invalidate a DIFFERENT sell
+    // recorded later, so both directions have to be checked here.
+    if(ok){
+      var editing = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
+      var candidate = {
+        id: editingTxId || '__candidate__',
+        type: selectedType,
+        amount: amount,
+        date: date,
+        createdAt: editing ? (editing.createdAt || 0) : Date.now()
+      };
+      var prospective = state.transactions.filter(function(t){ return t.id !== editingTxId; }).concat([candidate]);
+      var violation = findLedgerViolation(prospective);
+      if(violation){
         setFieldError('txAmount', true);
-        document.getElementById('txAmountError').textContent = 'Số lượng bán vượt quá số vàng đang có (' + fmtAmount(holdings) + ' chỉ).';
+        document.getElementById('txAmountError').textContent = violation.tx.id === candidate.id
+          ? 'Ngày ' + fmtDate(date) + ' bạn chỉ có ' + fmtAmount(violation.available) + ' chỉ để bán.'
+          : 'Thay đổi này khiến giao dịch bán ngày ' + fmtDate(violation.tx.date) + ' không còn đủ vàng (chỉ còn ' + fmtAmount(violation.available) + ' chỉ).';
         ok = false;
       }
     }
@@ -2435,7 +2515,15 @@
     }
   })();
   if(gistConfig){
-    pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
+    if(hasUnsyncedChanges()){
+      // Local edits never reached the Gist (app was offline, token had
+      // expired, API hiccup...). Pulling here would overwrite and destroy
+      // them, so push local up instead — it's the newer copy.
+      setGistStatus('syncing');
+      doGistPush().then(markSynced).catch(function(e){ setGistStatus('error', e.message); });
+    } else {
+      pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
+    }
   }
 
   // Offline support: caches this page + the live price/history/changelog JSON
