@@ -12,6 +12,11 @@
     --shadow:0 20px 60px rgba(0,0,0,.4);
     --grid-line:rgba(255,255,255,.035);
     --sheet-bg:#0E1526;--dialog-bg:#131D33;--tabbar-bg:#0B1220;--panel2-solid:#141F38;
+    /* Nền chip % lãi/lỗ. Chip nằm CHỒNG lên banner vốn đã có tint, nên tint
+       chồng tint làm nền tối dần — ở theme sáng điều đó kéo tương phản chữ
+       xuống dưới chuẩn. Nền tối thì tint đậm hơn banner là đúng hướng; nền
+       sáng thì phải đi ngược lại: pill trắng, sáng hơn banner. */
+    --chip-up-bg:rgba(11,18,32,.55);--chip-down-bg:rgba(11,18,32,.55);
     --safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom);
     --font:Cambria,Georgia,'Times New Roman',Times,serif;
   }
@@ -25,13 +30,19 @@
       --glass:rgba(15,23,42,.045);--glass2:rgba(15,23,42,.075);
       --line:rgba(15,23,42,.18);--line2:rgba(15,23,42,.26);
       --text:#171B2B;--muted:#5B6478;--muted2:#6B7280;
-      --gold:#B45309;--gold2:#D97706;--gold-soft:rgba(180,83,9,.14);
-      --green:#059669;--green-soft:rgba(5,150,105,.14);
+      /* Đo trên nền card thật rgb(254,253,252): --gold2 cũ (#D97706) chỉ đạt
+         3.14:1 và --green cũ (#059669) đạt 3.71:1 — dưới chuẩn AA 4.5:1, mà
+         đây lại đúng là màu của giá vàng và số lãi/lỗ (chữ 11-16px, không
+         đủ lớn để hưởng ngưỡng "chữ lớn" 3:1). Hạ tông sâu hơn: 6.01:1 và
+         5.40:1, vẫn đạt AA cả khi nằm trực tiếp trên nền kem của trang. */
+      --gold:#B45309;--gold2:#A34608;--gold-soft:rgba(180,83,9,.14);
+      --green:#047857;--green-soft:rgba(5,150,105,.14);
       --red:#DC2626;--red-soft:rgba(220,38,38,.13);
       --blue:#2563EB;--blue-soft:rgba(37,99,235,.13);
       --shadow:0 14px 36px rgba(15,23,42,.10);
       --grid-line:rgba(15,23,42,.035);
       --sheet-bg:#FFFFFF;--dialog-bg:#FFFFFF;--tabbar-bg:#F6F1E7;--panel2-solid:#FFFFFF;
+      --chip-up-bg:rgba(255,255,255,.85);--chip-down-bg:rgba(255,255,255,.85);
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -218,8 +229,8 @@
   .pl-banner.up .pl-amount{color:var(--green)}
   .pl-banner.down .pl-amount{color:var(--red)}
   .pl-pct{font-family:var(--font);font-weight:700;font-size:.86rem;padding:5px 10px;border-radius:100px}
-  .pl-banner.up .pl-pct{background:rgba(52,211,153,.18);color:var(--green)}
-  .pl-banner.down .pl-pct{background:rgba(251,113,133,.18);color:var(--red)}
+  .pl-banner.up .pl-pct{background:var(--chip-up-bg);color:var(--green)}
+  .pl-banner.down .pl-pct{background:var(--chip-down-bg);color:var(--red)}
   .pl-banner.flat .pl-pct{background:var(--glass2);color:var(--muted)}
 
   .sec-count{font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
