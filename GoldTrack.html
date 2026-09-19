@@ -691,6 +691,10 @@
       <input class="input" id="txStore" inputmode="text" placeholder="Ví dụ: PNJ, DOJI, tiệm vàng..." autocomplete="off">
     </div>
     <div class="field">
+      <label for="txAddress">Địa chỉ cửa hàng (tuỳ chọn)</label>
+      <input class="input" id="txAddress" inputmode="text" placeholder="Ví dụ: 52 Nguyễn Trãi, Q.5, TP.HCM" autocomplete="off" maxlength="200">
+    </div>
+    <div class="field">
       <label for="txDate" id="txDateLabel">Ngày mua</label>
       <input class="input" id="txDate" type="date" required>
     </div>
@@ -1559,6 +1563,7 @@
     document.getElementById('txAmount').value = '';
     document.getElementById('txPrice').value = '';
     document.getElementById('txStore').value = '';
+    document.getElementById('txAddress').value = '';
     document.getElementById('txNote').value = '';
     document.getElementById('txDate').value = todayISO();
     document.getElementById('txDate').max = todayISO();
@@ -1573,6 +1578,7 @@
     document.getElementById('txAmount').value = fmtAmount(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
     document.getElementById('txStore').value = tx.store || '';
+    document.getElementById('txAddress').value = tx.address || '';
     document.getElementById('txNote').value = tx.note || '';
     document.getElementById('txDate').value = tx.date;
     document.getElementById('txDate').max = todayISO();
@@ -1588,6 +1594,7 @@
     var amount = parseDecimal(document.getElementById('txAmount').value);
     var price = parseDigits(document.getElementById('txPrice').value);
     var store = document.getElementById('txStore').value.trim();
+    var address = document.getElementById('txAddress').value.trim();
     var note = document.getElementById('txNote').value.trim();
     var date = document.getElementById('txDate').value;
     var ok = true;
@@ -1605,9 +1612,9 @@
     document.getElementById('txAmountError').textContent = 'Nhập số lượng lớn hơn 0.';
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
-      tx.amount = amount; tx.price = price; tx.store = store; tx.note = note; tx.date = date; tx.type = selectedType;
+      tx.amount = amount; tx.price = price; tx.store = store; tx.address = address; tx.note = note; tx.date = date; tx.type = selectedType;
     } else {
-      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, note: note, date: date, createdAt: Date.now() });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, address: address, note: note, date: date, createdAt: Date.now() });
     }
     saveState();
     renderAll();
@@ -2110,7 +2117,7 @@
     list.innerHTML = txs.map(function(tx){
       var isSell = txType(tx) === 'sell';
       var badge = '<span class="tx-badge '+(isSell?'sell':'buy')+'">'+(isSell?'BÁN':'MUA')+'</span>';
-      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (tx.store ? ' · '+escapeHtml(tx.store) : '');
+      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
       var noteHtml = tx.note ? '<div class="tx-note">'+escapeHtml(tx.note)+'</div>' : '';
 
       var grid;
