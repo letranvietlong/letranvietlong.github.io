@@ -49,6 +49,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 .
 ├── index.html              # Trang chủ — Portfolio, Blog, Mini Game Hub, Contact
 ├── CryptoAI.html            # Product
+├── GoldTrack.html           # Product (theo dõi giá vàng — CSS/JS tách riêng, xem css/ và js/ dưới)
 ├── KOL-VuThiMinhThu.html    # Product
 ├── MeetingTranslator.html   # Product
 ├── MiniGameHub.html         # Product
@@ -62,23 +63,42 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── worldcup2026.html         # Product (HTML — CSS/JS tách riêng, xem css/ và js/ dưới)
 ├── privacy.html              # Chính sách bảo mật (VietLong Creator)
 ├── terms.html                 # Điều khoản dịch vụ (VietLong Creator)
+├── sw-goldtrack.js           # Service worker của GoldTrack — BẮT BUỘC nằm ở root (xem ghi chú dưới)
+├── CLAUDE.md                 # Hướng dẫn cho Claude Code — BẮT BUỘC nằm ở root để được tự động nạp
 ├── css/
 │   ├── ThubeeFarmery.css     # Style cho ThubeeFarmery.html
+│   ├── goldtrack.css         # Style cho GoldTrack.html
 │   └── worldcup2026.css      # Style cho worldcup2026.html
 ├── js/
 │   ├── ThubeeFarmery.ts      # Source TypeScript cho ThubeeFarmery.html
 │   ├── ThubeeFarmery.js      # Bản compile từ ThubeeFarmery.ts (file thực sự được load)
+│   ├── goldtrack.js          # Logic cho GoldTrack.html
 │   └── worldcup2026.js       # Logic cho worldcup2026.html
 ├── img/
 │   ├── thubee-icon.svg       # Logo mascot (favicon SVG)
-│   └── thubee-icon-*.png     # Icon PNG (32/180) cho favicon, apple-touch-icon
+│   ├── thubee-icon-*.png     # Icon PNG (32/180) cho favicon, apple-touch-icon
+│   ├── goldtrack-icon.svg    # Logo GoldTrack (favicon SVG)
+│   └── goldtrack-icon-*.png  # Icon PNG (32/180) cho favicon, apple-touch-icon
 ├── json/
 │   ├── products.json         # Catalog sản phẩm gốc (seed + nguồn combobox)
 │   ├── customers.json        # Danh sách khách hàng gốc (seed + nguồn combobox)
 │   ├── sellers.json          # Danh sách người bán hàng gốc (seed + nguồn combobox)
 │   └── orders.json           # Đơn hàng gốc (mặc định rỗng — dữ liệu thật tích lũy qua localStorage)
-└── README.md
+├── data/                     # Dữ liệu GoldTrack, cập nhật tự động bởi GitHub Actions
+│   ├── gold-price.json       # Giá vàng mới nhất
+│   ├── gold-price-history.json # Lịch sử giá (vẽ biểu đồ xu hướng)
+│   ├── gold-news.json        # Tin tức đã lọc theo từ khoá liên quan vàng
+│   └── changelog.json        # Lịch sử cập nhật hiện trong app (nút version ở header)
+├── scripts/                  # Script Python chạy trong GitHub Actions
+│   ├── fetch_gold_price.py   # Lấy giá vàng từ Ngọc Thịnh Jewelry
+│   └── fetch_gold_news.py    # Lấy + lọc tin tức từ RSS CafeF/VnExpress
+└── docs/
+    └── README.md             # Tài liệu này
 ```
+
+> **Vì sao `sw-goldtrack.js` và `CLAUDE.md` không nằm trong thư mục con?**
+> - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt vào `js/` thì scope co lại thành `/js/` và không còn điều khiển được `/GoldTrack.html` → mất toàn bộ tính năng offline. Muốn mở rộng scope phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header.
+> - `CLAUDE.md` được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực.
 
 ### 🔐 Thubee Farmery — lưu ý vận hành
 

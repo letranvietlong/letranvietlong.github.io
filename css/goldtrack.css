@@ -1,0 +1,423 @@
+  :root{
+    --bg:#0B1220;--bg2:#0F1A30;--bg3:#0A0F1D;
+    --panel:rgba(17,27,49,.86);--panel2:rgba(21,32,58,.8);
+    --glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);
+    --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.15);
+    --text:#F8FAFC;--muted:#A9B4CC;--muted2:#7C88A6;
+    --gold:#F59E0B;--gold2:#FBBF24;--gold-soft:rgba(245,158,11,.14);
+    --green:#34D399;--green-soft:rgba(52,211,153,.14);
+    --red:#FB7185;--red-soft:rgba(251,113,133,.14);
+    --blue:#60A5FA;--blue-soft:rgba(96,165,250,.14);
+    --radius:22px;--radius-sm:14px;
+    --shadow:0 20px 60px rgba(0,0,0,.4);
+    --grid-line:rgba(255,255,255,.035);
+    --sheet-bg:#0E1526;--dialog-bg:#131D33;--tabbar-bg:#0B1220;--panel2-solid:#141F38;
+    --safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom);
+    --font:Cambria,Georgia,'Times New Roman',Times,serif;
+  }
+  /* Dark is the app's native look; light only overrides what needs to flip
+     so the system's Light/Dark setting (Control Center) is followed
+     automatically — no in-app toggle. */
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F6F1E7;--bg2:#FFFFFF;--bg3:#EFE7D6;
+      --panel:rgba(255,255,255,.88);--panel2:rgba(255,255,255,.74);
+      --glass:rgba(15,23,42,.045);--glass2:rgba(15,23,42,.075);
+      --line:rgba(15,23,42,.18);--line2:rgba(15,23,42,.26);
+      --text:#171B2B;--muted:#5B6478;--muted2:#6B7280;
+      --gold:#B45309;--gold2:#D97706;--gold-soft:rgba(180,83,9,.14);
+      --green:#059669;--green-soft:rgba(5,150,105,.14);
+      --red:#DC2626;--red-soft:rgba(220,38,38,.13);
+      --blue:#2563EB;--blue-soft:rgba(37,99,235,.13);
+      --shadow:0 14px 36px rgba(15,23,42,.10);
+      --grid-line:rgba(15,23,42,.035);
+      --sheet-bg:#FFFFFF;--dialog-bg:#FFFFFF;--tabbar-bg:#F6F1E7;--panel2-solid:#FFFFFF;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none !important}
+  /* Defensive: if body's box ever falls short of the real screen for any
+     reason (viewport-height edge cases are common in iOS standalone
+     home-screen mode), html's own background shows through that sliver.
+     Left at the browser default (white) that reads as a stray white gap,
+     so paint it the same base color body's gradient starts/ends on. */
+  html{scroll-behavior:smooth;height:100%;overflow:hidden;background:var(--bg)}
+  body{
+    /* Must stay a definite height (not min-height) — .app below depends on
+       height:100% to be clipped to exactly one viewport and scroll
+       internally; min-height here would make body's height indefinite,
+       which breaks that percentage resolution and lets .app grow to fit
+       all content instead of clipping+scrolling it (confirmed by testing:
+       .app stopped scrolling entirely). 100dvh is a *live* unit — modern
+       Safari recomputes it as its own toolbar collapses/expands, so this
+       tracks the real viewport without needing min-height's growth trick. */
+    /* --app-height (set from window.visualViewport in JS) wins last when
+       present: 100dvh is known to get stuck stale on iOS right after the
+       on-screen keyboard closes — a text input in a sheet loses focus, the
+       keyboard dismisses, and body's rendered height stays at the
+       keyboard-open size until something else forces a reflow, which is
+       exactly why the fixed tab bar was intermittently sitting short of
+       the real bottom edge or floating high. visualViewport's own resize
+       event fires reliably for that exact transition, so reading its
+       height directly in JS is more trustworthy here than the CSS unit. */
+    margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;height:var(--app-height, 100dvh);color:var(--text);font-family:var(--font);
+    /* Cambria's default digits are old-style (text) figures — designed to
+       vary in height/depth like lowercase letters (e.g. 3/5/7/9 dip below
+       the baseline), which reads fine in prose but looks broken in a money
+       amount like "13.760.000". Force lining figures (flat baseline, full
+       cap height) with fixed tabular width everywhere in the app. */
+    font-variant-numeric:lining-nums tabular-nums;
+    background:
+      radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
+      radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
+      radial-gradient(circle at 40% 115%, rgba(245,158,11,.09), transparent 40%),
+      linear-gradient(180deg,var(--bg) 0%,var(--bg3) 50%,var(--bg) 100%);
+    overflow:hidden;overscroll-behavior:none;
+  }
+  body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,black,transparent 65%)}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  h1,h2,h3,p{margin:0}
+  /* .app is the only scrolling region — body itself never scrolls, so fixed
+     elements (tabbar, sheets, toast) can't drift during rubber-band bounce
+     on iOS, and pinch/double-tap zoom stays off since nothing pans past the
+     fixed viewport frame. */
+  .app{
+    max-width:480px;margin:0 auto;position:relative;
+    height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+    /* No visible scrollbar track — this is used as an installed app (iOS
+       hides it by default anyway), not a browser page; only matters when a
+       mouse/trackpad is attached (iPad, or testing in a desktop browser). */
+    scrollbar-width:none;-ms-overflow-style:none;
+    /* --header-h is measured live off #appHeader in JS (its real rendered
+       height, which depends on the device's safe-top) — the fallback here
+       only covers the first frame before that measurement runs. */
+    padding:var(--header-h, calc(70px + var(--safe-top))) 14px calc(84px + var(--safe-bottom));
+  }
+  .app::-webkit-scrollbar{display:none;width:0;height:0}
+  .icon{width:20px;height:20px;flex:none;display:block}
+  .icon-lg{width:26px;height:26px}
+
+  /* ---------- Pull-to-refresh ---------- */
+  /* Height is driven live by JS during the drag (no transition, tracks the
+     finger 1:1); .settling turns the transition back on for the snap-back
+     (or snap-to-spinner-height) once the finger lifts. */
+  /* overflow-anchor:none — without it, Chromium's scroll anchoring can
+     nudge .app.scrollTop above 0 to compensate for this element growing
+     (it sits first in .app's scroll flow, so everything below it shifts
+     down as it grows), and the drag handler's own `scrollTop > 0` guard
+     then reads that browser-driven nudge as "the user scrolled" and
+     cancels the pull mid-gesture. */
+  .ptr-indicator{height:0;overflow:hidden;overflow-anchor:none;display:flex;align-items:center;justify-content:center;color:var(--gold2)}
+  .ptr-indicator.settling{transition:height .25s ease}
+  .ptr-indicator.loading .ptr-spinner{animation:ptrSpin .7s linear infinite}
+  @keyframes ptrSpin{to{transform:rotate(360deg)}}
+
+  /* ---------- Topbar ---------- */
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-mark{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 6px 18px rgba(245,158,11,.25);flex:none}
+  .brand-mark svg{width:100%;height:100%;display:block}
+  .brand-text{display:flex;flex-direction:column;line-height:1.2;gap:2px}
+  .brand-sub{font-size:.72rem;color:var(--muted2);font-weight:500}
+  /* Fixed, not sticky — this app went through two failed shrink-on-scroll
+     attempts here: (1) animating width/height/font-size changed the
+     header's own layout box while it sat in .app's scroll flow, so .app's
+     scrollHeight shrank mid-gesture and fought the user's finger; (2) the
+     transform-only fix for that avoided the layout issue but hit a real
+     WebKit bug — a position:sticky ancestor with an animated-transform
+     descendant renders the sticky element detached, floating mid-content,
+     during active scroll on iOS Safari (reproduced live: the header
+     appeared stuck between the price card's range tabs and its chart).
+     A plain fixed header sidesteps both bug classes at the cost of the
+     shrink animation — content is offset below it via #app's padding-top,
+     kept in sync with this element's real rendered height in JS (safe-top
+     varies per device, so a hardcoded padding would drift). */
+  .app-header{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);max-width:480px;margin:0 auto;transform:translateZ(0)}
+  .page-title.app-header{padding:calc(4px + var(--safe-top)) 16px 18px}
+  .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
+  .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
+  .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+  /* ---------- Page title (History / Settings tabs) ---------- */
+  .page-title{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 18px}
+  .page-title h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .version-badge{border:none;background:var(--glass);border:1px solid var(--line);color:var(--muted);font-size:.68rem;font-weight:700;padding:6px 11px;border-radius:100px;flex:none;transition:background .2s,color .2s,border-color .2s}
+  .version-badge:hover{background:var(--glass2);color:var(--gold2);border-color:var(--line2)}
+  .version-badge:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+  .header-actions{display:flex;align-items:center;gap:8px;flex:none}
+
+  /* ---------- Cards ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden}
+  /* Pushed further outside the card and toned down — at the old top:-40px/
+     140px/blur(40px)/opacity:.35 the soft halo reached all the way to the
+     card's own top-right border and washed it out to invisible there
+     (the border is only a faint 1px line to begin with), so the border
+     looked like it randomly stopped partway around the card. */
+  .card-glow{position:absolute;top:-55px;right:-55px;width:120px;height:120px;border-radius:50%;filter:blur(34px);opacity:.22;pointer-events:none}
+
+  .price-updated{font-size:.68rem;color:var(--muted2)}
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}
+  .price-box{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 12px}
+  .price-box .pb-label{font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .price-box .pb-val{font-family:var(--font);font-size:1.14rem;font-weight:700;color:var(--gold2);letter-spacing:-.01em}
+  .price-box .pb-unit{font-size:.66rem;color:var(--muted2);margin-left:2px;font-weight:500}
+  .pb-change{display:inline-flex;align-items:center;gap:3px;font-size:.72rem;font-weight:700;margin-top:5px}
+  .pb-change.up{color:var(--green)}
+  .pb-change.down{color:var(--red)}
+  .pb-change.flat{color:var(--muted)}
+  .pb-change .icon{width:13px;height:13px}
+  .price-empty{padding:22px 4px;text-align:center;color:var(--muted)}
+  .price-empty p{font-size:.86rem;margin-bottom:12px}
+
+  .chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .chart-wrap{margin-top:6px}
+  .chart-title{font-size:.72rem;color:var(--muted2);font-weight:600}
+  .chart-svg{width:100%;height:auto;display:block}
+  .chart-empty{font-size:.76rem;color:var(--muted2);padding:14px 0;text-align:center}
+  .range-tabs{display:flex;gap:6px;margin:10px 0 2px}
+  .range-tabs button{flex:1;border:1px solid var(--line);background:var(--glass);color:var(--muted);font-size:.66rem;font-weight:700;padding:6px 2px;border-radius:100px;min-height:28px;transition:background .2s,color .2s,border-color .2s}
+  .range-tabs button.active{background:var(--gold-soft);color:var(--gold2);border-color:rgba(245,158,11,.4)}
+  .chart-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+  .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted2)}
+  .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chart-legend-dash{width:14px;height:0;border-top:2px dashed var(--muted2);flex:none}
+  .chart-axis-label{fill:var(--muted2)}
+  .chart-cost-line{stroke:var(--muted2)}
+
+  .btn{border:none;border-radius:100px;padding:11px 18px;font-weight:700;font-size:.86rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;transition:transform .15s,opacity .15s,background .2s}
+  .btn:active{transform:scale(.97)}
+  .btn-gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;box-shadow:0 8px 22px rgba(245,158,11,.3)}
+  .btn-ghost{background:var(--glass);color:var(--text);border:1px solid var(--line)}
+  .btn-block{width:100%}
+  .btn-danger{background:var(--red-soft);color:var(--red);border:1px solid rgba(251,113,133,.3)}
+  .btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+  .btn-sm{padding:8px 14px;font-size:.76rem;min-height:38px}
+
+  /* ---------- Summary ---------- */
+  .summary-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .summary-head-icon{width:36px;height:36px;border-radius:10px;background:rgba(52,211,153,.16);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
+  .summary-title{font-size:.98rem;font-weight:800;display:flex;align-items:center;gap:6px}
+  .summary-sub{font-size:.68rem;color:var(--muted2);margin-top:1px}
+  .summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0}
+  .summary-row + .summary-row{border-top:1px solid var(--line)}
+  .summary-label{font-size:.82rem;color:var(--muted)}
+  .summary-val{font-family:var(--font);font-weight:700;font-size:.94rem}
+  .summary-val.up{color:var(--green)}
+  .summary-val.down{color:var(--red)}
+  .pl-banner{margin-top:12px;border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pl-banner.up{background:var(--green-soft);border:1px solid rgba(52,211,153,.3)}
+  .pl-banner.down{background:var(--red-soft);border:1px solid rgba(251,113,133,.3)}
+  .pl-banner.flat{background:var(--glass);border:1px solid var(--line)}
+  .pl-left{display:flex;align-items:center;gap:10px}
+  .pl-badge{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .pl-banner.up .pl-badge{background:rgba(52,211,153,.22);color:var(--green)}
+  .pl-banner.down .pl-badge{background:rgba(251,113,133,.22);color:var(--red)}
+  .pl-banner.flat .pl-badge{background:var(--glass2);color:var(--muted)}
+  .pl-title{font-size:.7rem;color:var(--muted);font-weight:600}
+  .pl-amount{font-family:var(--font);font-weight:800;font-size:1.02rem}
+  .pl-banner.up .pl-amount{color:var(--green)}
+  .pl-banner.down .pl-amount{color:var(--red)}
+  .pl-pct{font-family:var(--font);font-weight:700;font-size:.86rem;padding:5px 10px;border-radius:100px}
+  .pl-banner.up .pl-pct{background:rgba(52,211,153,.18);color:var(--green)}
+  .pl-banner.down .pl-pct{background:rgba(251,113,133,.18);color:var(--red)}
+  .pl-banner.flat .pl-pct{background:var(--glass2);color:var(--muted)}
+
+  .sec-count{font-size:.72rem;color:var(--muted2);background:var(--glass);border:1px solid var(--line);padding:3px 9px;border-radius:100px}
+
+  /* ---------- Search & date filter (History tab) ---------- */
+  .search-row{display:flex;gap:8px;margin-bottom:10px}
+  .search-input-wrap{position:relative;flex:1}
+  .search-input-wrap .icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none}
+  .search-input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:11px 14px 11px 38px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
+  .search-input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
+  .icon-btn.active{color:var(--gold2);border-color:rgba(245,158,11,.4);background:var(--gold-soft)}
+  .date-filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .date-filter-row .input{flex:1;padding:10px 10px;font-size:.8rem;min-height:40px}
+  .date-filter-row span{color:var(--muted2);font-size:.8rem;flex:none}
+
+  /* ---------- Transactions ---------- */
+  /* .tx-row clips to the rounded rect; .tx-swipe-action sits behind, fully
+     covered until .tx-item is dragged left (iOS Mail/Reminders pattern). */
+  .tx-row{position:relative;border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden}
+  .tx-swipe-action{position:absolute;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:var(--red)}
+  .tx-swipe-del{width:84px;border:none;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:.68rem;font-weight:700}
+  /* Opaque, not the translucent --panel2, so the red "Xoá" layer behind it
+     (see .tx-swipe-action) can't bleed through when at rest. No border-radius
+     of its own — .tx-row's overflow:hidden clip already rounds it, and a
+     second independent radius here would double-antialias the same edge and
+     leak a 1px fringe of the red layer around the card. */
+  .tx-item{position:relative;background:var(--panel2-solid);border:1px solid var(--line);padding:14px;margin-bottom:0;cursor:pointer;touch-action:pan-y;transition:border-color .2s,background .2s,transform .22s cubic-bezier(.32,.72,0,1)}
+  .tx-item.swiping{transition:none}
+  .tx-item:hover{border-color:var(--line2)}
+  .tx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .tx-amount{font-weight:700;font-size:.94rem}
+  .tx-badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
+  .tx-badge.buy{background:var(--gold-soft);color:var(--gold2)}
+  .tx-badge.sell{background:var(--blue-soft);color:var(--blue)}
+  .tx-date{font-size:.72rem;color:var(--muted2);margin-top:2px}
+  .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font)}
+  .tx-cell-label{font-size:.64rem;color:var(--muted2);font-family:var(--font);font-weight:600;margin-bottom:2px}
+  .tx-cell-val{font-size:.84rem;font-weight:600}
+  .tx-cell-val.up{color:var(--green)}
+  .tx-cell-val.down{color:var(--red)}
+  .tx-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);font-style:italic}
+
+  .empty-state{text-align:center;padding:34px 14px;color:var(--muted)}
+  .empty-state .icon-lg{margin:0 auto 10px;color:var(--muted2)}
+  .empty-state p{font-size:.86rem}
+
+  /* ---------- News tab ---------- */
+  .news-updated{font-size:.68rem;color:var(--muted2)}
+  .news-item{display:block;background:var(--panel2-solid);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;text-decoration:none;color:inherit;transition:border-color .2s}
+  .news-item:hover{border-color:var(--line2)}
+  .news-item-title{font-size:.9rem;font-weight:700;line-height:1.4;margin-bottom:8px}
+  .news-item-meta{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted2)}
+  .news-item-source{font-weight:700;color:var(--gold2)}
+  .news-item-dot{width:3px;height:3px;border-radius:50%;background:var(--muted2)}
+  .news-skeleton{background:var(--panel2-solid);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px}
+  .news-skeleton-line{height:12px;border-radius:6px;background:var(--glass2);margin-bottom:8px}
+  .news-skeleton-line:last-child{width:60%;margin-bottom:0}
+
+  /* ---------- Assistant tab ---------- */
+  .assistant-section-title{font-size:.8rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:2px 0 10px}
+  .trend-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0}
+  .trend-row + .trend-row{border-top:1px solid var(--line)}
+  .trend-label{font-size:.84rem;color:var(--muted)}
+  .trend-val{font-family:var(--font);font-weight:700;font-size:.92rem}
+  .trend-val.up{color:var(--green)}
+  .trend-val.down{color:var(--red)}
+  .assistant-note{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-top:12px;font-size:.82rem;color:var(--muted);line-height:1.55}
+  .assistant-note b{color:var(--text)}
+  .verdict-banner{border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:12px}
+  .verdict-banner.up{background:var(--green-soft);border:1px solid rgba(52,211,153,.3)}
+  .verdict-banner.down{background:var(--red-soft);border:1px solid rgba(251,113,133,.3)}
+  .verdict-banner.flat{background:var(--glass);border:1px solid var(--line)}
+  .verdict-badge{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .verdict-banner.up .verdict-badge{background:rgba(52,211,153,.22);color:var(--green)}
+  .verdict-banner.down .verdict-badge{background:rgba(251,113,133,.22);color:var(--red)}
+  .verdict-banner.flat .verdict-badge{background:var(--glass2);color:var(--muted)}
+  .verdict-title{font-size:1.02rem;font-weight:800}
+  .verdict-banner.up .verdict-title{color:var(--green)}
+  .verdict-banner.down .verdict-title{color:var(--red)}
+  .verdict-sub{font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.4}
+  .mini-news-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;text-decoration:none;color:inherit}
+  .mini-news-item + .mini-news-item{border-top:1px solid var(--line)}
+  .mini-news-title{font-size:.82rem;font-weight:600;line-height:1.4}
+  .mini-news-item .icon{flex:none;color:var(--muted2);width:16px;height:16px}
+
+  /* ---------- Header add button ---------- */
+  .icon-btn-gold{width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1204;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(245,158,11,.35);transition:transform .15s}
+  .icon-btn-gold:active{transform:scale(.92)}
+  .icon-btn-gold:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+  /* ---------- Bottom tab bar (iOS style) ---------- */
+  /* Solid, not translucent+backdrop-filter — blurring a fixed element behind
+     the safe-area/overflow:hidden frame is a known source of WKWebView
+     compositing glitches in iOS standalone (home-screen) mode, rendering as
+     a dark smear instead of a frosted-glass blur. A plain opaque color is
+     guaranteed to render correctly everywhere, at the cost of the blur. */
+  /* transform:translateZ(0) forces its own compositing layer — without it,
+     position:fixed siblings of .app's -webkit-overflow-scrolling:touch
+     momentum scroll can visually lag/detach mid-scroll on iOS WebKit and
+     briefly render short of the real screen edge until scrolling fully
+     settles (long-documented WebKit behavior; this is the standard fix). */
+  /* Trimmed to the minimum this can be: the safe-bottom part of the padding
+     is the iOS home-indicator reserve and can't shrink (OS-mandated on any
+     app, native or web), but the bar's OWN padding/icon/min-height above
+     that were more generous than needed — shrunk them (44px min-height is
+     Apple's own touch-target floor, so this doesn't go below it). */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0)}
+  .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:none;color:var(--muted2);padding:3px 0;min-height:44px;border-radius:12px;transition:color .2s}
+  .tabbar-btn .icon{width:21px;height:21px}
+  .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
+  .tabbar-btn.active{color:var(--gold2)}
+  .tabbar-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:-2px}
+
+  /* ---------- Sheet ---------- */
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
+  .sheet-backdrop.open{opacity:1;pointer-events:auto}
+  /* translateY(100% + 100px), not just 102% — the box-shadow (offset -20px,
+     blur 60px, ~80px total reach) is anchored to the element's own box and
+     moves with it, but a plain 102% only clears the viewport by 2% of the
+     sheet's OWN height. For any sheet shorter than ~4000px that's under the
+     shadow's ~80px reach, so it bleeds back over the visible viewport as a
+     dark smear at the bottom edge on every page load (sheets stay in the
+     DOM, just transformed off-screen, even when "closed"). A fixed 100px
+     buffer guarantees clearance regardless of content height. */
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .sheet::-webkit-scrollbar{display:none;width:0;height:0}
+  .sheet.open{transform:translateY(0)}
+  .sheet-handle-hit{padding:8px 0 16px;display:flex;justify-content:center;touch-action:none;cursor:grab}
+  .sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2)}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .sheet-title{font-size:1.02rem;font-weight:800}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
+  .input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
+  .input:focus-visible{outline:2px solid var(--gold2);outline-offset:1px}
+  .field-hint{font-size:.7rem;color:var(--muted2);margin-top:5px}
+  .field-error{font-size:.72rem;color:var(--red);margin-top:5px;display:none}
+  .field.invalid .input{border-color:var(--red)}
+  .field.invalid .field-error{display:block}
+
+  .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px;position:relative}
+  /* The pill is a separate absolutely-positioned layer that slides under the
+     buttons (JS sets width/transform to match the active button's own box),
+     instead of each button painting its own background on activation — this
+     is what gives the native UISegmentedControl "sliding capsule" motion
+     instead of an instant color swap. */
+  /* left:0, not 3px — JS sets transform:translateX(active.offsetLeft), and
+     offsetLeft is already measured from the container's padding edge (i.e.
+     already includes the 3px inset), so a static left:3px here would double
+     it, landing the pill 3px right of the button it's supposed to match. */
+  .segmented-indicator{position:absolute;top:3px;bottom:3px;left:0;border-radius:9px;background:linear-gradient(135deg,var(--gold2),var(--gold));transition:transform .28s cubic-bezier(.34,1.2,.64,1),width .28s cubic-bezier(.34,1.2,.64,1),background .2s;z-index:0;pointer-events:none}
+  .segmented-indicator.sell{background:linear-gradient(135deg,#93C5FD,var(--blue))}
+  .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
+  .segmented button.active{color:#1A1204}
+  .segmented button.active[data-type="sell"]{color:#08213F}
+
+  .sheet-actions{display:flex;gap:10px;margin-top:6px}
+  .sheet-actions .btn{flex:1}
+
+  /* ---------- Settings tab ---------- */
+  .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .settings-row:last-child{border-bottom:none}
+  .settings-row-text{display:flex;flex-direction:column;gap:2px}
+  .settings-row-title{font-size:.88rem;font-weight:700}
+  .settings-row-desc{font-size:.72rem;color:var(--muted2)}
+
+  /* ---------- Update history sheet ---------- */
+  .version-entry{padding:14px 0;border-bottom:1px solid var(--line)}
+  .version-entry:last-child{border-bottom:none;padding-bottom:4px}
+  .version-entry-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .version-num{font-family:var(--font);font-weight:800;font-size:.88rem;color:var(--gold2)}
+  .version-date{font-size:.68rem;color:var(--muted2)}
+  .version-changes{margin:0;padding-left:18px;color:var(--muted);font-size:.82rem;line-height:1.6}
+
+  /* ---------- Confirm dialog ---------- */
+  .confirm-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.62);backdrop-filter:blur(2px);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+  .confirm-backdrop.open{opacity:1;pointer-events:auto}
+  .confirm-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(320px, calc(100% - 48px));background:var(--dialog-bg);border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.5);z-index:71;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .confirm-dialog.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .confirm-title{font-size:1.05rem;font-weight:800;margin-bottom:8px;text-align:center}
+  .confirm-message{font-size:.86rem;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px;white-space:pre-line}
+  .confirm-actions{display:flex;gap:10px}
+  .confirm-actions .btn{flex:1}
+
+  /* ---------- Toast ---------- */
+  .toast-wrap{position:fixed;left:0;right:0;bottom:calc(90px + var(--safe-bottom));display:flex;justify-content:center;z-index:60;pointer-events:none}
+  .toast{background:#111a2f;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:100px;font-size:.82rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;transform:translateY(20px);opacity:0;transition:transform .25s,opacity .25s}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.ok{color:var(--green)}
+  .toast.err{color:var(--red)}
+  .toast-action{background:none;border:none;color:var(--gold2);font-weight:800;font-size:.82rem;padding:2px 0 2px 6px;margin-left:2px;border-left:1px solid var(--line2)}
+
+  @keyframes tabFadeIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .tab-view.tab-enter{ animation: tabFadeIn .22s cubic-bezier(.32,.72,0,1); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+  a{color:var(--gold2)}

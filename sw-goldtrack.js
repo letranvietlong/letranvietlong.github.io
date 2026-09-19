@@ -6,15 +6,21 @@
 // To make that harmless, every handler below checks GOLDTRACK_PATHS first
 // and does nothing at all for any request that isn't one of GoldTrack's own
 // files — other pages on the site see no behavior change whatsoever.
-var CACHE_NAME = "goldtrack-cache-v2";
+var CACHE_NAME = "goldtrack-cache-v3";
 
-// GoldTrack.html is an actively-edited single file with no build hash in its
-// URL, so it must be network-first (see below) — cache-first on it meant
-// every visit kept re-serving whatever HTML happened to be cached at
-// install time, silently hiding every later fix/update behind a stale copy
+// The page plus its stylesheet and script — all actively edited, none with a
+// build hash in the URL, so all three must be network-first (see below).
+// Cache-first on these meant every visit kept re-serving whatever was cached
+// at install time, silently hiding every later fix/update behind a stale copy
 // (the exact "site still shows old source" bug this app has hit before,
 // this time self-inflicted by the service worker instead of the git race).
-var HTML_PATHS = ["/GoldTrack.html"];
+// The CSS/JS entries matter for offline too: the HTML alone would restore
+// from cache as an unstyled, non-functioning page without them.
+var APP_CODE_PATHS = [
+  "/GoldTrack.html",
+  "/css/goldtrack.css",
+  "/js/goldtrack.js"
+];
 // Icon files are named by content/size and effectively never change, so
 // cache-first (instant, no network round trip) is safe for these.
 var ICON_PATHS = [
@@ -28,8 +34,8 @@ var DATA_PATHS = [
   "/data/gold-news.json",
   "/data/changelog.json"
 ];
-var NETWORK_FIRST_PATHS = HTML_PATHS.concat(DATA_PATHS);
-var GOLDTRACK_PATHS = HTML_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
+var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
+var GOLDTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
 
 self.addEventListener("install", function(event){
   event.waitUntil(
