@@ -1258,10 +1258,16 @@
   // The old "Làm mới" button only re-read the committed JSON, which read as
   // "fetch a fresh price" and misled people. Instead, quietly re-read it
   // whenever the app comes back to the foreground.
+  // Also re-sync --app-height here (function declared further down, hoisted):
+  // a screen lock/unlock or app-switcher backgrounding doesn't reliably fire
+  // visualViewport's own resize event the way the on-screen keyboard does,
+  // so without this the tab bar could come back from a locked screen still
+  // sized to whatever height was last known before the screen turned off,
+  // leaving a gap or offset until something else forced a recompute.
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible'){ loadLiveData(); loadNews(); }
+    if(document.visibilityState === 'visible'){ syncAppHeight(); loadLiveData(); loadNews(); }
   });
-  window.addEventListener('pageshow', function(e){ if(e.persisted){ loadLiveData(); loadNews(); } });
+  window.addEventListener('pageshow', function(e){ syncAppHeight(); if(e.persisted){ loadLiveData(); loadNews(); } });
 
   // ---------- news (auto-fetched, static JSON updated hourly by GitHub Actions) ----------
   var newsData = null;
@@ -2242,15 +2248,17 @@
 
   // ---------- real viewport height (fixes the intermittent bottom tab bar gap) ----------
   // See body's CSS comment: 100dvh can get stuck at the on-screen-keyboard-open
-  // size after an input in a sheet loses focus on iOS. visualViewport.resize
-  // fires reliably right when the keyboard actually dismisses, so re-reading
-  // its height there keeps body (and therefore the fixed tab bar's bottom:0)
-  // matched to the real screen instead of a stale cached viewport unit.
+  // (or screen-locked) size after an input loses focus, or after the phone's
+  // screen was turned off and back on, on iOS. A plain function declaration
+  // (not a var assigned later) so it's hoisted and safe to call from the
+  // visibilitychange/pageshow handlers above, which run earlier in the file
+  // but need this exact recompute for the screen lock/unlock case.
+  function syncAppHeight(){
+    if(!window.visualViewport) return;
+    document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
+  }
+  syncAppHeight();
   if(window.visualViewport){
-    var syncAppHeight = function(){
-      document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
-    };
-    syncAppHeight();
     window.visualViewport.addEventListener('resize', syncAppHeight);
     window.visualViewport.addEventListener('scroll', syncAppHeight);
   }
