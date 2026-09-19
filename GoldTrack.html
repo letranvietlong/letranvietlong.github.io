@@ -1812,7 +1812,7 @@
       var isLast = i===n-1;
       return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+(isLast?lastDotColor:dotColor)+'"/>';
     }).join('');
-    var labelIdxs = pickLabelIndices(n, 5);
+    var labelIdxs = pickLabelIndices(n, 7);
     var labels = labelIdxs.map(function(i){
       var p = pts[i];
       var d = new Date(p.day+"T00:00:00");
@@ -1929,7 +1929,7 @@
       return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isLast?3:2)+'" fill="'+lineColor+'"/>';
     }).join('');
 
-    var labelIdxs = pickLabelIndices(n, 5);
+    var labelIdxs = pickLabelIndices(n, 7);
     var labels = labelIdxs.map(function(i){
       var p = valuePts[i];
       var d = new Date(series[i].day+"T00:00:00");
