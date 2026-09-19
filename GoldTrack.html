@@ -79,6 +79,12 @@
        event fires reliably for that exact transition, so reading its
        height directly in JS is more trustworthy here than the CSS unit. */
     margin:0;height:100%;height:100vh;height:-webkit-fill-available;height:100dvh;height:var(--app-height, 100dvh);color:var(--text);font-family:var(--font);
+    /* Cambria's default digits are old-style (text) figures — designed to
+       vary in height/depth like lowercase letters (e.g. 3/5/7/9 dip below
+       the baseline), which reads fine in prose but looks broken in a money
+       amount like "13.760.000". Force lining figures (flat baseline, full
+       cap height) with fixed tabular width everywhere in the app. */
+    font-variant-numeric:lining-nums tabular-nums;
     background:
       radial-gradient(circle at 10% -6%, rgba(245,158,11,.16), transparent 34%),
       radial-gradient(circle at 92% 6%, rgba(52,211,153,.12), transparent 32%),
