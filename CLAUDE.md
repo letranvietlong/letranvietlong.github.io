@@ -6,6 +6,25 @@ This repo has a Stop hook ([.claude/hooks/auto-commit-push.sh](.claude/hooks/aut
 
 The hook reads this file, uses it as the commit message, and deletes it after a successful commit. If the file is missing or empty, the hook falls back to a generic message listing changed file names — so writing this file is what keeps commit history searchable later.
 
+# Agents & workflow
+
+This project defines four subagents in [.claude/agents/](.claude/agents/):
+
+| Agent | Role | Writes code? |
+|---|---|---|
+| `planner` | Surveys real code, returns a plan with file:line, risks, and how to verify | No |
+| `coder` | Implements the plan, handles the easy-to-forget follow-ups (SW cache list, changelog, commit message) | Yes |
+| `tester` | Runs the app in a real browser via Playwright, reports PASS/FAIL with actual numbers | Test scripts only |
+| `reviewer` | Reviews the diff against the bug classes this repo has actually hit | No |
+
+Run all four in sequence with `/workflow <yêu cầu>` ([.claude/commands/workflow.md](.claude/commands/workflow.md)).
+
+**Judgement on when to use it:** the pipeline is for substantial work — new features, bugs with an unknown cause, refactors, anything touching portfolio math or sync. For a one-line change (text, colour, typo), skip it and just make the change; spinning up four agents for that is pure waste. Say so plainly rather than running the pipeline out of ceremony.
+
+**When orchestrating:** each agent starts cold and sees neither this conversation nor the previous agent's output, so every prompt must be self-contained (paste the actual plan/findings, not "làm theo kế hoạch"). Verify what agents claim — check `git diff` yourself rather than trusting "đã sửa xong".
+
+Note: agent definitions are loaded when a session starts, so a newly added or renamed agent only becomes available after restarting Claude Code. Skills are picked up immediately.
+
 # GoldTrack file layout
 
 GoldTrack is **not** a single self-contained file — its styles and logic live outside the HTML, matching the convention the other large pages here use:
