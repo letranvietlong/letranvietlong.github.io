@@ -69,6 +69,8 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   ├── css/gold-track.css
 │   │   ├── js/gold-track.js
 │   │   ├── js/sw-core.js     # Logic service worker (nạp qua importScripts từ vỏ ở root)
+│   │   ├── py/fetch_gold_price.py    # Lấy giá vàng từ Ngọc Thịnh Jewelry — chạy trong GitHub Actions
+│   │   ├── py/fetch_gold_news.py     # Lấy + lọc tin tức từ RSS CafeF/VnExpress — chạy trong GitHub Actions
 │   │   ├── manifest.json     # Web App Manifest
 │   │   └── data/             # Dữ liệu GoldTrack, cập nhật tự động bởi GitHub Actions
 │   │       ├── gold-price.json       # Giá vàng mới nhất
@@ -95,9 +97,6 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   ├── thubee-icon-*.png     # Icon PNG (32/180) cho favicon, apple-touch-icon
 │   ├── gold-track-icon.svg   # Logo GoldTrack (favicon SVG)
 │   └── gold-track-icon-*.png # Icon PNG (32/180) cho favicon, apple-touch-icon
-├── scripts/                  # Script Python chạy trong GitHub Actions
-│   ├── fetch_gold_price.py   # Lấy giá vàng từ Ngọc Thịnh Jewelry
-│   └── fetch_gold_news.py    # Lấy + lọc tin tức từ RSS CafeF/VnExpress
 └── docs/
     └── README.md             # Tài liệu này
 ```

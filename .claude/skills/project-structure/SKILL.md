@@ -11,7 +11,7 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 ## 1. Luật vàng của thư mục gốc
 
-> **Root chỉ chứa: `index.html`, thư mục `products/`, các thư mục dùng chung (`img/`, `scripts/`, `docs/`), và những file mà NỀN TẢNG bắt buộc phải ở root.**
+> **Root chỉ chứa: `index.html`, thư mục `products/`, các thư mục dùng chung thật sự (`img/`, `docs/`), và những file mà NỀN TẢNG bắt buộc phải ở root.**
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 
@@ -32,7 +32,7 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 | File `.html` của sản phẩm một-file (không có folder riêng) | kebab-case | `crypto-ai.html`, `viet-long-creator.html` |
 | File `.css` / `.js` / `.ts` phụ trợ | kebab-case, trùng slug của sản phẩm | `gold-track.css`, `thubee-farmery.js` |
 | File `.json` | kebab-case nếu tên nhiều từ, giữ nguyên nếu một từ | `gold-price-history.json`, `orders.json` |
-| File `.py` | `snake_case` — theo quy ước ngôn ngữ Python, **cố ý không ép kebab-case** | `fetch_gold_price.py` |
+| File `.py` | `snake_case` cho tên file — theo quy ước ngôn ngữ Python, **cố ý không ép kebab-case**; nhưng vẫn nằm trong tầng subfolder `py/` của đúng sản phẩm sở hữu nó, như mọi loại file khác | `products/gold-track/py/fetch_gold_price.py` |
 | Tên biến/hằng số nội bộ trong JS/Python | **không đổi** — đây là quy tắc đặt tên FILE, không phải quy tắc code | `GOLDTRACK_PATHS`, `CACHE_NAME` giữ nguyên |
 
 Đừng nhầm quy tắc tên file với tên định danh trong code — hai việc khác nhau. Đổi tên biến nội bộ khi không có lý do kỹ thuật là refactor ngoài phạm vi, không phải "thống nhất tên file".
@@ -47,12 +47,11 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 │       ├── html/<ten-san-pham>.html (hoặc index.html)
 │       ├── css/<ten-san-pham>.css
 │       ├── js/<ten-san-pham>.js    (+ .ts nếu có, nằm cùng chỗ với .js)
+│       ├── py/<ten_script>.py      # script Python CHỈ dùng riêng cho sản phẩm này
 │       ├── manifest.json           # Web App Manifest, nếu có
 │       ├── data/                   # dữ liệu do máy sinh (GitHub Actions ghi đè)
 │       └── json/                   # dữ liệu hạt giống, người viết tay
 ├── img/                 ảnh, icon dùng chung — tiền tố theo sản phẩm
-├── scripts/             script build/fetch chạy trong CI (Python) — CHỈ code chạy CI,
-│                        không phải code browser-load, nên KHÔNG chuyển vào products/
 └── docs/                tài liệu (.md)
 ```
 
@@ -60,7 +59,7 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 **Sản phẩm một-file ở lại flat, KHÔNG bị ép vào cấu trúc 3 tầng `products/<ten>/html/<ten>.html`.** Chỉ khi sản phẩm thật sự có ≥2 loại file riêng (css/js tách biệt) mới đáng để thêm tầng subfolder — thêm tầng cho một file HTML độc lập chỉ tạo thêm việc điều hướng không lợi ích gì.
 
-**`scripts/*.py` (fetch_gold_price.py, fetch_gold_news.py) cố ý ở lại `scripts/` chung, không chuyển vào `products/gold-track/py/`.** Lý do: `scripts/` = code chỉ chạy trong CI (GitHub Actions), tách biệt hẳn khỏi code browser-load trong `products/`. Gộp chung làm tăng rủi ro ai đó vô tình thêm nhầm `.py` vào danh sách cache của service worker.
+**Script Python chạy trong CI (GitHub Actions) nằm trong `py/` của đúng sản phẩm nó phục vụ** — ví dụ `products/gold-track/py/fetch_gold_price.py` — **cùng nguyên tắc file-type-subfolder như html/css/js/data**, không có ngoại lệ cho `.py`. Script tự tính đường dẫn dữ liệu tương đối theo vị trí của chính nó (`dirname(dirname(__file__))` trỏ về thư mục sản phẩm), không hardcode tên sản phẩm trong path — nhờ vậy path luôn đúng dù sản phẩm đổi tên sau này. Không có `scripts/` dùng chung ở root: nếu sau này có script CI thật sự cross-product (dùng chung cho ≥2 sản phẩm, không thuộc riêng ai), lúc đó mới đáng tạo một thư mục dùng chung — hiện tại chưa có trường hợp này.
 
 ## 4. Khi nào tách file khỏi HTML
 
@@ -101,7 +100,7 @@ Sau khi tách, kiểm tra **cả ba**, thiếu một là chưa xong:
 - [ ] Thẻ `<link>` / `<script src>` trong HTML (chú ý: đường dẫn tương đối đổi theo số tầng thư mục, ví dụ thêm tầng `html/` thì asset dùng `../css/...` thay vì `css/...`)
 - [ ] **Danh sách cache của service worker** (`APP_CODE_PATHS` / `ICON_PATHS` / `DATA_PATHS`) **và bump `CACHE_NAME`** — quên là app hỏng khi offline, hoặc kẹt bản cũ mãi. Bump luôn `?v=` trong `importScripts()` ở vỏ root cho khớp.
 - [ ] `navigator.serviceWorker.register(...)` và mọi `fetch(...)` đường dẫn tuyệt đối trong JS
-- [ ] Đường dẫn trong script Python (`scripts/*.py` ghi vào `data/`)
+- [ ] Đường dẫn trong script Python (`products/<ten>/py/*.py` ghi vào `data/`)
 - [ ] `.github/workflows/*.yml` (đường dẫn `git add` và bất kỳ path nào đọc lại file JSON)
 - [ ] `manifest.json` của sản phẩm đó (`start_url`, `icons[].src`)
 - [ ] Mọi self-reference URL bên trong chính trang đó (`<link rel="canonical">`, `<meta property="og:url">`, JSON-LD `"url"`, `data:` URI manifest inline) — dễ sót nhất vì trang tự trỏ về chính nó
@@ -151,6 +150,6 @@ File này là gì?
 ├─ Ảnh/icon                                → img/<tiền tố sản phẩm>-*
 ├─ Dữ liệu người viết tay                  → products/<ten>/json/
 ├─ Dữ liệu máy sinh (CI ghi đè)            → products/<ten>/data/
-├─ Script chạy trong CI (Python)           → scripts/ (KHÔNG vào products/)
+├─ Script chạy trong CI (Python)           → products/<ten>/py/
 └─ Tài liệu (.md)                          → docs/
 ```

@@ -52,7 +52,7 @@ git diff
 ### 7. Di chuyển/đổi tên file (nếu task đụng tới)
 - [ ] Đường dẫn tương đối trong HTML có khớp số tầng thư mục thật (`../css/...`, `../js/...` khi có tầng `html/`) không?
 - [ ] Self-reference URL của chính trang đó (`canonical`, `og:url`, JSON-LD `url`, `manifest` `start_url` kể cả loại sinh động bằng JS) đã cập nhật theo tên/đường dẫn mới chưa? (lỗi này đã xảy ra thật — nhiều lần)
-- [ ] `.github/workflows/*.yml` và `scripts/*.py` có còn trỏ path cũ không?
+- [ ] `.github/workflows/*.yml` và `products/gold-track/py/*.py` có còn trỏ path cũ không?
 
 ## Định dạng báo cáo
 

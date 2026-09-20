@@ -26,7 +26,7 @@ jobs:
 
       - run: pip install certifi
 
-      - run: python scripts/fetch_gold_news.py
+      - run: python products/gold-track/py/fetch_gold_news.py
 
       - name: Commit and push if changed
         run: |

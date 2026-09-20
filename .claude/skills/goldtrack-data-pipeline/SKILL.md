@@ -1,6 +1,6 @@
 ---
 name: goldtrack-data-pipeline
-description: Cách GoldTrack tự lấy giá vàng và tin tức qua GitHub Actions — nguồn dữ liệu, quy tắc đơn vị chỉ/lượng, lọc tin, xử lý múi giờ, và race condition khi bot commit. Dùng khi sửa scripts/fetch_*.py, sửa workflow, thêm nguồn dữ liệu, hoặc khi giá/tin không cập nhật.
+description: Cách GoldTrack tự lấy giá vàng và tin tức qua GitHub Actions — nguồn dữ liệu, quy tắc đơn vị chỉ/lượng, lọc tin, xử lý múi giờ, và race condition khi bot commit. Dùng khi sửa products/gold-track/py/fetch_*.py, sửa workflow, thêm nguồn dữ liệu, hoặc khi giá/tin không cập nhật.
 ---
 
 # Pipeline dữ liệu GoldTrack
@@ -9,11 +9,13 @@ Site tĩnh không có backend. Dữ liệu được **GitHub Actions chạy đ�
 
 ```
 GitHub Actions (cron)
-  ├── scripts/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
-  └── scripts/fetch_gold_news.py  → products/gold-track/data/gold-news.json
+  ├── products/gold-track/py/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
+  └── products/gold-track/py/fetch_gold_news.py  → products/gold-track/data/gold-news.json
                                      ↓ commit + push
                   products/gold-track/js/gold-track.js fetch('/products/gold-track/data/*.json')
 ```
+
+Cả hai script tự tính đường dẫn dữ liệu tương đối theo chính vị trí của mình (`PRODUCT_ROOT = dirname(dirname(__file__))` trỏ về `products/gold-track/`), không hardcode `"products", "gold-track"` trong path — vì đã nằm sẵn trong đúng thư mục sản phẩm.
 
 ## Giá vàng
 
