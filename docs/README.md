@@ -63,7 +63,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── worldcup2026.html         # Product (HTML — CSS/JS tách riêng, xem css/ và js/ dưới)
 ├── privacy.html              # Chính sách bảo mật (VietLong Creator)
 ├── terms.html                 # Điều khoản dịch vụ (VietLong Creator)
-├── sw-goldtrack.js           # Service worker của GoldTrack — BẮT BUỘC nằm ở root (xem ghi chú dưới)
+├── sw-goldtrack.js           # Vỏ service worker 1 dòng — BẮT BUỘC ở root (xem ghi chú dưới)
 ├── CLAUDE.md                 # Hướng dẫn cho Claude Code — BẮT BUỘC nằm ở root để được tự động nạp
 ├── css/
 │   ├── ThubeeFarmery.css     # Style cho ThubeeFarmery.html
@@ -73,6 +73,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   ├── ThubeeFarmery.ts      # Source TypeScript cho ThubeeFarmery.html
 │   ├── ThubeeFarmery.js      # Bản compile từ ThubeeFarmery.ts (file thực sự được load)
 │   ├── goldtrack.js          # Logic cho GoldTrack.html
+│   ├── sw-goldtrack-core.js  # Logic service worker (nạp qua importScripts từ vỏ ở root)
 │   └── worldcup2026.js       # Logic cho worldcup2026.html
 ├── img/
 │   ├── thubee-icon.svg       # Logo mascot (favicon SVG)
@@ -97,7 +98,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ```
 
 > **Vì sao `sw-goldtrack.js` và `CLAUDE.md` không nằm trong thư mục con?**
-> - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt vào `js/` thì scope co lại thành `/js/` và không còn điều khiển được `/GoldTrack.html` → mất toàn bộ tính năng offline. Muốn mở rộng scope phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header.
+> - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt vào `js/` thì scope co lại thành `/js/` và không còn điều khiển được `/GoldTrack.html` → mất toàn bộ tính năng offline. Muốn mở rộng scope phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header. Vì vậy root chỉ giữ **vỏ 1 dòng**, còn logic nằm ở `js/sw-goldtrack-core.js` — đúng nguyên tắc: chỉ những gì nền tảng BẮT BUỘC mới được ở root.
 > - `CLAUDE.md` được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực.
 
 ### 🔐 Thubee Farmery — lưu ý vận hành

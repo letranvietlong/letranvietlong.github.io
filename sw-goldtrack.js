@@ -1,99 +1,17 @@
-// Service worker for GoldTrack only.
+// Điểm vào service worker của GoldTrack — CỐ Ý chỉ có 1 dòng thật.
 //
-// This file has to live at the repo root next to every other product page
-// on this site, so its registration scope is technically the whole origin
-// (browsers can't scope a service worker narrower than its own directory).
-// To make that harmless, every handler below checks GOLDTRACK_PATHS first
-// and does nothing at all for any request that isn't one of GoldTrack's own
-// files — other pages on the site see no behavior change whatsoever.
-var CACHE_NAME = "goldtrack-cache-v3";
-
-// The page plus its stylesheet and script — all actively edited, none with a
-// build hash in the URL, so all three must be network-first (see below).
-// Cache-first on these meant every visit kept re-serving whatever was cached
-// at install time, silently hiding every later fix/update behind a stale copy
-// (the exact "site still shows old source" bug this app has hit before,
-// this time self-inflicted by the service worker instead of the git race).
-// The CSS/JS entries matter for offline too: the HTML alone would restore
-// from cache as an unstyled, non-functioning page without them.
-var APP_CODE_PATHS = [
-  "/GoldTrack.html",
-  "/css/goldtrack.css",
-  "/js/goldtrack.js"
-];
-// Icon files are named by content/size and effectively never change, so
-// cache-first (instant, no network round trip) is safe for these.
-var ICON_PATHS = [
-  "/img/goldtrack-icon.svg",
-  "/img/goldtrack-icon-32.png",
-  "/img/goldtrack-icon-180.png"
-];
-var DATA_PATHS = [
-  "/data/gold-price.json",
-  "/data/gold-price-history.json",
-  "/data/gold-news.json",
-  "/data/changelog.json"
-];
-var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
-var GOLDTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
-
-self.addEventListener("install", function(event){
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache){
-      // App shell must succeed for install to count as done. Data files are
-      // best-effort here — the fetch handler below will fill them in on the
-      // first successful network request either way, and a data endpoint
-      // hiccup at install time shouldn't block offline support for the app
-      // shell itself.
-      return cache.addAll(ICON_PATHS).then(function(){
-        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
-      });
-    })
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", function(event){
-  event.waitUntil(
-    caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(k){ return k !== CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
-    })
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", function(event){
-  if(event.request.method !== "GET") return;
-  var url = new URL(event.request.url);
-  if(url.origin !== location.origin) return;
-  if(GOLDTRACK_PATHS.indexOf(url.pathname) === -1) return; // not ours — let the browser handle it normally
-
-  var isNetworkFirst = NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1;
-
-  if(isNetworkFirst){
-    // Network-first: always show the freshest HTML/price/changelog when
-    // online, fall back to the last cached copy so the app still works
-    // offline.
-    event.respondWith(
-      fetch(event.request).then(function(res){
-        var copy = res.clone();
-        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
-        return res;
-      }).catch(function(){
-        return caches.match(event.request).then(function(cached){ return cached || Response.error(); });
-      })
-    );
-  } else {
-    // Cache-first for icons: instant load offline, refreshed in the background.
-    event.respondWith(
-      caches.match(event.request).then(function(cached){
-        var fetchPromise = fetch(event.request).then(function(res){
-          var copy = res.clone();
-          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
-          return res;
-        }).catch(function(){ return cached || Response.error(); });
-        return cached || fetchPromise;
-      })
-    );
-  }
-});
+// File này bắt buộc nằm ở thư mục gốc: service worker chỉ điều khiển được
+// các trang ngang hàng hoặc nằm dưới thư mục chứa nó. Đặt trong js/ thì
+// scope co lại thành /js/ và không còn quản được /GoldTrack.html — mất
+// toàn bộ offline. (Đã kiểm chứng: ép scope '/' từ /js/ ném SecurityError
+// "not under the max scope allowed ('/js/')". Cách nới scope duy nhất là
+// HTTP header Service-Worker-Allowed, mà GitHub Pages không cho set.)
+//
+// Nên root chỉ giữ đúng phần BẮT BUỘC phải ở root — cái vỏ. Toàn bộ logic
+// nằm cùng chỗ với mọi file JS khác: js/sw-goldtrack-core.js
+//
+// ?v= phải bump cùng lúc với CACHE_NAME trong core. Trình duyệt hiện đại có
+// kiểm tra cập nhật cho cả script được importScripts, nhưng hành vi này
+// từng khác nhau giữa các engine — query string làm việc cập nhật trở nên
+// chắc chắn thay vì phải tin vào engine.
+importScripts('/js/sw-goldtrack-core.js?v=3');

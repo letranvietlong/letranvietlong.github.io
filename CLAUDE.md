@@ -32,9 +32,10 @@ GoldTrack is **not** a single self-contained file — its styles and logic live 
 - [GoldTrack.html](GoldTrack.html) — markup only (~320 lines)
 - [css/goldtrack.css](css/goldtrack.css) — all styles
 - [js/goldtrack.js](js/goldtrack.js) — all logic (one IIFE, loaded at end of `<body>`)
-- [sw-goldtrack.js](sw-goldtrack.js) — service worker, **must stay at the repo root**: a service worker can only control pages at or below its own directory, so moving it into `js/` would shrink its scope to `/js/` and silently kill offline support for `/GoldTrack.html`. Widening it needs the `Service-Worker-Allowed` header, which GitHub Pages cannot set.
+- [sw-goldtrack.js](sw-goldtrack.js) — service worker **entry point only**, one real line. It has to sit at the repo root: a service worker can only control pages at or below its own directory, so registering from `js/` would shrink the scope to `/js/` and silently kill offline support for `/GoldTrack.html` (verified — forcing `scope:'/'` throws `SecurityError`). Widening it needs the `Service-Worker-Allowed` header, which GitHub Pages cannot set. So the root keeps only the shell; it `importScripts` the real logic.
+- [js/sw-goldtrack-core.js](js/sw-goldtrack-core.js) — the actual service worker logic, living with the rest of the JS. Never registered directly.
 
-**When adding a file GoldTrack loads at runtime**, add its path to `sw-goldtrack.js` as well (`APP_CODE_PATHS` for code that changes often, `ICON_PATHS` for immutable assets, `DATA_PATHS` for JSON) and bump `CACHE_NAME` — otherwise the app breaks offline, or keeps serving a stale copy.
+**When adding a file GoldTrack loads at runtime**, add its path to `js/sw-goldtrack-core.js` as well (`APP_CODE_PATHS` for code that changes often, `ICON_PATHS` for immutable assets, `DATA_PATHS` for JSON) and bump `CACHE_NAME` — otherwise the app breaks offline, or keeps serving a stale copy. Bump the `?v=` in the root shell's `importScripts` to the same number, so the imported script is re-fetched regardless of engine differences in how imports are update-checked.
 
 This file (`CLAUDE.md`) must also stay at the repo root so Claude Code auto-loads it; other docs live in [docs/](docs/).
 
