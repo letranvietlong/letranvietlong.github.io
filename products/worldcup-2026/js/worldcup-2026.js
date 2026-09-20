@@ -1729,7 +1729,7 @@ openTeamModal=function(t){
 };
 
 function setupPWA(){
-  const manifest={name:'FIFA World Cup 2026 Fan Site',short_name:'WC2026',start_url:'./worldcup2026.html',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',lang:'vi',description:'Lịch thi đấu, bảng đấu và đội tuyển FIFA World Cup 2026.'};
+  const manifest={name:'FIFA World Cup 2026 Fan Site',short_name:'WC2026',start_url:'./index.html',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',lang:'vi',description:'Lịch thi đấu, bảng đấu và đội tuyển FIFA World Cup 2026.'};
   let link=document.querySelector('link[rel="manifest"]');if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link);}link.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
   if(!document.querySelector('meta[name="application-name"]')){const m=document.createElement('meta');m.name='application-name';m.content='WC2026';document.head.appendChild(m);}
 }

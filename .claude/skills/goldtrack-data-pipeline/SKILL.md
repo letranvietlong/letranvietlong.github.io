@@ -9,10 +9,10 @@ Site tĩnh không có backend. Dữ liệu được **GitHub Actions chạy đ�
 
 ```
 GitHub Actions (cron)
-  ├── scripts/fetch_gold_price.py → data/gold-price.json, data/gold-price-history.json
-  └── scripts/fetch_gold_news.py  → data/gold-news.json
+  ├── scripts/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
+  └── scripts/fetch_gold_news.py  → products/gold-track/data/gold-news.json
                                      ↓ commit + push
-                          js/goldtrack.js fetch('data/*.json')
+                  products/gold-track/js/gold-track.js fetch('/products/gold-track/data/*.json')
 ```
 
 ## Giá vàng
@@ -82,4 +82,4 @@ with open('out.txt', 'w', encoding='utf-8') as f:
 
 ## Sau khi đổi cấu trúc dữ liệu
 
-Thêm file JSON mới mà app đọc lúc chạy → **phải** thêm path vào `DATA_PATHS` trong `sw-goldtrack.js` và bump `CACHE_NAME`, nếu không app hỏng khi offline.
+Thêm file JSON mới mà app đọc lúc chạy → **phải** thêm path vào `DATA_PATHS` trong `products/gold-track/js/sw-core.js` và bump `CACHE_NAME` (bump luôn `?v=` trong `importScripts()` ở vỏ root `sw-gold-track.js`), nếu không app hỏng khi offline.

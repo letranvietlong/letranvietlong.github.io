@@ -19,13 +19,14 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 
 ## Cạm bẫy đã biết của repo này — kiểm tra xem task có dính không
 
-- **GoldTrack đã tách 3 file**: `GoldTrack.html` (markup), `css/goldtrack.css`, `js/goldtrack.js`. Đừng đi tìm `<style>`/`<script>` inline.
-- **`sw-goldtrack.js` phải nằm ở root**. Service worker chỉ điều khiển được trang ngang hàng hoặc dưới thư mục của nó. Chuyển vào `js/` → scope co lại `/js/` → mất offline. (Đã kiểm chứng: ép scope `/` ném `SecurityError`.)
-- **Thêm file GoldTrack load lúc chạy → phải thêm path vào `sw-goldtrack.js` và bump `CACHE_NAME`**, nếu không app hỏng khi offline hoặc kẹt bản cũ.
+- **Mọi sản phẩm sống trong `products/`, đặt tên kebab-case, sản phẩm nhiều file có thêm tầng subfolder theo loại** (`html/`, `css/`, `js/`, `data/`/`json/`) — chi tiết ở skill `project-structure`.
+- **GoldTrack đã tách file**: `products/gold-track/html/index.html` (markup), `products/gold-track/css/gold-track.css`, `products/gold-track/js/gold-track.js`. Đừng đi tìm `<style>`/`<script>` inline.
+- **`sw-gold-track.js` phải nằm ở root**. Service worker chỉ điều khiển được trang ngang hàng hoặc dưới thư mục của nó. Chuyển vào `products/gold-track/js/` → scope co lại → mất offline. (Đã kiểm chứng: ép scope `/` từ thư mục con ném `SecurityError`.)
+- **Thêm file GoldTrack load lúc chạy → phải thêm path vào `products/gold-track/js/sw-core.js` và bump `CACHE_NAME`** (bump luôn `?v=` trong `sw-gold-track.js`), nếu không app hỏng khi offline hoặc kẹt bản cũ.
 - **`CLAUDE.md` phải ở root** để Claude Code tự nạp.
 - **Sổ sách mua/bán chạy theo thứ tự thời gian** (`computePortfolio` replay chronologically). Mọi thay đổi liên quan số lượng/ngày phải kiểm tra bằng `findLedgerViolation`, không dùng tổng số dư bỏ qua ngày.
 - **Đồng bộ Gist có thể mất dữ liệu**: lúc khởi động, nếu có thay đổi chưa đồng bộ (cờ `goldtrack_gist_dirty_v1`) thì phải **đẩy lên**, không được kéo về đè.
-- **iOS/PWA**: khoảng trống đáy màn hình thường là safe-area của home indicator (bình thường, không sửa được). `100dvh` có thể kẹt sau khi đóng bàn phím → dùng `visualViewport`.
+- **iOS/PWA**: khoảng trống đáy màn hình thường là safe-area của home indicator (bình thường, không sửa được). `100dvh` có thể kẹt sau khi đóng bàn phím → dùng `visualViewport`. `manifest.json` không khiến icon đã ghim trên iOS tự sửa URL khi trang di chuyển — iOS ghim theo URL cụ thể, không đọc lại `start_url`.
 - **Text giao diện viết bằng tiếng Việt.**
 
 ## Định dạng trả về

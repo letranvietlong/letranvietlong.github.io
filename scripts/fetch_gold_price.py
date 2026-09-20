@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fetch the current gold 9999 (nhẫn tròn) price from Ngọc Thịnh Jewelry's
-price board page and write it as static JSON that GoldTrack.html reads
+price board page and write it as static JSON that GoldTrack reads
 same-origin (no CORS).
 
 Ngọc Thịnh is the shop the user actually buys from, so its price is what
@@ -32,8 +32,8 @@ NGOCTHINH_ROW_PATTERN = re.compile(
 HISTORY_MAX = 500
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PRICE_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-price.json")
-HISTORY_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-price-history.json")
+PRICE_FILE = os.path.join(ROOT, "products", "gold-track", "data", "gold-price.json")
+HISTORY_FILE = os.path.join(ROOT, "products", "gold-track", "data", "gold-price-history.json")
 
 
 def fetch_ngocthinh():

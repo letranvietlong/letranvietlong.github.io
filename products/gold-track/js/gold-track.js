@@ -465,7 +465,7 @@
   // ---------- version / update history ----------
   var changelogData = null;
   function loadChangelog(){
-    return fetch('/products/goldtrack/data/changelog.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+    return fetch('/products/gold-track/data/changelog.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
       if(!data || !Array.isArray(data.entries)) return;
       changelogData = data;
       document.getElementById('btnVersion').textContent = 'v' + data.version;
@@ -536,8 +536,8 @@
 
   function loadLiveData(){
     return Promise.all([
-      fetch('/products/goldtrack/data/gold-price.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch('/products/goldtrack/data/gold-price-history.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      fetch('/products/gold-track/data/gold-price.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch('/products/gold-track/data/gold-price-history.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(results){
       if(results[0]) liveData = results[0];
       if(Array.isArray(results[1])) liveHistory = results[1];
@@ -569,7 +569,7 @@
   // ---------- news (auto-fetched, static JSON updated hourly by GitHub Actions) ----------
   var newsData = null;
   function loadNews(){
-    return fetch('/products/goldtrack/data/gold-news.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }).then(function(data){
+    return fetch('/products/gold-track/data/gold-news.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }).then(function(data){
       if(data && Array.isArray(data.articles)) newsData = data;
       if(!document.getElementById('viewNews').hidden) renderNews();
       if(!document.getElementById('viewAssistant').hidden) renderAssistant();
@@ -1784,10 +1784,10 @@
 
   // Offline support: caches this page + the live price/history/changelog JSON
   // so the app still opens with last-known data with no network. See
-  // sw-goldtrack.js for why this file has to sit at the site root.
+  // sw-gold-track.js for why this file has to sit at the site root.
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/sw-goldtrack.js').catch(function(){ /* offline support just won't be available */ });
+      navigator.serviceWorker.register('/sw-gold-track.js').catch(function(){ /* offline support just won't be available */ });
     });
   }
 })();

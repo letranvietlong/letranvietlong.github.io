@@ -1,12 +1,12 @@
 // Logic service worker của GoldTrack. KHÔNG đăng ký trực tiếp file này —
-// nó được nạp qua importScripts từ /sw-goldtrack.js ở thư mục gốc (đọc file
+// nó được nạp qua importScripts từ /sw-gold-track.js ở thư mục gốc (đọc file
 // đó để biết vì sao vỏ bắt buộc phải nằm ở root).
 //
 // Vì vỏ nằm ở root nên scope thực tế là toàn bộ origin, trong khi site này
 // còn nhiều trang sản phẩm khác. Để điều đó vô hại, mọi handler dưới đây
 // đều kiểm tra GOLDTRACK_PATHS trước và không làm gì với request không
 // thuộc GoldTrack — các trang khác không hề đổi hành vi.
-var CACHE_NAME = "goldtrack-cache-v5";
+var CACHE_NAME = "goldtrack-cache-v6";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -17,22 +17,22 @@ var CACHE_NAME = "goldtrack-cache-v5";
 // The CSS/JS entries matter for offline too: the HTML alone would restore
 // from cache as an unstyled, non-functioning page without them.
 var APP_CODE_PATHS = [
-  "/products/goldtrack/GoldTrack.html",
-  "/products/goldtrack/goldtrack.css",
-  "/products/goldtrack/goldtrack.js"
+  "/products/gold-track/html/index.html",
+  "/products/gold-track/css/gold-track.css",
+  "/products/gold-track/js/gold-track.js"
 ];
 // Icon files are named by content/size and effectively never change, so
 // cache-first (instant, no network round trip) is safe for these.
 var ICON_PATHS = [
-  "/img/goldtrack-icon.svg",
-  "/img/goldtrack-icon-32.png",
-  "/img/goldtrack-icon-180.png"
+  "/img/gold-track-icon.svg",
+  "/img/gold-track-icon-32.png",
+  "/img/gold-track-icon-180.png"
 ];
 var DATA_PATHS = [
-  "/products/goldtrack/data/gold-price.json",
-  "/products/goldtrack/data/gold-price-history.json",
-  "/products/goldtrack/data/gold-news.json",
-  "/products/goldtrack/data/changelog.json"
+  "/products/gold-track/data/gold-price.json",
+  "/products/gold-track/data/gold-price-history.json",
+  "/products/gold-track/data/gold-news.json",
+  "/products/gold-track/data/changelog.json"
 ];
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
 var GOLDTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);

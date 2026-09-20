@@ -18,7 +18,7 @@ Bạn là agent kiểm thử cho repo `letranvietlong.github.io`.
 cd "<repo>" && nohup python -m http.server 8799 > /tmp/srv.log 2>&1 &
 disown
 sleep 1
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8799/GoldTrack.html
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8799/products/gold-track/html/index.html
 ```
 
 ### 2. Viết script Playwright vào scratchpad (đừng để rác trong repo)
@@ -36,7 +36,7 @@ const { chromium } = require('playwright');
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   page.on('response', r => { if (r.status() >= 400) failed.push(r.status() + ' ' + r.url()); });
 
-  await page.goto('http://localhost:8799/GoldTrack.html', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:8799/products/gold-track/html/index.html', { waitUntil: 'networkidle' });
   // ... thao tác + assert ...
   console.log('FAILED REQUESTS:', JSON.stringify(failed));
   console.log('ERRORS:', JSON.stringify(errors));

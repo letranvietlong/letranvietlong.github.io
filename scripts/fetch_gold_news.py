@@ -2,7 +2,7 @@
 """Fetch Vietnamese finance RSS feeds and keep only items relevant to gold
 prices — either directly about gold, or about things that commonly move
 gold prices (Fed/interest rates, USD, inflation, safe-haven demand) — and
-write them as static JSON that GoldTrack.html reads same-origin.
+write them as static JSON that GoldTrack reads same-origin.
 
 None of these sources publish a dedicated gold-only RSS feed, so this
 pulls broader finance/business feeds and filters by keyword instead.
@@ -70,7 +70,7 @@ def clean_title(title):
 
 NEWS_MAX = 40
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEWS_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-news.json")
+NEWS_FILE = os.path.join(ROOT, "products", "gold-track", "data", "gold-news.json")
 
 
 def fetch_feed(url):

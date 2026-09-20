@@ -28,10 +28,10 @@ git diff
 - [ ] Import/export còn giữ đủ field không? (`isValidTx` không lọc field lạ — field mới tự đi qua được)
 
 ### 3. Service worker / offline
-- [ ] Có thêm file mà app load lúc chạy không? Nếu có, đã thêm vào `sw-goldtrack.js` chưa?
-- [ ] `CACHE_NAME` đã bump chưa? (không bump = client cũ giữ nguyên danh sách cache cũ)
+- [ ] Có thêm file mà app load lúc chạy không? Nếu có, đã thêm vào `products/gold-track/js/sw-core.js` chưa?
+- [ ] `CACHE_NAME` đã bump chưa? (không bump = client cũ giữ nguyên danh sách cache cũ) `?v=` trong `sw-gold-track.js` có khớp không?
 - [ ] File hay thay đổi có bị để ở chế độ cache-first không? (sẽ kẹt bản cũ — lỗi này đã xảy ra rồi)
-- [ ] `sw-goldtrack.js` có bị chuyển khỏi root không? (chuyển = mất offline)
+- [ ] `sw-gold-track.js` có bị chuyển khỏi root không? (chuyển = mất offline)
 
 ### 4. iOS / PWA
 - [ ] Có giả định sai rằng khoảng trống đáy màn hình là bug không? (đa phần là safe-area home indicator, bình thường)
@@ -40,14 +40,19 @@ git diff
 - [ ] Vùng chạm có còn ≥ 44px không?
 
 ### 5. Việc bị bỏ sót
-- [ ] Thay đổi người dùng thấy được → đã bump `data/changelog.json` (cả field `"version"` ở đầu) chưa?
+- [ ] Thay đổi người dùng thấy được → đã bump `products/gold-track/data/changelog.json` (cả field `"version"` ở đầu) chưa?
 - [ ] Đã ghi `.claude/hooks/.next-commit-message.txt` chưa? Nội dung có mô tả đúng thay đổi không (không phải "update code")?
 - [ ] Còn code chết / biến không dùng / tên biến sai nghĩa sau khi sửa không?
 - [ ] Text mới hiển thị cho người dùng có phải tiếng Việt không?
 
 ### 6. Phạm vi
 - [ ] Có thay đổi nào nằm ngoài yêu cầu không? (refactor tự phát, đổi tên không cần thiết)
-- [ ] Có ảnh hưởng sang sản phẩm khác trong site không? (`index.html`, `ThubeeFarmery.html`, ...)
+- [ ] Có ảnh hưởng sang sản phẩm khác trong site không? (`index.html`, `products/thubee-farmery/html/index.html`, ...)
+
+### 7. Di chuyển/đổi tên file (nếu task đụng tới)
+- [ ] Đường dẫn tương đối trong HTML có khớp số tầng thư mục thật (`../css/...`, `../js/...` khi có tầng `html/`) không?
+- [ ] Self-reference URL của chính trang đó (`canonical`, `og:url`, JSON-LD `url`, `manifest` `start_url` kể cả loại sinh động bằng JS) đã cập nhật theo tên/đường dẫn mới chưa? (lỗi này đã xảy ra thật — nhiều lần)
+- [ ] `.github/workflows/*.yml` và `scripts/*.py` có còn trỏ path cũ không?
 
 ## Định dạng báo cáo
 
