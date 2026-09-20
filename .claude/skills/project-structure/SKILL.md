@@ -11,7 +11,7 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 ## 1. Luật vàng của thư mục gốc
 
-> **Root chỉ chứa: `index.html`, thư mục `products/`, các thư mục dùng chung thật sự (`img/`, `docs/`), và những file mà NỀN TẢNG bắt buộc phải ở root.**
+> **Root chỉ chứa: `index.html`, thư mục `products/`, `docs/`, và những file mà NỀN TẢNG bắt buộc phải ở root.**
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 
@@ -28,8 +28,8 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 | Loại | Quy tắc | Ví dụ |
 |---|---|---|
-| Thư mục sản phẩm (trong `products/`) | kebab-case | `gold-track/`, `thubee-farmery/`, `worldcup-2026/`, `crypto-ai/` |
-| File `.html` chính của một sản phẩm | `index.html` bên trong `html/` của sản phẩm đó — kể cả sản phẩm chỉ có 1 file | `products/crypto-ai/html/index.html` |
+| Thư mục sản phẩm (trong `products/`) | kebab-case | `gold-track/`, `thubee-farmery/`, `worldcup-2026/`, `thanh-thu-fruit/` |
+| File `.html` chính của một sản phẩm | `index.html` bên trong `html/` của sản phẩm đó — kể cả sản phẩm chỉ có 1 file | `products/mini-game-hub/html/index.html` |
 | File `.css` / `.js` / `.ts` phụ trợ | kebab-case, trùng slug của sản phẩm | `gold-track.css`, `thubee-farmery.js` |
 | File `.json` | kebab-case nếu tên nhiều từ, giữ nguyên nếu một từ | `gold-price-history.json`, `orders.json` |
 | File `.py` | `snake_case` cho tên file — theo quy ước ngôn ngữ Python, **cố ý không ép kebab-case**; nhưng vẫn nằm trong tầng subfolder `py/` của đúng sản phẩm sở hữu nó, như mọi loại file khác | `products/gold-track/py/fetch_gold_price.py` |
@@ -49,12 +49,14 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 │       ├── css/<ten-san-pham>.css  # chỉ có nếu CSS đã tách khỏi HTML
 │       ├── js/<ten-san-pham>.js    # chỉ có nếu JS đã tách khỏi HTML (+ .ts nếu có, cùng chỗ)
 │       ├── py/<ten_script>.py      # script Python CHỈ dùng riêng cho sản phẩm này
+│       ├── img/<ten-san-pham>-icon*  # icon/ảnh CHỈ dùng riêng cho sản phẩm này, nếu có file thật
 │       ├── manifest.json           # Web App Manifest, nếu có
 │       ├── data/                   # dữ liệu do máy sinh (GitHub Actions ghi đè)
 │       └── json/                   # dữ liệu hạt giống, người viết tay
-├── img/                 ảnh, icon dùng chung — tiền tố theo sản phẩm
 └── docs/                tài liệu (.md)
 ```
+
+**`img/` nằm TRONG từng sản phẩm, không có `img/` dùng chung ở root.** Icon/favicon của một sản phẩm là file riêng của nó — di chuyển hay xoá sản phẩm không kéo theo dọn dẹp một thư mục dùng chung ở nơi khác. Nhiều sản phẩm nhúng icon trực tiếp bằng data URI trong HTML nên không cần `img/` — chỉ tạo `img/` khi sản phẩm thực sự có file ảnh riêng (ví dụ PNG nhiều kích thước cho `apple-touch-icon`). Chỉ tạo `img/` dùng chung ở root nếu sau này xuất hiện ảnh thật sự cross-product — hiện repo chưa có trường hợp này.
 
 **`json/` và `data/` khác nhau, đừng trộn:** `json/` là seed do người viết, sửa tay được, commit có chủ đích. `data/` do bot ghi đè liên tục — sửa tay ở đây sẽ bị mất ở lần chạy CI kế tiếp. Nhìn thư mục là biết được phép sửa tay hay không.
 
@@ -66,14 +68,13 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 ## 4. Khi nào tách file khỏi HTML
 
-Site này chấp nhận **cả hai kiểu**, chọn theo quy mô — đừng tách chỉ vì "cho chuẩn":
+**Quy tắc hiện tại: tách bất cứ khi nào có `<style>`/`<script>` đáng kể, không chờ ngưỡng LOC.** Từng có ngoại lệ "trang nhỏ thì để inline" dựa theo ngưỡng ~800–1000 dòng — đã bỏ theo yêu cầu của người dùng, vì "sản phẩm chỉ có html thì tách css/js nếu có" áp dụng cho MỌI sản phẩm html-only, kể cả những trang chỉ vài trăm dòng (ví dụ `mini-game-hub`, `viet-long-social`, hay các trang pháp lý `privacy.html`/`terms.html` chỉ ~15 dòng CSS).
 
-| Quy mô trang | Cách làm |
-|---|---|
-| Nhỏ, một mục đích, ít thay đổi | Để inline trong `products/<ten>/html/index.html`. |
-| Lớn, sửa thường xuyên, nhiều tính năng | Tách `products/<ten>/css/<ten>.css` + `products/<ten>/js/<ten>.js`, `html/index.html` chỉ còn markup. |
+Chỉ giữ inline những đoạn **nhỏ, mang tính bootstrap/metadata**, không phải "logic" theo nghĩa cần tách:
+- JSON-LD structured data (`<script type="application/ld+json">`) — vài dòng, thuộc về `<head>`, không phải logic ứng dụng.
+- Script chống FOUC (Flash of Unstyled Content) cần chạy đồng bộ *trước* khi CSS áp dụng, ví dụ set `data-theme` từ `localStorage` ngay đầu `<head>` — tách ra file ngoài sẽ làm mất tác dụng "chạy trước" của nó.
 
-Ngưỡng thực tế: **khi file HTML vượt ~800–1000 dòng**, hoặc khi bạn bắt đầu phải cuộn rất lâu mới tới đoạn cần sửa, thì tách. GoldTrack tách khi chạm 2540 dòng → còn ~320 dòng markup.
+Mọi `<style>`/`<script>` còn lại — dù to hay nhỏ — đều tách ra `css/<ten>.css` / `js/<ten>.js`. Nếu một trang có **nhiều block `<style>`/`<script>` rời rạc** (xen giữa là markup HTML), gộp tất cả nội dung theo đúng thứ tự gốc vào **một** file css và **một** file js — không tạo nhiều file css/js nhỏ lẻ cho cùng một trang. GoldTrack là ví dụ tách khi file đã lớn (2540 dòng → còn ~320 dòng markup); `viet-long-creator` và `viet-long-crypto` là ví dụ tách file cực lớn với nhiều block rời rạc (xem mục 5 bên dưới).
 
 ## 5. Cách tách file lớn mà không sai một byte
 
@@ -91,10 +92,13 @@ out = lines[0:17] + ['<link rel="stylesheet" href="../css/trang.css">\n'] \
 open('html/trang.html','w',encoding='utf-8',newline='').writelines(out)
 ```
 
+**Trang có nhiều block `<style>`/`<script>` rời rạc** (ví dụ `viet-long-crypto`: 2 block style + 2 block script xen giữa hàng nghìn dòng markup) — cắt từng block riêng theo đúng số dòng của nó, rồi `writelines` nối các đoạn theo đúng thứ tự gốc vào cùng một file css/js (nối bằng `+`, có thể thêm `['\n']` giữa các đoạn cho dễ đọc). Đặt `<link>`/`<script src>` tại vị trí của block **đầu tiên**; các block sau chỉ cần **xoá hẳn** (không thay bằng thẻ khác) vì nội dung đã gộp và load một lần ở trên. Việc định nghĩa hàm/biến sớm hơn vị trí gốc của nó không sao — code là khai báo đồng bộ ở top-level, không phụ thuộc thời điểm markup xung quanh render.
+
 Sau khi tách, kiểm tra **cả ba**, thiếu một là chưa xong:
-1. `grep -c "<style>\|<script>" html/trang.html` → phải bằng 0 (không sót inline).
-2. Mở trang thật, xác nhận CSS **có áp dụng** và JS **có chạy** (không chỉ HTTP 200 — file 200 nhưng sai đường dẫn tương đối vẫn 200).
-3. Không có request nào ≥400.
+1. `grep -n "<style\|<script" html/trang.html` → chỉ còn thẻ CDN bên ngoài (nếu có) và `<script src=".../trang.js">`/`<link rel="stylesheet">` mới thêm — không còn `<style>`/`<script>` chứa nội dung thật.
+2. `node --check js/trang.js` → xác nhận cú pháp JS hợp lệ trước khi mở trình duyệt.
+3. Mở trang thật, xác nhận CSS **có áp dụng** và JS **có chạy** (không chỉ HTTP 200 — file 200 nhưng sai đường dẫn tương đối vẫn 200).
+4. Không có request nào ≥400.
 
 ## 6. Di chuyển/đổi tên file: danh sách nơi phải cập nhật theo
 
@@ -150,7 +154,7 @@ File này là gì?
 ├─ Style của một trang nhiều file          → products/<ten>/css/<ten>.css
 ├─ Logic của một trang nhiều file          → products/<ten>/js/<ten>.js (+ .ts cùng chỗ)
 ├─ Web App Manifest                        → products/<ten>/manifest.json
-├─ Ảnh/icon                                → img/<tiền tố sản phẩm>-*
+├─ Ảnh/icon riêng của một sản phẩm          → products/<ten>/img/
 ├─ Dữ liệu người viết tay                  → products/<ten>/json/
 ├─ Dữ liệu máy sinh (CI ghi đè)            → products/<ten>/data/
 ├─ Script chạy trong CI (Python)           → products/<ten>/py/

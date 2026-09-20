@@ -6,7 +6,7 @@
 // còn nhiều trang sản phẩm khác. Để điều đó vô hại, mọi handler dưới đây
 // đều kiểm tra GOLDTRACK_PATHS trước và không làm gì với request không
 // thuộc GoldTrack — các trang khác không hề đổi hành vi.
-var CACHE_NAME = "goldtrack-cache-v6";
+var CACHE_NAME = "goldtrack-cache-v7";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -24,9 +24,9 @@ var APP_CODE_PATHS = [
 // Icon files are named by content/size and effectively never change, so
 // cache-first (instant, no network round trip) is safe for these.
 var ICON_PATHS = [
-  "/img/gold-track-icon.svg",
-  "/img/gold-track-icon-32.png",
-  "/img/gold-track-icon-180.png"
+  "/products/gold-track/img/gold-track-icon.svg",
+  "/products/gold-track/img/gold-track-icon-32.png",
+  "/products/gold-track/img/gold-track-icon-180.png"
 ];
 var DATA_PATHS = [
   "/products/gold-track/data/gold-price.json",

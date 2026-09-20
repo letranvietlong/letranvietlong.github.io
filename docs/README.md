@@ -19,16 +19,12 @@ Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt 
 | Trang | Mô tả | Link |
 |---|---|---|
 | **VietLongCrypto** | Theo dõi thị trường tiền điện tử — giá real-time, phân tích xu hướng, biểu đồ market cap. | [viet-long-crypto/html/index.html](../products/viet-long-crypto/html/index.html) |
-| **MeetingTranslator** | Công cụ AI dịch thuật real-time cho cuộc họp đa ngôn ngữ. | [meeting-translator/html/index.html](../products/meeting-translator/html/index.html) |
 | **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu/html/index.html](../products/kol-vu-thi-minh-thu/html/index.html) |
-| **MarkdownPro** | Trình soạn thảo Markdown online — preview real-time, export PDF/HTML. | [markdown-pro/html/index.html](../products/markdown-pro/html/index.html) |
-| **Crypto AI Market Pro** | Phân tích kỹ thuật & tín hiệu giao dịch crypto bằng AI. | [crypto-ai/html/index.html](../products/crypto-ai/html/index.html) |
 | **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](../products/thanh-thu-fruit/html/index.html) |
 | **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](../products/gold-track/html/index.html) |
 | **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](../products/thubee-farmery/html/index.html) |
 | **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](../products/viet-long-creator/html/index.html) |
 | **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](../products/viet-long-social/html/index.html) |
-| **Bingo by LongLTV** | Quay số Bingo 1–75 trực tuyến, có chế độ tự động cho sự kiện. | [bingo/html/index.html](../products/bingo/html/index.html) |
 | **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub/html/index.html](../products/mini-game-hub/html/index.html) |
 | **FIFA World Cup 2026** | Lịch thi đấu 104 trận, tỷ số trực tiếp, bảng xếp hạng, nhánh knockout. | [worldcup-2026/html/index.html](../products/worldcup-2026/html/index.html) |
 
@@ -54,20 +50,36 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── products/                # Mọi trang sản phẩm — xem bảng Products phía trên. Mỗi sản
 │   │                        # phẩm có folder riêng, kể cả sản phẩm chỉ 1 file HTML (để
 │   │                        # đồng nhất cấu trúc — không có ngoại lệ flat nữa).
-│   ├── bingo/html/index.html
-│   ├── crypto-ai/html/index.html
-│   ├── kol-vu-thi-minh-thu/html/index.html
-│   ├── markdown-pro/html/index.html
-│   ├── meeting-translator/html/index.html
-│   ├── mini-game-hub/html/index.html
-│   ├── thanh-thu-fruit/html/index.html
-│   ├── viet-long-crypto/html/index.html
-│   ├── viet-long-social/html/index.html
+│   ├── kol-vu-thi-minh-thu/
+│   │   ├── html/index.html
+│   │   ├── css/kol-vu-thi-minh-thu.css
+│   │   └── js/kol-vu-thi-minh-thu.js
+│   ├── mini-game-hub/
+│   │   ├── html/index.html
+│   │   ├── css/mini-game-hub.css
+│   │   └── js/mini-game-hub.js
+│   ├── thanh-thu-fruit/
+│   │   ├── html/index.html
+│   │   ├── css/thanh-thu-fruit.css
+│   │   └── js/thanh-thu-fruit.js
+│   ├── viet-long-crypto/
+│   │   ├── html/index.html
+│   │   ├── css/viet-long-crypto.css
+│   │   └── js/viet-long-crypto.js
+│   ├── viet-long-social/
+│   │   ├── html/index.html
+│   │   ├── css/viet-long-social.css
+│   │   └── js/viet-long-social.js
 │   ├── viet-long-creator/          # VietLong Creator — kèm 2 trang pháp lý CỦA sản phẩm này
-│   │   └── html/
-│   │       ├── index.html
-│   │       ├── privacy.html      # Chính sách bảo mật (đăng ký với TikTok for Developers)
-│   │       └── terms.html        # Điều khoản dịch vụ
+│   │   ├── html/
+│   │   │   ├── index.html
+│   │   │   ├── privacy.html      # Chính sách bảo mật (đăng ký với TikTok for Developers)
+│   │   │   └── terms.html        # Điều khoản dịch vụ
+│   │   ├── css/
+│   │   │   ├── viet-long-creator.css
+│   │   │   ├── privacy.css
+│   │   │   └── terms.css
+│   │   └── js/viet-long-creator.js
 │   ├── gold-track/           # Theo dõi giá vàng — subfolder theo loại file
 │   │   ├── html/index.html
 │   │   ├── css/gold-track.css
@@ -75,6 +87,8 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   ├── js/sw-core.js     # Logic service worker (nạp qua importScripts từ vỏ ở root)
 │   │   ├── py/fetch_gold_price.py    # Lấy giá vàng từ Ngọc Thịnh Jewelry — chạy trong GitHub Actions
 │   │   ├── py/fetch_gold_news.py     # Lấy + lọc tin tức từ RSS CafeF/VnExpress — chạy trong GitHub Actions
+│   │   ├── img/gold-track-icon.svg    # Favicon SVG
+│   │   ├── img/gold-track-icon-*.png  # Favicon PNG (32/180), apple-touch-icon
 │   │   ├── manifest.json     # Web App Manifest
 │   │   └── data/             # Dữ liệu GoldTrack, cập nhật tự động bởi GitHub Actions
 │   │       ├── gold-price.json       # Giá vàng mới nhất
@@ -86,6 +100,8 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   ├── css/thubee-farmery.css
 │   │   ├── js/thubee-farmery.ts  # Source TypeScript
 │   │   ├── js/thubee-farmery.js  # Bản compile từ .ts (file thực sự được load)
+│   │   ├── img/thubee-icon.svg       # Favicon SVG (logo mascot)
+│   │   ├── img/thubee-icon-*.png     # Favicon PNG (32/180), apple-touch-icon
 │   │   ├── manifest.json     # Web App Manifest
 │   │   └── json/             # Dữ liệu seed, viết tay
 │   │       ├── products.json     # Catalog sản phẩm gốc (seed + nguồn combobox)
@@ -96,14 +112,11 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │       ├── html/index.html
 │       ├── css/worldcup-2026.css
 │       └── js/worldcup-2026.js
-├── img/                      # Icon dùng chung, đặt tên theo tiền tố sản phẩm
-│   ├── thubee-icon.svg       # Logo mascot (favicon SVG)
-│   ├── thubee-icon-*.png     # Icon PNG (32/180) cho favicon, apple-touch-icon
-│   ├── gold-track-icon.svg   # Logo GoldTrack (favicon SVG)
-│   └── gold-track-icon-*.png # Icon PNG (32/180) cho favicon, apple-touch-icon
 └── docs/
     └── README.md             # Tài liệu này
 ```
+
+**Không còn `img/` dùng chung ở root.** Icon của mỗi sản phẩm nằm trong `img/` của chính sản phẩm đó — ví dụ `products/gold-track/img/gold-track-icon*`, `products/thubee-farmery/img/thubee-icon*`. Các sản phẩm khác nhúng icon trực tiếp bằng data URI trong HTML nên không cần thư mục `img/` riêng. Chỉ tạo `img/` dùng chung ở root nếu sau này có ảnh thật sự cross-product (hiện chưa có trường hợp này).
 
 > **Vì sao `sw-gold-track.js` và `CLAUDE.md` không nằm trong `products/`?**
 > - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt trong `products/gold-track/` thì scope co lại thành `/products/gold-track/` — vẫn còn điều khiển được `html/index.html` (nằm trong chính thư mục đó), nhưng mất khả năng mở rộng ra ngoài nếu sau này cần. Giữ vỏ ở root để scope luôn là toàn origin, an toàn cho mọi khả năng mở rộng sau này. Muốn thu hẹp/mở rộng khác đi phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header. Vì vậy root chỉ giữ **vỏ 1 dòng**, còn logic nằm ở `products/gold-track/js/sw-core.js` — đúng nguyên tắc: chỉ những gì nền tảng BẮT BUỘC mới được ở root.
@@ -121,34 +134,28 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 
 ## 📊 Quy mô file (LOC & dung lượng)
 
-| File | LOC | Dung lượng | Base64 nhúng |
-|---|---|---|---|
-| viet-long-creator/html/index.html | 12,155 | 561 KB | 0 |
-| viet-long-crypto/html/index.html | 11,712 | 1.09 MB | 2 |
-| index.html | 4,343 | 374 KB | 7 |
-| bingo/html/index.html | 2,083 | 59 KB | 0 |
-| markdown-pro/html/index.html | 1,276 | 54 KB | 0 |
-| thanh-thu-fruit/html/index.html | 1,166 | 42 KB | 0 |
-| viet-long-social/html/index.html | 1,149 | 68 KB | 0 |
-| crypto-ai/html/index.html | 1,025 | 86 KB | 0 |
-| kol-vu-thi-minh-thu/html/index.html | 927 | **11.7 MB** | **39** |
-| meeting-translator/html/index.html | 684 | 34 KB | 0 |
-| mini-game-hub/html/index.html | 671 | 72 KB | 0 |
-| worldcup-2026/html/index.html (+ css/js) | 280 + 331 + 1,372 | 42 + 33 + 84 KB | 3 |
-| viet-long-creator/html/privacy.html | 99 | 5 KB | 0 |
-| viet-long-creator/html/terms.html | 81 | 4 KB | 0 |
+| Sản phẩm (html + css + js) | LOC | Base64 nhúng |
+|---|---|---|
+| viet-long-creator (html/index.html + css + js) | 510 + 1,628 + 10,012 | 0 |
+| viet-long-crypto (html/index.html + css + js) | 2,376 + 2,443 + 6,889 | 2 |
+| index.html (chưa tách, trang chủ) | 4,343 | 7 |
+| worldcup-2026 (html/index.html + css + js) | 280 + 331 + 1,372 | 3 |
+| thanh-thu-fruit (html/index.html + css + js) | 281 + 823 + 60 | 0 |
+| viet-long-social (html/index.html + css + js) | 173 + 312 + 662 | 0 |
+| kol-vu-thi-minh-thu (html/index.html + css + js) | 572 + 244 + 109 | **39 (11.7 MB)** |
+| mini-game-hub (html/index.html + css + js) | 117 + 89 + 463 | 0 |
+| viet-long-creator/html/privacy.html + css/privacy.css | 84 + 14 | 0 |
+| viet-long-creator/html/terms.html + css/terms.css | 67 + 13 | 0 |
 
-*(Đo bằng `wc -l` + dung lượng file thật trên đĩa, không tính file đã nén/minify.)*
+*(Đo bằng `wc -l`, không tính file đã nén/minify. Mọi sản phẩm html-only đã tách css/js nếu có nội dung `<style>`/`<script>` đáng kể — chỉ giữ inline các đoạn nhỏ mang tính bootstrap/metadata: JSON-LD structured data, script chống FOUC cho theme.)*
 
 ### Đánh giá tách CSS/JS riêng
 
-Ngưỡng tham chiếu: `worldcup-2026` được tách khi đạt ~1,987 LOC.
+Toàn bộ sản phẩm html-only trong repo đã tách css/js (nếu có) — không còn ngoại lệ dựa theo ngưỡng LOC, vì quy tắc hiện tại là tách bất cứ khi nào có `<style>`/`<script>` đáng kể, bất kể kích thước trang lớn hay nhỏ.
 
-- **Nên tách ngay**: `viet-long-creator/html/index.html` (12,155 LOC) và `viet-long-crypto/html/index.html` (11,712 LOC) — gấp ~6 lần ngưỡng, lớn nhất trong repo, tách sẽ giúp maintain dễ hơn rõ rệt.
-- **Nên tách**: `index.html` (4,343 LOC) — hơn gấp đôi ngưỡng, là trang chủ nên ưu tiên dễ đọc/sửa.
-- **Có thể tách, không gấp**: `bingo/html/index.html` (2,083 LOC) — xấp xỉ ngưỡng cũ.
-- **Chưa cần tách**: `markdown-pro/html/index.html`, `thanh-thu-fruit/html/index.html`, `viet-long-social/html/index.html`, `crypto-ai/html/index.html` (1,000–1,300 LOC) — dưới ngưỡng, dung lượng nhỏ. `meeting-translator/html/index.html`, `mini-game-hub/html/index.html`, `privacy.html`, `terms.html` càng nhỏ hơn, không cần động tới.
-- **Vấn đề khác, không phải do CSS/JS**: `kol-vu-thi-minh-thu/html/index.html` chỉ 927 LOC nhưng nặng **11.7 MB** do nhúng 39 ảnh base64 trực tiếp trong HTML — tách CSS/JS không giải quyết được vấn đề này. Nếu muốn cải thiện tốc độ tải, cần xuất ảnh base64 ra file `.jpg`/`.png`/`.webp` riêng và load qua `<img src>` — đây là việc khác, quy mô lớn hơn, nên xử lý riêng nếu cần.
+- **`viet-long-creator` và `viet-long-crypto`** là 2 file lớn nhất repo (JS gộp lần lượt 10,012 và 6,889 dòng) — đã tách xong, mỗi bên có đúng 1 file `css/` và 1 file `js/` (các block `<style>`/`<script>` rời rạc trong HTML gốc được gộp lại theo đúng thứ tự ban đầu).
+- **`index.html`** (4,343 LOC, trang chủ) — chưa tách, ngoài phạm vi yêu cầu lần này (không phải file trong `products/`).
+- **`kol-vu-thi-minh-thu`** vẫn nặng do 39 ảnh base64 trực tiếp trong HTML — tách CSS/JS không giải quyết được vấn đề dung lượng này. Muốn cải thiện tốc độ tải cần xuất ảnh base64 ra file `.jpg`/`.png`/`.webp` riêng, là việc khác quy mô lớn hơn.
 
 ## 🧑‍💻 Chạy local
 
