@@ -29,9 +29,9 @@ git diff
 
 ### 3. Service worker / offline
 - [ ] Có thêm file mà app load lúc chạy không? Nếu có, đã thêm vào `products/gold-track/js/sw-core.js` chưa?
-- [ ] `CACHE_NAME` đã bump chưa? (không bump = client cũ giữ nguyên danh sách cache cũ) `?v=` trong `sw-gold-track.js` có khớp không?
+- [ ] `CACHE_NAME` đã bump chưa? (không bump = client cũ giữ nguyên danh sách cache cũ) `?v=` trong `products/gold-track/sw-gold-track.js` có khớp không?
 - [ ] File hay thay đổi có bị để ở chế độ cache-first không? (sẽ kẹt bản cũ — lỗi này đã xảy ra rồi)
-- [ ] `sw-gold-track.js` có bị chuyển khỏi root không? (chuyển = mất offline)
+- [ ] `products/gold-track/sw-gold-track.js` có bị lồng vào `html/`/`css/`/`js/`/`data/` không? (lồng vào = scope co lại = mất offline)
 
 ### 4. iOS / PWA
 - [ ] Có giả định sai rằng khoảng trống đáy màn hình là bug không? (đa phần là safe-area home indicator, bình thường)

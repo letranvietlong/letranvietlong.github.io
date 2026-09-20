@@ -1,11 +1,12 @@
 // Logic service worker của GoldTrack. KHÔNG đăng ký trực tiếp file này —
-// nó được nạp qua importScripts từ /sw-gold-track.js ở thư mục gốc (đọc file
-// đó để biết vì sao vỏ bắt buộc phải nằm ở root).
+// nó được nạp qua importScripts từ products/gold-track/sw-gold-track.js
+// (đọc file đó để biết vì sao vỏ phải nằm ngay trong products/gold-track/,
+// không lồng thêm vào js/).
 //
-// Vì vỏ nằm ở root nên scope thực tế là toàn bộ origin, trong khi site này
-// còn nhiều trang sản phẩm khác. Để điều đó vô hại, mọi handler dưới đây
-// đều kiểm tra GOLDTRACK_PATHS trước và không làm gì với request không
-// thuộc GoldTrack — các trang khác không hề đổi hành vi.
+// Vỏ đăng ký với scope /products/gold-track/ — đúng và đủ cho mọi trang của
+// GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
+// GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
+// giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
 var CACHE_NAME = "goldtrack-cache-v7";
 
 // The page plus its stylesheet and script — all actively edited, none with a

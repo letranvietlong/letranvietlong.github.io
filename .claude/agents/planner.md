@@ -21,8 +21,8 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 
 - **Mọi sản phẩm sống trong `products/`, đặt tên kebab-case, sản phẩm nhiều file có thêm tầng subfolder theo loại** (`html/`, `css/`, `js/`, `data/`/`json/`) — chi tiết ở skill `project-structure`.
 - **GoldTrack đã tách file**: `products/gold-track/html/index.html` (markup), `products/gold-track/css/gold-track.css`, `products/gold-track/js/gold-track.js`. Đừng đi tìm `<style>`/`<script>` inline.
-- **`sw-gold-track.js` phải nằm ở root**. Service worker chỉ điều khiển được trang ngang hàng hoặc dưới thư mục của nó. Chuyển vào `products/gold-track/js/` → scope co lại → mất offline. (Đã kiểm chứng: ép scope `/` từ thư mục con ném `SecurityError`.)
-- **Thêm file GoldTrack load lúc chạy → phải thêm path vào `products/gold-track/js/sw-core.js` và bump `CACHE_NAME`** (bump luôn `?v=` trong `sw-gold-track.js`), nếu không app hỏng khi offline hoặc kẹt bản cũ.
+- **`products/gold-track/sw-gold-track.js` phải nằm ngay trong `products/gold-track/`, không lồng vào `js/`**. Service worker chỉ điều khiển được trang ngang hàng hoặc dưới thư mục của nó — lồng vào `js/` thì scope co lại `/products/gold-track/js/`, mất offline cho chính `html/`/`data/`/`img/` của GoldTrack. (Đã kiểm chứng: ép scope rộng hơn thư mục chứa script ném `SecurityError`.)
+- **Thêm file GoldTrack load lúc chạy → phải thêm path vào `products/gold-track/js/sw-core.js` và bump `CACHE_NAME`** (bump luôn `?v=` trong `products/gold-track/sw-gold-track.js`), nếu không app hỏng khi offline hoặc kẹt bản cũ.
 - **`CLAUDE.md` phải ở root** để Claude Code tự nạp.
 - **Sổ sách mua/bán chạy theo thứ tự thời gian** (`computePortfolio` replay chronologically). Mọi thay đổi liên quan số lượng/ngày phải kiểm tra bằng `findLedgerViolation`, không dùng tổng số dư bỏ qua ngày.
 - **Đồng bộ Gist có thể mất dữ liệu**: lúc khởi động, nếu có thay đổi chưa đồng bộ (cờ `goldtrack_gist_dirty_v1`) thì phải **đẩy lên**, không được kéo về đè.

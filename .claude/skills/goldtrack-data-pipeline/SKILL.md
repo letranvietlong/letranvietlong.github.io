@@ -84,4 +84,4 @@ with open('out.txt', 'w', encoding='utf-8') as f:
 
 ## Sau khi đổi cấu trúc dữ liệu
 
-Thêm file JSON mới mà app đọc lúc chạy → **phải** thêm path vào `DATA_PATHS` trong `products/gold-track/js/sw-core.js` và bump `CACHE_NAME` (bump luôn `?v=` trong `importScripts()` ở vỏ root `sw-gold-track.js`), nếu không app hỏng khi offline.
+Thêm file JSON mới mà app đọc lúc chạy → **phải** thêm path vào `DATA_PATHS` trong `products/gold-track/js/sw-core.js` và bump `CACHE_NAME` (bump luôn `?v=` trong `importScripts()` ở vỏ `products/gold-track/sw-gold-track.js`), nếu không app hỏng khi offline.

@@ -15,14 +15,27 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 
-Hai file duy nhất hiện được miễn trừ, và **lý do đã được kiểm chứng bằng thực nghiệm chứ không phải phỏng đoán**:
+Hiện chỉ còn **một** file được miễn trừ:
 
 | File | Vì sao bắt buộc ở root |
 |---|---|
-| `sw-gold-track.js` | Service worker chỉ điều khiển được trang **ngang hàng hoặc dưới** thư mục của nó. Đăng ký từ `/products/gold-track/js/` → scope co lại, mất offline cho các trang khác nếu GoldTrack lại đổi cấu trúc. Ép `scope:'/'` từ một thư mục con → `SecurityError: not under the max scope allowed`. Nới scope cần header `Service-Worker-Allowed`, GitHub Pages không set được. |
 | `CLAUDE.md` | Claude Code tự nạp từ thư mục gốc của project. Chuyển đi = các quy ước trong đó mất hiệu lực, âm thầm. |
 
-**Mẹo quan trọng:** khi nền tảng bắt buộc một file ở root, hãy để ở root **đúng phần tối thiểu bắt buộc**, đẩy phần còn lại vào đúng chỗ. `sw-gold-track.js` làm đúng vậy: root giữ vỏ ~17 dòng (gần hết là comment giải thích), phần logic thật nằm ở `products/gold-track/js/sw-core.js` và được nạp qua `importScripts`. Đây cũng là cách Workbox/Next.js làm.
+`sw-gold-track.js` từng nằm ở root với lý do "phòng hờ tương lai" (scope toàn origin, an toàn dù GoldTrack đổi cấu trúc) — nhưng nó chưa bao giờ thực sự cần điều khiển gì ngoài GoldTrack, nên giữ ở root là scope rộng hơn mức cần thiết một cách không cần thiết, và vi phạm nguyên tắc "mọi thứ của một sản phẩm nằm trong folder của sản phẩm đó". Đã chuyển vào `products/gold-track/sw-gold-track.js` — xem mục **"Vỏ bắt buộc ở đúng cấp thư mục nào?"** ngay dưới đây.
+
+**Mẹo quan trọng, áp dụng cho MỌI file mà nền tảng ép về một vị trí cụ thể (dù là root hay chỉ là một cấp thư mục trong một sản phẩm):** chỉ giữ ở đó **đúng phần tối thiểu bắt buộc**, đẩy phần còn lại (logic thật) vào đúng chỗ theo quy tắc chung. Đây cũng là cách Workbox/Next.js làm.
+
+### Vỏ service worker bắt buộc ở đúng cấp thư mục nào?
+
+Service worker chỉ điều khiển được trang **ngang hàng hoặc dưới** thư mục chứa chính file đăng ký nó (scope mặc định = thư mục chứa script + mọi thứ bên dưới). Ép scope rộng hơn thư mục đó ném `SecurityError: not under the max scope allowed`; nới scope cần header HTTP `Service-Worker-Allowed`, GitHub Pages không set được — nên **vỏ phải nằm ở đúng cấp thư mục bao phủ đủ mọi thứ nó cần quản, không hơn không kém**, và không thể sửa sai bằng cấu hình sau đó.
+
+Ví dụ GoldTrack (`products/gold-track/sw-gold-track.js`, nằm ngang hàng với `html/`, `css/`, `js/`, `data/`, `img/`, KHÔNG lồng vào `js/`):
+- Nếu đặt trong `products/gold-track/js/` → scope co lại `/products/gold-track/js/`, không còn quản được `html/`, `data/`, `img/` của chính GoldTrack → mất offline ngay trên sản phẩm nó phục vụ.
+- Đặt thẳng trong `products/gold-track/` → scope là `/products/gold-track/` → đúng và đủ, vì service worker này chưa bao giờ cần điều khiển gì ngoài GoldTrack.
+
+Quy tắc chung khi một sản phẩm cần service worker: đặt vỏ ở **cấp thư mục cha thấp nhất bao phủ đủ mọi file sản phẩm đó cần cache** (thường là ngay tại `products/<ten>/`), không lồng vào bất kỳ subfolder loại-file nào (`html/`, `css/`, `js/`...) vì subfolder luôn hẹp hơn mức cần. Logic thật vẫn nằm ở `js/sw-core.js` như mọi file JS khác, vỏ chỉ `importScripts` vào đó.
+
+**Di chuyển vỏ service worker đã có registration thật (site đang live) cần dọn dẹp registration cũ:** trình duyệt của người dùng cũ vẫn giữ registration ở scope trước đó cho tới khi có gì đó unregister nó — không tự hết hạn. Thêm code gọi `navigator.serviceWorker.getRegistrations()` và unregister registration có scope cũ trước khi đăng ký registration mới, để người dùng cũ không bị kẹt 2 service worker chồng nhau vô thời hạn.
 
 ## 2. Quy tắc đặt tên (kebab-case, thống nhất toàn repo)
 

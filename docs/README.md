@@ -45,7 +45,6 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ```
 .
 ├── index.html              # Trang chủ — Portfolio, Blog, Mini Game Hub, Contact
-├── sw-gold-track.js         # Vỏ service worker 1 dòng — BẮT BUỘC ở root (xem ghi chú dưới)
 ├── CLAUDE.md                # Hướng dẫn cho Claude Code — BẮT BUỘC nằm ở root để được tự động nạp
 ├── products/                # Mọi trang sản phẩm — xem bảng Products phía trên. Mỗi sản
 │   │                        # phẩm có folder riêng, kể cả sản phẩm chỉ 1 file HTML (để
@@ -81,10 +80,11 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   │   └── terms.css
 │   │   └── js/viet-long-creator.js
 │   ├── gold-track/           # Theo dõi giá vàng — subfolder theo loại file
+│   │   ├── sw-gold-track.js  # Vỏ service worker 1 dòng — ngang hàng html/css/js/data, KHÔNG lồng vào js/
 │   │   ├── html/index.html
 │   │   ├── css/gold-track.css
 │   │   ├── js/gold-track.js
-│   │   ├── js/sw-core.js     # Logic service worker (nạp qua importScripts từ vỏ ở root)
+│   │   ├── js/sw-core.js     # Logic service worker thật (nạp qua importScripts từ vỏ)
 │   │   ├── py/fetch_gold_price.py    # Lấy giá vàng từ Ngọc Thịnh Jewelry — chạy trong GitHub Actions
 │   │   ├── py/fetch_gold_news.py     # Lấy + lọc tin tức từ RSS CafeF/VnExpress — chạy trong GitHub Actions
 │   │   ├── img/gold-track-icon.svg    # Favicon SVG
@@ -118,10 +118,14 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 
 **Không còn `img/` dùng chung ở root.** Icon của mỗi sản phẩm nằm trong `img/` của chính sản phẩm đó — ví dụ `products/gold-track/img/gold-track-icon*`, `products/thubee-farmery/img/thubee-icon*`. Các sản phẩm khác nhúng icon trực tiếp bằng data URI trong HTML nên không cần thư mục `img/` riêng. Chỉ tạo `img/` dùng chung ở root nếu sau này có ảnh thật sự cross-product (hiện chưa có trường hợp này).
 
-> **Vì sao `sw-gold-track.js` và `CLAUDE.md` không nằm trong `products/`?**
-> - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt trong `products/gold-track/` thì scope co lại thành `/products/gold-track/` — vẫn còn điều khiển được `html/index.html` (nằm trong chính thư mục đó), nhưng mất khả năng mở rộng ra ngoài nếu sau này cần. Giữ vỏ ở root để scope luôn là toàn origin, an toàn cho mọi khả năng mở rộng sau này. Muốn thu hẹp/mở rộng khác đi phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header. Vì vậy root chỉ giữ **vỏ 1 dòng**, còn logic nằm ở `products/gold-track/js/sw-core.js` — đúng nguyên tắc: chỉ những gì nền tảng BẮT BUỘC mới được ở root.
-> - `CLAUDE.md` được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực.
-> - GoldTrack tự fetch dữ liệu của nó (`/products/gold-track/data/*.json`) và tự đăng ký service worker (`/sw-gold-track.js`) bằng **đường dẫn tuyệt đối**, không phải tương đối — với dữ liệu thì chỉ là thói quen tốt (giờ đã cùng thư mục), nhưng với service worker thì bắt buộc thật: vỏ vẫn ở root còn `html/index.html` nằm sâu 3 cấp, một đường dẫn tương đối sẽ resolve theo vị trí trang, không phải theo root.
+> **Vì sao `CLAUDE.md` không nằm trong `products/`?**
+> - Được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực. Đây là file duy nhất còn bị ràng buộc phải ở root.
+
+> **Vì sao `sw-gold-track.js` nằm ngay trong `products/gold-track/`, không lồng vào `js/`?**
+> - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt trong `products/gold-track/js/` thì scope co lại thành `/products/gold-track/js/` — không còn điều khiển được `html/index.html`, `data/`, `img/` của chính GoldTrack, mất offline ngay trên sản phẩm nó phục vụ. Đặt thẳng ở `products/gold-track/` thì scope là `/products/gold-track/` — bao phủ đúng và đủ, vì service worker này chưa bao giờ cần điều khiển gì ngoài GoldTrack. Muốn nới scope rộng hơn thư mục chứa script phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header — nên vị trí vật lý của file quyết định scope, không sửa được bằng cấu hình sau đó. Vỏ chỉ giữ **1 dòng thật**, logic nằm ở `products/gold-track/js/sw-core.js`.
+> - File này từng đặt ở root repo với lý do "phòng hờ tương lai" (scope toàn origin) — đã chuyển vào trong `products/gold-track/` vì lý do đó không còn hợp lý: service worker này luôn tự giới hạn qua `GOLDTRACK_PATHS`, chưa từng cần điều khiển gì ngoài GoldTrack.
+> - GoldTrack tự fetch dữ liệu (`/products/gold-track/data/*.json`) và tự đăng ký service worker (`/products/gold-track/sw-gold-track.js`) bằng **đường dẫn tuyệt đối** — với service worker thì bắt buộc thật: vỏ nằm ngay trong `products/gold-track/`, còn `html/index.html` nằm sâu hơn 1 cấp ở `products/gold-track/html/`, KHÔNG cùng thư mục. `register()` resolve đường dẫn tương đối theo URL của *trang đang chạy*, không phải theo vị trí file script — nếu dùng tên file trần sẽ resolve sai thành `products/gold-track/html/sw-gold-track.js` (404, và lỗi bị `.catch()` nuốt âm thầm, offline sẽ không hoạt động mà không có cảnh báo gì).
+> - **Di chuyển vỏ trên site đang live cần dọn registration cũ**: trình duyệt của người dùng cũ vẫn giữ service worker đăng ký ở scope root (`/`) cho tới khi bị unregister — không tự hết hạn. `gold-track.js` gọi `navigator.serviceWorker.getRegistrations()` và unregister mọi registration có scope đúng bằng gốc origin trước khi đăng ký registration mới, để người dùng cũ không bị kẹt 2 service worker chồng nhau.
 
 ### 🔐 Thubee Farmery — lưu ý vận hành
 

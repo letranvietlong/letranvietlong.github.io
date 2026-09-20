@@ -1784,10 +1784,24 @@
 
   // Offline support: caches this page + the live price/history/changelog JSON
   // so the app still opens with last-known data with no network. See
-  // sw-gold-track.js for why this file has to sit at the site root.
+  // products/gold-track/sw-gold-track.js for why this file lives there
+  // (scope must cover the whole gold-track/ folder, not just js/).
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/sw-gold-track.js').catch(function(){ /* offline support just won't be available */ });
+      // One-time migration: this SW used to be registered from the site root
+      // (/sw-gold-track.js, scope "/") before it moved into products/gold-track/.
+      // A returning visitor's browser still has that origin-wide registration
+      // active until something unregisters it — harmless (it already guards
+      // every request via GOLDTRACK_PATHS) but pointless now that the new
+      // registration's narrower scope covers GoldTrack just as well. Clean it
+      // up so old visitors end up with exactly one registration, like a fresh
+      // install would.
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        regs.forEach(function(reg){
+          if(reg.scope === location.origin + '/') reg.unregister();
+        });
+      }).catch(function(){});
+      navigator.serviceWorker.register('/products/gold-track/sw-gold-track.js').catch(function(){ /* offline support just won't be available */ });
     });
   }
 })();
