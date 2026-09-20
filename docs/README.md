@@ -12,24 +12,24 @@
 
 ## 📖 Giới thiệu
 
-Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](../products/) — phần lớn là một file HTML tự chứa (inline CSS/JS), không cần build step, deploy thẳng bằng GitHub Pages. Sản phẩm quy mô lớn có thư mục riêng chứa CSS/JS tách biệt, thêm một tầng subfolder theo loại file (xem [products/worldcup-2026/](../products/worldcup-2026/) làm ví dụ), vẫn không cần build step. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `project-structure` ([.claude/skills/project-structure/SKILL.md](../.claude/skills/project-structure/SKILL.md)).
+Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](../products/) — mỗi sản phẩm có folder riêng mang tên kebab-case, kể cả sản phẩm chỉ có một file HTML tự chứa (inline CSS/JS). Sản phẩm quy mô lớn có thêm subfolder theo loại file bên trong (xem [products/worldcup-2026/](../products/worldcup-2026/) làm ví dụ). Không có build step ở bất kỳ đâu, deploy thẳng bằng GitHub Pages. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `project-structure` ([.claude/skills/project-structure/SKILL.md](../.claude/skills/project-structure/SKILL.md)).
 
 ## 🧩 Products
 
 | Trang | Mô tả | Link |
 |---|---|---|
-| **VietLongCrypto** | Theo dõi thị trường tiền điện tử — giá real-time, phân tích xu hướng, biểu đồ market cap. | [viet-long-crypto.html](../products/viet-long-crypto.html) |
-| **MeetingTranslator** | Công cụ AI dịch thuật real-time cho cuộc họp đa ngôn ngữ. | [meeting-translator.html](../products/meeting-translator.html) |
-| **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu.html](../products/kol-vu-thi-minh-thu.html) |
-| **MarkdownPro** | Trình soạn thảo Markdown online — preview real-time, export PDF/HTML. | [markdown-pro.html](../products/markdown-pro.html) |
-| **Crypto AI Market Pro** | Phân tích kỹ thuật & tín hiệu giao dịch crypto bằng AI. | [crypto-ai.html](../products/crypto-ai.html) |
-| **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit.html](../products/thanh-thu-fruit.html) |
+| **VietLongCrypto** | Theo dõi thị trường tiền điện tử — giá real-time, phân tích xu hướng, biểu đồ market cap. | [viet-long-crypto/html/index.html](../products/viet-long-crypto/html/index.html) |
+| **MeetingTranslator** | Công cụ AI dịch thuật real-time cho cuộc họp đa ngôn ngữ. | [meeting-translator/html/index.html](../products/meeting-translator/html/index.html) |
+| **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu/html/index.html](../products/kol-vu-thi-minh-thu/html/index.html) |
+| **MarkdownPro** | Trình soạn thảo Markdown online — preview real-time, export PDF/HTML. | [markdown-pro/html/index.html](../products/markdown-pro/html/index.html) |
+| **Crypto AI Market Pro** | Phân tích kỹ thuật & tín hiệu giao dịch crypto bằng AI. | [crypto-ai/html/index.html](../products/crypto-ai/html/index.html) |
+| **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](../products/thanh-thu-fruit/html/index.html) |
 | **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](../products/gold-track/html/index.html) |
 | **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](../products/thubee-farmery/html/index.html) |
-| **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator.html](../products/viet-long-creator.html) |
-| **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social.html](../products/viet-long-social.html) |
-| **Bingo by LongLTV** | Quay số Bingo 1–75 trực tuyến, có chế độ tự động cho sự kiện. | [bingo.html](../products/bingo.html) |
-| **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub.html](../products/mini-game-hub.html) |
+| **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](../products/viet-long-creator/html/index.html) |
+| **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](../products/viet-long-social/html/index.html) |
+| **Bingo by LongLTV** | Quay số Bingo 1–75 trực tuyến, có chế độ tự động cho sự kiện. | [bingo/html/index.html](../products/bingo/html/index.html) |
+| **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub/html/index.html](../products/mini-game-hub/html/index.html) |
 | **FIFA World Cup 2026** | Lịch thi đấu 104 trận, tỷ số trực tiếp, bảng xếp hạng, nhánh knockout. | [worldcup-2026/html/index.html](../products/worldcup-2026/html/index.html) |
 
 > Toàn bộ danh sách trên cũng được liệt kê tại tab **Products** của [trang chủ](https://letranvietlong.github.io).
@@ -41,7 +41,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ## ⚙️ Tech Stack
 
 - **HTML5 / CSS3 / Vanilla JavaScript** — không framework, không build step.
-- Mỗi trang là **một sản phẩm độc lập**, sống trong [products/](../products/) — phần lớn tự chứa style & logic inline; sản phẩm quy mô lớn có thư mục riêng chứa CSS/JS tách biệt theo tầng loại file (`html/`, `css/`, `js/`, `data/`/`json/`), tên file giữ theo slug kebab-case của sản phẩm, để dễ maintain.
+- Mỗi trang là **một sản phẩm độc lập**, sống trong [products/](../products/) trong folder riêng của nó — sản phẩm nhỏ chỉ có `html/index.html` (style & logic inline), sản phẩm lớn có thêm `css/`, `js/`, `data/`/`json/` tách biệt theo tầng loại file, tên file giữ theo slug kebab-case của sản phẩm, để dễ maintain.
 - Deploy bằng **GitHub Pages**, không cần server hay CI/CD.
 
 ## 📁 Cấu trúc
@@ -51,19 +51,23 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ├── index.html              # Trang chủ — Portfolio, Blog, Mini Game Hub, Contact
 ├── sw-gold-track.js         # Vỏ service worker 1 dòng — BẮT BUỘC ở root (xem ghi chú dưới)
 ├── CLAUDE.md                # Hướng dẫn cho Claude Code — BẮT BUỘC nằm ở root để được tự động nạp
-├── products/                # Mọi trang sản phẩm — xem bảng Products phía trên
-│   ├── crypto-ai.html
-│   ├── kol-vu-thi-minh-thu.html
-│   ├── meeting-translator.html
-│   ├── mini-game-hub.html
-│   ├── thanh-thu-fruit.html
-│   ├── viet-long-creator.html
-│   ├── viet-long-crypto.html
-│   ├── viet-long-social.html
-│   ├── bingo.html
-│   ├── markdown-pro.html
-│   ├── privacy.html          # Chính sách bảo mật (VietLong Creator)
-│   ├── terms.html            # Điều khoản dịch vụ (VietLong Creator)
+├── products/                # Mọi trang sản phẩm — xem bảng Products phía trên. Mỗi sản
+│   │                        # phẩm có folder riêng, kể cả sản phẩm chỉ 1 file HTML (để
+│   │                        # đồng nhất cấu trúc — không có ngoại lệ flat nữa).
+│   ├── bingo/html/index.html
+│   ├── crypto-ai/html/index.html
+│   ├── kol-vu-thi-minh-thu/html/index.html
+│   ├── markdown-pro/html/index.html
+│   ├── meeting-translator/html/index.html
+│   ├── mini-game-hub/html/index.html
+│   ├── thanh-thu-fruit/html/index.html
+│   ├── viet-long-crypto/html/index.html
+│   ├── viet-long-social/html/index.html
+│   ├── viet-long-creator/          # VietLong Creator — kèm 2 trang pháp lý CỦA sản phẩm này
+│   │   └── html/
+│   │       ├── index.html
+│   │       ├── privacy.html      # Chính sách bảo mật (đăng ký với TikTok for Developers)
+│   │       └── terms.html        # Điều khoản dịch vụ
 │   ├── gold-track/           # Theo dõi giá vàng — subfolder theo loại file
 │   │   ├── html/index.html
 │   │   ├── css/gold-track.css
@@ -119,20 +123,20 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 
 | File | LOC | Dung lượng | Base64 nhúng |
 |---|---|---|---|
-| viet-long-creator.html | 12,155 | 561 KB | 0 |
-| viet-long-crypto.html | 11,712 | 1.09 MB | 2 |
+| viet-long-creator/html/index.html | 12,155 | 561 KB | 0 |
+| viet-long-crypto/html/index.html | 11,712 | 1.09 MB | 2 |
 | index.html | 4,343 | 374 KB | 7 |
-| bingo.html | 2,083 | 59 KB | 0 |
-| markdown-pro.html | 1,276 | 54 KB | 0 |
-| thanh-thu-fruit.html | 1,166 | 42 KB | 0 |
-| viet-long-social.html | 1,149 | 68 KB | 0 |
-| crypto-ai.html | 1,025 | 86 KB | 0 |
-| kol-vu-thi-minh-thu.html | 927 | **11.7 MB** | **39** |
-| meeting-translator.html | 684 | 34 KB | 0 |
-| mini-game-hub.html | 671 | 72 KB | 0 |
+| bingo/html/index.html | 2,083 | 59 KB | 0 |
+| markdown-pro/html/index.html | 1,276 | 54 KB | 0 |
+| thanh-thu-fruit/html/index.html | 1,166 | 42 KB | 0 |
+| viet-long-social/html/index.html | 1,149 | 68 KB | 0 |
+| crypto-ai/html/index.html | 1,025 | 86 KB | 0 |
+| kol-vu-thi-minh-thu/html/index.html | 927 | **11.7 MB** | **39** |
+| meeting-translator/html/index.html | 684 | 34 KB | 0 |
+| mini-game-hub/html/index.html | 671 | 72 KB | 0 |
 | worldcup-2026/html/index.html (+ css/js) | 280 + 331 + 1,372 | 42 + 33 + 84 KB | 3 |
-| privacy.html | 99 | 5 KB | 0 |
-| terms.html | 81 | 4 KB | 0 |
+| viet-long-creator/html/privacy.html | 99 | 5 KB | 0 |
+| viet-long-creator/html/terms.html | 81 | 4 KB | 0 |
 
 *(Đo bằng `wc -l` + dung lượng file thật trên đĩa, không tính file đã nén/minify.)*
 
@@ -140,11 +144,11 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 
 Ngưỡng tham chiếu: `worldcup-2026` được tách khi đạt ~1,987 LOC.
 
-- **Nên tách ngay**: `viet-long-creator.html` (12,155 LOC) và `viet-long-crypto.html` (11,712 LOC) — gấp ~6 lần ngưỡng, lớn nhất trong repo, tách sẽ giúp maintain dễ hơn rõ rệt.
+- **Nên tách ngay**: `viet-long-creator/html/index.html` (12,155 LOC) và `viet-long-crypto/html/index.html` (11,712 LOC) — gấp ~6 lần ngưỡng, lớn nhất trong repo, tách sẽ giúp maintain dễ hơn rõ rệt.
 - **Nên tách**: `index.html` (4,343 LOC) — hơn gấp đôi ngưỡng, là trang chủ nên ưu tiên dễ đọc/sửa.
-- **Có thể tách, không gấp**: `bingo.html` (2,083 LOC) — xấp xỉ ngưỡng cũ.
-- **Chưa cần tách**: `markdown-pro.html`, `thanh-thu-fruit.html`, `viet-long-social.html`, `crypto-ai.html` (1,000–1,300 LOC) — dưới ngưỡng, dung lượng nhỏ. `meeting-translator.html`, `mini-game-hub.html`, `privacy.html`, `terms.html` càng nhỏ hơn, không cần động tới.
-- **Vấn đề khác, không phải do CSS/JS**: `kol-vu-thi-minh-thu.html` chỉ 927 LOC nhưng nặng **11.7 MB** do nhúng 39 ảnh base64 trực tiếp trong HTML — tách CSS/JS không giải quyết được vấn đề này. Nếu muốn cải thiện tốc độ tải, cần xuất ảnh base64 ra file `.jpg`/`.png`/`.webp` riêng và load qua `<img src>` — đây là việc khác, quy mô lớn hơn, nên xử lý riêng nếu cần.
+- **Có thể tách, không gấp**: `bingo/html/index.html` (2,083 LOC) — xấp xỉ ngưỡng cũ.
+- **Chưa cần tách**: `markdown-pro/html/index.html`, `thanh-thu-fruit/html/index.html`, `viet-long-social/html/index.html`, `crypto-ai/html/index.html` (1,000–1,300 LOC) — dưới ngưỡng, dung lượng nhỏ. `meeting-translator/html/index.html`, `mini-game-hub/html/index.html`, `privacy.html`, `terms.html` càng nhỏ hơn, không cần động tới.
+- **Vấn đề khác, không phải do CSS/JS**: `kol-vu-thi-minh-thu/html/index.html` chỉ 927 LOC nhưng nặng **11.7 MB** do nhúng 39 ảnh base64 trực tiếp trong HTML — tách CSS/JS không giải quyết được vấn đề này. Nếu muốn cải thiện tốc độ tải, cần xuất ảnh base64 ra file `.jpg`/`.png`/`.webp` riêng và load qua `<img src>` — đây là việc khác, quy mô lớn hơn, nên xử lý riêng nếu cần.
 
 ## 🧑‍💻 Chạy local
 
@@ -158,10 +162,10 @@ cd letranvietlong.github.io
 
 ## 📄 Pháp lý
 
-- [Chính sách bảo mật](../products/privacy.html)
-- [Điều khoản dịch vụ](../products/terms.html)
+- [Chính sách bảo mật](../products/viet-long-creator/html/privacy.html)
+- [Điều khoản dịch vụ](../products/viet-long-creator/html/terms.html)
 
-*(Áp dụng cho VietLong Creator — đăng ký với TikTok for Developers.)*
+*(Áp dụng cho VietLong Creator — đăng ký với TikTok for Developers. Hai trang này nằm trong folder `viet-long-creator/` vì là trang pháp lý của riêng sản phẩm đó, không phải sản phẩm độc lập.)*
 
 ## 📬 Liên hệ
 

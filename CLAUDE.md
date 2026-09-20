@@ -27,7 +27,7 @@ Note: agent definitions are loaded when a session starts, so a newly added or re
 
 # Repo layout — products live in products/
 
-All product pages moved out of the repo root into `products/` (one kebab-case module folder per product with its own assets, flat kebab-case `.html` for single-file products with none). Inside a multi-asset product folder, files are further split into a subfolder per file type: `html/`, `css/`, `js/` (`.ts` sits next to its compiled `.js`), plus `data/` (bot-generated JSON) or `json/` (hand-written seed JSON). See the `project-structure` skill for the full naming/structure rule this follows. Root now holds only `index.html` plus the two files a platform constraint forces to stay there.
+All product pages moved out of the repo root into `products/` — every product has its own kebab-case folder, even single-file products with no separate CSS/JS (e.g. `products/crypto-ai/html/index.html`). Inside each product folder, files are split into a subfolder per file type: `html/`, `css/`, `js/` (`.ts` sits next to its compiled `.js`) — only the ones that actually exist for that product — plus `data/` (bot-generated JSON), `json/` (hand-written seed JSON), or `py/` (CI-only Python scripts) when applicable. A page that supports one product but isn't a product of its own (e.g. VietLong Creator's privacy/terms pages) lives inside that product's own `html/`, not as a sibling in `products/`. See the `project-structure` skill for the full naming/structure rule this follows. Root now holds only `index.html` plus the two files a platform constraint forces to stay there.
 
 GoldTrack is **not** a single self-contained file — its styles and logic live outside the HTML:
 

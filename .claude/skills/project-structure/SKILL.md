@@ -28,8 +28,8 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 | Loại | Quy tắc | Ví dụ |
 |---|---|---|
-| Thư mục sản phẩm (trong `products/`) | kebab-case | `gold-track/`, `thubee-farmery/`, `worldcup-2026/` |
-| File `.html` của sản phẩm một-file (không có folder riêng) | kebab-case | `crypto-ai.html`, `viet-long-creator.html` |
+| Thư mục sản phẩm (trong `products/`) | kebab-case | `gold-track/`, `thubee-farmery/`, `worldcup-2026/`, `crypto-ai/` |
+| File `.html` chính của một sản phẩm | `index.html` bên trong `html/` của sản phẩm đó — kể cả sản phẩm chỉ có 1 file | `products/crypto-ai/html/index.html` |
 | File `.css` / `.js` / `.ts` phụ trợ | kebab-case, trùng slug của sản phẩm | `gold-track.css`, `thubee-farmery.js` |
 | File `.json` | kebab-case nếu tên nhiều từ, giữ nguyên nếu một từ | `gold-price-history.json`, `orders.json` |
 | File `.py` | `snake_case` cho tên file — theo quy ước ngôn ngữ Python, **cố ý không ép kebab-case**; nhưng vẫn nằm trong tầng subfolder `py/` của đúng sản phẩm sở hữu nó, như mọi loại file khác | `products/gold-track/py/fetch_gold_price.py` |
@@ -41,12 +41,13 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 ```
 /                        index.html + file nền tảng bắt buộc ở root
-├── products/            MỌI trang sản phẩm sống ở đây
-│   ├── <ten-san-pham>.html         # sản phẩm một-file, không cần folder riêng
-│   └── <ten-san-pham>/             # sản phẩm nhiều file — thêm 1 tầng theo LOẠI FILE
-│       ├── html/<ten-san-pham>.html (hoặc index.html)
-│       ├── css/<ten-san-pham>.css
-│       ├── js/<ten-san-pham>.js    (+ .ts nếu có, nằm cùng chỗ với .js)
+├── products/            MỌI trang sản phẩm sống ở đây — MỖI sản phẩm có folder riêng,
+│   │                    kể cả sản phẩm chỉ có 1 file HTML, không có ngoại lệ flat
+│   └── <ten-san-pham>/
+│       ├── html/index.html         # trang chính; sản phẩm 1-file chỉ có mỗi file này
+│       ├── html/<trang-phu>.html   # trang phụ CỦA sản phẩm này (vd. privacy/terms), nếu có
+│       ├── css/<ten-san-pham>.css  # chỉ có nếu CSS đã tách khỏi HTML
+│       ├── js/<ten-san-pham>.js    # chỉ có nếu JS đã tách khỏi HTML (+ .ts nếu có, cùng chỗ)
 │       ├── py/<ten_script>.py      # script Python CHỈ dùng riêng cho sản phẩm này
 │       ├── manifest.json           # Web App Manifest, nếu có
 │       ├── data/                   # dữ liệu do máy sinh (GitHub Actions ghi đè)
@@ -57,7 +58,9 @@ Hai file duy nhất hiện được miễn trừ, và **lý do đã được ki�
 
 **`json/` và `data/` khác nhau, đừng trộn:** `json/` là seed do người viết, sửa tay được, commit có chủ đích. `data/` do bot ghi đè liên tục — sửa tay ở đây sẽ bị mất ở lần chạy CI kế tiếp. Nhìn thư mục là biết được phép sửa tay hay không.
 
-**Sản phẩm một-file ở lại flat, KHÔNG bị ép vào cấu trúc 3 tầng `products/<ten>/html/<ten>.html`.** Chỉ khi sản phẩm thật sự có ≥2 loại file riêng (css/js tách biệt) mới đáng để thêm tầng subfolder — thêm tầng cho một file HTML độc lập chỉ tạo thêm việc điều hướng không lợi ích gì.
+**Mọi sản phẩm đều có folder riêng, kể cả chỉ 1 file HTML không tách css/js.** Từng có ngoại lệ "sản phẩm 1-file ở lại flat trong `products/<ten>.html`" — đã bỏ theo yêu cầu đồng nhất tuyệt đối của người dùng, vì để 2 kiểu cấu trúc song song (có folder / không có folder) gây khó đoán hơn là tốn thêm 1 tầng thư mục cho sản phẩm nhỏ.
+
+**Trang phụ thuộc về một sản phẩm (không phải sản phẩm độc lập) nằm trong `html/` của CHÍNH sản phẩm đó, không nằm ngang hàng ở `products/`.** Ví dụ: `privacy.html`/`terms.html` là trang pháp lý của VietLong Creator (không phải sản phẩm riêng) → nằm ở `products/viet-long-creator/html/privacy.html`, `.../terms.html`, không phải `products/privacy.html`. Trước khi tạo folder riêng cho một file `.html` mới, tự hỏi: *"file này có phải một sản phẩm độc lập, hay là trang phụ trợ của một sản phẩm đã có?"*
 
 **Script Python chạy trong CI (GitHub Actions) nằm trong `py/` của đúng sản phẩm nó phục vụ** — ví dụ `products/gold-track/py/fetch_gold_price.py` — **cùng nguyên tắc file-type-subfolder như html/css/js/data**, không có ngoại lệ cho `.py`. Script tự tính đường dẫn dữ liệu tương đối theo vị trí của chính nó (`dirname(dirname(__file__))` trỏ về thư mục sản phẩm), không hardcode tên sản phẩm trong path — nhờ vậy path luôn đúng dù sản phẩm đổi tên sau này. Không có `scripts/` dùng chung ở root: nếu sau này có script CI thật sự cross-product (dùng chung cho ≥2 sản phẩm, không thuộc riêng ai), lúc đó mới đáng tạo một thư mục dùng chung — hiện tại chưa có trường hợp này.
 
@@ -67,8 +70,8 @@ Site này chấp nhận **cả hai kiểu**, chọn theo quy mô — đừng tá
 
 | Quy mô trang | Cách làm |
 |---|---|
-| Nhỏ, một mục đích, ít thay đổi | Để inline trong `.html`, để flat trong `products/<ten>.html`. |
-| Lớn, sửa thường xuyên, nhiều tính năng | Tách `products/<ten>/css/<ten>.css` + `products/<ten>/js/<ten>.js`, thêm tầng `html/` chứa trang chính. |
+| Nhỏ, một mục đích, ít thay đổi | Để inline trong `products/<ten>/html/index.html`. |
+| Lớn, sửa thường xuyên, nhiều tính năng | Tách `products/<ten>/css/<ten>.css` + `products/<ten>/js/<ten>.js`, `html/index.html` chỉ còn markup. |
 
 Ngưỡng thực tế: **khi file HTML vượt ~800–1000 dòng**, hoặc khi bạn bắt đầu phải cuộn rất lâu mới tới đoạn cần sửa, thì tách. GoldTrack tách khi chạm 2540 dòng → còn ~320 dòng markup.
 
@@ -140,8 +143,8 @@ done
 
 ```
 File này là gì?
-├─ Trang sản phẩm một-file (.html)        → products/<ten-kebab-case>.html
-├─ Trang sản phẩm nhiều file              → products/<ten-kebab-case>/html/...
+├─ Trang chính của một sản phẩm            → products/<ten-kebab-case>/html/index.html
+├─ Trang phụ CỦA một sản phẩm đã có         → products/<ten-cua-san-pham-do>/html/<ten-trang>.html
 ├─ Nền tảng BẮT BUỘC ở root?              → root, nhưng chỉ giữ phần tối thiểu,
 │                                            đẩy logic vào thư mục con của sản phẩm
 ├─ Style của một trang nhiều file          → products/<ten>/css/<ten>.css
