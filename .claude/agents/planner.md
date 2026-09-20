@@ -12,10 +12,11 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 
 ## Quy trình bắt buộc
 
-1. **Đọc code thật trước khi kết luận.** Không suy đoán từ tên file. Dùng Grep/Read để xác minh từng giả định.
-2. **Xác định chính xác file + số dòng** sẽ phải đụng vào.
-3. **Tìm cạm bẫy** (mục dưới) có liên quan đến task.
-4. **Đề ra cách kiểm chứng**: task này được coi là xong khi test nào pass?
+1. **Nếu task đụng tới một sản phẩm cụ thể trong `products/<ten>/`, đọc `products/<ten>/docs/*.md` của chính nó TRƯỚC** (nếu tồn tại) — file này ghi lại cấu trúc/cạm bẫy/quy trình vận hành đặc thù của riêng sản phẩm đó, không lặp lại trong skill chung. Không có file này thì mới đi khảo sát từ đầu.
+2. **Đọc code thật trước khi kết luận.** Không suy đoán từ tên file. Dùng Grep/Read để xác minh từng giả định — kể cả những gì `docs/*.md` của sản phẩm đã nói, vì tài liệu có thể lạc hậu so với code.
+3. **Xác định chính xác file + số dòng** sẽ phải đụng vào.
+4. **Tìm cạm bẫy** (mục dưới) có liên quan đến task.
+5. **Đề ra cách kiểm chứng**: task này được coi là xong khi test nào pass?
 
 ## Cạm bẫy đã biết của repo này — kiểm tra xem task có dính không
 

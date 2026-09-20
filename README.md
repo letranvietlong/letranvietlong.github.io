@@ -12,21 +12,21 @@
 
 ## 📖 Giới thiệu
 
-Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](../products/) — mỗi sản phẩm có folder riêng mang tên kebab-case, kể cả sản phẩm chỉ có một file HTML tự chứa (inline CSS/JS). Sản phẩm quy mô lớn có thêm subfolder theo loại file bên trong (xem [products/worldcup-2026/](../products/worldcup-2026/) làm ví dụ). Không có build step ở bất kỳ đâu, deploy thẳng bằng GitHub Pages. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `project-structure` ([.claude/skills/project-structure/SKILL.md](../.claude/skills/project-structure/SKILL.md)).
+Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](products/) — mỗi sản phẩm có folder riêng mang tên kebab-case, kể cả sản phẩm chỉ có một file HTML tự chứa (inline CSS/JS). Sản phẩm quy mô lớn có thêm subfolder theo loại file bên trong (xem [products/worldcup-2026/](products/worldcup-2026/) làm ví dụ). Không có build step ở bất kỳ đâu, deploy thẳng bằng GitHub Pages. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `project-structure` ([.claude/skills/project-structure/SKILL.md](.claude/skills/project-structure/SKILL.md)).
 
 ## 🧩 Products
 
 | Trang | Mô tả | Link |
 |---|---|---|
-| **VietLongCrypto** | Theo dõi thị trường tiền điện tử — giá real-time, phân tích xu hướng, biểu đồ market cap. | [viet-long-crypto/html/index.html](../products/viet-long-crypto/html/index.html) |
-| **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu/html/index.html](../products/kol-vu-thi-minh-thu/html/index.html) |
-| **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](../products/thanh-thu-fruit/html/index.html) |
-| **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](../products/gold-track/html/index.html) |
-| **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](../products/thubee-farmery/html/index.html) |
-| **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](../products/viet-long-creator/html/index.html) |
-| **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](../products/viet-long-social/html/index.html) |
-| **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub/html/index.html](../products/mini-game-hub/html/index.html) |
-| **FIFA World Cup 2026** | Lịch thi đấu 104 trận, tỷ số trực tiếp, bảng xếp hạng, nhánh knockout. | [worldcup-2026/html/index.html](../products/worldcup-2026/html/index.html) |
+| **VietLongCrypto** | Theo dõi thị trường tiền điện tử — giá real-time, phân tích xu hướng, biểu đồ market cap. | [viet-long-crypto/html/index.html](products/viet-long-crypto/html/index.html) |
+| **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu/html/index.html](products/kol-vu-thi-minh-thu/html/index.html) |
+| **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](products/thanh-thu-fruit/html/index.html) |
+| **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](products/gold-track/html/index.html) |
+| **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](products/thubee-farmery/html/index.html) |
+| **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](products/viet-long-creator/html/index.html) |
+| **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](products/viet-long-social/html/index.html) |
+| **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub/html/index.html](products/mini-game-hub/html/index.html) |
+| **FIFA World Cup 2026** | Lịch thi đấu 104 trận, tỷ số trực tiếp, bảng xếp hạng, nhánh knockout. | [worldcup-2026/html/index.html](products/worldcup-2026/html/index.html) |
 
 > Toàn bộ danh sách trên cũng được liệt kê tại tab **Products** của [trang chủ](https://letranvietlong.github.io).
 
@@ -37,7 +37,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 ## ⚙️ Tech Stack
 
 - **HTML5 / CSS3 / Vanilla JavaScript** — không framework, không build step.
-- Mỗi trang là **một sản phẩm độc lập**, sống trong [products/](../products/) trong folder riêng của nó — sản phẩm nhỏ chỉ có `html/index.html` (style & logic inline), sản phẩm lớn có thêm `css/`, `js/`, `data/`/`json/` tách biệt theo tầng loại file, tên file giữ theo slug kebab-case của sản phẩm, để dễ maintain.
+- Mỗi trang là **một sản phẩm độc lập**, sống trong [products/](products/) trong folder riêng của nó — sản phẩm nhỏ chỉ có `html/index.html` (style & logic inline), sản phẩm lớn có thêm `css/`, `js/`, `data/`/`json/` tách biệt theo tầng loại file, tên file giữ theo slug kebab-case của sản phẩm, để dễ maintain.
 - Deploy bằng **GitHub Pages**, không cần server hay CI/CD.
 
 ## 📁 Cấu trúc
@@ -46,6 +46,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 .
 ├── index.html              # Trang chủ — Portfolio, Blog, Mini Game Hub, Contact
 ├── CLAUDE.md                # Hướng dẫn cho Claude Code — BẮT BUỘC nằm ở root để được tự động nạp
+├── README.md                # Tài liệu này — BẮT BUỘC ở root để GitHub hiển thị làm trang chủ repo
 ├── products/                # Mọi trang sản phẩm — xem bảng Products phía trên. Mỗi sản
 │   │                        # phẩm có folder riêng, kể cả sản phẩm chỉ 1 file HTML (để
 │   │                        # đồng nhất cấu trúc — không có ngoại lệ flat nữa).
@@ -112,8 +113,6 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │       ├── html/index.html
 │       ├── css/worldcup-2026.css
 │       └── js/worldcup-2026.js
-└── docs/
-    └── README.md             # Tài liệu này
 ```
 
 **Không còn `img/` dùng chung ở root.** Icon của mỗi sản phẩm nằm trong `img/` của chính sản phẩm đó — ví dụ `products/gold-track/img/gold-track-icon*`, `products/thubee-farmery/img/thubee-icon*`. Các sản phẩm khác nhúng icon trực tiếp bằng data URI trong HTML nên không cần thư mục `img/` riêng. Chỉ tạo `img/` dùng chung ở root nếu sau này có ảnh thật sự cross-product (hiện chưa có trường hợp này).
@@ -173,8 +172,8 @@ cd letranvietlong.github.io
 
 ## 📄 Pháp lý
 
-- [Chính sách bảo mật](../products/viet-long-creator/html/privacy.html)
-- [Điều khoản dịch vụ](../products/viet-long-creator/html/terms.html)
+- [Chính sách bảo mật](products/viet-long-creator/html/privacy.html)
+- [Điều khoản dịch vụ](products/viet-long-creator/html/terms.html)
 
 *(Áp dụng cho VietLong Creator — đăng ký với TikTok for Developers. Hai trang này nằm trong folder `viet-long-creator/` vì là trang pháp lý của riêng sản phẩm đó, không phải sản phẩm độc lập.)*
 

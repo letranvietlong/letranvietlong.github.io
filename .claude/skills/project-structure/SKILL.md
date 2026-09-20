@@ -11,15 +11,18 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 ## 1. Luật vàng của thư mục gốc
 
-> **Root chỉ chứa: `index.html`, thư mục `products/`, `docs/`, và những file mà NỀN TẢNG bắt buộc phải ở root.**
+> **Root chỉ chứa: `index.html`, thư mục `products/`, và những file mà NỀN TẢNG bắt buộc phải ở root.**
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 
-Hiện chỉ còn **một** file được miễn trừ:
+Hiện chỉ còn **hai** file được miễn trừ:
 
 | File | Vì sao bắt buộc ở root |
 |---|---|
 | `CLAUDE.md` | Claude Code tự nạp từ thư mục gốc của project. Chuyển đi = các quy ước trong đó mất hiệu lực, âm thầm. |
+| `README.md` | GitHub chỉ hiển thị `README.md` ở **root** làm trang chủ repo trên github.com — một `README.md` trong subfolder (kể cả `docs/`) không được dùng cho việc này. Đặt trong `docs/` từng khiến trang chủ repo trên GitHub trống trơn. |
+
+Tài liệu riêng của từng sản phẩm KHÔNG đặt ở root — mỗi `products/<ten>/` có `docs/*.md` riêng, mô tả đúng sản phẩm đó (xem mục 9 bên dưới).
 
 `sw-gold-track.js` từng nằm ở root với lý do "phòng hờ tương lai" (scope toàn origin, an toàn dù GoldTrack đổi cấu trúc) — nhưng nó chưa bao giờ thực sự cần điều khiển gì ngoài GoldTrack, nên giữ ở root là scope rộng hơn mức cần thiết một cách không cần thiết, và vi phạm nguyên tắc "mọi thứ của một sản phẩm nằm trong folder của sản phẩm đó". Đã chuyển vào `products/gold-track/sw-gold-track.js` — xem mục **"Vỏ bắt buộc ở đúng cấp thư mục nào?"** ngay dưới đây.
 
@@ -53,21 +56,23 @@ Quy tắc chung khi một sản phẩm cần service worker: đặt vỏ ở **c
 ## 3. Bản đồ thư mục
 
 ```
-/                        index.html + file nền tảng bắt buộc ở root
-├── products/            MỌI trang sản phẩm sống ở đây — MỖI sản phẩm có folder riêng,
-│   │                    kể cả sản phẩm chỉ có 1 file HTML, không có ngoại lệ flat
-│   └── <ten-san-pham>/
-│       ├── html/index.html         # trang chính; sản phẩm 1-file chỉ có mỗi file này
-│       ├── html/<trang-phu>.html   # trang phụ CỦA sản phẩm này (vd. privacy/terms), nếu có
-│       ├── css/<ten-san-pham>.css  # chỉ có nếu CSS đã tách khỏi HTML
-│       ├── js/<ten-san-pham>.js    # chỉ có nếu JS đã tách khỏi HTML (+ .ts nếu có, cùng chỗ)
-│       ├── py/<ten_script>.py      # script Python CHỈ dùng riêng cho sản phẩm này
-│       ├── img/<ten-san-pham>-icon*  # icon/ảnh CHỈ dùng riêng cho sản phẩm này, nếu có file thật
-│       ├── manifest.json           # Web App Manifest, nếu có
-│       ├── data/                   # dữ liệu do máy sinh (GitHub Actions ghi đè)
-│       └── json/                   # dữ liệu hạt giống, người viết tay
-└── docs/                tài liệu (.md)
+/                        index.html + file nền tảng bắt buộc ở root (CLAUDE.md, README.md)
+└── products/            MỌI trang sản phẩm sống ở đây — MỖI sản phẩm có folder riêng,
+    │                    kể cả sản phẩm chỉ có 1 file HTML, không có ngoại lệ flat
+    └── <ten-san-pham>/
+        ├── html/index.html         # trang chính; sản phẩm 1-file chỉ có mỗi file này
+        ├── html/<trang-phu>.html   # trang phụ CỦA sản phẩm này (vd. privacy/terms), nếu có
+        ├── css/<ten-san-pham>.css  # chỉ có nếu CSS đã tách khỏi HTML
+        ├── js/<ten-san-pham>.js    # chỉ có nếu JS đã tách khỏi HTML (+ .ts nếu có, cùng chỗ)
+        ├── py/<ten_script>.py      # script Python CHỈ dùng riêng cho sản phẩm này
+        ├── img/<ten-san-pham>-icon*  # icon/ảnh CHỈ dùng riêng cho sản phẩm này, nếu có file thật
+        ├── manifest.json           # Web App Manifest, nếu có
+        ├── docs/*.md               # Tài liệu mô tả RIÊNG sản phẩm này — planner/agent khác đọc trước khi sửa
+        ├── data/                   # dữ liệu do máy sinh (GitHub Actions ghi đè)
+        └── json/                   # dữ liệu hạt giống, người viết tay
 ```
+
+Không còn `docs/` dùng chung ở root — tài liệu tổng quan toàn repo nằm trong `README.md` ở root; tài liệu riêng từng sản phẩm nằm trong `products/<ten>/docs/` của chính nó.
 
 **`img/` nằm TRONG từng sản phẩm, không có `img/` dùng chung ở root.** Icon/favicon của một sản phẩm là file riêng của nó — di chuyển hay xoá sản phẩm không kéo theo dọn dẹp một thư mục dùng chung ở nơi khác. Nhiều sản phẩm nhúng icon trực tiếp bằng data URI trong HTML nên không cần `img/` — chỉ tạo `img/` khi sản phẩm thực sự có file ảnh riêng (ví dụ PNG nhiều kích thước cho `apple-touch-icon`). Chỉ tạo `img/` dùng chung ở root nếu sau này xuất hiện ảnh thật sự cross-product — hiện repo chưa có trường hợp này.
 
@@ -124,7 +129,7 @@ Sau khi tách, kiểm tra **cả ba**, thiếu một là chưa xong:
 - [ ] `.github/workflows/*.yml` (đường dẫn `git add` và bất kỳ path nào đọc lại file JSON)
 - [ ] `manifest.json` của sản phẩm đó (`start_url`, `icons[].src`)
 - [ ] Mọi self-reference URL bên trong chính trang đó (`<link rel="canonical">`, `<meta property="og:url">`, JSON-LD `"url"`, `data:` URI manifest inline) — dễ sót nhất vì trang tự trỏ về chính nó
-- [ ] Sơ đồ cấu trúc + bảng Products trong `docs/README.md`
+- [ ] Sơ đồ cấu trúc + bảng Products trong `README.md` (root); nếu đổi tên/di chuyển sản phẩm thì cả `products/<ten>/docs/*.md` của sản phẩm đó
 - [ ] `CLAUDE.md` nếu file đó thuộc quy ước làm việc
 - [ ] `.claude/agents/*.md` nếu agent nào tham chiếu đường dẫn cụ thể
 - [ ] `.gitignore`
@@ -156,7 +161,19 @@ for name in findLedgerViolation APP_CODE_PATHS CACHE_NAME; do
 done
 ```
 
-## 9. Quyết định nhanh: file mới nên để đâu, tên gì?
+## 9. `docs/` riêng của từng sản phẩm — để agent đọc trước khi sửa
+
+Mỗi `products/<ten>/` có `docs/` riêng chứa `.md` mô tả ĐÚNG sản phẩm đó — không phải bản sao README tổng quan, không phải tài liệu kỹ thuật chung. Mục đích: `planner` (và các agent khác) đọc file này TRƯỚC khi khảo sát code, để không phải suy đoán lại từ đầu cấu trúc/cạm bẫy đặc thù của từng sản phẩm mỗi lần.
+
+**Một file `products/<ten>/docs/<ten>.md` nên có:**
+- Sản phẩm này làm gì, cho ai dùng (1-2 câu).
+- Cấu trúc file thật của sản phẩm (không lặp lại bản đồ chung ở mục 3 — chỉ nêu điểm khác biệt/đặc thù: có tách css/js chưa, có service worker không, có dùng localStorage/Gist/backend giả nào không).
+- Cạm bẫy đã biết, đặc thù riêng sản phẩm này (không phải cạm bẫy chung của repo — cái đó đã có trong skill này và `planner.md`).
+- Quy trình vận hành nếu có (ví dụ: cách đổi mật khẩu ThubeeFarmery, cách GoldTrack tự cập nhật giá qua GitHub Actions).
+
+**Không viết:** danh sách file (đã có ở mục 3), quy tắc đặt tên chung (đã có ở mục 2), nội dung trùng với `README.md` gốc.
+
+## 10. Quyết định nhanh: file mới nên để đâu, tên gì?
 
 ```
 File này là gì?
@@ -171,5 +188,6 @@ File này là gì?
 ├─ Dữ liệu người viết tay                  → products/<ten>/json/
 ├─ Dữ liệu máy sinh (CI ghi đè)            → products/<ten>/data/
 ├─ Script chạy trong CI (Python)           → products/<ten>/py/
-└─ Tài liệu (.md)                          → docs/
+├─ Tài liệu RIÊNG một sản phẩm             → products/<ten>/docs/
+└─ Tài liệu tổng quan toàn repo            → README.md (root)
 ```
