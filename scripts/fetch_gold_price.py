@@ -32,8 +32,8 @@ NGOCTHINH_ROW_PATTERN = re.compile(
 HISTORY_MAX = 500
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PRICE_FILE = os.path.join(ROOT, "data", "gold-price.json")
-HISTORY_FILE = os.path.join(ROOT, "data", "gold-price-history.json")
+PRICE_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-price.json")
+HISTORY_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-price-history.json")
 
 
 def fetch_ngocthinh():

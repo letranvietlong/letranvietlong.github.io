@@ -63,16 +63,26 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   ├── markdownpro.html
 │   ├── privacy.html          # Chính sách bảo mật (VietLong Creator)
 │   ├── terms.html            # Điều khoản dịch vụ (VietLong Creator)
-│   ├── goldtrack/            # Theo dõi giá vàng — CSS/JS/service-worker-logic riêng
+│   ├── goldtrack/            # Theo dõi giá vàng — CSS/JS/service-worker-logic/data riêng
 │   │   ├── GoldTrack.html
 │   │   ├── goldtrack.css
 │   │   ├── goldtrack.js
-│   │   └── sw-goldtrack-core.js  # Logic service worker (nạp qua importScripts từ vỏ ở root)
-│   ├── thubee-farmery/       # Đăng nhập nội bộ — HTML/CSS/JS/TS riêng
+│   │   ├── sw-goldtrack-core.js  # Logic service worker (nạp qua importScripts từ vỏ ở root)
+│   │   └── data/             # Dữ liệu GoldTrack, cập nhật tự động bởi GitHub Actions
+│   │       ├── gold-price.json       # Giá vàng mới nhất
+│   │       ├── gold-price-history.json # Lịch sử giá (vẽ biểu đồ xu hướng)
+│   │       ├── gold-news.json        # Tin tức đã lọc theo từ khoá liên quan vàng
+│   │       └── changelog.json        # Lịch sử cập nhật hiện trong app (nút version ở header)
+│   ├── thubee-farmery/       # Đăng nhập nội bộ — HTML/CSS/JS/TS/data riêng
 │   │   ├── ThubeeFarmery.html
 │   │   ├── ThubeeFarmery.css
 │   │   ├── ThubeeFarmery.ts  # Source TypeScript
-│   │   └── ThubeeFarmery.js  # Bản compile từ .ts (file thực sự được load)
+│   │   ├── ThubeeFarmery.js  # Bản compile từ .ts (file thực sự được load)
+│   │   └── json/             # Dữ liệu seed, viết tay
+│   │       ├── products.json     # Catalog sản phẩm gốc (seed + nguồn combobox)
+│   │       ├── customers.json    # Danh sách khách hàng gốc (seed + nguồn combobox)
+│   │       ├── sellers.json      # Danh sách người bán hàng gốc (seed + nguồn combobox)
+│   │       └── orders.json       # Đơn hàng gốc (mặc định rỗng — dữ liệu thật tích lũy qua localStorage)
 │   └── worldcup2026/         # CSS/JS riêng
 │       ├── worldcup2026.html
 │       ├── worldcup2026.css
@@ -82,16 +92,6 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   ├── thubee-icon-*.png     # Icon PNG (32/180) cho favicon, apple-touch-icon
 │   ├── goldtrack-icon.svg    # Logo GoldTrack (favicon SVG)
 │   └── goldtrack-icon-*.png  # Icon PNG (32/180) cho favicon, apple-touch-icon
-├── json/
-│   ├── products.json         # Catalog sản phẩm gốc (seed + nguồn combobox)
-│   ├── customers.json        # Danh sách khách hàng gốc (seed + nguồn combobox)
-│   ├── sellers.json          # Danh sách người bán hàng gốc (seed + nguồn combobox)
-│   └── orders.json           # Đơn hàng gốc (mặc định rỗng — dữ liệu thật tích lũy qua localStorage)
-├── data/                     # Dữ liệu GoldTrack, cập nhật tự động bởi GitHub Actions
-│   ├── gold-price.json       # Giá vàng mới nhất
-│   ├── gold-price-history.json # Lịch sử giá (vẽ biểu đồ xu hướng)
-│   ├── gold-news.json        # Tin tức đã lọc theo từ khoá liên quan vàng
-│   └── changelog.json        # Lịch sử cập nhật hiện trong app (nút version ở header)
 ├── scripts/                  # Script Python chạy trong GitHub Actions
 │   ├── fetch_gold_price.py   # Lấy giá vàng từ Ngọc Thịnh Jewelry
 │   └── fetch_gold_news.py    # Lấy + lọc tin tức từ RSS CafeF/VnExpress
@@ -102,14 +102,14 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 > **Vì sao `sw-goldtrack.js` và `CLAUDE.md` không nằm trong `products/`?**
 > - Service worker chỉ điều khiển được các trang **ngang hàng hoặc nằm dưới thư mục chứa nó**. Đặt trong `products/goldtrack/` thì scope co lại thành `/products/goldtrack/` — vẫn còn điều khiển được `GoldTrack.html` (nằm trong chính thư mục đó), nhưng mất khả năng mở rộng ra ngoài nếu sau này cần. Giữ vỏ ở root để scope luôn là toàn origin, an toàn cho mọi khả năng mở rộng sau này. Muốn thu hẹp/mở rộng khác đi phải set HTTP header `Service-Worker-Allowed`, mà GitHub Pages không cho tuỳ chỉnh header. Vì vậy root chỉ giữ **vỏ 1 dòng**, còn logic nằm ở `products/goldtrack/sw-goldtrack-core.js` — đúng nguyên tắc: chỉ những gì nền tảng BẮT BUỘC mới được ở root.
 > - `CLAUDE.md` được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực.
-> - GoldTrack tự fetch dữ liệu của nó (`/data/*.json`) và tự đăng ký service worker (`/sw-goldtrack.js`) bằng **đường dẫn tuyệt đối**, không phải tương đối — bắt buộc vì `GoldTrack.html` giờ nằm sâu 2 cấp trong `products/goldtrack/`, trong khi `data/` và vỏ service worker vẫn ở root.
+> - GoldTrack tự fetch dữ liệu của nó (`/products/goldtrack/data/*.json`) và tự đăng ký service worker (`/sw-goldtrack.js`) bằng **đường dẫn tuyệt đối**, không phải tương đối — với dữ liệu thì chỉ là thói quen tốt (giờ đã cùng thư mục), nhưng với service worker thì bắt buộc thật: vỏ vẫn ở root còn `GoldTrack.html` nằm sâu 2 cấp, một đường dẫn tương đối sẽ resolve theo vị trí trang, không phải theo root.
 
 ### 🔐 Thubee Farmery — lưu ý vận hành
 
 `ThubeeFarmery.html` là dashboard nội bộ **chỉ thiết kế cho iPhone 14 Pro Max** (không hỗ trợ desktop) — bottom tab bar, modal kiểu bottom-sheet, safe-area cho Dynamic Island/home indicator. Có màn hình đăng nhập chặn người ngoài. Vì site không có backend, đây là **client-side password gate** (so khớp SHA-256 hash trong `products/thubee-farmery/ThubeeFarmery.ts`), không phải bảo mật thật — đủ để chặn người xem thông thường, không chống được người cố tình đọc source.
 
 - Đổi mật khẩu: mở Console trên `ThubeeFarmery.html`, gọi `ThubeeAuth.hashPassword("user_moi", "mat_khau_moi")`, copy hash in ra và thay vào hằng `AUTH_PASSWORD_HASH` + `AUTH_USERNAME` trong `products/thubee-farmery/ThubeeFarmery.ts`, sau đó compile lại ra `.js` cùng thư mục (`tsc products/thubee-farmery/ThubeeFarmery.ts --target ES2017 --lib dom,es2017 --module none --outDir products/thubee-farmery`).
-- **Dữ liệu**: `json/*.json` là dữ liệu khởi tạo (seed) + nguồn gợi ý cho combobox (khách hàng/người bán/sản phẩm khi tạo đơn). Mọi thêm/sửa/xoá trên website lưu vào `localStorage` của trình duyệt — không mất khi tải lại trang, nhưng **không đồng bộ giữa nhiều thiết bị** và **không ghi ngược lại file json** (site tĩnh trên GitHub Pages, browser không thể tự viết vào file trên repo). Muốn đồng bộ nhiều máy/nhiều người dùng thật cần thêm backend (Firebase/Supabase...), ngoài phạm vi site tĩnh hiện tại.
+- **Dữ liệu**: `json/*.json` (trong `products/thubee-farmery/`) là dữ liệu khởi tạo (seed) + nguồn gợi ý cho combobox (khách hàng/người bán/sản phẩm khi tạo đơn). Mọi thêm/sửa/xoá trên website lưu vào `localStorage` của trình duyệt — không mất khi tải lại trang, nhưng **không đồng bộ giữa nhiều thiết bị** và **không ghi ngược lại file json** (site tĩnh trên GitHub Pages, browser không thể tự viết vào file trên repo). Muốn đồng bộ nhiều máy/nhiều người dùng thật cần thêm backend (Firebase/Supabase...), ngoài phạm vi site tĩnh hiện tại.
 - **Add to Home Screen**: dùng tính năng có sẵn của Safari trên iOS (Share → Add to Home Screen) — `apple-touch-icon` + meta `apple-mobile-web-app-*` trong `<head>` đã đủ để hiện đúng icon/tên khi ghim vào màn hình chính, không cần web app manifest.
 - **Người bán hàng**: tab riêng để quản lý nhân viên bán hàng (tên + SĐT), gắn vào từng đơn hàng, có bảng xếp hạng doanh thu theo người bán.
 

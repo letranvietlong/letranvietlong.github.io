@@ -6,7 +6,7 @@
 // còn nhiều trang sản phẩm khác. Để điều đó vô hại, mọi handler dưới đây
 // đều kiểm tra GOLDTRACK_PATHS trước và không làm gì với request không
 // thuộc GoldTrack — các trang khác không hề đổi hành vi.
-var CACHE_NAME = "goldtrack-cache-v4";
+var CACHE_NAME = "goldtrack-cache-v5";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -29,10 +29,10 @@ var ICON_PATHS = [
   "/img/goldtrack-icon-180.png"
 ];
 var DATA_PATHS = [
-  "/data/gold-price.json",
-  "/data/gold-price-history.json",
-  "/data/gold-news.json",
-  "/data/changelog.json"
+  "/products/goldtrack/data/gold-price.json",
+  "/products/goldtrack/data/gold-price-history.json",
+  "/products/goldtrack/data/gold-news.json",
+  "/products/goldtrack/data/changelog.json"
 ];
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
 var GOLDTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);

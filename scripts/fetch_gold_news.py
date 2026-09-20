@@ -70,7 +70,7 @@ def clean_title(title):
 
 NEWS_MAX = 40
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEWS_FILE = os.path.join(ROOT, "data", "gold-news.json")
+NEWS_FILE = os.path.join(ROOT, "products", "goldtrack", "data", "gold-news.json")
 
 
 def fetch_feed(url):
