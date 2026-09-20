@@ -14,10 +14,10 @@ const STORAGE_SELLERS = 'thubee_farmery_sellers';
 const STORAGE_ORDERS = 'thubee_farmery_orders';
 const STORAGE_SESSION = 'thubee_farmery_session';
 const JSON_PATHS = {
-    products: 'json/products.json',
-    customers: 'json/customers.json',
-    sellers: 'json/sellers.json',
-    orders: 'json/orders.json',
+    products: '/json/products.json',
+    customers: '/json/customers.json',
+    sellers: '/json/sellers.json',
+    orders: '/json/orders.json',
 };
 const STATUS_LABEL = {
     completed: 'Hoàn thành',

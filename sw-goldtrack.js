@@ -14,4 +14,4 @@
 // kiểm tra cập nhật cho cả script được importScripts, nhưng hành vi này
 // từng khác nhau giữa các engine — query string làm việc cập nhật trở nên
 // chắc chắn thay vì phải tin vào engine.
-importScripts('/js/sw-goldtrack-core.js?v=3');
+importScripts('/products/goldtrack/sw-goldtrack-core.js?v=4');

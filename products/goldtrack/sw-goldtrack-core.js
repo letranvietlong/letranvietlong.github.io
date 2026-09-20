@@ -6,7 +6,7 @@
 // còn nhiều trang sản phẩm khác. Để điều đó vô hại, mọi handler dưới đây
 // đều kiểm tra GOLDTRACK_PATHS trước và không làm gì với request không
 // thuộc GoldTrack — các trang khác không hề đổi hành vi.
-var CACHE_NAME = "goldtrack-cache-v3";
+var CACHE_NAME = "goldtrack-cache-v4";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -17,9 +17,9 @@ var CACHE_NAME = "goldtrack-cache-v3";
 // The CSS/JS entries matter for offline too: the HTML alone would restore
 // from cache as an unstyled, non-functioning page without them.
 var APP_CODE_PATHS = [
-  "/GoldTrack.html",
-  "/css/goldtrack.css",
-  "/js/goldtrack.js"
+  "/products/goldtrack/GoldTrack.html",
+  "/products/goldtrack/goldtrack.css",
+  "/products/goldtrack/goldtrack.js"
 ];
 // Icon files are named by content/size and effectively never change, so
 // cache-first (instant, no network round trip) is safe for these.
