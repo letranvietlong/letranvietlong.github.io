@@ -261,23 +261,6 @@ async function submitContact() {
 }
 
 // ================================================
-// AVAILABLE STATUS - dynamic từ config
-// ================================================
-const AVAILABLE = true; // thay false khi không available
-(function updateStatus() {
-  const dot = document.querySelector('.sdot');
-  const statusEl = document.querySelector('.nav-status');
-  if(!statusEl) return;
-  if(AVAILABLE) {
-    statusEl.innerHTML = '<span class="sdot"></span>Available for work';
-    statusEl.style.cssText = '';
-  } else {
-    if(dot) dot.style.background = 'var(--orange)';
-    statusEl.innerHTML = '<span class="sdot" style="background:var(--orange)"></span>Open to opportunities';
-  }
-})();
-
-// ================================================
 // INIT: Run deep link on load
 // ================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -443,61 +426,6 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
-
-// ===========================================================
-// SKILLS RADAR CHART (SVG thuần)
-// ===========================================================
-function renderRadarChart() {
-  const container = document.getElementById('radarChart');
-  if(!container) return;
-  const skills = [
-    {label:'Frontend', value:0.90},
-    {label:'Backend',  value:0.80},
-    {label:'AI/LLM',   value:0.75},
-    {label:'DevOps',   value:0.70},
-    {label:'Database', value:0.72},
-    {label:'Mobile',   value:0.50},
-  ];
-  const N=skills.length, R=100, cx=130, cy=120;
-  const toXY = (i,r) => {
-    const a = (Math.PI*2*i/N) - Math.PI/2;
-    return [cx + r*Math.cos(a), cy + r*Math.sin(a)];
-  };
-  // Grid circles
-  let circles = [0.25,0.5,0.75,1].map(t => {
-    const pts = skills.map((_,i)=>toXY(i,R*t).join(',')).join(' ');
-    return `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
-  }).join('');
-  // Axes
-  let axes = skills.map((_,i) => {
-    const [x,y]=toXY(i,R);
-    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.1)" stroke-width="1"/>`;
-  }).join('');
-  // Skill polygon
-  const pts = skills.map((s,i)=>toXY(i,R*s.value).join(',')).join(' ');
-  const poly = `<polygon points="${pts}" fill="rgba(0,245,212,.15)" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>`;
-  // Dots
-  const dots = skills.map((s,i) => {
-    const [x,y]=toXY(i,R*s.value);
-    return `<circle cx="${x}" cy="${y}" r="4" fill="var(--cyan)" stroke="var(--bg)" stroke-width="2"/>`;
-  }).join('');
-  // Labels
-  const labels = skills.map((s,i) => {
-    const [x,y]=toXY(i,R*1.22);
-    const anchor = x < cx-5 ? 'end' : x > cx+5 ? 'start' : 'middle';
-    return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="var(--mono)" font-size="10" fill="var(--muted)">${s.label} ${Math.round(s.value*100)}%</text>`;
-  }).join('');
-  container.innerHTML = `<svg width="100%" viewBox="0 0 260 240">
-    ${circles}${axes}${poly}${dots}${labels}
-  </svg>`;
-}
-
-// Patch showPage để render chart khi vào Skills
-const _showPageForSkills = window.showPage;
-window.showPage = function(id) {
-  _showPageForSkills(id);
-  if(id === 'skills') setTimeout(renderRadarChart, 100);
-};
 
 // ===========================================================
 // TOAST vào submit post

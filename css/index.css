@@ -63,9 +63,6 @@ nav{
 }
 @keyframes brandShift{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
 @keyframes glitchReveal{0%,85%{clip-path:inset(0 100% 0 0);opacity:0;}88%{clip-path:inset(0 60% 0 0);opacity:.8;transform:translateX(-2px);}90%{clip-path:inset(0 40% 0 0);opacity:.5;transform:translateX(2px);}92%{clip-path:inset(0 0% 0 0);opacity:.9;}96%{clip-path:inset(0 0% 0 0);opacity:.4;}100%{clip-path:inset(0 100% 0 0);opacity:0;}}
-.nav-status{display:flex;align-items:center;gap:7px;background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.2);padding:5px 14px;border-radius:100px;font-family:var(--mono);font-size:.68rem;color:var(--green);}
-.sdot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:blink 2s ease infinite;}
-@keyframes blink{50%{opacity:.2;}}
 .nav-links{display:flex;align-items:center;gap:6px;list-style:none;}
 .nav-links a{
   font-size:.78rem;font-weight:500;color:var(--muted);text-decoration:none;
@@ -826,6 +823,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 /* == TYPEWRITER == */
 .typewriter-wrap { display:inline-block; }
 .typewriter-cursor { display:inline-block; width:2px; height:1em; background:var(--orange); margin-left:2px; vertical-align:middle; animation:blink .7s step-end infinite; }
+@keyframes blink { 50% { opacity:.2; } }
 
 /* == CV PRINT == */
 @media print {
@@ -849,7 +847,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 @media(max-width:768px) {
   .hamburger { display:flex; }
   .nav-links { display:none !important; }
-  .nav-status { display:none; }
   .about-grid { grid-template-columns:1fr; }
   .products-grid { grid-template-columns:1fr; }
   .blog-grid { grid-template-columns:1fr; }
@@ -1086,12 +1083,4 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 /* == VISIBILITYCHAGE pause == */
 /* handled in JS */
 
-/* == AVAILABLE STATUS == */
-.status-toggle {
-  display:flex; align-items:center; gap:7px; cursor:none;
-  background:rgba(6,214,160,.1); border:1px solid rgba(6,214,160,.2);
-  padding:5px 14px; border-radius:100px;
-  font-family:var(--mono); font-size:.68rem; color:var(--green);
-  transition:all .2s;
-}
 
