@@ -44,7 +44,7 @@ GoldTrack fetches its own data with root-absolute paths (`/products/gold-track/d
 
 ThubeeFarmery and worldcup-2026 follow the same one-folder-per-product pattern (`products/thubee-farmery/`, `products/worldcup-2026/`) — same reasoning applies if either grows a service worker later. ThubeeFarmery also has its own `products/thubee-farmery/manifest.json` (same iOS caveat as above); worldcup-2026 generates its manifest dynamically in JS instead (see `setupPWA()` in `products/worldcup-2026/js/worldcup-2026.js`).
 
-This file (`CLAUDE.md`) must stay at the repo root so Claude Code auto-loads it. [README.md](README.md) also stays at root — GitHub only renders a repo's root `README.md` as its homepage on github.com, not one from a subfolder — so these two are the only root exceptions. Each product also has its own `docs/*.md` describing that product specifically (see `products/<name>/docs/`).
+This file (`CLAUDE.md`) must stay at the repo root so Claude Code auto-loads it. [README.md](README.md) also stays at root — GitHub only renders a repo's root `README.md` as its homepage on github.com, not one from a subfolder. `robots.txt` and `sitemap.xml` are the other two root exceptions: the Robots Exclusion Protocol requires `robots.txt` at the exact domain root to be found by crawlers, and `sitemap.xml` follows the same near-universal convention search engines expect by default. These four are the only root exceptions. Each product also has its own `docs/*.md` describing that product specifically (see `products/<name>/docs/`).
 
 # GoldTrack changelog
 

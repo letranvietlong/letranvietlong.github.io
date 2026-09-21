@@ -11,16 +11,18 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 ## 1. Luật vàng của thư mục gốc
 
-> **Root chỉ chứa: `index.html`, thư mục `products/`, và những file mà NỀN TẢNG bắt buộc phải ở root.**
+> **Root chỉ chứa: `index.html`, thư mục `products/`, và những file mà NỀN TẢNG (GitHub/Claude Code/chuẩn web) bắt buộc phải ở root.**
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 
-Hiện chỉ còn **hai** file được miễn trừ:
+Hiện chỉ còn **bốn** file được miễn trừ:
 
 | File | Vì sao bắt buộc ở root |
 |---|---|
 | `CLAUDE.md` | Claude Code tự nạp từ thư mục gốc của project. Chuyển đi = các quy ước trong đó mất hiệu lực, âm thầm. |
 | `README.md` | GitHub chỉ hiển thị `README.md` ở **root** làm trang chủ repo trên github.com — một `README.md` trong subfolder (kể cả `docs/`) không được dùng cho việc này. Đặt trong `docs/` từng khiến trang chủ repo trên GitHub trống trơn. |
+| `robots.txt` | Chuẩn Robots Exclusion Protocol quy định trình thu thập dữ liệu (Googlebot...) chỉ tìm file này tại đúng gốc domain (`/robots.txt`) — đặt trong subfolder thì không crawler nào đọc được. |
+| `sitemap.xml` | Không bắt buộc kỹ thuật tuyệt đối (có thể khai báo đường dẫn khác trong `robots.txt`), nhưng đặt ở root là quy ước gần như phổ quát mà Google Search Console/Bing Webmaster Tools mặc định tìm tới trước — đặt nơi khác chỉ tạo thêm bước cấu hình không cần thiết. |
 
 Tài liệu riêng của từng sản phẩm KHÔNG đặt ở root — mỗi `products/<ten>/` có `docs/*.md` riêng, mô tả đúng sản phẩm đó (xem mục 9 bên dưới).
 
@@ -56,7 +58,12 @@ Quy tắc chung khi một sản phẩm cần service worker: đặt vỏ ở **c
 ## 3. Bản đồ thư mục
 
 ```
-/                        index.html + file nền tảng bắt buộc ở root (CLAUDE.md, README.md)
+/                        index.html + file nền tảng bắt buộc ở root
+├── CLAUDE.md, README.md, robots.txt, sitemap.xml   # 4 ngoại lệ root — xem mục 1
+├── css/index.css        # CSS của index.html — index.html KHÔNG nằm trong products/
+├── js/index.js          # nhưng vẫn buộc phải tách css/js như mọi trang lớn khác,
+│                        # nên có css/ và js/ CỦA RIÊNG nó ngay tại root, không lồng vào products/
+├── img/og-image.jpg     # ảnh dùng cho og:image/twitter:image khi chia sẻ trang chủ
 └── products/            MỌI trang sản phẩm sống ở đây — MỖI sản phẩm có folder riêng,
     │                    kể cả sản phẩm chỉ có 1 file HTML, không có ngoại lệ flat
     └── <ten-san-pham>/
@@ -111,6 +118,14 @@ open('html/trang.html','w',encoding='utf-8',newline='').writelines(out)
 ```
 
 **Trang có nhiều block `<style>`/`<script>` rời rạc** (ví dụ `viet-long-crypto`: 2 block style + 2 block script xen giữa hàng nghìn dòng markup) — cắt từng block riêng theo đúng số dòng của nó, rồi `writelines` nối các đoạn theo đúng thứ tự gốc vào cùng một file css/js (nối bằng `+`, có thể thêm `['\n']` giữa các đoạn cho dễ đọc). Đặt `<link>`/`<script src>` tại vị trí của block **đầu tiên**; các block sau chỉ cần **xoá hẳn** (không thay bằng thẻ khác) vì nội dung đã gộp và load một lần ở trên. Việc định nghĩa hàm/biến sớm hơn vị trí gốc của nó không sao — code là khai báo đồng bộ ở top-level, không phụ thuộc thời điểm markup xung quanh render.
+
+**⚠️ Cạm bẫy đã gặp thật khi gộp 2 `<script>` thành 1 file: lỗi TDZ (Temporal Dead Zone) của `let`/`const`.** Nếu script gốc thứ nhất có một lệnh gọi hàm ngay ở top-level (ví dụ `showPage('home');` cuối script #1), và hàm đó đọc một biến `let`/`const` được khai báo ở script gốc thứ hai (ví dụ `let gameState = {}`) qua `typeof gameState !== 'undefined'` — code này **an toàn khi còn là 2 thẻ `<script>` riêng** (script #1 chạy xong trước khi script #2 được parse, nên `gameState` với JS engine lúc đó coi như "chưa từng khai báo", `typeof` trả về `'undefined'` an toàn), nhưng **ném `ReferenceError: Cannot access 'gameState' before initialization` ngay khi gộp thành 1 file** — vì lúc này toàn bộ `let`/`const` trong file được hoist vào Temporal Dead Zone ngay khi script bắt đầu chạy, và `typeof` KHÔNG an toàn với biến đang trong TDZ (chỉ an toàn với biến chưa từng khai báo ở bất kỳ đâu trong scope).
+
+Hậu quả nghiêm trọng hơn triệu chứng ban đầu: lỗi này ném ra ở top-level sẽ **dừng toàn bộ phần code phía sau nó trong cùng file thực thi** — mọi `const`/`let` top-level khác chưa kịp gán giá trị (ví dụ `const ALL=[...]` chứa toàn bộ dữ liệu blog) sẽ mãi mãi ở trạng thái chưa khởi tạo, mọi `document.addEventListener(...)` top-level chưa kịp đăng ký sẽ không bao giờ được gắn — gây ra một chuỗi lỗi tưởng như không liên quan (modal rỗng, nút bấm không phản hồi, số liệu animate kẹt ở 0) mà gốc rễ chỉ là MỘT lệnh gọi hàm quá sớm.
+
+**Cách phát hiện:** không thể thấy bằng đọc code hay `node --check` (cú pháp vẫn hợp lệ) — chỉ lộ ra khi **chạy thật trong trình duyệt** và xem console. Nếu nghi ngờ, so sánh chạy thử bản gốc (nhiều script tag) song song với bản đã gộp.
+
+**Cách sửa:** dời lệnh gọi hàm top-level đó xuống **cuối file**, sau khi mọi `let`/`const` nó phụ thuộc (trực tiếp hoặc gián tiếp qua hàm khác) đã được khai báo và gán giá trị — không sửa hàm, không sửa cách khai báo biến, chỉ đổi vị trí lệnh gọi.
 
 Sau khi tách, kiểm tra **cả ba**, thiếu một là chưa xong:
 1. `grep -n "<style\|<script" html/trang.html` → chỉ còn thẻ CDN bên ngoài (nếu có) và `<script src=".../trang.js">`/`<link rel="stylesheet">` mới thêm — không còn `<style>`/`<script>` chứa nội dung thật.
