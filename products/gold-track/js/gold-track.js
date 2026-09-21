@@ -505,6 +505,7 @@
   var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || 'all';
   if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = 'all';
   if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = 'all';
+  var pnlGroupBy = 'month';
   function renderRangeTabs(id, activeKey){
     return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
       Object.keys(RANGE_LABELS).map(function(key){
@@ -525,6 +526,15 @@
     portfolioChartRange = btn.getAttribute('data-range');
     localStorage.setItem(PORTFOLIO_RANGE_KEY, portfolioChartRange);
     renderSummary();
+  });
+  document.getElementById('pnlGroupBy').addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#pnlGroupBy button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    pnlGroupBy = btn.getAttribute('data-group');
+    positionSegmentedIndicator(document.getElementById('pnlGroupBy'));
+    renderPnlReport();
   });
 
   function getEffectivePrice(){
@@ -1351,19 +1361,71 @@
       '<div class="chart-wrap">' + renderPortfolioChart(portfolioChartRange) + '</div>';
   }
 
+  // ---------- monthly/yearly P&L report ----------
+  function computePnlReport(groupBy){
+    var p = computePortfolio();
+    var groups = {};
+    state.transactions.forEach(function(tx){
+      if(txType(tx) !== 'sell') return;
+      var rec = p.perTx[tx.id];
+      if(!rec) return;
+      var key = groupBy === 'year' ? tx.date.slice(0,4) : tx.date.slice(0,7);
+      if(!groups[key]) groups[key] = { pl: 0, count: 0, isCurrent: false };
+      groups[key].pl += rec.pl;
+      groups[key].count += 1;
+    });
+    var currentKey = groupBy === 'year' ? todayISO().slice(0,4) : todayISO().slice(0,7);
+    if(!groups[currentKey]) groups[currentKey] = { pl: 0, count: 0, isCurrent: false };
+    var eff = getEffectivePrice();
+    var hasVal = !!eff;
+    var unrealizedPL = hasVal ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
+    groups[currentKey].pl += unrealizedPL;
+    groups[currentKey].isCurrent = true;
+    var order = Object.keys(groups).filter(function(key){
+      if(groups[key].count > 0) return true;
+      return key === currentKey && p.holdingAmount > 0;
+    }).sort(function(a,b){ return b.localeCompare(a); });
+    return { groups: groups, order: order };
+  }
+
+  function renderPnlReport(){
+    var card = document.getElementById('pnlReportCard');
+    var content = document.getElementById('pnlReportContent');
+    var report = computePnlReport(pnlGroupBy);
+    if(report.order.length === 0){ card.hidden = true; return; }
+    card.hidden = false;
+    positionSegmentedIndicator(document.getElementById('pnlGroupBy'));
+    content.innerHTML = report.order.map(function(key){
+      var g = report.groups[key];
+      var label = pnlGroupBy === 'year' ? ('Năm '+key) : ('Tháng '+parseInt(key.slice(5,7),10)+'/'+key.slice(0,4));
+      if(g.isCurrent) label += ' (hiện tại)';
+      var cls = g.pl > 0 ? 'up' : (g.pl < 0 ? 'down' : '');
+      return '<div class="summary-row"><span class="summary-label">'+label+'</span><span class="summary-val '+cls+'">'+(g.pl>=0?'+':'')+fmtVND(g.pl)+' đ</span></div>';
+    }).join('');
+  }
+
   // ---------- store breakdown ----------
   function renderStoreSummary(){
     var el = document.getElementById('storeSummary');
-    var buys = state.transactions.filter(function(t){ return txType(t) === 'buy' && t.store; });
+    var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
     var byStore = {};
     var storeNames = [];
     buys.forEach(function(t){
-      if(!byStore[t.store]){ byStore[t.store] = { amount: 0, cost: 0 }; storeNames.push(t.store); }
-      byStore[t.store].amount += t.amount;
-      byStore[t.store].cost += t.amount * t.price;
+      var key = (t.store && t.store.trim()) ? t.store.trim() : 'Không rõ';
+      if(!byStore[key]){ byStore[key] = { amount: 0, cost: 0 }; storeNames.push(key); }
+      byStore[key].amount += t.amount;
+      byStore[key].cost += t.amount * t.price;
     });
     if(storeNames.length === 0){ el.hidden = true; return; }
     storeNames.sort(function(a,b){ return byStore[b].cost - byStore[a].cost; });
+    var totalCost = storeNames.reduce(function(sum,name){ return sum + byStore[name].cost; }, 0);
+    var bestName = null, bestAvg = Infinity;
+    storeNames.forEach(function(name){
+      if(name === 'Không rõ') return;
+      var s = byStore[name];
+      var avg = s.amount ? s.cost / s.amount : Infinity;
+      if(avg < bestAvg){ bestAvg = avg; bestName = name; }
+    });
     el.hidden = false;
     el.innerHTML =
       '<div class="card" style="padding:14px 18px">' +
@@ -1371,7 +1433,13 @@
         storeNames.map(function(name){
           var s = byStore[name];
           var avg = s.amount ? s.cost / s.amount : 0;
-          return '<div class="summary-row"><span class="summary-label">'+escapeHtml(name)+' · '+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+fmtVND(avg)+' đ/chỉ TB</span></div>';
+          var pct = totalCost ? (s.cost / totalCost * 100) : 0;
+          var isBest = name === bestName;
+          return '<div class="store-bar-row">' +
+            '<div class="store-bar-top"><span class="store-bar-name">'+escapeHtml(name)+(isBest ? ' <span class="store-bar-best">Giá tốt nhất</span>' : '')+'</span></div>' +
+            '<div class="store-bar-track"><div class="store-bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>' +
+            '<div class="summary-row"><span class="summary-label">'+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+fmtVND(avg)+' đ/chỉ TB</span></div>' +
+          '</div>';
         }).join('') +
       '</div>';
   }
@@ -1594,7 +1662,7 @@
   });
 
   function renderAll(){
-    renderPrice(); renderSummary(); renderTx();
+    renderPrice(); renderSummary(); renderPnlReport(); renderTx();
     // Assistant reads liveData/liveHistory/computePortfolio() too, so it
     // must refresh on every state or price change, not just when its own
     // tab is switched into — otherwise it silently shows stale numbers
