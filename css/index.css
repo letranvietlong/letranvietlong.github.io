@@ -738,7 +738,16 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 }
 #pwa-banner.show { transform:translateX(-50%) translateY(0); }
 .pwa-icon { font-size:1.6rem; }
-.pwa-text { flex:1; }
+.pwa-text { flex:1; min-width:0; }
+/* Màn hình hẹp: icon+chữ chiếm hết hàng 1 (đủ rộng để tiêu đề chỉ wrap tối đa 2
+   dòng thay vì 3 dòng ngắn khi phải chen chỗ với 2 nút), 2 nút xuống hàng 2 —
+   dùng ::after làm "điểm ngắt dòng" ảo thay vì bọc thêm div trong HTML. */
+@media(max-width:480px){
+  #pwa-banner{ flex-wrap:wrap; width:calc(100vw - 32px); min-width:0; row-gap:10px; }
+  #pwa-banner::after{ content:''; flex-basis:100%; order:1; }
+  .pwa-install{ order:2; flex:1; }
+  .pwa-dismiss{ order:3; }
+}
 .pwa-title { font-size:.85rem; font-weight:600; color:var(--text); }
 .pwa-sub { font-family:var(--mono); font-size:.62rem; color:var(--muted); margin-top:2px; }
 .pwa-btn { min-height:44px; min-width:44px; flex-shrink:0; padding:7px 16px; border-radius:8px; font-family:var(--mono); font-size:.7rem; font-weight:700; cursor:none; border:none; transition:all .15s; }
@@ -775,17 +784,6 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:20
 .mobile-menu a:hover, .mobile-menu a.active { background:rgba(0,245,212,.08); color:var(--cyan); }
 
 /* == BLOG LOAD MORE == */
-.blog-load-more {
-  text-align:center; margin-top:12px;
-}
-.btn-load-more {
-  display:inline-flex; align-items:center; gap:8px;
-  background:var(--glass); border:1px solid var(--border2);
-  color:var(--muted); font-family:var(--mono); font-size:.75rem;
-  padding:10px 24px; border-radius:10px; cursor:none; transition:all .2s;
-}
-.btn-load-more:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,245,212,.06); }
-
 /* == GAME HIGH SCORE == */
 .game-highscore {
   text-align:center; font-family:var(--mono); font-size:.68rem;
