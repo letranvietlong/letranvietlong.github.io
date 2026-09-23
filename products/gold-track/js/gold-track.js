@@ -61,6 +61,9 @@
     return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
   }
   function todayISO(){ return localDayKey(new Date()); }
+  function daysBetween(fromISO, toISO){
+    return Math.round((new Date(toISO+"T00:00:00") - new Date(fromISO+"T00:00:00")) / 86400000);
+  }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -811,8 +814,20 @@
       avgCost: holdingAmount > 0 ? holdingCost / holdingAmount : 0,
       realizedPL: realizedPL,
       totalBuyCost: totalBuyCost,
-      perTx: perTx
+      perTx: perTx,
+      firstTxDate: chrono.length ? chrono[0].date : null
     };
+  }
+
+  function computeAvgHoldingDays(){
+    var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
+    if(buys.length === 0) return null;
+    var today = todayISO(), totalAmt = 0, weightedSum = 0;
+    buys.forEach(function(t){
+      weightedSum += daysBetween(t.date, today) * t.amount;
+      totalAmt += t.amount;
+    });
+    return totalAmt > 0 ? weightedSum / totalAmt : null;
   }
 
   function chronoSort(list){
@@ -1095,7 +1110,8 @@
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
       '</div>' +
       renderRangeTabs('priceRangeTabs', priceChartRange) +
-      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange, avgCost) + '</div>';
+      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange, avgCost) + '</div>' +
+      renderPriceRangeCard(liveHistory, eff.buy);
   }
 
   function buildDailyPriceSeries(hist){
@@ -1107,6 +1123,25 @@
   }
   function aggregateDailyHistory(hist, days){
     return buildDailyPriceSeries(hist).slice(-days);
+  }
+  function computePriceRange(hist, days){
+    var daily = aggregateDailyHistory(hist, days);
+    if(daily.length < days) return { insufficient: true };
+    var buys = daily.map(function(p){ return p.buy; });
+    return { insufficient: false, high: Math.max.apply(null, buys), low: Math.min.apply(null, buys) };
+  }
+  function renderPriceRangeCard(hist, currentBuy){
+    return '<div class="chart-head" style="margin-top:16px"><span class="chart-title">Vùng giá mua vào 30/90 ngày</span></div>' +
+      [30, 90].map(function(days){
+        var r = computePriceRange(hist, days);
+        if(r.insufficient) return '<div class="chart-empty">Chưa đủ dữ liệu '+days+' ngày</div>';
+        var pctFromHigh = (currentBuy - r.high) / r.high * 100;
+        var pctFromLow = (currentBuy - r.low) / r.low * 100;
+        return '<div class="summary-row"><span class="summary-label">Cao nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.high)+' đ/chỉ</span></div>' +
+          '<div class="summary-row"><span class="summary-label">Thấp nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.low)+' đ/chỉ</span></div>' +
+          '<div class="summary-row"><span class="summary-label">Cách đỉnh '+days+' ngày</span><span class="summary-val">'+(pctFromHigh>=0?'+':'')+pctFromHigh.toFixed(2)+'%</span></div>' +
+          '<div class="summary-row"><span class="summary-label">Cách đáy '+days+' ngày</span><span class="summary-val">'+(pctFromLow>=0?'+':'')+pctFromLow.toFixed(2)+'%</span></div>';
+      }).join('');
   }
 
   // Maps a daily series to SVG coordinates. minOverride/maxOverride let two
@@ -1335,6 +1370,14 @@
     var unrealizedPL = hasVal ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
     var totalPL = p.realizedPL + unrealizedPL;
     var totalPlPct = p.totalBuyCost ? (totalPL / p.totalBuyCost * 100) : 0;
+    var firstTxDate = p.firstTxDate;
+    var daysSinceFirst = firstTxDate ? daysBetween(firstTxDate, todayISO()) : 0;
+    var annualizedPct = null;
+    if(hasVal && p.totalBuyCost && daysSinceFirst > 0){
+      var roiRatio = 1 + totalPlPct/100;
+      if(roiRatio > 0) annualizedPct = (Math.pow(roiRatio, 365/daysSinceFirst) - 1) * 100;
+    }
+    var avgHoldingDays = computeAvgHoldingDays();
     var bannerCls = !hasVal ? 'flat' : (totalPL > 0 ? 'up' : (totalPL < 0 ? 'down' : 'flat'));
     var arrowPath = totalPL >= 0
       ? '<path d="M6 15l6-6 6 6"/>'
@@ -1350,10 +1393,12 @@
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':'Tổng lãi/lỗ')+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
+          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
         (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>' +
+      (annualizedPct !== null ? '<div class="summary-row"><span class="summary-label">ROI hàng năm (ước tính, lãi kép)</span><span class="summary-val '+(annualizedPct>=0?'up':'down')+'">'+(annualizedPct>=0?'+':'')+annualizedPct.toFixed(2)+'%</span></div>' : '') +
+      (avgHoldingDays !== null ? '<div class="summary-row"><span class="summary-label">Thời gian nắm giữ TB (mọi lần mua)</span><span class="summary-val">'+Math.round(avgHoldingDays)+' ngày</span></div>' : '') +
       '<div class="chart-head" style="margin-top:16px">' +
         '<span class="chart-title">Giá trị danh mục theo thời gian</span>' +
       '</div>' +
