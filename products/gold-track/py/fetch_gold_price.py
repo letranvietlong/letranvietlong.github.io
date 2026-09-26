@@ -26,27 +26,20 @@ VN_TZ = timezone(timedelta(hours=7))  # Vietnam has no DST, so a fixed offset is
 USER_AGENT = "Mozilla/5.0 (compatible; GoldTrack/1.0)"
 
 NGOCTHINH_URL = "https://ngocthinh-jewelry.vn/pages/bang-gia-vang"
-# Order here is display order in gold-price.json; "9999-nhan-tron" is the
-# historical default type id, relied on elsewhere in the app.
+# Ngọc Thịnh's page publishes several gold rows, but the user only wants
+# this shop tracked for "Vàng 9999 (nhẫn tròn)" — it's also the historical
+# default type id, relied on elsewhere in the app.
 NGOCTHINH_TYPES = [
     ("9999-nhan-tron", "Vàng 9999 (nhẫn tròn)"),
-    ("98-nhan-tron", "Vàng 98 (nhẫn tròn)"),
-    ("96-nhan-tron", "Vàng 96 (nhẫn tròn)"),
-    ("24k-98-trang-suc", "Vàng trang sức 24K 98"),
-    ("tay-610", "Vàng tây 610"),
-    ("trang-10k-417", "Vàng trắng 10K 417"),
-    # "Bạc trang sức" (silver) deliberately excluded — this app tracks vàng only.
 ]
 
 HUYTHANH_URL = "https://huythanhjewelry.vn/gia-vang-hom-nay"
-# loaivang code -> (type id, label). "24KTT" is intentionally absent: its
-# giaban is always 0 (market-reference number, not a tradeable quote).
+# loaivang code -> (type id, label). Huy Thanh's page publishes several rows
+# (22K/18K/14K/10K nguyên liệu, plus a "24KTT" market-reference row with no
+# real sell price), but the user only wants this shop tracked for its own
+# "Vàng Huy Thanh 24k" quote.
 HUYTHANH_TYPES = {
     "24K": ("24k-huy-thanh", "Vàng Huy Thanh 24k"),
-    "22K": ("nguyen-lieu-22k", "Giá nguyên liệu 22K"),
-    "18K": ("nguyen-lieu-18k", "Giá nguyên liệu 18K"),
-    "14K": ("nguyen-lieu-14k", "Giá nguyên liệu 14K"),
-    "10K": ("nguyen-lieu-10k", "Giá nguyên liệu 10K"),
 }
 # Matches each price entry directly in the raw backslash-escaped JSON blob
 # embedded in the page's __next_f RSC script chunk, without reconstructing

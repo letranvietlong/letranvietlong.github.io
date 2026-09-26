@@ -1,6 +1,6 @@
 # GoldTrack
 
-Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệm — Ngọc Thịnh Jewelry (6 loại: 9999 nhẫn tròn, 98 nhẫn tròn, 96 nhẫn tròn, trang sức 24K 98, tây 610, trắng 10K 417) và Huy Thanh Jewelry (5 loại: 24k, nguyên liệu 22K/18K/14K/10K) — mỗi giao dịch phải gắn đúng tiệm + loại vàng vì giá và độ tuổi vàng khác nhau giữa các tiệm. PWA cài được lên iPhone qua "Add to Home Screen".
+Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệm — Ngọc Thịnh Jewelry (chỉ Vàng 9999 nhẫn tròn) và Huy Thanh Jewelry (chỉ Vàng Huy Thanh 24k) — mỗi giao dịch phải gắn đúng tiệm + loại vàng vì giá khác nhau giữa các tiệm. Dữ liệu vẫn có cấu trúc shop→types (không phải shop→giá phẳng) dù mỗi tiệm hiện chỉ có 1 loại, để không phải đổi shape lần nữa nếu sau này thêm loại vàng khác. PWA cài được lên iPhone qua "Add to Home Screen".
 
 ## Cấu trúc thật (khác biệt so với mặt bằng chung)
 

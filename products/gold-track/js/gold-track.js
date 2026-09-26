@@ -12,21 +12,16 @@
     { id: 'huy-thanh', name: 'Huy Thanh Jewelry' },
     { id: 'khac', name: 'Khác' }
   ];
+  // Each shop is tracked for exactly one gold type, per the user's choice —
+  // Ngọc Thịnh's/Huy Thanh's other published rows are deliberately not
+  // fetched or offered here. Must match fetch_gold_price.py's
+  // NGOCTHINH_TYPES/HUYTHANH_TYPES exactly.
   var SHOP_TYPES = {
     'ngoc-thinh': [
-      { id: '9999-nhan-tron', label: 'Vàng 9999 (nhẫn tròn)' },
-      { id: '98-nhan-tron', label: 'Vàng 98 (nhẫn tròn)' },
-      { id: '96-nhan-tron', label: 'Vàng 96 (nhẫn tròn)' },
-      { id: '24k-98-trang-suc', label: 'Vàng trang sức 24K 98' },
-      { id: 'tay-610', label: 'Vàng tây 610' },
-      { id: 'trang-10k-417', label: 'Vàng trắng 10K 417' }
+      { id: '9999-nhan-tron', label: 'Vàng 9999 (nhẫn tròn)' }
     ],
     'huy-thanh': [
-      { id: '24k-huy-thanh', label: 'Vàng Huy Thanh 24k' },
-      { id: 'nguyen-lieu-22k', label: 'Giá nguyên liệu 22K' },
-      { id: 'nguyen-lieu-18k', label: 'Giá nguyên liệu 18K' },
-      { id: 'nguyen-lieu-14k', label: 'Giá nguyên liệu 14K' },
-      { id: 'nguyen-lieu-10k', label: 'Giá nguyên liệu 10K' }
+      { id: '24k-huy-thanh', label: 'Vàng Huy Thanh 24k' }
     ],
     'khac': []
   };
