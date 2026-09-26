@@ -311,6 +311,27 @@
   .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
   .tabbar-btn.active{color:var(--gold2)}
   .tabbar-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:-2px}
+  /* Safety-net floor at 34px — the fixed home-indicator inset on every
+     Face-ID iPhone in portrait — for cases where env(safe-area-inset-bottom)
+     under-resolves in installed-PWA mode (e.g. a Home Screen icon added
+     before viewport-fit=cover was correctly set: iOS snapshots some display
+     config at Add-to-Home-Screen time and doesn't re-read it after, per this
+     repo's own documented history of that exact quirk).
+     Scoped to iOS standalone ONLY — `@supports (-webkit-touch-callout:none)`
+     is a well-established WebKit/iOS-only feature-detect, combined with
+     `display-mode:standalone` — so Android/desktop installed PWAs, where
+     --safe-bottom correctly IS 0, don't get an unwanted ~34px of dead
+     padding they never had this bug in the first place. .app's own bottom
+     clearance gets the same floor here so it stays ≥ the tabbar's real
+     height in this exact scoped case (they'd otherwise disagree by a few
+     px, since .app's calc(84px + var(--safe-bottom)) baseline was tuned
+     against the *unfloored* var(--safe-bottom) everywhere else). */
+  @supports (-webkit-touch-callout:none){
+    @media (display-mode:standalone){
+      .tabbar{padding-bottom:calc(3px + max(var(--safe-bottom), 34px))}
+      .app{padding-bottom:calc(84px + max(var(--safe-bottom), 34px))}
+    }
+  }
 
   /* ---------- Sheet ---------- */
   .sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}

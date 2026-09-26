@@ -30,14 +30,6 @@
   // the app's original/primary catalog entry.
   var DEFAULT_PRICE_SHOP = 'ngoc-thinh';
   var DEFAULT_PRICE_TYPE = '9999-nhan-tron';
-  // Human label for the one fixed group computePortfolioSeries() scopes its
-  // single price series to — shown on the portfolio chart's title so that
-  // scoping is visible to the user rather than silently implicit.
-  var DEFAULT_PRICE_GROUP_LABEL = (function(){
-    var shopInfo = SHOPS.filter(function(s){ return s.id === DEFAULT_PRICE_SHOP; })[0];
-    var typeInfo = (SHOP_TYPES[DEFAULT_PRICE_SHOP] || []).filter(function(t){ return t.id === DEFAULT_PRICE_TYPE; })[0];
-    return (shopInfo && typeInfo) ? (shopInfo.name + ', ' + typeInfo.label) : '';
-  })();
 
   // Every transaction ever created before this feature shipped was, in
   // effect, always priced against Ngọc Thịnh's 9999 type — getEffectivePrice()
@@ -115,9 +107,6 @@
     return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
   }
   function todayISO(){ return localDayKey(new Date()); }
-  function daysBetween(fromISO, toISO){
-    return Math.round((new Date(toISO+"T00:00:00") - new Date(fromISO+"T00:00:00")) / 86400000);
-  }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -761,17 +750,6 @@
     };
   }
 
-  function computeAvgHoldingDays(){
-    var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
-    if(buys.length === 0) return null;
-    var today = todayISO(), totalAmt = 0, weightedSum = 0;
-    buys.forEach(function(t){
-      weightedSum += daysBetween(t.date, today) * t.amount;
-      totalAmt += t.amount;
-    });
-    return totalAmt > 0 ? weightedSum / totalAmt : null;
-  }
-
   function chronoSort(list){
     return list.slice().sort(function(a,b){
       return a.date.localeCompare(b.date) || (a.createdAt||0) - (b.createdAt||0);
@@ -1281,29 +1259,50 @@
   }
 
   // ---------- portfolio value over time (holding amount x historical price, day by day) ----------
-  // Scoped to DEFAULT_PRICE_SHOP/DEFAULT_PRICE_TYPE's own transactions and
-  // own price series only — this chart replays a SINGLE price series, and
-  // once transactions can belong to different, non-fungible gold types,
-  // feeding it every transaction would silently value every other group's
-  // chỉ at this one group's price too. A true multi-series "value of
-  // everything over time" chart covering every group is future work,
-  // explicitly out of scope here — but blending wrong prices together would
-  // be worse than clearly scoping to one group, so this scoping is required,
-  // not optional (see renderSummary's chart title for how this is surfaced).
+  // Replays EVERY (shop, goldType) group the user holds in parallel, each
+  // against its own price series (via groupTransactions()/getHistoryFor()),
+  // then sums their per-day value/cost into one combined series — a group
+  // with no price data at all (e.g. shop 'khac') still contributes its real
+  // holdingCost every day, just 0 to value, matching how computePortfolioAll()
+  // treats an unpriced group's unrealizedPL as 0 rather than excluding it.
   function computePortfolioSeries(rangeKey){
-    var groupTx = state.transactions.filter(function(t){
-      return t.shop === DEFAULT_PRICE_SHOP && (t.goldType||null) === DEFAULT_PRICE_TYPE;
-    });
-    if(groupTx.length === 0) return [];
-    var priceSeries = buildDailyPriceSeries(getHistoryFor(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE));
-    if(priceSeries.length === 0) return [];
+    var groupsMap = groupTransactions(state.transactions);
+    var groupKeys = Object.keys(groupsMap);
+    if(groupKeys.length === 0) return [];
 
-    var chrono = groupTx.slice().sort(function(a,b){
-      return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+    var groups = groupKeys.map(function(key){
+      var txs = groupsMap[key];
+      var shop = txs[0].shop, goldType = txs[0].goldType || null;
+      var chrono = txs.slice().sort(function(a,b){
+        return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+      });
+      return {
+        chrono: chrono,
+        priceSeries: buildDailyPriceSeries(getHistoryFor(shop, goldType)),
+        holdingAmount: 0,
+        holdingCost: 0,
+        txIdx: 0,
+        priceIdx: 0,
+        lastKnownBuy: null
+      };
     });
-    var firstTxDay = chrono[0].date;
-    var firstPriceDay = priceSeries[0].day;
-    var startDay = firstTxDay > firstPriceDay ? firstTxDay : firstPriceDay; // before this we either have no price data or no holdings
+
+    function applyTx(g, tx){
+      if(txType(tx) === 'sell'){
+        var avgCost = g.holdingAmount > 0 ? g.holdingCost / g.holdingAmount : 0;
+        var sellAmt = Math.min(tx.amount, g.holdingAmount);
+        g.holdingCost -= avgCost * sellAmt;
+        g.holdingAmount -= sellAmt;
+        if(g.holdingAmount < 1e-9){ g.holdingAmount = 0; g.holdingCost = 0; }
+      } else {
+        g.holdingCost += tx.amount * tx.price;
+        g.holdingAmount += tx.amount;
+      }
+    }
+
+    var startDay = groups.reduce(function(min, g){
+      return (!min || g.chrono[0].date < min) ? g.chrono[0].date : min;
+    }, null);
     var today = todayISO();
     var days = RANGE_DAYS[rangeKey] || Infinity;
     if(days !== Infinity){
@@ -1312,24 +1311,10 @@
     }
     if(startDay > today) return [];
 
-    var holdingAmount = 0, holdingCost = 0;
-    function applyTx(tx){
-      if(txType(tx) === 'sell'){
-        var avgCost = holdingAmount > 0 ? holdingCost / holdingAmount : 0;
-        var sellAmt = Math.min(tx.amount, holdingAmount);
-        holdingCost -= avgCost * sellAmt;
-        holdingAmount -= sellAmt;
-        if(holdingAmount < 1e-9){ holdingAmount = 0; holdingCost = 0; }
-      } else {
-        holdingCost += tx.amount * tx.price;
-        holdingAmount += tx.amount;
-      }
-    }
-    var txIdx = 0;
-    while(txIdx < chrono.length && chrono[txIdx].date < startDay){ applyTx(chrono[txIdx]); txIdx++; }
-
-    var priceIdx = 0, lastKnownBuy = null;
-    while(priceIdx < priceSeries.length && priceSeries[priceIdx].day <= startDay){ lastKnownBuy = priceSeries[priceIdx].buy; priceIdx++; }
+    groups.forEach(function(g){
+      while(g.txIdx < g.chrono.length && g.chrono[g.txIdx].date < startDay){ applyTx(g, g.chrono[g.txIdx]); g.txIdx++; }
+      while(g.priceIdx < g.priceSeries.length && g.priceSeries[g.priceIdx].day <= startDay){ g.lastKnownBuy = g.priceSeries[g.priceIdx].buy; g.priceIdx++; }
+    });
 
     var series = [];
     var d = new Date(startDay+"T00:00:00");
@@ -1343,11 +1328,14 @@
     while(d <= endD && guard < 20000){
       guard++;
       var dayKey = localDayKey(d);
-      while(txIdx < chrono.length && chrono[txIdx].date === dayKey){ applyTx(chrono[txIdx]); txIdx++; }
-      while(priceIdx < priceSeries.length && priceSeries[priceIdx].day <= dayKey){ lastKnownBuy = priceSeries[priceIdx].buy; priceIdx++; }
-      if(lastKnownBuy != null){
-        series.push({ day: dayKey, value: holdingAmount * lastKnownBuy, cost: holdingCost });
-      }
+      var totalValue = 0, totalCost = 0;
+      groups.forEach(function(g){
+        while(g.txIdx < g.chrono.length && g.chrono[g.txIdx].date === dayKey){ applyTx(g, g.chrono[g.txIdx]); g.txIdx++; }
+        while(g.priceIdx < g.priceSeries.length && g.priceSeries[g.priceIdx].day <= dayKey){ g.lastKnownBuy = g.priceSeries[g.priceIdx].buy; g.priceIdx++; }
+        totalValue += g.lastKnownBuy != null ? g.holdingAmount * g.lastKnownBuy : 0;
+        totalCost += g.holdingCost;
+      });
+      series.push({ day: dayKey, value: totalValue, cost: totalCost });
       d = new Date(d.getTime() + 86400000);
     }
     return series;
@@ -1423,13 +1411,6 @@
     var totalPL = pAll.totalRealizedPL + unrealizedPL;
     var totalPlPct = pAll.totalBuyCost ? (totalPL / pAll.totalBuyCost * 100) : 0;
     var firstTxDate = pAll.firstTxDate;
-    var daysSinceFirst = firstTxDate ? daysBetween(firstTxDate, todayISO()) : 0;
-    var annualizedPct = null;
-    if(hasVal && pAll.totalBuyCost && daysSinceFirst > 0){
-      var roiRatio = 1 + totalPlPct/100;
-      if(roiRatio > 0) annualizedPct = (Math.pow(roiRatio, 365/daysSinceFirst) - 1) * 100;
-    }
-    var avgHoldingDays = computeAvgHoldingDays();
     var bannerCls = !hasVal ? 'flat' : (totalPL > 0 ? 'up' : (totalPL < 0 ? 'down' : 'flat'));
     var arrowPath = totalPL >= 0
       ? '<path d="M6 15l6-6 6 6"/>'
@@ -1454,10 +1435,8 @@
         '</div>' +
         (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>' +
-      (annualizedPct !== null ? '<div class="summary-row"><span class="summary-label">ROI hàng năm (ước tính, lãi kép)</span><span class="summary-val '+(annualizedPct>=0?'up':'down')+'">'+(annualizedPct>=0?'+':'')+annualizedPct.toFixed(2)+'%</span></div>' : '') +
-      (avgHoldingDays !== null ? '<div class="summary-row"><span class="summary-label">Thời gian nắm giữ TB (mọi lần mua)</span><span class="summary-val">'+Math.round(avgHoldingDays)+' ngày</span></div>' : '') +
       '<div class="chart-head" style="margin-top:16px">' +
-        '<span class="chart-title">Giá trị danh mục theo thời gian'+(DEFAULT_PRICE_GROUP_LABEL?' ('+DEFAULT_PRICE_GROUP_LABEL+')':'')+'</span>' +
+        '<span class="chart-title">Giá trị danh mục theo thời gian</span>' +
       '</div>' +
       renderRangeTabs('portfolioRangeTabs', portfolioChartRange) +
       '<div class="chart-wrap">' + renderPortfolioChart(portfolioChartRange) + '</div>';
