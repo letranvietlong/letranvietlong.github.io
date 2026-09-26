@@ -560,14 +560,16 @@
   var selectedPriceType = DEFAULT_PRICE_TYPE;
 
   // ---------- chart range selection (shared markup, independent state per chart) ----------
+  // Always starts at 7 ngày on every fresh page load — deliberately NOT
+  // persisted to localStorage. It used to be, but that meant a single old
+  // click on "Tất cả" stuck forever across reloads, silently overriding the
+  // 7-day default this app is supposed to always open with. A view-range
+  // toggle resetting per load (while still working normally within a
+  // session via in-memory state) is the expected, simpler behavior here.
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
   var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
-  var PRICE_RANGE_KEY = "goldtrack_price_range_v1";
-  var PORTFOLIO_RANGE_KEY = "goldtrack_portfolio_range_v1";
-  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || '7';
-  var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || '7';
-  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = '7';
-  if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = '7';
+  var priceChartRange = '7';
+  var portfolioChartRange = '7';
   var pnlGroupBy = 'month';
   function renderRangeTabs(id, activeKey){
     return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
@@ -580,14 +582,12 @@
     var btn = e.target.closest('#priceRangeTabs button');
     if(!btn) return;
     priceChartRange = btn.getAttribute('data-range');
-    localStorage.setItem(PRICE_RANGE_KEY, priceChartRange);
     renderPrice();
   });
   document.getElementById('summaryCard').addEventListener('click', function(e){
     var btn = e.target.closest('#portfolioRangeTabs button');
     if(!btn) return;
     portfolioChartRange = btn.getAttribute('data-range');
-    localStorage.setItem(PORTFOLIO_RANGE_KEY, portfolioChartRange);
     renderSummary();
   });
   document.getElementById('pnlGroupBy').addEventListener('click', function(e){
@@ -867,7 +867,6 @@
     var isSell = selectedType === 'sell';
     document.getElementById('txPriceLabel').textContent = isSell ? 'Giá bán (VNĐ / chỉ)' : 'Giá mua (VNĐ / chỉ)';
     document.getElementById('txDateLabel').textContent = isSell ? 'Ngày bán' : 'Ngày mua';
-    document.getElementById('txStoreLabel').textContent = isSell ? 'Nơi bán' : 'Cửa hàng';
     document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : (isSell ? 'Thêm giao dịch bán vàng' : 'Thêm giao dịch mua vàng');
     // Holdings as of the date currently in the form, not the net total —
     // picking an earlier date genuinely changes how much there is to sell.
@@ -894,7 +893,6 @@
     // Defaults to this app's original/primary shop+type.
     document.getElementById('txShop').value = 'ngoc-thinh';
     populateGoldTypeSelect('ngoc-thinh', '9999-nhan-tron');
-    document.getElementById('txStore').value = '';
     document.getElementById('txAddress').value = '';
     document.getElementById('txNote').value = '';
     document.getElementById('txDate').value = todayISO();
@@ -911,7 +909,6 @@
     document.getElementById('txPrice').value = fmtVND(tx.price);
     document.getElementById('txShop').value = tx.shop || 'ngoc-thinh';
     populateGoldTypeSelect(tx.shop || 'ngoc-thinh', tx.goldType || '9999-nhan-tron');
-    document.getElementById('txStore').value = tx.store || '';
     document.getElementById('txAddress').value = tx.address || '';
     document.getElementById('txNote').value = tx.note || '';
     document.getElementById('txDate').value = tx.date;
@@ -929,7 +926,6 @@
     var price = parseDigits(document.getElementById('txPrice').value);
     var shop = document.getElementById('txShop').value;
     var goldType = document.getElementById('txGoldType').value || null;
-    var store = document.getElementById('txStore').value.trim();
     var address = document.getElementById('txAddress').value.trim();
     var note = document.getElementById('txNote').value.trim();
     var date = document.getElementById('txDate').value;
@@ -968,10 +964,13 @@
     document.getElementById('txAmountError').textContent = 'Nhập số lượng lớn hơn 0.';
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
-      tx.amount = amount; tx.price = price; tx.store = store; tx.address = address; tx.note = note; tx.date = date; tx.type = selectedType;
+      // tx.store deliberately untouched — the free-text field was removed
+      // from the form (shop already identifies the store), but a legacy
+      // value entered before that removal is left as-is, not wiped.
+      tx.amount = amount; tx.price = price; tx.address = address; tx.note = note; tx.date = date; tx.type = selectedType;
       tx.shop = shop; tx.goldType = goldType;
     } else {
-      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, address: address, note: note, date: date, createdAt: Date.now(), shop: shop, goldType: goldType });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, address: address, note: note, date: date, createdAt: Date.now(), shop: shop, goldType: goldType });
     }
     saveState();
     renderAll();
@@ -1516,7 +1515,7 @@
   // type catalogs have zero overlapping type ids, so comparing "best price"
   // across groups would compare purity, not deal quality — an actual
   // correctness bug, not a style choice.
-  function renderStoreSummary(){
+  function renderStoreSummary(pAll){
     var el = document.getElementById('storeSummary');
     var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
     var byGroup = {};
@@ -1530,10 +1529,19 @@
     if(groupKeys.length === 0){ el.hidden = true; return; }
     groupKeys.sort(function(a,b){ return byGroup[b].cost - byGroup[a].cost; });
     var totalCost = groupKeys.reduce(function(sum,key){ return sum + byGroup[key].cost; }, 0);
+    // Same numbers as the Overview summary card (reused, not recomputed) —
+    // shown here too so they're visible while browsing History without
+    // switching tabs, right next to what was actually bought per group.
+    var hasVal = pAll.groups.some(function(g){ return !g.hasPriceGap; });
+    var currentValue = pAll.totalHoldingCost + pAll.totalUnrealizedPL;
+    var totalsHtml =
+      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>';
     el.hidden = false;
     el.innerHTML =
       '<div class="card" style="padding:14px 18px">' +
-        '<div class="settings-row-title" style="margin-bottom:8px">Theo cửa hàng &amp; loại vàng</div>' +
+        totalsHtml +
+        '<div class="settings-row-title" style="margin:12px 0 8px">Theo cửa hàng &amp; loại vàng</div>' +
         groupKeys.map(function(key){
           var g = byGroup[key];
           var avg = g.amount ? g.cost / g.amount : 0;
@@ -1605,7 +1613,7 @@
     var list = document.getElementById('txList');
     var count = document.getElementById('txCount');
     var pAll = computePortfolioAll();
-    renderStoreSummary();
+    renderStoreSummary(pAll);
     var all = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = all.length;
     var txs = all.filter(function(t){
