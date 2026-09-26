@@ -356,11 +356,6 @@
   .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
   .segmented button.active{color:#1A1204}
   .segmented button.active[data-type="sell"]{color:#08213F}
-  /* Gold-type control can hold up to 6 long Vietnamese labels (e.g. "Vàng
-     trắng 10K 417") — equal-flex columns would squeeze them unreadably, so
-     this variant scrolls horizontally instead of shrinking each button. */
-  .segmented.segmented-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .segmented.segmented-scroll button{flex:0 0 auto;padding:10px 16px;white-space:nowrap}
 
   .sheet-actions{display:flex;gap:10px;margin-top:6px}
   .sheet-actions .btn{flex:1}

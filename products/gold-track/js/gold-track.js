@@ -1055,20 +1055,12 @@
     });
   });
 
-  // ---------- price tab: shop / gold-type selection ----------
-  // Populates the type segmented control for whichever shop is currently
-  // selected — buttons are rebuilt (not just re-flagged) since the set of
-  // types differs per shop. Reuses the shared positionSegmentedIndicator
-  // pattern, same as every other .segmented control in this file.
-  function renderPriceTypeButtons(){
-    var container = document.getElementById('priceTypeSelect');
-    var types = SHOP_TYPES[selectedPriceShop] || [];
-    container.innerHTML = '<div class="segmented-indicator"></div>' + types.map(function(t){
-      return '<button type="button" class="'+(t.id===selectedPriceType?'active':'')+'" data-goldtype="'+t.id+'">'+escapeHtml(t.label)+'</button>';
-    }).join('');
-    if(container.offsetWidth > 0) positionSegmentedIndicator(container);
-  }
-  renderPriceTypeButtons();
+  // ---------- price tab: shop selection ----------
+  // Each shop is tracked for exactly one gold type (SHOP_TYPES[shop][0]), so
+  // there's nothing for the user to actually choose beyond the shop itself —
+  // selectedPriceType just follows the shop automatically. A separate
+  // gold-type selector used to exist here but became a single-option
+  // segmented control (dead UI) once the catalog was narrowed to 1 type/shop.
   document.getElementById('priceShopSelect').addEventListener('click', function(e){
     var btn = e.target.closest('button');
     if(!btn) return;
@@ -1078,16 +1070,6 @@
     selectedPriceShop = btn.getAttribute('data-shop');
     var types = SHOP_TYPES[selectedPriceShop] || [];
     selectedPriceType = types.length ? types[0].id : null;
-    renderPriceTypeButtons();
-    renderPrice();
-  });
-  document.getElementById('priceTypeSelect').addEventListener('click', function(e){
-    var btn = e.target.closest('button');
-    if(!btn) return;
-    document.querySelectorAll('#priceTypeSelect button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    positionSegmentedIndicator(document.getElementById('priceTypeSelect'));
-    selectedPriceType = btn.getAttribute('data-goldtype');
     renderPrice();
   });
 
