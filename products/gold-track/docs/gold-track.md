@@ -7,7 +7,7 @@ Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệ
 - Đã tách css/js từ lâu — không có `<style>`/`<script>` inline trong `html/index.html`.
 - **Có service worker thật** (duy nhất trong repo tính đến nay): `sw-gold-track.js` nằm ngay trong `products/gold-track/` (không lồng vào `js/`) — xem skill `project-structure` mục "Vỏ service worker bắt buộc ở đúng cấp thư mục nào?" để hiểu vì sao vị trí này bắt buộc. Logic thật ở `js/sw-core.js`, vỏ chỉ `importScripts` vào đó.
 - Có `manifest.json` (Web App Manifest) — không tự khiến icon đã ghim trên iOS "tự sửa" nếu URL đổi (iOS ghim theo URL cụ thể, không đọc `start_url`).
-- Dữ liệu (`data/*.json`) do 2 script Python trong `py/` tự cập nhật qua GitHub Actions (cron), KHÔNG sửa tay các file này.
+- Dữ liệu (`data/*.json`) do 1 script Python trong `py/` tự cập nhật qua GitHub Actions (cron), KHÔNG sửa tay các file này.
 - Đồng bộ nhiều thiết bị qua GitHub Gist (không có backend thật).
 
 ## Cạm bẫy đặc thù của GoldTrack (không phải cạm bẫy chung của repo)
@@ -23,4 +23,4 @@ Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệ
 ## Quy trình vận hành
 
 - **Đổi version + changelog**: mọi thay đổi người dùng thấy được (feature, fix, redesign — không phải refactor nội bộ) → bump field `"version"` + prepend entry vào `data/changelog.json` (tiếng Việt, mô tả cho người dùng). Chi tiết đầy đủ nằm trong `CLAUDE.md` ở root.
-- **Lấy dữ liệu**: `py/fetch_gold_price.py` (giá) và `py/fetch_gold_news.py` (tin tức, lọc theo từ khoá) chạy qua `.github/workflows/*.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `goldtrack-data-pipeline`.
+- **Lấy dữ liệu**: 1 script Python, `py/fetch_gold_price.py` (giá), chạy qua `.github/workflows/*.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `goldtrack-data-pipeline`.

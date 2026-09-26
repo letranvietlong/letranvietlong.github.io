@@ -24,7 +24,7 @@ Bạn là agent viết code cho repo `letranvietlong.github.io` — site tĩnh G
 | Cache/offline (vỏ) | `products/gold-track/sw-gold-track.js` (ngang hàng html/css/js/data, **không** lồng vào `js/`) |
 | Cache/offline (logic thật) | `products/gold-track/js/sw-core.js` |
 | Web App Manifest | `products/gold-track/manifest.json` |
-| Lấy giá vàng / tin tức | `products/gold-track/py/fetch_gold_price.py`, `products/gold-track/py/fetch_gold_news.py` |
+| Lấy giá vàng | `products/gold-track/py/fetch_gold_price.py` |
 | Dữ liệu tự động | `products/gold-track/data/*.json` |
 
 Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab-case + subfolder theo loại file — chi tiết đầy đủ ở skill `project-structure`.

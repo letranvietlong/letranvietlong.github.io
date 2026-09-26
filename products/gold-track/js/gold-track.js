@@ -124,14 +124,6 @@
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
   }
-  // escapeHtml only entity-escapes — it does nothing to stop a
-  // javascript:/data: URI from executing on click. News article links come
-  // from third-party RSS feeds (fetch_gold_news.py already rejects
-  // non-http(s) links at the source, but this is a second, independent
-  // check before anything from that data ever lands in an href).
-  function safeUrl(u){
-    return /^https?:\/\//i.test(String(u||'')) ? u : '#';
-  }
   function txType(tx){ return tx.type === 'sell' ? 'sell' : 'buy'; }
 
   var toastEl = document.getElementById('toast');
@@ -235,7 +227,7 @@
   }
 
   // ---------- tab navigation ----------
-  var TAB_VIEWS = { overview: 'viewOverview', prices: 'viewPrices', history: 'viewHistory', news: 'viewNews', assistant: 'viewAssistant', settings: 'viewSettings' };
+  var TAB_VIEWS = { overview: 'viewOverview', prices: 'viewPrices', history: 'viewHistory', settings: 'viewSettings' };
   function switchTab(tab){
     Object.keys(TAB_VIEWS).forEach(function(key){
       var el = document.getElementById(TAB_VIEWS[key]);
@@ -249,8 +241,6 @@
       else btn.removeAttribute('aria-current');
     });
     if(tab === 'settings') refreshGistUI();
-    if(tab === 'news') renderNews();
-    if(tab === 'assistant') renderAssistant();
     // #txFilter lives inside a hidden tab-view (display:none), so its
     // offsetWidth is 0 until the tab is actually shown — any earlier
     // positioning attempt (e.g. at page load) would leave the pill at
@@ -574,10 +564,10 @@
   var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
   var PRICE_RANGE_KEY = "goldtrack_price_range_v1";
   var PORTFOLIO_RANGE_KEY = "goldtrack_portfolio_range_v1";
-  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || 'all';
-  var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || 'all';
-  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = 'all';
-  if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = 'all';
+  var priceChartRange = localStorage.getItem(PRICE_RANGE_KEY) || '7';
+  var portfolioChartRange = localStorage.getItem(PORTFOLIO_RANGE_KEY) || '7';
+  if(!RANGE_DAYS.hasOwnProperty(priceChartRange)) priceChartRange = '7';
+  if(!RANGE_DAYS.hasOwnProperty(portfolioChartRange)) portfolioChartRange = '7';
   var pnlGroupBy = 'month';
   function renderRangeTabs(id, activeKey){
     return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
@@ -650,211 +640,13 @@
   // leaving a gap or offset until something else forced a recompute.
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible'){
-      syncAppHeight(); loadLiveData(); loadNews();
+      syncAppHeight(); loadLiveData();
       // A push that failed while offline is never retried on its own —
       // coming back to the foreground is the natural moment to heal it.
       if(gistConfig && hasUnsyncedChanges()) syncToGist();
     }
   });
-  window.addEventListener('pageshow', function(e){ syncAppHeight(); if(e.persisted){ loadLiveData(); loadNews(); } });
-
-  // ---------- news (auto-fetched, static JSON updated hourly by GitHub Actions) ----------
-  var newsData = null;
-  function loadNews(){
-    return fetch('/products/gold-track/data/gold-news.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }).then(function(data){
-      if(data && Array.isArray(data.articles)) newsData = data;
-      if(!document.getElementById('viewNews').hidden) renderNews();
-      if(!document.getElementById('viewAssistant').hidden) renderAssistant();
-    });
-  }
-  function fmtNewsDate(iso){
-    if(!iso) return '';
-    var d = new Date(iso);
-    if(isNaN(d)) return '';
-    var dayKey = localDayKey(d);
-    var timeTxt = pad2(d.getHours())+':'+pad2(d.getMinutes());
-    if(dayKey === localDayKey(new Date())) return 'Hôm nay ' + timeTxt;
-    if(dayKey === localDayKey(new Date(Date.now()-86400000))) return 'Hôm qua ' + timeTxt;
-    return fmtDate(dayKey) + ' ' + timeTxt;
-  }
-  function renderNewsSkeleton(){
-    var one = '<div class="news-skeleton"><div class="news-skeleton-line"></div><div class="news-skeleton-line"></div></div>';
-    return one + one + one;
-  }
-  function renderNews(){
-    var list = document.getElementById('newsList');
-    var updatedEl = document.getElementById('newsUpdatedAt');
-    if(!newsData){
-      updatedEl.textContent = '';
-      list.innerHTML = renderNewsSkeleton();
-      return;
-    }
-    updatedEl.textContent = newsData.fetchedAt ? 'Cập nhật ' + fmtNewsDate(newsData.fetchedAt) : '';
-    var articles = newsData.articles || [];
-    if(articles.length === 0){
-      list.innerHTML =
-        '<div class="empty-state">' +
-          '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>' +
-          '<p>Chưa có tin tức nào.</p>' +
-        '</div>';
-      return;
-    }
-    list.innerHTML = articles.map(function(a){
-      return (
-        '<a class="news-item" href="'+escapeHtml(safeUrl(a.link))+'" target="_blank" rel="noopener">' +
-          '<div class="news-item-title">'+escapeHtml(a.title)+'</div>' +
-          '<div class="news-item-meta">' +
-            '<span class="news-item-source">'+escapeHtml(a.source||'')+'</span>' +
-            '<span class="news-item-dot"></span>' +
-            '<span>'+fmtNewsDate(a.publishedAt)+'</span>' +
-          '</div>' +
-        '</a>'
-      );
-    }).join('');
-  }
-
-  // ---------- assistant (rule-based trend read from data already in the app —
-  // NOT a predictive model; see the disclaimer card in the tab itself) ----------
-  function computeTrendStats(hist){
-    var daily = buildDailyPriceSeries(hist);
-    if(daily.length < 2) return null;
-    var lastBuy = daily[daily.length-1].buy;
-    // Returns the actual date compared against, not just a percentage —
-    // "days" is a position N points back in a day-deduplicated array, which
-    // only equals N calendar days if the bot recorded every single day with
-    // no gap. Labeling this "N ngày qua" would assert a precision the data
-    // doesn't guarantee if a day was ever missed; showing the real date
-    // (same convention as the price card's day-over-day delta) is honest
-    // regardless of gaps.
-    function changeFromDaysAgo(days){
-      var idx = daily.length - 1 - days;
-      if(idx < 0) return null;
-      var base = daily[idx].buy;
-      if(!base) return null;
-      return { pct: (lastBuy - base) / base * 100, day: daily[idx].day };
-    }
-    function movingAvg(days){
-      var slice = daily.slice(-Math.min(days, daily.length));
-      var sum = 0;
-      slice.forEach(function(p){ sum += p.buy; });
-      return slice.length ? sum / slice.length : null;
-    }
-    var upDays = 0, downDays = 0;
-    for(var i=1;i<daily.length;i++){
-      if(daily[i].buy > daily[i-1].buy) upDays++;
-      else if(daily[i].buy < daily[i-1].buy) downDays++;
-    }
-    // Volatility: how wide a band the price has moved in recently, as a %
-    // of the low — a flat +0.4% trend during a 5%-wide swing reads very
-    // differently than the same trend during a 0.5%-wide one.
-    var volSlice = daily.slice(-Math.min(14, daily.length));
-    var volVals = volSlice.map(function(p){ return p.buy; });
-    var volMin = Math.min.apply(null, volVals), volMax = Math.max.apply(null, volVals);
-    var ma7 = daily.length >= 3 ? movingAvg(7) : null;
-    var maDiffPct = (ma7 && lastBuy) ? (lastBuy - ma7) / ma7 * 100 : null;
-    // Verdict signal, best available first: current-vs-recent-average is the
-    // most stable read; fall back to the 7-point change, then to a plain
-    // up/down day tally when there's too little history for either.
-    var FLAT_THRESHOLD = 0.15; // %, below this reads as sideways rather than a real move
-    var verdictPct = maDiffPct !== null ? maDiffPct : (changeFromDaysAgo(7) ? changeFromDaysAgo(7).pct : null);
-    var verdict = 'flat';
-    if(verdictPct !== null){
-      verdict = verdictPct > FLAT_THRESHOLD ? 'up' : (verdictPct < -FLAT_THRESHOLD ? 'down' : 'flat');
-    } else if(upDays !== downDays){
-      verdict = upDays > downDays ? 'up' : 'down';
-    }
-    return {
-      change7: changeFromDaysAgo(7),
-      change30: changeFromDaysAgo(30),
-      ma7: ma7,
-      maDiffPct: maDiffPct,
-      volatilityPct: volMin ? (volMax - volMin) / volMin * 100 : null,
-      upDays: upDays,
-      downDays: downDays,
-      totalPoints: daily.length,
-      verdict: verdict,
-      verdictPct: verdictPct
-    };
-  }
-  function trendRowHtml(label, pct){
-    var cls = pct > 0 ? 'up' : (pct < 0 ? 'down' : '');
-    return '<div class="trend-row"><span class="trend-label">'+label+'</span><span class="trend-val '+cls+'">'+(pct>=0?'+':'')+pct.toFixed(2)+'%</span></div>';
-  }
-  function renderAssistant(){
-    var el = document.getElementById('assistantContent');
-    var trend = computeTrendStats(getHistoryFor(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE));
-    var eff = getEffectivePrice(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE);
-    // Scoped to the same single group the price card/trend above are
-    // reasoning about — blending avgCost across non-fungible gold types
-    // would make "so with your cost" meaningless.
-    var p = computePortfolioForGroup(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE);
-    var html = '';
-
-    if(trend){
-      var vIcon = trend.verdict === 'up' ? '<path d="M12 19V6M6 12l6-6 6 6"/>' : (trend.verdict === 'down' ? '<path d="M12 5v13M6 12l6 6 6-6"/>' : '<path d="M5 12h14"/>');
-      var vTitle = trend.verdict === 'up' ? 'Đang tăng' : (trend.verdict === 'down' ? 'Đang giảm' : 'Đi ngang');
-      var vSub = trend.verdictPct !== null
-        ? (trend.maDiffPct !== null ? 'So với trung bình gần đây: ' : 'So với ' + fmtDate(trend.change7.day).slice(0,5) + ': ') + (trend.verdictPct>=0?'+':'') + trend.verdictPct.toFixed(2) + '%'
-        : trend.upDays + ' lần tăng / ' + trend.downDays + ' lần giảm trong ' + trend.totalPoints + ' lần ghi nhận gần đây';
-      html += '<div class="card"><div class="assistant-section-title">Tổng quan xu hướng</div>' +
-        '<div class="verdict-banner ' + trend.verdict + '">' +
-          '<div class="verdict-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' + vIcon + '</svg></div>' +
-          '<div><div class="verdict-title">' + vTitle + '</div><div class="verdict-sub">' + vSub + '</div></div>' +
-        '</div></div>';
-    }
-
-    html += '<div class="card"><div class="assistant-section-title">Chi tiết xu hướng giá</div>';
-    if(!trend){
-      html += '<p class="field-hint">Cần thêm dữ liệu giá qua nhiều lần cập nhật hơn để phân tích xu hướng.</p>';
-    } else {
-      if(trend.change7) html += trendRowHtml('So với ' + fmtDate(trend.change7.day).slice(0,5), trend.change7.pct);
-      if(trend.change30) html += trendRowHtml('So với ' + fmtDate(trend.change30.day).slice(0,5), trend.change30.pct);
-      if(trend.maDiffPct !== null){
-        html += trendRowHtml('So với trung bình gần đây', trend.maDiffPct);
-      }
-      if(trend.volatilityPct !== null){
-        html += '<div class="trend-row"><span class="trend-label">Biên độ dao động</span><span class="trend-val">' + trend.volatilityPct.toFixed(2) + '%</span></div>';
-      }
-      html += '<div class="assistant-note">Trong '+trend.totalPoints+' lần ghi nhận gần đây: <b>'+trend.upDays+'</b> lần tăng, <b>'+trend.downDays+'</b> lần giảm so với lần trước đó.</div>';
-    }
-    html += '</div>';
-
-    html += '<div class="card"><div class="assistant-section-title">So với giá vốn của bạn</div>';
-    if(p.holdingAmount <= 0 || !(p.avgCost > 0)){
-      html += '<p class="field-hint">Bạn chưa có vàng đang nắm giữ để so sánh với giá vốn.</p>';
-    } else if(!eff){
-      html += '<p class="field-hint">Chưa có giá hiện tại để so sánh.</p>';
-    } else {
-      var diffPct = (eff.buy - p.avgCost) / p.avgCost * 100;
-      html += trendRowHtml('Giá mua vào hiện tại', diffPct);
-      var note;
-      if(diffPct > 0){
-        note = 'Giá hiện tại <b>cao hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Đây thường là lúc nhiều người cân nhắc chốt lời một phần.';
-      } else if(diffPct < 0){
-        note = 'Giá hiện tại <b>thấp hơn</b> giá vốn trung bình của bạn '+Math.abs(diffPct).toFixed(2)+'%. Đây thường là lúc nhiều người mua thêm để hạ giá vốn trung bình (DCA).';
-      } else {
-        note = 'Giá hiện tại đang bằng đúng giá vốn trung bình của bạn.';
-      }
-      html += '<div class="assistant-note">'+note+'</div>';
-    }
-    html += '</div>';
-
-    html += '<div class="card"><div class="assistant-section-title">Tin tức có thể ảnh hưởng</div>';
-    var articles = (newsData && newsData.articles) || [];
-    if(articles.length === 0){
-      html += '<p class="field-hint">Chưa có tin tức để tham khảo.</p>';
-    } else {
-      html += articles.slice(0, 4).map(function(a){
-        return '<a class="mini-news-item" href="'+escapeHtml(safeUrl(a.link))+'" target="_blank" rel="noopener">' +
-          '<span class="mini-news-title">'+escapeHtml(a.title)+'</span>' +
-          '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg>' +
-        '</a>';
-      }).join('');
-    }
-    html += '</div>';
-
-    el.innerHTML = html;
-  }
+  window.addEventListener('pageshow', function(e){ syncAppHeight(); if(e.persisted){ loadLiveData(); } });
 
   function setFieldError(inputId, on){
     var field = document.getElementById(inputId).closest('.field');
@@ -1115,7 +907,7 @@
   function openEditTx(tx){
     editingTxId = tx.id;
     document.getElementById('txDeleteBtn').hidden = false;
-    document.getElementById('txAmount').value = fmtAmount(tx.amount);
+    document.getElementById('txAmount').value = String(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
     document.getElementById('txShop').value = tx.shop || 'ngoc-thinh';
     populateGoldTypeSelect(tx.shop || 'ngoc-thinh', tx.goldType || '9999-nhan-tron');
@@ -1365,10 +1157,27 @@
   function aggregateDailyHistory(hist, days){
     return buildDailyPriceSeries(hist).slice(-days);
   }
+  // Unlike aggregateDailyHistory() (point-count based, shared with the
+  // price/portfolio charts), this filters by actual calendar date so "30
+  // ngày"/"90 ngày" can't silently span more real days than labeled if the
+  // price-fetch bot ever misses a day. "Insufficient data" is judged by
+  // whether history actually reaches back far enough to cover the full
+  // window (earliest point <= cutoff), not by a raw point count, since a
+  // calendar-filtered set can legitimately have fewer than `days` points
+  // even with full coverage (e.g. a gap the bot filled in later that day).
   function computePriceRange(hist, days){
-    var daily = aggregateDailyHistory(hist, days);
-    if(daily.length < days) return { insufficient: true };
-    var buys = daily.map(function(p){ return p.buy; });
+    var daily = buildDailyPriceSeries(hist);
+    if(daily.length === 0) return { insufficient: true };
+    var cutoffDay = localDayKey(new Date(Date.now() - (days-1)*86400000));
+    if(daily[0].day > cutoffDay) return { insufficient: true };
+    var windowed = daily.filter(function(p){ return p.day >= cutoffDay; });
+    // daily[0].day <= cutoffDay only proves the series STARTS early enough —
+    // if the whole history predates the window (e.g. the price feed went
+    // stale a long time ago), every point could still fall before cutoffDay,
+    // leaving windowed empty. Math.max/min.apply(null, []) would silently
+    // return -Infinity/Infinity in that case, so guard it explicitly.
+    if(windowed.length === 0) return { insufficient: true };
+    var buys = windowed.map(function(p){ return p.buy; });
     return { insufficient: false, high: Math.max.apply(null, buys), low: Math.min.apply(null, buys) };
   }
   function renderPriceRangeCard(hist, currentBuy){
@@ -1545,7 +1354,12 @@
     var d = new Date(startDay+"T00:00:00");
     var endD = new Date(today+"T00:00:00");
     var guard = 0;
-    while(d <= endD && guard < 2000){
+    // 2000 (~5.48 years of daily steps) was a real but distant risk: this
+    // loop would silently truncate the chart before reaching today once the
+    // app had been used continuously past that point. Raised to ~54 years —
+    // cheap to raise now while it's a hypothetical, rather than waiting for
+    // it to become an actual bug.
+    while(d <= endD && guard < 20000){
       guard++;
       var dayKey = localDayKey(d);
       while(txIdx < chrono.length && chrono[txIdx].date === dayKey){ applyTx(chrono[txIdx]); txIdx++; }
@@ -1982,16 +1796,10 @@
 
   function renderAll(){
     renderPrice(); renderSummary(); renderPnlReport(); renderTx();
-    // Assistant reads liveData/liveHistoryAll/computePortfolio() too, so it
-    // must refresh on every state or price change, not just when its own
-    // tab is switched into — otherwise it silently shows stale numbers
-    // after a background price refresh (loadLiveData) or portfolio edit.
-    if(!document.getElementById('viewAssistant').hidden) renderAssistant();
   }
   renderAll();
   loadLiveData();
   loadChangelog();
-  loadNews();
 
   // ---------- real viewport height (fixes the intermittent bottom tab bar gap) ----------
   // See body's CSS comment: 100dvh can get stuck at the on-screen-keyboard-open
@@ -2129,12 +1937,12 @@
       refreshing = true;
       ptr.classList.add('loading');
       ptr.style.height = '52px';
-      // loadLiveData/loadNews/loadChangelog each catch their own network
-      // errors internally and resolve anyway (so their callers don't need
-      // to special-case a failed background refresh) — meaning Promise.all
+      // loadLiveData/loadChangelog each catch their own network errors
+      // internally and resolve anyway (so their callers don't need to
+      // special-case a failed background refresh) — meaning Promise.all
       // here never actually rejects. loadLiveData is the only one of the
-      // three with a real success/failure return value (!!results[0]), so
-      // it's what decides which toast to show; the others are best-effort.
+      // two with a real success/failure return value (!!results[0]), so
+      // it's what decides which toast to show; the other is best-effort.
       function settle(priceOk){
         ptr.classList.remove('loading');
         ptr.style.height = '0px';
@@ -2142,15 +1950,15 @@
         showToast(priceOk ? 'Đã làm mới dữ liệu' : 'Không thể làm mới — kiểm tra kết nối mạng', priceOk ? 'ok' : 'err');
       }
       // The loaders shouldn't reject (they catch their own network errors),
-      // but they do call renderAll()/renderNews() synchronously inside their
-      // own .then — an unrelated throw there (e.g. a malformed JSON payload
-      // reaching a render function unguarded) would otherwise reject this
-      // Promise.all with no handler, leaving `refreshing` stuck true and the
-      // spinner frozen forever (the pointerdown guard above blocks every
-      // future pull while it's true). Catch defensively so a render bug
-      // degrades to a failed refresh instead of permanently wedging the
-      // gesture until a full page reload.
-      Promise.all([loadLiveData(), loadNews(), loadChangelog()]).then(function(results){
+      // but they do call renderAll() synchronously inside their own .then —
+      // an unrelated throw there (e.g. a malformed JSON payload reaching a
+      // render function unguarded) would otherwise reject this Promise.all
+      // with no handler, leaving `refreshing` stuck true and the spinner
+      // frozen forever (the pointerdown guard above blocks every future
+      // pull while it's true). Catch defensively so a render bug degrades
+      // to a failed refresh instead of permanently wedging the gesture
+      // until a full page reload.
+      Promise.all([loadLiveData(), loadChangelog()]).then(function(results){
         settle(results[0]);
       }).catch(function(){
         settle(false);

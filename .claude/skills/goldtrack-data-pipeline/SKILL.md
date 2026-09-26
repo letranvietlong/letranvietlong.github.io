@@ -1,6 +1,6 @@
 ---
 name: goldtrack-data-pipeline
-description: Cách GoldTrack tự lấy giá vàng và tin tức qua GitHub Actions — nguồn dữ liệu, quy tắc đơn vị chỉ/lượng, lọc tin, xử lý múi giờ, và race condition khi bot commit. Dùng khi sửa products/gold-track/py/fetch_*.py, sửa workflow, thêm nguồn dữ liệu, hoặc khi giá/tin không cập nhật.
+description: Cách GoldTrack tự lấy giá vàng qua GitHub Actions — nguồn dữ liệu (Ngọc Thịnh + Huy Thanh), quy tắc đơn vị chỉ/lượng, xử lý múi giờ, và race condition khi bot commit. Dùng khi sửa products/gold-track/py/fetch_gold_price.py, sửa workflow, thêm nguồn dữ liệu, hoặc khi giá không cập nhật.
 ---
 
 # Pipeline dữ liệu GoldTrack
@@ -9,17 +9,19 @@ Site tĩnh không có backend. Dữ liệu được **GitHub Actions chạy đ�
 
 ```
 GitHub Actions (cron)
-  ├── products/gold-track/py/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
-  └── products/gold-track/py/fetch_gold_news.py  → products/gold-track/data/gold-news.json
+  └── products/gold-track/py/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
                                      ↓ commit + push
                   products/gold-track/js/gold-track.js fetch('/products/gold-track/data/*.json')
 ```
 
-Cả hai script tự tính đường dẫn dữ liệu tương đối theo chính vị trí của mình (`PRODUCT_ROOT = dirname(dirname(__file__))` trỏ về `products/gold-track/`), không hardcode `"products", "gold-track"` trong path — vì đã nằm sẵn trong đúng thư mục sản phẩm.
+Script tự tính đường dẫn dữ liệu tương đối theo chính vị trí của mình (`PRODUCT_ROOT = dirname(dirname(__file__))` trỏ về `products/gold-track/`), không hardcode `"products", "gold-track"` trong path — vì đã nằm sẵn trong đúng thư mục sản phẩm.
 
 ## Giá vàng
 
-**Nguồn:** Ngọc Thịnh Jewelry (`ngocthinh-jewelry.vn/pages/bang-gia-vang`) — HTML render sẵn, không có API, phải parse bằng regex.
+**2 tiệm, mỗi tiệm chỉ theo dõi đúng 1 loại vàng** (chủ đích thu hẹp, không phải giới hạn kỹ thuật — `NGOCTHINH_TYPES`/`HUYTHANH_TYPES` trong `fetch_gold_price.py` mỗi cái chỉ có 1 entry, dù shape JSON vẫn là shop→types để dễ mở rộng lại sau này):
+
+- **Ngọc Thịnh Jewelry** (`ngocthinh-jewelry.vn/pages/bang-gia-vang`, chỉ "Vàng 9999 (nhẫn tròn)") — HTML render sẵn, không có API, parse bằng regex trên các `<div class="stylecus headerindex1/2/3">`.
+- **Huy Thanh Jewelry** (`huythanhjewelry.vn/gia-vang-hom-nay`, chỉ "Vàng Huy Thanh 24k") — site Next.js; giá KHÔNG nằm ở bảng HTML hiển thị mà nhúng sẵn dạng JSON escaped trong 1 script chunk RSC (`self.__next_f.push(...)`) — regex bắt trực tiếp `\"giaban\\":(\d+),\\"giamua\\":(\d+),\\"loaivang\\":\\"([^"\\]+)\\"` từ chunk đó, không dựng lại rồi `json.loads()` cả blob (dễ vỡ nếu cấu trúc RSC đổi thứ tự field). `giaban:0` là dòng tham chiếu thị trường, không phải giá giao dịch thật — phải loại.
 
 **Đơn vị — chỗ dễ sai nhất:** người Việt dùng **chỉ** và **lượng** (1 lượng = 10 chỉ). Giá trên trang nguồn ghi rõ **VNĐ/CHỈ**. Toàn bộ app thống nhất dùng **chỉ**.
 
@@ -32,22 +34,6 @@ Cả hai script tự tính đường dẫn dữ liệu tương đối theo chín
 VN_TZ = timezone(timedelta(hours=7))   # VN không có DST nên offset cố định là đủ
 ```
 Cắt chuỗi ISO của UTC để lấy ngày sẽ **sai**: mọi thời điểm trước 07:00 giờ VN sẽ bị tính sang ngày hôm trước.
-
-## Tin tức
-
-**Nguồn:** RSS của CafeF + VnExpress (không nguồn nào có feed riêng về vàng) → lấy feed rộng rồi **lọc theo từ khoá**.
-
-Lọc từ khoá kiểu "chứa chuỗi con" dính rất nhiều **dương tính giả** — đã gặp thật:
-
-| Tiêu đề | Dính vì | Thực tế |
-|---|---|---|
-| "...siêu đô thị 10 tỷ USD, Vingroup đề xuất xây dựng" | `usd` | Bất động sản |
-| "Big Tech — tài sản chiến lược nghìn tỷ USD" | `usd` | Không liên quan |
-| "SCIC bán vốn doanh nghiệp nắm 'đất vàng' Đồng Khởi" | `vàng` | Thành ngữ bất động sản |
-
-Quy tắc đã dùng: `tỷ|triệu|nghìn tỷ` + `usd` đứng liền nhau luôn là **con số tiền tệ**, không phải tin tỷ giá; `đất vàng` là thành ngữ, không phải kim loại. Tin tỷ giá thật viết là *"tỷ giá USD"*, *"đồng USD"*, *"giá USD"*.
-
-**Dấu `...` cuối tiêu đề là của CafeF, không phải do mình cắt.** Đã xác minh: `<title>`, `og:title`, `<h1>` của chính bài báo đều mang dấu đó → không có bản đầy đủ hơn để lấy. Chỉ nên **bỏ dấu `...` thừa**, giữ nguyên phần nội dung còn lại (đừng cắt bớt danh sách cửa hàng — người dùng muốn xem đầy đủ).
 
 ## GitHub Actions: lịch chạy KHÔNG đáng tin
 

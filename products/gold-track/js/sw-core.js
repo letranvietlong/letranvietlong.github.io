@@ -7,7 +7,7 @@
 // GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
 // GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
 // giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
-var CACHE_NAME = "goldtrack-cache-v8";
+var CACHE_NAME = "goldtrack-cache-v9";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -32,7 +32,6 @@ var ICON_PATHS = [
 var DATA_PATHS = [
   "/products/gold-track/data/gold-price.json",
   "/products/gold-track/data/gold-price-history.json",
-  "/products/gold-track/data/gold-news.json",
   "/products/gold-track/data/changelog.json"
 ];
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
