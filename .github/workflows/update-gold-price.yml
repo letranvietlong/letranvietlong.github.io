@@ -36,8 +36,8 @@ jobs:
             echo "No price change to commit."
             exit 0
           fi
-          BUY=$(python -c "import json;print(f'{json.load(open(\"products/gold-track/data/gold-price.json\"))[\"buy\"]:,}'.replace(',', '.'))")
-          SELL=$(python -c "import json;print(f'{json.load(open(\"products/gold-track/data/gold-price.json\"))[\"sell\"]:,}'.replace(',', '.'))")
+          BUY=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"buy\"]:,}'.replace(',', '.'))")
+          SELL=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"sell\"]:,}'.replace(',', '.'))")
           git commit -m "Auto-update gold price: mua ${BUY} / ban ${SELL}"
 
           for i in 1 2 3 4 5; do

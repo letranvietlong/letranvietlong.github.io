@@ -73,23 +73,6 @@
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
   <div class="tab-view" id="viewOverview">
-    <!-- Current price card -->
-    <div class="card" id="priceCard">
-      <div class="card-glow" style="background:var(--gold)"></div>
-      <div class="summary-head">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="summary-head-icon" style="background:var(--gold-soft);color:var(--gold2)">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
-          </div>
-          <div>
-            <div class="summary-title">Giá vàng 9999</div>
-            <div class="summary-sub price-updated" id="priceUpdatedSub"></div>
-          </div>
-        </div>
-      </div>
-      <div id="priceContent"></div>
-    </div>
-
     <!-- Portfolio summary -->
     <div class="card" id="summaryCard" hidden>
       <div class="card-glow" style="background:var(--green)"></div>
@@ -123,6 +106,34 @@
         <button type="button" data-group="year">Theo năm</button>
       </div>
       <div id="pnlReportContent"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: GIÁ ============ -->
+  <div class="tab-view" id="viewPrices" hidden>
+    <div class="page-title"><h1>Giá vàng</h1></div>
+
+    <div class="segmented" id="priceShopSelect" role="group" aria-label="Chọn tiệm vàng" style="margin-bottom:10px">
+      <div class="segmented-indicator"></div>
+      <button type="button" class="active" data-shop="ngoc-thinh">Ngọc Thịnh Jewelry</button>
+      <button type="button" data-shop="huy-thanh">Huy Thanh Jewelry</button>
+    </div>
+    <div class="segmented segmented-scroll" id="priceTypeSelect" role="group" aria-label="Chọn loại vàng" style="margin-bottom:14px"></div>
+
+    <div class="card" id="priceCard">
+      <div class="card-glow" style="background:var(--gold)"></div>
+      <div class="summary-head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="summary-head-icon" style="background:var(--gold-soft);color:var(--gold2)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+          </div>
+          <div>
+            <div class="summary-title" id="priceCardTitle">Giá vàng</div>
+            <div class="summary-sub price-updated" id="priceUpdatedSub"></div>
+          </div>
+        </div>
+      </div>
+      <div id="priceContent"></div>
     </div>
   </div>
 
@@ -240,6 +251,10 @@
     <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
     <span>Tổng quan</span>
   </button>
+  <button class="tabbar-btn" data-tab="prices" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+    <span>Giá</span>
+  </button>
   <button class="tabbar-btn" data-tab="history" type="button">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
     <span>Lịch sử</span>
@@ -287,6 +302,14 @@
       <label for="txPrice" id="txPriceLabel">Giá mua (VNĐ / chỉ)</label>
       <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
       <div class="field-error">Nhập giá lớn hơn 0.</div>
+    </div>
+    <div class="field">
+      <label for="txShop">Nguồn giá vàng</label>
+      <select class="input" id="txShop"></select>
+    </div>
+    <div class="field">
+      <label for="txGoldType">Loại vàng</label>
+      <select class="input" id="txGoldType"></select>
     </div>
     <div class="field">
       <label for="txStore" id="txStoreLabel">Cửa hàng</label>

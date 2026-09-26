@@ -2,14 +2,73 @@
   "use strict";
   var STORAGE_KEY = "goldtrack_v1";
 
+  // Canonical shop + gold-type catalog. Must match fetch_gold_price.py's
+  // NGOCTHINH_TYPES/HUYTHANH_TYPES exactly — these ids are the join key
+  // between a transaction and the live price JSON. Sourced from the
+  // catalog directly (not from liveData) so a temporarily-missing live
+  // price never removes a type from the form's dropdowns.
+  var SHOPS = [
+    { id: 'ngoc-thinh', name: 'Ngọc Thịnh Jewelry' },
+    { id: 'huy-thanh', name: 'Huy Thanh Jewelry' },
+    { id: 'khac', name: 'Khác' }
+  ];
+  var SHOP_TYPES = {
+    'ngoc-thinh': [
+      { id: '9999-nhan-tron', label: 'Vàng 9999 (nhẫn tròn)' },
+      { id: '98-nhan-tron', label: 'Vàng 98 (nhẫn tròn)' },
+      { id: '96-nhan-tron', label: 'Vàng 96 (nhẫn tròn)' },
+      { id: '24k-98-trang-suc', label: 'Vàng trang sức 24K 98' },
+      { id: 'tay-610', label: 'Vàng tây 610' },
+      { id: 'trang-10k-417', label: 'Vàng trắng 10K 417' }
+    ],
+    'huy-thanh': [
+      { id: '24k-huy-thanh', label: 'Vàng Huy Thanh 24k' },
+      { id: 'nguyen-lieu-22k', label: 'Giá nguyên liệu 22K' },
+      { id: 'nguyen-lieu-18k', label: 'Giá nguyên liệu 18K' },
+      { id: 'nguyen-lieu-14k', label: 'Giá nguyên liệu 14K' },
+      { id: 'nguyen-lieu-10k', label: 'Giá nguyên liệu 10K' }
+    ],
+    'khac': []
+  };
+  // The price tab still shows exactly one series (a multi-shop price tab is
+  // a separate follow-up task) — this is that series' shop/type, matching
+  // the app's original/primary catalog entry.
+  var DEFAULT_PRICE_SHOP = 'ngoc-thinh';
+  var DEFAULT_PRICE_TYPE = '9999-nhan-tron';
+  // Human label for the one fixed group computePortfolioSeries() scopes its
+  // single price series to — shown on the portfolio chart's title so that
+  // scoping is visible to the user rather than silently implicit.
+  var DEFAULT_PRICE_GROUP_LABEL = (function(){
+    var shopInfo = SHOPS.filter(function(s){ return s.id === DEFAULT_PRICE_SHOP; })[0];
+    var typeInfo = (SHOP_TYPES[DEFAULT_PRICE_SHOP] || []).filter(function(t){ return t.id === DEFAULT_PRICE_TYPE; })[0];
+    return (shopInfo && typeInfo) ? (shopInfo.name + ', ' + typeInfo.label) : '';
+  })();
+
+  // Every transaction ever created before this feature shipped was, in
+  // effect, always priced against Ngọc Thịnh's 9999 type — getEffectivePrice()
+  // never read `store` before, and that was the only price stream that ever
+  // existed. Mutates in place; presence-of-`shop` is itself a sufficient,
+  // idempotent migration check (safe to run again on already-migrated data).
+  function migrateTxShape(list){
+    var migrated = false;
+    list.forEach(function(t){
+      if(!t.shop){
+        t.shop = 'ngoc-thinh';
+        t.goldType = '9999-nhan-tron';
+        migrated = true;
+      }
+    });
+    return migrated;
+  }
+  var migratedFromLegacyShape = false;
   function loadState(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return { transactions:[] };
       var parsed = JSON.parse(raw);
-      return {
-        transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
-      };
+      var transactions = Array.isArray(parsed.transactions) ? parsed.transactions : [];
+      if(migrateTxShape(transactions)) migratedFromLegacyShape = true;
+      return { transactions: transactions };
     }catch(e){ return { transactions:[] }; }
   }
   function saveState(){
@@ -181,7 +240,7 @@
   }
 
   // ---------- tab navigation ----------
-  var TAB_VIEWS = { overview: 'viewOverview', history: 'viewHistory', news: 'viewNews', assistant: 'viewAssistant', settings: 'viewSettings' };
+  var TAB_VIEWS = { overview: 'viewOverview', prices: 'viewPrices', history: 'viewHistory', news: 'viewNews', assistant: 'viewAssistant', settings: 'viewSettings' };
   function switchTab(tab){
     Object.keys(TAB_VIEWS).forEach(function(key){
       var el = document.getElementById(TAB_VIEWS[key]);
@@ -336,6 +395,9 @@
       if(!file || !file.content) return false;
       var data = JSON.parse(file.content);
       state.transactions = Array.isArray(data.transactions) ? data.transactions : [];
+      // A Gist copy pushed from a not-yet-migrated device would otherwise
+      // land here in the old shape — same idempotent fix as loadState()'s.
+      migrateTxShape(state.transactions);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       markSynced();
       return true;
@@ -496,8 +558,21 @@
 
   // ---------- live price (auto-fetched, static JSON updated by GitHub Actions) ----------
   var liveData = null;
-  var liveHistory = [];
+  // Full { shop: { goldType: [{buy,sell,at}, ...] } } object, kept whole
+  // (not sliced to one group) so the price tab can look up whichever group
+  // the user has selected. Read a specific series via getHistoryFor().
+  var liveHistoryAll = null;
   var liveLoading = true;
+  function getHistoryFor(shop, goldType){
+    var s = liveHistoryAll && liveHistoryAll[shop];
+    var arr = s && s[goldType];
+    return Array.isArray(arr) ? arr : [];
+  }
+  // Price tab's own selection state — starts on the app's original/primary
+  // group so a returning user's price card looks the same until they pick
+  // something else.
+  var selectedPriceShop = DEFAULT_PRICE_SHOP;
+  var selectedPriceType = DEFAULT_PRICE_TYPE;
 
   // ---------- chart range selection (shared markup, independent state per chart) ----------
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
@@ -540,11 +615,16 @@
     renderPnlReport();
   });
 
-  function getEffectivePrice(){
-    if(liveData){
-      return { buy: liveData.buy, sell: liveData.sell, at: liveData.fetchedAt };
-    }
-    return null;
+  // Replaces the old zero-arg version — a single global price stopped
+  // meaning anything once transactions can belong to different, non-fungible
+  // (shop, goldType) groups. Returns null when that specific group has no
+  // live price (shop 'khac' has no catalog, or a fetch temporarily missed a
+  // type) so callers can show a gap instead of a wrong number.
+  function getEffectivePrice(shop, goldType){
+    if(!shop || !goldType) return null;
+    var shopData = liveData && liveData[shop];
+    var t = shopData && shopData.types && shopData.types[goldType];
+    return t ? { buy: t.buy, sell: t.sell, at: shopData.fetchedAt } : null;
   }
 
   function loadLiveData(){
@@ -553,7 +633,11 @@
       fetch('/products/gold-track/data/gold-price-history.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(results){
       if(results[0]) liveData = results[0];
-      if(Array.isArray(results[1])) liveHistory = results[1];
+      // gold-price-history.json is keyed by shop then goldType (each an
+      // array of {buy,sell,at}), matching gold-price.json's shape. Kept as
+      // the full object (see liveHistoryAll's comment) so the price tab can
+      // look up whichever (shop, goldType) group the user has selected.
+      if(results[1] && typeof results[1] === 'object') liveHistoryAll = results[1];
       liveLoading = false;
       renderAll();
       return !!results[0];
@@ -703,9 +787,12 @@
   }
   function renderAssistant(){
     var el = document.getElementById('assistantContent');
-    var trend = computeTrendStats(liveHistory);
-    var eff = getEffectivePrice();
-    var p = computePortfolio();
+    var trend = computeTrendStats(getHistoryFor(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE));
+    var eff = getEffectivePrice(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE);
+    // Scoped to the same single group the price card/trend above are
+    // reasoning about — blending avgCost across non-fungible gold types
+    // would make "so with your cost" meaningless.
+    var p = computePortfolioForGroup(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE);
     var html = '';
 
     if(trend){
@@ -781,8 +868,14 @@
   function clearFieldError(inputId){ setFieldError(inputId, false); }
 
   // ---------- portfolio math (moving-average cost method, buy + sell aware) ----------
-  function computePortfolio(){
-    var chrono = state.transactions.slice().sort(function(a,b){
+  // Accepts an optional pre-filtered list so it can be replayed independently
+  // per (shop, goldType) group — gold of a different purity/type is not
+  // fungible, so blending groups into one weighted-average cost would be
+  // meaningless (and could let a sell of one type validate against holdings
+  // of a completely different type). Internal math is unchanged.
+  function computePortfolio(transactions){
+    var list = transactions || state.transactions;
+    var chrono = list.slice().sort(function(a,b){
       return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
     });
     var holdingAmount = 0, holdingCost = 0, realizedPL = 0, totalBuyCost = 0;
@@ -819,6 +912,68 @@
     };
   }
 
+  // ---------- group-aware portfolio aggregation (shop + goldType) ----------
+  function groupKey(tx){ return tx.shop + '::' + (tx.goldType || ''); }
+  function groupTransactions(list){
+    list = list || state.transactions;
+    var map = {};
+    list.forEach(function(tx){
+      var key = groupKey(tx);
+      if(!map[key]) map[key] = [];
+      map[key].push(tx);
+    });
+    return map;
+  }
+  // Replays only one (shop, goldType) group's own ledger — for UI spots
+  // (price tab, assistant) that reason about a single group rather than the
+  // full merged portfolio.
+  function computePortfolioForGroup(shop, goldType){
+    var list = state.transactions.filter(function(t){ return t.shop === shop && (t.goldType||null) === (goldType||null); });
+    return computePortfolio(list);
+  }
+  // Merges every (shop, goldType) group into portfolio-wide totals. Each
+  // group is replayed independently via the unmodified computePortfolio()
+  // ledger logic, then only VNĐ totals are summed across groups —
+  // holdingAmount/avgCost are never merged, since chỉ of different gold
+  // types are not fungible (see the "groups" array for a per-group view).
+  function computePortfolioAll(){
+    var groups = groupTransactions(state.transactions);
+    var totalRealizedPL = 0, totalUnrealizedPL = 0, totalBuyCost = 0, totalHoldingCost = 0;
+    var perTx = {}, firstTxDate = null, priceGapCount = 0;
+    var groupList = [];
+    Object.keys(groups).forEach(function(key){
+      var txs = groups[key];
+      var shop = txs[0].shop, goldType = txs[0].goldType || null;
+      var p = computePortfolio(txs);
+      var eff = getEffectivePrice(shop, goldType);
+      var hasPriceGap = !eff;
+      var unrealizedPL = eff ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
+      totalRealizedPL += p.realizedPL;
+      totalUnrealizedPL += unrealizedPL;
+      totalBuyCost += p.totalBuyCost;
+      totalHoldingCost += p.holdingCost;
+      Object.keys(p.perTx).forEach(function(txId){ perTx[txId] = p.perTx[txId]; });
+      if(p.firstTxDate && (!firstTxDate || p.firstTxDate < firstTxDate)) firstTxDate = p.firstTxDate;
+      if(hasPriceGap) priceGapCount++;
+      groupList.push({
+        shop: shop, goldType: goldType,
+        holdingAmount: p.holdingAmount, holdingCost: p.holdingCost, avgCost: p.avgCost,
+        realizedPL: p.realizedPL, unrealizedPL: unrealizedPL, hasPriceGap: hasPriceGap
+      });
+    });
+    return {
+      totalRealizedPL: totalRealizedPL,
+      totalUnrealizedPL: totalUnrealizedPL,
+      totalBuyCost: totalBuyCost,
+      totalHoldingCost: totalHoldingCost,
+      perTx: perTx,
+      firstTxDate: firstTxDate,
+      groups: groupList,
+      anyPriceGap: priceGapCount > 0,
+      priceGapCount: priceGapCount
+    };
+  }
+
   function computeAvgHoldingDays(){
     var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
     if(buys.length === 0) return null;
@@ -841,9 +996,13 @@
   // before its matching buy pass validation, and computePortfolio (which
   // does replay chronologically) then clamped that sell to zero: holdings
   // never dropped, yet the full sale was still booked as realized profit.
-  function holdingsAsOf(dateStr, createdAt, excludeId){
+  // Scoped to a single (shop, goldType) group — gold of a different
+  // purity/type is not fungible, so holdings of one group must never count
+  // toward how much there is to sell in another.
+  function holdingsAsOf(dateStr, createdAt, excludeId, shop, goldType){
     var held = 0;
-    chronoSort(state.transactions).forEach(function(t){
+    var scoped = state.transactions.filter(function(t){ return t.shop === shop && (t.goldType||null) === (goldType||null); });
+    chronoSort(scoped).forEach(function(t){
       if(t.id === excludeId) return;
       var isBefore = t.date < dateStr || (t.date === dateStr && (t.createdAt||0) < createdAt);
       if(!isBefore) return;
@@ -884,6 +1043,33 @@
       positionSegmentedIndicator(btn.closest('.segmented'));
     });
   });
+  // ---------- shop / gold-type selects ----------
+  function populateShopSelect(){
+    var sel = document.getElementById('txShop');
+    sel.innerHTML = SHOPS.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>'; }).join('');
+  }
+  // 'khac' has no catalog (Part 1 — no known types for an arbitrary shop),
+  // so its type select is disabled with a placeholder rather than left
+  // showing another shop's stale options.
+  function populateGoldTypeSelect(shopId, preferredTypeId){
+    var sel = document.getElementById('txGoldType');
+    var types = SHOP_TYPES[shopId] || [];
+    if(types.length === 0){
+      sel.innerHTML = '<option value="">Không áp dụng</option>';
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    sel.innerHTML = types.map(function(t){ return '<option value="'+t.id+'">'+escapeHtml(t.label)+'</option>'; }).join('');
+    sel.value = types.some(function(t){ return t.id === preferredTypeId; }) ? preferredTypeId : types[0].id;
+  }
+  populateShopSelect();
+  document.getElementById('txShop').addEventListener('change', function(){
+    populateGoldTypeSelect(this.value, null);
+    updateTxFormLabels();
+  });
+  document.getElementById('txGoldType').addEventListener('change', updateTxFormLabels);
+
   // The sellable-amount hint depends on the chosen date now, so it has to
   // refresh when the date changes, not just when buy/sell is toggled.
   document.getElementById('txDate').addEventListener('change', function(){
@@ -898,9 +1084,13 @@
     document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : (isSell ? 'Thêm giao dịch bán vàng' : 'Thêm giao dịch mua vàng');
     // Holdings as of the date currently in the form, not the net total —
     // picking an earlier date genuinely changes how much there is to sell.
+    // Scoped to the group currently selected in the form (Part 3.6) — a
+    // different gold type's holdings must never count toward this one's.
     var dateVal = document.getElementById('txDate').value || todayISO();
     var editing = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
-    var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId);
+    var shopVal = document.getElementById('txShop').value;
+    var typeVal = document.getElementById('txGoldType').value || null;
+    var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId, shopVal, typeVal);
     document.getElementById('txAmountHint').textContent = isSell ? ('Ngày ' + fmtDate(dateVal) + ' có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
   }
   function setType(type){
@@ -914,6 +1104,9 @@
     document.getElementById('txDeleteBtn').hidden = true;
     document.getElementById('txAmount').value = '';
     document.getElementById('txPrice').value = '';
+    // Defaults to this app's original/primary shop+type.
+    document.getElementById('txShop').value = 'ngoc-thinh';
+    populateGoldTypeSelect('ngoc-thinh', '9999-nhan-tron');
     document.getElementById('txStore').value = '';
     document.getElementById('txAddress').value = '';
     document.getElementById('txNote').value = '';
@@ -929,6 +1122,8 @@
     document.getElementById('txDeleteBtn').hidden = false;
     document.getElementById('txAmount').value = fmtAmount(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
+    document.getElementById('txShop').value = tx.shop || 'ngoc-thinh';
+    populateGoldTypeSelect(tx.shop || 'ngoc-thinh', tx.goldType || '9999-nhan-tron');
     document.getElementById('txStore').value = tx.store || '';
     document.getElementById('txAddress').value = tx.address || '';
     document.getElementById('txNote').value = tx.note || '';
@@ -945,6 +1140,8 @@
     e.preventDefault();
     var amount = parseDecimal(document.getElementById('txAmount').value);
     var price = parseDigits(document.getElementById('txPrice').value);
+    var shop = document.getElementById('txShop').value;
+    var goldType = document.getElementById('txGoldType').value || null;
     var store = document.getElementById('txStore').value.trim();
     var address = document.getElementById('txAddress').value.trim();
     var note = document.getElementById('txNote').value.trim();
@@ -954,7 +1151,10 @@
     if(!(price > 0)){ setFieldError('txPrice', true); ok = false; } else clearFieldError('txPrice');
     // Validate the whole prospective timeline, not just this one row: a buy
     // edited downwards (or a backdated sell) can invalidate a DIFFERENT sell
-    // recorded later, so both directions have to be checked here.
+    // recorded later, so both directions have to be checked here. Scoped to
+    // this transaction's own (shop, goldType) group — a sell of one gold
+    // type must never validate against holdings of a completely different
+    // type (see holdingsAsOf's comment for the same reasoning).
     if(ok){
       var editing = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
       var candidate = {
@@ -964,7 +1164,10 @@
         date: date,
         createdAt: editing ? (editing.createdAt || 0) : Date.now()
       };
-      var prospective = state.transactions.filter(function(t){ return t.id !== editingTxId; }).concat([candidate]);
+      var sameGroup = state.transactions.filter(function(t){
+        return t.id !== editingTxId && t.shop === shop && (t.goldType||null) === (goldType||null);
+      });
+      var prospective = sameGroup.concat([candidate]);
       var violation = findLedgerViolation(prospective);
       if(violation){
         setFieldError('txAmount', true);
@@ -979,8 +1182,9 @@
     if(editingTxId){
       var tx = state.transactions.find(function(t){ return t.id === editingTxId; });
       tx.amount = amount; tx.price = price; tx.store = store; tx.address = address; tx.note = note; tx.date = date; tx.type = selectedType;
+      tx.shop = shop; tx.goldType = goldType;
     } else {
-      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, address: address, note: note, date: date, createdAt: Date.now() });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, store: store, address: address, note: note, date: date, createdAt: Date.now(), shop: shop, goldType: goldType });
     }
     saveState();
     renderAll();
@@ -1045,6 +1249,7 @@
       showConfirm(msg, { title: 'Nhập dữ liệu', confirmText: 'Nhập, ghi đè', danger: true }).then(function(ok){
         e.target.value = '';
         if(!ok) return;
+        migrateTxShape(validTx);
         state = { transactions: validTx };
         saveState();
         renderAll();
@@ -1063,13 +1268,49 @@
     });
   });
 
+  // ---------- price tab: shop / gold-type selection ----------
+  // Populates the type segmented control for whichever shop is currently
+  // selected — buttons are rebuilt (not just re-flagged) since the set of
+  // types differs per shop. Reuses the shared positionSegmentedIndicator
+  // pattern, same as every other .segmented control in this file.
+  function renderPriceTypeButtons(){
+    var container = document.getElementById('priceTypeSelect');
+    var types = SHOP_TYPES[selectedPriceShop] || [];
+    container.innerHTML = '<div class="segmented-indicator"></div>' + types.map(function(t){
+      return '<button type="button" class="'+(t.id===selectedPriceType?'active':'')+'" data-goldtype="'+t.id+'">'+escapeHtml(t.label)+'</button>';
+    }).join('');
+    if(container.offsetWidth > 0) positionSegmentedIndicator(container);
+  }
+  renderPriceTypeButtons();
+  document.getElementById('priceShopSelect').addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#priceShopSelect button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    positionSegmentedIndicator(document.getElementById('priceShopSelect'));
+    selectedPriceShop = btn.getAttribute('data-shop');
+    var types = SHOP_TYPES[selectedPriceShop] || [];
+    selectedPriceType = types.length ? types[0].id : null;
+    renderPriceTypeButtons();
+    renderPrice();
+  });
+  document.getElementById('priceTypeSelect').addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#priceTypeSelect button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    positionSegmentedIndicator(document.getElementById('priceTypeSelect'));
+    selectedPriceType = btn.getAttribute('data-goldtype');
+    renderPrice();
+  });
+
   // ---------- render: price card ----------
   // Small up/down/flat % chip for a price box, comparing to the previous
   // local day's last reading (not the previous 30-minute poll — the bot only
   // records real changes now, but a day-over-day figure is what actually
   // answers "is gold up or down?"). No VND amount, just direction + %.
-  function priceChangeHtml(key, current){
-    var daily = aggregateDailyHistory(liveHistory, 2);
+  function priceChangeHtml(key, current, hist){
+    var daily = aggregateDailyHistory(hist, 2);
     var todayKey = localDayKey(new Date());
     if(daily.length !== 2 || daily[1].day !== todayKey) return '';
     var prevVal = daily[0][key];
@@ -1084,7 +1325,12 @@
   function renderPrice(){
     var el = document.getElementById('priceContent');
     var subEl = document.getElementById('priceUpdatedSub');
-    var eff = getEffectivePrice();
+    var titleEl = document.getElementById('priceCardTitle');
+    var shopInfo = SHOPS.filter(function(s){ return s.id === selectedPriceShop; })[0];
+    var typeInfo = (SHOP_TYPES[selectedPriceShop] || []).filter(function(t){ return t.id === selectedPriceType; })[0];
+    titleEl.textContent = (shopInfo && typeInfo) ? (shopInfo.name + ' · ' + typeInfo.label) : 'Giá vàng';
+    var hist = getHistoryFor(selectedPriceShop, selectedPriceType);
+    var eff = getEffectivePrice(selectedPriceShop, selectedPriceType);
 
     if(!eff){
       subEl.textContent = liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động';
@@ -1098,20 +1344,20 @@
     var whenTxt = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
     subEl.textContent = 'Cập nhật lần cuối ' + whenTxt;
 
-    var p = computePortfolio();
+    var p = computePortfolioForGroup(selectedPriceShop, selectedPriceType);
     var avgCost = p.holdingAmount > 0 ? p.avgCost : null;
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy)+'</div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy, hist)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell, hist)+'</div>' +
       '</div>' +
       '<div class="chart-head">' +
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
       '</div>' +
       renderRangeTabs('priceRangeTabs', priceChartRange) +
-      '<div class="chart-wrap">' + renderChart(liveHistory, priceChartRange, avgCost) + '</div>' +
-      renderPriceRangeCard(liveHistory, eff.buy);
+      '<div class="chart-wrap">' + renderChart(hist, priceChartRange, avgCost) + '</div>' +
+      renderPriceRangeCard(hist, eff.buy);
   }
 
   function buildDailyPriceSeries(hist){
@@ -1250,12 +1496,24 @@
   }
 
   // ---------- portfolio value over time (holding amount x historical price, day by day) ----------
+  // Scoped to DEFAULT_PRICE_SHOP/DEFAULT_PRICE_TYPE's own transactions and
+  // own price series only — this chart replays a SINGLE price series, and
+  // once transactions can belong to different, non-fungible gold types,
+  // feeding it every transaction would silently value every other group's
+  // chỉ at this one group's price too. A true multi-series "value of
+  // everything over time" chart covering every group is future work,
+  // explicitly out of scope here — but blending wrong prices together would
+  // be worse than clearly scoping to one group, so this scoping is required,
+  // not optional (see renderSummary's chart title for how this is surfaced).
   function computePortfolioSeries(rangeKey){
-    if(state.transactions.length === 0) return [];
-    var priceSeries = buildDailyPriceSeries(liveHistory);
+    var groupTx = state.transactions.filter(function(t){
+      return t.shop === DEFAULT_PRICE_SHOP && (t.goldType||null) === DEFAULT_PRICE_TYPE;
+    });
+    if(groupTx.length === 0) return [];
+    var priceSeries = buildDailyPriceSeries(getHistoryFor(DEFAULT_PRICE_SHOP, DEFAULT_PRICE_TYPE));
     if(priceSeries.length === 0) return [];
 
-    var chrono = state.transactions.slice().sort(function(a,b){
+    var chrono = groupTx.slice().sort(function(a,b){
       return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
     });
     var firstTxDay = chrono[0].date;
@@ -1364,16 +1622,20 @@
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
 
-    var eff = getEffectivePrice();
-    var hasVal = !!eff;
-    var p = computePortfolio();
-    var unrealizedPL = hasVal ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
-    var totalPL = p.realizedPL + unrealizedPL;
-    var totalPlPct = p.totalBuyCost ? (totalPL / p.totalBuyCost * 100) : 0;
-    var firstTxDate = p.firstTxDate;
+    // Merged across ALL (shop, goldType) groups — money totals only.
+    // holdingAmount/avgCost are deliberately NOT shown here anymore: chỉ of
+    // different gold types are not fungible, so a blended "X chỉ đang nắm
+    // giữ" or a blended "đ/chỉ trung bình" across types would be meaningless.
+    // A per-group breakdown lives in the "Theo cửa hàng & loại vàng" card.
+    var pAll = computePortfolioAll();
+    var hasVal = pAll.groups.some(function(g){ return !g.hasPriceGap; });
+    var unrealizedPL = pAll.totalUnrealizedPL;
+    var totalPL = pAll.totalRealizedPL + unrealizedPL;
+    var totalPlPct = pAll.totalBuyCost ? (totalPL / pAll.totalBuyCost * 100) : 0;
+    var firstTxDate = pAll.firstTxDate;
     var daysSinceFirst = firstTxDate ? daysBetween(firstTxDate, todayISO()) : 0;
     var annualizedPct = null;
-    if(hasVal && p.totalBuyCost && daysSinceFirst > 0){
+    if(hasVal && pAll.totalBuyCost && daysSinceFirst > 0){
       var roiRatio = 1 + totalPlPct/100;
       if(roiRatio > 0) annualizedPct = (Math.pow(roiRatio, 365/daysSinceFirst) - 1) * 100;
     }
@@ -1382,25 +1644,30 @@
     var arrowPath = totalPL >= 0
       ? '<path d="M6 15l6-6 6 6"/>'
       : '<path d="M6 9l6 6 6-6"/>';
-    var realizedCls = p.realizedPL > 0 ? 'up' : (p.realizedPL < 0 ? 'down' : '');
+    var realizedCls = pAll.totalRealizedPL > 0 ? 'up' : (pAll.totalRealizedPL < 0 ? 'down' : '');
+    // Sum of priced groups' real market value + unpriced groups' cost basis
+    // as a fallback (their unrealizedPL contributes 0, per the gap note).
+    var currentValue = pAll.totalHoldingCost + unrealizedPL;
+    var gapNote = pAll.anyPriceGap
+      ? '<p class="field-hint">'+pAll.priceGapCount+' nhóm vàng chưa có giá tham chiếu — tạm tính lãi/lỗ chưa chốt bằng 0 cho phần này.</p>'
+      : '';
 
     content.innerHTML =
-      '<div class="summary-row"><span class="summary-label">Đang nắm giữ</span><span class="summary-val">'+fmtAmount(p.holdingAmount)+' chỉ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá vốn trung bình</span><span class="summary-val">'+(p.holdingAmount>0 ? fmtVND(p.avgCost)+' đ/chỉ' : '—')+'</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(p.holdingCost)+' đ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(p.holdingAmount*eff.buy)+' đ' : '—')+'</span></div>' +
-      (p.realizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(p.realizedPL>=0?'+':'')+fmtVND(p.realizedPL)+' đ</span></div>' : '') +
+      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
+      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>' +
+      (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(pAll.totalRealizedPL>=0?'+':'')+fmtVND(pAll.totalRealizedPL)+' đ</span></div>' : '') +
+      gapNote +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
           '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
-        (hasVal && p.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
+        (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
       '</div>' +
       (annualizedPct !== null ? '<div class="summary-row"><span class="summary-label">ROI hàng năm (ước tính, lãi kép)</span><span class="summary-val '+(annualizedPct>=0?'up':'down')+'">'+(annualizedPct>=0?'+':'')+annualizedPct.toFixed(2)+'%</span></div>' : '') +
       (avgHoldingDays !== null ? '<div class="summary-row"><span class="summary-label">Thời gian nắm giữ TB (mọi lần mua)</span><span class="summary-val">'+Math.round(avgHoldingDays)+' ngày</span></div>' : '') +
       '<div class="chart-head" style="margin-top:16px">' +
-        '<span class="chart-title">Giá trị danh mục theo thời gian</span>' +
+        '<span class="chart-title">Giá trị danh mục theo thời gian'+(DEFAULT_PRICE_GROUP_LABEL?' ('+DEFAULT_PRICE_GROUP_LABEL+')':'')+'</span>' +
       '</div>' +
       renderRangeTabs('portfolioRangeTabs', portfolioChartRange) +
       '<div class="chart-wrap">' + renderPortfolioChart(portfolioChartRange) + '</div>';
@@ -1408,11 +1675,14 @@
 
   // ---------- monthly/yearly P&L report ----------
   function computePnlReport(groupBy){
-    var p = computePortfolio();
+    // Each sell's pl was already computed correctly within its own group by
+    // computePortfolio() — merging perTx by tx.id (globally unique) doesn't
+    // corrupt that, it's just a lookup table.
+    var pAll = computePortfolioAll();
     var groups = {};
     state.transactions.forEach(function(tx){
       if(txType(tx) !== 'sell') return;
-      var rec = p.perTx[tx.id];
+      var rec = pAll.perTx[tx.id];
       if(!rec) return;
       var key = groupBy === 'year' ? tx.date.slice(0,4) : tx.date.slice(0,7);
       if(!groups[key]) groups[key] = { pl: 0, count: 0, isCurrent: false };
@@ -1421,14 +1691,13 @@
     });
     var currentKey = groupBy === 'year' ? todayISO().slice(0,4) : todayISO().slice(0,7);
     if(!groups[currentKey]) groups[currentKey] = { pl: 0, count: 0, isCurrent: false };
-    var eff = getEffectivePrice();
-    var hasVal = !!eff;
-    var unrealizedPL = hasVal ? (p.holdingAmount * eff.buy - p.holdingCost) : 0;
-    groups[currentKey].pl += unrealizedPL;
+    // Sum of each group's own correctly-priced unrealized P&L — not a
+    // blended holdingAmount × single price, since groups aren't fungible.
+    groups[currentKey].pl += pAll.totalUnrealizedPL;
     groups[currentKey].isCurrent = true;
     var order = Object.keys(groups).filter(function(key){
       if(groups[key].count > 0) return true;
-      return key === currentKey && p.holdingAmount > 0;
+      return key === currentKey && pAll.totalHoldingCost > 0;
     }).sort(function(a,b){ return b.localeCompare(a); });
     return { groups: groups, order: order };
   }
@@ -1450,40 +1719,42 @@
   }
 
   // ---------- store breakdown ----------
+  // Groups by (shop, goldType) rather than free-text store now that every
+  // transaction has an authoritative shop+type. The old "best price" badge
+  // is dropped entirely, not just simplified: Ngọc Thịnh's and Huy Thanh's
+  // type catalogs have zero overlapping type ids, so comparing "best price"
+  // across groups would compare purity, not deal quality — an actual
+  // correctness bug, not a style choice.
   function renderStoreSummary(){
     var el = document.getElementById('storeSummary');
     var buys = state.transactions.filter(function(t){ return txType(t) === 'buy'; });
-    var byStore = {};
-    var storeNames = [];
+    var byGroup = {};
+    var groupKeys = [];
     buys.forEach(function(t){
-      var key = (t.store && t.store.trim()) ? t.store.trim() : 'Không rõ';
-      if(!byStore[key]){ byStore[key] = { amount: 0, cost: 0 }; storeNames.push(key); }
-      byStore[key].amount += t.amount;
-      byStore[key].cost += t.amount * t.price;
+      var key = groupKey(t);
+      if(!byGroup[key]){ byGroup[key] = { amount: 0, cost: 0, shop: t.shop, goldType: t.goldType }; groupKeys.push(key); }
+      byGroup[key].amount += t.amount;
+      byGroup[key].cost += t.amount * t.price;
     });
-    if(storeNames.length === 0){ el.hidden = true; return; }
-    storeNames.sort(function(a,b){ return byStore[b].cost - byStore[a].cost; });
-    var totalCost = storeNames.reduce(function(sum,name){ return sum + byStore[name].cost; }, 0);
-    var bestName = null, bestAvg = Infinity;
-    storeNames.forEach(function(name){
-      if(name === 'Không rõ') return;
-      var s = byStore[name];
-      var avg = s.amount ? s.cost / s.amount : Infinity;
-      if(avg < bestAvg){ bestAvg = avg; bestName = name; }
-    });
+    if(groupKeys.length === 0){ el.hidden = true; return; }
+    groupKeys.sort(function(a,b){ return byGroup[b].cost - byGroup[a].cost; });
+    var totalCost = groupKeys.reduce(function(sum,key){ return sum + byGroup[key].cost; }, 0);
     el.hidden = false;
     el.innerHTML =
       '<div class="card" style="padding:14px 18px">' +
-        '<div class="settings-row-title" style="margin-bottom:8px">Theo cửa hàng</div>' +
-        storeNames.map(function(name){
-          var s = byStore[name];
-          var avg = s.amount ? s.cost / s.amount : 0;
-          var pct = totalCost ? (s.cost / totalCost * 100) : 0;
-          var isBest = name === bestName;
+        '<div class="settings-row-title" style="margin-bottom:8px">Theo cửa hàng &amp; loại vàng</div>' +
+        groupKeys.map(function(key){
+          var g = byGroup[key];
+          var avg = g.amount ? g.cost / g.amount : 0;
+          var pct = totalCost ? (g.cost / totalCost * 100) : 0;
+          var shopInfo = SHOPS.filter(function(s){ return s.id === g.shop; })[0];
+          var shopName = shopInfo ? shopInfo.name : g.shop;
+          var typeInfo = (SHOP_TYPES[g.shop] || []).filter(function(t){ return t.id === g.goldType; })[0];
+          var label = typeInfo ? (shopName + ' · ' + typeInfo.label) : shopName;
           return '<div class="store-bar-row">' +
-            '<div class="store-bar-top"><span class="store-bar-name">'+escapeHtml(name)+(isBest ? ' <span class="store-bar-best">Giá tốt nhất</span>' : '')+'</span></div>' +
+            '<div class="store-bar-top"><span class="store-bar-name">'+escapeHtml(label)+'</span></div>' +
             '<div class="store-bar-track"><div class="store-bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>' +
-            '<div class="summary-row"><span class="summary-label">'+fmtAmount(s.amount)+' chỉ</span><span class="summary-val">'+fmtVND(avg)+' đ/chỉ TB</span></div>' +
+            '<div class="summary-row"><span class="summary-label">'+fmtAmount(g.amount)+' chỉ</span><span class="summary-val">'+fmtVND(avg)+' đ/chỉ TB</span></div>' +
           '</div>';
         }).join('') +
       '</div>';
@@ -1542,8 +1813,7 @@
   function renderTx(){
     var list = document.getElementById('txList');
     var count = document.getElementById('txCount');
-    var eff = getEffectivePrice();
-    var p = computePortfolio();
+    var pAll = computePortfolioAll();
     renderStoreSummary();
     var all = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = all.length;
@@ -1571,12 +1841,18 @@
     list.innerHTML = txs.map(function(tx){
       var isSell = txType(tx) === 'sell';
       var badge = '<span class="tx-badge '+(isSell?'sell':'buy')+'">'+(isSell?'BÁN':'MUA')+'</span>';
-      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
+      // Shop/type shown per-row now that a single list can mix multiple
+      // (shop, goldType) groups — without this, two same-day transactions
+      // at the same store but different gold types were indistinguishable.
+      var shopInfo = SHOPS.filter(function(s){ return s.id === tx.shop; })[0];
+      var typeInfo = (SHOP_TYPES[tx.shop] || []).filter(function(t){ return t.id === tx.goldType; })[0];
+      var groupTxt = typeInfo ? (shopInfo.name + ' · ' + typeInfo.label) : (shopInfo ? shopInfo.name : '');
+      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (groupTxt ? ' · '+escapeHtml(groupTxt) : '') + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
       var noteHtml = tx.note ? '<div class="tx-note">'+escapeHtml(tx.note)+'</div>' : '';
 
       var grid;
       if(isSell){
-        var sellInfo = p.perTx[tx.id] || { avgCostAtSale: 0, pl: 0 };
+        var sellInfo = pAll.perTx[tx.id] || { avgCostAtSale: 0, pl: 0 };
         var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
         grid =
           '<div class="tx-grid">' +
@@ -1585,8 +1861,11 @@
             '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>' +
           '</div>';
       } else {
+        // Own group's price, not a single global one — a Huy Thanh 18K buy
+        // must never be valued against Ngọc Thịnh's 9999 price or vice versa.
+        var txEff = getEffectivePrice(tx.shop, tx.goldType);
         var cost = tx.amount * tx.price;
-        var currentVal = eff ? tx.amount * eff.buy : null;
+        var currentVal = txEff ? tx.amount * txEff.buy : null;
         var pl = currentVal === null ? null : currentVal - cost;
         var plPct = (pl === null || cost === 0) ? null : (pl/cost*100);
         var plCls2 = pl === null ? '' : (pl > 0 ? 'up' : (pl < 0 ? 'down' : ''));
@@ -1708,7 +1987,7 @@
 
   function renderAll(){
     renderPrice(); renderSummary(); renderPnlReport(); renderTx();
-    // Assistant reads liveData/liveHistory/computePortfolio() too, so it
+    // Assistant reads liveData/liveHistoryAll/computePortfolio() too, so it
     // must refresh on every state or price change, not just when its own
     // tab is switched into — otherwise it silently shows stale numbers
     // after a background price refresh (loadLiveData) or portfolio edit.
@@ -1883,6 +2162,11 @@
       });
     }
   })();
+  // Persist the shop/goldType migration (if any transaction needed it) and
+  // mark the Gist dirty flag BEFORE the pull/push decision right below —
+  // otherwise this device could pull down an older, unmigrated Gist copy
+  // and silently lose the fix it just made locally.
+  if(migratedFromLegacyShape) saveState();
   if(gistConfig){
     if(hasUnsyncedChanges()){
       // Local edits never reached the Gist (app was offline, token had

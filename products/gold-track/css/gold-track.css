@@ -239,7 +239,6 @@
   .store-bar-row{padding:6px 0}
   .store-bar-top{display:flex;align-items:center;margin-bottom:6px}
   .store-bar-name{font-size:.86rem;font-weight:700}
-  .store-bar-best{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.03em;margin-left:6px;background:var(--green-soft);color:var(--green)}
   .store-bar-track{background:var(--glass);border-radius:100px;height:8px;overflow:hidden}
   .store-bar-fill{height:100%;border-radius:100px;background:linear-gradient(135deg,var(--gold2),var(--gold))}
 
@@ -396,6 +395,11 @@
   .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
   .segmented button.active{color:#1A1204}
   .segmented button.active[data-type="sell"]{color:#08213F}
+  /* Gold-type control can hold up to 6 long Vietnamese labels (e.g. "Vàng
+     trắng 10K 417") — equal-flex columns would squeeze them unreadably, so
+     this variant scrolls horizontally instead of shrinking each button. */
+  .segmented.segmented-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .segmented.segmented-scroll button{flex:0 0 auto;padding:10px 16px;white-space:nowrap}
 
   .sheet-actions{display:flex;gap:10px;margin-top:6px}
   .sheet-actions .btn{flex:1}

@@ -1,6 +1,6 @@
 # GoldTrack
 
-Theo dõi giá vàng 9999 (nhẫn tròn) và tính lời/lỗ danh mục vàng đã mua. PWA cài được lên iPhone qua "Add to Home Screen".
+Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệm — Ngọc Thịnh Jewelry (6 loại: 9999 nhẫn tròn, 98 nhẫn tròn, 96 nhẫn tròn, trang sức 24K 98, tây 610, trắng 10K 417) và Huy Thanh Jewelry (5 loại: 24k, nguyên liệu 22K/18K/14K/10K) — mỗi giao dịch phải gắn đúng tiệm + loại vàng vì giá và độ tuổi vàng khác nhau giữa các tiệm. PWA cài được lên iPhone qua "Add to Home Screen".
 
 ## Cấu trúc thật (khác biệt so với mặt bằng chung)
 
@@ -13,6 +13,7 @@ Theo dõi giá vàng 9999 (nhẫn tròn) và tính lời/lỗ danh mục vàng �
 ## Cạm bẫy đặc thù của GoldTrack (không phải cạm bẫy chung của repo)
 
 - **Sổ sách mua/bán phải replay theo thứ tự thời gian** (`computePortfolio`). Đừng validate bằng tổng số dư bỏ qua ngày — từng gây bug lãi ảo khi bán lùi ngày (`findLedgerViolation` là hàm chống bug này, mọi thay đổi liên quan số lượng/ngày phải đi qua nó).
+- **Vàng khác tiệm/loại không được gộp chung sổ sách**: mọi giao dịch mang `shop`+`goldType`; `computePortfolio`/`holdingsAsOf`/`findLedgerViolation` phải luôn được gọi trên danh sách đã lọc đúng 1 cặp (shop, goldType) — trộn lẫn sẽ cho phép bán "khống" loại vàng A dựa trên tồn kho loại B, hoặc bịa ra giá vốn trung bình vô nghĩa giữa các độ tuổi vàng khác nhau. `computePortfolioAll()` là nơi duy nhất được gộp số liệu giữa các nhóm — và chỉ gộp số tiền (VNĐ), không bao giờ gộp số "chỉ"/giá vốn TB giữa các loại vàng khác nhau.
 - **Lãi/lỗ phải tính trên lượng đã clamp** (`sellAmt`), không phải lượng thô (`tx.amount`) — dùng lượng thô sẽ bịa ra lợi nhuận trên vàng chưa từng bán.
 - **Đồng bộ Gist có thể mất dữ liệu nếu không cẩn thận**: cờ `goldtrack_gist_dirty_v1` phải được tôn trọng lúc khởi động — có thay đổi chưa đồng bộ thì phải đẩy lên (push), không được kéo về (pull) đè mất.
 - **Thêm file mới mà app load lúc chạy** (css/js/icon/data) → phải thêm path vào đúng mảng (`APP_CODE_PATHS`/`ICON_PATHS`/`DATA_PATHS`) trong `js/sw-core.js` **và** bump `CACHE_NAME` **và** bump `?v=` trong `sw-gold-track.js` cho khớp — thiếu 1 trong 3 bước này là app hỏng khi offline hoặc kẹt bản cũ.

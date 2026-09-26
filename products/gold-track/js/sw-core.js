@@ -7,7 +7,7 @@
 // GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
 // GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
 // giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
-var CACHE_NAME = "goldtrack-cache-v7";
+var CACHE_NAME = "goldtrack-cache-v8";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
