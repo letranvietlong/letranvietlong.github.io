@@ -126,14 +126,10 @@ a{color:var(--accent)}
 .chart-tip-name{color:var(--muted);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .chart-tip-val{margin-left:auto;padding-left:10px;font-weight:700;white-space:nowrap;font-family:var(--font)}
 
-.chart-legend{list-style:none;margin:12px 0 0;padding:0}
-.legend-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
-.legend-row:first-child{border-top:none}
+.chart-legend{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+.legend-row{display:flex;align-items:center;gap:8px;min-width:0}
 .legend-swatch{flex:none;width:14px;height:4px;border-radius:100px}
-.legend-name{flex:1 1 auto;min-width:0;font-size:.84rem;font-weight:700}
-.legend-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
-.legend-price{font-family:var(--font);font-size:.95rem;font-weight:800;white-space:nowrap}
-.legend-right .chip{font-size:.7rem;padding:2px 8px}
+.legend-name{min-width:0;font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- History ---------- */
 .hist-entry{padding:12px 0;border-top:1px solid var(--line)}

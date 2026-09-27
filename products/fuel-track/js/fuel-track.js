@@ -82,7 +82,7 @@
         '<div class="price-name">' + escapeHtml(it.label) + note + '</div>' +
         '<div class="price-right">' +
           '<span class="price-val">' + fmtVnd(it.price) + '<span class="price-unit">' + unit + '</span></span>' +
-          changeChip(it.change, false) +
+          (it.change != null ? rangeChip(it.change, it.prevPrice) : '') +
         '</div>' +
       '</div>';
     }).join('');
@@ -275,13 +275,11 @@
   function renderLegend(data){
     var el = $('chartLegend');
     if(data.days.length < 2){ el.innerHTML = ''; return; }
+    // Colour key only — current prices and changes already sit in "Giá hôm nay".
     el.innerHTML = data.series.map(function(s, si){
-      var fl = firstLast(s.vals);
-      if(fl.last == null) return '';
       return '<li class="legend-row">' +
         '<span class="legend-swatch" style="background:' + seriesColor(si) + '"></span>' +
         '<span class="legend-name">' + escapeHtml(s.label) + '</span>' +
-        '<span class="legend-right"><span class="legend-price">' + fmtVnd(fl.last) + '</span>' + rangeChip(fl.last - fl.first, fl.first) + '</span>' +
       '</li>';
     }).join('');
   }
