@@ -1241,16 +1241,32 @@
     var hasAvgLine = typeof avgCost === 'number' && avgCost > 0;
     var vals = daily.map(function(p){ return p.buy; });
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    // Floor the Y span at 0.2% of price: a 10.000đ move on a ~14tr price
+    // should read as a visible step, while a truly flat series still looks
+    // flat rather than being blown up to fill the whole plot.
+    var MIN_SPAN = Math.max(min * 0.002, 1);
+    if(max - min < MIN_SPAN){ var mid = (min + max) / 2; min = mid - MIN_SPAN / 2; max = mid + MIN_SPAN / 2; }
+    // Include the avg-cost line only when it's reasonably close to the data.
+    // Stretching the axis to a far-away cost (e.g. right after buying, cost =
+    // shop's sell price, ~2.6% above its buy price) squashed real day-to-day
+    // moves into a visually flat line. Far away → pin it to the plot edge and
+    // say so in the legend instead.
+    var avgOffscale = 0; // 1 = above the plot, -1 = below
     if(hasAvgLine){
+      var MAX_EXTEND = 1.5 * (max - min);
       // Solved so the margin itself is exactly MARGIN_FRAC of the *final*
       // range — a margin sized off the pre-extension span shrinks to nothing
       // once avgCost sits far outside it, leaving the line flush on the edge.
       var MARGIN_FRAC = 0.15;
       var k = MARGIN_FRAC / (1 - MARGIN_FRAC);
-      if(avgCost > max) max = avgCost + k * Math.max(avgCost - min, 1);
-      else if(avgCost < min) min = avgCost - k * Math.max(max - avgCost, 1);
+      if(avgCost > max){
+        if(avgCost - max <= MAX_EXTEND) max = avgCost + k * Math.max(avgCost - min, 1);
+        else avgOffscale = 1;
+      } else if(avgCost < min){
+        if(min - avgCost <= MAX_EXTEND) min = avgCost - k * Math.max(max - avgCost, 1);
+        else avgOffscale = -1;
+      }
     }
-    if(min === max){ min -= 1; max += 1; }
 
     var pts = mapPointsToSvg(daily, 'buy', w, h, padTop, padBottom, padX, min, max);
     var plotBottom = padTop + (h - padTop - padBottom);
@@ -1273,7 +1289,7 @@
     var avgLineSvg = '';
     if(hasAvgLine){
       var plotH = h - padTop - padBottom;
-      var avgY = padTop + plotH - ((avgCost-min)/(max-min))*plotH;
+      var avgY = avgOffscale === 1 ? padTop : avgOffscale === -1 ? padTop + plotH : padTop + plotH - ((avgCost-min)/(max-min))*plotH;
       avgLineSvg = '<line class="chart-cost-line" x1="'+padX+'" x2="'+(w-padX)+'" y1="'+avgY.toFixed(1)+'" y2="'+avgY.toFixed(1)+'" stroke-width="1.4" stroke-dasharray="4 3"/>';
     }
 
@@ -1289,7 +1305,9 @@
     (hasAvgLine ?
       '<div class="chart-legend">' +
         '<span class="chart-legend-item"><span class="chart-legend-dot" style="background:'+lineColor+'"></span>Giá mua vào</span>' +
-        '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Giá vốn TB của bạn</span>' +
+        '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Giá vốn TB của bạn' +
+          (avgOffscale ? ' ('+fmtVND(avgCost)+' đ, '+(avgOffscale === 1 ? 'cao hơn' : 'thấp hơn')+' khung)' : '') +
+        '</span>' +
       '</div>'
     : '');
   }
