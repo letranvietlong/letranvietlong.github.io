@@ -21,7 +21,7 @@ Theo dõi giá bán lẻ xăng dầu PVOIL tại Đà Nẵng (nội thành = Vù
 
 - `py/fetch_fuel_price.py` (chạy thường): lấy ngày hôm nay theo giờ VN, không có thì hôm qua; lỗi mạng / không có dữ liệu → exit 1, không ghi file. Idempotent: chạy lại khi giá không đổi thì không đụng file nào.
 - `--backfill-from YYYY-MM-DD`: quét từng ngày tới hôm nay. Nếu bị chặn giữa chừng, script ghi phần đã có và in ngày để chạy tiếp. Ngày cũ hơn entry cuối bị bỏ qua, nên chỉ backfill được "về phía trước" — muốn làm lại từ đầu thì xoá 2 file data rồi chạy lại.
-- `.github/workflows/update-fuel-price.yml`: cron `23 1,8,9,10,13 * * *` UTC (08:23, 15:23, 16:23, 17:23, 20:23 giờ VN), dồn lượt sau 15:00 vì kỳ điều hành hiệu lực lúc đó. Chỉ `git add` 2 file giá, vòng lặp fetch/rebase/push 5 lần để né race với các workflow khác.
+- `.github/workflows/update-fuel-price.yml`: cron `23 * * * *` (mỗi giờ, phút :23). Từng chỉ chạy 5 lượt/ngày quanh 15:00 VN nhưng GitHub hay bỏ lượt hẹn giờ khi quá tải, nên chạy dày; không sinh commit rác vì script chỉ ghi khi giá đổi. Chỉ `git add` 2 file giá, vòng lặp fetch/rebase/push 5 lần để né race với các workflow khác.
 
 ## Cạm bẫy
 

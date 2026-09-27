@@ -2,10 +2,12 @@ name: Update fuel price
 
 on:
   schedule:
-    # 08:23, 15:23, 16:23, 17:23, 20:23 giờ VN. Kỳ điều hành hiệu lực 15:00 VN
-    # (thường thứ Năm) nên dồn nhiều lượt sau 15:00; phút :23 để né slot :00/:30
-    # mà GitHub hay bỏ qua.
-    - cron: "23 1,8,9,10,13 * * *"
+    # Mỗi giờ, phút :23 (né slot :00/:30 mà GitHub hay bỏ qua). Từng chạy chỉ
+    # 5 lượt/ngày quanh 15:00 VN, nhưng GitHub bỏ lượt hẹn giờ khi quá tải
+    # (ngày đầu 27/09/2026: cả 3 lượt chiều đều không chạy) — chạy dày để lượt
+    # nào lọt cũng bắt được kỳ điều chỉnh. Không sinh commit rác: script chỉ
+    # ghi file khi giá thật sự đổi.
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 permissions:
