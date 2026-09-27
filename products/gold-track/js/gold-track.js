@@ -559,7 +559,7 @@
   var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
   var priceChartRange = '7';
   var portfolioChartRange = '7';
-  var pnlGroupBy = 'month';
+  var pnlGroupBy = 'day';
   var pnlCalMonth = todayISO().slice(0,7);
   var pnlCalSelected = null;
   function renderRangeTabs(id, activeKey){
