@@ -560,6 +560,8 @@
   var priceChartRange = '7';
   var portfolioChartRange = '7';
   var pnlGroupBy = 'month';
+  var pnlCalMonth = todayISO().slice(0,7);
+  var pnlCalSelected = null;
   function renderRangeTabs(id, activeKey){
     return '<div class="range-tabs" id="'+id+'" role="group" aria-label="Khoảng thời gian">' +
       Object.keys(RANGE_LABELS).map(function(key){
@@ -586,6 +588,22 @@
     btn.classList.add('active');
     pnlGroupBy = btn.getAttribute('data-group');
     positionSegmentedIndicator(document.getElementById('pnlGroupBy'));
+    renderPnlReport();
+  });
+  document.getElementById('pnlReportContent').addEventListener('click', function(e){
+    var nav = e.target.closest('[data-cal-nav]');
+    if(nav){
+      if(nav.disabled) return;
+      var parts = pnlCalMonth.split('-');
+      var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1 + parseInt(nav.getAttribute('data-cal-nav'),10), 1);
+      pnlCalMonth = d.getFullYear()+'-'+pad2(d.getMonth()+1);
+      pnlCalSelected = null;
+      renderPnlReport();
+      return;
+    }
+    var cell = e.target.closest('[data-cal-day]');
+    if(!cell) return;
+    pnlCalSelected = cell.getAttribute('data-cal-day');
     renderPnlReport();
   });
 
@@ -1523,9 +1541,176 @@
     return { groups: groups, order: order, unrealizedPL: unrealizedPL };
   }
 
+  // Daily change in (unrealized + realized) P&L. Each (shop, goldType) group
+  // is replayed on its own with the same arithmetic as computePortfolioSeries'
+  // applyTx; only the VNĐ deltas are summed across groups. A group's day with
+  // no known price contributes 0 and keeps its previous unrealized value, so
+  // the jump is booked on the first day a price becomes known instead of lost.
+  // Realized part reuses computePortfolioAll's per-sell pl as-is.
+  function computeDailyPnl(){
+    var result = {};
+    var groupsMap = groupTransactions(state.transactions);
+    var groupKeys = Object.keys(groupsMap);
+    if(groupKeys.length === 0) return result;
+    var pAll = computePortfolioAll();
+
+    var groups = groupKeys.map(function(key){
+      var txs = groupsMap[key];
+      var shop = txs[0].shop, goldType = txs[0].goldType || null;
+      return {
+        shop: shop, goldType: goldType,
+        chrono: txs.slice().sort(function(a,b){
+          return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+        }),
+        priceSeries: buildDailyPriceSeries(getHistoryFor(shop, goldType)),
+        holdingAmount: 0, holdingCost: 0, txIdx: 0, priceIdx: 0,
+        lastKnownBuy: null, prevUnreal: 0
+      };
+    });
+
+    function applyTx(g, tx){
+      if(txType(tx) === 'sell'){
+        var avgCost = g.holdingAmount > 0 ? g.holdingCost / g.holdingAmount : 0;
+        var sellAmt = Math.min(tx.amount, g.holdingAmount);
+        g.holdingCost -= avgCost * sellAmt;
+        g.holdingAmount -= sellAmt;
+        if(g.holdingAmount < 1e-9){ g.holdingAmount = 0; g.holdingCost = 0; }
+      } else {
+        g.holdingCost += tx.amount * tx.price;
+        g.holdingAmount += tx.amount;
+      }
+    }
+
+    var realizedByDay = {};
+    state.transactions.forEach(function(tx){
+      if(txType(tx) !== 'sell') return;
+      var rec = pAll.perTx[tx.id];
+      if(!rec) return;
+      realizedByDay[tx.date] = (realizedByDay[tx.date] || 0) + rec.pl;
+    });
+
+    var startDay = groups.reduce(function(min, g){
+      return (!min || g.chrono[0].date < min) ? g.chrono[0].date : min;
+    }, null);
+    var today = todayISO();
+    var p = startDay.split('-');
+    var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+    var guard = 0;
+    while(localDayKey(d) <= today && guard < 20000){
+      guard++;
+      var dayKey = localDayKey(d);
+      var total = 0;
+      groups.forEach(function(g){
+        while(g.txIdx < g.chrono.length && g.chrono[g.txIdx].date === dayKey){ applyTx(g, g.chrono[g.txIdx]); g.txIdx++; }
+        while(g.priceIdx < g.priceSeries.length && g.priceSeries[g.priceIdx].day <= dayKey){ g.lastKnownBuy = g.priceSeries[g.priceIdx].buy; g.priceIdx++; }
+        // Today uses the same live price as Overview, so the days always add
+        // up to its "Tổng lãi/lỗ" even if history lags the live fetch.
+        if(dayKey === today){
+          var eff = getEffectivePrice(g.shop, g.goldType);
+          if(eff) g.lastKnownBuy = eff.buy;
+        }
+        var unreal = g.holdingAmount <= 1e-9 ? 0
+          : (g.lastKnownBuy != null ? g.holdingAmount * g.lastKnownBuy - g.holdingCost : null);
+        if(unreal === null) return;
+        total += unreal - g.prevUnreal;
+        g.prevUnreal = unreal;
+      });
+      var realized = realizedByDay[dayKey] || 0;
+      result[dayKey] = { total: total + realized, realized: realized };
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1);
+    }
+    return result;
+  }
+
+  function fmtCompactVND(x){
+    var a = Math.abs(x);
+    if(a < 500) return '0';
+    var sign = x < 0 ? '-' : '+';
+    // 999.500+ would round to "1000k" — show it as "1,0tr" instead.
+    if(a < 999500) return sign + Math.round(a/1000) + 'k';
+    return sign + (a/1e6).toFixed(1).replace('.', ',') + 'tr';
+  }
+  function fmtSignedVND(x){
+    var r = Math.round(x) || 0;
+    return (r >= 0 ? '+' : '') + fmtVND(r) + ' đ';
+  }
+  function signClass(x){
+    var r = Math.round(x);
+    return r > 0 ? 'up' : (r < 0 ? 'down' : '');
+  }
+
+  function renderPnlCalendar(){
+    var daily = computeDailyPnl();
+    var today = todayISO();
+    var curMonth = today.slice(0,7);
+    var firstMonth = state.transactions.reduce(function(min, tx){
+      return (!min || tx.date < min) ? tx.date : min;
+    }, null).slice(0,7);
+    if(firstMonth > curMonth) firstMonth = curMonth;
+    if(pnlCalMonth > curMonth) pnlCalMonth = curMonth;
+    if(pnlCalMonth < firstMonth) pnlCalMonth = firstMonth;
+
+    var y = parseInt(pnlCalMonth.slice(0,4),10), m = parseInt(pnlCalMonth.slice(5,7),10);
+    var offset = (new Date(y, m-1, 1).getDay() + 6) % 7;
+    var daysInMonth = new Date(y, m, 0).getDate();
+    var selected = pnlCalSelected;
+    if(!selected || selected.slice(0,7) !== pnlCalMonth || !daily[selected]){
+      selected = (today.slice(0,7) === pnlCalMonth && daily[today]) ? today : null;
+    }
+
+    var cells = '';
+    for(var i=0;i<offset;i++) cells += '<div class="pnl-cal-cell pnl-cal-blank"></div>';
+    var monthTotal = 0;
+    for(var dd=1; dd<=daysInMonth; dd++){
+      var key = pnlCalMonth + '-' + pad2(dd);
+      var rec = daily[key];
+      var extra = (key === today ? ' today' : '') + (key === selected ? ' selected' : '');
+      if(!rec){
+        cells += '<div class="pnl-cal-cell pnl-cal-empty'+extra+'"><span class="pnl-cal-num">'+dd+'</span></div>';
+        continue;
+      }
+      monthTotal += rec.total;
+      var txt = fmtCompactVND(rec.total);
+      var cls = txt === '0' ? 'zero' : signClass(rec.total);
+      cells += '<button type="button" class="pnl-cal-cell'+extra+'" data-cal-day="'+key+'" aria-label="Ngày '+fmtDate(key)+': '+fmtSignedVND(rec.total)+'">' +
+        '<span class="pnl-cal-num">'+dd+'</span>' +
+        '<span class="pnl-cal-amt '+cls+(txt.length > 6 ? ' long' : '')+'">'+txt+'</span>' +
+      '</button>';
+    }
+
+    var detail = '';
+    if(selected){
+      var s = daily[selected];
+      detail = 'Ngày '+fmtDate(selected)+': <span class="summary-val '+signClass(s.total)+'">'+fmtSignedVND(s.total)+'</span>';
+      if(Math.round(s.realized) !== 0) detail += ' (đã chốt '+fmtSignedVND(s.realized)+')';
+    }
+
+    return '<div class="pnl-cal-head">' +
+        '<button type="button" class="pnl-cal-nav" data-cal-nav="-1" aria-label="Tháng trước"'+(pnlCalMonth <= firstMonth ? ' disabled' : '')+'>‹</button>' +
+        '<span class="pnl-cal-title">Tháng '+m+'/'+y+'</span>' +
+        '<button type="button" class="pnl-cal-nav" data-cal-nav="1" aria-label="Tháng sau"'+(pnlCalMonth >= curMonth ? ' disabled' : '')+'>›</button>' +
+      '</div>' +
+      '<div class="pnl-cal-grid">' +
+        ['T2','T3','T4','T5','T6','T7','CN'].map(function(w){ return '<div class="pnl-cal-wd">'+w+'</div>'; }).join('') +
+        cells +
+      '</div>' +
+      '<div class="pnl-cal-detail">'+detail+'</div>' +
+      '<div class="summary-row"><span class="summary-label">Tổng tháng</span><span class="summary-val '+signClass(monthTotal)+'">'+fmtSignedVND(monthTotal)+'</span></div>';
+  }
+
   function renderPnlReport(){
     var card = document.getElementById('pnlReportCard');
     var content = document.getElementById('pnlReportContent');
+    document.getElementById('pnlReportSub').textContent = pnlGroupBy === 'day'
+      ? 'Mỗi ngày: biến động giá vàng đang giữ + lãi đã chốt'
+      : 'Theo từng kỳ, dựa trên giao dịch đã bán';
+    if(pnlGroupBy === 'day'){
+      if(state.transactions.length === 0){ card.hidden = true; return; }
+      card.hidden = false;
+      positionSegmentedIndicator(document.getElementById('pnlGroupBy'));
+      content.innerHTML = renderPnlCalendar();
+      return;
+    }
     var report = computePnlReport(pnlGroupBy);
     if(report.order.length === 0 && report.unrealizedPL === null){ card.hidden = true; return; }
     card.hidden = false;
