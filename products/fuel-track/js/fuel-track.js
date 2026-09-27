@@ -9,7 +9,7 @@
   var priceDoc = null;
   var historyDoc = null;
   var changelogData = null;
-  var selectedRange = '30';
+  var selectedRange = '7';
   var historyShown = HISTORY_PAGE;
 
   function $(id){ return document.getElementById(id); }
@@ -165,6 +165,37 @@
     return { first: first, last: last };
   }
 
+  // Monotone cubic (Fritsch–Carlson) through the daily points: soft corners
+  // like GoldTrack's line, but never overshoots — a flat week stays flat and a
+  // price jump never dips/peaks past the real values, so the Y labels stay true.
+  function smoothPath(pts){
+    var n = pts.length;
+    if(!n) return '';
+    var f = function(v){ return v.toFixed(1); };
+    var d = 'M' + f(pts[0].x) + ',' + f(pts[0].y);
+    if(n === 1) return d;
+    var dx = [], m = [], t = [];
+    for(var i = 0; i < n - 1; i++){
+      dx[i] = pts[i+1].x - pts[i].x;
+      m[i] = dx[i] ? (pts[i+1].y - pts[i].y) / dx[i] : 0;
+    }
+    t[0] = m[0]; t[n-1] = m[n-2];
+    for(var j = 1; j < n - 1; j++){
+      if(m[j-1] * m[j] <= 0) t[j] = 0;
+      else {
+        var w1 = 2 * dx[j] + dx[j-1], w2 = dx[j] + 2 * dx[j-1];
+        t[j] = (w1 + w2) / (w1 / m[j-1] + w2 / m[j]);
+      }
+    }
+    for(var k = 0; k < n - 1; k++){
+      var h = dx[k] / 3;
+      d += ' C' + f(pts[k].x + h) + ',' + f(pts[k].y + t[k] * h) +
+           ' ' + f(pts[k+1].x - h) + ',' + f(pts[k+1].y - t[k+1] * h) +
+           ' ' + f(pts[k+1].x) + ',' + f(pts[k+1].y);
+    }
+    return d;
+  }
+
   function renderChart(data){
     chartState = null;
     var n = data.days.length;
@@ -182,18 +213,11 @@
     function yAt(v){ return padTop + plotH - ((v - min) / (max - min)) * plotH; }
 
     var paths = data.series.map(function(s, si){
-      var d = '', prev = null;
+      var pts = [];
       for(var i = 0; i < n; i++){
-        var v = s.vals[i];
-        if(v == null) continue;
-        if(prev == null){
-          d = 'M' + xAt(i).toFixed(1) + ',' + yAt(v).toFixed(1);
-        } else {
-          d += ' H' + xAt(i).toFixed(1);
-          if(v !== prev) d += ' V' + yAt(v).toFixed(1);
-        }
-        prev = v;
+        if(s.vals[i] != null) pts.push({ x: xAt(i), y: yAt(s.vals[i]) });
       }
+      var d = smoothPath(pts);
       return d ? '<path d="' + d + '" fill="none" style="stroke:' + seriesColor(si) + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' : '';
     }).join('');
 

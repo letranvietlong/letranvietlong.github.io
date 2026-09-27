@@ -1,6 +1,6 @@
 # FuelTrack
 
-Theo dõi giá bán lẻ xăng dầu PVOIL tại Đà Nẵng (nội thành = Vùng 1) theo từng ngày. **Chỉ xem giá** — không có mua/bán, danh mục hay lời/lỗ, không lưu gì trên máy người dùng. Trang cuộn một cột (không tabbar): giá hôm nay + mức tăng/giảm so với kỳ trước, biểu đồ bậc thang theo ngày, lịch sử các kỳ điều chỉnh. PWA cài được lên iPhone qua "Add to Home Screen".
+Theo dõi giá bán lẻ xăng dầu PVOIL tại Đà Nẵng (nội thành = Vùng 1) theo từng ngày. **Chỉ xem giá** — không có mua/bán, danh mục hay lời/lỗ, không lưu gì trên máy người dùng. Trang cuộn một cột (không tabbar): giá hôm nay + mức tăng/giảm so với kỳ trước, biểu đồ theo ngày (4 loại trên một biểu đồ, đường cong monotone không vượt quá giá thật, mặc định 7N), lịch sử các kỳ điều chỉnh. PWA cài được lên iPhone qua "Add to Home Screen".
 
 ## Nguồn dữ liệu
 
