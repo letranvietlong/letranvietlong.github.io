@@ -147,6 +147,8 @@
     return { days: out, series: series };
   }
 
+  var DAY_DOT_MAX = 10;
+
   function pickLabelIndices(n, maxLabels){
     if(n <= maxLabels) return Array.from({ length: n }, function(_, i){ return i; });
     var idxs = [];
@@ -204,7 +206,8 @@
     if(n < 2 || !all.length){
       return '<div class="chart-empty">Chưa đủ dữ liệu để vẽ biểu đồ.</div>';
     }
-    var w = 300, h = 170, padTop = 8, padBottom = 20, padLeft = 40, padRight = 8;
+    var w = 300, h = 170, padTop = 8, padBottom = 20, padLeft = 40;
+    var padRight = n <= DAY_DOT_MAX ? 14 : 8;  // room for the last centred day label
     var dataMin = Math.min.apply(null, all), dataMax = Math.max.apply(null, all);
     var pad = Math.max((dataMax - dataMin) * 0.06, dataMax * 0.004, 1);
     var min = dataMin - pad, max = dataMax + pad;
@@ -218,7 +221,13 @@
         if(s.vals[i] != null) pts.push({ x: xAt(i), y: yAt(s.vals[i]) });
       }
       var d = smoothPath(pts);
-      return d ? '<path d="' + d + '" fill="none" style="stroke:' + seriesColor(si) + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' : '';
+      if(!d) return '';
+      // One dot per day on short ranges (like GoldTrack's ≤10-point rule);
+      // on 30N+ they'd merge into a bead chain and hide the line itself.
+      var marks = n <= DAY_DOT_MAX ? pts.map(function(pt){
+        return '<circle class="chart-point" r="2.6" cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" style="fill:' + seriesColor(si) + '"/>';
+      }).join('') : '';
+      return '<path d="' + d + '" fill="none" style="stroke:' + seriesColor(si) + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' + marks;
     }).join('');
 
     var gridVals = [dataMin];
@@ -235,10 +244,12 @@
     }).join('');
 
     var longRange = n > 120;
-    var labels = pickLabelIndices(n, 5).map(function(idx, k, arr){
+    var labels = pickLabelIndices(n, n <= DAY_DOT_MAX ? n : 5).map(  // short ranges: label every day, matching the dots
+      function(idx, k, arr){
       var p = data.days[idx].split('-');
       var lbl = longRange ? 'T' + (+p[1]) + '/' + p[0].slice(2) : p[2] + '/' + p[1];  // "T9/25", not "09/25" which reads as a day/month
-      var anchor = k === 0 ? 'start' : (k === arr.length - 1 ? 'end' : 'middle');
+      // Every-day labels sit centred under their dots; sparse ones hug the edges.
+      var anchor = n <= DAY_DOT_MAX ? 'middle' : (k === 0 ? 'start' : (k === arr.length - 1 ? 'end' : 'middle'));
       return '<text class="chart-axis-label" x="' + xAt(idx).toFixed(1) + '" y="' + (h - 5) + '" font-size="9" text-anchor="' + anchor + '">' + lbl + '</text>';
     }).join('');
 
