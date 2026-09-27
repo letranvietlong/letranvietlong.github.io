@@ -8,7 +8,7 @@ Theo dõi giá bán lẻ xăng dầu PVOIL tại Đà Nẵng (nội thành = Vù
 - Nguồn thực tế: `GET https://giaxanghomnay.com/api/pvdate/YYYY-MM-DD` (JSON, không auth). Trả mảng 4 phần tử: `[0]` Petrolimex ngày D (`zone1_price`/`zone2_price`), `[1]` PVOIL ngày D (`price`), `[2]`/`[3]` bản ghi liền trước. Ngày chưa có bản ghi → phần tử rỗng.
 - Bản ghi ngày D được tạo lúc 00:00 giờ VN; ngày có điều chỉnh (thường thứ Năm, hiệu lực 15:00) thì bản ghi bị **ghi đè trong ngày** bằng giá mới → bản ghi ngày D = giá áp dụng cuối ngày D.
 - Giá PVOIL trùng khít Petrolimex Vùng 1 ở mọi mặt hàng chung. Feed PVOIL **không có E10 RON 95-III** → lấy `zone1_price` của Petrolimex, gắn `source: "petrolimex-v1"` và UI ghi chú rõ. Nếu một ngày feed PVOIL tự có E10 thì dùng của PVOIL. **DO 0,001S-V bị loại** vì giá Petrolimex lệch PVOIL.
-- Mặt hàng thay đổi theo thời gian: tới ~06/2026 PVOIL có RON 95-III, sau đó mất. Mặt hàng đã ngừng vẫn nằm trong lịch sử (hiện "Ngừng niêm yết") nhưng không có tab trên biểu đồ.
+- Mặt hàng thay đổi theo thời gian: tới ~06/2026 PVOIL có RON 95-III, sau đó mất. Mặt hàng đã ngừng vẫn nằm trong lịch sử (hiện "Ngừng niêm yết") nhưng không được vẽ trên biểu đồ (biểu đồ vẽ mọi mặt hàng có trong mốc mới nhất, mỗi mặt hàng một đường).
 - Rate limit ~60 request/phút, từng bị từ chối kết nối sau ~8 request cách nhau 1s → backfill nghỉ 2s giữa các request, retry backoff 5/10/20/40s.
 
 ## Dữ liệu (`data/`, do bot sinh — KHÔNG sửa tay)

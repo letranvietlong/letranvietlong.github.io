@@ -3,14 +3,12 @@
 
   var DATA_BASE = '/products/fuel-track/data/';
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
-  var DEFAULT_ITEM = 'e5-ron92-ii';
   var HISTORY_PAGE = 8;
   var DAY_MS = 86400000;
 
   var priceDoc = null;
   var historyDoc = null;
   var changelogData = null;
-  var selectedItem = DEFAULT_ITEM;
   var selectedRange = '30';
   var historyShown = HISTORY_PAGE;
 
@@ -92,27 +90,61 @@
   }
 
   // ---------- Biểu đồ ----------
-  // Forward-fills the change points into one price per VN calendar day.
-  function dailySeries(changes, itemId, days){
-    var withItem = changes.filter(function(c){ return c.prices && c.prices[itemId] != null; });
-    if(!withItem.length) return [];
-    var firstMs = dayToMs(withItem[0].date);
+  var SERIES_COLORS = 4;
+  var chartState = null;
+
+  // Items still listed in the latest change point — discontinued ones (e.g.
+  // RON 95-III) stay in the history list but are not drawn.
+  function chartItems(){
+    var changes = getChanges();
+    if(!changes.length) return [];
+    var last = changes[changes.length - 1].prices || {};
+    var ids = [];
+    if(priceDoc && Array.isArray(priceDoc.items)){
+      priceDoc.items.forEach(function(it){ if(last[it.id] != null) ids.push(it.id); });
+    }
+    Object.keys(last).forEach(function(id){ if(last[id] != null && ids.indexOf(id) < 0) ids.push(id); });
+    return ids.map(function(id){
+      var found = priceDoc && Array.isArray(priceDoc.items) && priceDoc.items.filter(function(it){ return it.id === id; })[0];
+      return { id: id, label: found ? found.label : itemLabel(id) };
+    });
+  }
+
+  // Forward-fills the change points into one price per VN calendar day, for
+  // every item on a shared day axis (null before an item's first appearance).
+  function dailySeries(changes, items, days){
+    var firstMs = Infinity;
+    items.forEach(function(it){
+      for(var i = 0; i < changes.length; i++){
+        if(changes[i].prices && changes[i].prices[it.id] != null){
+          firstMs = Math.min(firstMs, dayToMs(changes[i].date));
+          break;
+        }
+      }
+    });
+    if(!isFinite(firstMs)) return { days: [], series: [] };
     var endMs = dayToMs(vnToday());
-    var lastMs = dayToMs(withItem[withItem.length - 1].date);
+    var lastMs = dayToMs(changes[changes.length - 1].date);
     if(lastMs > endMs) endMs = lastMs;
     var startMs = isFinite(days) ? Math.max(endMs - (days - 1) * DAY_MS, firstMs) : firstMs;
 
+    var current = {};
+    var series = items.map(function(it){ return { id: it.id, label: it.label, vals: [] }; });
     var out = [];
-    var idx = 0, current = null;
+    var idx = 0;
     for(var ms = firstMs; ms <= endMs; ms += DAY_MS){
       var day = msToDay(ms);
-      while(idx < withItem.length && withItem[idx].date <= day){
-        current = withItem[idx].prices[itemId];
+      while(idx < changes.length && changes[idx].date <= day){
+        var prices = changes[idx].prices || {};
+        items.forEach(function(it){ if(prices[it.id] != null) current[it.id] = prices[it.id]; });
         idx++;
       }
-      if(ms >= startMs && current != null) out.push({ day: day, price: current });
+      if(ms >= startMs){
+        out.push(day);
+        series.forEach(function(s){ s.vals.push(current[s.id] != null ? current[s.id] : null); });
+      }
     }
-    return out;
+    return { days: out, series: series };
   }
 
   function pickLabelIndices(n, maxLabels){
@@ -122,29 +154,56 @@
     return idxs.filter(function(v, i, a){ return a.indexOf(v) === i; });
   }
 
-  function renderChart(series){
-    if(series.length < 2){
+  function seriesColor(i){ return 'var(--series-' + (i % SERIES_COLORS + 1) + ')'; }
+  function firstLast(vals){
+    var first = null, last = null;
+    for(var i = 0; i < vals.length; i++){
+      if(vals[i] == null) continue;
+      if(first == null) first = vals[i];
+      last = vals[i];
+    }
+    return { first: first, last: last };
+  }
+
+  function renderChart(data){
+    chartState = null;
+    var n = data.days.length;
+    var all = [];
+    data.series.forEach(function(s){ s.vals.forEach(function(v){ if(v != null) all.push(v); }); });
+    if(n < 2 || !all.length){
       return '<div class="chart-empty">Chưa đủ dữ liệu để vẽ biểu đồ.</div>';
     }
-    var w = 300, h = 110, padTop = 10, padBottom = 20, padLeft = 40, padRight = 8;
-    var n = series.length;
-    var vals = series.map(function(p){ return p.price; });
-    var dataMin = Math.min.apply(null, vals), dataMax = Math.max.apply(null, vals);
-    var pad = Math.max((dataMax - dataMin) * 0.12, dataMax * 0.004, 1);
+    var w = 300, h = 170, padTop = 8, padBottom = 20, padLeft = 40, padRight = 8;
+    var dataMin = Math.min.apply(null, all), dataMax = Math.max.apply(null, all);
+    var pad = Math.max((dataMax - dataMin) * 0.06, dataMax * 0.004, 1);
     var min = dataMin - pad, max = dataMax + pad;
     var plotW = w - padLeft - padRight, plotH = h - padTop - padBottom;
     function xAt(i){ return padLeft + (i / (n - 1)) * plotW; }
     function yAt(v){ return padTop + plotH - ((v - min) / (max - min)) * plotH; }
 
-    var d = 'M' + xAt(0).toFixed(1) + ',' + yAt(vals[0]).toFixed(1);
-    for(var i = 1; i < n; i++){
-      d += ' H' + xAt(i).toFixed(1);
-      if(vals[i] !== vals[i - 1]) d += ' V' + yAt(vals[i]).toFixed(1);
-    }
-    var plotBottom = padTop + plotH;
-    var area = d + ' V' + plotBottom + ' H' + xAt(0).toFixed(1) + ' Z';
+    var paths = data.series.map(function(s, si){
+      var d = '', prev = null;
+      for(var i = 0; i < n; i++){
+        var v = s.vals[i];
+        if(v == null) continue;
+        if(prev == null){
+          d = 'M' + xAt(i).toFixed(1) + ',' + yAt(v).toFixed(1);
+        } else {
+          d += ' H' + xAt(i).toFixed(1);
+          if(v !== prev) d += ' V' + yAt(v).toFixed(1);
+        }
+        prev = v;
+      }
+      return d ? '<path d="' + d + '" fill="none" style="stroke:' + seriesColor(si) + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' : '';
+    }).join('');
 
-    var gridVals = dataMin === dataMax ? [dataMin] : [dataMax, dataMin];
+    var gridVals = [dataMin];
+    if(dataMax !== dataMin){
+      gridVals = [dataMax];
+      var mid = Math.round((dataMin + dataMax) / 20) * 10;
+      if(mid > dataMin && mid < dataMax) gridVals.push(mid);
+      gridVals.push(dataMin);
+    }
     var grid = gridVals.map(function(v){
       var y = yAt(v).toFixed(1);
       return '<line class="chart-grid" x1="' + padLeft + '" x2="' + (w - padRight) + '" y1="' + y + '" y2="' + y + '" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>' +
@@ -153,66 +212,137 @@
 
     var longRange = n > 120;
     var labels = pickLabelIndices(n, 5).map(function(idx, k, arr){
-      var p = series[idx].day.split('-');
+      var p = data.days[idx].split('-');
       var lbl = longRange ? p[1] + '/' + p[0].slice(2) : p[2] + '/' + p[1];
       var anchor = k === 0 ? 'start' : (k === arr.length - 1 ? 'end' : 'middle');
       return '<text class="chart-axis-label" x="' + xAt(idx).toFixed(1) + '" y="' + (h - 5) + '" font-size="9" text-anchor="' + anchor + '">' + lbl + '</text>';
     }).join('');
 
-    var lastX = xAt(n - 1).toFixed(1), lastY = yAt(vals[n - 1]).toFixed(1);
-    return '<svg class="chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Biểu đồ giá ' + escapeHtml(itemLabel(selectedItem)) + '">' +
-      '<defs><linearGradient id="ftChartFill" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0" style="stop-color:var(--chart-fill);stop-opacity:.32"/><stop offset="1" style="stop-color:var(--chart-fill);stop-opacity:0"/>' +
-      '</linearGradient></defs>' +
-      grid +
-      '<path d="' + area + '" fill="url(#ftChartFill)"/>' +
-      '<path d="' + d + '" fill="none" style="stroke:var(--chart-line)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
-      '<circle cx="' + lastX + '" cy="' + lastY + '" r="3" style="fill:var(--chart-line)"/>' +
-      labels +
-    '</svg>';
+    var dots = data.series.map(function(s, si){
+      return '<circle class="chart-dot" r="3.5" cx="0" cy="0" style="fill:' + seriesColor(si) + '" visibility="hidden"/>';
+    }).join('');
+
+    var summary = data.series.map(function(s){
+      var fl = firstLast(s.vals);
+      return s.label + ' ' + (fl.last != null ? fmtVnd(fl.last) + ' đồng' : 'không có dữ liệu');
+    }).join('; ');
+    var aria = 'Biểu đồ giá ' + data.series.length + ' loại xăng dầu từ ' + fmtDate(data.days[0]) + ' đến ' + fmtDate(data.days[n - 1]) +
+      ', giá cuối kỳ: ' + summary;
+
+    chartState = { data: data, w: w, n: n, padLeft: padLeft, plotW: plotW, padTop: padTop, xAt: xAt, yAt: yAt, idx: -1 };
+
+    return '<svg class="chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + escapeHtml(aria) + '">' +
+      grid + paths + labels +
+      '<line class="chart-cursor" x1="0" x2="0" y1="' + padTop + '" y2="' + (padTop + plotH) + '" stroke-width="1" vector-effect="non-scaling-stroke" visibility="hidden"/>' +
+      dots +
+    '</svg>' +
+    '<div class="chart-tip" aria-hidden="true" hidden></div>';
   }
 
-  function renderStats(series){
-    var el = $('chartStats');
-    if(series.length < 2){ el.innerHTML = ''; return; }
-    var vals = series.map(function(p){ return p.price; });
-    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-    var first = vals[0], last = vals[vals.length - 1];
-    var diff = last - first;
-    var pct = first ? diff / first * 100 : 0;
-    var cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
-    var arrow = diff > 0 ? '▲ ' : diff < 0 ? '▼ ' : '';
-    el.innerHTML =
-      '<div class="chart-stat"><div class="chart-stat-label">Thấp nhất</div><div class="chart-stat-val">' + fmtVnd(lo) + '</div><div class="chart-stat-sub">đ/lít</div></div>' +
-      '<div class="chart-stat"><div class="chart-stat-label">Cao nhất</div><div class="chart-stat-val">' + fmtVnd(hi) + '</div><div class="chart-stat-sub">đ/lít</div></div>' +
-      '<div class="chart-stat"><div class="chart-stat-label">Thay đổi</div><div class="chart-stat-val ' + cls + '">' +
-        (diff === 0 ? 'Không đổi' : arrow + fmtVnd(Math.abs(diff))) + '</div>' +
-        '<div class="chart-stat-sub">' + (diff === 0 ? '0%' : (diff > 0 ? '+' : '−') + Math.abs(pct).toFixed(2).replace('.', ',') + '%') + '</div></div>';
+  function rangeChip(diff, base){
+    if(diff === 0) return '<span class="chip flat">Không đổi</span>';
+    var up = diff > 0;
+    var amount = fmtVnd(Math.abs(diff));
+    var pct = (up ? '+' : '−') + (base ? Math.abs(diff / base * 100) : 0).toFixed(2).replace('.', ',') + '%';
+    return '<span class="chip ' + (up ? 'up' : 'down') + '" aria-label="' + (up ? 'Tăng ' : 'Giảm ') + amount + ' đồng, ' + pct + '">' +
+      '<span aria-hidden="true">' + (up ? '▲' : '▼') + '</span>' + amount + ' (' + pct + ')</span>';
   }
 
-  function chartItems(){
-    // Only items still sold today — discontinued ones (e.g. RON 95-III)
-    // remain in the history list but get no chart tab.
-    if(!priceDoc || !Array.isArray(priceDoc.items)) return [];
-    var changes = getChanges();
-    return priceDoc.items.filter(function(it){
-      return changes.some(function(c){ return c.prices && c.prices[it.id] != null; });
-    });
-  }
-
-  function renderItemTabs(){
-    var items = chartItems();
-    if(items.length && !items.some(function(it){ return it.id === selectedItem; })){
-      selectedItem = items.some(function(it){ return it.id === DEFAULT_ITEM; }) ? DEFAULT_ITEM : items[0].id;
-    }
-    $('itemTabs').innerHTML = items.map(function(it){
-      var active = it.id === selectedItem;
-      return '<button type="button" data-item="' + escapeHtml(it.id) + '"' + (active ? ' class="active" aria-pressed="true"' : ' aria-pressed="false"') + '>' + escapeHtml(it.label) + '</button>';
+  function renderLegend(data){
+    var el = $('chartLegend');
+    if(data.days.length < 2){ el.innerHTML = ''; return; }
+    el.innerHTML = data.series.map(function(s, si){
+      var fl = firstLast(s.vals);
+      if(fl.last == null) return '';
+      return '<li class="legend-row">' +
+        '<span class="legend-swatch" style="background:' + seriesColor(si) + '"></span>' +
+        '<span class="legend-name">' + escapeHtml(s.label) + '</span>' +
+        '<span class="legend-right"><span class="legend-price">' + fmtVnd(fl.last) + '</span>' + rangeChip(fl.last - fl.first, fl.first) + '</span>' +
+      '</li>';
     }).join('');
   }
 
+  function hideCursor(){
+    var wrap = $('chart');
+    var tip = wrap.querySelector('.chart-tip');
+    if(!tip) return;
+    tip.hidden = true;
+    Array.prototype.forEach.call(wrap.querySelectorAll('.chart-cursor,.chart-dot'), function(el){ el.setAttribute('visibility', 'hidden'); });
+    if(chartState) chartState.idx = -1;
+  }
+
+  function showCursorAt(clientX){
+    var st = chartState;
+    var wrap = $('chart');
+    var svg = wrap.querySelector('.chart-svg');
+    var tip = wrap.querySelector('.chart-tip');
+    if(!st || !svg || !tip) return;
+    var rect = svg.getBoundingClientRect();
+    if(!rect.width) return;
+    var scale = rect.width / st.w;
+    var vx = (clientX - rect.left) / scale;
+    var idx = Math.round((vx - st.padLeft) / st.plotW * (st.n - 1));
+    idx = Math.max(0, Math.min(st.n - 1, idx));
+    if(idx === st.idx && !tip.hidden) return;
+    st.idx = idx;
+
+    var x = st.xAt(idx).toFixed(1);
+    var cursor = wrap.querySelector('.chart-cursor');
+    cursor.setAttribute('x1', x);
+    cursor.setAttribute('x2', x);
+    cursor.setAttribute('visibility', 'visible');
+    var dots = wrap.querySelectorAll('.chart-dot');
+    var rows = st.data.series.map(function(s, si){
+      var v = s.vals[idx];
+      if(v == null){
+        dots[si].setAttribute('visibility', 'hidden');
+        return '';
+      }
+      dots[si].setAttribute('cx', x);
+      dots[si].setAttribute('cy', st.yAt(v).toFixed(1));
+      dots[si].setAttribute('visibility', 'visible');
+      return '<div class="chart-tip-row"><span class="legend-swatch" style="background:' + seriesColor(si) + '"></span>' +
+        '<span class="chart-tip-name">' + escapeHtml(s.label) + '</span><span class="chart-tip-val">' + fmtVnd(v) + '</span></div>';
+    }).join('');
+    tip.innerHTML = '<div class="chart-tip-date">' + fmtDate(st.data.days[idx]) + '</div>' + rows;
+    tip.hidden = false;
+
+    var wrapRect = wrap.getBoundingClientRect();
+    var px = rect.left - wrapRect.left + st.xAt(idx) * scale;
+    var tw = tip.offsetWidth;
+    var gap = 10;
+    var left = px + gap + tw <= wrapRect.width ? px + gap : px - gap - tw;
+    left = Math.max(0, Math.min(wrapRect.width - tw, left));
+    tip.style.left = left + 'px';
+    tip.style.top = (rect.top - wrapRect.top + st.padTop * scale) + 'px';
+  }
+
+  (function enableChartCursor(){
+    var wrap = $('chart');
+    var pressed = false;
+    wrap.addEventListener('pointerdown', function(e){
+      if(!e.target.closest('.chart-svg')){ hideCursor(); return; }
+      pressed = true;
+      showCursorAt(e.clientX);
+    });
+    wrap.addEventListener('pointermove', function(e){
+      if(e.pointerType === 'mouse' ? !e.target.closest('.chart-svg') : !pressed) return;
+      showCursorAt(e.clientX);
+    });
+    wrap.addEventListener('pointerup', function(){ pressed = false; });
+    // Touch pointers also fire pointerleave right after pointerup; the
+    // tooltip should stay up after a tap, so only a mouse leaving hides it.
+    wrap.addEventListener('pointerleave', function(e){
+      pressed = false;
+      if(e.pointerType === 'mouse') hideCursor();
+    });
+    wrap.addEventListener('pointercancel', function(){ pressed = false; hideCursor(); });
+    document.addEventListener('pointerdown', function(e){
+      if(!wrap.contains(e.target)) hideCursor();
+    });
+  })();
+
   function renderChartCard(){
-    renderItemTabs();
     var buttons = $('rangeTabs').querySelectorAll('button');
     Array.prototype.forEach.call(buttons, function(b){
       var active = b.getAttribute('data-range') === selectedRange;
@@ -220,21 +350,16 @@
       b.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     if(!historyDoc){
+      chartState = null;
       $('chart').innerHTML = '<div class="chart-empty">Không tải được lịch sử giá. Kiểm tra kết nối rồi mở lại app.</div>';
-      $('chartStats').innerHTML = '';
+      $('chartLegend').innerHTML = '';
       return;
     }
-    var series = dailySeries(getChanges(), selectedItem, RANGE_DAYS[selectedRange]);
-    $('chart').innerHTML = renderChart(series);
-    renderStats(series);
+    var data = dailySeries(getChanges(), chartItems(), RANGE_DAYS[selectedRange]);
+    $('chart').innerHTML = renderChart(data);
+    renderLegend(data);
   }
 
-  $('itemTabs').addEventListener('click', function(e){
-    var btn = e.target.closest('button[data-item]');
-    if(!btn) return;
-    selectedItem = btn.getAttribute('data-item');
-    renderChartCard();
-  });
   $('rangeTabs').addEventListener('click', function(e){
     var btn = e.target.closest('button[data-range]');
     if(!btn) return;
