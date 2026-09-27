@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F6FB" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1220" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!-- "default", NOT "black-translucent": measured on an iPhone 14 Pro Max Home
+     Screen app (GoldTrack), translucent mode drew content from the very top
+     edge but reported a viewport 59pt (= status bar) short, and WebKit clips
+     everything below that. In default mode content starts BELOW the status
+     bar and the viewport runs down to the true bottom. iOS snapshots this
+     tag at Add-to-Home-Screen time. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="FuelTrack" />
+<meta name="description" content="Theo dõi giá xăng dầu PVOIL tại Đà Nẵng theo từng ngày: giá hôm nay, mức tăng/giảm mỗi kỳ điều hành và biểu đồ dao động." />
+<title>FuelTrack — Giá xăng dầu PVOIL Đà Nẵng</title>
+<link rel="canonical" href="https://letranvietlong.github.io/products/fuel-track/html/index.html">
+<link rel="icon" type="image/svg+xml" href="/products/fuel-track/img/fuel-track-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/products/fuel-track/img/fuel-track-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/products/fuel-track/img/fuel-track-icon-180.png">
+<link rel="manifest" href="/products/fuel-track/manifest.json">
+<link rel="stylesheet" href="../css/fuel-track.css">
+</head>
+<body>
+<main class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-mark" src="/products/fuel-track/img/fuel-track-icon.svg" alt="" width="40" height="40">
+      <div class="brand-text">
+        <h1>FuelTrack</h1>
+        <span class="brand-sub">PVOIL · Đà Nẵng (Vùng 1)</span>
+      </div>
+    </div>
+    <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
+  </header>
+
+  <section class="card" aria-labelledby="priceTitle">
+    <div class="card-head">
+      <h2 class="card-title" id="priceTitle">Giá hôm nay</h2>
+      <span class="card-meta" id="effectiveDate"></span>
+    </div>
+    <div id="priceList" aria-live="polite">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="chartTitle" id="chartCard">
+    <div class="card-head">
+      <h2 class="card-title" id="chartTitle">Biểu đồ dao động</h2>
+      <span class="card-meta">đ/lít</span>
+    </div>
+    <div class="item-tabs" id="itemTabs" role="group" aria-label="Chọn mặt hàng"></div>
+    <div class="range-tabs" id="rangeTabs" role="group" aria-label="Khoảng thời gian">
+      <button type="button" data-range="7">7N</button>
+      <button type="button" data-range="30" class="active" aria-pressed="true">30N</button>
+      <button type="button" data-range="90">90N</button>
+      <button type="button" data-range="all">Tất cả</button>
+    </div>
+    <div id="chart" class="chart-wrap"><div class="skeleton-chart"></div></div>
+    <div class="chart-stats" id="chartStats"></div>
+  </section>
+
+  <section class="card" aria-labelledby="historyTitle">
+    <div class="card-head">
+      <h2 class="card-title" id="historyTitle">Lịch sử điều chỉnh</h2>
+    </div>
+    <div id="historyList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+    <button class="btn-more" id="historyMore" type="button" hidden>Xem thêm</button>
+  </section>
+
+  <footer class="app-footer">
+    <p>Giá bán lẻ tối đa đã gồm VAT và thuế BVMT, có thể chênh tại từng cửa hàng.</p>
+    <p>Nguồn: dữ liệu PVOIL tổng hợp từ giaxanghomnay.com.</p>
+    <p id="e10Note" hidden>Giá E10 RON 95-III lấy theo giá Vùng 1 của Petrolimex (trùng giá PVOIL).</p>
+    <div class="footer-links">
+      <a href="https://www.pvoil.com.vn/tin-gia-xang-dau" target="_blank" rel="noopener">Giá chính thức PVOIL</a>
+      <a href="https://giaxanghomnay.com/" target="_blank" rel="noopener">giaxanghomnay.com</a>
+    </div>
+  </footer>
+
+</main>
+
+<div class="sheet-backdrop" id="versionBackdrop"></div>
+<div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="versionSheetTitle">Lịch sử cập nhật</h3>
+    <button class="icon-btn" id="versionClose" aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div id="versionContent"></div>
+</div>
+
+<script src="../js/fuel-track.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+name: Update fuel price
+
+on:
+  schedule:
+    # 08:23, 15:23, 16:23, 17:23, 20:23 giờ VN. Kỳ điều hành hiệu lực 15:00 VN
+    # (thường thứ Năm) nên dồn nhiều lượt sau 15:00; phút :23 để né slot :00/:30
+    # mà GitHub hay bỏ qua.
+    - cron: "23 1,8,9,10,13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-fuel-price
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - run: pip install certifi
+
+      - run: python products/fuel-track/py/fetch_fuel_price.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products/fuel-track/data/fuel-price.json products/fuel-track/data/fuel-price-history.json
+          if git diff --cached --quiet; then
+            echo "No price change to commit."
+            exit 0
+          fi
+          SUMMARY=$(python -c "
+          import json
+          d = {i['id']: i['price'] for i in json.load(open('products/fuel-track/data/fuel-price.json', encoding='utf-8'))['items']}
+          f = lambda k: '{:,}'.format(d[k]).replace(',', '.') if k in d else '?'
+          print('E5 %s / E10 %s / DO %s' % (f('e5-ron92-ii'), f('e10-ron95-iii'), f('do-005s-ii')))
+          ")
+          git commit -m "Auto-update fuel price: ${SUMMARY}"
+
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $i failed (branch likely moved), retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Giving up after 5 push attempts."
+          exit 1

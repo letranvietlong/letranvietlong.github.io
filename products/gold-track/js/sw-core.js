@@ -7,7 +7,7 @@
 // GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
 // GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
 // giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
-var CACHE_NAME = "goldtrack-cache-v9";
+var CACHE_NAME = "goldtrack-cache-v10";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -56,7 +56,9 @@ self.addEventListener("install", function(event){
 self.addEventListener("activate", function(event){
   event.waitUntil(
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(k){ return k !== CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
+      // Cache Storage is shared by the whole origin (FuelTrack's SW lives in
+      // it too) — only ever delete our own old versions.
+      return Promise.all(keys.filter(function(k){ return k.indexOf("goldtrack-cache-") === 0 && k !== CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
     })
   );
   self.clients.claim();

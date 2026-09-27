@@ -1,0 +1,76 @@
+// Logic service worker của FuelTrack. KHÔNG đăng ký trực tiếp file này —
+// nó được nạp qua importScripts từ products/fuel-track/sw-fuel-track.js
+// (đọc file đó để biết vì sao vỏ phải nằm ngay trong products/fuel-track/).
+var CACHE_NAME = "fueltrack-cache-v1";
+
+// Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
+var APP_CODE_PATHS = [
+  "/products/fuel-track/html/index.html",
+  "/products/fuel-track/css/fuel-track.css",
+  "/products/fuel-track/js/fuel-track.js"
+];
+var ICON_PATHS = [
+  "/products/fuel-track/img/fuel-track-icon.svg",
+  "/products/fuel-track/img/fuel-track-icon-32.png",
+  "/products/fuel-track/img/fuel-track-icon-180.png"
+];
+var DATA_PATHS = [
+  "/products/fuel-track/data/fuel-price.json",
+  "/products/fuel-track/data/fuel-price-history.json",
+  "/products/fuel-track/data/changelog.json",
+  "/products/fuel-track/manifest.json"
+];
+var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
+var FUELTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
+
+self.addEventListener("install", function(event){
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache){
+      return cache.addAll(ICON_PATHS).then(function(){
+        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
+      });
+    })
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", function(event){
+  event.waitUntil(
+    caches.keys().then(function(keys){
+      // Cache Storage is shared by the whole origin (GoldTrack's SW lives in
+      // it too) — only ever delete our own old versions.
+      return Promise.all(keys.filter(function(k){ return k.indexOf("fueltrack-cache-") === 0 && k !== CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", function(event){
+  if(event.request.method !== "GET") return;
+  var url = new URL(event.request.url);
+  if(url.origin !== location.origin) return;
+  if(FUELTRACK_PATHS.indexOf(url.pathname) === -1) return;
+
+  if(NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1){
+    event.respondWith(
+      fetch(event.request).then(function(res){
+        var copy = res.clone();
+        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+        return res;
+      }).catch(function(){
+        return caches.match(event.request).then(function(cached){ return cached || Response.error(); });
+      })
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(function(cached){
+        var fetchPromise = fetch(event.request).then(function(res){
+          var copy = res.clone();
+          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          return res;
+        }).catch(function(){ return cached || Response.error(); });
+        return cached || fetchPromise;
+      })
+    );
+  }
+});

@@ -22,6 +22,7 @@ Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt 
 | **KOL — Vũ Thị Minh Thư** | Profile chuyên nghiệp cho KOL/Influencer, thông tin hợp tác & truyền thông. | [kol-vu-thi-minh-thu/html/index.html](products/kol-vu-thi-minh-thu/html/index.html) |
 | **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](products/thanh-thu-fruit/html/index.html) |
 | **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](products/gold-track/html/index.html) |
+| **FuelTrack** | Theo dõi giá xăng dầu PVOIL tại Đà Nẵng theo từng ngày — chỉ xem giá, không mua bán. | [fuel-track/html/index.html](products/fuel-track/html/index.html) |
 | **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](products/thubee-farmery/html/index.html) |
 | **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](products/viet-long-creator/html/index.html) |
 | **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](products/viet-long-social/html/index.html) |
@@ -94,6 +95,21 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │       ├── gold-price.json       # Giá vàng mới nhất
 │   │       ├── gold-price-history.json # Lịch sử giá (vẽ biểu đồ xu hướng)
 │   │       └── changelog.json        # Lịch sử cập nhật hiện trong app (nút version ở header)
+│   ├── fuel-track/           # Theo dõi giá xăng dầu PVOIL Đà Nẵng — cùng mẫu với gold-track
+│   │   ├── sw-fuel-track.js  # Vỏ service worker 1 dòng — ngang hàng html/css/js/data, KHÔNG lồng vào js/
+│   │   ├── html/index.html
+│   │   ├── css/fuel-track.css
+│   │   ├── js/fuel-track.js
+│   │   ├── js/sw-core.js     # Logic service worker thật (nạp qua importScripts từ vỏ)
+│   │   ├── py/fetch_fuel_price.py    # Lấy giá từ giaxanghomnay.com — chạy trong GitHub Actions
+│   │   ├── img/fuel-track-icon.svg    # Favicon SVG
+│   │   ├── img/fuel-track-icon-*.png  # Favicon PNG (32/180), apple-touch-icon
+│   │   ├── manifest.json     # Web App Manifest
+│   │   ├── docs/fuel-track.md
+│   │   └── data/             # Cập nhật tự động bởi GitHub Actions (update-fuel-price.yml)
+│   │       ├── fuel-price.json       # Giá hiện hành + mức thay đổi so với kỳ trước
+│   │       ├── fuel-price-history.json # Các điểm thay đổi giá (biểu đồ, lịch sử)
+│   │       └── changelog.json        # Lịch sử cập nhật hiện trong app
 │   ├── thubee-farmery/       # Đăng nhập nội bộ — subfolder theo loại file
 │   │   ├── html/index.html
 │   │   ├── css/thubee-farmery.css
