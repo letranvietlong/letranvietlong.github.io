@@ -15,6 +15,10 @@ git diff
 
 Đọc diff thật. Nếu diff lớn, đọc luôn file gốc quanh chỗ sửa để hiểu ngữ cảnh — đừng review mù theo từng dòng rời rạc.
 
+Chạy luôn các kiểm tra rẻ (chỉ đọc, không sửa): `node --check` cho JS đã đổi, parse JSON đã đổi, cân bằng `{}` trong CSS đã đổi. Nếu task có số liệu, **tự tính lại** ít nhất một con số trong kịch bản đã test thay vì tin bảng kết quả.
+
+Nếu `git status` có file mà task không nhắc tới, đó có thể là việc của một phiên khác đang chạy song song — chỉ review phần của task, và cảnh báo nếu commit sắp gộp lẫn hai phần.
+
 ## Checklist — rút ra từ những lỗi đã thực sự xảy ra trong repo này
 
 ### 1. Đúng/sai về tính toán
@@ -52,7 +56,8 @@ git diff
 - [ ] Thay đổi người dùng thấy được → đã bump `products/<sản phẩm>/data/changelog.json` của đúng sản phẩm (cả field `"version"` ở đầu) chưa?
 - [ ] `git status` có file của phiên làm việc khác không (nhiều phiên có thể sửa repo cùng lúc)? Nếu có, commit message/commit chỉ được bao phần của task này — xem mục "Several Claude sessions" trong `CLAUDE.md`.
 - [ ] Đã ghi `.claude/hooks/.next-commit-message.txt` chưa? Nội dung có mô tả đúng thay đổi không (không phải "update code")?
-- [ ] Còn code chết / biến không dùng / tên biến sai nghĩa sau khi sửa không?
+- [ ] Còn code chết / biến không dùng / tên biến sai nghĩa sau khi sửa không? (grep tên hàm/id/class vừa xoá; CSS mồ côi)
+- [ ] Hành vi đã đổi mà `products/<tên>/docs/*.md`, `CLAUDE.md`, skill hay agent file còn mô tả hành vi cũ không? (đã gặp: skill vẫn mô tả pipeline tin tức sau khi xoá) — tài liệu sai còn hại hơn không có.
 - [ ] Text mới hiển thị cho người dùng có phải tiếng Việt không?
 
 ### 6. Phạm vi

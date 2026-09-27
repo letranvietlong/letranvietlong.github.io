@@ -12,11 +12,14 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 
 ## Quy trình bắt buộc
 
+0. Đọc mục "Baseline for every web app" trong `CLAUDE.md`, và skill liên quan tới task (đọc thẳng file): giao diện/số liệu/biểu đồ → `.claude/skills/ui-craft/SKILL.md`; iPhone/PWA/service worker → `.claude/skills/ios-pwa-pitfalls/SKILL.md`; dữ liệu bot/GitHub Actions → `.claude/skills/goldtrack-data-pipeline/SKILL.md`; cấu trúc/file mới → `.claude/skills/project-structure/SKILL.md`; cách kiểm chứng (công cụ, fixture GoldTrack có sẵn số kỳ vọng, giới hạn Chromium) → `.claude/skills/browser-testing/SKILL.md`.
 1. **Nếu task đụng tới một sản phẩm cụ thể trong `products/<ten>/`, đọc `products/<ten>/docs/*.md` của chính nó TRƯỚC** (nếu tồn tại) — file này ghi lại cấu trúc/cạm bẫy/quy trình vận hành đặc thù của riêng sản phẩm đó, không lặp lại trong skill chung. Không có file này thì mới đi khảo sát từ đầu.
 2. **Đọc code thật trước khi kết luận.** Không suy đoán từ tên file. Dùng Grep/Read để xác minh từng giả định — kể cả những gì `docs/*.md` của sản phẩm đã nói, vì tài liệu có thể lạc hậu so với code.
 3. **Xác định chính xác file + số dòng** sẽ phải đụng vào.
 4. **Tìm cạm bẫy** (mục dưới) có liên quan đến task.
-5. **Đề ra cách kiểm chứng**: task này được coi là xong khi test nào pass?
+5. **Đề ra cách kiểm chứng**: task này được coi là xong khi test nào pass? Với mọi thứ có tính toán, đưa **một kịch bản dữ liệu cụ thể kèm con số kỳ vọng đã tính tay** (giao dịch, giá, ngày → từng số phải hiện ra) — tester và coder sẽ dùng thẳng nó. Chọn dữ liệu sao cho code sai và code đúng cho kết quả **khác nhau**.
+6. **Lỗi chỉ xuất hiện trên iPhone thật**: Chromium không tái hiện được (xem skill `browser-testing` §5). Kế hoạch phải có bước lấy số đo trên máy thật (dòng chẩn đoán, ảnh chụp) trước khi chốt nguyên nhân — đừng đề xuất sửa dựa trên đoán.
+7. **Đo trên ảnh người dùng gửi** khi có: quy đổi pixel ảnh ra pt (ảnh iPhone 14 Pro Max: rộng 944px ≈ 430pt), so với kích thước CSS để tìm con số lệch — cách này đã chỉ đúng nguyên nhân hụt 59pt.
 
 ## Cạm bẫy đã biết của repo này — kiểm tra xem task có dính không
 
@@ -46,8 +49,13 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 ## Rủi ro / cạm bẫy dính phải
 <từ danh sách trên, hoặc "không có">
 
+## Cần quyết định
+<điểm mà người dùng/điều phối phải chốt (đánh đổi thật, không có đáp án kỹ thuật duy nhất) — mỗi điểm kèm đề xuất của bạn; "không có" nếu không có>
+
 ## Cách kiểm chứng
-<test cụ thể để biết là đã xong đúng>
+<test cụ thể + kịch bản dữ liệu và bảng số kỳ vọng tính tay>
 ```
+
+Phân biệt rõ trong báo cáo: điều **đã xác minh bằng code** (có file:dòng) với điều **nghi ngờ, chưa chắc**. Không độn cảnh báo chung chung.
 
 Ngắn gọn, đi thẳng vào việc. Nếu task quá đơn giản (đổi text, đổi màu), nói thẳng là không cần kế hoạch và mô tả sửa gì trong 1-2 dòng.

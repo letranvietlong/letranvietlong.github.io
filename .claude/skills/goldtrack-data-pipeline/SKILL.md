@@ -60,6 +60,16 @@ for i in 1 2 3 4 5; do
 done
 ```
 
+### Khi rebase xung đột ở file dữ liệu (đã suýt mất lịch sử giá thật)
+
+Đổi **cấu trúc** file JSON mà bot cũng đang ghi → hook push chắc chắn thất bại: bot vẫn ghi theo shape cũ trên `origin/main` trong lúc bạn làm. Commit local nằm lại, hook in cảnh báo "Auto-committed LOCALLY, but push … FAILED".
+
+- **Trong `git rebase`, `--ours`/`--theirs` bị ĐẢO so với merge**: `--ours` = `origin/main` (của bot), `--theirs` = commit của bạn. `git checkout --theirs` từng lấy nhầm bản local cũ, suýt vứt 8 điểm giá bot đã ghi thêm.
+- File lịch sử: **gộp hai bên theo mốc thời gian** (union theo `at`, sắp xếp, cắt `HISTORY_MAX`), rồi so số điểm trước/sau — không chọn nguyên một bên.
+- File giá hiện tại (snapshot): chạy lại `fetch_gold_price.py` sau khi gộp để có số mới nhất đúng shape mới.
+- Kiểm JSON hợp lệ, `git add`, `GIT_EDITOR=true git rebase --continue`, rồi push.
+- Tốt nhất: đẩy thay đổi script + shape mới **sớm**, trước khi làm tiếp phần giao diện, để bot chuyển sang shape mới ngay.
+
 ## Khi sửa script Python trên Windows
 
 `print()` tiếng Việt ra console sẽ crash (`UnicodeEncodeError`, cp1252). Ghi ra file UTF-8 rồi đọc lại:

@@ -25,6 +25,8 @@ Run all four in sequence with `/workflow <yêu cầu>` ([.claude/commands/workfl
 
 **When orchestrating:** each agent starts cold and sees neither this conversation nor the previous agent's output, so every prompt must be self-contained (paste the actual plan/findings, not "làm theo kế hoạch"). Verify what agents claim — check `git diff` yourself rather than trusting "đã sửa xong".
 
+**Shared test tooling** lives in `.claude/tools/` (static server `serve.sh`, Playwright `harness.js` with data mocks, localStorage seeding, iOS-standalone simulation and a standard health report). Install once with `npm install --prefix .claude/tools` (node_modules is gitignored; Chromium is already cached on this machine). How to use it, proven test recipes and Chromium's limits for iPhone-only bugs: skill `browser-testing`.
+
 Note: agent definitions are loaded when a session starts, so a newly added or renamed agent only becomes available after restarting Claude Code. Skills are picked up immediately.
 
 # Repo layout — products live in products/
