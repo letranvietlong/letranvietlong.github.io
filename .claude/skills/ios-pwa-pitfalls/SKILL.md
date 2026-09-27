@@ -135,6 +135,10 @@ Cách bắt lỗi này chỉ có một: **bấm thật bằng Playwright** (`pag
 
 **Bẫy cụ thể đã gặp: khai báo `width:44px;height:44px` vẫn bị đo ra nhỏ hơn** khi phần tử là con của một container `display:flex` không đủ chỗ — flexbox tự co nó lại (`flex-shrink` mặc định là `1`) để cả hàng vừa khít, bất kể `width` đã khai báo. Đo ra 36.5px thay vì 44px dù CSS ghi rõ `width:44px`, và **không** gây tràn ngang trang (nên `scrollWidth === clientWidth` vẫn PASS, dễ đánh lừa rằng "không có gì sai"). Bắt buộc thêm `flex-shrink:0` (và tốt nhất cả `min-width`) cho bất kỳ phần tử kích thước cố định nào sống trong flex container có khả năng chật chỗ (nav, banner, toolbar).
 
+## 12b. Phông có trên Windows nhưng không có trên iPhone → số "cao thấp"
+
+iPhone không có Cambria (phông của Office/Windows). Stack `Cambria, Georgia, …` rơi về **Georgia bản iOS — chỉ có số kiểu old-style, không có lining** nên `font-variant-numeric: lining-nums` vô tác dụng; trên Windows (Cambria/Georgia mới đều có `lnum`) test không bao giờ thấy lỗi. Cách sửa: một `@font-face` chỉ cho chữ số (`unicode-range: U+0030-0039`) lấy `local('Cambria')`, rồi `local('Times New Roman')`/`local('TimesNewRomanPSMT')` (có sẵn trên iOS, lining mặc định), khai báo riêng mặt đậm; đặt tên phông này đầu stack. Muốn tái hiện trên Windows: tắt `font-variant-numeric` rồi so Georgia với phông mới.
+
 ## 13. Kiểm thử: những gì Chromium headless KHÔNG mô phỏng được
 
 Playwright/Chromium **không** tái hiện: `env(safe-area-inset-*)` thật, bàn phím ảo iOS, quirk `100dvh` của WebKit, lag compositing khi `-webkit-overflow-scrolling:touch`.
