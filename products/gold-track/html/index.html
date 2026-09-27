@@ -73,6 +73,13 @@
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
   <div class="tab-view" id="viewOverview">
+    <!-- Empty state: shown instead of a blank screen when there are no transactions -->
+    <div class="card" id="overviewEmpty" hidden>
+      <div class="summary-title" style="margin-bottom:6px">Chưa có giao dịch nào</div>
+      <p class="field-hint" style="margin:0 0 8px">Thêm giao dịch mua vàng ở tab <b>Lịch sử</b> (nút +) để bắt đầu theo dõi lãi/lỗ.</p>
+      <p class="field-hint" style="margin:0">Lưu ý: app mở từ Màn hình chính dùng bộ nhớ riêng, tách biệt với Safari. Nếu đã nhập giao dịch trong Safari, hãy kết nối GitHub Gist (cùng token) ở tab <b>Cài đặt</b> trên cả hai nơi để đồng bộ.</p>
+    </div>
+
     <!-- Portfolio summary -->
     <div class="card" id="summaryCard" hidden>
       <div class="card-glow" style="background:var(--green)"></div>
@@ -226,6 +233,7 @@
       </div>
     </div>
     <p class="field-hint" style="margin-top:2px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
+    <p class="field-hint" id="displayDiag" style="margin-top:10px;text-align:center;opacity:.7"></p>
   </div>
 </div>
 

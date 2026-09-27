@@ -1433,6 +1433,7 @@
   function renderSummary(){
     var card = document.getElementById('summaryCard');
     var content = document.getElementById('summaryContent');
+    document.getElementById('overviewEmpty').hidden = state.transactions.length !== 0;
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
 
@@ -1812,10 +1813,39 @@
   // visibilitychange/pageshow handlers above, which run earlier in the file
   // but need this exact recompute for the screen lock/unlock case.
   function syncAppHeight(){
+    syncStandaloneGap();
     if(!window.visualViewport) return;
     document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
   }
+  // iOS standalone (Home Screen) + black-translucent status bar: WebKit can
+  // report a layout viewport shorter than the physical screen by exactly the
+  // status-bar height (measured on an iPhone 14 Pro Max: 873pt of 932pt),
+  // while still drawing content from the very top. position:fixed;bottom:0
+  // then lands ~59pt above the real bottom edge — no env()/safe-area value
+  // can fix that, since the viewport itself is short. Measure the shortfall
+  // and push bottom-anchored fixed elements down by it. No-op (0px) in a
+  // browser tab, in landscape, or once iOS reports the full height.
+  function syncStandaloneGap(){
+    var standalone = window.navigator.standalone === true ||
+      !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    var portrait = screen.height > screen.width;
+    var gap = (standalone && portrait) ? Math.round(screen.height - window.innerHeight) : 0;
+    // Only a status-bar-sized shortfall is this bug; anything else (keyboard
+    // open, odd zoom) must not shove the bar off-screen.
+    if(gap < 0 || gap > 80) gap = 0;
+    document.documentElement.style.setProperty('--standalone-gap', gap + 'px');
+    var diag = document.getElementById('displayDiag');
+    if(diag){
+      diag.textContent = 'standalone: ' + (standalone ? 'có' : 'không') +
+        ' · màn hình ' + screen.width + '×' + screen.height +
+        ' · viewport ' + window.innerWidth + '×' + window.innerHeight +
+        (window.visualViewport ? ' · visual ' + Math.round(window.visualViewport.height) : '') +
+        ' · bù đáy ' + gap + 'px';
+    }
+  }
   syncAppHeight();
+  window.addEventListener('resize', syncStandaloneGap);
+  window.addEventListener('orientationchange', function(){ setTimeout(syncStandaloneGap, 300); });
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize', syncAppHeight);
     window.visualViewport.addEventListener('scroll', syncAppHeight);
