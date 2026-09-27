@@ -226,7 +226,23 @@ function showApp(): void {
   document.getElementById('loadingScreen')?.remove();
   document.getElementById('authScreen')?.classList.remove('visible');
   document.getElementById('appShell')?.classList.add('visible');
-  renderAll();
+  try {
+    renderAll();
+  } catch (e) {
+    storedDataError = storedDataError || errorText(e);
+  }
+  if (storedDataError && !storedDataErrorShown) {
+    storedDataErrorShown = true;
+    alert(`Dữ liệu lưu trên máy này bị lỗi (${storedDataError}), app có thể hiển thị thiếu. Dữ liệu chưa bị xoá. Hãy dùng nút "Khôi phục" ở cuối tab Tổng quan để nạp lại từ file sao lưu.`);
+  }
+}
+
+// Set when localStorage holds data the UI can't render; the shell still opens so "Khôi phục" stays reachable.
+let storedDataError: string | null = null;
+let storedDataErrorShown = false;
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 function showLogin(): void {
@@ -991,6 +1007,7 @@ function renderAll(): void {
   renderCustomersCards(rows);
   renderSellersCards(rows);
   renderRangeLabel();
+  renderBackupCounts();
 }
 
 function renderRangeLabel(): void {
@@ -1321,8 +1338,206 @@ function exportOrdersCSV(): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can abort the download on iOS Safari — give it time to start.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
   showToast('Đã xuất file CSV.');
+}
+
+// ===================== Backup / restore =====================
+
+interface BackupFile {
+  app: 'thubee-farmery';
+  version: number;
+  exportedAt: string;
+  products: Product[];
+  customers: Customer[];
+  sellers: Seller[];
+  orders: Order[];
+}
+
+type DatasetKey = 'products' | 'customers' | 'sellers' | 'orders';
+type Dataset = { products: Product[]; customers: Customer[]; sellers: Seller[]; orders: Order[] };
+
+const countOf = (v: unknown): number => (Array.isArray(v) ? v.length : 0);
+
+function describeCounts(o: Record<DatasetKey, unknown>): string {
+  return `${countOf(o.orders)} đơn · ${countOf(o.products)} sản phẩm · ${countOf(o.customers)} khách · ${countOf(o.sellers)} người bán`;
+}
+
+function renderBackupCounts(): void {
+  setText('backupCounts', describeCounts({ orders, products, customers, sellers }));
+}
+
+function downloadBackup(filenamePrefix: string): void {
+  const data: BackupFile = {
+    app: 'thubee-farmery',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products,
+    customers,
+    sellers,
+    orders,
+  };
+  const now = new Date();
+  const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filenamePrefix}-${localDate}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Revoking synchronously can abort the download on iOS Safari — give it time to start.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function exportBackupJSON(): void {
+  downloadBackup('thubee-farmery-backup');
+  showToast('Đã tạo file sao lưu.');
+}
+
+// Ids are interpolated into onclick="...('${id}')" and value="${id}", so anything beyond [\w-] would be an injection vector.
+const ID_RE = /^[\w-]+$/;
+const OPTIONAL_ID_RE = /^[\w-]*$/;
+const isStr = (v: unknown): boolean => typeof v === 'string';
+const isNum = (v: unknown): boolean => typeof v === 'number' && isFinite(v);
+const isId = (v: unknown): boolean => typeof v === 'string' && ID_RE.test(v);
+// undefined allowed: orders saved by the first release had a `customer` name and no customerId/sellerId; toRow shows them as "(Khách lẻ)".
+const isOptionalId = (v: unknown): boolean => v === undefined || (typeof v === 'string' && OPTIONAL_ID_RE.test(v));
+const isOptionalStr = (v: unknown): boolean => v === undefined || typeof v === 'string';
+const isKeyOf = (obj: object) => (v: unknown): boolean => typeof v === 'string' && Object.prototype.hasOwnProperty.call(obj, v);
+
+const DATASET_SCHEMA: Record<DatasetKey, [string, (v: unknown) => boolean][]> = {
+  products: [['id', isId], ['name', isStr], ['category', isStr], ['unit', isStr], ['price', isNum], ['cost', isNum], ['stock', isNum]],
+  customers: [['id', isId], ['name', isStr], ['phone', isOptionalStr]],
+  sellers: [['id', isId], ['name', isStr], ['phone', isOptionalStr]],
+  orders: [
+    ['id', isId],
+    ['date', (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)],
+    ['customerId', isOptionalId],
+    ['sellerId', isOptionalId],
+    ['productId', isId],
+    ['quantity', isNum],
+    ['status', isKeyOf(STATUS_LABEL)],
+    ['payment', isKeyOf(PAYMENT_LABEL)],
+  ],
+};
+
+function validateDataset(data: Record<DatasetKey, unknown>): string | null {
+  for (const key of Object.keys(DATASET_SCHEMA) as DatasetKey[]) {
+    const list = data[key];
+    if (!Array.isArray(list)) return `"${key}" không phải danh sách`;
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return `${key}[${i}] không phải bản ghi hợp lệ`;
+      for (const [field, check] of DATASET_SCHEMA[key]) {
+        if (!check((item as Record<string, unknown>)[field])) return `${key}[${i}] thiếu hoặc sai trường "${field}"`;
+      }
+    }
+  }
+  return null;
+}
+
+// Runs the derivations the UI performs against the candidate data, so a restore can never persist something that crashes rendering.
+function dryRunDataset(candidate: Dataset): string | null {
+  const saved: Dataset = { products, customers, sellers, orders };
+  try {
+    ({ products, customers, sellers, orders } = candidate);
+    Array.from(new Set(products.map((p) => p.category))).forEach((c) => escapeHtml(c));
+    sellers.forEach((s) => escapeHtml(s.name));
+    customers.forEach((c) => c.name.toLowerCase());
+    products.forEach((p) => formatCurrency(p.price) + formatNumber(p.stock) + escapeHtml(p.name) + escapeHtml(p.unit));
+    const rows = getRows({ from: '0000-01-01', to: '9999-12-31' });
+    computeKPIs(rows);
+    rows.forEach((r) => formatDateVN(r.date) + formatCurrency(r.total) + escapeHtml(r.customerName) + escapeHtml(r.sellerName));
+    return null;
+  } catch (e) {
+    return errorText(e);
+  } finally {
+    ({ products, customers, sellers, orders } = saved);
+  }
+}
+
+function parseBackup(text: string): { backup: BackupFile } | { error: string } {
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { error: 'File không phải JSON hợp lệ.' };
+  }
+  if (!data || typeof data !== 'object' || data.app !== 'thubee-farmery') {
+    return { error: 'Đây không phải file sao lưu Thubee Farmery.' };
+  }
+  if (data.version !== 1) return { error: `Phiên bản sao lưu "${String(data.version)}" không được hỗ trợ.` };
+  const invalid = validateDataset(data);
+  if (invalid) return { error: `Dữ liệu trong file bị lỗi: ${invalid}.` };
+  const crash = dryRunDataset(data);
+  if (crash) return { error: `Dữ liệu trong file không hiển thị được (${crash}).` };
+  return { backup: data as BackupFile };
+}
+
+function applyBackup(backup: BackupFile): boolean {
+  const entries: [string, unknown[]][] = [
+    [STORAGE_PRODUCTS, backup.products],
+    [STORAGE_CUSTOMERS, backup.customers],
+    [STORAGE_SELLERS, backup.sellers],
+    [STORAGE_ORDERS, backup.orders],
+  ];
+  const previous = entries.map(([key]) => localStorage.getItem(key));
+  try {
+    for (const [key, value] of entries) localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Roll back so a quota failure halfway through doesn't leave orders from one dataset pointing at products from another.
+    entries.forEach(([key], i) => {
+      const old = previous[i];
+      try {
+        if (old === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, old);
+      } catch {
+        // ignore: the old value fitted before, so this only fails if storage is broken outright
+      }
+    });
+    return false;
+  }
+  products = backup.products;
+  customers = backup.customers;
+  sellers = backup.sellers;
+  orders = backup.orders;
+  return true;
+}
+
+function handleRestoreFile(input: HTMLInputElement): void {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    input.value = '';
+    const parsed = parseBackup(String(reader.result ?? ''));
+    if ('error' in parsed) {
+      alert(`Không khôi phục được. ${parsed.error} Dữ liệu hiện tại không bị thay đổi.`);
+      return;
+    }
+    const backup = parsed.backup;
+    if (!confirm(`Thay toàn bộ dữ liệu hiện tại bằng bản sao lưu: ${describeCounts(backup)}?\n\nDữ liệu hiện tại (${describeCounts({ orders, products, customers, sellers })}) sẽ bị ghi đè. Một bản sao lưu dữ liệu hiện tại sẽ được tải xuống trước.`)) return;
+    downloadBackup('thubee-farmery-truoc-khoi-phuc');
+    if (!applyBackup(backup)) {
+      alert('Không ghi được dữ liệu (bộ nhớ trình duyệt có thể đã đầy). Dữ liệu hiện tại không bị thay đổi.');
+      return;
+    }
+    storedDataError = null;
+    orderCategoryFilter = '';
+    orderSellerFilter = '';
+    populateCategoryFilter();
+    populateSellerFilter();
+    renderAll();
+    alert(`Đã khôi phục: ${describeCounts(backup)}.`);
+  };
+  reader.onerror = () => {
+    input.value = '';
+    alert('Không đọc được file. Dữ liệu hiện tại không bị thay đổi.');
+  };
+  reader.readAsText(file);
 }
 
 // ===================== Init =====================
@@ -1372,6 +1587,11 @@ function bindEvents(): void {
 
   document.getElementById('exportCsvBtn')?.addEventListener('click', exportOrdersCSV);
 
+  document.getElementById('backupBtn')?.addEventListener('click', exportBackupJSON);
+  const restoreInput = document.getElementById('restoreFileInput') as HTMLInputElement | null;
+  document.getElementById('restoreBtn')?.addEventListener('click', () => restoreInput?.click());
+  restoreInput?.addEventListener('change', () => handleRestoreFile(restoreInput));
+
   const searchInput = document.getElementById('orderSearchInput') as HTMLInputElement | null;
   searchInput?.addEventListener('input', () => {
     orderSearchText = searchInput.value;
@@ -1404,10 +1624,15 @@ function bindEvents(): void {
 
 async function init(): Promise<void> {
   await loadState();
-  populateCategoryFilter();
-  populateSellerFilter();
   currentRange = rangeForPreset(currentPreset);
   bindEvents();
+  storedDataError = validateDataset({ products, customers, sellers, orders });
+  try {
+    populateCategoryFilter();
+    populateSellerFilter();
+  } catch (e) {
+    storedDataError = storedDataError || errorText(e);
+  }
 
   if (hasValidSession()) {
     showApp();

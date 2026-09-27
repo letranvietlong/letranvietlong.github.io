@@ -214,12 +214,14 @@ footer{background:var(--dark);color:var(--cream);padding:48px 60px;display:flex;
 
 /* RESPONSIVE */
 @media(max-width:900px){
-  nav{padding:18px 24px}
+  nav{padding:18px max(24px,env(safe-area-inset-right,0px)) 18px max(24px,env(safe-area-inset-left,0px))}
   .nav-links{display:none}
   .tab-bar{display:block}
   .page-dots{display:none}
-  body{padding-bottom:64px}
-  #floatGroup{bottom:80px;right:18px}
+  /* viewport-fit=cover: keep content clear of the home indicator (portrait) and the notch (landscape) */
+  body{padding:0 env(safe-area-inset-right,0px) calc(64px + env(safe-area-inset-bottom,0px)) env(safe-area-inset-left,0px)}
+  .tab-bar{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+  #floatGroup{bottom:calc(80px + env(safe-area-inset-bottom,0px));right:calc(18px + env(safe-area-inset-right,0px))}
   .hero{grid-template-columns:1fr}
   .hero-right{display:none}
   .hero-left{padding:100px 24px 60px}

@@ -11,7 +11,7 @@ Repo này là **nhiều sản phẩm độc lập trong một site tĩnh** trên
 
 ## 1. Luật vàng của thư mục gốc
 
-> **Root chỉ chứa: `index.html`, thư mục `products/`, và những file mà NỀN TẢNG (GitHub/Claude Code/chuẩn web) bắt buộc phải ở root.**
+> **Root chỉ chứa: `index.html` (kèm `css/index.css`, `js/index.js`, `img/og-image.jpg` của riêng nó — xem mục 3), thư mục `products/`, và những file mà NỀN TẢNG (GitHub/Claude Code/chuẩn web) bắt buộc phải ở root.**
 
 Không có ngoại lệ "cho tiện". Mỗi file ở root phải trả lời được câu: *"nếu chuyển vào thư mục con thì hỏng cái gì?"* — không trả lời được thì nó không thuộc về root.
 

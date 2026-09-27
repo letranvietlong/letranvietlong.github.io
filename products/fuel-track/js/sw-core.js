@@ -1,7 +1,7 @@
 // Logic service worker của FuelTrack. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/fuel-track/sw-fuel-track.js
 // (đọc file đó để biết vì sao vỏ phải nằm ngay trong products/fuel-track/).
-var CACHE_NAME = "fueltrack-cache-v1";
+var CACHE_NAME = "fueltrack-cache-v2";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
@@ -54,9 +54,15 @@ self.addEventListener("fetch", function(event){
   if(NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1){
     event.respondWith(
       fetch(event.request).then(function(res){
-        var copy = res.clone();
-        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
-        return res;
+        // Only a good response may replace the offline copy — caching a
+        // transient 404/5xx would overwrite the last working version. On such
+        // an error, serve that last working version if we have one.
+        if(res.ok){
+          var copy = res.clone();
+          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          return res;
+        }
+        return caches.match(event.request).then(function(cached){ return cached || res; });
       }).catch(function(){
         return caches.match(event.request).then(function(cached){ return cached || Response.error(); });
       })
@@ -65,8 +71,10 @@ self.addEventListener("fetch", function(event){
     event.respondWith(
       caches.match(event.request).then(function(cached){
         var fetchPromise = fetch(event.request).then(function(res){
-          var copy = res.clone();
-          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          if(res.ok){
+            var copy = res.clone();
+            caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          }
           return res;
         }).catch(function(){ return cached || Response.error(); });
         return cached || fetchPromise;

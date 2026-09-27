@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#3f6b35">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Thubee Farmery">
-<link rel="icon" type="image/svg+xml" href="/products/thubee-farmery/img/thubee-icon.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="/products/thubee-farmery/img/thubee-icon-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/products/thubee-farmery/img/thubee-icon-180.png">
+<link rel="icon" type="image/svg+xml" href="/products/thubee-farmery/img/thubee-farmery-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/products/thubee-farmery/img/thubee-farmery-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/products/thubee-farmery/img/thubee-farmery-icon-180.png">
 <link rel="manifest" href="/products/thubee-farmery/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/thubee-farmery.css">
@@ -213,6 +213,17 @@
       <div class="panel-card">
         <div class="panel-card-title">Sản phẩm bán chạy nhất</div>
         <div id="topProductsList"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-title">Sao lưu dữ liệu</div>
+        <p class="backup-note">Dữ liệu chỉ lưu trên máy này. App mở từ Màn hình chính có bộ nhớ riêng, tách với Safari; xoá icon là mất dữ liệu — hãy sao lưu trước khi xoá icon hoặc đổi máy.</p>
+        <div class="backup-counts" id="backupCounts"></div>
+        <div class="backup-actions">
+          <button class="btn-outline" id="backupBtn">⭳ Sao lưu (.json)</button>
+          <button class="btn-outline" id="restoreBtn">⭱ Khôi phục</button>
+        </div>
+        <input type="file" id="restoreFileInput" accept="application/json,.json" hidden>
       </div>
     </section>
 

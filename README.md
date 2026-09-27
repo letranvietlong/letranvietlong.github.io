@@ -115,8 +115,8 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   ├── css/thubee-farmery.css
 │   │   ├── js/thubee-farmery.ts  # Source TypeScript
 │   │   ├── js/thubee-farmery.js  # Bản compile từ .ts (file thực sự được load)
-│   │   ├── img/thubee-icon.svg       # Favicon SVG (logo mascot)
-│   │   ├── img/thubee-icon-*.png     # Favicon PNG (32/180), apple-touch-icon
+│   │   ├── img/thubee-farmery-icon.svg       # Favicon SVG (logo mascot)
+│   │   ├── img/thubee-farmery-icon-*.png     # Favicon PNG (32/180), apple-touch-icon
 │   │   ├── manifest.json     # Web App Manifest
 │   │   └── json/             # Dữ liệu seed, viết tay
 │   │       ├── products.json     # Catalog sản phẩm gốc (seed + nguồn combobox)
@@ -129,7 +129,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │       └── js/worldcup-2026.js
 ```
 
-**Không còn `img/` dùng chung ở root.** Icon của mỗi sản phẩm nằm trong `img/` của chính sản phẩm đó — ví dụ `products/gold-track/img/gold-track-icon*`, `products/thubee-farmery/img/thubee-icon*`. Các sản phẩm khác nhúng icon trực tiếp bằng data URI trong HTML nên không cần thư mục `img/` riêng. Chỉ tạo `img/` dùng chung ở root nếu sau này có ảnh thật sự cross-product (hiện chưa có trường hợp này).
+**Không còn `img/` dùng chung ở root.** Icon của mỗi sản phẩm nằm trong `img/` của chính sản phẩm đó — ví dụ `products/gold-track/img/gold-track-icon*`, `products/thubee-farmery/img/thubee-farmery-icon*`. Các sản phẩm khác nhúng icon trực tiếp bằng data URI trong HTML nên không cần thư mục `img/` riêng. Chỉ tạo `img/` dùng chung ở root nếu sau này có ảnh thật sự cross-product (hiện chưa có trường hợp này).
 
 > **Vì sao `CLAUDE.md` không nằm trong `products/`?**
 > - Được Claude Code tự động nạp từ **thư mục gốc** của project. Chuyển đi nơi khác thì quy ước commit message và quy ước cập nhật changelog trong đó sẽ không còn hiệu lực. Đây là file duy nhất còn bị ràng buộc phải ở root.

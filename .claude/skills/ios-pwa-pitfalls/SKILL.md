@@ -25,7 +25,7 @@ Thứ **có thể** thu gọn: padding/icon/min-height của chính thanh menu (
 
 Cách sửa gốc: dùng `status-bar-style=default` — nội dung bắt đầu **dưới** status bar, viewport 873pt chạy tới đáy thật. Nhớ mục 8: đổi meta này phải **xoá icon và Add to Home Screen lại** mới có hiệu lực.
 
-**Quy tắc cho mọi trang mới trong repo:** mặc định `default`, không dùng `black-translucent` cho trang có thanh menu/nút cố định ở đáy. Trước khi thêm tab bar hay nút `position:fixed;bottom:0` vào trang đang dùng `black-translucent`, đổi meta trước. (Tính đến 2026-09-27, trang chủ và phần lớn sản phẩm khác vẫn dùng `black-translucent` — chạy `grep -rl black-translucent --include=*.html .` để xem danh sách hiện tại.)
+**Quy tắc cho mọi trang mới trong repo:** mặc định `default`, không dùng `black-translucent` cho trang có thanh menu/nút cố định ở đáy. Trước khi thêm tab bar hay nút `position:fixed;bottom:0` vào trang đang dùng `black-translucent`, đổi meta trước. (Tính đến 2026-09-28, mọi trang sản phẩm đã dùng `default`. Chỉ trang chủ `index.html` còn `black-translucent` — nó có `viewport-fit=cover`, nav trên cùng cộng `env(safe-area-inset-top)` (mục 9) và không có thanh cố định ở đáy; thêm thanh đáy vào trang chủ thì đổi meta trước. `black-translucent` mà thiếu `viewport-fit=cover` thì mọi `env()` = 0 → header cố định chui dưới status bar — lỗi từng có ở 4 trang sản phẩm. Chạy `grep -rl black-translucent --include=*.html .` để xem danh sách hiện tại.)
 
 Chẩn đoán nhanh: in ra `screen.height`, `innerHeight`, `env(safe-area-inset-top/bottom)` (qua phần tử thăm dò có `padding-top:env(...)`) và `getBoundingClientRect().bottom` của thanh menu — GoldTrack hiện dòng này ở cuối tab Cài đặt.
 
