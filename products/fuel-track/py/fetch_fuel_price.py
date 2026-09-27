@@ -169,6 +169,13 @@ def load_history():
     return {"items": dict(ITEMS), "changes": h["changes"]}
 
 
+REVERT_WINDOW_DAYS = 3
+
+
+def _days_between(a, b):
+    return (date.fromisoformat(b) - date.fromisoformat(a)).days
+
+
 def same_state(entry, prices, sources):
     return entry.get("prices") == prices and (entry.get("sources") or {}) == (sources or {})
 
@@ -182,6 +189,22 @@ def apply_observation(history, date_str, prices, src_upd, sources):
         return False
     if last and same_state(last, prices, sources):
         return False
+    # The source occasionally serves a bad record for a day or two — a stale
+    # price set from an earlier period (seen 2025-10-25, 2025-12-26) or a row
+    # missing — then snaps back. Official adjustments are at least a week
+    # apart, so an entry that both appeared within a few days of the one before
+    # it AND is now reverted within a few days was a blip: drop it instead of
+    # recording the snap-back. (Checking only the revert side would misfire on
+    # a stale record arriving two days after a real Thursday change — it would
+    # drop the real change.)
+    if (len(changes) >= 2 and date_str != last["date"]
+            and same_state(changes[-2], prices, sources)
+            and _days_between(changes[-2]["date"], last["date"]) <= REVERT_WINDOW_DAYS
+            and _days_between(last["date"], date_str) <= REVERT_WINDOW_DAYS):
+        print("warning: %s reverted to the %s state, dropping %s as a source glitch"
+              % (date_str, changes[-2]["date"], last["date"]), file=sys.stderr)
+        changes.pop()
+        return True
 
     entry = {"date": date_str, "detectedAt": src_upd, "prices": prices}
     if sources:
