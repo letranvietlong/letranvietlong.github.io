@@ -38,9 +38,19 @@ git diff
 - [ ] Có dựa vào `100dvh` cho thứ cần chính xác sau khi đóng bàn phím không? (nên dùng `visualViewport`)
 - [ ] Có đặt `transform` động lên phần tử con của `position:sticky` không? (WebKit render sai, đã gặp)
 - [ ] Vùng chạm có còn ≥ 44px không?
+- [ ] Trang có thanh menu/nút `position:fixed;bottom:0` mà meta `apple-mobile-web-app-status-bar-style` là `black-translucent` không? (viewport hụt 59pt ở đáy khi mở từ Màn hình chính — phải dùng `default`)
+- [ ] Có "sửa" lỗi đáy màn hình bằng cách đẩy phần tử fixed ra ngoài viewport (`bottom:-Npx`) không? (WebKit cắt mất phần đó — đã hỏng thật ở GoldTrack v1.53)
+- [ ] Stack phông có bắt đầu bằng phông không có trên iOS (Cambria…) mà thiếu mặt phông chữ số riêng không? (số tiền sẽ cao thấp trên iPhone dù Windows trông đúng)
+- [ ] Lỗi chỉ xuất hiện trên iPhone mà báo cáo lại khẳng định "đã sửa" chỉ dựa trên Playwright/Chromium? → hạ xuống "chưa kiểm chứng trên máy thật"
+
+### 4b. Hiển thị số liệu tài chính
+- [ ] Có con số nào cộng trùng không? (vd lãi/lỗ chưa chốt trên từng lệnh mua trong khi lệnh bán đã chốt phần đó)
+- [ ] Báo cáo theo kỳ có trộn lãi chưa chốt vào một kỳ cụ thể không? Tổng lãi/lỗ theo ngày có khớp tổng ở màn tổng quan không?
+- [ ] Biểu đồ có kéo giãn trục Y để chứa đường tham chiếu ở xa, làm biến động thật trông như đi ngang không?
 
 ### 5. Việc bị bỏ sót
-- [ ] Thay đổi người dùng thấy được → đã bump `products/gold-track/data/changelog.json` (cả field `"version"` ở đầu) chưa?
+- [ ] Thay đổi người dùng thấy được → đã bump `products/<sản phẩm>/data/changelog.json` của đúng sản phẩm (cả field `"version"` ở đầu) chưa?
+- [ ] `git status` có file của phiên làm việc khác không (nhiều phiên có thể sửa repo cùng lúc)? Nếu có, commit message/commit chỉ được bao phần của task này — xem mục "Several Claude sessions" trong `CLAUDE.md`.
 - [ ] Đã ghi `.claude/hooks/.next-commit-message.txt` chưa? Nội dung có mô tả đúng thay đổi không (không phải "update code")?
 - [ ] Còn code chết / biến không dùng / tên biến sai nghĩa sau khi sửa không?
 - [ ] Text mới hiển thị cho người dùng có phải tiếng Việt không?

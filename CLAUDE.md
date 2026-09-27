@@ -6,6 +6,8 @@ This repo has a Stop hook ([.claude/hooks/auto-commit-push.sh](.claude/hooks/aut
 
 The hook reads this file, uses it as the commit message, and deletes it after a successful commit. If the file is missing or empty, the hook falls back to a generic message listing changed file names — so writing this file is what keeps commit history searchable later.
 
+**Several Claude sessions may work on this repo at the same time** (it has happened: one session on GoldTrack while another built FuelTrack). The hook does `git add -A`, so whichever turn ends first sweeps *everyone's* uncommitted work into one commit under one message. Before ending a turn, run `git status --short`: if it shows files you didn't touch, or `.next-commit-message.txt` already exists with text you didn't write, **don't overwrite that file** — commit only your own paths yourself (`git add <your files>` + `git commit` with your message and the attribution line), and leave the other session's files and message alone. Never stash, revert or "clean up" changes you didn't make.
+
 # Agents & workflow
 
 This project defines four subagents in [.claude/agents/](.claude/agents/):
@@ -50,7 +52,20 @@ FuelTrack (`products/fuel-track/`, view-only PVOIL fuel prices for Đà Nẵng �
 
 This file (`CLAUDE.md`) must stay at the repo root so Claude Code auto-loads it. [README.md](README.md) also stays at root — GitHub only renders a repo's root `README.md` as its homepage on github.com, not one from a subfolder. `robots.txt` and `sitemap.xml` are the other two root exceptions: the Robots Exclusion Protocol requires `robots.txt` at the exact domain root to be found by crawlers, and `sitemap.xml` follows the same near-universal convention search engines expect by default. These four are the only root exceptions. Each product also has its own `docs/*.md` describing that product specifically (see `products/<name>/docs/`).
 
-# GoldTrack changelog
+# Baseline for every web app in products/ (learned the hard way on GoldTrack)
+
+Apply these when creating a product page, and check them whenever touching one that's meant to be used on a phone / added to the Home Screen. Details and measurements live in the skills named in brackets — read them before improvising a fix.
+
+- **Status bar: `<meta name="apple-mobile-web-app-status-bar-style" content="default">`, not `black-translucent`.** Measured on iPhone 14 Pro Max standalone: translucent mode draws from the top edge but reports a viewport 59pt short, so anything `position:fixed; bottom:0` floats 59pt above the real bottom and nothing painted below that line is visible. No CSS/`env()` fix exists; pushing elements down only clips them. Changing this tag requires removing and re-adding the Home Screen icon. [`ios-pwa-pitfalls` §1b]
+- **Fonts must exist on iOS.** Cambria is a Windows/Office font; iPhones fall back to Georgia, whose iOS version only has old-style (up/down) digits, so `font-variant-numeric: lining-nums` does nothing and money amounts look broken. Any serif stack that starts with a non-iOS font needs the digits-only `@font-face` (unicode-range 0-9 → Cambria, else Times New Roman). Windows tests will never show this bug. [`ui-craft` §3]
+- **A Home Screen app has its own storage, separate from Safari.** Data entered in Safari doesn't appear in the installed app. Any product that stores user data locally needs an empty state that says so, plus a way to move data (export/import or sync). [`ios-pwa-pitfalls` §14]
+- **iOS-only layout can't be verified in Chromium** (no real safe-area, no standalone viewport). For such bugs, add a small on-device diagnostics line (screen/viewport size, safe-area insets via a `padding:env(...)` probe element, position of the fixed element) and ask the user for a screenshot instead of guessing. Say "chưa kiểm chứng trên máy thật" until you have it. [`ios-pwa-pitfalls` §1b, §13]
+- **Service workers share one Cache Storage per origin**: `activate` may only delete caches with its own prefix (see the FuelTrack note above).
+- **Charts and money displays**: don't stretch a chart's Y-axis to fit a far-away reference line (it flattens real moves); in a P&L view never show a number that double-counts or silently mixes realized with unrealized. [`ui-craft` §9-10]
+
+# Product changelogs
+
+Every product with an in-app version badge keeps a user-facing changelog at `products/<name>/data/changelog.json` (currently GoldTrack and FuelTrack, versioned independently). The rule below is written for GoldTrack but applies to each of them with their own files.
 
 `products/gold-track/html/index.html` shows a version badge (top header, all tabs) that opens an in-app "Lịch sử cập nhật" popup reading from [products/gold-track/data/changelog.json](products/gold-track/data/changelog.json). This is a **user-facing** changelog, not raw commit messages — write entries in plain Vietnamese describing what changed for the user, not implementation detail.
 

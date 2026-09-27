@@ -1,6 +1,6 @@
 ---
 name: ios-pwa-pitfalls
-description: Cạm bẫy khi làm web app chạy như app trên iPhone (Add to Home Screen / standalone PWA) — safe area, chiều cao viewport, bàn phím ảo, service worker scope, bug render của WebKit. Dùng khi sửa lỗi giao diện chỉ xuất hiện trên iPhone thật, lỗi thanh menu/header bị lệch, lỗi offline, hoặc khi thấy "sửa mãi không hết".
+description: Cạm bẫy khi làm web app chạy như app trên iPhone (Add to Home Screen / standalone PWA) — status bar black-translucent làm hụt viewport, safe area, chiều cao viewport, bàn phím ảo, phông/chữ số thiếu trên iOS, bộ nhớ app Màn hình chính tách với Safari, service worker scope/cache, bug render của WebKit. Dùng khi tạo trang mới có thanh menu/nút cố định, khi sửa lỗi giao diện chỉ xuất hiện trên iPhone thật, lỗi thanh menu/header bị lệch hay hở đáy, dữ liệu "biến mất" khi mở từ icon, lỗi offline, hoặc khi thấy "sửa mãi không hết".
 ---
 
 # Cạm bẫy iOS / PWA
@@ -24,6 +24,8 @@ Thứ **có thể** thu gọn: padding/icon/min-height của chính thanh menu (
 Đo trên iPhone 14 Pro Max, app mở từ Màn hình chính với `apple-mobile-web-app-status-bar-style=black-translucent`: `screen.height=932`, `window.innerHeight=873`, trong khi nội dung vẫn vẽ từ mép trên cùng (dưới status bar). → Viewport thiếu đúng 59pt (= status bar/Dynamic Island) ở **đáy**; thanh menu `bottom:0` luôn lơ lửng cách đáy thật 59pt, và **WebKit cắt mọi thứ vẽ dưới mốc 873** — đẩy phần tử xuống bằng `bottom:-59px` chỉ làm mất chữ/icon (đã thử, hỏng). Không `env()`/safe-area nào sửa được vì chính viewport bị ngắn.
 
 Cách sửa gốc: dùng `status-bar-style=default` — nội dung bắt đầu **dưới** status bar, viewport 873pt chạy tới đáy thật. Nhớ mục 8: đổi meta này phải **xoá icon và Add to Home Screen lại** mới có hiệu lực.
+
+**Quy tắc cho mọi trang mới trong repo:** mặc định `default`, không dùng `black-translucent` cho trang có thanh menu/nút cố định ở đáy. Trước khi thêm tab bar hay nút `position:fixed;bottom:0` vào trang đang dùng `black-translucent`, đổi meta trước. (Tính đến 2026-09-27, trang chủ và phần lớn sản phẩm khác vẫn dùng `black-translucent` — chạy `grep -rl black-translucent --include=*.html .` để xem danh sách hiện tại.)
 
 Chẩn đoán nhanh: in ra `screen.height`, `innerHeight`, `env(safe-area-inset-top/bottom)` (qua phần tử thăm dò có `padding-top:env(...)`) và `getBoundingClientRect().bottom` của thanh menu — GoldTrack hiện dòng này ở cuối tab Cài đặt.
 
@@ -75,6 +77,7 @@ File HTML/CSS/JS đang sửa thường xuyên mà để **cache-first** thì m�
 - Asset bất biến (icon) → cache-first.
 - Thêm file mới app load lúc chạy → **phải** thêm vào danh sách cache **và bump `CACHE_NAME`**, nếu không client cũ giữ nguyên danh sách cũ.
 - Cache HTML mà quên CSS/JS → offline lên trang trắng/không style.
+- **Cache Storage dùng chung cho cả origin** (mọi sản phẩm trên `letranvietlong.github.io`): `activate` chỉ được xoá cache mang **tiền tố của chính mình** (`k.indexOf("goldtrack-cache-")===0 && k!==CACHE_NAME`). Lọc trần `k !== CACHE_NAME` sẽ xoá sạch cache offline của sản phẩm khác (đã suýt xảy ra khi thêm FuelTrack).
 
 ## 6. `position:sticky` + `transform` ở phần tử con = lỗi render WebKit
 
@@ -144,3 +147,12 @@ iPhone không có Cambria (phông của Office/Windows). Stack `Cambria, Georgia
 Playwright/Chromium **không** tái hiện: `env(safe-area-inset-*)` thật, bàn phím ảo iOS, quirk `100dvh` của WebKit, lag compositing khi `-webkit-overflow-scrolling:touch`.
 
 → Vẫn test được: giá trị computed style, thứ tự DOM, có tràn ngang không, service worker + offline, logic JS. Nhưng với lỗi chỉ xuất hiện trên máy thật, hãy **nói rõ là chưa kiểm chứng được** thay vì khẳng định đã sửa xong.
+
+## 14. App ở Màn hình chính có bộ nhớ RIÊNG, tách hẳn với Safari
+
+`localStorage`/IndexedDB của web app mở từ icon Màn hình chính **không dùng chung** với tab Safari cùng địa chỉ. Người dùng nhập dữ liệu trong Safari rồi mở icon → thấy app trống trơn và tưởng mất dữ liệu (đã xảy ra với GoldTrack). Xoá icon cũng xoá luôn bộ nhớ đó.
+
+Bắt buộc với sản phẩm lưu dữ liệu người dùng:
+- Trạng thái rỗng phải **giải thích** chuyện bộ nhớ tách riêng, không để màn hình trắng trơn (card ẩn hết khi không có dữ liệu = trông như app hỏng).
+- Có đường chuyển dữ liệu: xuất/nhập file hoặc đồng bộ (GoldTrack dùng GitHub Gist).
+- Khi phải yêu cầu người dùng xoá icon và thêm lại (mục 1b, 8), nhắc họ sao lưu/đồng bộ **trước**.

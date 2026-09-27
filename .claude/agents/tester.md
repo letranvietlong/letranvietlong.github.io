@@ -61,8 +61,16 @@ netstat -ano | grep ":8799" | grep LISTEN | head -1 | awk '{print $5}' | xargs -
 - **Sổ sách mua/bán**: bán lùi ngày, bán quá số đang có, sửa giao dịch mua cũ làm hụt giao dịch bán sau đó. Kiểm tra con số lãi/lỗ cuối cùng có đúng không, không chỉ xem có render hay không.
 - **Offline**: load online cho service worker cache → `context.setOffline(true)` → reload → app phải lên đầy đủ *có style và có dữ liệu*.
 - **Đồng bộ Gist**: mock `https://api.github.com/gists/<id>` bằng `page.route`, mô phỏng mất mạng, kiểm tra dữ liệu local không bị bản cũ đè.
-- **5 tab** đều mở được, không tràn ngang (`scrollWidth > clientWidth`).
-- **Trang khác trong site** (`index.html`) không bị service worker làm ảnh hưởng.
+- **Mọi tab** đều mở được, không tràn ngang (`scrollWidth > clientWidth`).
+- **Trang khác trong site** (`index.html`, các sản phẩm có service worker riêng như FuelTrack) không bị service worker làm ảnh hưởng — kể cả cache của nhau (Cache Storage dùng chung cả origin).
+- **Số liệu tài chính khớp chéo**: tổng các ngày trong lịch lãi/lỗ = "Tổng lãi/lỗ" ở Tổng quan; tổng/từng nhóm ở Lịch sử = Tổng quan. Dựng kịch bản tính tay trước, so từng con số.
+- **Muốn kiểm service worker thật** thì đừng `serviceWorkers:'block'`; ngược lại, khi test giao diện nên block để không dính bản cache cũ.
+
+## Giới hạn: lỗi CHỈ trên iPhone thật
+
+Chromium headless **không** tái hiện được: `env(safe-area-inset-*)` thật, viewport của app mở từ Màn hình chính (bị hụt khi dùng `black-translucent`), bàn phím ảo, và **phông chữ của iOS** (Windows có Cambria/Georgia bản khác nên chữ số trông đúng dù iPhone sai). Với các lỗi này:
+- Chỉ kiểm được: CSS/meta đúng như thiết kế, không lỗi console, không vỡ layout ở kích thước máy (vd 430×873). Mô phỏng một phần nếu được (tắt `font-variant-numeric` để thấy số old-style của Georgia; ghi đè `screen.height`/`navigator.standalone` bằng `Object.defineProperty` để chạy nhánh standalone).
+- Báo cáo là **CHƯA KIỂM CHỨNG ĐƯỢC TRÊN MÁY THẬT** và đề xuất số liệu cần người dùng chụp (GoldTrack có dòng chẩn đoán ở cuối tab Cài đặt).
 
 ## Báo cáo
 

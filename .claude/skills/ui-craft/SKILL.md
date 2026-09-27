@@ -1,6 +1,6 @@
 ---
 name: ui-craft
-description: Chuẩn mực craft giao diện cho site này — token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính, độ sâu/viền, chuyển động, và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, chọn màu, thêm component mới, hoặc review UI trước khi giao.
+description: Chuẩn mực craft giao diện cho site này — token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính (kể cả phông thiếu trên iPhone), biểu đồ, cách hiển thị lãi/lỗ không cộng trùng, độ sâu/viền, chuyển động, và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, chọn màu/phông, vẽ biểu đồ, hiển thị số liệu tài chính, thêm component mới, hoặc review UI trước khi giao.
 ---
 
 # UI Craft
@@ -49,6 +49,13 @@ Hệ quả thiết kế: **đừng hardcode rgba của một theme rồi dùng c
 
 - **Bắt buộc:** `font-variant-numeric: lining-nums tabular-nums` trên `body`.
   Font serif (Cambria, Georgia, Times) mặc định dùng **old-style figures** — chữ số cao thấp so le như chữ thường (3/5/7/9 thụt xuống dưới baseline). Đọc văn xuôi thì đẹp, nhưng số tiền `13.760.000` trông như hỏng. `tabular-nums` thêm lợi ích: các chữ số cùng bề rộng nên cột số thẳng hàng và **không nhảy** khi giá cập nhật.
+- **`lining-nums` chỉ có tác dụng nếu phông THẬT SỰ có kiểu số thẳng hàng — và phông phải có trên iPhone.** iOS không có Cambria (phông của Windows/Office) → rơi về Georgia, mà Georgia bản iOS **chỉ có số old-style**, nên số tiền vẫn cao thấp dù CSS đúng. Trên Windows (có Cambria, Georgia mới có `lnum`) không bao giờ thấy lỗi này. Cách sửa đã chạy ở GoldTrack — một mặt phông chỉ cho chữ số, đặt đầu stack, chữ cái giữ nguyên:
+  ```css
+  @font-face{font-family:'App Digits';src:local('Cambria'),local('Times New Roman'),local('TimesNewRomanPSMT');font-weight:100 500;unicode-range:U+0030-0039}
+  @font-face{font-family:'App Digits';src:local('Cambria Bold'),local('Cambria-Bold'),local('Times New Roman Bold'),local('TimesNewRomanPS-BoldMT');font-weight:600 900;unicode-range:U+0030-0039}
+  --font:'App Digits',Cambria,Georgia,'Times New Roman',Times,serif;
+  ```
+  Tái hiện trên Windows: tắt `font-variant-numeric` rồi so Georgia với stack mới. Áp dụng cho **mọi** sản phẩm dùng stack serif bắt đầu bằng phông không có trên iOS.
 - Đơn vị (`đ/chỉ`, `%`) luôn nhỏ hơn và nhạt hơn con số — con số là thông tin, đơn vị là ngữ cảnh.
 - Số tiền không bao giờ để font khác với phần còn lại chỉ vì "cho đẹp" — đặt `font-family:var(--font)` rõ ràng ở các class số để tránh bị input/button reset nuốt mất.
 
@@ -141,7 +148,22 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
   .map(el => el.textContent.trim().slice(0,20) + ' = ' + Math.round(el.getBoundingClientRect().height) + 'px')
 ```
 
-## 9. Thứ tự ưu tiên khi cân nhắc đánh đổi
+## 9. Biểu đồ đường
+
+- **Trục Y ôm sát dữ liệu, đừng kéo giãn để chứa một đường tham chiếu ở xa.** Đã gặp: kéo trục cho đường "giá vốn TB" (cách giá hiện tại ~2,6%) lọt khung → biến động thật -0,07% chỉ còn 1–2 pixel, người dùng tưởng biểu đồ "đi ngang". Quy tắc: chỉ đưa đường tham chiếu vào khung nếu nó gần dữ liệu (≤ 1,5 lần biên độ); xa hơn thì ghim ở mép khung và ghi giá trị + "cao hơn/thấp hơn khung" trong chú thích.
+- **Sàn biên độ trục Y** (GoldTrack dùng 0,2% giá trị): dao động nhỏ vẫn nhìn thấy, nhưng chuỗi thật sự phẳng không bị phóng thành răng cưa.
+- Ghi rõ biểu đồ vẽ **giá nào** ("Giá mua vào" ≠ "Giá bán ra") — người dùng sẽ so với giá họ đã trả và tưởng biểu đồ sai.
+- Mặc định khung thời gian ngắn (7 ngày) và **không lưu lựa chọn khoảng thời gian qua các lần mở** — một lần bấm "Tất cả" cũ từng dính mãi, đè mất mặc định.
+
+## 10. Hiển thị số liệu tài chính (lãi/lỗ, danh mục)
+
+- **Không hiển thị con số có thể cộng trùng.** Với giá vốn bình quân, lãi/lỗ "chưa chốt" tính riêng cho từng lệnh mua sẽ trùng với lãi đã chốt ở lệnh bán sau đó → dòng mua chỉ nên so giá theo đơn vị (giá mua vs giá hôm nay, %), lãi/lỗ tiền thì tính ở cấp nhóm đã trừ phần bán.
+- **Báo cáo theo kỳ chỉ chứa lãi đã chốt.** Lãi chưa chốt tích luỹ qua nhiều tháng không thuộc về tháng hiện tại — tách thành một dòng riêng. Nếu làm lãi/lỗ theo ngày: `ngày D = Δ lãi chưa chốt + lãi chốt trong ngày D`, và tổng các ngày phải khớp đúng tổng lãi/lỗ ở màn tổng quan (hôm nay dùng cùng giá trực tiếp với màn tổng quan).
+- **Một card chỉ một loại số.** Đừng đặt "vốn đang giữ" cạnh "tổng số lượng đã từng mua" trong cùng card.
+- Nhãn giá phải nói rõ ai mua ai bán: "Giá tiệm mua vào" (số tiền bạn nhận khi bán) khác "giá mua" (số tiền bạn đã trả).
+- Tự điền giá cho người dùng chỉ khi chắc chắn đúng (vd giá hôm nay cho giao dịch hôm nay); giao dịch lùi ngày thì để trống, không bao giờ ghi đè giá người dùng đã gõ.
+
+## 11. Thứ tự ưu tiên khi cân nhắc đánh đổi
 
 1. **Đọc được** — tương phản, cỡ chữ, vùng chạm. Không bao giờ hy sinh cho thẩm mỹ.
 2. **Đúng** — số liệu hiển thị chính xác, trạng thái phản ánh đúng dữ liệu.

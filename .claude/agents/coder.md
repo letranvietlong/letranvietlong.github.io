@@ -32,7 +32,7 @@ Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab
 ## Việc bắt buộc kèm theo (rất hay bị quên)
 
 1. **Thêm file mà GoldTrack load lúc chạy** → thêm path vào `products/gold-track/js/sw-core.js` (`APP_CODE_PATHS` cho code hay đổi, `ICON_PATHS` cho asset bất biến, `DATA_PATHS` cho JSON) **và bump `CACHE_NAME`** (bump luôn `?v=` trong `importScripts()` ở `products/gold-track/sw-gold-track.js`). Bỏ qua bước này = app hỏng khi offline hoặc kẹt bản cũ.
-2. **Thay đổi người dùng nhìn thấy được** → bump version + thêm entry vào `products/gold-track/data/changelog.json` (tiếng Việt, mô tả cho người dùng chứ không phải mô tả kỹ thuật). Nhớ sửa cả field `"version"` ở đầu file.
+2. **Thay đổi người dùng nhìn thấy được** → bump version + thêm entry vào `products/<sản phẩm>/data/changelog.json` của đúng sản phẩm đang sửa (GoldTrack, FuelTrack…) (tiếng Việt, mô tả cho người dùng chứ không phải mô tả kỹ thuật). Nhớ sửa cả field `"version"` ở đầu file.
 3. **Trước khi kết thúc** → ghi commit message mô tả đúng nội dung thay đổi vào `.claude/hooks/.next-commit-message.txt`.
 
 ## Ràng buộc kỹ thuật không được vi phạm
