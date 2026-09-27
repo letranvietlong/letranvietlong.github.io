@@ -213,7 +213,7 @@
     var longRange = n > 120;
     var labels = pickLabelIndices(n, 5).map(function(idx, k, arr){
       var p = data.days[idx].split('-');
-      var lbl = longRange ? p[1] + '/' + p[0].slice(2) : p[2] + '/' + p[1];
+      var lbl = longRange ? 'T' + (+p[1]) + '/' + p[0].slice(2) : p[2] + '/' + p[1];  // "T9/25", not "09/25" which reads as a day/month
       var anchor = k === 0 ? 'start' : (k === arr.length - 1 ? 'end' : 'middle');
       return '<text class="chart-axis-label" x="' + xAt(idx).toFixed(1) + '" y="' + (h - 5) + '" font-size="9" text-anchor="' + anchor + '">' + lbl + '</text>';
     }).join('');
@@ -309,12 +309,22 @@
 
     var wrapRect = wrap.getBoundingClientRect();
     var px = rect.left - wrapRect.left + st.xAt(idx) * scale;
+    tip.style.left = '0px';  // measure at full width, not squeezed against the right edge by the previous position
     var tw = tip.offsetWidth;
     var gap = 10;
-    var left = px + gap + tw <= wrapRect.width ? px + gap : px - gap - tw;
-    left = Math.max(0, Math.min(wrapRect.width - tw, left));
+    var top = rect.top - wrapRect.top + st.padTop * scale;
+    var left;
+    if (px + gap + tw <= wrapRect.width) left = px + gap;
+    else if (px - gap - tw >= 0) left = px - gap - tw;
+    else {
+      // Fits on neither side (narrow phones, cursor mid-chart): clamping it
+      // sideways would cover the very point being inspected, so drop it below
+      // the chart instead, over the legend.
+      left = Math.max(0, Math.min(wrapRect.width - tw, px - tw / 2));
+      top = rect.bottom - wrapRect.top + 6;
+    }
     tip.style.left = left + 'px';
-    tip.style.top = (rect.top - wrapRect.top + st.padTop * scale) + 'px';
+    tip.style.top = top + 'px';
   }
 
   (function enableChartCursor(){
