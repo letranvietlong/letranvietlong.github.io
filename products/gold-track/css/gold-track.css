@@ -306,10 +306,7 @@
      app, native or web), but the bar's OWN padding/icon/min-height above
      that were more generous than needed — shrunk them (44px min-height is
      Apple's own touch-target floor, so this doesn't go below it). */
-  /* bottom: --standalone-gap is 0 everywhere except iOS standalone when
-     WebKit reports a viewport shorter than the screen (see syncStandaloneGap
-     in gold-track.js) — then the bar is pushed down onto the real edge. */
-  .tabbar{position:fixed;left:0;right:0;bottom:calc(-1 * var(--standalone-gap, 0px));z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0)}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0)}
   .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:none;color:var(--muted2);padding:3px 0;min-height:44px;border-radius:12px;transition:color .2s}
   .tabbar-btn .icon{width:21px;height:21px}
   .tabbar-btn span{font-size:.64rem;font-weight:600;letter-spacing:.01em}
@@ -348,7 +345,7 @@
      dark smear at the bottom edge on every page load (sheets stay in the
      DOM, just transformed off-screen, even when "closed"). A fixed 100px
      buffer guarantees clearance regardless of content height. */
-  .sheet{position:fixed;left:0;right:0;bottom:calc(-1 * var(--standalone-gap, 0px));z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));transition:transform .28s cubic-bezier(.32,.72,0,1);max-height:88svh;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
   .sheet::-webkit-scrollbar{display:none;width:0;height:0}
   .sheet.open{transform:translateY(0)}
   .sheet-handle-hit{padding:8px 0 16px;display:flex;justify-content:center;touch-action:none;cursor:grab}

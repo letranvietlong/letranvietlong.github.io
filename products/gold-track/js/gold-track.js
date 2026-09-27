@@ -1813,39 +1813,34 @@
   // visibilitychange/pageshow handlers above, which run earlier in the file
   // but need this exact recompute for the screen lock/unlock case.
   function syncAppHeight(){
-    syncStandaloneGap();
+    renderDisplayDiag();
     if(!window.visualViewport) return;
     document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
   }
-  // iOS standalone (Home Screen) + black-translucent status bar: WebKit can
-  // report a layout viewport shorter than the physical screen by exactly the
-  // status-bar height (measured on an iPhone 14 Pro Max: 873pt of 932pt),
-  // while still drawing content from the very top. position:fixed;bottom:0
-  // then lands ~59pt above the real bottom edge — no env()/safe-area value
-  // can fix that, since the viewport itself is short. Measure the shortfall
-  // and push bottom-anchored fixed elements down by it. No-op (0px) in a
-  // browser tab, in landscape, or once iOS reports the full height.
-  function syncStandaloneGap(){
+  // Diagnostics only (bottom of Settings) — real on-device numbers are the
+  // only way to verify iOS standalone layout, which headless test browsers
+  // can't emulate. safe-top ≈ 59 means iOS still applies the old
+  // black-translucent snapshot (icon needs removing + re-adding); 0 means
+  // the "default" status bar mode is active.
+  var safeProbe = document.createElement('div');
+  safeProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';
+  document.body.appendChild(safeProbe);
+  function renderDisplayDiag(){
+    var diag = document.getElementById('displayDiag');
+    if(!diag) return;
     var standalone = window.navigator.standalone === true ||
       !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-    var portrait = screen.height > screen.width;
-    var gap = (standalone && portrait) ? Math.round(screen.height - window.innerHeight) : 0;
-    // Only a status-bar-sized shortfall is this bug; anything else (keyboard
-    // open, odd zoom) must not shove the bar off-screen.
-    if(gap < 0 || gap > 80) gap = 0;
-    document.documentElement.style.setProperty('--standalone-gap', gap + 'px');
-    var diag = document.getElementById('displayDiag');
-    if(diag){
-      diag.textContent = 'standalone: ' + (standalone ? 'có' : 'không') +
-        ' · màn hình ' + screen.width + '×' + screen.height +
-        ' · viewport ' + window.innerWidth + '×' + window.innerHeight +
-        (window.visualViewport ? ' · visual ' + Math.round(window.visualViewport.height) : '') +
-        ' · bù đáy ' + gap + 'px';
-    }
+    var ps = getComputedStyle(safeProbe);
+    var tabbar = document.querySelector('.tabbar');
+    diag.textContent = 'standalone: ' + (standalone ? 'có' : 'không') +
+      ' · màn hình ' + screen.width + '×' + screen.height +
+      ' · viewport ' + window.innerWidth + '×' + window.innerHeight +
+      ' · safe ' + parseFloat(ps.paddingTop) + '/' + parseFloat(ps.paddingBottom) +
+      (tabbar ? ' · menu đáy ' + Math.round(tabbar.getBoundingClientRect().bottom) : '');
   }
   syncAppHeight();
-  window.addEventListener('resize', syncStandaloneGap);
-  window.addEventListener('orientationchange', function(){ setTimeout(syncStandaloneGap, 300); });
+  window.addEventListener('resize', renderDisplayDiag);
+  window.addEventListener('orientationchange', function(){ setTimeout(renderDisplayDiag, 300); });
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize', syncAppHeight);
     window.visualViewport.addEventListener('scroll', syncAppHeight);

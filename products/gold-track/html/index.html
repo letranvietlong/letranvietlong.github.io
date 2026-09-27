@@ -7,7 +7,15 @@
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1220" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<!-- "default", NOT "black-translucent": measured on an iPhone 14 Pro Max Home
+     Screen app, translucent mode drew content from the very top edge but
+     still reported a viewport 59pt (= status bar) short (873 of 932pt), and
+     WebKit clips everything below that — so the bottom tab bar could never
+     reach the real screen edge. In default mode content starts BELOW the
+     status bar and the same 873pt viewport runs down to the true bottom.
+     iOS snapshots this tag at Add-to-Home-Screen time: an existing icon must
+     be removed and re-added for the change to apply. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="GoldTrack" />
 <meta name="robots" content="noindex, nofollow" />
 <meta name="description" content="Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua." />

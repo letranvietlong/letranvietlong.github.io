@@ -19,6 +19,14 @@ Cách hỏi người dùng cho dứt điểm: *"khoảng trống nằm trên hay
 
 Thứ **có thể** thu gọn: padding/icon/min-height của chính thanh menu (giữ vùng chạm ≥ 44px). Thứ **không** thu gọn được: `env(safe-area-inset-bottom)`.
 
+## 1b. `black-translucent` + standalone: viewport hụt đúng bằng status bar (đã đo thật)
+
+Đo trên iPhone 14 Pro Max, app mở từ Màn hình chính với `apple-mobile-web-app-status-bar-style=black-translucent`: `screen.height=932`, `window.innerHeight=873`, trong khi nội dung vẫn vẽ từ mép trên cùng (dưới status bar). → Viewport thiếu đúng 59pt (= status bar/Dynamic Island) ở **đáy**; thanh menu `bottom:0` luôn lơ lửng cách đáy thật 59pt, và **WebKit cắt mọi thứ vẽ dưới mốc 873** — đẩy phần tử xuống bằng `bottom:-59px` chỉ làm mất chữ/icon (đã thử, hỏng). Không `env()`/safe-area nào sửa được vì chính viewport bị ngắn.
+
+Cách sửa gốc: dùng `status-bar-style=default` — nội dung bắt đầu **dưới** status bar, viewport 873pt chạy tới đáy thật. Nhớ mục 8: đổi meta này phải **xoá icon và Add to Home Screen lại** mới có hiệu lực.
+
+Chẩn đoán nhanh: in ra `screen.height`, `innerHeight`, `env(safe-area-inset-top/bottom)` (qua phần tử thăm dò có `padding-top:env(...)`) và `getBoundingClientRect().bottom` của thanh menu — GoldTrack hiện dòng này ở cuối tab Cài đặt.
+
 ## 2. `position: fixed` không phụ thuộc chiều cao CSS của body
 
 Phần tử `position:fixed; bottom:0` bám theo **viewport thật của trình duyệt**, không phải theo `body{height:...}`. Nên sửa `100dvh`/`--app-height` thường **không** ảnh hưởng vị trí thanh menu cố định — trừ khi có tổ tiên mang `transform`/`filter`/`will-change` (khi đó containing block đổi, fixed sẽ bám theo phần tử đó).
