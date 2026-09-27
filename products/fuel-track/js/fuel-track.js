@@ -3,7 +3,7 @@
 
   var DATA_BASE = '/products/fuel-track/data/';
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
-  var HISTORY_PAGE = 8;
+  var HISTORY_PAGE = 3;
   var DAY_MS = 86400000;
 
   var priceDoc = null;
@@ -86,7 +86,6 @@
         '</div>' +
       '</div>';
     }).join('');
-    $('e10Note').hidden = !priceDoc.items.some(function(it){ return it.source === 'petrolimex-v1'; });
   }
 
   // ---------- Biểu đồ ----------
