@@ -31,6 +31,18 @@
   var DEFAULT_PRICE_SHOP = 'ngoc-thinh';
   var DEFAULT_PRICE_TYPE = '9999-nhan-tron';
 
+  // Fixed pair by the user's choice (no "add person" UI). The owner is read
+  // through txOwner() instead of being written back into stored data: a
+  // load-time rewrite would mark the Gist dirty on every device at once and
+  // push-storm, and older app versions keep unknown tx fields anyway. Owner
+  // list / filter are never stored outside `transactions` — pullFromGist()
+  // replaces everything else.
+  var OWNERS = ['Viết Long', 'Minh Thư'];
+  var DEFAULT_OWNER = 'Viết Long';
+  var OWNER_FILTER_KEY = 'goldtrack_owner_filter_v1';
+  var LAST_OWNER_KEY = 'goldtrack_last_owner_v1';
+  function txOwner(t){ return t.owner || DEFAULT_OWNER; }
+
   // Every transaction ever created before this feature shipped was, in
   // effect, always priced against Ngọc Thịnh's 9999 type — getEffectivePrice()
   // never read `store` before, and that was the only price stream that ever
@@ -65,6 +77,25 @@
   }
 
   var state = loadState();
+
+  function ownerList(){
+    var list = OWNERS.slice();
+    state.transactions.forEach(function(t){
+      var o = txOwner(t);
+      if(list.indexOf(o) === -1) list.push(o);
+    });
+    return list;
+  }
+  var ownerFilter = (function(){
+    try{
+      var v = localStorage.getItem(OWNER_FILTER_KEY);
+      return OWNERS.indexOf(v) !== -1 ? v : 'all';
+    }catch(e){ return 'all'; }
+  })();
+  function scopedTx(){
+    if(ownerFilter === 'all') return state.transactions;
+    return state.transactions.filter(function(t){ return txOwner(t) === ownerFilter; });
+  }
 
   // ---------- helpers ----------
   function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
@@ -706,8 +737,10 @@
     };
   }
 
-  // ---------- group-aware portfolio aggregation (shop + goldType) ----------
-  function groupKey(tx){ return tx.shop + '::' + (tx.goldType || ''); }
+  // ---------- group-aware portfolio aggregation (owner + shop + goldType) ----------
+  // Each person's gold is a separate ledger: one person's sell must never
+  // draw down (or take its average cost from) the other person's buys.
+  function groupKey(tx){ return txOwner(tx) + '::' + tx.shop + '::' + (tx.goldType || ''); }
   function groupTransactions(list){
     list = list || state.transactions;
     var map = {};
@@ -718,22 +751,33 @@
     });
     return map;
   }
-  // Replays only one (shop, goldType) group's own ledger — for UI spots
-  // (price tab, assistant) that reason about a single group rather than the
-  // full merged portfolio.
+  // Holdings of one (shop, goldType) within the current owner scope, for UI
+  // spots (price tab) that reason about a single gold type. Each owner's
+  // ledger is replayed separately and only amount/cost are summed — replaying
+  // a merged ledger across owners would apply one person's sell at a blended
+  // average cost and give a wrong cost basis.
   function computePortfolioForGroup(shop, goldType){
-    var list = state.transactions.filter(function(t){ return t.shop === shop && (t.goldType||null) === (goldType||null); });
-    return computePortfolio(list);
+    var list = scopedTx().filter(function(t){ return t.shop === shop && (t.goldType||null) === (goldType||null); });
+    var groups = groupTransactions(list);
+    var amount = 0, cost = 0;
+    Object.keys(groups).forEach(function(key){
+      var p = computePortfolio(groups[key]);
+      amount += p.holdingAmount;
+      cost += p.holdingCost;
+    });
+    return { holdingAmount: amount, holdingCost: cost, avgCost: amount > 0 ? cost / amount : 0 };
   }
   // Merges every (shop, goldType) group into portfolio-wide totals. Each
   // group is replayed independently via the unmodified computePortfolio()
   // ledger logic, then only VNĐ totals are summed across groups —
   // holdingAmount/avgCost are never merged, since chỉ of different gold
   // types are not fungible (see the "groups" array for a per-group view).
-  function computePortfolioAll(){
-    var groups = groupTransactions(state.transactions);
+  function computePortfolioAll(list){
+    var groups = groupTransactions(list || scopedTx());
     var totalRealizedPL = 0, totalUnrealizedPL = 0, totalBuyCost = 0, totalHoldingCost = 0;
-    var perTx = {}, firstTxDate = null, priceGapCount = 0;
+    // Gaps are counted per gold type (shop + goldType), not per owner ledger:
+    // one unpriced type held by both people is still one missing price.
+    var perTx = {}, firstTxDate = null, priceGapKeys = {};
     var groupList = [];
     Object.keys(groups).forEach(function(key){
       var txs = groups[key];
@@ -748,9 +792,9 @@
       totalHoldingCost += p.holdingCost;
       Object.keys(p.perTx).forEach(function(txId){ perTx[txId] = p.perTx[txId]; });
       if(p.firstTxDate && (!firstTxDate || p.firstTxDate < firstTxDate)) firstTxDate = p.firstTxDate;
-      if(hasPriceGap) priceGapCount++;
+      if(hasPriceGap) priceGapKeys[shop + '::' + (goldType || '')] = true;
       groupList.push({
-        shop: shop, goldType: goldType,
+        owner: txOwner(txs[0]), shop: shop, goldType: goldType,
         holdingAmount: p.holdingAmount, holdingCost: p.holdingCost, avgCost: p.avgCost,
         realizedPL: p.realizedPL, unrealizedPL: unrealizedPL, hasPriceGap: hasPriceGap
       });
@@ -763,8 +807,8 @@
       perTx: perTx,
       firstTxDate: firstTxDate,
       groups: groupList,
-      anyPriceGap: priceGapCount > 0,
-      priceGapCount: priceGapCount
+      anyPriceGap: Object.keys(priceGapKeys).length > 0,
+      priceGapCount: Object.keys(priceGapKeys).length
     };
   }
 
@@ -782,9 +826,9 @@
   // Scoped to a single (shop, goldType) group — gold of a different
   // purity/type is not fungible, so holdings of one group must never count
   // toward how much there is to sell in another.
-  function holdingsAsOf(dateStr, createdAt, excludeId, shop, goldType){
+  function holdingsAsOf(dateStr, createdAt, excludeId, shop, goldType, owner){
     var held = 0;
-    var scoped = state.transactions.filter(function(t){ return t.shop === shop && (t.goldType||null) === (goldType||null); });
+    var scoped = state.transactions.filter(function(t){ return txOwner(t) === owner && t.shop === shop && (t.goldType||null) === (goldType||null); });
     chronoSort(scoped).forEach(function(t){
       if(t.id === excludeId) return;
       var isBefore = t.date < dateStr || (t.date === dateStr && (t.createdAt||0) < createdAt);
@@ -906,9 +950,27 @@
     var editing = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
     var shopVal = document.getElementById('txShop').value;
     var typeVal = document.getElementById('txGoldType').value || null;
-    var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId, shopVal, typeVal);
-    document.getElementById('txAmountHint').textContent = isSell ? ('Ngày ' + fmtDate(dateVal) + ' có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
+    var ownerVal = document.getElementById('txOwner').value || DEFAULT_OWNER;
+    var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId, shopVal, typeVal, ownerVal);
+    document.getElementById('txAmountHint').textContent = isSell ? ('Ngày ' + fmtDate(dateVal) + ' ' + ownerVal + ' có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
   }
+  function populateOwnerSelect(selected){
+    var sel = document.getElementById('txOwner');
+    var owners = ownerList();
+    if(owners.indexOf(selected) === -1) selected = DEFAULT_OWNER;
+    sel.innerHTML = owners.map(function(o){ return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>'; }).join('');
+    sel.value = selected;
+  }
+  function defaultFormOwner(){
+    if(ownerFilter !== 'all') return ownerFilter;
+    var last = null;
+    try{ last = localStorage.getItem(LAST_OWNER_KEY); }catch(e){}
+    return ownerList().indexOf(last) !== -1 ? last : DEFAULT_OWNER;
+  }
+  document.getElementById('txOwner').addEventListener('change', function(){
+    updateTxFormLabels();
+    clearFieldError('txAmount');
+  });
   function setType(type){
     selectedType = type;
     typeButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-type') === type); });
@@ -924,6 +986,7 @@
     // Defaults to this app's original/primary shop+type.
     document.getElementById('txShop').value = 'ngoc-thinh';
     populateGoldTypeSelect('ngoc-thinh', '9999-nhan-tron');
+    populateOwnerSelect(defaultFormOwner());
     document.getElementById('txAddress').value = '';
     document.getElementById('txNote').value = '';
     document.getElementById('txDate').value = todayISO();
@@ -941,6 +1004,7 @@
     delete document.getElementById('txPrice').dataset.autofilled;
     document.getElementById('txShop').value = tx.shop || 'ngoc-thinh';
     populateGoldTypeSelect(tx.shop || 'ngoc-thinh', tx.goldType || '9999-nhan-tron');
+    populateOwnerSelect(txOwner(tx));
     document.getElementById('txAddress').value = tx.address || '';
     document.getElementById('txNote').value = tx.note || '';
     document.getElementById('txDate').value = tx.date;
@@ -958,6 +1022,7 @@
     var price = parseDigits(document.getElementById('txPrice').value);
     var shop = document.getElementById('txShop').value;
     var goldType = document.getElementById('txGoldType').value || null;
+    var owner = document.getElementById('txOwner').value || DEFAULT_OWNER;
     var address = document.getElementById('txAddress').value.trim();
     var note = document.getElementById('txNote').value.trim();
     var date = document.getElementById('txDate').value;
@@ -980,10 +1045,22 @@
         createdAt: editing ? (editing.createdAt || 0) : Date.now()
       };
       var sameGroup = state.transactions.filter(function(t){
-        return t.id !== editingTxId && t.shop === shop && (t.goldType||null) === (goldType||null);
+        return t.id !== editingTxId && txOwner(t) === owner && t.shop === shop && (t.goldType||null) === (goldType||null);
       });
       var prospective = sameGroup.concat([candidate]);
       var violation = findLedgerViolation(prospective);
+      // Moving a tx to another (owner, shop, goldType) also removes it from
+      // its old ledger — moving a buy away can starve that ledger's later
+      // sells. Only blocked when this edit causes it: an old ledger that was
+      // already inconsistent (legacy/imported data) must stay fixable by
+      // reassigning its rows.
+      if(!violation && editing && (txOwner(editing) !== owner || editing.shop !== shop || (editing.goldType||null) !== (goldType||null))){
+        var oldGroupWith = state.transactions.filter(function(t){
+          return txOwner(t) === txOwner(editing) && t.shop === editing.shop && (t.goldType||null) === (editing.goldType||null);
+        });
+        var oldGroupWithout = oldGroupWith.filter(function(t){ return t.id !== editingTxId; });
+        if(!findLedgerViolation(oldGroupWith)) violation = findLedgerViolation(oldGroupWithout);
+      }
       if(violation){
         setFieldError('txAmount', true);
         document.getElementById('txAmountError').textContent = violation.tx.id === candidate.id
@@ -1000,10 +1077,11 @@
       // from the form (shop already identifies the store), but a legacy
       // value entered before that removal is left as-is, not wiped.
       tx.amount = amount; tx.price = price; tx.address = address; tx.note = note; tx.date = date; tx.type = selectedType;
-      tx.shop = shop; tx.goldType = goldType;
+      tx.shop = shop; tx.goldType = goldType; tx.owner = owner;
     } else {
-      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, address: address, note: note, date: date, createdAt: Date.now(), shop: shop, goldType: goldType });
+      state.transactions.push({ id: uid(), type: selectedType, amount: amount, price: price, address: address, note: note, date: date, createdAt: Date.now(), shop: shop, goldType: goldType, owner: owner });
     }
+    try{ localStorage.setItem(LAST_OWNER_KEY, owner); }catch(e){}
     saveState();
     renderAll();
     closeSheet('txSheet','txBackdrop');
@@ -1338,7 +1416,7 @@
   // holdingCost every day, just 0 to value, matching how computePortfolioAll()
   // treats an unpriced group's unrealizedPL as 0 rather than excluding it.
   function computePortfolioSeries(rangeKey){
-    var groupsMap = groupTransactions(state.transactions);
+    var groupsMap = groupTransactions(scopedTx());
     var groupKeys = Object.keys(groupsMap);
     if(groupKeys.length === 0) return [];
 
@@ -1466,12 +1544,33 @@
   }
 
   // ---------- render: summary ----------
+  // The form can't create an oversized sell, but Gist data from an old app
+  // version, an import, or rows defaulted to DEFAULT_OWNER can. Checked over
+  // ALL transactions (not the current filter) so the warning can't hide.
+  function ledgerWarningHtml(){
+    var groups = groupTransactions(state.transactions);
+    var first = null;
+    Object.keys(groups).forEach(function(key){
+      var v = findLedgerViolation(groups[key]);
+      if(v && (!first || v.tx.date < first.tx.date)) first = v;
+    });
+    if(!first) return '';
+    return '<p class="field-hint ledger-warn">Có giao dịch bán vượt số vàng đang giữ của '+escapeHtml(txOwner(first.tx))+' ngày '+fmtDate(first.tx.date).slice(0,5)+' — kiểm tra lại người sở hữu.</p>';
+  }
+
   function renderSummary(){
     var card = document.getElementById('summaryCard');
     var content = document.getElementById('summaryContent');
     document.getElementById('overviewEmpty').hidden = state.transactions.length !== 0;
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
+    document.getElementById('summaryTitle').textContent = 'Tổng quan danh mục' + (ownerFilter !== 'all' ? ' · ' + ownerFilter : '');
+    var warnHtml = ledgerWarningHtml();
+    if(scopedTx().length === 0){
+      content.innerHTML = warnHtml +
+        '<p class="field-hint" style="margin:0">'+escapeHtml(ownerFilter)+' chưa có giao dịch nào. Thêm giao dịch ở tab <b>Lịch sử</b> (nút +) và chọn người sở hữu.</p>';
+      return;
+    }
 
     // Merged across ALL (shop, goldType) groups — money totals only.
     // holdingAmount/avgCost are deliberately NOT shown here anymore: chỉ of
@@ -1496,7 +1595,7 @@
       ? '<p class="field-hint">'+pAll.priceGapCount+' nhóm vàng chưa có giá tham chiếu — tạm tính lãi/lỗ chưa chốt bằng 0 cho phần này.</p>'
       : '';
 
-    content.innerHTML =
+    content.innerHTML = warnHtml +
       '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
       '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>' +
       (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(pAll.totalRealizedPL>=0?'+':'')+fmtVND(pAll.totalRealizedPL)+' đ</span></div>' : '') +
@@ -1522,7 +1621,7 @@
     // corrupt that, it's just a lookup table.
     var pAll = computePortfolioAll();
     var groups = {};
-    state.transactions.forEach(function(tx){
+    scopedTx().forEach(function(tx){
       if(txType(tx) !== 'sell') return;
       var rec = pAll.perTx[tx.id];
       if(!rec) return;
@@ -1549,7 +1648,7 @@
   // Realized part reuses computePortfolioAll's per-sell pl as-is.
   function computeDailyPnl(){
     var result = {};
-    var groupsMap = groupTransactions(state.transactions);
+    var groupsMap = groupTransactions(scopedTx());
     var groupKeys = Object.keys(groupsMap);
     if(groupKeys.length === 0) return result;
     var pAll = computePortfolioAll();
@@ -1582,7 +1681,7 @@
     }
 
     var realizedByDay = {};
-    state.transactions.forEach(function(tx){
+    scopedTx().forEach(function(tx){
       if(txType(tx) !== 'sell') return;
       var rec = pAll.perTx[tx.id];
       if(!rec) return;
@@ -1643,7 +1742,7 @@
     var daily = computeDailyPnl();
     var today = todayISO();
     var curMonth = today.slice(0,7);
-    var firstMonth = state.transactions.reduce(function(min, tx){
+    var firstMonth = scopedTx().reduce(function(min, tx){
       return (!min || tx.date < min) ? tx.date : min;
     }, null).slice(0,7);
     if(firstMonth > curMonth) firstMonth = curMonth;
@@ -1705,7 +1804,7 @@
       ? 'Mỗi ngày: biến động giá vàng đang giữ + lãi đã chốt'
       : 'Theo từng kỳ, dựa trên giao dịch đã bán';
     if(pnlGroupBy === 'day'){
-      if(state.transactions.length === 0){ card.hidden = true; return; }
+      if(scopedTx().length === 0){ card.hidden = true; return; }
       card.hidden = false;
       positionSegmentedIndicator(document.getElementById('pnlGroupBy'));
       content.innerHTML = renderPnlCalendar();
@@ -1737,10 +1836,27 @@
   // correctness bug, not a style choice.
   function renderStoreSummary(pAll){
     var el = document.getElementById('storeSummary');
-    if(state.transactions.length === 0){ el.hidden = true; return; }
+    if(scopedTx().length === 0){ el.hidden = true; return; }
     // Current holdings straight from computePortfolioAll's per-group ledger
-    // replay — re-summing buy rows would ignore what was later sold.
-    var held = pAll.groups.filter(function(g){ return g.holdingAmount > 1e-9; });
+    // replay — re-summing buy rows would ignore what was later sold. Owners'
+    // ledgers are merged per (shop, goldType) by summing amount/cost only;
+    // the avg cost is derived from those sums, never from a merged replay.
+    var merged = {};
+    pAll.groups.forEach(function(g){
+      if(g.holdingAmount <= 1e-9) return;
+      var key = g.shop + '::' + (g.goldType || '');
+      var m = merged[key];
+      if(!m) m = merged[key] = { shop: g.shop, goldType: g.goldType, holdingAmount: 0, holdingCost: 0, unrealizedPL: 0, hasPriceGap: false };
+      m.holdingAmount += g.holdingAmount;
+      m.holdingCost += g.holdingCost;
+      m.unrealizedPL += g.unrealizedPL;
+      m.hasPriceGap = m.hasPriceGap || g.hasPriceGap;
+    });
+    var held = Object.keys(merged).map(function(key){
+      var m = merged[key];
+      m.avgCost = m.holdingCost / m.holdingAmount;
+      return m;
+    });
     held.sort(function(a,b){ return b.holdingCost - a.holdingCost; });
     var totalCost = held.reduce(function(sum,g){ return sum + g.holdingCost; }, 0);
     // Same numbers as the Overview summary card (reused, not recomputed) —
@@ -1831,22 +1947,24 @@
     var count = document.getElementById('txCount');
     var pAll = computePortfolioAll();
     renderStoreSummary(pAll);
-    var all = state.transactions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
+    var all = scopedTx().slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = all.length;
     var txs = all.filter(function(t){
       if(txFilter !== 'all' && txType(t) !== txFilter) return false;
       if(txDateFrom && t.date < txDateFrom) return false;
       if(txDateTo && t.date > txDateTo) return false;
       if(txSearchQuery){
-        var haystack = ((t.store||'') + ' ' + (t.note||'')).toLowerCase();
+        var haystack = (txOwner(t) + ' ' + (t.store||'') + ' ' + (t.note||'')).toLowerCase();
         if(haystack.indexOf(txSearchQuery) === -1) return false;
       }
       return true;
     });
     if(txs.length === 0){
-      var emptyMsg = all.length === 0
+      var emptyMsg = state.transactions.length === 0
         ? 'Chưa có giao dịch nào. Nhấn nút + để thêm giao dịch mua vàng đầu tiên.'
-        : 'Không có giao dịch nào khớp bộ lọc này.';
+        : all.length === 0
+          ? escapeHtml(ownerFilter) + ' chưa có giao dịch nào. Nhấn nút + để thêm.'
+          : 'Không có giao dịch nào khớp bộ lọc này.';
       list.innerHTML =
         '<div class="empty-state">' +
           '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
@@ -1863,7 +1981,7 @@
       var shopInfo = SHOPS.filter(function(s){ return s.id === tx.shop; })[0];
       var typeInfo = (SHOP_TYPES[tx.shop] || []).filter(function(t){ return t.id === tx.goldType; })[0];
       var groupTxt = typeInfo ? (shopInfo.name + ' · ' + typeInfo.label) : (shopInfo ? shopInfo.name : '');
-      var metaTxt = (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (groupTxt ? ' · '+escapeHtml(groupTxt) : '') + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
+      var metaTxt = escapeHtml(txOwner(tx)) + ' · ' + (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (groupTxt ? ' · '+escapeHtml(groupTxt) : '') + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
       var noteHtml = tx.note ? '<div class="tx-note">'+escapeHtml(tx.note)+'</div>' : '';
 
       var grid;
@@ -2000,6 +2118,28 @@
     closeSwipeRow(document.querySelector('.tx-row[data-row-id="'+openSwipeRowId+'"]'));
     openSwipeRowId = null;
   });
+
+  var ownerFilterEl = document.getElementById('ownerFilter');
+  function syncOwnerFilterButtons(){
+    ownerFilterEl.querySelectorAll('button').forEach(function(b){
+      var on = b.getAttribute('data-owner') === ownerFilter;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    positionSegmentedIndicator(ownerFilterEl);
+  }
+  ownerFilterEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-owner]');
+    if(!btn) return;
+    var val = btn.getAttribute('data-owner');
+    if(val === ownerFilter) return;
+    ownerFilter = val;
+    try{ localStorage.setItem(OWNER_FILTER_KEY, val); }catch(err){}
+    syncOwnerFilterButtons();
+    pnlCalSelected = null;
+    renderAll();
+  });
+  syncOwnerFilterButtons();
 
   function renderAll(){
     renderPrice(); renderSummary(); renderPnlReport(); renderTx();

@@ -76,8 +76,9 @@
     }
     $('effectiveDate').textContent = priceDoc.effectiveDate ? 'Áp dụng từ ' + fmtDate(priceDoc.effectiveDate) : '';
     var unit = escapeHtml(priceDoc.unit || 'đ/lít');
+    var allPlx = priceDoc.items.every(function(it){ return it.source === 'petrolimex-v1'; });
     list.innerHTML = priceDoc.items.map(function(it){
-      var note = it.source === 'petrolimex-v1' ? '<small>Theo giá Vùng 1 Petrolimex</small>' : '';
+      var note = !allPlx && it.source === 'petrolimex-v1' ? '<small>Theo giá Vùng 1 Petrolimex</small>' : '';
       return '<div class="price-row">' +
         '<div class="price-name">' + escapeHtml(it.label) + note + '</div>' +
         '<div class="price-right">' +
@@ -85,7 +86,7 @@
           (it.change != null ? rangeChip(it.change, it.prevPrice) : '') +
         '</div>' +
       '</div>';
-    }).join('');
+    }).join('') + (allPlx ? '<p class="price-note">Theo giá Vùng 1 Petrolimex</p>' : '');
   }
 
   // ---------- Biểu đồ ----------

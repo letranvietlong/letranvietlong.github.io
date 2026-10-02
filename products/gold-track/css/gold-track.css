@@ -111,7 +111,7 @@
     /* --header-h is measured live off #appHeader in JS (its real rendered
        height, which depends on the device's safe-top) — the fallback here
        only covers the first frame before that measurement runs. */
-    padding:var(--header-h, calc(70px + var(--safe-top))) 14px calc(84px + var(--safe-bottom));
+    padding:var(--header-h, calc(124px + var(--safe-top))) 14px calc(84px + var(--safe-bottom));
   }
   .app::-webkit-scrollbar{display:none;width:0;height:0}
   .icon{width:20px;height:20px;flex:none;display:block}
@@ -152,7 +152,10 @@
      kept in sync with this element's real rendered height in JS (safe-top
      varies per device, so a hardcoded padding would drift). */
   .app-header{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);max-width:480px;margin:0 auto;transform:translateZ(0)}
-  .page-title.app-header{padding:calc(4px + var(--safe-top)) 16px 18px}
+  .page-title.app-header{padding:calc(4px + var(--safe-top)) 16px 12px;flex-wrap:wrap}
+  .owner-filter{flex:1 0 100%;margin-top:10px}
+  .segmented.owner-filter button{min-height:44px}
+  .field-hint.ledger-warn{color:var(--red)}
   .icon-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
   .icon-btn:hover{background:var(--glass2);border-color:var(--line2)}
   .icon-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}

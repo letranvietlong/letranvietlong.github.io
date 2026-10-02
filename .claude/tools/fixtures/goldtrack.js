@@ -5,7 +5,9 @@
 //   data/gold-price.json         { <shop>: { name, sourceUrl, fetchedAt, unit:'chi', types: { <typeId>: { label, buy, sell } } } }
 //   data/gold-price-history.json { <shop>: { <typeId>: [ { buy, sell, at } ... ] } }
 //   localStorage goldtrack_v1    { transactions: [ { id, type:'buy'|'sell', amount (chỉ), price (đ/chỉ), date 'YYYY-MM-DD',
-//                                   shop:'ngoc-thinh'|'huy-thanh'|'khac', goldType, address, note, createdAt } ] }
+//                                   shop:'ngoc-thinh'|'huy-thanh'|'khac', goldType, address, note, createdAt,
+//                                   owner?:'Viết Long'|'Minh Thư' (v1.59+; missing = 'Viết Long') } ] }
+//   localStorage goldtrack_owner_filter_v1  'Viết Long' | 'Minh Thư' (absent/other = Tất cả) — header filter, per device
 // `buy` = the shop's buying price (what the user receives when selling) — used for valuation.
 //
 // Scenario: buy 2 chỉ @13.100.000 on 20/09, sell 1 chỉ @13.300.000 on 23/09.

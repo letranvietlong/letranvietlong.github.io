@@ -5,9 +5,14 @@ JSON that FuelTrack reads same-origin (no CORS).
 pvoil.com.vn sits behind a Cloudflare challenge that blocks every non-browser
 client (and even a real headful Chromium), so the data comes from
 giaxanghomnay.com's JSON API instead, which republishes PVOIL's daily list.
-Its PVOIL prices match Petrolimex Vùng 1 exactly on every shared product, and
-the PVOIL feed has no E10 RON 95-III row — so E10 falls back to Petrolimex's
-zone1_price and is tagged with source "petrolimex-v1" for the UI to disclose.
+Since 2026-10 that "PVOIL" feed is itself a copy of Petrolimex Vùng 1 (rows
+flagged is_reference) under Petrolimex's "Mức" product names, and it has no KO
+row — KO comes from Petrolimex's zone1_price. Anything not a genuine PVOIL row
+is tagged with source "petrolimex-v1" for the UI to disclose.
+
+The source renames apply retroactively to every past date, so never rebuild
+history from scratch: periods recorded under the old feed (e.g. ron95-iii)
+would be lost.
 
 History stores only change points (a new entry whenever the set of prices
 differs from the previous entry); the UI forward-fills them per day.
@@ -44,17 +49,36 @@ ITEMS = [
 ITEM_LABELS = dict(ITEMS)
 ITEM_ORDER = [i for i, _ in ITEMS]
 
+# Exact titles only, no fuzzy matching: "Mức 3" and "Mức 5" are different
+# products one character apart.
 PV_TITLES = {
     "Xăng E10 RON 95-III": "e10-ron95-iii",
+    "Xăng E10 RON 95 Mức 3": "e10-ron95-iii",
     "Xăng E5 RON 92-II": "e5-ron92-ii",
+    "Xăng E5 RON 92 Mức 2": "e5-ron92-ii",
     "Xăng RON 95-III": "ron95-iii",
+    "Xăng RON 95 Mức 3": "ron95-iii",
     "Dầu DO 0,05S-II": "do-005s-ii",
+    "Dầu DO 0,05S Mức 2": "do-005s-ii",
     "Dầu KO": "ko",
+    "Dầu hỏa 2-K": "ko",
 }
-# Only used when the PVOIL feed lacks the item. DO 0,001S-V is deliberately
-# absent: Petrolimex's price for it does not match PVOIL's.
-PLX_FALLBACK = {"Xăng E10 RON 95-III": "e10-ron95-iii"}
+PV_IGNORED = {
+    "Dầu DO 0,001S-V",
+    "Dầu DO 0,001S Mức 5",
+    "Xăng E10 RON 95 Mức 5",
+    "Xăng RON 95 Mức 5",
+}
+# Only used when the PVOIL feed lacks the item. DO 0,001S is deliberately
+# absent: Petrolimex's price for it did not match PVOIL's.
+PLX_FALLBACK = {
+    "Xăng E10 RON 95-III": "e10-ron95-iii",
+    "Xăng E10 RON 95 Mức 3": "e10-ron95-iii",
+    "Dầu hỏa 2-K": "ko",
+}
 REQUIRED = ("e5-ron92-ii", "do-005s-ii")
+# Items no longer listed by the source: not carried forward when missing.
+RETIRED = {"ron95-iii"}
 
 # No per-change amplitude cap: KO really did jump 19.460 -> 35.380 once.
 PRICE_MIN, PRICE_MAX = 5000, 100000
@@ -98,13 +122,19 @@ def fetch_day(day, backoff):
         time.sleep(wait)
 
 
+def warn(msg):
+    print("warning: " + msg, file=sys.stderr)
+    print("::warning::" + msg)
+
+
 def valid_price(v):
     return isinstance(v, int) and not isinstance(v, bool) and PRICE_MIN <= v <= PRICE_MAX
 
 
 def parse_day(payload):
     """-> (date_str, prices, source_updated_at, sources) or None when the day
-    has no usable PVOIL record. sources only lists non-PVOIL items."""
+    has no usable PVOIL record. sources only lists non-PVOIL items (including
+    PVOIL-feed rows the source flags as Petrolimex reference copies)."""
     if not isinstance(payload, list) or len(payload) < 2:
         return None
     pv = payload[1] if isinstance(payload[1], list) else []
@@ -120,13 +150,16 @@ def parse_day(payload):
         title = norm_title(row.get("title"))
         item_id = PV_TITLES.get(title)
         if not item_id:
-            print("warning: unknown PVOIL title %r, skipping" % title, file=sys.stderr)
+            if title not in PV_IGNORED:
+                warn("unknown PVOIL title %r, skipping" % title)
             continue
         price = row.get("price")
         if not valid_price(price):
-            print("warning: %s has implausible price %r, skipping" % (item_id, price), file=sys.stderr)
+            warn("%s has implausible price %r, skipping" % (item_id, price))
             continue
         prices[item_id] = price
+        if row.get("is_reference"):
+            sources[item_id] = "petrolimex-v1"
         date_str = date_str or str(row.get("date", ""))[:10]
         upd = row.get("updated_at")
         if upd and (updated is None or upd > updated):
@@ -176,8 +209,41 @@ def _days_between(a, b):
     return (date.fromisoformat(b) - date.fromisoformat(a)).days
 
 
-def same_state(entry, prices, sources):
-    return entry.get("prices") == prices and (entry.get("sources") or {}) == (sources or {})
+def same_state(entry, prices):
+    return entry.get("prices") == prices
+
+
+def set_sources(entry, sources):
+    """Relabel an entry's sources in place. Returns True if it changed. A
+    source-label change alone must not open a new period: nothing changed at
+    the pump."""
+    if (entry.get("sources") or {}) == (sources or {}):
+        return False
+    if sources:
+        entry["sources"] = sources
+    else:
+        entry.pop("sources", None)
+    return True
+
+
+def carry_forward(history, prices, sources):
+    """Fill items missing from today's response with their last recorded price
+    and source, so a renamed or dropped row never makes a product vanish from
+    the page. Mutates prices/sources; returns them reordered."""
+    for item_id in ITEM_ORDER:
+        if item_id in prices or item_id in RETIRED:
+            continue
+        for entry in reversed(history["changes"]):
+            if item_id in entry.get("prices", {}):
+                prices[item_id] = entry["prices"][item_id]
+                src = (entry.get("sources") or {}).get(item_id)
+                if src:
+                    sources[item_id] = src
+                warn("carry forward %s=%d from %s (missing from source)"
+                     % (item_id, prices[item_id], entry["date"]))
+                break
+    ordered = {k: prices[k] for k in ITEM_ORDER if k in prices}
+    return ordered, sources
 
 
 def apply_observation(history, date_str, prices, src_upd, sources):
@@ -187,8 +253,8 @@ def apply_observation(history, date_str, prices, src_upd, sources):
     if last and date_str < last["date"]:
         print("warning: %s is older than last change %s, ignoring" % (date_str, last["date"]), file=sys.stderr)
         return False
-    if last and same_state(last, prices, sources):
-        return False
+    if last and same_state(last, prices):
+        return set_sources(last, sources)
     # The source occasionally serves a bad record for a day or two — a stale
     # price set from an earlier period (seen 2025-10-25, 2025-12-26) or a row
     # missing — then snaps back. Official adjustments are at least a week
@@ -198,7 +264,7 @@ def apply_observation(history, date_str, prices, src_upd, sources):
     # a stale record arriving two days after a real Thursday change — it would
     # drop the real change.)
     if (len(changes) >= 2 and date_str != last["date"]
-            and same_state(changes[-2], prices, sources)
+            and same_state(changes[-2], prices)
             and _days_between(changes[-2]["date"], last["date"]) <= REVERT_WINDOW_DAYS
             and _days_between(last["date"], date_str) <= REVERT_WINDOW_DAYS):
         print("warning: %s reverted to the %s state, dropping %s as a source glitch"
@@ -215,7 +281,8 @@ def apply_observation(history, date_str, prices, src_upd, sources):
         # adjustment takes effect mid-day): keep one entry per date.
         changes.pop()
         prev = changes[-1] if changes else None
-        if prev and same_state(prev, prices, sources):
+        if prev and same_state(prev, prices):
+            set_sources(prev, sources)
             return True
     changes.append(entry)
     return True
@@ -307,6 +374,7 @@ def run_today():
         return 1
 
     date_str, prices, upd, sources = parsed
+    prices, sources = carry_forward(history, prices, sources)
     changed = apply_observation(history, date_str, prices, upd, sources)
     print("OK %s: %s" % (date_str, ", ".join("%s=%d" % kv for kv in prices.items())))
     print("  history: %s" % ("new change point" if changed else "unchanged"))
@@ -336,6 +404,7 @@ def run_backfill(start):
         parsed = parse_day(payload)
         if parsed:
             date_str, prices, upd, sources = parsed
+            prices, sources = carry_forward(history, prices, sources)
             if apply_observation(history, date_str, prices, upd, sources):
                 changed_any = True
                 print("%s change: %s" % (date_str, ", ".join("%s=%d" % kv for kv in prices.items())))

@@ -77,6 +77,12 @@
     <div class="header-actions">
       <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
     </div>
+    <div class="segmented owner-filter" id="ownerFilter" role="group" aria-label="Xem số liệu của">
+      <div class="segmented-indicator"></div>
+      <button type="button" class="active" data-owner="all">Tất cả</button>
+      <button type="button" data-owner="Viết Long">Viết Long</button>
+      <button type="button" data-owner="Minh Thư">Minh Thư</button>
+    </div>
   </div>
 
   <!-- ============ TAB: TỔNG QUAN ============ -->
@@ -96,7 +102,7 @@
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
         </div>
         <div>
-          <div class="summary-title">Tổng quan danh mục</div>
+          <div class="summary-title" id="summaryTitle">Tổng quan danh mục</div>
           <div class="summary-sub">Tính theo giá vốn trung bình</div>
         </div>
       </div>
@@ -169,7 +175,7 @@
     <div class="search-row">
       <div class="search-input-wrap">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="search" id="txSearch" class="search-input" placeholder="Tìm theo cửa hàng, ghi chú..." autocomplete="off" enterkeyhint="search">
+        <input type="search" id="txSearch" class="search-input" placeholder="Tìm theo người, cửa hàng, ghi chú..." autocomplete="off" enterkeyhint="search">
       </div>
       <button class="icon-btn" id="btnDateFilter" aria-label="Lọc theo khoảng ngày" type="button">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -284,6 +290,10 @@
         <button type="button" class="active" data-type="buy">Mua vào</button>
         <button type="button" data-type="sell">Bán ra</button>
       </div>
+    </div>
+    <div class="field">
+      <label for="txOwner">Người sở hữu</label>
+      <select class="input" id="txOwner"></select>
     </div>
     <div class="field">
       <label for="txAmount">Số lượng vàng (chỉ)</label>
