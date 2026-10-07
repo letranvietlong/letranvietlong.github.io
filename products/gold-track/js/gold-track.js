@@ -1186,7 +1186,8 @@
   // Small up/down/flat % chip for a price box, comparing to the previous
   // local day's last reading (not the previous 30-minute poll — the bot only
   // records real changes now, but a day-over-day figure is what actually
-  // answers "is gold up or down?"). No VND amount, just direction + %.
+  // answers "is gold up or down?"). Shows the VND amount per chỉ plus %.
+  function signedVND(v){ return (v > 0 ? '+' : (v < 0 ? '-' : '')) + fmtVND(Math.abs(v)); }
   function priceChangeHtml(key, current, hist){
     var daily = aggregateDailyHistory(hist, 2);
     var todayKey = localDayKey(new Date());
@@ -1197,7 +1198,7 @@
     var pct = diff / prevVal * 100;
     var cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
     var arrowPath = diff > 0 ? '<path d="M12 19V6M6 12l6-6 6 6"/>' : (diff < 0 ? '<path d="M12 5v13M6 12l6 6 6-6"/>' : '<path d="M5 12h14"/>');
-    return '<div class="pb-change '+cls+'"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</div>';
+    return '<div class="pb-change '+cls+'"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg>'+signedVND(diff)+' đ ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)</div>';
   }
 
   function renderPrice(){
@@ -1280,8 +1281,8 @@
         var pctFromLow = (currentBuy - r.low) / r.low * 100;
         return '<div class="summary-row"><span class="summary-label">Cao nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.high)+' đ/chỉ</span></div>' +
           '<div class="summary-row"><span class="summary-label">Thấp nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.low)+' đ/chỉ</span></div>' +
-          '<div class="summary-row"><span class="summary-label">Cách đỉnh '+days+' ngày</span><span class="summary-val">'+(pctFromHigh>=0?'+':'')+pctFromHigh.toFixed(2)+'%</span></div>' +
-          '<div class="summary-row"><span class="summary-label">Cách đáy '+days+' ngày</span><span class="summary-val">'+(pctFromLow>=0?'+':'')+pctFromLow.toFixed(2)+'%</span></div>';
+          '<div class="summary-row"><span class="summary-label">Cách đỉnh '+days+' ngày</span><span class="summary-val">'+signedVND(currentBuy - r.high)+' đ ('+(pctFromHigh>=0?'+':'')+pctFromHigh.toFixed(2)+'%)</span></div>' +
+          '<div class="summary-row"><span class="summary-label">Cách đáy '+days+' ngày</span><span class="summary-val">'+signedVND(currentBuy - r.low)+' đ ('+(pctFromLow>=0?'+':'')+pctFromLow.toFixed(2)+'%)</span></div>';
       }).join('');
   }
 
