@@ -49,10 +49,11 @@
       <p>Chọn ngày hai bạn bắt đầu yêu nhau để bắt đầu đếm từng ngày bên nhau.</p>
     </div>
     <form class="card form" id="setupForm" novalidate>
-      <label class="field">
-        <span class="field-label">Ngày bắt đầu yêu nhau</span>
-        <input type="date" id="setupStart" required>
-      </label>
+      <div class="field">
+        <span class="field-label" id="setupStartLabel">Ngày bắt đầu yêu nhau</span>
+        <input type="hidden" id="setupStart">
+        <button type="button" class="date-field is-empty" id="setupStartBtn" data-date-for="setupStart" data-date-title="Ngày bắt đầu yêu nhau" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="setupStartLabel setupStartBtn"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      </div>
       <div class="field-row">
         <label class="field">
           <span class="field-label">Tên anh</span>
@@ -64,14 +65,16 @@
         </label>
       </div>
       <div class="field-row">
-        <label class="field">
-          <span class="field-label">Sinh nhật anh <em>(tuỳ chọn)</em></span>
-          <input type="date" id="setupDobLong">
-        </label>
-        <label class="field">
-          <span class="field-label">Sinh nhật em <em>(tuỳ chọn)</em></span>
-          <input type="date" id="setupDobThu">
-        </label>
+        <div class="field">
+          <span class="field-label" id="setupDobLongLabel">Sinh nhật anh <em>(tuỳ chọn)</em></span>
+          <input type="hidden" id="setupDobLong">
+          <button type="button" class="date-field is-empty" id="setupDobLongBtn" data-date-for="setupDobLong" data-date-title="Sinh nhật anh" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="setupDobLongLabel setupDobLongBtn"><span class="date-field-text">Chưa đặt</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+        </div>
+        <div class="field">
+          <span class="field-label" id="setupDobThuLabel">Sinh nhật em <em>(tuỳ chọn)</em></span>
+          <input type="hidden" id="setupDobThu">
+          <button type="button" class="date-field is-empty" id="setupDobThuBtn" data-date-for="setupDobThu" data-date-title="Sinh nhật em" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="setupDobThuLabel setupDobThuBtn"><span class="date-field-text">Chưa đặt</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+        </div>
       </div>
       <p class="form-error" id="setupError" role="alert" hidden></p>
       <button type="submit" class="btn btn-primary btn-block">Bắt đầu đếm ngày</button>
@@ -165,10 +168,11 @@
 
     <form class="card form" id="profileForm" novalidate>
       <h3 class="card-title">Hồ sơ đôi mình</h3>
-      <label class="field">
-        <span class="field-label">Ngày bắt đầu yêu nhau</span>
-        <input type="date" id="pfStart" required>
-      </label>
+      <div class="field">
+        <span class="field-label" id="pfStartLabel">Ngày bắt đầu yêu nhau</span>
+        <input type="hidden" id="pfStart">
+        <button type="button" class="date-field is-empty" id="pfStartBtn" data-date-for="pfStart" data-date-title="Ngày bắt đầu yêu nhau" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="pfStartLabel pfStartBtn"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      </div>
       <div class="field-row">
         <label class="field">
           <span class="field-label">Tên anh</span>
@@ -180,14 +184,16 @@
         </label>
       </div>
       <div class="field-row">
-        <label class="field">
-          <span class="field-label">Sinh nhật anh</span>
-          <input type="date" id="pfDobLong">
-        </label>
-        <label class="field">
-          <span class="field-label">Sinh nhật em</span>
-          <input type="date" id="pfDobThu">
-        </label>
+        <div class="field">
+          <span class="field-label" id="pfDobLongLabel">Sinh nhật anh</span>
+          <input type="hidden" id="pfDobLong">
+          <button type="button" class="date-field is-empty" id="pfDobLongBtn" data-date-for="pfDobLong" data-date-title="Sinh nhật anh" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="pfDobLongLabel pfDobLongBtn"><span class="date-field-text">Chưa đặt</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+        </div>
+        <div class="field">
+          <span class="field-label" id="pfDobThuLabel">Sinh nhật em</span>
+          <input type="hidden" id="pfDobThu">
+          <button type="button" class="date-field is-empty" id="pfDobThuBtn" data-date-for="pfDobThu" data-date-title="Sinh nhật em" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="pfDobThuLabel pfDobThuBtn"><span class="date-field-text">Chưa đặt</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+        </div>
       </div>
       <p class="form-error" id="profileError" role="alert" hidden></p>
       <button type="submit" class="btn btn-primary btn-block">Lưu hồ sơ</button>
@@ -314,10 +320,11 @@
       </label>
     </div>
     <div class="emoji-picks" id="emojiPicks"></div>
-    <label class="field">
-      <span class="field-label">Ngày</span>
-      <input type="date" id="msDate" required>
-    </label>
+    <div class="field">
+      <span class="field-label" id="msDateLabel">Ngày</span>
+      <input type="hidden" id="msDate">
+      <button type="button" class="date-field is-empty" id="msDateBtn" data-date-for="msDate" data-date-title="Ngày kỷ niệm" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="msDateLabel msDateBtn"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+    </div>
     <label class="field">
       <span class="field-label">Ghi chú <em>(không bắt buộc)</em></span>
       <textarea id="msNote" maxlength="500" rows="2"></textarea>
@@ -382,6 +389,26 @@
     </button>
   </div>
   <div id="versionContent"></div>
+</div>
+
+<div class="dp-backdrop" id="dpBackdrop"></div>
+<div class="dp-sheet" id="datePicker" role="dialog" aria-modal="true" aria-labelledby="dpTitle" aria-hidden="true">
+  <div class="dp-head">
+    <button type="button" class="dp-action" id="dpCancel">Huỷ</button>
+    <h3 class="dp-title" id="dpTitle">Chọn ngày</h3>
+    <button type="button" class="dp-action dp-done" id="dpDone">Xong</button>
+  </div>
+  <p class="dp-preview" id="dpPreview" aria-live="polite"></p>
+  <div class="dp-wheels">
+    <div class="dp-band" aria-hidden="true"></div>
+    <div class="dp-col dp-col-d" id="dpDay" role="listbox" tabindex="0" aria-label="Ngày"></div>
+    <div class="dp-col dp-col-m" id="dpMonth" role="listbox" tabindex="0" aria-label="Tháng"></div>
+    <div class="dp-col dp-col-y" id="dpYear" role="listbox" tabindex="0" aria-label="Năm"></div>
+  </div>
+  <div class="dp-extras">
+    <button type="button" class="dp-chip" id="dpToday">Hôm nay</button>
+    <button type="button" class="dp-chip dp-chip-clear" id="dpClear">Xoá ngày</button>
+  </div>
 </div>
 
 <script src="../js/love-days-core.js"></script>

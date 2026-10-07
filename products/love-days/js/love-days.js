@@ -160,16 +160,14 @@
     $("tabbar").hidden = true;
     ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
     $("setupView").hidden = false;
-    var today = C.todayStr(now());
-    ["setupStart", "setupDobLong", "setupDobThu"].forEach(function(id){ $(id).max = today; });
     var p = state.profile;
     if(p){
       $("setupNameLong").value = p.persons[0].name;
       $("setupNameThu").value = p.persons[1].name;
-      $("setupDobLong").value = p.persons[0].dob || "";
-      $("setupDobThu").value = p.persons[1].dob || "";
+      setDateValue("setupDobLong", p.persons[0].dob || "");
+      setDateValue("setupDobThu", p.persons[1].dob || "");
       if(p.startStatus === "future"){
-        $("setupStart").value = p.startDate;
+        setDateValue("setupStart", p.startDate);
         setBanner("start", "Ngày bắt đầu đã lưu (" + fmtDate(p.startDate) + ") nằm sau hôm nay — hãy kiểm tra ngày giờ của máy hoặc chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
       } else {
         setBanner("start", "Ngày bắt đầu đã lưu bị hỏng — hãy chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
@@ -344,7 +342,7 @@
     state.editingId = m ? m.id : null;
     $("msSheetTitle").textContent = m ? "Sửa kỷ niệm" : "Thêm kỷ niệm";
     $("msTitle").value = m ? m.title : "";
-    $("msDate").value = m ? m.date : C.todayStr(now());
+    setDateValue("msDate", m ? m.date : C.todayStr(now()));
     $("msEmoji").value = m ? m.emoji : "";
     $("msNote").value = m ? m.note : "";
     $("msRepeat").checked = m ? m.repeatYearly : false;
@@ -385,6 +383,256 @@
       closeSheets();
       recompute(); renderHome(); renderMilestones();
     }, function(){ showError("msError", "Không xoá được. Hãy thử lại."); });
+  });
+
+  // ---------- Date fields + wheel picker ----------
+  // Each date is a hidden input (its .value stays 'YYYY-MM-DD' or '') plus a
+  // button showing it. Always write through setDateValue so the button never
+  // goes stale. "Today" and the bounds come from LoveCore (VN time).
+  var DATE_FIELDS = {
+    setupStart:   { min: "1950-01-01", optional: false },
+    setupDobLong: { min: "1900-01-01", optional: true, def: "2000-01-01" },
+    setupDobThu:  { min: "1900-01-01", optional: true, def: "2000-01-01" },
+    pfStart:      { min: "1950-01-01", optional: false },
+    pfDobLong:    { min: "1900-01-01", optional: true, def: "2000-01-01" },
+    pfDobThu:     { min: "1900-01-01", optional: true, def: "2000-01-01" },
+    // 1900 matches validateMilestone, so an older stored milestone opens on its
+    // own date instead of being moved to the bound when "Xong" is pressed.
+    msDate:       { min: "1900-01-01", optional: false, futureYears: 20 }
+  };
+
+  function setDateValue(id, v){
+    $(id).value = v || "";
+    renderDateField(id);
+  }
+  function renderDateField(id){
+    var v = $(id).value, btn = $(id + "Btn"), ok = C.isValidDate(v);
+    btn.classList.toggle("is-empty", !ok);
+    btn.querySelector(".date-field-text").innerHTML = ok
+      ? '<span class="date-field-wd">' + weekday(v) + ", </span>" + fmtDate(v)
+      : (DATE_FIELDS[id].optional ? "Chưa đặt" : "Chọn ngày");
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-date-for]"), function(btn){
+    btn.addEventListener("click", function(){ openDatePicker(btn.getAttribute("data-date-for")); });
+  });
+
+  var DP_ROW = 40;
+  var reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
+  var dp = { open: false, id: null, y: 2000, m: 1, d: 1, min: "", max: "", today: "", minY: 1900, maxY: 2000, raf: 0 };
+  var dpCols = [
+    { key: "d", el: $("dpDay"), timer: null, prog: false, touching: false },
+    { key: "m", el: $("dpMonth"), timer: null, prog: false, touching: false },
+    { key: "y", el: $("dpYear"), timer: null, prog: false, touching: false }
+  ];
+
+  function ymd(y, m, d){ return y + "-" + pad2(m) + "-" + pad2(d); }
+  function monthLen(y, m){ return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function colCount(col){ return col.key === "d" ? 31 : col.key === "m" ? 12 : dp.maxY - dp.minY + 1; }
+  function colValue(col, i){ return col.key === "y" ? dp.minY + i : i + 1; }
+  function colIndexOf(col, v){ return col.key === "y" ? v - dp.minY : v - 1; }
+  function colScrollIndex(col){
+    return Math.max(0, Math.min(colCount(col) - 1, Math.round(col.el.scrollTop / DP_ROW)));
+  }
+
+  function dpSetParts(s){ dp.y = +s.slice(0, 4); dp.m = +s.slice(5, 7); dp.d = +s.slice(8, 10); }
+  // Clamp the day to the month's length, then the date into [min, max].
+  function dpNormalize(){
+    dp.d = Math.min(dp.d, monthLen(dp.y, dp.m));
+    var s = ymd(dp.y, dp.m, dp.d);
+    if(s < dp.min) dpSetParts(dp.min);
+    else if(s > dp.max) dpSetParts(dp.max);
+  }
+  function dpValue(){ return ymd(dp.y, dp.m, dp.d); }
+
+  function dpBuild(){
+    dpCols.forEach(function(col){
+      var html = "";
+      for(var i = 0, n = colCount(col); i < n; i++){
+        var v = colValue(col, i);
+        html += '<div class="dp-opt" role="option" id="' + col.el.id + "-" + i + '" data-i="' + i + '" aria-selected="false">' +
+          (col.key === "m" ? "Tháng " + v : v) + "</div>";
+      }
+      col.el.innerHTML = html;
+      col.opts = col.el.children;
+    });
+  }
+
+  function dpPaintDisabled(){
+    var dim = monthLen(dp.y, dp.m), day = dpCols[0], mon = dpCols[1];
+    for(var d = 1; d <= 31; d++){
+      var s = ymd(dp.y, dp.m, d);
+      day.opts[d - 1].setAttribute("aria-disabled", d > dim || s < dp.min || s > dp.max ? "true" : "false");
+    }
+    for(var m = 1; m <= 12; m++){
+      var off = ymd(dp.y, m, monthLen(dp.y, m)) < dp.min || ymd(dp.y, m, 1) > dp.max;
+      mon.opts[m - 1].setAttribute("aria-disabled", off ? "true" : "false");
+    }
+  }
+
+  // Puts every wheel on the current value. Columns the user is still moving
+  // are left alone; their own settle re-runs this.
+  function dpSync(smooth){
+    dpPaintDisabled();
+    dpCols.forEach(function(col){
+      var i = colIndexOf(col, dp[col.key]);
+      var prev = col.el.querySelector('[aria-selected="true"]');
+      if(prev) prev.setAttribute("aria-selected", "false");
+      col.opts[i].setAttribute("aria-selected", "true");
+      col.el.setAttribute("aria-activedescendant", col.opts[i].id);
+      if(col.touching || (col.timer && !col.prog)) return;
+      if(Math.abs(col.el.scrollTop - i * DP_ROW) > 0.5){
+        col.prog = true;
+        col.el.scrollTo({ top: i * DP_ROW, behavior: smooth && !(reduceMotion && reduceMotion.matches) ? "smooth" : "auto" });
+      }
+    });
+    var v = dpValue();
+    $("dpPreview").textContent = weekday(v) + ", " + fmtDate(v);
+    dpPaintWheels();
+  }
+
+  function dpSettle(col){
+    clearTimeout(col.timer);
+    col.timer = null;
+    if(!dp.open || col.touching) return;
+    var wasProg = col.prog;
+    col.prog = false;
+    var v = colValue(col, colScrollIndex(col));
+    if(!wasProg) dp[col.key] = v;
+    dpNormalize();
+    dpSync(true);
+  }
+
+  // The 3D tilt and the bold centre row follow the live scroll position.
+  function dpPaintWheels(){
+    dp.raf = 0;
+    var tilt = !(reduceMotion && reduceMotion.matches);
+    dpCols.forEach(function(col){
+      var center = col.el.scrollTop / DP_ROW, n = colCount(col);
+      var lo = Math.max(0, Math.floor(center) - 4), hi = Math.min(n - 1, Math.ceil(center) + 4);
+      for(var i = lo; i <= hi; i++){
+        var dist = i - center, o = col.opts[i];
+        o.classList.toggle("is-center", Math.abs(dist) < 0.5);
+        o.style.transform = tilt ? "perspective(320px) rotateX(" + Math.max(-70, Math.min(70, -dist * 20)).toFixed(1) + "deg)" : "";
+      }
+    });
+  }
+
+  dpCols.forEach(function(col){
+    var el = col.el;
+    el.addEventListener("scroll", function(){
+      if(!dp.raf) dp.raf = requestAnimationFrame(dpPaintWheels);
+      clearTimeout(col.timer);
+      // scrollend isn't in older Safari; the debounce covers it.
+      if(!col.touching) col.timer = setTimeout(function(){ dpSettle(col); }, 140);
+      else col.timer = null;
+    }, { passive: true });
+    el.addEventListener("scrollend", function(){ if(col.timer) dpSettle(col); });
+    el.addEventListener("touchstart", function(){ col.touching = true; col.prog = false; clearTimeout(col.timer); col.timer = null; }, { passive: true });
+    function touchEnd(){
+      col.touching = false;
+      clearTimeout(col.timer);
+      col.timer = setTimeout(function(){ dpSettle(col); }, 140);
+    }
+    el.addEventListener("touchend", touchEnd, { passive: true });
+    el.addEventListener("touchcancel", touchEnd, { passive: true });
+    el.addEventListener("wheel", function(){ col.prog = false; }, { passive: true });
+    el.addEventListener("click", function(e){
+      var o = e.target.closest(".dp-opt");
+      if(!o) return;
+      dp[col.key] = colValue(col, +o.getAttribute("data-i"));
+      dpNormalize();
+      dpSync(true);
+    });
+    el.addEventListener("keydown", function(e){
+      var i = colIndexOf(col, dp[col.key]), n = colCount(col), to = null;
+      if(e.key === "ArrowUp") to = i - 1;
+      else if(e.key === "ArrowDown") to = i + 1;
+      else if(e.key === "PageUp") to = i - 5;
+      else if(e.key === "PageDown") to = i + 5;
+      else if(e.key === "Home") to = 0;
+      else if(e.key === "End") to = n - 1;
+      else if(e.key === "Enter"){ e.preventDefault(); closeDatePicker(true); return; }
+      if(to === null) return;
+      e.preventDefault();
+      clearTimeout(col.timer); col.timer = null;
+      dp[col.key] = colValue(col, Math.max(0, Math.min(n - 1, to)));
+      dpNormalize();
+      dpSync(true);
+    });
+  });
+
+  function openDatePicker(id){
+    var cfg = DATE_FIELDS[id], today = C.todayStr(now()), v = $(id).value;
+    dp.id = id; dp.today = today; dp.min = cfg.min;
+    dp.max = cfg.futureYears ? C.addYearsClamp(today, cfg.futureYears) : today;
+    // A stored value outside the bounds (old data, imported backup) widens them
+    // so opening the picker and pressing "Xong" never silently moves it; the
+    // save path still validates (e.g. future start dates are rejected there).
+    if(C.isValidDate(v)){ if(v < dp.min) dp.min = v; if(v > dp.max) dp.max = v; }
+    dp.minY = +dp.min.slice(0, 4); dp.maxY = +dp.max.slice(0, 4);
+    dpSetParts(C.isValidDate(v) ? v : cfg.def || today);
+    dpNormalize();
+    dpBuild();
+    dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; col.touching = false; col.prog = false; });
+    $("dpTitle").textContent = $(id + "Btn").getAttribute("data-date-title");
+    $("dpToday").hidden = today < dp.min || today > dp.max;
+    $("dpClear").hidden = !cfg.optional || !v;
+    dp.open = true;
+    var sheet = $("datePicker");
+    sheet.setAttribute("aria-hidden", "false");
+    sheet.classList.add("open");
+    $("dpBackdrop").classList.add("open");
+    $(id + "Btn").setAttribute("aria-expanded", "true");
+    dpSync(false);
+    dpCols[0].el.focus({ preventScroll: true });
+  }
+
+  // how: true = Xong, "clear" = Xoá ngày, false = Huỷ.
+  function closeDatePicker(how){
+    if(!dp.open) return;
+    if(how === true){
+      dpCols.forEach(function(col){
+        if(col.touching || (col.timer && !col.prog)) dp[col.key] = colValue(col, colScrollIndex(col));
+      });
+      dpNormalize();
+    }
+    dp.open = false;
+    dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; col.touching = false; });
+    var sheet = $("datePicker"), id = dp.id;
+    sheet.classList.remove("open");
+    sheet.setAttribute("aria-hidden", "true");
+    $("dpBackdrop").classList.remove("open");
+    if(how){
+      var val = how === "clear" ? "" : dpValue(), input = $(id);
+      if(input.value !== val){
+        setDateValue(id, val);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+    $(id + "Btn").setAttribute("aria-expanded", "false");
+    $(id + "Btn").focus({ preventScroll: true });
+  }
+
+  function onDatePickerKey(e){
+    if(e.key === "Escape"){ e.preventDefault(); closeDatePicker(false); return; }
+    if(e.key !== "Tab") return;
+    var f = Array.prototype.filter.call($("datePicker").querySelectorAll("button,[tabindex]"), function(el){ return !el.hidden; });
+    var i = f.indexOf(document.activeElement);
+    if(e.shiftKey && i <= 0){ e.preventDefault(); f[f.length - 1].focus(); }
+    else if(!e.shiftKey && i === f.length - 1){ e.preventDefault(); f[0].focus(); }
+    else if(i === -1){ e.preventDefault(); f[0].focus(); }
+  }
+
+  $("dpCancel").addEventListener("click", function(){ closeDatePicker(false); });
+  $("dpDone").addEventListener("click", function(){ closeDatePicker(true); });
+  $("dpClear").addEventListener("click", function(){ closeDatePicker("clear"); });
+  $("dpBackdrop").addEventListener("click", function(){ closeDatePicker(false); });
+  $("dpToday").addEventListener("click", function(){
+    dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; });
+    dpSetParts(dp.today);
+    dpNormalize();
+    dpSync(true);
   });
 
   // ---------- Profile (setup + settings share validation) ----------
@@ -433,13 +681,12 @@
   });
 
   function fillProfileForm(){
-    var p = state.profile, today = C.todayStr(now());
-    $("pfStart").value = p.startDate;
+    var p = state.profile;
+    setDateValue("pfStart", p.startDate);
     $("pfNameLong").value = p.persons[0].name;
     $("pfNameThu").value = p.persons[1].name;
-    $("pfDobLong").value = p.persons[0].dob || "";
-    $("pfDobThu").value = p.persons[1].dob || "";
-    ["pfStart", "pfDobLong", "pfDobThu"].forEach(function(id){ $(id).max = today; });
+    setDateValue("pfDobLong", p.persons[0].dob || "");
+    setDateValue("pfDobThu", p.persons[1].dob || "");
     $("labelAvatarLong").textContent = p.persons[0].name;
     $("labelAvatarThu").textContent = p.persons[1].name;
   }
@@ -1568,6 +1815,7 @@
   $("sheetBackdrop").addEventListener("click", closeSheets);
   Array.prototype.forEach.call(document.querySelectorAll("[data-close-sheet]"), function(b){ b.addEventListener("click", closeSheets); });
   document.addEventListener("keydown", function(e){
+    if(dp.open){ onDatePickerKey(e); return; }
     if(viewer.open){ onViewerKey(e); return; }
     if(e.key === "Escape" && document.querySelector(".sheet.open")) closeSheets();
   });
