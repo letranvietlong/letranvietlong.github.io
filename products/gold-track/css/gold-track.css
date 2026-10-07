@@ -230,7 +230,7 @@
 
   .pnl-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .pnl-cal-title{font-size:.88rem;font-weight:700}
-  .pnl-cal-nav{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--text);font-size:1.3rem;line-height:1;display:flex;align-items:center;justify-content:center}
+  .pnl-cal-nav{width:44px;height:44px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--glass);color:var(--text);font-size:1.3rem;line-height:1;display:flex;align-items:center;justify-content:center}
   .pnl-cal-nav:disabled{opacity:.35}
   .pnl-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
   .pnl-cal-wd{font-size:.62rem;font-weight:700;color:var(--muted2);text-align:center;padding:2px 0 4px}
@@ -277,7 +277,7 @@
   .search-row{display:flex;gap:8px;margin-bottom:10px}
   .search-input-wrap{position:relative;flex:1}
   .search-input-wrap .icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none}
-  .search-input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:11px 14px 11px 38px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
+  .search-input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px 11px 38px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
   .search-input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
   .icon-btn.active{color:var(--gold2);border-color:rgba(245,158,11,.4);background:var(--gold-soft)}
   .date-filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
@@ -288,16 +288,23 @@
   /* .tx-row clips to the rounded rect; .tx-swipe-action sits behind, fully
      covered until .tx-item is dragged left (iOS Mail/Reminders pattern). */
   .tx-row{position:relative;border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden}
-  .tx-swipe-action{position:absolute;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:var(--red)}
+  /* The card's border lives on the clipping row as an overlay with the same
+     radius. A border on .tx-item (square, clipped by this row's curve) was cut
+     off along every rounded corner — visible at 3x as a gap in the outline. */
+  .tx-row::after{content:'';position:absolute;inset:0;border:1px solid var(--line);border-radius:inherit;pointer-events:none;z-index:2;transition:border-color .2s}
+  .tx-row:hover::after{border-color:var(--line2)}
+  /* Hidden at rest: both layers are clipped by the same anti-aliased curve,
+     so a red layer underneath tints the corner pixels pink even when fully
+     covered. Shown only while a swipe is active or open (JS: .swipe-active). */
+  .tx-swipe-action{position:absolute;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:var(--red);visibility:hidden}
+  .tx-row.swipe-active .tx-swipe-action,.tx-row.swipe-open .tx-swipe-action{visibility:visible}
   .tx-swipe-del{width:84px;border:none;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:.68rem;font-weight:700}
   /* Opaque, not the translucent --panel2, so the red "Xoá" layer behind it
-     (see .tx-swipe-action) can't bleed through when at rest. No border-radius
-     of its own — .tx-row's overflow:hidden clip already rounds it, and a
-     second independent radius here would double-antialias the same edge and
-     leak a 1px fringe of the red layer around the card. */
-  .tx-item{position:relative;background:var(--panel2-solid);border:1px solid var(--line);padding:14px;margin-bottom:0;cursor:pointer;touch-action:pan-y;transition:border-color .2s,background .2s,transform .22s cubic-bezier(.32,.72,0,1)}
+     can't show through while swiping. No border-radius or border of its own —
+     .tx-row's clip rounds it and .tx-row::after draws the outline. Padding is
+     15px (14px + the 1px border that moved to the overlay) to keep layout. */
+  .tx-item{position:relative;background:var(--panel2-solid);padding:15px;margin-bottom:0;cursor:pointer;touch-action:pan-y;transition:background .2s,transform .22s cubic-bezier(.32,.72,0,1)}
   .tx-item.swiping{transition:none}
-  .tx-item:hover{border-color:var(--line2)}
   .tx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
   .tx-amount{font-weight:700;font-size:.94rem}
   .tx-badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
@@ -385,7 +392,7 @@
 
   .field{margin-bottom:14px}
   .field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px}
-  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
+  .input{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:16px;min-height:44px;font-family:var(--font)}
   .input:focus{outline:none;border-color:var(--gold);background:var(--glass2)}
   .input:focus-visible{outline:2px solid var(--gold2);outline-offset:1px}
   .field-hint{font-size:.7rem;color:var(--muted2);margin-top:5px}
@@ -393,7 +400,7 @@
   .field.invalid .input{border-color:var(--red)}
   .field.invalid .field-error{display:block}
 
-  .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px;position:relative}
+  .segmented{display:flex;background:var(--glass);border:1px solid var(--line);border-radius:var(--radius-sm);padding:3px;position:relative}
   /* The pill is a separate absolutely-positioned layer that slides under the
      buttons (JS sets width/transform to match the active button's own box),
      instead of each button painting its own background on activation — this
@@ -403,9 +410,9 @@
      offsetLeft is already measured from the container's padding edge (i.e.
      already includes the 3px inset), so a static left:3px here would double
      it, landing the pill 3px right of the button it's supposed to match. */
-  .segmented-indicator{position:absolute;top:3px;bottom:3px;left:0;border-radius:9px;background:linear-gradient(135deg,var(--gold2),var(--gold));transition:transform .28s cubic-bezier(.34,1.2,.64,1),width .28s cubic-bezier(.34,1.2,.64,1),background .2s;z-index:0;pointer-events:none}
+  .segmented-indicator{position:absolute;top:3px;bottom:3px;left:0;border-radius:10px;background:linear-gradient(135deg,var(--gold2),var(--gold));transition:transform .28s cubic-bezier(.34,1.2,.64,1),width .28s cubic-bezier(.34,1.2,.64,1),background .2s;z-index:0;pointer-events:none}
   .segmented-indicator.sell{background:linear-gradient(135deg,#93C5FD,var(--blue))}
-  .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:9px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
+  .segmented button{flex:1;border:none;background:transparent;padding:10px 0;border-radius:10px;font-weight:700;font-size:.84rem;color:var(--muted);min-height:38px;transition:color .2s;position:relative;z-index:1}
   .segmented button.active{color:#1A1204}
   .segmented button.active[data-type="sell"]{color:#08213F}
 

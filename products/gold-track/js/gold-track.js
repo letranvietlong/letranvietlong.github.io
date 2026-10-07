@@ -2049,12 +2049,22 @@
   // browser's native scroll of `.app`; only horizontal drags reach here.
   var SWIPE_ACTION_WIDTH = 84;
   var openSwipeRowId = null;
+  // The red action layer is hidden at rest (it tints the anti-aliased corner
+  // pixels otherwise — see .tx-swipe-action in the CSS). Keep it visible until
+  // the item has slid back (.22s transition), unless the row reopened.
+  function hideSwipeActionLater(row){
+    clearTimeout(row._swipeHideTimer);
+    row._swipeHideTimer = setTimeout(function(){
+      if(!row.classList.contains('swipe-open') && !row.querySelector('.tx-item.swiping')) row.classList.remove('swipe-active');
+    }, 260);
+  }
   function closeSwipeRow(row){
     if(!row) return;
     var item = row.querySelector('.tx-item');
     item.classList.remove('swiping');
     item.style.transform = '';
     row.classList.remove('swipe-open');
+    hideSwipeActionLater(row);
   }
   function bindSwipeRow(row){
     var id = row.getAttribute('data-row-id');
@@ -2073,7 +2083,11 @@
       var dx = e.clientX - startX, dy = e.clientY - startY;
       if(axisLocked === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
         axisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-        if(axisLocked === 'x'){ try{ item.setPointerCapture(e.pointerId); }catch(err){} }
+        if(axisLocked === 'x'){
+          clearTimeout(row._swipeHideTimer);
+          row.classList.add('swipe-active');
+          try{ item.setPointerCapture(e.pointerId); }catch(err){}
+        }
       }
       if(axisLocked !== 'x') return;
       var nx = baseX + dx;
@@ -2092,7 +2106,7 @@
         item.style.transform = open ? 'translateX(-'+SWIPE_ACTION_WIDTH+'px)' : '';
         row.classList.toggle('swipe-open', open);
         if(open){ closeOpenSwipeExcept(id); openSwipeRowId = id; }
-        else if(openSwipeRowId === id) openSwipeRowId = null;
+        else { if(openSwipeRowId === id) openSwipeRowId = null; hideSwipeActionLater(row); }
         suppressClick = true;
       } else {
         item.style.transform = baseX ? 'translateX(-'+SWIPE_ACTION_WIDTH+'px)' : '';
