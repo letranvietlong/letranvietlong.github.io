@@ -1,0 +1,96 @@
+name: LoveDays daily push
+
+on:
+  schedule:
+    # 23:17 UTC hôm trước → 04:17 UTC = 06:17–11:17 giờ VN, phút :17 né slot
+    # :00/:30 mà GitHub hay bỏ khi quá tải. Chạy 6 lượt để lượt nào lọt cũng
+    # gửi được; send_push.py chỉ gửi 1 lần mỗi ngày VN (data/push-state.json).
+    - cron: "17 23,0-4 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Gửi kể cả khi hôm nay đã gửi"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Chạy thử: không gửi, không ghi trạng thái"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: love-days-push
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      # Until the user has created the secrets, end green instead of failing
+      # (and emailing) six times a day. Once configured, send_push.py itself
+      # exits 2 on any bad/missing value.
+      - name: Check secrets
+        id: cfg
+        env:
+          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.LOVE_VAPID_PRIVATE_KEY }}
+          LOVE_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_PUSH_SUBSCRIPTIONS }}
+        run: |
+          if [ -z "$LOVE_VAPID_PRIVATE_KEY" ] && [ -z "$LOVE_PUSH_SUBSCRIPTIONS" ]; then
+            echo "::notice::Chưa cấu hình secret LOVE_VAPID_PRIVATE_KEY / LOVE_PUSH_SUBSCRIPTIONS — bỏ qua (xem products/love-days/docs/love-days.md)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.configured == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          python-version: "3.x"
+
+      - run: pip install pywebpush==2.5.0
+        if: steps.cfg.outputs.configured == 'true'
+
+      - name: Send push
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.LOVE_VAPID_PRIVATE_KEY }}
+          LOVE_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_PUSH_SUBSCRIPTIONS }}
+          LOVE_START_DATE: ${{ secrets.LOVE_START_DATE }}
+          LOVE_VAPID_SUB: ${{ secrets.LOVE_VAPID_SUB }}
+          FORCE: ${{ inputs.force }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=""
+          if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python products/love-days/py/send_push.py $ARGS
+
+      - name: Commit and push state
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add products/love-days/data/push-state.json
+          if git diff --cached --quiet; then
+            echo "No push state change to commit."
+            exit 0
+          fi
+          DAY=$(python -c "import json; print(json.load(open('products/love-days/data/push-state.json', encoding='utf-8')).get('lastSentDate'))")
+          git commit -m "Love-days push: ${DAY}"
+
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $i failed (branch likely moved), retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Giving up after 5 push attempts."
+          exit 1

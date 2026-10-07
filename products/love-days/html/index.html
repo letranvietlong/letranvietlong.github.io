@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFF5F7" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1A0F14" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!-- "default", NOT "black-translucent": translucent mode reports a viewport
+     59pt short on iPhone Home Screen apps and WebKit clips everything below
+     it, so the fixed tab bar would float. iOS snapshots this tag at
+     Add-to-Home-Screen time. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Long &amp; Thư" />
+<title>Long &amp; Thư — LoveDays</title>
+<link rel="icon" type="image/svg+xml" href="/products/love-days/img/love-days-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/products/love-days/img/love-days-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/products/love-days/img/love-days-icon-180.png">
+<link rel="manifest" href="/products/love-days/manifest.json">
+<link rel="stylesheet" href="../css/love-days.css">
+</head>
+<body>
+<main class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-mark" src="/products/love-days/img/love-days-icon.svg" alt="" width="40" height="40">
+      <div class="brand-text">
+        <h1>Long &amp; Thư</h1>
+        <span class="brand-sub">LoveDays · nhật ký đôi mình</span>
+      </div>
+    </div>
+    <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
+  </header>
+
+  <div id="banners" class="banners" aria-live="polite"></div>
+
+  <div id="loadingView" class="loading-view" aria-hidden="true">
+    <svg class="heart-icon pulse" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 4.3 2.4h2c.8-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+  </div>
+
+  <!-- First run / corrupt start date -->
+  <section id="setupView" class="view" hidden>
+    <div class="setup-hero">
+      <svg class="heart-icon beat" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 4.3 2.4h2c.8-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+      <h2>Chào hai bạn 💕</h2>
+      <p>Chọn ngày hai bạn bắt đầu yêu nhau để bắt đầu đếm từng ngày bên nhau.</p>
+    </div>
+    <form class="card form" id="setupForm" novalidate>
+      <label class="field">
+        <span class="field-label">Ngày bắt đầu yêu nhau</span>
+        <input type="date" id="setupStart" required>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Tên anh</span>
+          <input type="text" id="setupNameLong" maxlength="40" autocomplete="off" value="Viết Long">
+        </label>
+        <label class="field">
+          <span class="field-label">Tên em</span>
+          <input type="text" id="setupNameThu" maxlength="40" autocomplete="off" value="Minh Thư">
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Sinh nhật anh <em>(tuỳ chọn)</em></span>
+          <input type="date" id="setupDobLong">
+        </label>
+        <label class="field">
+          <span class="field-label">Sinh nhật em <em>(tuỳ chọn)</em></span>
+          <input type="date" id="setupDobThu">
+        </label>
+      </div>
+      <p class="form-error" id="setupError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block">Bắt đầu đếm ngày</button>
+      <p class="storage-note">Dữ liệu chỉ lưu trên máy này. App ở Màn hình chính có bộ nhớ riêng, tách với Safari, và xoá icon là mất dữ liệu — hãy sao lưu định kỳ.</p>
+      <label class="btn btn-ghost btn-block file-btn">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImportSetup"></label>
+    </form>
+  </section>
+
+  <!-- Trang chủ -->
+  <section id="tab-home" class="view" hidden>
+    <div class="hero">
+      <div class="cover" id="cover">
+        <img id="coverImg" alt="" hidden>
+        <div class="cover-shade"></div>
+        <svg class="cover-hearts" viewBox="0 0 200 80" aria-hidden="true"><path d="M30 30s-9-5.5-11.5-11.2C16.7 14.7 19.2 10 23.6 10c2.5 0 4.2 1.3 5.2 2.9h2.4c1-1.6 2.7-2.9 5.2-2.9 4.4 0 6.9 4.7 5.1 8.8C39 24.5 30 30 30 30z"/><path d="M168 54s-6-3.7-7.7-7.5c-1.2-2.7.5-5.9 3.4-5.9 1.7 0 2.8.9 3.5 1.9h1.6c.7-1 1.8-1.9 3.5-1.9 2.9 0 4.6 3.2 3.4 5.9C174 50.3 168 54 168 54z"/><path d="M150 18s-4-2.4-5.1-5c-.8-1.8.3-3.9 2.3-3.9 1.1 0 1.9.6 2.3 1.3h1c.4-.7 1.2-1.3 2.3-1.3 2 0 3.1 2.1 2.3 3.9-1.1 2.6-5.1 5-5.1 5z"/></svg>
+      </div>
+      <div class="couple">
+        <div class="avatar" id="avatarLong"><img alt="" hidden><span class="avatar-initial"></span></div>
+        <div class="heart-beat" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 4.3 2.4h2c.8-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+        </div>
+        <div class="avatar" id="avatarThu"><img alt="" hidden><span class="avatar-initial"></span></div>
+      </div>
+      <p class="couple-names"><span id="nameLong"></span> <span class="amp" aria-label="và">♥</span> <span id="nameThu"></span></p>
+    </div>
+
+    <section class="card count-card" aria-labelledby="countLabel">
+      <p class="count-label" id="countLabel">Đã bên nhau</p>
+      <p class="count-big"><span id="dayCount">0</span><span class="count-unit">ngày</span></p>
+      <p class="count-hours"><span id="hoursCount">0</span> giờ bên nhau</p>
+      <p class="count-clock"><span class="clock-label">đã trôi qua</span><span id="liveClock"></span></p>
+      <p class="count-note">Đếm cả ngày bắt đầu là ngày 1 · giờ Việt Nam (UTC+7)<br><span id="sinceLine"></span></p>
+    </section>
+
+    <section class="card upcoming-card" id="upcomingCard" aria-labelledby="upcomingTitle">
+      <h2 class="card-kicker" id="upcomingTitle">Sắp tới</h2>
+      <div id="upcomingBody"></div>
+    </section>
+
+    <div class="bday-grid" id="birthdays"></div>
+  </section>
+
+  <!-- Kỷ niệm -->
+  <section id="tab-milestones" class="view" hidden>
+    <div class="view-head">
+      <h2 class="view-title">Kỷ niệm</h2>
+      <button type="button" class="btn btn-primary btn-sm" id="btnAddMilestone">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Thêm kỷ niệm
+      </button>
+    </div>
+    <p class="view-sub">Mốc 100 ngày, kỷ niệm hằng năm và sinh nhật được tự tính. Chạm vào kỷ niệm riêng để sửa.</p>
+    <ul class="ms-list" id="milestoneList"></ul>
+  </section>
+
+  <!-- Album -->
+  <section id="tab-album" class="view" hidden>
+    <div class="view-head">
+      <h2 class="view-title">Album</h2>
+      <label class="btn btn-primary btn-sm file-btn" id="albumAdd">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Thêm ảnh<input type="file" accept="image/*" multiple id="fileAlbum">
+      </label>
+    </div>
+    <p class="view-sub" id="albumSub">Ảnh chung của hai bạn, chỉ lưu trên máy này.</p>
+    <div class="album-tools" id="albumTools" hidden>
+      <div class="segmented" role="group" aria-label="Sắp xếp ảnh theo">
+        <button type="button" class="seg-btn" data-sort="taken">Ngày chụp</button>
+        <button type="button" class="seg-btn" data-sort="added">Ngày thêm</button>
+        <button type="button" class="seg-btn" data-sort="custom">Tuỳ chỉnh</button>
+      </div>
+      <div class="arrange-row" id="arrangeRow" hidden>
+        <p class="arrange-hint" id="arrangeHint">Thứ tự do bạn tự sắp.</p>
+        <button type="button" class="btn btn-soft btn-sm" id="btnArrange">Sắp xếp</button>
+      </div>
+    </div>
+    <p class="album-progress" id="albumProgress" role="status" hidden></p>
+    <p class="form-error" id="albumError" role="alert" hidden></p>
+    <p class="album-note" id="albumNote" role="status" hidden></p>
+    <div class="card empty-state" id="albumEmpty" hidden>
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>
+      <p class="empty-title">Chưa có ảnh nào</p>
+      <p class="empty-text">Chạm “Thêm ảnh” để lưu những khoảnh khắc của hai bạn. Ảnh được thu nhỏ gọn và chỉ lưu trên máy này — nhớ sao lưu ở tab Cài đặt.</p>
+    </div>
+    <ul class="album-grid" id="albumGrid"></ul>
+  </section>
+
+  <!-- Cài đặt -->
+  <section id="tab-settings" class="view" hidden>
+    <div class="view-head"><h2 class="view-title">Cài đặt</h2></div>
+
+    <form class="card form" id="profileForm" novalidate>
+      <h3 class="card-title">Hồ sơ đôi mình</h3>
+      <label class="field">
+        <span class="field-label">Ngày bắt đầu yêu nhau</span>
+        <input type="date" id="pfStart" required>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Tên anh</span>
+          <input type="text" id="pfNameLong" maxlength="40" autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="field-label">Tên em</span>
+          <input type="text" id="pfNameThu" maxlength="40" autocomplete="off">
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Sinh nhật anh</span>
+          <input type="date" id="pfDobLong">
+        </label>
+        <label class="field">
+          <span class="field-label">Sinh nhật em</span>
+          <input type="date" id="pfDobThu">
+        </label>
+      </div>
+      <p class="form-error" id="profileError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block">Lưu hồ sơ</button>
+      <p class="form-ok" id="profileOk" role="status" hidden>Đã lưu ✓</p>
+    </form>
+
+    <section class="card" aria-labelledby="photoTitle">
+      <h3 class="card-title" id="photoTitle">Ảnh đại diện &amp; ảnh bìa</h3>
+      <div class="photo-row" data-photo="avatar-long">
+        <div class="photo-thumb round" id="thumbAvatarLong"><img alt="" hidden><span></span></div>
+        <div class="photo-info"><span class="photo-name" id="labelAvatarLong">Anh</span><span class="photo-hint">Ảnh đại diện</span></div>
+        <label class="btn btn-soft btn-sm file-btn">Chọn ảnh<input type="file" accept="image/*" id="fileAvatarLong"></label>
+        <button type="button" class="btn btn-ghost btn-sm" data-remove="avatar-long" hidden>Gỡ</button>
+      </div>
+      <div class="photo-row" data-photo="avatar-thu">
+        <div class="photo-thumb round" id="thumbAvatarThu"><img alt="" hidden><span></span></div>
+        <div class="photo-info"><span class="photo-name" id="labelAvatarThu">Em</span><span class="photo-hint">Ảnh đại diện</span></div>
+        <label class="btn btn-soft btn-sm file-btn">Chọn ảnh<input type="file" accept="image/*" id="fileAvatarThu"></label>
+        <button type="button" class="btn btn-ghost btn-sm" data-remove="avatar-thu" hidden>Gỡ</button>
+      </div>
+      <div class="photo-row" data-photo="cover">
+        <div class="photo-thumb wide" id="thumbCover"><img alt="" hidden><span></span></div>
+        <div class="photo-info"><span class="photo-name">Ảnh bìa</span><span class="photo-hint">Ảnh ngang đẹp nhất</span></div>
+        <label class="btn btn-soft btn-sm file-btn">Chọn ảnh<input type="file" accept="image/*" id="fileCover"></label>
+        <button type="button" class="btn btn-ghost btn-sm" data-remove="cover" hidden>Gỡ</button>
+      </div>
+      <p class="form-error" id="photoError" role="alert" hidden></p>
+      <p class="photo-busy" id="photoBusy" role="status" hidden>Đang xử lý ảnh…</p>
+    </section>
+
+    <section class="card" aria-labelledby="backupTitle">
+      <h3 class="card-title" id="backupTitle">Sao lưu</h3>
+      <p class="card-text">Dữ liệu chỉ lưu trên máy này. App ở Màn hình chính có bộ nhớ riêng, tách với Safari, và xoá icon là mất dữ liệu — hãy sao lưu định kỳ.</p>
+      <p class="backup-last" id="backupLast">Chưa sao lưu lần nào.</p>
+      <div class="btn-pair">
+        <button type="button" class="btn btn-soft" id="btnPrepare">Chuẩn bị bản sao lưu</button>
+        <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
+        <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
+      </div>
+      <p class="card-hint" id="backupStatus" role="status">Bản sao lưu là một file .zip gồm hồ sơ, kỷ niệm và toàn bộ ảnh. Trên iPhone, chọn “Lưu vào Tệp”.</p>
+      <p class="form-error" id="backupError" role="alert" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="pushTitle">
+      <h3 class="card-title" id="pushTitle">Thông báo hằng ngày &amp; số trên icon</h3>
+      <p class="card-text">Mỗi sáng (khoảng 6–11 giờ, giờ Việt Nam) máy nhận một thông báo “💕 Ngày thứ …”, và icon app hiện số ngày hai bạn bên nhau.</p>
+      <p class="push-status" id="pushStatus" role="status"></p>
+      <ol class="push-steps">
+        <li>Trong Safari, chạm nút Chia sẻ → <b>Thêm vào MH chính</b>, rồi mở app từ icon “Long &amp; Thư” (cần iOS 16.4 trở lên). Mỗi người làm trên iPhone của mình.</li>
+        <li>Đặt tên máy bên dưới (ví dụ “iPhone Long”), chạm <b>Bật thông báo</b> → chọn <b>Cho phép</b>.</li>
+        <li>Chạm <b>Sao chép</b> để chép mã đăng ký của máy này, rồi gửi mã cho người giữ repo GitHub.</li>
+        <li>Trên GitHub: repo → Settings → Secrets and variables → Actions → secret <code>LOVE_PUSH_SUBSCRIPTIONS</code>. Dán mã của <b>cả hai máy</b> vào một cặp ngoặc vuông, cách nhau dấu phẩy: <code>[mã máy anh, mã máy em]</code>.</li>
+        <li>Khi app báo “Mã đăng ký đã đổi”, làm lại bước 2–4 trên máy đó và thay mã cũ trong secret.</li>
+      </ol>
+      <label class="field">
+        <span class="field-label">Tên máy này</span>
+        <input type="text" id="pushLabel" maxlength="40" autocomplete="off" placeholder="Ví dụ: iPhone Long">
+      </label>
+      <div class="btn-pair">
+        <button type="button" class="btn btn-primary" id="btnPushEnable">Bật thông báo</button>
+        <button type="button" class="btn btn-soft" id="btnPushTest">Gửi thử thông báo trên máy này</button>
+      </div>
+      <p class="card-hint" id="pushTestNote" role="status" hidden></p>
+      <div class="push-sub" id="pushSubBox" hidden>
+        <label class="field">
+          <span class="field-label">Mã đăng ký của máy này</span>
+          <textarea id="pushSubJson" rows="5" readonly spellcheck="false"></textarea>
+        </label>
+        <button type="button" class="btn btn-soft btn-block" id="btnPushCopy">Sao chép</button>
+        <p class="card-hint" id="pushCopyNote" role="status">Mã này không phải mật khẩu nhưng chỉ nên dán vào secret, đừng đăng công khai.</p>
+      </div>
+      <p class="form-error" id="pushError" role="alert" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="storageTitle">
+      <h3 class="card-title" id="storageTitle">Bộ nhớ</h3>
+      <p class="card-text" id="storageInfo">Đang đo…</p>
+    </section>
+
+    <p class="diag" id="diagLine"></p>
+    <span class="safe-probe" id="safeProbe" aria-hidden="true"></span>
+  </section>
+
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Điều hướng" hidden>
+  <button type="button" class="tabbar-btn" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-6.5-4-8.3-8C2.4 9 4.2 5.5 7.4 5.5c1.9 0 3.1 1 3.8 2.1h1.6c.7-1.1 1.9-2.1 3.8-2.1 3.2 0 5 3.5 3.7 6.5-1.8 4-8.3 8-8.3 8z"/></svg>
+    <span>Trang chủ</span>
+  </button>
+  <button type="button" class="tabbar-btn" data-tab="milestones">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 17.2s-2.6-1.5-3.2-3c-.4-1 .3-2.1 1.3-2.1.7 0 1.2.4 1.5.8h.8c.3-.4.8-.8 1.5-.8 1 0 1.7 1.1 1.3 2.1-.6 1.5-3.2 3-3.2 3z" fill="currentColor" stroke="none"/></svg>
+    <span>Kỷ niệm</span>
+  </button>
+  <button type="button" class="tabbar-btn" data-tab="album">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
+    <span>Album</span>
+  </button>
+  <button type="button" class="tabbar-btn" data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span>Cài đặt</span>
+  </button>
+</nav>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+<div class="sheet" id="milestoneSheet" role="dialog" aria-modal="true" aria-labelledby="msSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="msSheetTitle">Thêm kỷ niệm</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="milestoneForm" novalidate>
+    <div class="field-row emoji-row">
+      <label class="field field-emoji">
+        <span class="field-label">Biểu tượng</span>
+        <input type="text" id="msEmoji" maxlength="8" placeholder="💗" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="field-label">Tên kỷ niệm</span>
+        <input type="text" id="msTitle" maxlength="80" placeholder="Ví dụ: Ngày gặp nhau" autocomplete="off" required>
+      </label>
+    </div>
+    <div class="emoji-picks" id="emojiPicks"></div>
+    <label class="field">
+      <span class="field-label">Ngày</span>
+      <input type="date" id="msDate" required>
+    </label>
+    <label class="field">
+      <span class="field-label">Ghi chú <em>(không bắt buộc)</em></span>
+      <textarea id="msNote" maxlength="500" rows="2"></textarea>
+    </label>
+    <label class="check">
+      <input type="checkbox" id="msRepeat">
+      <span class="switch" aria-hidden="true"></span>
+      <span>Lặp lại hằng năm</span>
+    </label>
+    <p class="form-error" id="msError" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block">Lưu kỷ niệm</button>
+    <button type="button" class="btn btn-danger btn-block" id="msDelete" hidden>Xoá kỷ niệm này</button>
+  </form>
+</div>
+
+<div class="sheet" id="importSheet" role="dialog" aria-modal="true" aria-labelledby="importSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="importSheetTitle">Nhập bản sao lưu</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div id="importContent"></div>
+</div>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Xem ảnh" hidden>
+  <div class="viewer-top">
+    <button type="button" class="viewer-btn" id="viewerClose" aria-label="Đóng, quay lại album">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <span class="viewer-count" id="viewerCount"></span>
+    <button type="button" class="viewer-btn" id="viewerDelete" aria-label="Xoá ảnh này">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+    </button>
+  </div>
+  <div class="viewer-stage" id="viewerStage">
+    <img id="viewerImg" alt="" draggable="false">
+  </div>
+  <button type="button" class="viewer-nav prev" id="viewerPrev" aria-label="Ảnh trước">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button type="button" class="viewer-nav next" id="viewerNext" aria-label="Ảnh sau">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <div class="viewer-bottom">
+    <p class="viewer-date" id="viewerDate"></p>
+    <button type="button" class="viewer-caption" id="viewerCaption"></button>
+    <form class="viewer-caption-form" id="viewerCaptionForm" hidden>
+      <input type="text" id="viewerCaptionInput" maxlength="200" placeholder="Viết vài chữ về khoảnh khắc này" autocomplete="off" aria-label="Chú thích ảnh">
+      <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+    </form>
+  </div>
+</div>
+
+<div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="versionSheetTitle">Lịch sử cập nhật</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div id="versionContent"></div>
+</div>
+
+<script src="../js/love-days-core.js"></script>
+<script src="../js/love-days-media.js"></script>
+<script src="../js/love-days-backup.js"></script>
+<script src="../js/love-days.js"></script>
+</body>
+</html>

@@ -1,0 +1,1644 @@
+(function(){
+  "use strict";
+
+  // VAPID PUBLIC key (base64url, 87 chars, starts with "B"): the "publicKey"
+  // half of `npx --yes web-push generate-vapid-keys --json`, run on your own
+  // machine OUTSIDE this repo. The matching privateKey goes ONLY into the
+  // GitHub secret LOVE_VAPID_PRIVATE_KEY — never into any file here (the repo
+  // is public and a Stop hook pushes every change). Empty = notifications off.
+  // Changing it invalidates every existing subscription (see docs/love-days.md).
+  var VAPID_PUBLIC_KEY = '';
+
+  var C = self.LoveCore, M = self.LoveMedia, B = self.LoveBackup;
+  var $ = function(id){ return document.getElementById(id); };
+
+  var PHOTO_IDS = ["avatar-long", "avatar-thu", "cover"];
+  var EMOJI_PICKS = ["💗", "💐", "💍", "✈️", "🏖️", "🎂", "🍰", "🎬", "🌙", "⭐"];
+  var WEEKDAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+
+  var state = {
+    db: null, profile: null, milestones: [], blobs: {}, urls: {},
+    computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false,
+    photos: [], albumOrder: [], arranging: false,
+    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken" }
+  };
+  var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
+  // One long job at a time: album add, backup build, import.
+  var busy = null;
+  var banners = {};
+
+  function now(){ return Date.now(); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  }
+  function fmtDate(s){ return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
+  function fmtDayMonth(s){ return s.slice(8, 10) + "/" + s.slice(5, 7); }
+  function weekday(s){ return WEEKDAYS[((C.dayIdx(s) + 4) % 7 + 7) % 7]; }
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+  var fmtInt = C.fmtInt;
+  function initial(name){
+    var parts = String(name).trim().split(/\s+/);
+    return (parts[parts.length - 1] || "♥").charAt(0).toUpperCase();
+  }
+  function daysLeftText(x){
+    if(x.daysLeft === 0) return "Hôm nay 🎉";
+    if(x.past) return "đã qua " + fmtInt(-x.daysLeft) + " ngày";
+    return "còn " + fmtInt(x.daysLeft) + " ngày";
+  }
+  function clockText(b){
+    return b.years + " năm " + b.months + " tháng " + b.days + " ngày · " + pad2(b.h) + ":" + pad2(b.mi) + ":" + pad2(b.s);
+  }
+  function showError(id, msg){ var el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+
+  // ---------- Banners ----------
+  // action: { label, run } adds a button to the banner.
+  function setBanner(key, text, kind, action){
+    if(text) banners[key] = { text: text, kind: kind || "warn", action: action || null }; else delete banners[key];
+    $("banners").innerHTML = Object.keys(banners).map(function(k){
+      var b = banners[k];
+      return '<div class="banner banner-' + b.kind + '"><span>' + escapeHtml(b.text) + "</span>" +
+        (b.action ? '<button type="button" class="banner-btn" data-banner="' + k + '">' + escapeHtml(b.action.label) + "</button>" : "") + "</div>";
+    }).join("");
+  }
+  $("banners").addEventListener("click", function(e){
+    var btn = e.target.closest("[data-banner]");
+    var b = btn && banners[btn.getAttribute("data-banner")];
+    if(b && b.action) b.action.run();
+  });
+
+  // ---------- Storage (IndexedDB, or memory when it can't be opened) ----------
+  function put(store, value){
+    if(state.db) return C.idbPut(state.db, store, value);
+    mem[store][store === "kv" ? value.key : value.id] = value;
+    return Promise.resolve();
+  }
+  function del(store, key){
+    if(state.db) return C.idbDelete(state.db, store, key);
+    delete mem[store][key];
+    return Promise.resolve();
+  }
+  function profileRecord(p){
+    return { key: "profile", startDate: p.startDate, persons: p.persons, hasCover: p.hasCover,
+             activeGen: C.genForWrite(p, state.photos).write, updatedAt: p.updatedAt };
+  }
+
+  function loadAll(){
+    var db = state.db;
+    var safe = function(p, fallback){ return p.catch(function(){ return fallback; }); };
+    // A failed read of profile/milestones/photos/meta rejects the whole load:
+    // treating it as "nothing stored" would show first-run setup and let the
+    // next save overwrite the real data. Only avatar/cover reads may fail soft.
+    return Promise.all([
+      C.idbGet(db, "kv", "profile"),
+      C.idbGetAll(db, "milestones"),
+      Promise.all(PHOTO_IDS.map(function(id){ return safe(C.idbGet(db, "blobs", id), undefined); })),
+      C.idbGetAll(db, "photos"),
+      C.idbGet(db, "kv", "meta")
+    ]).then(function(r){
+      var skipped = 0;
+      if(r[0] !== undefined){
+        state.profile = C.validateProfile(r[0], now());
+        if(!state.profile) skipped++;
+      }
+      state.milestones = r[1].map(function(m){
+        var v = C.validateMilestone(m);
+        if(!v) skipped++;
+        return v;
+      }).filter(Boolean);
+      r[2].forEach(function(b, i){
+        if(b === undefined) return;
+        var v = C.validateBlob(b);
+        if(!v){ skipped++; return; }
+        state.blobs[PHOTO_IDS[i]] = v;
+        setUrl(PHOTO_IDS[i]);
+      });
+      // Only trust activeGen when it was stored valid — validateProfile
+      // substitutes "g1" otherwise, and deleting by a guessed gen loses photos.
+      var gen = state.profile && state.profile.activeGenOk ? state.profile.activeGen : null;
+      state.photos = r[3].map(function(ph){
+        var v = C.validatePhoto(ph);
+        if(!v) skipped++;
+        return v;
+      }).filter(function(v){ return v && (!gen || v.gen === gen); });
+      var meta = r[4];
+      if(meta && typeof meta === "object"){
+        if(typeof meta.lastBackupAt === "number" && isFinite(meta.lastBackupAt)) state.meta.lastBackupAt = meta.lastBackupAt;
+        if(SORTS.indexOf(meta.albumSort) !== -1) state.meta.albumSort = meta.albumSort;
+      }
+      if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng trong dữ liệu đã lưu. Phần còn lại vẫn dùng bình thường.", "warn");
+      return C.cleanupGenerations(db, gen).catch(function(){});
+    });
+  }
+
+  function setUrl(id){
+    if(state.urls[id]) URL.revokeObjectURL(state.urls[id]);
+    var b = state.blobs[id];
+    state.urls[id] = b ? URL.createObjectURL(new Blob([b.data], { type: b.mime || "image/jpeg" })) : null;
+  }
+
+  // ---------- View switching ----------
+  function render(){
+    $("loadingView").hidden = true;
+    if(state.loadFailed){ showLoadFailed(); return; }
+    var p = state.profile;
+    if(!p || p.startStatus !== "ok") showSetup(); else showApp();
+  }
+
+  function showLoadFailed(){
+    state.mode = "failed";
+    stopClock();
+    $("tabbar").hidden = true;
+    $("setupView").hidden = true;
+    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
+    setBanner("load", "Không đọc được dữ liệu đã lưu. Dữ liệu vẫn còn trên máy và chưa bị thay đổi — hãy tải lại app.", "error",
+              { label: "Tải lại app", run: function(){ location.reload(); } });
+  }
+
+  function showSetup(){
+    state.mode = "setup";
+    stopClock();
+    $("tabbar").hidden = true;
+    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
+    $("setupView").hidden = false;
+    var today = C.todayStr(now());
+    ["setupStart", "setupDobLong", "setupDobThu"].forEach(function(id){ $(id).max = today; });
+    var p = state.profile;
+    if(p){
+      $("setupNameLong").value = p.persons[0].name;
+      $("setupNameThu").value = p.persons[1].name;
+      $("setupDobLong").value = p.persons[0].dob || "";
+      $("setupDobThu").value = p.persons[1].dob || "";
+      if(p.startStatus === "future"){
+        $("setupStart").value = p.startDate;
+        setBanner("start", "Ngày bắt đầu đã lưu (" + fmtDate(p.startDate) + ") nằm sau hôm nay — hãy kiểm tra ngày giờ của máy hoặc chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
+      } else {
+        setBanner("start", "Ngày bắt đầu đã lưu bị hỏng — hãy chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
+      }
+    }
+  }
+
+  function showApp(){
+    state.mode = "app";
+    setBanner("start", null);
+    $("setupView").hidden = true;
+    $("tabbar").hidden = false;
+    recompute();
+    renderHome();
+    renderMilestones();
+    fillProfileForm();
+    renderPhotoRows();
+    renderBackupCard();
+    switchTab(state.tab);
+    startClock();
+    updateBadge();
+  }
+
+  function switchTab(name){
+    if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
+    state.tab = name;
+    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
+    Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
+      if(b.getAttribute("data-tab") === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    if(name === "settings"){
+      refreshStorage(); renderDiag(); renderBackupCard(); renderPush();
+      refreshSub().then(function(){ renderPush(); checkPushChanged(); });
+    }
+    window.scrollTo(0, 0);
+    if(name === "album") renderAlbum();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
+    b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
+  });
+
+  // ---------- Home ----------
+  function recompute(){
+    var t = now();
+    state.computed = C.computeAll(state.profile, state.milestones, t);
+    state.lastIdx = C.todayIdx(t);
+  }
+
+  function paintImg(container, url){
+    var img = container.querySelector("img");
+    if(url){ img.src = url; img.hidden = false; container.classList.add("has-img"); }
+    else { img.removeAttribute("src"); img.hidden = true; container.classList.remove("has-img"); }
+  }
+
+  function renderHome(){
+    var p = state.profile, c = state.computed;
+    $("nameLong").textContent = p.persons[0].name;
+    $("nameThu").textContent = p.persons[1].name;
+    $("avatarLong").querySelector(".avatar-initial").textContent = initial(p.persons[0].name);
+    $("avatarThu").querySelector(".avatar-initial").textContent = initial(p.persons[1].name);
+    paintImg($("avatarLong"), state.urls["avatar-long"]);
+    paintImg($("avatarThu"), state.urls["avatar-thu"]);
+    paintImg($("cover"), state.urls.cover);
+    $("dayCount").textContent = fmtInt(c.n);
+    $("hoursCount").textContent = fmtInt(c.hours);
+    $("liveClock").textContent = clockText(c.breakdown);
+    $("sinceLine").textContent = "Bắt đầu từ " + weekday(p.startDate).toLowerCase() + ", " + fmtDate(p.startDate);
+
+    var u = c.upcoming;
+    $("upcomingBody").innerHTML = u ?
+      '<div class="up-row"><span class="up-emoji" aria-hidden="true">' + escapeHtml(u.emoji) + '</span>' +
+      '<div class="up-main"><p class="up-title">' + escapeHtml(u.title) + '</p><p class="up-date">' + weekday(u.date) + ", " + fmtDate(u.date) + "</p></div>" +
+      (u.daysLeft === 0
+        ? '<div class="up-left today">Hôm nay 🎉</div>'
+        : '<div class="up-left"><span class="up-num">' + fmtInt(u.daysLeft) + '</span><span class="up-unit">ngày nữa</span></div>') +
+      "</div>"
+      : '<p class="card-text">Chưa có mốc nào sắp tới.</p>';
+
+    $("birthdays").innerHTML = p.persons.map(function(person){
+      var b = null;
+      c.birthdays.forEach(function(x){ if(x.personId === person.id) b = x; });
+      if(!b){
+        return '<div class="card bday-card empty"><span class="bday-emoji" aria-hidden="true">🎂</span>' +
+          '<p class="bday-name">' + escapeHtml(person.name) + '</p><p class="bday-meta">Chưa có ngày sinh</p>' +
+          '<button type="button" class="btn btn-soft btn-sm" data-goto="settings">Thêm ngày sinh</button></div>';
+      }
+      return '<div class="card bday-card' + (b.daysLeft === 0 ? " today" : "") + '"><span class="bday-emoji" aria-hidden="true">🎂</span>' +
+        '<p class="bday-name">' + escapeHtml(person.name) + '</p>' +
+        '<p class="bday-age">' + b.age + ' tuổi</p>' +
+        '<p class="bday-meta">Sinh nhật ' + fmtDayMonth(b.date) + ' · tròn ' + b.turning + '</p>' +
+        '<p class="bday-left">' + daysLeftText(b) + '</p></div>';
+    }).join("");
+  }
+  $("birthdays").addEventListener("click", function(e){
+    var btn = e.target.closest("[data-goto]");
+    if(btn) switchTab(btn.getAttribute("data-goto"));
+  });
+
+  // ---------- Live clock + day rollover ----------
+  function tick(){
+    if(state.mode !== "app") return;
+    var t = now();
+    if(C.todayIdx(t) !== state.lastIdx){
+      recompute();
+      renderHome();
+      renderMilestones();
+      updateBadge();
+      return;
+    }
+    $("hoursCount").textContent = fmtInt(C.hoursTogether(state.profile.startDate, t));
+    $("liveClock").textContent = clockText(C.breakdown(state.profile.startDate, t));
+  }
+  function startClock(){
+    stopClock();
+    tick();
+    state.timer = setInterval(tick, 1000);
+  }
+  function stopClock(){
+    if(state.timer) clearInterval(state.timer);
+    state.timer = null;
+  }
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden"){ stopClock(); return; }
+    if(state.mode === "app"){ startClock(); updateBadge(); }
+  });
+
+  // Only when the user already granted notifications (Phase 2 asks); never
+  // prompts, never throws.
+  function updateBadge(){
+    try{
+      if(!state.computed || !("setAppBadge" in navigator)) return;
+      if(typeof Notification === "undefined" || Notification.permission !== "granted") return;
+      var r = navigator.setAppBadge(state.computed.n);
+      if(r && r.catch) r.catch(function(){});
+    }catch(e){}
+  }
+
+  // ---------- Milestones ----------
+  function renderMilestones(){
+    var list = state.computed.list;
+    $("milestoneList").innerHTML = list.map(function(x){
+      var sub = fmtDate(x.date);
+      if(x.kind === "birthday") sub += " · tròn " + x.turning + " tuổi";
+      else if(x.kind === "user" && x.repeatYearly) sub += " · hằng năm từ " + x.origDate.slice(0, 4);
+      else if(x.auto) sub += " · tự động";
+      var right = '<span class="ms-left' + (x.daysLeft === 0 ? " today" : x.past ? " past" : "") + '">' + daysLeftText(x) + "</span>";
+      var inner = '<span class="ms-emoji" aria-hidden="true">' + escapeHtml(x.emoji) + "</span>" +
+        '<span class="ms-main"><span class="ms-title">' + escapeHtml(x.title) + '</span><span class="ms-sub">' + escapeHtml(sub) + "</span></span>" + right;
+      if(x.auto) return '<li class="ms-item auto" data-ms-id="' + x.id + '">' + inner + "</li>";
+      return '<li class="ms-item-wrap"><button type="button" class="ms-item" data-ms-id="' + escapeHtml(x.id) + '">' + inner + "</button></li>";
+    }).join("");
+  }
+  $("milestoneList").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-ms-id]");
+    if(!btn) return;
+    var id = btn.getAttribute("data-ms-id");
+    var m = null;
+    state.milestones.forEach(function(x){ if(x.id === id) m = x; });
+    if(m) openMilestoneSheet(m);
+  });
+  $("btnAddMilestone").addEventListener("click", function(){ openMilestoneSheet(null); });
+
+  $("emojiPicks").innerHTML = EMOJI_PICKS.map(function(e){
+    return '<button type="button" class="emoji-pick" data-emoji="' + e + '" aria-label="Chọn ' + e + '">' + e + "</button>";
+  }).join("");
+  $("emojiPicks").addEventListener("click", function(e){
+    var b = e.target.closest("[data-emoji]");
+    if(b) $("msEmoji").value = b.getAttribute("data-emoji");
+  });
+
+  function openMilestoneSheet(m){
+    state.editingId = m ? m.id : null;
+    $("msSheetTitle").textContent = m ? "Sửa kỷ niệm" : "Thêm kỷ niệm";
+    $("msTitle").value = m ? m.title : "";
+    $("msDate").value = m ? m.date : C.todayStr(now());
+    $("msEmoji").value = m ? m.emoji : "";
+    $("msNote").value = m ? m.note : "";
+    $("msRepeat").checked = m ? m.repeatYearly : false;
+    $("msDelete").hidden = !m;
+    showError("msError", null);
+    openSheet("milestoneSheet");
+  }
+
+  $("milestoneForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var title = $("msTitle").value.trim(), date = $("msDate").value;
+    if(!title){ showError("msError", "Hãy đặt tên cho kỷ niệm."); return; }
+    if(!C.isValidDate(date)){ showError("msError", "Hãy chọn ngày hợp lệ."); return; }
+    var old = null;
+    state.milestones.forEach(function(x){ if(x.id === state.editingId) old = x; });
+    var rec = C.validateMilestone({
+      id: old ? old.id : "m" + now().toString(36) + Math.random().toString(36).slice(2, 7),
+      title: title, date: date, emoji: $("msEmoji").value.trim().slice(0, 8), note: $("msNote").value.trim(),
+      repeatYearly: $("msRepeat").checked, createdAt: old ? old.createdAt : now()
+    });
+    if(!rec){ showError("msError", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    put("milestones", rec).then(function(){
+      state.milestones = state.milestones.filter(function(x){ return x.id !== rec.id; }).concat([rec]);
+      dataChanged();
+      closeSheets();
+      recompute(); renderHome(); renderMilestones();
+    }, function(){ showError("msError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
+  });
+
+  $("msDelete").addEventListener("click", function(){
+    var id = state.editingId;
+    var m = null;
+    state.milestones.forEach(function(x){ if(x.id === id) m = x; });
+    if(!m || !window.confirm('Xoá kỷ niệm "' + m.title + '"?')) return;
+    del("milestones", id).then(function(){
+      state.milestones = state.milestones.filter(function(x){ return x.id !== id; });
+      dataChanged();
+      closeSheets();
+      recompute(); renderHome(); renderMilestones();
+    }, function(){ showError("msError", "Không xoá được. Hãy thử lại."); });
+  });
+
+  // ---------- Profile (setup + settings share validation) ----------
+  function readProfileInputs(ids){
+    var start = $(ids.start).value;
+    var st = C.checkStartDate(start, now());
+    if(st === "invalid") return { error: "Hãy chọn ngày bắt đầu yêu nhau." };
+    if(st === "future") return { error: "Ngày bắt đầu không được sau hôm nay." };
+    var names = [$(ids.nameLong).value.trim(), $(ids.nameThu).value.trim()];
+    if(!names[0] || !names[1]) return { error: "Hãy nhập tên của cả hai bạn." };
+    var dobs = [$(ids.dobLong).value, $(ids.dobThu).value];
+    for(var i = 0; i < 2; i++){
+      if(!dobs[i]){ dobs[i] = null; continue; }
+      var ds = C.checkStartDate(dobs[i], now());
+      if(ds === "invalid") return { error: "Ngày sinh chưa hợp lệ." };
+      if(ds === "future") return { error: "Ngày sinh không được sau hôm nay." };
+    }
+    var old = state.profile;
+    return { record: {
+      key: "profile", startDate: start,
+      persons: [{ id: "long", name: names[0], dob: dobs[0] }, { id: "thu", name: names[1], dob: dobs[1] }],
+      hasCover: old ? old.hasCover : false,
+      activeGen: C.genForWrite(old, state.photos).write,
+      updatedAt: now()
+    } };
+  }
+
+  function saveProfile(rec){
+    if(state.loadFailed) return Promise.reject(new Error("load failed"));
+    return put("kv", rec).then(function(){
+      state.profile = C.validateProfile(rec, now());
+      dataChanged();
+    });
+  }
+
+  $("setupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var r = readProfileInputs({ start: "setupStart", nameLong: "setupNameLong", nameThu: "setupNameThu", dobLong: "setupDobLong", dobThu: "setupDobThu" });
+    if(r.error){ showError("setupError", r.error); return; }
+    showError("setupError", null);
+    saveProfile(r.record).then(function(){
+      requestPersist();
+      state.tab = "home";
+      showApp();
+    }, function(){ showError("setupError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
+  });
+
+  function fillProfileForm(){
+    var p = state.profile, today = C.todayStr(now());
+    $("pfStart").value = p.startDate;
+    $("pfNameLong").value = p.persons[0].name;
+    $("pfNameThu").value = p.persons[1].name;
+    $("pfDobLong").value = p.persons[0].dob || "";
+    $("pfDobThu").value = p.persons[1].dob || "";
+    ["pfStart", "pfDobLong", "pfDobThu"].forEach(function(id){ $(id).max = today; });
+    $("labelAvatarLong").textContent = p.persons[0].name;
+    $("labelAvatarThu").textContent = p.persons[1].name;
+  }
+
+  var okTimer = null;
+  $("profileForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var r = readProfileInputs({ start: "pfStart", nameLong: "pfNameLong", nameThu: "pfNameThu", dobLong: "pfDobLong", dobThu: "pfDobThu" });
+    if(r.error){ showError("profileError", r.error); $("profileOk").hidden = true; return; }
+    showError("profileError", null);
+    saveProfile(r.record).then(function(){
+      recompute(); renderHome(); renderMilestones(); fillProfileForm(); updateBadge();
+      $("profileOk").hidden = false;
+      clearTimeout(okTimer);
+      okTimer = setTimeout(function(){ $("profileOk").hidden = true; }, 2500);
+    }, function(){ showError("profileError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
+  });
+
+  // ---------- Avatar / cover ----------
+  var THUMB_IDS = { "avatar-long": "thumbAvatarLong", "avatar-thu": "thumbAvatarThu", cover: "thumbCover" };
+  function renderPhotoRows(){
+    var p = state.profile;
+    PHOTO_IDS.forEach(function(id){
+      var box = $(THUMB_IDS[id]);
+      paintImg(box, state.urls[id]);
+      box.querySelector("span").textContent = id === "cover" ? "♥" : initial(p.persons[id === "avatar-long" ? 0 : 1].name);
+      document.querySelector('[data-remove="' + id + '"]').hidden = !state.blobs[id];
+    });
+  }
+
+  function handlePhoto(id, input){
+    var file = input.files && input.files[0];
+    if(!file) return;
+    showError("photoError", null);
+    $("photoBusy").hidden = false;
+    var job = id === "cover" ? M.compressCover(file) : M.compressAvatar(file);
+    job.then(function(res){
+      var rec = { id: id, gen: C.genForWrite(state.profile, state.photos).tag, mime: res.mime, data: res.data, thumb: null, w: res.w, h: res.h };
+      return put("blobs", rec).then(function(){
+        state.blobs[id] = rec;
+        setUrl(id);
+        if(id === "cover" && !state.profile.hasCover){
+          state.profile.hasCover = true;
+          return put("kv", profileRecord(state.profile));
+        }
+      });
+    }).then(function(){
+      dataChanged();
+      renderPhotoRows(); renderHome();
+    }, function(){
+      showError("photoError", 'Không xử lý được ảnh "' + file.name + '". Hãy thử ảnh khác.');
+    }).then(function(){
+      $("photoBusy").hidden = true;
+      input.value = "";
+    });
+  }
+  $("fileAvatarLong").addEventListener("change", function(){ handlePhoto("avatar-long", this); });
+  $("fileAvatarThu").addEventListener("change", function(){ handlePhoto("avatar-thu", this); });
+  $("fileCover").addEventListener("change", function(){ handlePhoto("cover", this); });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-remove]"), function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-remove");
+      if(!window.confirm(id === "cover" ? "Gỡ ảnh bìa?" : "Gỡ ảnh đại diện này?")) return;
+      del("blobs", id).then(function(){
+        delete state.blobs[id];
+        setUrl(id);
+        if(id === "cover"){
+          state.profile.hasCover = false;
+          return put("kv", profileRecord(state.profile));
+        }
+      }).then(function(){ dataChanged(); renderPhotoRows(); renderHome(); }, function(){
+        showError("photoError", "Không gỡ được ảnh. Hãy thử lại.");
+      });
+    });
+  });
+
+  // ---------- Album storage (IndexedDB, or memory) ----------
+  var SORTS = ["taken", "added", "custom"];
+
+  function readBlob(id){
+    if(state.db) return C.idbGet(state.db, "blobs", id).then(function(b){ return C.validateBlob(b); }, function(){ return null; });
+    return Promise.resolve(mem.blobs[id] || null);
+  }
+  function readBlobs(ids){
+    if(!state.db) return Promise.resolve(ids.map(function(id){ return mem.blobs[id] || null; }));
+    var st;
+    try{ st = state.db.transaction("blobs").objectStore("blobs"); }catch(e){ return Promise.resolve(ids.map(function(){ return null; })); }
+    return Promise.all(ids.map(function(id){ return C.reqP(st.get(id)).catch(function(){ return null; }); }));
+  }
+  function putPhotoAndBlob(photo, blob){
+    if(!state.db){ mem.photos[photo.id] = photo; mem.blobs[blob.id] = blob; return Promise.resolve(); }
+    var tx = state.db.transaction(["photos", "blobs"], "readwrite");
+    tx.objectStore("blobs").put(blob);
+    tx.objectStore("photos").put(photo);
+    return C.txDone(tx);
+  }
+  function putPhotos(list){
+    if(!state.db){ list.forEach(function(p){ mem.photos[p.id] = p; }); return Promise.resolve(); }
+    var tx = state.db.transaction("photos", "readwrite");
+    list.forEach(function(p){ tx.objectStore("photos").put(p); });
+    return C.txDone(tx);
+  }
+  function deletePhoto(id){
+    if(!state.db){ delete mem.photos[id]; delete mem.blobs[id]; return Promise.resolve(); }
+    var tx = state.db.transaction(["photos", "blobs"], "readwrite");
+    tx.objectStore("photos").delete(id);
+    tx.objectStore("blobs").delete(id);
+    return C.txDone(tx);
+  }
+  function saveMeta(){ return put("kv", state.meta).catch(function(){}); }
+  function photoById(id){
+    for(var i = 0; i < state.photos.length; i++) if(state.photos[i].id === id) return state.photos[i];
+    return null;
+  }
+  function newPhotoId(){ return "p" + now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function vnDate(ms){ return fmtDate(C.todayStr(ms)); }
+  function photoDateText(p){ return p.takenAt != null ? "Chụp " + vnDate(p.takenAt) : "Thêm vào " + vnDate(p.addedAt); }
+
+  // ---------- Album grid ----------
+  // Ngày chụp: oldest first (the story in order; no EXIF → date added).
+  // Ngày thêm: newest first, so just-added photos are on top.
+  function sortedPhotos(){
+    var s = state.meta.albumSort;
+    return state.photos.slice().sort(function(a, b){
+      if(s === "custom") return a.order - b.order || a.addedAt - b.addedAt || (a.id < b.id ? -1 : 1);
+      if(s === "added") return b.addedAt - a.addedAt || b.order - a.order || (a.id < b.id ? -1 : 1);
+      var ka = a.takenAt != null ? a.takenAt : a.addedAt, kb = b.takenAt != null ? b.takenAt : b.addedAt;
+      return ka - kb || a.addedAt - b.addedAt || (a.id < b.id ? -1 : 1);
+    });
+  }
+
+  var thumbUrls = {}, thumbWanted = [], thumbTimer = null;
+  var thumbIO = "IntersectionObserver" in window ? new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      thumbIO.unobserve(e.target);
+      wantThumb(e.target.getAttribute("data-id"));
+    });
+  }, { rootMargin: "700px 0px" }) : null;
+
+  function wantThumb(id){
+    thumbWanted.push(id);
+    if(!thumbTimer) thumbTimer = setTimeout(flushThumbs, 16);
+  }
+  function flushThumbs(){
+    thumbTimer = null;
+    var ids = thumbWanted.filter(function(id, i, a){ return a.indexOf(id) === i && !thumbUrls[id]; });
+    thumbWanted = [];
+    if(!ids.length) return;
+    readBlobs(ids).then(function(recs){
+      recs.forEach(function(rec, i){
+        var id = ids[i];
+        if(!rec || thumbUrls[id] || state.tab !== "album" || !photoById(id)) return;
+        var buf = rec.thumb instanceof ArrayBuffer && rec.thumb.byteLength ? rec.thumb : rec.data;
+        if(!(buf instanceof ArrayBuffer)) return;
+        thumbUrls[id] = URL.createObjectURL(new Blob([buf], { type: "image/jpeg" }));
+        var img = document.querySelector('.album-tile[data-id="' + id + '"] img');
+        if(img) img.src = thumbUrls[id];
+      });
+    });
+  }
+  function revokeThumb(id){
+    if(thumbUrls[id]){ URL.revokeObjectURL(thumbUrls[id]); delete thumbUrls[id]; }
+  }
+  function releaseAlbumThumbs(){
+    if(thumbIO) thumbIO.disconnect();
+    $("albumGrid").innerHTML = "";
+    Object.keys(thumbUrls).forEach(revokeThumb);
+  }
+
+  var ICON_PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  var ICON_NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
+  function renderAlbum(){
+    var list = sortedPhotos(), n = list.length, sort = state.meta.albumSort;
+    state.albumOrder = list.map(function(p){ return p.id; });
+    $("albumSub").textContent = n ? fmtInt(n) + " ảnh · chạm vào ảnh để xem lớn" : "Ảnh chung của hai bạn, chỉ lưu trên máy này.";
+    $("albumTools").hidden = n === 0;
+    $("albumEmpty").hidden = n !== 0 || busy === "album";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-sort]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-sort") === sort ? "true" : "false");
+    });
+    var custom = sort === "custom";
+    if(!custom || n < 2) state.arranging = false;
+    $("arrangeRow").hidden = !custom || n < 2;
+    $("btnArrange").textContent = state.arranging ? "Xong" : "Sắp xếp";
+    $("btnArrange").className = "btn btn-sm " + (state.arranging ? "btn-primary" : "btn-soft");
+    $("arrangeHint").textContent = state.arranging ? "Dùng mũi tên để đổi chỗ, “Lên đầu” để đưa ảnh về đầu album." : "Thứ tự do hai bạn tự sắp.";
+    $("albumGrid").classList.toggle("arranging", state.arranging);
+
+    var present = {};
+    list.forEach(function(p){ present[p.id] = true; });
+    Object.keys(thumbUrls).forEach(function(id){ if(!present[id]) revokeThumb(id); });
+    if(thumbIO) thumbIO.disconnect();
+
+    $("albumGrid").innerHTML = list.map(function(p, i){
+      var src = thumbUrls[p.id] ? ' src="' + thumbUrls[p.id] + '"' : "";
+      if(state.arranging){
+        var pos = i + 1;
+        return '<li class="album-tile" data-id="' + p.id + '"><div class="album-thumb"><img alt=""' + src + '><span class="tile-pos">' + pos + "</span></div>" +
+          '<div class="tile-ctrls">' +
+          '<button type="button" class="tile-btn" data-move="-1" aria-label="Đưa ảnh ' + pos + ' lên trước"' + (i === 0 ? " disabled" : "") + ">" + ICON_PREV + "</button>" +
+          '<button type="button" class="tile-btn" data-move="1" aria-label="Đưa ảnh ' + pos + ' ra sau"' + (i === n - 1 ? " disabled" : "") + ">" + ICON_NEXT + "</button>" +
+          '<button type="button" class="tile-btn tile-top" data-move="top"' + (i === 0 ? " disabled" : "") + ">Lên đầu</button>" +
+          "</div></li>";
+      }
+      var label = "Ảnh " + (i + 1) + ", " + photoDateText(p).toLowerCase() + (p.caption ? ": " + p.caption : "");
+      return '<li class="album-tile" data-id="' + p.id + '"><button type="button" class="album-thumb" data-open="' + p.id + '" aria-label="' + escapeHtml(label) + '"><img alt=""' + src + "></button></li>";
+    }).join("");
+
+    Array.prototype.forEach.call($("albumGrid").children, function(li){
+      var id = li.getAttribute("data-id");
+      if(thumbUrls[id]) return;
+      if(thumbIO) thumbIO.observe(li); else wantThumb(id);
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-sort]"), function(b){
+    b.addEventListener("click", function(){
+      var s = b.getAttribute("data-sort");
+      if(s === state.meta.albumSort) return;
+      state.meta.albumSort = s;
+      state.arranging = false;
+      saveMeta();
+      renderAlbum();
+    });
+  });
+  $("btnArrange").addEventListener("click", function(){
+    state.arranging = !state.arranging;
+    renderAlbum();
+  });
+
+  $("albumGrid").addEventListener("click", function(e){
+    var mv = e.target.closest("[data-move]");
+    if(mv){
+      if(!mv.disabled) movePhoto(mv.closest(".album-tile").getAttribute("data-id"), mv.getAttribute("data-move"));
+      return;
+    }
+    var open = e.target.closest("[data-open]");
+    if(open) openViewer(open.getAttribute("data-open"));
+  });
+
+  // Renumbers order 0..n-1 in the new sequence and writes only the photos
+  // whose order actually changed (one transaction).
+  function movePhoto(id, how){
+    if(busy) return;
+    var list = sortedPhotos();
+    var idx = -1;
+    list.forEach(function(p, i){ if(p.id === id) idx = i; });
+    if(idx < 0) return;
+    var item = list.splice(idx, 1)[0];
+    var to = how === "top" ? 0 : Math.max(0, Math.min(list.length, idx + (+how)));
+    list.splice(to, 0, item);
+    var changed = [];
+    list.forEach(function(p, i){ if(p.order !== i) changed.push(Object.assign({}, p, { order: i })); });
+    if(!changed.length) return;
+    putPhotos(changed).then(function(){
+      changed.forEach(function(c){
+        for(var i = 0; i < state.photos.length; i++) if(state.photos[i].id === c.id) state.photos[i] = c;
+      });
+      dataChanged();
+      renderAlbum();
+      var sel = '.album-tile[data-id="' + id + '"] [data-move="' + how + '"]';
+      var again = document.querySelector(sel);
+      if(again && !again.disabled) again.focus({ preventScroll: true });
+    }, function(){ showError("albumError", "Không lưu được thứ tự mới. Hãy thử lại."); });
+  }
+
+  // ---------- Album: add photos ----------
+  $("fileAlbum").addEventListener("change", function(){
+    var files = Array.prototype.slice.call(this.files || []);
+    this.value = "";
+    if(files.length) addPhotos(files);
+  });
+
+  function setAlbumBusy(on){
+    $("albumAdd").classList.toggle("is-busy", on);
+    $("fileAlbum").disabled = on;
+  }
+
+  async function addPhotos(files){
+    if(busy){ showError("albumError", "Đang có việc khác chạy (sao lưu hoặc nhập). Hãy đợi xong rồi thêm ảnh."); return; }
+    busy = "album";
+    setAlbumBusy(true);
+    showError("albumError", null);
+    $("albumNote").hidden = true;
+    var total = files.length, saved = 0, dupes = 0, failed = [], quotaAt = -1;
+    var shas = {}, baseOrder = 0, addedBase = now();
+    state.photos.forEach(function(p){
+      if(p.sha256) shas[p.sha256] = true;
+      if(p.order + 1 > baseOrder) baseOrder = p.order + 1;
+    });
+    var gen = C.genForWrite(state.profile, state.photos).tag;
+    for(var i = 0; i < total; i++){
+      $("albumProgress").hidden = false;
+      $("albumProgress").textContent = "Đang xử lý " + (i + 1) + "/" + total + "…";
+      var file = files[i], name = file.name || "ảnh " + (i + 1), res;
+      try{ res = await M.compressAlbum(file); }
+      catch(e){ failed.push(name); continue; }
+      if(res.sha256 && shas[res.sha256]){ dupes++; continue; }
+      var id = newPhotoId();
+      var photo = { id: id, gen: gen, caption: "", takenAt: res.takenAt, addedAt: addedBase + i,
+                    order: baseOrder + saved, w: res.w, h: res.h, bytes: res.bytes, sha256: res.sha256 };
+      try{
+        await putPhotoAndBlob(photo, { id: id, gen: gen, mime: res.mime, data: res.data, thumb: res.thumb });
+      }catch(e){
+        if(B.isQuota(e)){ quotaAt = i; break; }
+        failed.push(name);
+        continue;
+      }
+      res = null;
+      if(photo.sha256) shas[photo.sha256] = true;
+      state.photos.push(photo);
+      saved++;
+      if(state.tab === "album") renderAlbum();
+    }
+    busy = null;
+    setAlbumBusy(false);
+    $("albumProgress").hidden = true;
+    if(saved){ dataChanged(); requestPersist(); }
+    var errs = [];
+    if(quotaAt >= 0) errs.push("Bộ nhớ máy đã đầy — đã lưu " + saved + "/" + total + " ảnh, phần còn lại chưa được thêm. Hãy giải phóng dung lượng máy rồi thử lại.");
+    if(failed.length) errs.push("Không đọc được " + failed.length + " ảnh: " + failed.slice(0, 5).join(", ") + (failed.length > 5 ? "…" : "") + ". Có thể định dạng không được hỗ trợ (ví dụ HEIC) — hãy thử ảnh JPEG hoặc PNG.");
+    showError("albumError", errs.join(" ") || null);
+    var notes = [];
+    if(saved) notes.push("Đã thêm " + saved + " ảnh.");
+    if(dupes) notes.push("Bỏ qua " + dupes + " ảnh đã có trong album.");
+    $("albumNote").textContent = notes.join(" ");
+    $("albumNote").hidden = !notes.length;
+    if(state.tab === "album") renderAlbum();
+  }
+
+  // ---------- Viewer ----------
+  // A fixed overlay on top of the album: no navigation, so closing lands on
+  // the same grid. The page behind is locked with body{position:fixed} (iOS
+  // ignores overflow:hidden on body) and scrollY is restored on close.
+  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false };
+
+  function lockScroll(){
+    viewer.scrollY = window.scrollY;
+    var b = document.body.style;
+    b.position = "fixed"; b.top = -viewer.scrollY + "px"; b.left = "0"; b.right = "0"; b.width = "100%";
+  }
+  function unlockScroll(){
+    var b = document.body.style;
+    b.position = ""; b.top = ""; b.left = ""; b.right = ""; b.width = "";
+    window.scrollTo(0, viewer.scrollY);
+  }
+
+  function openViewer(id){
+    var idx = state.albumOrder.indexOf(id);
+    if(idx < 0) return;
+    viewer.ids = state.albumOrder.slice();
+    viewer.open = true;
+    viewer.dirty = false;
+    lockScroll();
+    $("viewer").hidden = false;
+    showViewerAt(idx);
+    $("viewerClose").focus({ preventScroll: true });
+  }
+
+  function closeViewer(){
+    if(!viewer.open) return;
+    viewer.open = false;
+    endCaptionEdit();
+    $("viewer").hidden = true;
+    $("viewerImg").removeAttribute("src");
+    Object.keys(viewer.urls).forEach(dropFull);
+    if(viewer.dirty) renderAlbum();
+    unlockScroll();
+    var tile = document.querySelector('.album-tile[data-id="' + viewer.ids[viewer.index] + '"] .album-thumb');
+    if(tile && tile.focus) tile.focus({ preventScroll: true });
+  }
+
+  function loadFull(id){
+    if(!viewer.urls[id]){
+      viewer.urls[id] = readBlob(id).then(function(rec){
+        if(!rec) return null;
+        return URL.createObjectURL(new Blob([rec.data], { type: rec.mime || "image/jpeg" }));
+      });
+    }
+    return viewer.urls[id];
+  }
+  function dropFull(id){
+    var p = viewer.urls[id];
+    delete viewer.urls[id];
+    if(p) p.then(function(url){ if(url) URL.revokeObjectURL(url); });
+  }
+
+  function showViewerAt(i){
+    var ids = viewer.ids;
+    viewer.index = i;
+    var id = ids[i], p = photoById(id);
+    if(!p) return;
+    endCaptionEdit();
+    $("viewerCount").textContent = (i + 1) + " / " + ids.length;
+    $("viewerDate").textContent = photoDateText(p);
+    renderCaption(p);
+    $("viewerPrev").disabled = i === 0;
+    $("viewerNext").disabled = i === ids.length - 1;
+    var img = $("viewerImg");
+    img.style.transform = "";
+    if(thumbUrls[id]) img.src = thumbUrls[id]; else img.removeAttribute("src");
+    img.alt = p.caption || photoDateText(p);
+    loadFull(id).then(function(url){
+      if(url && viewer.open && viewer.ids[viewer.index] === id) img.src = url;
+    });
+    var keep = {};
+    [i - 1, i, i + 1].forEach(function(k){ if(k >= 0 && k < ids.length) keep[ids[k]] = true; });
+    Object.keys(viewer.urls).forEach(function(k){ if(!keep[k]) dropFull(k); });
+    [i - 1, i + 1].forEach(function(k){
+      if(k < 0 || k >= ids.length) return;
+      loadFull(ids[k]).then(function(url){
+        if(!url) return;
+        var pre = new Image();
+        pre.src = url;
+        if(pre.decode) pre.decode().catch(function(){});
+      });
+    });
+  }
+
+  function viewerStep(d){
+    var k = viewer.index + d;
+    if(k < 0 || k >= viewer.ids.length) return;
+    showViewerAt(k);
+  }
+
+  function renderCaption(p){
+    var b = $("viewerCaption");
+    b.textContent = p.caption || "Thêm chú thích…";
+    b.classList.toggle("empty", !p.caption);
+  }
+  function startCaptionEdit(){
+    var p = photoById(viewer.ids[viewer.index]);
+    if(!p) return;
+    viewer.editing = true;
+    $("viewerCaption").hidden = true;
+    $("viewerCaptionForm").hidden = false;
+    $("viewerCaptionInput").value = p.caption;
+    $("viewerCaptionInput").focus();
+  }
+  function endCaptionEdit(){
+    viewer.editing = false;
+    $("viewerCaptionForm").hidden = true;
+    $("viewerCaption").hidden = false;
+  }
+  $("viewerCaption").addEventListener("click", startCaptionEdit);
+  $("viewerCaptionForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var p = photoById(viewer.ids[viewer.index]);
+    if(!p) return;
+    var cap = $("viewerCaptionInput").value.trim().slice(0, 200);
+    if(cap === p.caption){ endCaptionEdit(); return; }
+    var rec = Object.assign({}, p, { caption: cap });
+    endCaptionEdit();
+    renderCaption(rec);
+    putPhotos([rec]).then(function(){
+      for(var i = 0; i < state.photos.length; i++) if(state.photos[i].id === rec.id) state.photos[i] = rec;
+      viewer.dirty = true;
+      dataChanged();
+    }, function(){
+      if(viewer.open && viewer.ids[viewer.index] === p.id){
+        renderCaption(p);
+        $("viewerCaption").textContent = "Không lưu được chú thích. Chạm để thử lại.";
+      }
+    });
+  });
+
+  $("viewerClose").addEventListener("click", closeViewer);
+  $("viewerPrev").addEventListener("click", function(){ viewerStep(-1); });
+  $("viewerNext").addEventListener("click", function(){ viewerStep(1); });
+  $("viewerDelete").addEventListener("click", function(){
+    var id = viewer.ids[viewer.index];
+    if(!photoById(id) || busy) return;
+    if(!window.confirm("Xoá ảnh này khỏi album? Không thể hoàn tác.")) return;
+    deletePhoto(id).then(function(){
+      state.photos = state.photos.filter(function(p){ return p.id !== id; });
+      dropFull(id);
+      revokeThumb(id);
+      viewer.ids.splice(viewer.index, 1);
+      viewer.dirty = true;
+      dataChanged();
+      if(!viewer.ids.length){ closeViewer(); return; }
+      showViewerAt(Math.min(viewer.index, viewer.ids.length - 1));
+    }, function(){ window.alert("Không xoá được ảnh. Hãy thử lại."); });
+  });
+
+  function onViewerKey(e){
+    if(viewer.editing){
+      if(e.key === "Escape"){ e.preventDefault(); endCaptionEdit(); }
+      return;
+    }
+    if(e.key === "Escape"){ e.preventDefault(); closeViewer(); }
+    else if(e.key === "ArrowLeft"){ e.preventDefault(); viewerStep(-1); }
+    else if(e.key === "ArrowRight"){ e.preventDefault(); viewerStep(1); }
+  }
+
+  (function(){
+    var stage = $("viewerStage"), img = $("viewerImg");
+    var sx = 0, sy = 0, dx = 0, active = false, horizontal = null;
+    stage.addEventListener("pointerdown", function(e){
+      if(viewer.editing || (e.pointerType === "mouse" && e.button !== 0)) return;
+      active = true; sx = e.clientX; sy = e.clientY; dx = 0; horizontal = null;
+      img.style.transition = "none";
+      try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    stage.addEventListener("pointermove", function(e){
+      if(!active) return;
+      var mx = e.clientX - sx, my = e.clientY - sy;
+      if(horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) horizontal = Math.abs(mx) > Math.abs(my);
+      if(!horizontal) return;
+      dx = mx;
+      var atEdge = (dx > 0 && viewer.index === 0) || (dx < 0 && viewer.index === viewer.ids.length - 1);
+      img.style.transform = "translateX(" + (atEdge ? dx / 3 : dx) + "px)";
+    });
+    function end(){
+      if(!active) return;
+      active = false;
+      img.style.transition = "";
+      img.style.transform = "";
+      if(horizontal && dx <= -50) viewerStep(1);
+      else if(horizontal && dx >= 50) viewerStep(-1);
+      dx = 0;
+    }
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
+  })();
+
+  // ---------- Backup: export ----------
+  var backup = { prepared: null, version: 0, saved: false };
+
+  // Any edit makes a prepared file stale.
+  function dataChanged(){
+    backup.version++;
+    if(backup.prepared){
+      backup.prepared = null;
+      backup.saved = false;
+      renderBackupCard();
+    }
+  }
+  function fmtStamp(ms){
+    var w = C.wall(ms);
+    return pad2(w.h) + ":" + pad2(w.mi) + " · " + pad2(w.d) + "/" + pad2(w.m) + "/" + w.y;
+  }
+  function backupContents(c){
+    var parts = [fmtInt(c.photos) + " ảnh", fmtInt(c.milestones) + " kỷ niệm"];
+    if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
+    return parts.join(", ");
+  }
+
+  function renderBackupCard(){
+    var last = state.meta.lastBackupAt, p = backup.prepared;
+    $("backupLast").textContent = last ? "Lần sao lưu gần nhất: " + fmtStamp(last) : "Chưa sao lưu lần nào.";
+    $("backupLast").classList.toggle("stale", !last || now() - last > 30 * C.DAY);
+    $("btnPrepare").hidden = !!p;
+    $("btnPrepare").disabled = !!busy;
+    $("btnSaveBackup").hidden = !p;
+    if(p) $("btnSaveBackup").textContent = "Lưu file (" + fmtMB(p.size) + ")";
+    $("fileImport").disabled = !!busy;
+    $("importLabel").classList.toggle("is-busy", !!busy);
+    if(busy !== "backup"){
+      $("backupStatus").textContent = p
+        ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · gồm " + backupContents(p.counts) + ". Trên iPhone, chọn “Lưu vào Tệp”."
+        : "Bản sao lưu là một file .zip gồm hồ sơ, kỷ niệm và toàn bộ ảnh. Trên iPhone, chọn “Lưu vào Tệp”.";
+    }
+  }
+
+  function prepareBackup(onProgress){
+    var version = backup.version;
+    busy = "backup";
+    return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos, readBlob: readBlob },
+                         now(), onProgress).then(function(r){
+      busy = null;
+      if(version === backup.version){ backup.prepared = r; backup.saved = false; }
+      return r;
+    }, function(err){ busy = null; throw err; });
+  }
+
+  // Must run synchronously inside the tap: Safari drops the user activation
+  // after a long await and navigator.share() then throws NotAllowedError —
+  // that's why preparing and saving are two separate buttons.
+  function saveBackupFile(p, done){
+    var f = p.file;
+    try{
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })){
+        navigator.share({ files: [f] }).then(function(){ markBackedUp(); done(true); }, function(err){
+          if(err && err.name === "AbortError") done(false, null);
+          else done(false, "Không mở được bảng chia sẻ của máy (" + (err && err.name || "lỗi") + "). Hãy thử lại.");
+        });
+        return;
+      }
+    }catch(e){}
+    var url = URL.createObjectURL(f);
+    var a = document.createElement("a");
+    a.href = url; a.download = p.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoking right away can abort the download on iOS Safari.
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+    markBackedUp();
+    done(true);
+  }
+  function markBackedUp(){
+    state.meta.lastBackupAt = now();
+    backup.saved = true;
+    saveMeta().then(renderBackupCard);
+  }
+
+  $("btnPrepare").addEventListener("click", function(){
+    if(busy){ showError("backupError", "Đang có việc khác chạy. Hãy đợi xong rồi thử lại."); return; }
+    showError("backupError", null);
+    $("btnPrepare").disabled = true;
+    prepareBackup(function(d, t){ $("backupStatus").textContent = "Đang chuẩn bị " + d + "/" + t + "…"; })
+      .then(function(){ renderBackupCard(); }, function(err){
+        renderBackupCard();
+        showError("backupError", (err && err.userMessage) || "Không tạo được bản sao lưu. Hãy thử lại.");
+      });
+  });
+  $("btnSaveBackup").addEventListener("click", function(){
+    if(!backup.prepared) return;
+    showError("backupError", null);
+    saveBackupFile(backup.prepared, function(ok, msg){
+      if(msg) showError("backupError", msg);
+      renderBackupCard();
+    });
+  });
+
+  // ---------- Backup: import ----------
+  var imp = { phase: "idle", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null };
+
+  function localSnapshot(){
+    var hasBlob = {};
+    PHOTO_IDS.forEach(function(id){ hasBlob[id] = !!state.blobs[id]; });
+    return {
+      profileOk: !!(state.profile && state.profile.startStatus === "ok"),
+      profile: state.profile, photos: state.photos, milestones: state.milestones, hasBlob: hasBlob
+    };
+  }
+  function hasLocalData(){
+    var l = localSnapshot();
+    return l.profileOk || l.photos.length > 0 || l.milestones.length > 0;
+  }
+
+  function onImportFile(input){
+    var f = input.files && input.files[0];
+    input.value = "";
+    if(!f) return;
+    imp = { phase: "checking", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null };
+    if(busy){
+      imp.phase = "error";
+      imp.error = "Đang có việc khác chạy (thêm ảnh hoặc sao lưu). Hãy đợi xong rồi nhập lại.";
+    } else if(state.loadFailed){
+      imp.phase = "error";
+      imp.error = "Chưa đọc được dữ liệu đang có trên máy nên chưa nhập, để không ghi đè lên nó. Hãy tải lại app rồi thử lại.";
+    } else if(!state.db){
+      imp.phase = "error";
+      imp.error = "Không mở được bộ nhớ trên máy nên chưa nhập được. Hãy đóng các cửa sổ LoveDays khác rồi mở lại app.";
+    }
+    renderImport();
+    openSheet("importSheet");
+    if(imp.phase !== "checking") return;
+    busy = "import";
+    B.parseBackup(f, now()).then(function(parsed){
+      imp.parsed = parsed;
+      imp.plan = B.planMerge(parsed, localSnapshot());
+      imp.phase = "ready";
+    }, function(err){
+      imp.phase = "error";
+      imp.error = (err && err.userMessage) || "Không đọc được file này.";
+    }).then(function(){
+      busy = null;
+      renderImport();
+      renderBackupCard();
+    });
+  }
+  $("fileImport").addEventListener("change", function(){ onImportFile(this); });
+  $("fileImportSetup").addEventListener("change", function(){ onImportFile(this); });
+
+  function renderImport(){
+    var el = $("importContent"), h = "";
+    if(imp.phase === "checking"){
+      h = '<p class="import-status">Đang kiểm tra file…</p>';
+    } else if(imp.phase === "error"){
+      h = '<div class="import-box import-error" role="alert"><p class="import-box-title">Không nhập được</p><p>' + escapeHtml(imp.error) +
+        "</p><p>Dữ liệu hiện tại không bị thay đổi.</p></div>" +
+        '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
+    } else if(imp.phase === "importing"){
+      h = '<p class="import-status" id="importProgress">' + importProgressText() + "</p>" +
+        '<p class="card-hint">Đừng đóng app trong lúc nhập. Nếu bị gián đoạn, dữ liệu cũ vẫn còn nguyên — chỉ cần nhập lại.</p>';
+    } else if(imp.phase === "done"){
+      var r = imp.result, parts = [];
+      parts.push(r.addedPhotos ? "thêm " + fmtInt(r.addedPhotos) + " ảnh" : "không có ảnh mới");
+      if(r.skippedPhotos) parts.push("bỏ qua " + fmtInt(r.skippedPhotos) + " ảnh đã có");
+      parts.push(r.addedMilestones ? "thêm " + r.addedMilestones + " kỷ niệm" : "không có kỷ niệm mới");
+      h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' +
+        (imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu bằng bản sao lưu: " : "") + escapeHtml(parts.join(", ")) + ".</p>" +
+        (r.profileKept ? "<p>Hồ sơ hiện tại được giữ nguyên.</p>" : "") + "</div>" +
+        '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
+    } else if(imp.phase === "ready"){
+      h = renderImportReady();
+    }
+    el.innerHTML = h;
+  }
+
+  function importProgressText(){
+    return imp.total ? "Đang nhập " + imp.done + "/" + imp.total + "…" : "Đang nhập…";
+  }
+
+  function renderImportReady(){
+    var ps = imp.parsed, pl = imp.plan, local = localSnapshot();
+    var when = ps.exportedAt ? "Bản sao lưu lúc " + fmtStamp(ps.exportedAt) : "Bản sao lưu";
+    var imgs = Object.keys(ps.images).length;
+    var h = '<div class="import-summary"><p class="import-when">' + escapeHtml(when) + "</p><ul>" +
+      "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
+      "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
+      "</ul></div>";
+    if(!hasLocalData()){
+      return h + '<p class="card-text">Máy này chưa có dữ liệu — toàn bộ nội dung bản sao lưu sẽ được nhập.</p>' +
+        '<button type="button" class="btn btn-primary btn-block" data-imp="run">Nhập bản sao lưu</button>';
+    }
+    h += '<div class="segmented import-mode" role="group" aria-label="Cách nhập">' +
+      '<button type="button" class="seg-btn" data-imp="mode-merge" aria-pressed="' + (imp.mode === "merge") + '">Gộp (khuyên dùng)</button>' +
+      '<button type="button" class="seg-btn" data-imp="mode-replace" aria-pressed="' + (imp.mode === "replace") + '">Thay thế</button></div>';
+    if(imp.mode === "merge"){
+      var bits = ["thêm " + fmtInt(pl.addPhotos) + " ảnh" + (pl.skipPhotos ? " (bỏ qua " + fmtInt(pl.skipPhotos) + " ảnh đã có)" : ""),
+                  "thêm " + pl.addMilestones + " kỷ niệm" + (pl.skipMilestones ? " (" + pl.skipMilestones + " đã có)" : "")];
+      h += '<p class="card-text">Giữ nguyên dữ liệu đang có, chỉ thêm phần còn thiếu: ' + escapeHtml(bits.join(", ")) + ". " +
+        (local.profileOk ? "Hồ sơ và ảnh đại diện hiện tại được giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.") + "</p>" +
+        '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
+      return h;
+    }
+    var p = backup.prepared;
+    h += '<div class="import-box import-warn"><p class="import-box-title">Toàn bộ dữ liệu hiện tại sẽ bị xoá</p><p>' +
+      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, hồ sơ và ảnh đại diện trên máy này sẽ được thay bằng nội dung bản sao lưu.</p></div>" +
+      '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
+    if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
+    else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
+    else h += '<button type="button" class="btn btn-soft btn-block" data-imp="save">' + (backup.saved ? "Đã lưu ✓ · lưu lại" : "Lưu file (" + fmtMB(p.size) + ")") + "</button>";
+    if(imp.prepMsg && busy !== "backup") h += '<p class="form-error">' + escapeHtml(imp.prepMsg) + "</p>";
+    h += '<p class="import-step">Bước 2 · Thay thế</p>' +
+      '<button type="button" class="btn btn-danger btn-block" data-imp="run"' + (busy ? " disabled" : "") + ">Thay thế bằng bản sao lưu</button>";
+    return h;
+  }
+
+  $("importContent").addEventListener("click", function(e){
+    var b = e.target.closest("[data-imp]");
+    if(!b || b.disabled) return;
+    var act = b.getAttribute("data-imp");
+    if(act === "close"){ closeSheets(); return; }
+    if(act === "mode-merge" || act === "mode-replace"){ imp.mode = act === "mode-merge" ? "merge" : "replace"; renderImport(); return; }
+    if(act === "prep"){
+      if(busy) return;
+      imp.prepMsg = null;
+      prepareBackup(function(d, t){
+        imp.prepMsg = "Đang chuẩn bị " + d + "/" + t + "…";
+        var el = $("importPrep");
+        if(el) el.textContent = imp.prepMsg;
+      }).then(function(){ imp.prepMsg = null; }, function(err){
+        imp.prepMsg = (err && err.userMessage) || "Không tạo được bản sao lưu.";
+      }).then(function(){ renderImport(); renderBackupCard(); });
+      renderImport();
+      return;
+    }
+    if(act === "save"){
+      if(!backup.prepared) return;
+      saveBackupFile(backup.prepared, function(ok, msg){
+        imp.prepMsg = msg || null;
+        renderImport();
+        renderBackupCard();
+      });
+      return;
+    }
+    if(act === "run") runImport();
+  });
+
+  function runImport(){
+    if(busy || !imp.parsed) return;
+    var mode = hasLocalData() ? imp.mode : "merge";
+    if(mode === "replace"){
+      var l = localSnapshot();
+      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm và hồ sơ hiện tại, thay bằng bản sao lưu?" +
+        (backup.saved ? "" : "\n\nBạn CHƯA lưu bản sao lưu dữ liệu hiện tại — sau khi thay sẽ không lấy lại được.");
+      if(!window.confirm(msg)) return;
+    }
+    busy = "import";
+    imp.mode = mode;
+    imp.phase = "importing";
+    imp.done = 0; imp.total = 0;
+    renderImport();
+    B.importBackup({
+      db: state.db, parsed: imp.parsed, mode: mode, local: localSnapshot(), nowMs: now(),
+      onProgress: function(d, t){
+        imp.done = d; imp.total = t;
+        var el = $("importProgress");
+        if(el) el.textContent = importProgressText();
+      }
+    }).then(function(res){
+      imp.result = res;
+      imp.phase = "done";
+      imp.parsed = null;
+      return reloadAll();
+    }, function(err){
+      imp.phase = "error";
+      imp.error = (err && err.userMessage) || "Không ghi được dữ liệu vào máy.";
+    }).then(function(){
+      busy = null;
+      dataChanged();
+      renderImport();
+      renderBackupCard();
+    });
+  }
+
+  function reloadAll(){
+    closeViewer();
+    releaseAlbumThumbs();
+    Object.keys(state.urls).forEach(function(k){ if(state.urls[k]) URL.revokeObjectURL(state.urls[k]); });
+    state.urls = {}; state.blobs = {}; state.photos = []; state.milestones = []; state.profile = null;
+    setBanner("skipped", null);
+    setBanner("load", null);
+    state.loadFailed = false;
+    return loadAll().catch(function(){ state.loadFailed = true; }).then(render);
+  }
+
+  // ---------- Storage info + diagnostics ----------
+  function fmtMB(bytes){ return (bytes / 1048576).toFixed(1).replace(".", ",") + " MB"; }
+  var storageFacts = { usage: null, quota: null, persisted: null };
+
+  function requestPersist(){
+    try{
+      if(navigator.storage && navigator.storage.persist){
+        navigator.storage.persist().then(refreshStorage, function(){});
+      }
+    }catch(e){}
+  }
+
+  function refreshStorage(){
+    var s = navigator.storage;
+    var pEst = s && s.estimate ? s.estimate().catch(function(){ return null; }) : Promise.resolve(null);
+    var pPer = s && s.persisted ? s.persisted().catch(function(){ return null; }) : Promise.resolve(null);
+    Promise.all([pEst, pPer]).then(function(r){
+      storageFacts.usage = r[0] ? r[0].usage : null;
+      storageFacts.quota = r[0] ? r[0].quota : null;
+      storageFacts.persisted = r[1];
+      var parts = [];
+      parts.push(storageFacts.usage != null ? "Đã dùng " + fmtMB(storageFacts.usage) + " trên khoảng " + fmtMB(storageFacts.quota) + " được phép." : "Trình duyệt không cho biết dung lượng đã dùng.");
+      if(r[1] === true) parts.push("Bộ nhớ bền vững: đã bật — máy sẽ không tự xoá dữ liệu khi thiếu dung lượng.");
+      else if(r[1] === false) parts.push("Bộ nhớ bền vững: chưa bật — khi máy thiếu dung lượng, dữ liệu có thể bị xoá. Hãy sao lưu định kỳ.");
+      if(state.db === null) parts.push("Đang chạy tạm trong bộ nhớ: dữ liệu sẽ mất khi đóng app.");
+      $("storageInfo").textContent = parts.join(" ");
+      renderDiag();
+    });
+  }
+
+  function renderDiag(){
+    var probe = getComputedStyle($("safeProbe"));
+    var standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+    var bar = $("tabbar").getBoundingClientRect();
+    $("diagLine").textContent = [
+      "standalone " + (standalone ? "có" : "không"),
+      "thông báo " + (typeof Notification === "undefined" ? "không hỗ trợ" : Notification.permission),
+      "setAppBadge " + ("setAppBadge" in navigator ? "có" : "không"),
+      "push " + (!pushSupported() ? "không hỗ trợ" : currentSub() ? "đã đăng ký" : "chưa đăng ký"),
+      "màn hình " + screen.height + " / viewport " + window.innerHeight,
+      "safe-area " + parseFloat(probe.paddingTop) + "/" + parseFloat(probe.paddingBottom),
+      "tabbar đáy " + Math.round(bar.bottom),
+      "bộ nhớ " + (storageFacts.usage != null ? fmtMB(storageFacts.usage) : "?") + (storageFacts.persisted === true ? " (bền vững)" : storageFacts.persisted === false ? " (chưa bền vững)" : ""),
+      "IndexedDB " + (state.db ? "OK" : "tạm thời")
+    ].join(" · ");
+  }
+
+  // ---------- Daily notifications + icon number ----------
+  // The page only subscribes and shows the subscription JSON; the daily push
+  // comes from .github/workflows/love-days-push.yml and the SW computes N from
+  // this device's own start date when it arrives.
+  var push = { reg: null, sub: null, busy: false, key: undefined,
+               rec: { key: "push", deviceLabel: "", lastCopiedEndpointHash: null } };
+  var PUSH_ICON = "/products/love-days/img/love-days-icon-180.png";
+
+  function isStandalone(){
+    return navigator.standalone === true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  }
+  function pushSupported(){
+    return "serviceWorker" in navigator && "PushManager" in window && typeof Notification !== "undefined";
+  }
+  function vapidKey(){
+    if(push.key !== undefined) return push.key;
+    push.key = null;
+    try{
+      var s = VAPID_PUBLIC_KEY;
+      var bin = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4));
+      var u8 = new Uint8Array(bin.length);
+      for(var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      if(u8.length === 65 && u8[0] === 4) push.key = u8;
+    }catch(e){}
+    return push.key;
+  }
+  function keyMatches(sub, key){
+    var k = sub && sub.options && sub.options.applicationServerKey;
+    if(!k) return true;
+    var a = new Uint8Array(k);
+    if(a.length !== key.length) return false;
+    for(var i = 0; i < a.length; i++) if(a[i] !== key[i]) return false;
+    return true;
+  }
+  function currentSub(){
+    var key = vapidKey();
+    return push.sub && key && keyMatches(push.sub, key) ? push.sub : null;
+  }
+  // Only compared with itself, so a short non-crypto hash is enough.
+  function endpointHash(s){
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for(var i = 0; i < s.length; i++){
+      h1 = Math.imul(h1 ^ s.charCodeAt(i), 16777619) >>> 0;
+      h2 = Math.imul(h2 + s.charCodeAt(i), 2246822519) >>> 0;
+    }
+    return ("0000000" + h1.toString(16)).slice(-8) + ("0000000" + h2.toString(16)).slice(-8);
+  }
+  function pushLabel(){ return $("pushLabel").value.trim().slice(0, 40) || "iPhone"; }
+  function subJson(sub){
+    var j = sub.toJSON();
+    return JSON.stringify({ label: pushLabel(), endpoint: j.endpoint, expirationTime: j.expirationTime == null ? null : j.expirationTime, keys: j.keys });
+  }
+  function userErr(msg){ var e = new Error(msg); e.userMessage = msg; return e; }
+  function savePushRec(){ return put("kv", push.rec).catch(function(){}); }
+
+  function loadPushRec(){
+    var p = state.db ? C.idbGet(state.db, "kv", "push").catch(function(){ return null; }) : Promise.resolve(mem.kv.push || null);
+    return p.then(function(r){
+      if(!r || typeof r !== "object") return;
+      if(typeof r.deviceLabel === "string" && r.deviceLabel.length <= 40) push.rec.deviceLabel = r.deviceLabel;
+      if(typeof r.lastCopiedEndpointHash === "string" && /^[0-9a-f]{16}$/.test(r.lastCopiedEndpointHash)) push.rec.lastCopiedEndpointHash = r.lastCopiedEndpointHash;
+    });
+  }
+
+  // Never waits forever: `ready` doesn't settle when the SW failed to install.
+  function swReady(){
+    if(push.reg) return Promise.resolve(push.reg);
+    return new Promise(function(resolve, reject){
+      var t = setTimeout(function(){ reject(userErr("App chưa sẵn sàng chạy nền. Hãy đóng hẳn app, mở lại rồi thử lại.")); }, 8000);
+      navigator.serviceWorker.ready.then(function(reg){ clearTimeout(t); push.reg = reg; resolve(reg); });
+    });
+  }
+
+  function refreshSub(){
+    if(!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration("/products/love-days/").then(function(reg){
+      if(!reg) return;
+      push.reg = reg;
+      return reg.pushManager.getSubscription().then(function(sub){ push.sub = sub; });
+    }).catch(function(){});
+  }
+
+  function renderPush(){
+    var perm = typeof Notification === "undefined" ? "unsupported" : Notification.permission;
+    var key = vapidKey(), sub = currentSub();
+    var status = "", ok = false, canEnable = false;
+    if(!VAPID_PUBLIC_KEY){
+      status = "Chưa cấu hình khoá thông báo. Người giữ repo cần tạo khoá VAPID và dán khoá công khai vào app (xem docs/love-days.md).";
+    } else if(!key){
+      status = "Khoá thông báo trong app không hợp lệ — cần kiểm tra lại VAPID_PUBLIC_KEY.";
+    } else if(!pushSupported() || !isStandalone()){
+      status = "Mở app từ icon Màn hình chính (iOS 16.4+) để bật thông báo — trong tab Safari không bật được.";
+    } else if(perm === "denied"){
+      status = "Bạn đã chặn thông báo. Bật lại trong Cài đặt iPhone → Thông báo → Long & Thư.";
+    } else if(sub){
+      ok = true;
+      status = "Đã bật trên máy này ✓ Nhớ sao chép mã bên dưới vào secret.";
+    } else {
+      canEnable = true;
+      status = perm === "granted" ? "Đã cho phép thông báo nhưng máy chưa có mã đăng ký — chạm “Bật thông báo”." : "Chưa bật trên máy này.";
+    }
+    $("pushStatus").textContent = status;
+    $("pushStatus").classList.toggle("ok", ok);
+    $("btnPushEnable").hidden = ok;
+    $("btnPushEnable").disabled = !canEnable || push.busy;
+    $("btnPushEnable").textContent = push.busy ? "Đang bật…" : "Bật thông báo";
+    $("btnPushTest").disabled = typeof Notification === "undefined" || perm === "denied" || !("serviceWorker" in navigator) || !state.computed;
+    $("pushSubBox").hidden = !sub;
+    if(sub) $("pushSubJson").value = subJson(sub);
+  }
+
+  function checkPushChanged(){
+    var stored = push.rec.lastCopiedEndpointHash;
+    if(!stored || !vapidKey() || !pushSupported()){ setBanner("push", null); return; }
+    var sub = currentSub();
+    var changed = !sub || endpointHash(sub.endpoint) !== stored;
+    // No subscription at all may simply mean the user turned notifications
+    // off on purpose — let them say so, which forgets the stored hash.
+    var dismiss = sub ? null : { label: "Tôi đã tắt thông báo", run: function(){
+      push.rec.lastCopiedEndpointHash = null;
+      savePushRec();
+      setBanner("push", null);
+    } };
+    setBanner("push", changed ? "Mã đăng ký thông báo của máy này đã đổi — cần cập nhật secret LOVE_PUSH_SUBSCRIPTIONS. Vào Cài đặt → Thông báo hằng ngày để lấy mã mới." : null, "warn", dismiss);
+  }
+
+  function initPush(){
+    return loadPushRec().then(function(){
+      $("pushLabel").value = push.rec.deviceLabel;
+      return refreshSub();
+    }).then(function(){
+      renderPush();
+      checkPushChanged();
+    }).catch(function(){});
+  }
+
+  $("pushLabel").addEventListener("input", function(){
+    var sub = currentSub();
+    if(sub) $("pushSubJson").value = subJson(sub);
+  });
+  $("pushLabel").addEventListener("change", function(){
+    push.rec.deviceLabel = $("pushLabel").value.trim().slice(0, 40);
+    savePushRec();
+  });
+
+  // requestPermission() must be the first thing in the tap (iOS only shows
+  // the prompt during a user gesture).
+  $("btnPushEnable").addEventListener("click", function(){
+    var key = vapidKey();
+    if(push.busy || !key || !pushSupported()) return;
+    showError("pushError", null);
+    var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
+    push.busy = true;
+    renderPush();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== "granted") throw userErr(perm === "denied" ? "Bạn đã chọn Không cho phép. Bật lại trong Cài đặt iPhone → Thông báo → Long & Thư." : "Chưa được cho phép thông báo. Hãy chạm lại và chọn Cho phép.");
+      return swReady();
+    }).then(function(reg){
+      return reg.pushManager.getSubscription().then(function(old){
+        if(old && keyMatches(old, key)) return old;
+        // A subscription made with another VAPID key can't be reused:
+        // subscribe() would throw InvalidStateError.
+        return (old ? old.unsubscribe().catch(function(){}) : Promise.resolve()).then(function(){
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        });
+      });
+    }).then(function(sub){
+      push.sub = sub;
+      push.rec.deviceLabel = $("pushLabel").value.trim().slice(0, 40);
+      savePushRec();
+      updateBadge();
+    }).catch(function(err){
+      showError("pushError", (err && err.userMessage) || "Không bật được thông báo (" + (err && err.name || "lỗi") + "). Hãy thử lại.");
+    }).then(function(){
+      push.busy = false;
+      renderPush();
+      checkPushChanged();
+      renderDiag();
+    });
+  });
+
+  $("btnPushCopy").addEventListener("click", function(){
+    var sub = currentSub();
+    if(!sub) return;
+    var ta = $("pushSubJson"), txt = subJson(sub);
+    ta.value = txt;
+    function done(msg){
+      push.rec.lastCopiedEndpointHash = endpointHash(sub.endpoint);
+      push.rec.deviceLabel = $("pushLabel").value.trim().slice(0, 40);
+      savePushRec();
+      checkPushChanged();
+      $("pushCopyNote").textContent = msg;
+    }
+    function fallback(){
+      ta.focus();
+      ta.select();
+      try{ ta.setSelectionRange(0, txt.length); }catch(e){}
+      var ok = false;
+      try{ ok = document.execCommand("copy"); }catch(e){}
+      done(ok ? "Đã sao chép ✓ Dán vào secret LOVE_PUSH_SUBSCRIPTIONS cùng mã của máy kia." : "Không tự sao chép được — mã đã được bôi đen, hãy chạm giữ rồi chọn Sao chép.");
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        done("Đã sao chép ✓ Dán vào secret LOVE_PUSH_SUBSCRIPTIONS cùng mã của máy kia.");
+      }, fallback);
+    } else fallback();
+  });
+
+  $("btnPushTest").addEventListener("click", function(){
+    if(typeof Notification === "undefined" || !state.computed) return;
+    showError("pushError", null);
+    var note = $("pushTestNote");
+    note.hidden = true;
+    var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== "granted") throw userErr("Cần cho phép thông báo thì mới gửi thử được.");
+      return swReady();
+    }).then(function(reg){
+      var n = state.computed.n;
+      return reg.showNotification("💕 Ngày thứ " + fmtInt(n), {
+        body: "Thông báo thử trên máy này — hôm nay là ngày thứ " + fmtInt(n) + " Long & Thư yêu nhau",
+        tag: "love-days-test", icon: PUSH_ICON
+      }).then(function(){ return n; });
+    }).then(function(n){
+      var badged = false;
+      try{
+        if("setAppBadge" in navigator){
+          var r = navigator.setAppBadge(n);
+          if(r && r.catch) r.catch(function(){});
+          badged = true;
+        }
+      }catch(e){}
+      note.textContent = "Đã gửi thử ✓ " + (badged ? "Icon app sẽ hiện số " + fmtInt(n) + ". " : "Máy này không hỗ trợ số trên icon. ") +
+        "Không thấy thông báo thì kiểm tra Cài đặt iPhone → Thông báo → Long & Thư.";
+      note.hidden = false;
+      renderPush();
+      renderDiag();
+    }).catch(function(err){
+      showError("pushError", (err && err.userMessage) || "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
+      renderPush();
+    });
+  });
+
+  // ---------- Sheets ----------
+  function openSheet(id){
+    $(id).classList.add("open");
+    $("sheetBackdrop").classList.add("open");
+  }
+  function closeSheets(){
+    if(imp.phase === "importing") return;
+    Array.prototype.forEach.call(document.querySelectorAll(".sheet.open"), function(s){ s.classList.remove("open"); });
+    $("sheetBackdrop").classList.remove("open");
+  }
+  $("sheetBackdrop").addEventListener("click", closeSheets);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-close-sheet]"), function(b){ b.addEventListener("click", closeSheets); });
+  document.addEventListener("keydown", function(e){
+    if(viewer.open){ onViewerKey(e); return; }
+    if(e.key === "Escape" && document.querySelector(".sheet.open")) closeSheets();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".sheet"), function(sheet){
+    var handle = sheet.querySelector(".sheet-handle-hit");
+    var startY = 0, currentY = 0, dragging = false;
+    handle.addEventListener("pointerdown", function(e){
+      dragging = true; currentY = 0; startY = e.clientY;
+      sheet.style.transition = "none";
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    handle.addEventListener("pointermove", function(e){
+      if(!dragging) return;
+      currentY = Math.max(0, e.clientY - startY);
+      sheet.style.transform = "translateY(" + currentY + "px)";
+    });
+    function endDrag(){
+      if(!dragging) return;
+      dragging = false;
+      sheet.style.transition = "";
+      sheet.style.transform = "";
+      if(currentY > 120) closeSheets();
+      currentY = 0;
+    }
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  });
+
+  // ---------- Changelog ----------
+  var changelogData = null;
+  function renderChangelog(){
+    var el = $("versionContent");
+    if(!changelogData){
+      el.innerHTML = '<p class="card-text">Không tải được lịch sử cập nhật.</p>';
+      return;
+    }
+    el.innerHTML = changelogData.entries.map(function(entry){
+      return '<div class="version-entry">' +
+        '<div class="version-entry-head"><span class="version-num">v' + escapeHtml(entry.version) + '</span><span class="version-date">' + (C.isValidDate(entry.date) ? fmtDate(entry.date) : "") + "</span></div>" +
+        '<ul class="version-changes">' + (entry.changes || []).map(function(c){ return "<li>" + escapeHtml(c) + "</li>"; }).join("") + "</ul>" +
+        "</div>";
+    }).join("");
+  }
+  $("btnVersion").addEventListener("click", function(){ renderChangelog(); openSheet("versionSheet"); });
+  fetch("/products/love-days/data/changelog.json").then(function(r){
+    if(!r.ok) throw new Error(r.status);
+    return r.json();
+  }).then(function(d){
+    if(d && Array.isArray(d.entries)){
+      changelogData = d;
+      $("btnVersion").textContent = "v" + d.version;
+    }
+  }).catch(function(){});
+
+  // ---------- Boot ----------
+  C.openDb().then(function(db){
+    state.db = db;
+    return Promise.resolve().then(loadAll).catch(function(){ state.loadFailed = true; });
+  }, function(err){
+    var why = err && err.code === "blocked" ? "đang bị một cửa sổ LoveDays khác giữ" : err && err.code === "timeout" ? "quá thời gian chờ" : "trình duyệt từ chối";
+    setBanner("db", "Không mở được bộ nhớ trên máy (" + why + "). App vẫn chạy nhưng thay đổi sẽ không được lưu. Hãy đóng các cửa sổ LoveDays khác rồi mở lại.", "error");
+  }).then(render).catch(function(){
+    $("loadingView").hidden = true;
+    setBanner("render", "Có lỗi khi hiển thị dữ liệu. Dữ liệu vẫn còn trên máy — hãy thử mở lại app.", "error");
+  }).then(initPush);
+
+  // Offline: the shell lives in products/love-days/ (scope). Absolute path —
+  // a relative one would resolve against html/, not the shell's folder.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("/products/love-days/sw-love-days.js").catch(function(){});
+    });
+  }
+})();

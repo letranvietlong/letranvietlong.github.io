@@ -110,6 +110,22 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │       ├── fuel-price.json       # Giá hiện hành + mức thay đổi so với kỳ trước
 │   │       ├── fuel-price-history.json # Các điểm thay đổi giá (biểu đồ, lịch sử)
 │   │       └── changelog.json        # Lịch sử cập nhật hiện trong app
+│   ├── love-days/            # Riêng tư (không index, không có trên trang chủ) — đếm ngày yêu nhau, cùng mẫu với fuel-track
+│   │   ├── sw-love-days.js   # Vỏ service worker 1 dòng — ngang hàng html/css/js/data, KHÔNG lồng vào js/
+│   │   ├── html/index.html
+│   │   ├── css/love-days.css
+│   │   ├── js/love-days-core.js  # Tính ngày (giờ VN) + IndexedDB — dùng chung cho trang và service worker
+│   │   ├── js/love-days-media.js # Nén ảnh album (1600px + thumbnail 480px, EXIF ngày chụp, sha256) và ảnh đại diện/ảnh bìa
+│   │   ├── js/love-days-backup.js # Sao lưu/nhập file .zip (ảnh + dữ liệu), gộp hoặc thay thế
+│   │   ├── js/love-days.js
+│   │   ├── js/sw-core.js     # Logic service worker thật (nạp qua importScripts từ vỏ) + nhận thông báo đẩy
+│   │   ├── py/send_push.py   # Gửi thông báo đẩy hằng ngày — chạy trong GitHub Actions (love-days-push.yml)
+│   │   ├── img/love-days-icon.svg, img/love-days-icon-*.png  # Favicon + apple-touch-icon (32/180)
+│   │   ├── manifest.json     # Web App Manifest
+│   │   ├── docs/love-days.md
+│   │   └── data/
+│   │       ├── changelog.json    # Lịch sử cập nhật hiện trong app
+│   │       └── push-state.json   # Ngày đã gửi thông báo, ghi tự động bởi GitHub Actions (.github/workflows/love-days-push.yml)
 │   ├── thubee-farmery/       # Đăng nhập nội bộ — subfolder theo loại file
 │   │   ├── html/index.html
 │   │   ├── css/thubee-farmery.css
