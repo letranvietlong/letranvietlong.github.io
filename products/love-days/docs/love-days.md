@@ -2,7 +2,7 @@
 
 App riêng tư đếm ngày yêu nhau của Viết Long và Minh Thư, dùng như app ở Màn hình chính trên iPhone 14 Pro Max (iOS 16.4+). Tiêu đề icon "Long & Thư". **Không công khai**: `robots.txt` chặn `/products/love-days/`, trang có `noindex,nofollow`, không có canonical, không nằm trong `sitemap.xml`, không có card trên trang chủ, README chỉ ghi trong sơ đồ cấu trúc.
 
-Tình trạng: **Phase 1A + 1B + 2** (đếm ngày, kỷ niệm, hồ sơ + ảnh đại diện/ảnh bìa, badge khi mở, album ảnh, sao lưu/nhập ZIP, thông báo đẩy hằng ngày từ GitHub Actions). Thông báo chỉ chạy sau khi người dùng làm các bước cài đặt một lần ở mục "Thông báo đẩy".
+Tình trạng: **Phase 1A + 1B + 2** (đếm ngày, kỷ niệm, hồ sơ + ảnh đại diện/ảnh bìa, badge khi mở, album ảnh, sao lưu/nhập ZIP, thông báo đẩy hằng ngày từ GitHub Actions). Thông báo chỉ chạy sau khi người dùng làm các bước cài đặt một lần (Cài đặt → nhóm "Thông báo" → "Cách cài đặt (làm một lần)").
 
 ## Cấu trúc đặc thù
 
@@ -64,7 +64,7 @@ love-days.json             {app:'love-days', format:1, exportedAt (ISO),
                             images:{'avatar-long':'avatars/long.jpg', ...}}
 ```
 
-- **Lưu hai bước**: "Chuẩn bị bản sao lưu" dựng file → "Lưu file (xx MB)" gọi `navigator.share({files})` **ngay trong cú chạm** khi `canShare` (iPhone: "Lưu vào Tệp"), nếu không thì `a.download` + revoke sau 10s. Safari mất "user activation" sau await dài → share ném `NotAllowedError`, nên không gộp hai bước. Mọi thay đổi dữ liệu làm file đã chuẩn bị hết hiệu lực. Lưu xong ghi `kv.meta.lastBackupAt` ("Lần sao lưu gần nhất").
+- **Lưu hai bước**: "Chuẩn bị bản sao lưu" dựng file → "Lưu file (xx MB)" gọi `navigator.share({files})` **ngay trong cú chạm** khi `canShare` (iPhone: "Lưu vào Tệp"), nếu không thì `a.download` + revoke sau 10s. Safari mất "user activation" sau await dài → share ném `NotAllowedError`, nên không gộp hai bước. Mọi thay đổi dữ liệu làm file đã chuẩn bị hết hiệu lực. Lưu xong ghi `kv.meta.lastBackupAt`; thẻ Sao lưu hiện "Lần cuối: hôm nay, 21:30" / "Lần cuối: 31 ngày trước (01/09/2026)" (đếm theo ngày lịch VN), tô màu cảnh báo khi chưa sao lưu lần nào hoặc đã ≥ 30 ngày.
 - **Đọc**: chỉ nhận đúng định dạng do app tạo — EOCD nằm ở đúng 22 byte cuối (không comment), 1 đĩa, method 0, không mã hoá/data descriptor, csize = usize, tên mục chỉ gồm chữ/số/`_`/`-`/`.`/`/` và không có `..`, offset nằm trong file. Từng mục được đọc bằng `file.slice().arrayBuffer()`, kiểm CRC32 + đầu JPEG `FF D8 FF`, sha256 khớp manifest.
 - **Kiểm tra trước khi ghi**: app/format, ngày thật (không chỉ regex) và không sau hôm nay, độ dài chuỗi, id `^[\w-]+$`, không trùng id, mọi ảnh được tham chiếu phải có trong ZIP; chạy thử `LoveCore.computeAll()` trên dữ liệu mới. File bị từ chối → thông báo tiếng Việt, dữ liệu không đổi. Lỗi CRC của một ảnh chỉ lộ ra lúc đọc ảnh đó (sau khi bấm Nhập) — vẫn huỷ sạch.
 
@@ -119,16 +119,16 @@ SW (js/sw-core.js) nhận "push":
 
 1. Trên máy tính của mình, ở thư mục **ngoài repo** (ví dụ Desktop), chạy `npx --yes web-push generate-vapid-keys --json` → được `{"publicKey":"B…","privateKey":"…"}`. **Không** lưu kết quả vào file nào trong repo — Stop hook chạy `git add -A` và push lên repo công khai.
 2. Dán `privateKey` vào secret `LOVE_VAPID_PRIVATE_KEY`.
-3. Dán `publicKey` vào hằng `VAPID_PUBLIC_KEY` ở đầu `js/love-days.js` (khoá công khai, commit được), bump version + changelog. Khi hằng này trống, mục Thông báo hiện "Chưa cấu hình khoá thông báo" và nút "Bật thông báo" bị tắt.
-4. Trên **mỗi** iPhone (iOS 16.4+): Safari → Chia sẻ → Thêm vào MH chính → mở app từ icon → Cài đặt → Thông báo hằng ngày → đặt tên máy → Bật thông báo → Cho phép → Sao chép.
+3. Dán `publicKey` vào hằng `VAPID_PUBLIC_KEY` ở đầu `js/love-days.js` (khoá công khai, commit được), bump version + changelog. Khi hằng này trống, mục Thông báo hiện "Chưa cấu hình khoá thông báo", ô tên máy và nút "Bật thông báo" bị ẩn (chỉ còn "Gửi thử trên máy này").
+4. Trên **mỗi** iPhone (iOS 16.4+): Safari → Chia sẻ → Thêm vào MH chính → mở app từ icon → Cài đặt → Thông báo → đặt tên máy → Bật thông báo → Cho phép → Sao chép.
 5. Gộp mã của hai máy thành một mảng `[mã máy anh, mã máy em]` và dán vào secret `LOVE_PUSH_SUBSCRIPTIONS`. (Tuỳ chọn: `LOVE_START_DATE`, `LOVE_VAPID_SUB`.)
 6. Actions → "LoveDays daily push" → Run workflow với `dry_run` để kiểm tra cấu hình (log liệt kê tên máy), rồi chạy với `force` để nhận thông báo thật ngay.
 
-Nút "Gửi thử thông báo trên máy này" gọi `showNotification` + `setAppBadge` ngay trên máy (không qua workflow, không cần khoá VAPID) — dùng để kiểm tra quyền thông báo và số trên icon.
+Nút "Gửi thử trên máy này" gọi `showNotification` + `setAppBadge` ngay trên máy (không qua workflow, không cần khoá VAPID) — dùng để kiểm tra quyền thông báo và số trên icon.
 
 ### Khi mã đăng ký đổi / hết hạn
 
-- App lưu dấu (hash) của endpoint lúc bấm "Sao chép" trong `kv.push` {deviceLabel, lastCopiedEndpointHash}. Mỗi lần mở app so với `pushManager.getSubscription()`; khác hoặc mất → banner "Mã đăng ký thông báo của máy này đã đổi — cần cập nhật secret…". Làm lại bước 4–5 cho máy đó, thay mã cũ trong secret. Khi máy **không còn** mã đăng ký (ví dụ cố ý tắt thông báo), banner có nút "Tôi đã tắt thông báo" — bấm thì xoá hash đã lưu và banner không hiện lại.
+- App lưu dấu (hash) của endpoint lúc bấm "Sao chép" trong `kv.push` {deviceLabel, lastCopiedEndpointHash}. Mỗi lần mở app so với `pushManager.getSubscription()`; khác hoặc mất → banner "Mã đăng ký thông báo của máy này đã đổi — cần cập nhật secret. Xem Cài đặt → Thông báo." Làm lại bước 4–5 cho máy đó, thay mã cũ trong secret. Khi máy **không còn** mã đăng ký (ví dụ cố ý tắt thông báo), banner có nút "Tôi đã tắt thông báo" — bấm thì xoá hash đã lưu và banner không hiện lại.
 - Log workflow báo `hết hạn đăng ký (410)` → máy đó đã gỡ app / tắt thông báo / iOS thu hồi: gỡ mục đó khỏi secret, đăng ký lại.
 - **Đổi cặp khoá VAPID** làm mọi mã đăng ký cũ vô hiệu: app tự huỷ đăng ký cũ khi bấm "Bật thông báo" (khoá khác → `subscribe()` sẽ ném InvalidStateError), banner hiện ra, cả hai máy phải sao chép lại mã.
 - iOS thu hồi đăng ký nếu service worker nhận push mà không hiện thông báo → mọi nhánh trong handler `push` đều kết thúc bằng `showNotification`, kể cả khi đọc IndexedDB lỗi.
@@ -137,4 +137,4 @@ Nút "Gửi thử thông báo trên máy này" gọi `showNotification` + `setAp
 
 - Cache Storage dùng chung cả origin: `activate` chỉ xoá cache tiền tố `lovedays-cache-`.
 - Không dùng `<input type=date>` (Chrome desktop hiện lịch xám, định dạng tháng/ngày kiểu Mỹ). Mỗi ô ngày = `<input type=hidden id=…>` (giữ hợp đồng `.value` `'YYYY-MM-DD'` hoặc `''`) + nút `.date-field[data-date-for]` mở bánh xe chọn ngày `#datePicker` trong `love-days.js`. **Mọi chỗ gán giá trị bằng code phải qua `setDateValue(id, v)`**, gán thẳng `.value` thì nút hiển thị bị cũ. Giới hạn từng ô ở `DATE_FIELDS` (ngày bắt đầu 1950 → hôm nay VN; ngày sinh 1900 → hôm nay VN, mặc định mở ở 01/01/2000; kỷ niệm 1900 → hôm nay + 20 năm; giá trị đã lưu nằm ngoài giới hạn thì giới hạn được nới ra lúc mở bộ chọn, để bấm "Xong" không âm thầm dời ngày cũ — việc kiểm tra hợp lệ vẫn ở bước lưu). Ngày ngoài giới hạn / không tồn tại (31/02) bị làm mờ và bánh xe tự quay về ngày hợp lệ gần nhất; chọn xong ("Xong") mới ghi giá trị và phát `input` + `change`. Ngày tương lai vẫn bị chặn thêm bằng JS khi lưu (`checkStartDate`).
-- Không thể kiểm chứng trên Chromium: safe-area thật, badge thật trên icon, giới hạn bộ nhớ/eviction của Safari, bảng chia sẻ `navigator.share({files})` / "Lưu vào Tệp", Web Push thật qua APNs (Chromium headless không đăng ký push được — chỉ kiểm handler bằng CDP `ServiceWorker.deliverPushMessage`), ảnh HEIC thật từ thư viện iPhone (Safari giải mã được HEIC, Chromium thì không), bộ nhớ khi giải mã ảnh 48MP, vuốt bằng ngón tay thật trong viewer. Dòng chẩn đoán cuối tab Cài đặt in standalone, quyền thông báo, `setAppBadge`, đã đăng ký push chưa, màn hình/viewport, safe-area, đáy tab bar, dung lượng và trạng thái bộ nhớ bền vững.
+- Không thể kiểm chứng trên Chromium: safe-area thật, badge thật trên icon, giới hạn bộ nhớ/eviction của Safari, bảng chia sẻ `navigator.share({files})` / "Lưu vào Tệp", Web Push thật qua APNs (Chromium headless không đăng ký push được — chỉ kiểm handler bằng CDP `ServiceWorker.deliverPushMessage`), ảnh HEIC thật từ thư viện iPhone (Safari giải mã được HEIC, Chromium thì không), bộ nhớ khi giải mã ảnh 48MP, vuốt bằng ngón tay thật trong viewer. Dòng chẩn đoán (Cài đặt → Thông tin → mở "Thông tin kỹ thuật") in standalone, quyền thông báo, `setAppBadge`, đã đăng ký push chưa, màn hình/viewport, safe-area, đáy tab bar, dung lượng và trạng thái bộ nhớ bền vững.

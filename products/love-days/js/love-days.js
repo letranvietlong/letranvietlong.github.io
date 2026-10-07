@@ -41,9 +41,15 @@
     return (parts[parts.length - 1] || "♥").charAt(0).toUpperCase();
   }
   function daysLeftText(x){
-    if(x.daysLeft === 0) return "Hôm nay 🎉";
+    if(x.daysLeft === 0) return "hôm nay";
     if(x.past) return "đã qua " + fmtInt(-x.daysLeft) + " ngày";
     return "còn " + fmtInt(x.daysLeft) + " ngày";
+  }
+  // Big number + small unit; the row's aria-label carries the full wording.
+  function bigDays(x, cls){
+    if(x.daysLeft === 0) return '<span class="' + cls + ' today">Hôm nay 🎉</span>';
+    return '<span class="' + cls + (x.past ? " past" : "") + '"><span class="ms-num">' + fmtInt(Math.abs(x.daysLeft)) +
+      '</span><span class="ms-unit">ngày</span></span>';
   }
   function clockText(b){
     return b.years + " năm " + b.months + " tháng " + b.days + " ngày · " + pad2(b.h) + ":" + pad2(b.mi) + ":" + pad2(b.s);
@@ -125,7 +131,7 @@
         if(typeof meta.lastBackupAt === "number" && isFinite(meta.lastBackupAt)) state.meta.lastBackupAt = meta.lastBackupAt;
         if(SORTS.indexOf(meta.albumSort) !== -1) state.meta.albumSort = meta.albumSort;
       }
-      if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng trong dữ liệu đã lưu. Phần còn lại vẫn dùng bình thường.", "warn");
+      if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
   }
@@ -150,7 +156,9 @@
     $("tabbar").hidden = true;
     $("setupView").hidden = true;
     ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
-    setBanner("load", "Không đọc được dữ liệu đã lưu. Dữ liệu vẫn còn trên máy và chưa bị thay đổi — hãy tải lại app.", "error",
+    $("loadingView").hidden = false;
+    $("loadingView").classList.add("failed");
+    setBanner("load", "Không đọc được dữ liệu đã lưu — dữ liệu vẫn còn nguyên.", "error",
               { label: "Tải lại app", run: function(){ location.reload(); } });
   }
 
@@ -168,9 +176,9 @@
       setDateValue("setupDobThu", p.persons[1].dob || "");
       if(p.startStatus === "future"){
         setDateValue("setupStart", p.startDate);
-        setBanner("start", "Ngày bắt đầu đã lưu (" + fmtDate(p.startDate) + ") nằm sau hôm nay — hãy kiểm tra ngày giờ của máy hoặc chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
+        setBanner("start", "Ngày bắt đầu đã lưu (" + fmtDate(p.startDate) + ") sau hôm nay — kiểm tra giờ máy hoặc chọn lại. Dữ liệu khác vẫn giữ nguyên.", "warn");
       } else {
-        setBanner("start", "Ngày bắt đầu đã lưu bị hỏng — hãy chọn lại. Các dữ liệu khác vẫn được giữ nguyên.", "warn");
+        setBanner("start", "Ngày bắt đầu bị hỏng — hãy chọn lại. Dữ liệu khác vẫn giữ nguyên.", "warn");
       }
     }
   }
@@ -234,36 +242,58 @@
     $("dayCount").textContent = fmtInt(c.n);
     $("hoursCount").textContent = fmtInt(c.hours);
     $("liveClock").textContent = clockText(c.breakdown);
-    $("sinceLine").textContent = "Bắt đầu từ " + weekday(p.startDate).toLowerCase() + ", " + fmtDate(p.startDate);
+    $("sinceLine").textContent = "Từ " + fmtDate(p.startDate);
+    renderGoal(c.n);
 
     var u = c.upcoming;
     $("upcomingBody").innerHTML = u ?
-      '<div class="up-row"><span class="up-emoji" aria-hidden="true">' + escapeHtml(u.emoji) + '</span>' +
-      '<div class="up-main"><p class="up-title">' + escapeHtml(u.title) + '</p><p class="up-date">' + weekday(u.date) + ", " + fmtDate(u.date) + "</p></div>" +
+      '<button type="button" class="up-row" data-goto="milestones" aria-label="' +
+      escapeHtml(u.title + ", " + weekday(u.date) + " " + fmtDate(u.date) + ", " + (u.daysLeft === 0 ? "hôm nay" : "còn " + fmtInt(u.daysLeft) + " ngày") + ". Xem tất cả kỷ niệm") + '">' +
+      '<span class="up-emoji" aria-hidden="true">' + escapeHtml(u.emoji) + '</span>' +
+      '<span class="up-main"><span class="up-title">' + escapeHtml(u.title) + '</span><span class="up-date">' + weekday(u.date) + ", " + fmtDate(u.date) + "</span></span>" +
       (u.daysLeft === 0
-        ? '<div class="up-left today">Hôm nay 🎉</div>'
-        : '<div class="up-left"><span class="up-num">' + fmtInt(u.daysLeft) + '</span><span class="up-unit">ngày nữa</span></div>') +
-      "</div>"
+        ? '<span class="up-left today">Hôm nay 🎉</span>'
+        : '<span class="up-left"><span class="up-num">' + fmtInt(u.daysLeft) + '</span><span class="up-unit">ngày nữa</span></span>') +
+      "</button>"
       : '<p class="card-text">Chưa có mốc nào sắp tới.</p>';
 
     $("birthdays").innerHTML = p.persons.map(function(person){
       var b = null;
       c.birthdays.forEach(function(x){ if(x.personId === person.id) b = x; });
+      var head = '<p class="bday-head"><span class="bday-emoji" aria-hidden="true">🎂</span><span class="bday-name">' + escapeHtml(person.name) + "</span></p>";
       if(!b){
-        return '<div class="card bday-card empty"><span class="bday-emoji" aria-hidden="true">🎂</span>' +
-          '<p class="bday-name">' + escapeHtml(person.name) + '</p><p class="bday-meta">Chưa có ngày sinh</p>' +
+        return '<div class="card bday-card empty">' + head +
           '<button type="button" class="btn btn-soft btn-sm" data-goto="settings">Thêm ngày sinh</button></div>';
       }
-      return '<div class="card bday-card' + (b.daysLeft === 0 ? " today" : "") + '"><span class="bday-emoji" aria-hidden="true">🎂</span>' +
-        '<p class="bday-name">' + escapeHtml(person.name) + '</p>' +
-        '<p class="bday-age">' + b.age + ' tuổi</p>' +
-        '<p class="bday-meta">Sinh nhật ' + fmtDayMonth(b.date) + ' · tròn ' + b.turning + '</p>' +
-        '<p class="bday-left">' + daysLeftText(b) + '</p></div>';
+      var meta = fmtDayMonth(b.date) + " · tròn " + b.turning + " tuổi";
+      if(b.daysLeft === 0){
+        return '<div class="card bday-card today">' + head + '<p class="bday-left today">Hôm nay 🎂</p><p class="bday-meta">' + meta + "</p></div>";
+      }
+      return '<div class="card bday-card">' + head +
+        '<p class="bday-left"><span class="sr-only">còn </span><span class="bday-num">' + fmtInt(b.daysLeft) + '</span><span class="bday-unit">ngày</span></p>' +
+        '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
   }
-  $("birthdays").addEventListener("click", function(e){
+  function goTo(e){
     var btn = e.target.closest("[data-goto]");
     if(btn) switchTab(btn.getAttribute("data-goto"));
+  }
+  $("birthdays").addEventListener("click", goTo);
+  $("upcomingBody").addEventListener("click", goTo);
+
+  // Progress toward the next multiple of 100 days (the same K as the
+  // "Ngày thứ K" milestone): K-100 → K fills the bar.
+  function renderGoal(n){
+    var K = Math.max(100, Math.ceil(n / 100) * 100), left = K - n;
+    $("goalText").textContent = left === 0 ? "Hôm nay tròn " + fmtInt(K) + " ngày 🎉" : fmtInt(left) + " ngày nữa → " + fmtInt(K);
+    $("goalFill").style.transform = "scaleX(" + (left === 0 ? 1 : (n - (K - 100)) / 100) + ")";
+    $("goalFill").parentNode.parentNode.classList.toggle("done", left === 0);
+  }
+
+  $("btnCountInfo").addEventListener("click", function(){
+    var open = $("countInfo").hidden;
+    $("countInfo").hidden = !open;
+    this.setAttribute("aria-expanded", open ? "true" : "false");
   });
 
   // ---------- Live clock + day rollover ----------
@@ -308,17 +338,25 @@
   // ---------- Milestones ----------
   function renderMilestones(){
     var list = state.computed.list;
-    $("milestoneList").innerHTML = list.map(function(x){
+    function row(x){
       var sub = fmtDate(x.date);
       if(x.kind === "birthday") sub += " · tròn " + x.turning + " tuổi";
-      else if(x.kind === "user" && x.repeatYearly) sub += " · hằng năm từ " + x.origDate.slice(0, 4);
-      else if(x.auto) sub += " · tự động";
-      var right = '<span class="ms-left' + (x.daysLeft === 0 ? " today" : x.past ? " past" : "") + '">' + daysLeftText(x) + "</span>";
+      else if(x.kind === "user" && x.repeatYearly && x.years > 0) sub += " · lần thứ " + x.years;
+      var label = escapeHtml(x.title + ", " + fmtDate(x.date) + ", " + daysLeftText(x));
       var inner = '<span class="ms-emoji" aria-hidden="true">' + escapeHtml(x.emoji) + "</span>" +
-        '<span class="ms-main"><span class="ms-title">' + escapeHtml(x.title) + '</span><span class="ms-sub">' + escapeHtml(sub) + "</span></span>" + right;
-      if(x.auto) return '<li class="ms-item auto" data-ms-id="' + x.id + '">' + inner + "</li>";
-      return '<li class="ms-item-wrap"><button type="button" class="ms-item" data-ms-id="' + escapeHtml(x.id) + '">' + inner + "</button></li>";
-    }).join("");
+        '<span class="ms-main"><span class="ms-title">' + escapeHtml(x.title) + '</span><span class="ms-sub">' + escapeHtml(sub) + "</span></span>" +
+        bigDays(x, "ms-left");
+      var today = x.daysLeft === 0 ? " is-today" : "";
+      if(x.auto) return '<li class="ms-item auto' + today + '" data-ms-id="' + x.id + '" aria-label="' + label + '">' + inner + "</li>";
+      return '<li class="ms-item-wrap"><button type="button" class="ms-item' + today + '" data-ms-id="' + escapeHtml(x.id) + '" aria-label="' + label + '">' + inner +
+        '<svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></li>';
+    }
+    function group(title, items){
+      if(!items.length) return "";
+      return '<h3 class="group-title">' + title + '</h3><ul class="ms-group">' + items.map(row).join("") + "</ul>";
+    }
+    $("milestoneList").innerHTML = group("Sắp tới", list.filter(function(x){ return !x.past; })) +
+      group("Đã qua", list.filter(function(x){ return x.past; }));
   }
   $("milestoneList").addEventListener("click", function(e){
     var btn = e.target.closest("button[data-ms-id]");
@@ -331,12 +369,22 @@
   $("btnAddMilestone").addEventListener("click", function(){ openMilestoneSheet(null); });
 
   $("emojiPicks").innerHTML = EMOJI_PICKS.map(function(e){
-    return '<button type="button" class="emoji-pick" data-emoji="' + e + '" aria-label="Chọn ' + e + '">' + e + "</button>";
+    return '<button type="button" class="emoji-pick" data-emoji="' + e + '" aria-label="Chọn ' + e + '" aria-pressed="false">' + e + "</button>";
   }).join("");
+  // An empty field saves as 💗 (LoveCore's default), so 💗 shows as picked.
+  function markEmoji(){
+    var v = $("msEmoji").value.trim() || "💗";
+    Array.prototype.forEach.call($("emojiPicks").children, function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-emoji") === v ? "true" : "false");
+    });
+  }
   $("emojiPicks").addEventListener("click", function(e){
     var b = e.target.closest("[data-emoji]");
-    if(b) $("msEmoji").value = b.getAttribute("data-emoji");
+    if(!b) return;
+    $("msEmoji").value = b.getAttribute("data-emoji");
+    markEmoji();
   });
+  $("msEmoji").addEventListener("input", markEmoji);
 
   function openMilestoneSheet(m){
     state.editingId = m ? m.id : null;
@@ -344,6 +392,7 @@
     $("msTitle").value = m ? m.title : "";
     setDateValue("msDate", m ? m.date : C.todayStr(now()));
     $("msEmoji").value = m ? m.emoji : "";
+    markEmoji();
     $("msNote").value = m ? m.note : "";
     $("msRepeat").checked = m ? m.repeatYearly : false;
     $("msDelete").hidden = !m;
@@ -369,6 +418,7 @@
       dataChanged();
       closeSheets();
       recompute(); renderHome(); renderMilestones();
+      toast(old ? "Đã lưu kỷ niệm ✓" : "Đã thêm kỷ niệm 💕");
     }, function(){ showError("msError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
   });
 
@@ -382,6 +432,7 @@
       dataChanged();
       closeSheets();
       recompute(); renderHome(); renderMilestones();
+      toast("Đã xoá kỷ niệm");
     }, function(){ showError("msError", "Không xoá được. Hãy thử lại."); });
   });
 
@@ -391,8 +442,8 @@
   // goes stale. "Today" and the bounds come from LoveCore (VN time).
   var DATE_FIELDS = {
     setupStart:   { min: "1950-01-01", optional: false },
-    setupDobLong: { min: "1900-01-01", optional: true, def: "2000-01-01" },
-    setupDobThu:  { min: "1900-01-01", optional: true, def: "2000-01-01" },
+    setupDobLong: { min: "1900-01-01", optional: true, def: "2000-01-01", empty: "Tuỳ chọn" },
+    setupDobThu:  { min: "1900-01-01", optional: true, def: "2000-01-01", empty: "Tuỳ chọn" },
     pfStart:      { min: "1950-01-01", optional: false },
     pfDobLong:    { min: "1900-01-01", optional: true, def: "2000-01-01" },
     pfDobThu:     { min: "1900-01-01", optional: true, def: "2000-01-01" },
@@ -410,7 +461,7 @@
     btn.classList.toggle("is-empty", !ok);
     btn.querySelector(".date-field-text").innerHTML = ok
       ? '<span class="date-field-wd">' + weekday(v) + ", </span>" + fmtDate(v)
-      : (DATE_FIELDS[id].optional ? "Chưa đặt" : "Chọn ngày");
+      : (DATE_FIELDS[id].optional ? DATE_FIELDS[id].empty || "Chưa đặt" : "Chọn ngày");
   }
   Array.prototype.forEach.call(document.querySelectorAll("[data-date-for]"), function(btn){
     btn.addEventListener("click", function(){ openDatePicker(btn.getAttribute("data-date-for")); });
@@ -689,19 +740,29 @@
     setDateValue("pfDobThu", p.persons[1].dob || "");
     $("labelAvatarLong").textContent = p.persons[0].name;
     $("labelAvatarThu").textContent = p.persons[1].name;
+    profileSnap = profileFormValue();
+    syncProfileDirty();
   }
 
-  var okTimer = null;
+  // "Lưu hồ sơ" stays disabled until something in the form differs from
+  // what's stored. Date pickers dispatch input/change on their hidden inputs.
+  var PF_IDS = ["pfStart", "pfNameLong", "pfNameThu", "pfDobLong", "pfDobThu"];
+  var profileSnap = "";
+  function profileFormValue(){
+    return JSON.stringify(PF_IDS.map(function(id){ return id.indexOf("Name") > 0 ? $(id).value.trim() : $(id).value; }));
+  }
+  function syncProfileDirty(){ $("btnSaveProfile").disabled = profileFormValue() === profileSnap; }
+  $("profileForm").addEventListener("input", syncProfileDirty);
+  $("profileForm").addEventListener("change", syncProfileDirty);
+
   $("profileForm").addEventListener("submit", function(e){
     e.preventDefault();
     var r = readProfileInputs({ start: "pfStart", nameLong: "pfNameLong", nameThu: "pfNameThu", dobLong: "pfDobLong", dobThu: "pfDobThu" });
-    if(r.error){ showError("profileError", r.error); $("profileOk").hidden = true; return; }
+    if(r.error){ showError("profileError", r.error); return; }
     showError("profileError", null);
     saveProfile(r.record).then(function(){
       recompute(); renderHome(); renderMilestones(); fillProfileForm(); updateBadge();
-      $("profileOk").hidden = false;
-      clearTimeout(okTimer);
-      okTimer = setTimeout(function(){ $("profileOk").hidden = true; }, 2500);
+      toast("Đã lưu hồ sơ ✓");
     }, function(){ showError("profileError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
   });
 
@@ -864,18 +925,23 @@
   function renderAlbum(){
     var list = sortedPhotos(), n = list.length, sort = state.meta.albumSort;
     state.albumOrder = list.map(function(p){ return p.id; });
-    $("albumSub").textContent = n ? fmtInt(n) + " ảnh · chạm vào ảnh để xem lớn" : "Ảnh chung của hai bạn, chỉ lưu trên máy này.";
+    $("albumSub").textContent = fmtInt(n) + " ảnh";
+    $("albumSub").hidden = n === 0;
     $("albumTools").hidden = n === 0;
     $("albumEmpty").hidden = n !== 0 || busy === "album";
+    // The empty state carries its own "Thêm ảnh"; one action on screen is enough.
+    $("albumAdd").hidden = n === 0 && busy !== "album";
     Array.prototype.forEach.call(document.querySelectorAll("[data-sort]"), function(b){
       b.setAttribute("aria-pressed", b.getAttribute("data-sort") === sort ? "true" : "false");
     });
+    placeSegPill($("albumTools").querySelector(".segmented"));
     var custom = sort === "custom";
     if(!custom || n < 2) state.arranging = false;
     $("arrangeRow").hidden = !custom || n < 2;
     $("btnArrange").textContent = state.arranging ? "Xong" : "Sắp xếp";
     $("btnArrange").className = "btn btn-sm " + (state.arranging ? "btn-primary" : "btn-soft");
-    $("arrangeHint").textContent = state.arranging ? "Dùng mũi tên để đổi chỗ, “Lên đầu” để đưa ảnh về đầu album." : "Thứ tự do hai bạn tự sắp.";
+    $("arrangeHint").textContent = state.arranging ? "‹ › đổi chỗ · “Lên đầu” đưa ảnh lên đầu" : "";
+    $("arrangeHint").hidden = !state.arranging;
     $("albumGrid").classList.toggle("arranging", state.arranging);
 
     var present = {};
@@ -957,23 +1023,26 @@
   }
 
   // ---------- Album: add photos ----------
-  $("fileAlbum").addEventListener("change", function(){
+  function onAlbumFiles(){
     var files = Array.prototype.slice.call(this.files || []);
     this.value = "";
     if(files.length) addPhotos(files);
-  });
+  }
+  $("fileAlbum").addEventListener("change", onAlbumFiles);
+  $("fileAlbumEmpty").addEventListener("change", onAlbumFiles);
 
   function setAlbumBusy(on){
     $("albumAdd").classList.toggle("is-busy", on);
     $("fileAlbum").disabled = on;
+    $("fileAlbumEmpty").disabled = on;
   }
 
   async function addPhotos(files){
-    if(busy){ showError("albumError", "Đang có việc khác chạy (sao lưu hoặc nhập). Hãy đợi xong rồi thêm ảnh."); return; }
+    if(busy){ showError("albumError", "Đang sao lưu/nhập — đợi xong rồi thêm ảnh."); return; }
     busy = "album";
     setAlbumBusy(true);
     showError("albumError", null);
-    $("albumNote").hidden = true;
+    if(state.tab === "album") renderAlbum();
     var total = files.length, saved = 0, dupes = 0, failed = [], quotaAt = -1;
     var shas = {}, baseOrder = 0, addedBase = now();
     state.photos.forEach(function(p){
@@ -1009,14 +1078,13 @@
     $("albumProgress").hidden = true;
     if(saved){ dataChanged(); requestPersist(); }
     var errs = [];
-    if(quotaAt >= 0) errs.push("Bộ nhớ máy đã đầy — đã lưu " + saved + "/" + total + " ảnh, phần còn lại chưa được thêm. Hãy giải phóng dung lượng máy rồi thử lại.");
-    if(failed.length) errs.push("Không đọc được " + failed.length + " ảnh: " + failed.slice(0, 5).join(", ") + (failed.length > 5 ? "…" : "") + ". Có thể định dạng không được hỗ trợ (ví dụ HEIC) — hãy thử ảnh JPEG hoặc PNG.");
+    if(quotaAt >= 0) errs.push("Bộ nhớ máy đầy — đã lưu " + saved + "/" + total + " ảnh.");
+    if(failed.length) errs.push("Không đọc được " + failed.length + " ảnh (" + failed.slice(0, 5).join(", ") + (failed.length > 5 ? "…" : "") + ") — hãy thử JPEG/PNG.");
     showError("albumError", errs.join(" ") || null);
     var notes = [];
-    if(saved) notes.push("Đã thêm " + saved + " ảnh.");
-    if(dupes) notes.push("Bỏ qua " + dupes + " ảnh đã có trong album.");
-    $("albumNote").textContent = notes.join(" ");
-    $("albumNote").hidden = !notes.length;
+    if(saved) notes.push("Đã thêm " + saved + " ảnh 💕");
+    if(dupes) notes.push((saved ? "bỏ qua " : "Bỏ qua ") + dupes + " ảnh đã có");
+    if(notes.length) toast(notes.join(" · "));
     if(state.tab === "album") renderAlbum();
   }
 
@@ -1148,6 +1216,7 @@
       for(var i = 0; i < state.photos.length; i++) if(state.photos[i].id === rec.id) state.photos[i] = rec;
       viewer.dirty = true;
       dataChanged();
+      toast("Đã lưu chú thích ✓");
     }, function(){
       if(viewer.open && viewer.ids[viewer.index] === p.id){
         renderCaption(p);
@@ -1230,7 +1299,7 @@
   }
   function fmtStamp(ms){
     var w = C.wall(ms);
-    return pad2(w.h) + ":" + pad2(w.mi) + " · " + pad2(w.d) + "/" + pad2(w.m) + "/" + w.y;
+    return pad2(w.d) + "/" + pad2(w.m) + "/" + w.y + ", " + pad2(w.h) + ":" + pad2(w.mi);
   }
   function backupContents(c){
     var parts = [fmtInt(c.photos) + " ảnh", fmtInt(c.milestones) + " kỷ niệm"];
@@ -1238,10 +1307,20 @@
     return parts.join(", ");
   }
 
+  // Calendar days in VN time: "hôm nay, 21:30" / "31 ngày trước (01/09/2026)".
+  function backupAgo(last){
+    var days = C.todayIdx(now()) - C.todayIdx(last), w = C.wall(last);
+    var date = pad2(w.d) + "/" + pad2(w.m) + "/" + w.y, time = pad2(w.h) + ":" + pad2(w.mi);
+    if(days < 0) return { text: date, days: 0 };
+    if(days === 0) return { text: "hôm nay, " + time, days: 0 };
+    if(days === 1) return { text: "hôm qua, " + time, days: 1 };
+    return { text: days + " ngày trước (" + date + ")", days: days };
+  }
+
   function renderBackupCard(){
-    var last = state.meta.lastBackupAt, p = backup.prepared;
-    $("backupLast").textContent = last ? "Lần sao lưu gần nhất: " + fmtStamp(last) : "Chưa sao lưu lần nào.";
-    $("backupLast").classList.toggle("stale", !last || now() - last > 30 * C.DAY);
+    var last = state.meta.lastBackupAt, p = backup.prepared, ago = last ? backupAgo(last) : null;
+    $("backupLast").textContent = ago ? "Lần cuối: " + ago.text : "Chưa sao lưu lần nào";
+    $("backupLast").classList.toggle("stale", !ago || ago.days >= 30);
     $("btnPrepare").hidden = !!p;
     $("btnPrepare").disabled = !!busy;
     $("btnSaveBackup").hidden = !p;
@@ -1250,8 +1329,8 @@
     $("importLabel").classList.toggle("is-busy", !!busy);
     if(busy !== "backup"){
       $("backupStatus").textContent = p
-        ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · gồm " + backupContents(p.counts) + ". Trên iPhone, chọn “Lưu vào Tệp”."
-        : "Bản sao lưu là một file .zip gồm hồ sơ, kỷ niệm và toàn bộ ảnh. Trên iPhone, chọn “Lưu vào Tệp”.";
+        ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
+        : "File .zip gồm hồ sơ, kỷ niệm và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -1377,20 +1456,20 @@
         '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
     } else if(imp.phase === "importing"){
       h = '<p class="import-status" id="importProgress">' + importProgressText() + "</p>" +
-        '<p class="card-hint">Đừng đóng app trong lúc nhập. Nếu bị gián đoạn, dữ liệu cũ vẫn còn nguyên — chỉ cần nhập lại.</p>';
+        '<p class="card-hint">Đừng đóng app. Bị gián đoạn thì dữ liệu cũ vẫn nguyên — nhập lại là được.</p>';
     } else if(imp.phase === "done"){
-      var r = imp.result, parts = [];
-      parts.push(r.addedPhotos ? "thêm " + fmtInt(r.addedPhotos) + " ảnh" : "không có ảnh mới");
-      if(r.skippedPhotos) parts.push("bỏ qua " + fmtInt(r.skippedPhotos) + " ảnh đã có");
-      parts.push(r.addedMilestones ? "thêm " + r.addedMilestones + " kỷ niệm" : "không có kỷ niệm mới");
-      h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' +
-        (imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu bằng bản sao lưu: " : "") + escapeHtml(parts.join(", ")) + ".</p>" +
-        (r.profileKept ? "<p>Hồ sơ hiện tại được giữ nguyên.</p>" : "") + "</div>" +
+      var r = imp.result;
+      var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm";
+      var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
+        : r.addedPhotos || r.addedMilestones ? "Đã thêm " + what + "." : "Không có ảnh hay kỷ niệm mới.";
+      h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
+        (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
     }
     el.innerHTML = h;
+    placeSegPill(el.querySelector(".segmented"), true);
   }
 
   function importProgressText(){
@@ -1399,7 +1478,7 @@
 
   function renderImportReady(){
     var ps = imp.parsed, pl = imp.plan, local = localSnapshot();
-    var when = ps.exportedAt ? "Bản sao lưu lúc " + fmtStamp(ps.exportedAt) : "Bản sao lưu";
+    var when = ps.exportedAt ? "Bản sao lưu ngày " + fmtStamp(ps.exportedAt) : "Bản sao lưu";
     var imgs = Object.keys(ps.images).length;
     var h = '<div class="import-summary"><p class="import-when">' + escapeHtml(when) + "</p><ul>" +
       "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
@@ -1413,16 +1492,23 @@
       '<button type="button" class="seg-btn" data-imp="mode-merge" aria-pressed="' + (imp.mode === "merge") + '">Gộp (khuyên dùng)</button>' +
       '<button type="button" class="seg-btn" data-imp="mode-replace" aria-pressed="' + (imp.mode === "replace") + '">Thay thế</button></div>';
     if(imp.mode === "merge"){
-      var bits = ["thêm " + fmtInt(pl.addPhotos) + " ảnh" + (pl.skipPhotos ? " (bỏ qua " + fmtInt(pl.skipPhotos) + " ảnh đã có)" : ""),
-                  "thêm " + pl.addMilestones + " kỷ niệm" + (pl.skipMilestones ? " (" + pl.skipMilestones + " đã có)" : "")];
-      h += '<p class="card-text">Giữ nguyên dữ liệu đang có, chỉ thêm phần còn thiếu: ' + escapeHtml(bits.join(", ")) + ". " +
-        (local.profileOk ? "Hồ sơ và ảnh đại diện hiện tại được giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.") + "</p>" +
+      // Merge only takes avatars/cover the device doesn't have yet.
+      var fillImgs = Object.keys(ps.images).filter(function(id){ return !local.hasBlob[id]; }).length;
+      var skipped = pl.skipPhotos + pl.skipMilestones;
+      if(!pl.addPhotos && !pl.addMilestones && !fillImgs && local.profileOk){
+        return h + '<p class="card-text">Không có gì mới — mọi ảnh và kỷ niệm đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' +
+          '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
+      }
+      var adds = [fmtInt(pl.addPhotos) + " ảnh", fmtInt(pl.addMilestones) + " kỷ niệm"];
+      if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + " đã có, bỏ qua)" : "") + ". " +
+        (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
     }
     var p = backup.prepared;
     h += '<div class="import-box import-warn"><p class="import-box-title">Toàn bộ dữ liệu hiện tại sẽ bị xoá</p><p>' +
-      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, hồ sơ và ảnh đại diện trên máy này sẽ được thay bằng nội dung bản sao lưu.</p></div>" +
+      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p></div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -1514,6 +1600,10 @@
 
   // ---------- Storage info + diagnostics ----------
   function fmtMB(bytes){ return (bytes / 1048576).toFixed(1).replace(".", ",") + " MB"; }
+  function fmtSize(bytes){
+    var mb = bytes / 1048576;
+    return mb >= 1024 ? (mb / 1024).toFixed(1).replace(".", ",") + " GB" : fmtMB(bytes);
+  }
   var storageFacts = { usage: null, quota: null, persisted: null };
 
   function requestPersist(){
@@ -1533,11 +1623,13 @@
       storageFacts.quota = r[0] ? r[0].quota : null;
       storageFacts.persisted = r[1];
       var parts = [];
-      parts.push(storageFacts.usage != null ? "Đã dùng " + fmtMB(storageFacts.usage) + " trên khoảng " + fmtMB(storageFacts.quota) + " được phép." : "Trình duyệt không cho biết dung lượng đã dùng.");
-      if(r[1] === true) parts.push("Bộ nhớ bền vững: đã bật — máy sẽ không tự xoá dữ liệu khi thiếu dung lượng.");
-      else if(r[1] === false) parts.push("Bộ nhớ bền vững: chưa bật — khi máy thiếu dung lượng, dữ liệu có thể bị xoá. Hãy sao lưu định kỳ.");
+      parts.push(storageFacts.usage != null
+        ? "Bộ nhớ: " + fmtSize(storageFacts.usage) + (storageFacts.quota ? " / " + fmtSize(storageFacts.quota) : "")
+        : "Bộ nhớ: không rõ dung lượng");
+      if(r[1] === true) parts.push("Bền vững: đã bật ✓");
+      else if(r[1] === false) parts.push("Bền vững: chưa bật — máy có thể xoá khi đầy");
       if(state.db === null) parts.push("Đang chạy tạm trong bộ nhớ: dữ liệu sẽ mất khi đóng app.");
-      $("storageInfo").textContent = parts.join(" ");
+      $("storageInfo").innerHTML = parts.map(escapeHtml).join("<br>");
       renderDiag();
     });
   }
@@ -1644,25 +1736,30 @@
   function renderPush(){
     var perm = typeof Notification === "undefined" ? "unsupported" : Notification.permission;
     var key = vapidKey(), sub = currentSub();
-    var status = "", ok = false, canEnable = false;
+    var status = "", ok = false, warn = false, canEnable = false;
     if(!VAPID_PUBLIC_KEY){
-      status = "Chưa cấu hình khoá thông báo. Người giữ repo cần tạo khoá VAPID và dán khoá công khai vào app (xem docs/love-days.md).";
+      status = "Chưa cấu hình khoá thông báo";
     } else if(!key){
-      status = "Khoá thông báo trong app không hợp lệ — cần kiểm tra lại VAPID_PUBLIC_KEY.";
+      status = "Khoá thông báo không hợp lệ (VAPID_PUBLIC_KEY).";
+      warn = true;
     } else if(!pushSupported() || !isStandalone()){
-      status = "Mở app từ icon Màn hình chính (iOS 16.4+) để bật thông báo — trong tab Safari không bật được.";
+      status = "Chỉ bật được khi mở từ icon Màn hình chính (iOS 16.4+).";
     } else if(perm === "denied"){
-      status = "Bạn đã chặn thông báo. Bật lại trong Cài đặt iPhone → Thông báo → Long & Thư.";
+      status = "Đã chặn — bật lại ở Cài đặt iPhone → Thông báo → Long & Thư.";
+      warn = true;
     } else if(sub){
       ok = true;
-      status = "Đã bật trên máy này ✓ Nhớ sao chép mã bên dưới vào secret.";
+      status = "Đã bật ✓ Nhớ sao chép mã vào secret.";
     } else {
       canEnable = true;
-      status = perm === "granted" ? "Đã cho phép thông báo nhưng máy chưa có mã đăng ký — chạm “Bật thông báo”." : "Chưa bật trên máy này.";
+      status = perm === "granted" ? "Đã cho phép, chưa có mã — chạm “Bật thông báo”." : "Chưa bật trên máy này";
     }
     $("pushStatus").textContent = status;
     $("pushStatus").classList.toggle("ok", ok);
-    $("btnPushEnable").hidden = ok;
+    $("pushStatus").classList.toggle("warn", warn);
+    // Without a key nothing can be enabled, so hide the controls for it.
+    $("pushLabelField").hidden = !key;
+    $("btnPushEnable").hidden = ok || !key;
     $("btnPushEnable").disabled = !canEnable || push.busy;
     $("btnPushEnable").textContent = push.busy ? "Đang bật…" : "Bật thông báo";
     $("btnPushTest").disabled = typeof Notification === "undefined" || perm === "denied" || !("serviceWorker" in navigator) || !state.computed;
@@ -1682,7 +1779,7 @@
       savePushRec();
       setBanner("push", null);
     } };
-    setBanner("push", changed ? "Mã đăng ký thông báo của máy này đã đổi — cần cập nhật secret LOVE_PUSH_SUBSCRIPTIONS. Vào Cài đặt → Thông báo hằng ngày để lấy mã mới." : null, "warn", dismiss);
+    setBanner("push", changed ? "Mã đăng ký thông báo của máy này đã đổi — cần cập nhật secret. Xem Cài đặt → Thông báo." : null, "warn", dismiss);
   }
 
   function initPush(){
@@ -1758,11 +1855,11 @@
       try{ ta.setSelectionRange(0, txt.length); }catch(e){}
       var ok = false;
       try{ ok = document.execCommand("copy"); }catch(e){}
-      done(ok ? "Đã sao chép ✓ Dán vào secret LOVE_PUSH_SUBSCRIPTIONS cùng mã của máy kia." : "Không tự sao chép được — mã đã được bôi đen, hãy chạm giữ rồi chọn Sao chép.");
+      done(ok ? "Đã sao chép ✓ Dán vào secret cùng mã máy kia." : "Không tự sao chép được — mã đã được bôi đen, hãy chạm giữ rồi chọn Sao chép.");
     }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(function(){
-        done("Đã sao chép ✓ Dán vào secret LOVE_PUSH_SUBSCRIPTIONS cùng mã của máy kia.");
+        done("Đã sao chép ✓ Dán vào secret cùng mã máy kia.");
       }, fallback);
     } else fallback();
   });
@@ -1791,8 +1888,8 @@
           badged = true;
         }
       }catch(e){}
-      note.textContent = "Đã gửi thử ✓ " + (badged ? "Icon app sẽ hiện số " + fmtInt(n) + ". " : "Máy này không hỗ trợ số trên icon. ") +
-        "Không thấy thông báo thì kiểm tra Cài đặt iPhone → Thông báo → Long & Thư.";
+      note.textContent = "Đã gửi thử ✓ " + (badged ? "Icon hiện số " + fmtInt(n) + ". " : "Máy này không hỗ trợ số trên icon. ") +
+        "Không thấy? Xem Cài đặt iPhone → Thông báo.";
       note.hidden = false;
       renderPush();
       renderDiag();
@@ -1800,6 +1897,40 @@
       showError("pushError", (err && err.userMessage) || "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
       renderPush();
     });
+  });
+
+  // ---------- Toast + segmented pill ----------
+  var toastTimer = null;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2500);
+  }
+
+  // One pill per segmented control, slid under the pressed button. Measure
+  // only while visible: inside display:none every offsetWidth is 0.
+  function placeSegPill(seg, instant){
+    if(!seg) return;
+    var pill = seg.querySelector(".seg-pill");
+    if(!pill){
+      pill = document.createElement("span");
+      pill.className = "seg-pill";
+      pill.setAttribute("aria-hidden", "true");
+      seg.insertBefore(pill, seg.firstChild);
+      instant = true;
+    }
+    var on = seg.querySelector('[aria-pressed="true"]');
+    if(!on || !on.offsetWidth){ pill.style.opacity = "0"; return; }
+    if(instant) pill.classList.add("no-anim");
+    pill.style.width = on.offsetWidth + "px";
+    pill.style.transform = "translateX(" + on.offsetLeft + "px)";
+    pill.style.opacity = "";
+    if(instant){ void pill.offsetWidth; pill.classList.remove("no-anim"); }
+  }
+  window.addEventListener("resize", function(){
+    Array.prototype.forEach.call(document.querySelectorAll(".segmented"), function(seg){ placeSegPill(seg, true); });
   });
 
   // ---------- Sheets ----------
@@ -1876,7 +2007,7 @@
     return Promise.resolve().then(loadAll).catch(function(){ state.loadFailed = true; });
   }, function(err){
     var why = err && err.code === "blocked" ? "đang bị một cửa sổ LoveDays khác giữ" : err && err.code === "timeout" ? "quá thời gian chờ" : "trình duyệt từ chối";
-    setBanner("db", "Không mở được bộ nhớ trên máy (" + why + "). App vẫn chạy nhưng thay đổi sẽ không được lưu. Hãy đóng các cửa sổ LoveDays khác rồi mở lại.", "error");
+    setBanner("db", "Không mở được bộ nhớ (" + why + ") — thay đổi sẽ không được lưu. Đóng các cửa sổ LoveDays khác rồi mở lại.", "error");
   }).then(render).catch(function(){
     $("loadingView").hidden = true;
     setBanner("render", "Có lỗi khi hiển thị dữ liệu. Dữ liệu vẫn còn trên máy — hãy thử mở lại app.", "error");

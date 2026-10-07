@@ -47,31 +47,41 @@ const edges = [
   { startDate: '2026-01-31', now: '2026-03-01T12:00:00+07:00', n: '30', clock: '0 năm 1 tháng 1 ngày · 12:00:00' }
 ];
 
-// Milestones tab at `now`, in display order. Upcoming card = first row.
+// Milestones tab at `now`, in display order (= each .ms-item's aria-label;
+// visibly the row shows only the big number + "ngày"). The first 6 sit under
+// the "Sắp tới" group title, the last under "Đã qua". Upcoming card = first row.
 const milestoneRows = [
-  'Ngày gặp nhau | 05/10/2026 | còn 3 ngày',
-  'Sinh nhật Minh Thư | 15/10/2026 | còn 13 ngày',      // currently 25 tuổi, turning 26
-  'Ngày thứ 1.000 | 09/11/2026 | còn 38 ngày',          // wrong convention → 10/11, 39
-  'Du lịch Đà Lạt | 24/12/2026 | còn 83 ngày',
-  'Kỷ niệm 3 năm | 14/02/2027 | còn 135 ngày',
-  'Sinh nhật Viết Long | 20/05/2027 | còn 230 ngày',    // currently 28 tuổi
-  'Lần đầu tặng hoa | 08/03/2024 | đã qua 938 ngày'
+  'Ngày gặp nhau, 05/10/2026, còn 3 ngày',             // .ms-sub "05/10/2026 · lần thứ 3" (repeat yearly from 2023)
+  'Sinh nhật Minh Thư, 15/10/2026, còn 13 ngày',       // .ms-sub "… · tròn 26 tuổi"
+  'Ngày thứ 1.000, 09/11/2026, còn 38 ngày',           // wrong convention → 10/11, 39
+  'Du lịch Đà Lạt, 24/12/2026, còn 83 ngày',
+  'Kỷ niệm 3 năm, 14/02/2027, còn 135 ngày',
+  'Sinh nhật Viết Long, 20/05/2027, còn 230 ngày',     // .ms-sub "… · tròn 29 tuổi"
+  'Lần đầu tặng hoa, 08/03/2024, đã qua 938 ngày'
 ];
-const birthdays = { long: { age: '28 tuổi', left: 'còn 230 ngày' }, thu: { age: '25 tuổi', left: 'còn 13 ngày' } };
+// Home birthday tiles: big number (.bday-num) + .bday-meta. No current age shown.
+const birthdays = { long: { left: '230', meta: '20/05 · tròn 29 tuổi' }, thu: { left: '13', meta: '15/10 · tròn 26 tuổi' } };
+// Home progress chip toward the next multiple of 100 (#goalText, #goalFill transform).
+const goal = [
+  { startDate: '2024-02-14', text: '38 ngày nữa → 1.000', scale: 0.62 },
+  { startDate: '2026-10-02', text: '99 ngày nữa → 100', scale: 0.01 },
+  { startDate: '2024-01-07', text: 'Hôm nay tròn 1.000 ngày 🎉', scale: 1 }
+];
 // start 2024-02-29 → anniversary on 28/02 in non-leap years.
-const leap = { startDate: '2024-02-29', row: 'Kỷ niệm 3 năm | 28/02/2027 | còn 149 ngày' };
+const leap = { startDate: '2024-02-29', row: 'Kỷ niệm 3 năm, 28/02/2027, còn 149 ngày' };
 
 const sel = {
   tab: name => '.tabbar-btn[data-tab="' + name + '"]',    // home | milestones | album | settings
   dayCount: '#dayCount', hours: '#hoursCount', clock: '#liveClock',
   upcoming: '#upcomingBody', birthdays: '#birthdays .bday-card',
-  milestoneRows: '#milestoneList .ms-item',               // title .ms-title, date+tag .ms-sub, right .ms-left
+  milestoneRows: '#milestoneList .ms-item',               // aria-label = milestoneRows; .ms-title, .ms-sub, .ms-left (.ms-num + .ms-unit); editable rows are <button> with .ms-chev
+  goalText: '#goalText', goalFill: '#goalFill', countInfo: '#btnCountInfo', toast: '#toast',
   addMilestone: '#btnAddMilestone',
   setupView: '#setupView', setupStart: '#setupStart', setupError: '#setupError',
   banners: '#banners .banner',
   avatarLongImg: '#avatarLong img', avatarThuImg: '#avatarThu img', coverImg: '#coverImg',
   fileAvatarLong: '#fileAvatarLong', fileAvatarThu: '#fileAvatarThu', fileCover: '#fileCover',
-  diag: '#diagLine', version: '#btnVersion',
+  diag: '#diagLine', version: '#btnVersion',             // #diagLine sits in a closed <details>: read textContent, not innerText
   // Album: tiles carry data-id; .album-thumb opens the viewer (aria-label "Ảnh N, chụp dd/mm/yyyy").
   fileAlbum: '#fileAlbum', albumGrid: '#albumGrid', albumTiles: '#albumGrid .album-tile', albumSub: '#albumSub',
   albumProgress: '#albumProgress', albumError: '#albumError', sort: k => '[data-sort="' + k + '"]', // taken | added | custom
@@ -135,4 +145,4 @@ function badgeStubScript() {
   try { Object.defineProperty(Notification, 'permission', { get: () => 'granted', configurable: true }); } catch (e) {}
 }
 
-module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, leap, sel, seed, seedPhotos, badgeStubScript };
+module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript };
