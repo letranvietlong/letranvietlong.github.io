@@ -1,10 +1,11 @@
-// Standard FuelTrack test scenario with hand-computed expectations (v1.8).
+// Standard FuelTrack test scenario with hand-computed expectations (v1.9).
 // Pair with harness.open({ path: ft.path, now: ft.now.B, mocks: ft.mocks.full, localStorage: ft.localStorage }).
 //
 // Data shapes (the real bot-written files follow the same shape):
 //   data/fuel-price-history.json { items: {id: label}, changes: [ { date 'YYYY-MM-DD', detectedAt, prices: {id: đ/lít} } ] }
 //       — change points only; each entry is a FULL snapshot; the page forward-fills per VN day.
-//         A new price applies from 15:00 VN on its date (so that day has two list prices).
+//         A new price applies from 15:00 VN on its date (so that day has two list prices) — unless
+//         detectedAt is before 07:00 VN of that date: then it applied all day (one price).
 //   data/fuel-price.json         { effectiveDate, unit, items: [ { id, label, price, prevPrice, change, source } ] }
 //   localStorage fueltrack_log_v1 { version:1, vehicles:[{id,name}], fills:[ { id, date, vehicleId, fuelId, fuelLabel,
 //                                   liters (3 dp), amount (int đ), price (int đ/L), priceSource:'list'|'user',
@@ -33,6 +34,12 @@ const changesFull = [
 ];
 const historyFull = { items, changes: changesFull };
 const historyTrunc = { items, changes: changesFull.slice(0, -1) };
+// Holiday shift: the period of the week of 31/12/2026 was moved to Wednesday 30/12.
+const historyHoliday = { items, changes: [
+  { date: '2026-12-17', detectedAt: '2026-12-17T08:00:00Z', prices: P(28000, 27000, 29000, 30000) },
+  { date: '2026-12-24', detectedAt: '2026-12-24T08:00:00Z', prices: P(28100, 27100, 29100, 30100) },
+  { date: '2026-12-30', detectedAt: '2026-12-30T08:00:00Z', prices: P(28200, 27200, 29200, 30200) }
+] };
 
 function priceDoc(changes) {
   const last = changes[changes.length - 1], prev = changes[changes.length - 2];
@@ -45,7 +52,8 @@ function priceDoc(changes) {
 
 const mocks = {
   full: { 'data/fuel-price.json': priceDoc(changesFull), 'data/fuel-price-history.json': historyFull },
-  trunc: { 'data/fuel-price.json': priceDoc(historyTrunc.changes), 'data/fuel-price-history.json': historyTrunc }
+  trunc: { 'data/fuel-price.json': priceDoc(historyTrunc.changes), 'data/fuel-price-history.json': historyTrunc },
+  holiday: { 'data/fuel-price.json': priceDoc(historyHoliday.changes), 'data/fuel-price-history.json': historyHoliday }
 };
 
 // "Now" cases (pass as harness `now`; tz Asia/Ho_Chi_Minh unless noted).
@@ -75,7 +83,12 @@ const expected = {
     B: { date: 'Thứ năm 15/10 · 15:00', left: 'còn 6 ngày 23 giờ' },
     C: { waiting: 'Đang chờ giá kỳ 08/10' },
     D: { date: 'Thứ năm 15/10 · 15:00', left: 'còn 6 ngày 6 giờ' },
-    TZ: { date: 'Thứ năm 15/10 · 15:00', left: 'còn 6 ngày 14 giờ' }
+    TZ: { date: 'Thứ năm 15/10 · 15:00', left: 'còn 6 ngày 14 giờ' },
+    // mocks.full at Thu 14:45 VN ('2026-10-08T07:45:00Z'): bot already recorded today → count to today 15:00
+    early: { date: 'Thứ năm 08/10 · 15:00', left: 'còn 0 giờ 15 phút', meta: 'đã có giá mới' },
+    // mocks.holiday: Wed 30/12 16:00 ('2026-12-30T09:00:00Z') and Thu 31/12 16:00 ('2026-12-31T09:00:00Z') — never "Đang chờ"
+    holidayWed: { date: 'Thứ năm 07/01 · 15:00', left: 'còn 7 ngày 23 giờ' },
+    holidayThu: { date: 'Thứ năm 07/01 · 15:00', left: 'còn 6 ngày 23 giờ' }
   },
   // now B + mocks.full. 30N base = price in effect on 08/09 = point 03/09.
   // Compare chips by textContent — innerText adds a space after ▲/▼ (flex gap).
@@ -126,6 +139,6 @@ const sel = {
 };
 
 module.exports = {
-  path, items, historyFull, historyTrunc, priceDoc, mocks, now, fills, log, expected, sel,
+  path, items, historyFull, historyTrunc, historyHoliday, priceDoc, mocks, now, fills, log, expected, sel,
   localStorage: { fueltrack_log_v1: log }
 };

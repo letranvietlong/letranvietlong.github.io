@@ -33,8 +33,12 @@
     if(!/^\d+(\.\d+)?$/.test(s) && !/^\.\d+$/.test(s)) return NaN;
     return Math.round(parseFloat(s) * 1000) / 1000;
   }
+  // Dots/spaces group thousands; commas too, but only in exact 3-digit groups
+  // ("93,100") — "93,1" stays invalid rather than guessing a decimal.
   function parseInteger(str){
-    var s = String(str || '').replace(/[.\s]/g, '');
+    var s = String(str || '').replace(/\s/g, '');
+    if(/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, '');
+    s = s.replace(/\./g, '');
     if(!/^\d+$/.test(s) || s.length > 12) return NaN;
     return parseInt(s, 10);
   }
@@ -64,15 +68,16 @@
         'Định dạng file không hợp lệ.';
     }
     if(!Array.isArray(d.vehicles) || !d.vehicles.length || d.vehicles.length > 50) return 'Danh sách xe trong file không hợp lệ.';
-    var vids = {};
+    // Null-prototype maps: with {} an id like "toString" would look present.
+    var vids = Object.create(null);
     for(var i = 0; i < d.vehicles.length; i++){
       var v = d.vehicles[i];
-      if(!v || typeof v.id !== 'string' || !ID_RE.test(v.id) || v.id.length > 40 || vids[v.id] ||
+      if(!v || typeof v.id !== 'string' || !ID_RE.test(v.id) || v.id.length > 40 || v.id === '__proto__' || vids[v.id] ||
          typeof v.name !== 'string' || !v.name.trim() || v.name.length > 40) return 'Danh sách xe trong file không hợp lệ.';
       vids[v.id] = true;
     }
     if(!Array.isArray(d.fills) || d.fills.length > MAX_FILLS) return 'Danh sách lần đổ trong file không hợp lệ.';
-    var fids = {};
+    var fids = Object.create(null);
     for(var j = 0; j < d.fills.length; j++){
       var f = d.fills[j], n = 'Lần đổ thứ ' + (j + 1) + ': ';
       if(!f || typeof f !== 'object') return n + 'không hợp lệ.';
@@ -144,13 +149,31 @@
   function cloneData(){ return JSON.parse(JSON.stringify(data)); }
 
   // ---------- Calculations ----------
-  // Per vehicle: by date, then odometer (when both have one), then entry order.
-  function cmpFill(a, b){
+  // Order of fills: by date; within a day by entry order, except that fills
+  // with an odometer reading are put in odometer order among the slots they
+  // occupy. A pairwise comparator "odo if both have one, else entry order" is
+  // not transitive (A 50 km, B no km, C 100 km entered C, B, A), so the result
+  // depended on array order and a valid log could load as corrupt.
+  function cmpEntry(a, b){
     if(a.date !== b.date) return a.date < b.date ? -1 : 1;
-    if(a.odo != null && b.odo != null && a.odo !== b.odo) return a.odo - b.odo;
-    return (a.createdAt || 0) - (b.createdAt || 0);
+    if((a.createdAt || 0) !== (b.createdAt || 0)) return (a.createdAt || 0) - (b.createdAt || 0);
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
   }
-  function fillsOf(fills, vehicleId){ return fills.filter(function(f){ return f.vehicleId === vehicleId; }).sort(cmpFill); }
+  function sortFills(fills){
+    var list = fills.slice().sort(cmpEntry);
+    for(var i = 0; i < list.length;){
+      var j = i, slots = [], withOdo = [];
+      while(j < list.length && list[j].date === list[i].date){
+        if(list[j].odo != null){ slots.push(j); withOdo.push(list[j]); }
+        j++;
+      }
+      withOdo.sort(function(a, b){ return a.odo - b.odo || cmpEntry(a, b); });
+      slots.forEach(function(s, k){ list[s] = withOdo[k]; });
+      i = j;
+    }
+    return list;
+  }
+  function fillsOf(fills, vehicleId){ return sortFills(fills.filter(function(f){ return f.vehicleId === vehicleId; })); }
   // First fill whose odometer is below that of the previous fill (by date)
   // that has one. Replayed in date order — never compared with the newest.
   function findOdoViolation(fills, vehicleId){
@@ -212,7 +235,7 @@
   }
   function defaultVehicle(){
     if(selectedVehicle && vehicleName(selectedVehicle)) return selectedVehicle;
-    var latest = data.fills.slice().sort(cmpFill).pop();
+    var latest = sortFills(data.fills).pop();
     return latest ? latest.vehicleId : data.vehicles[0].id;
   }
   function renderLog(){
@@ -258,7 +281,8 @@
       var p = st.paid, d = p.diff;
       var diffTxt = d > 0 ? 'Trả hơn niêm yết ' + fmtVnd(d) + ' đ' : d < 0 ? 'Trả ít hơn niêm yết ' + fmtVnd(-d) + ' đ' : 'Đúng giá niêm yết';
       html += '<div class="sum-row" id="sumPaid"><span class="sum-k">Giá trả TB</span><span class="sum-v">' + fmtVnd(Math.round(p.avgPaid)) + ' đ/L</span></div>' +
-        '<p class="sum-note" id="sumPaidDiff">' + diffTxt + ' · niêm yết TB ' + fmtVnd(Math.round(p.avgList)) + '</p>';
+        '<p class="sum-note" id="sumPaidDiff">' + diffTxt + ' · niêm yết TB ' + fmtVnd(Math.round(p.avgList)) +
+        (p.count < st.total.count ? ' · tính trên ' + p.count + '/' + st.total.count + ' lần có giá niêm yết' : '') + '</p>';
     }
     html += '<div class="sum-row" id="sumTotal"><span class="sum-k">Tổng cộng</span><span class="sum-v">' + fmtVnd(st.total.money) + ' đ · ' + fmtDec(st.total.liters, 2) + ' L · ' + st.total.count + ' lần</span></div>';
     html += '</div>';
@@ -299,10 +323,17 @@
   });
 
   // ---------- Form ----------
-  // Fill 2 of 3: litres, money, price/litre. pMode says where the price came
-  // from: 'list' (auto from the price list), 'user' (typed), 'derived'
-  // (= money / litres), 'empty'. A list price never overwrites a typed one.
-  var form = { editing: null, pMode: 'empty', anchor: 'L', lUser: false, aUser: false, chipPick: null };
+  // Fill 2 of 3: litres (L), money (A), price/litre (P). form.order = fields
+  // the user set, oldest first; the newest two valid ones decide the third.
+  // An automatic list price sits at the oldest position, so anything typed
+  // outranks it (L then A typed → price = A ÷ L, both kept).
+  // pMode = where the price came from: 'list' (auto), 'chip' (tapped list
+  // price), 'user' (typed), 'derived' (A ÷ L), 'stored' (editing), 'empty'.
+  // Editing a saved fill: litres and money are what was paid, so they start
+  // as the two inputs and a date/fuel change never rewrites them — the list
+  // price of the new date is only offered as a chip.
+  var form = { editing: null, pMode: 'empty', order: [], derived: null, priceSet: false };
+  var FIELD_IDS = { L: 'fLiters', A: 'fAmount', P: 'fPrice' };
 
   function setFieldError(id, msg){ $(id).textContent = msg || ''; $(id).hidden = !msg; }
   function clearErrors(){ ['fDateErr', 'fQtyErr', 'fPriceErr', 'fOdoErr', 'fillError'].forEach(function(id){ setFieldError(id, null); }); }
@@ -311,12 +342,13 @@
     var ids = S.itemsOn(day);
     if(!ids.length) ids = S.itemOrder();
     if(!ids.length) ids = ['e10-ron95-iii', 'e5-ron92-ii', 'do-005s-ii', 'ko'];
-    if(keep && ids.indexOf(keep) < 0) ids = ids.concat(keep);
+    keep.forEach(function(k){ if(k && ids.indexOf(k) < 0) ids = ids.concat(k); });
     return ids;
   }
-  function refreshFuelOptions(){
+  // keepCurrent: a background refresh must not change the selected fuel.
+  function refreshFuelOptions(keepCurrent){
     var sel = $('fFuel'), prev = sel.value;
-    var keep = form.editing ? form.editing.fuelId : null;
+    var keep = [form.editing ? form.editing.fuelId : null, keepCurrent ? prev : null];
     var ids = fuelChoices($('fDate').value, keep);
     sel.innerHTML = ids.map(function(id){
       var label = form.editing && form.editing.fuelId === id && form.editing.fuelLabel ? form.editing.fuelLabel : S.itemLabel(id);
@@ -331,60 +363,88 @@
   function setPrice(v, mode){
     $('fPrice').value = v == null || v === '' ? '' : fmtVnd(v);
     form.pMode = mode;
+    if($('fPrice').value) form.priceSet = true;
   }
-  function renderChips(adj){
-    var box = $('fPriceChips');
-    if(!adj){ box.hidden = true; box.innerHTML = ''; return; }
+  // List price for the form's date + fuel: { adj, auto, hint }.
+  function listInfo(){
+    var day = $('fDate').value, id = $('fFuel').value;
+    if(!realDate(day) || !id) return { adj: null, auto: null, hint: '' };
+    var adj = S.adjustmentOn(id, day);
+    if(adj){
+      if(day === S.vnToday()){
+        var after = today15Passed();
+        return { adj: adj, auto: after ? adj.after : adj.before, hint: after ? '· từ 15h' : '· trước 15h' };
+      }
+      return { adj: adj, auto: null, hint: '· ngày đổi giá, chọn bên dưới' };
+    }
+    var p = S.priceOn(id, day);
+    return { adj: null, auto: p, hint: p != null ? '· niêm yết' : '' };
+  }
+  function changedFromStored(){
+    var ed = form.editing;
+    return !!ed && ($('fDate').value !== ed.date || $('fFuel').value !== ed.fuelId);
+  }
+  function renderChips(li){
+    var box = $('fPriceChips'), chips = [];
+    if(li.adj) chips = [['Trước 15h', li.adj.before], ['Từ 15h', li.adj.after]];
+    else if(li.auto != null && changedFromStored() && li.auto !== parseInteger($('fPrice').value)) chips = [['Niêm yết ' + fmtDM($('fDate').value), li.auto]];
+    if(!chips.length){ box.hidden = true; box.innerHTML = ''; return; }
     var P = parseInteger($('fPrice').value);
-    box.innerHTML = [['before', 'Trước 15h', adj.before], ['after', 'Từ 15h', adj.after]].map(function(c){
-      var on = form.pMode === 'list' && P === c[2];
-      return '<button type="button" class="price-chip' + (on ? ' active' : '') + '" data-price="' + c[2] + '" aria-pressed="' + on + '">' + c[1] + ' <b>' + fmtVnd(c[2]) + '</b></button>';
+    box.innerHTML = chips.map(function(c){
+      var on = P === c[1];
+      return '<button type="button" class="price-chip' + (on ? ' active' : '') + '" data-price="' + c[1] + '" aria-pressed="' + on + '">' + c[0] + ' <b>' + fmtVnd(c[1]) + '</b></button>';
     }).join('');
     box.hidden = false;
   }
-  function refreshListPrice(){
-    var day = $('fDate').value, id = $('fFuel').value;
-    var hint = '';
-    var adj = realDate(day) && id ? S.adjustmentOn(id, day) : null;
-    if(form.pMode !== 'user' && form.pMode !== 'derived'){
-      if(adj){
-        if(day === S.vnToday()){
-          var after = today15Passed();
-          setPrice(after ? adj.after : adj.before, 'list');
-          hint = after ? '· từ 15h' : '· trước 15h';
-        } else {
-          setPrice('', 'empty');
-          hint = '· ngày đổi giá, chọn bên dưới';
-        }
-      } else {
-        var p = realDate(day) && id ? S.priceOn(id, day) : null;
-        if(p != null){ setPrice(p, 'list'); hint = '· niêm yết'; }
-        else setPrice('', 'empty');
-      }
-      recalc();
-    }
-    $('fPriceHint').textContent = hint;
-    renderChips(adj);
+  function touch(f){
+    form.order = form.order.filter(function(x){ return x !== f; }).concat(f);
+    if(form.derived === f) form.derived = null;
+  }
+  function setAutoPrice(li){
+    setPrice(li.auto, li.auto == null ? 'empty' : 'list');
+    form.order = form.order.filter(function(x){ return x !== 'P'; });
+    if(form.pMode === 'list') form.order.unshift('P');
+    if(form.derived === 'P') form.derived = null;
+    $('fPriceHint').textContent = li.hint;
   }
   function setLiters(v){ $('fLiters').value = v.toFixed(3).replace('.', ','); }
-  function recalc(){
-    var L = parseLiters($('fLiters').value), A = parseInteger($('fAmount').value), P = parseInteger($('fPrice').value);
-    if((form.pMode === 'list' || form.pMode === 'user') && P > 0){
-      if(form.anchor === 'L' && L > 0){ $('fAmount').value = fmtVnd(Math.round(L * P)); form.aUser = false; }
-      else if(form.anchor === 'A' && A > 0){ setLiters(Math.round(A / P * 1000) / 1000); form.lUser = false; }
-    } else if((form.pMode === 'derived' || form.pMode === 'empty') && L > 0 && A > 0 && form.lUser && form.aUser){
-      setPrice(Math.round(A / L), 'derived');
-      $('fPriceHint').textContent = '· tính từ tiền ÷ lít';
-    }
+  function formValues(){
+    return { L: parseLiters($('fLiters').value), A: parseInteger($('fAmount').value), P: parseInteger($('fPrice').value) };
   }
-  $('fLiters').addEventListener('input', function(){ form.lUser = true; form.anchor = 'L'; setFieldError('fQtyErr', null); recalc(); });
-  $('fAmount').addEventListener('input', function(){ form.aUser = true; form.anchor = 'A'; setFieldError('fQtyErr', null); recalc(); });
+  // onlyEmpty: may fill an empty field but never rewrite one (background
+  // refresh, save). src: the field being typed in — never computed into.
+  function recalc(onlyEmpty, src){
+    var v = formValues();
+    var inputs = form.order.filter(function(f){ return v[f] > 0; }).slice(-2);
+    if(inputs.length < 2){
+      // A value computed from inputs that are gone would be stale.
+      var d = form.derived;
+      if(d && !onlyEmpty && d !== src){
+        form.derived = null;
+        if(d === 'P'){ setPrice('', 'empty'); $('fPriceHint').textContent = ''; if(!form.editing) setAutoPrice(listInfo()); }
+        else $(FIELD_IDS[d]).value = '';
+      }
+      return;
+    }
+    var target = ['L', 'A', 'P'].filter(function(f){ return inputs.indexOf(f) < 0; })[0];
+    if(target === src) return;
+    if(onlyEmpty && $(FIELD_IDS[target]).value.trim()) return;
+    form.order = form.order.filter(function(f){ return f !== target; });
+    form.derived = target;
+    if(target === 'A') $('fAmount').value = fmtVnd(Math.round(v.L * v.P));
+    else if(target === 'L') setLiters(Math.round(v.A / v.P * 1000) / 1000);
+    else { setPrice(Math.round(v.A / v.L), 'derived'); $('fPriceHint').textContent = '· tính từ tiền ÷ lít'; }
+  }
+  $('fLiters').addEventListener('input', function(){ touch('L'); setFieldError('fQtyErr', null); recalc(false, 'L'); renderChips(listInfo()); });
+  $('fAmount').addEventListener('input', function(){ touch('A'); setFieldError('fQtyErr', null); recalc(false, 'A'); renderChips(listInfo()); });
   $('fPrice').addEventListener('input', function(){
-    form.pMode = $('fPrice').value.trim() ? 'user' : 'empty';
+    if($('fPrice').value.trim()){ form.pMode = 'user'; form.priceSet = true; touch('P'); }
+    else { form.pMode = 'empty'; form.order = form.order.filter(function(x){ return x !== 'P'; }); }
+    if(form.derived === 'P') form.derived = null;
     $('fPriceHint').textContent = '';
     setFieldError('fPriceErr', null);
-    recalc();
-    renderChips($('fDate').value && $('fFuel').value ? S.adjustmentOn($('fFuel').value, $('fDate').value) : null);
+    recalc(false, 'P');
+    renderChips(listInfo());
   });
   ['fAmount', 'fPrice', 'fOdo'].forEach(function(id){
     $(id).addEventListener('blur', function(){
@@ -395,20 +455,45 @@
   $('fPriceChips').addEventListener('click', function(e){
     var b = e.target.closest('button[data-price]');
     if(!b) return;
-    setPrice(+b.getAttribute('data-price'), 'list');
+    setPrice(+b.getAttribute('data-price'), 'chip');
+    touch('P');
     $('fPriceHint').textContent = '';
     setFieldError('fPriceErr', null);
-    recalc();
-    renderChips(S.adjustmentOn($('fFuel').value, $('fDate').value));
+    recalc(false, 'P');
+    renderChips(listInfo());
   });
-  $('fDate').addEventListener('change', function(){ setFieldError('fDateErr', null); refreshFuelOptions(); refreshListPrice(); });
-  $('fFuel').addEventListener('change', refreshListPrice);
+  // The user changed date or fuel.
+  function onDateOrFuel(){
+    var li = listInfo();
+    if(form.editing){
+      $('fPriceHint').textContent = '';
+    } else if(form.pMode !== 'user' && form.pMode !== 'derived'){
+      setAutoPrice(li);
+      recalc();
+    }
+    renderChips(li);
+  }
+  $('fDate').addEventListener('change', function(){ setFieldError('fDateErr', null); refreshFuelOptions(false); onDateOrFuel(); });
+  $('fFuel').addEventListener('change', onDateOrFuel);
   $('fOdo').addEventListener('input', function(){ setFieldError('fOdoErr', null); });
+  // Price list reloaded while the form is open (app came back to the
+  // foreground, periodic refresh). Values the user chose or that come from
+  // the saved record are never touched; only a price that was never set may
+  // be filled in, and nothing is recomputed over an existing value.
+  function refreshOpenForm(){
+    refreshFuelOptions(true);
+    var li = listInfo();
+    if(!form.editing && form.pMode === 'empty' && !form.priceSet && li.auto != null){
+      setAutoPrice(li);
+      recalc(true);
+    }
+    renderChips(li);
+  }
 
   function openForm(fill){
     if(broken) return;
     clearErrors();
-    form = { editing: fill || null, pMode: 'empty', anchor: 'L', lUser: !!fill, aUser: !!fill };
+    form = { editing: fill || null, pMode: 'empty', order: fill ? ['L', 'A'] : [], derived: null, priceSet: false };
     var vid = fill ? fill.vehicleId : selectedVehicle || data.vehicles[0].id;
     $('fillSheetTitle').textContent = fill ? 'Sửa lần đổ' : 'Thêm lần đổ';
     $('btnFillDelete').hidden = !fill;
@@ -419,24 +504,24 @@
     $('fDate').max = today;
     $('fDate').value = fill ? fill.date : today;
     $('fFuel').innerHTML = '';
-    refreshFuelOptions();
+    refreshFuelOptions(false);
     var last = fillsOf(data.fills, vid).pop();
     var fuel = fill ? fill.fuelId : (last ? last.fuelId : null);
     if(fuel && Array.prototype.some.call($('fFuel').options, function(o){ return o.value === fuel; })) $('fFuel').value = fuel;
     if(fill){
       $('fLiters').value = fmtLiters(fill.liters);
       $('fAmount').value = fmtVnd(fill.amount);
-      setPrice(fill.price, fill.priceSource === 'list' ? 'list' : 'user');
+      setPrice(fill.price, 'stored');
       $('fOdo').value = fill.odo != null ? fmtVnd(fill.odo) : '';
       $('fFull').checked = fill.full;
       $('fNote').value = fill.note;
       $('fPriceHint').textContent = '';
-      renderChips(S.adjustmentOn(fill.fuelId, fill.date));
+      renderChips(listInfo());
     } else {
       $('fLiters').value = ''; $('fAmount').value = ''; $('fOdo').value = ''; $('fNote').value = '';
       $('fFull').checked = last ? last.full : false;
       setPrice('', 'empty');
-      refreshListPrice();
+      onDateOrFuel();
     }
     S.openSheet('fillSheet', function(){ form.editing = null; });
   }
@@ -446,7 +531,7 @@
   // Odometer must fit between its chronological neighbours (not just be
   // above the newest reading — a back-dated fill sits in the middle).
   function odoBoundsError(candidate, others){
-    var list = others.concat(candidate).filter(function(f){ return f.vehicleId === candidate.vehicleId; }).sort(cmpFill);
+    var list = sortFills(others.concat(candidate).filter(function(f){ return f.vehicleId === candidate.vehicleId; }));
     var idx = list.indexOf(candidate), lo = null, hi = null;
     for(var i = idx - 1; i >= 0; i--){ if(list[i].odo != null){ lo = list[i]; break; } }
     for(var j = idx + 1; j < list.length; j++){ if(list[j].odo != null){ hi = list[j]; break; } }
@@ -465,14 +550,20 @@
     else if(day > today){ setFieldError('fDateErr', 'Ngày không được sau hôm nay.'); ok = false; }
     var fuelId = $('fFuel').value;
     if(!fuelId){ setFieldError('fDateErr', 'Chọn loại nhiên liệu.'); ok = false; }
-    var L = parseLiters($('fLiters').value), A = parseInteger($('fAmount').value), P = parseInteger($('fPrice').value);
-    if(form.pMode === 'derived' && L > 0 && A > 0) P = Math.round(A / L);
-    if(!(L > 0 && L <= 1000)){ setFieldError('fQtyErr', 'Nhập số lít (lớn hơn 0, tối đa 1.000).'); ok = false; }
+    recalc(true);
+    var v = formValues(), L = v.L, A = v.A, P = v.P;
+    var aBad = $('fAmount').value.trim() && isNaN(A), lBad = $('fLiters').value.trim() && isNaN(L);
+    if(aBad){ setFieldError('fQtyErr', 'Số tiền chỉ gồm chữ số, ví dụ 93.100.'); ok = false; }
+    else if(lBad){ setFieldError('fQtyErr', 'Số lít không đúng dạng, ví dụ 3,5.'); ok = false; }
+    else if(!(L > 0 && L <= 1000)){ setFieldError('fQtyErr', 'Nhập số lít (lớn hơn 0, tối đa 1.000).'); ok = false; }
     else if(!(A > 0 && A <= 1e9)){ setFieldError('fQtyErr', 'Nhập số tiền.'); ok = false; }
     if(!(P > 0 && P <= 1e6)){
-      setFieldError('fPriceErr', $('fPriceChips').hidden ? 'Nhập giá/lít.' : 'Chọn giá trước hay từ 15h, hoặc nhập giá.');
+      setFieldError('fPriceErr', $('fPrice').value.trim() && isNaN(P) ? 'Giá/lít chỉ gồm chữ số, ví dụ 26.560.' :
+        $('fPriceChips').hidden ? 'Nhập giá/lít.' : 'Chọn giá trước hay từ 15h, hoặc nhập giá.');
       ok = false;
     }
+    var li = listInfo();
+    var isList = li.adj ? P === li.adj.before || P === li.adj.after : li.auto != null && P === li.auto;
     var odoTxt = $('fOdo').value.trim(), odo = null;
     if(odoTxt){
       odo = parseInteger(odoTxt);
@@ -487,7 +578,7 @@
       id: ed ? ed.id : newId('f'), date: day, vehicleId: $('fVehicle').value || selectedVehicle,
       fuelId: fuelId,
       fuelLabel: ed && ed.fuelId === fuelId ? ed.fuelLabel : S.itemLabel(fuelId),
-      liters: L, amount: A, price: P, priceSource: form.pMode === 'list' ? 'list' : 'user',
+      liters: L, amount: A, price: P, priceSource: isList ? 'list' : 'user',
       odo: odo, full: $('fFull').checked, note: note,
       createdAt: ed ? ed.createdAt : now, updatedAt: now
     };
@@ -545,7 +636,7 @@
   // ---------- Settings: vehicles ----------
   var vehEditing = null;
   function renderVehicles(){
-    var counts = {};
+    var counts = Object.create(null);
     data.fills.forEach(function(f){ counts[f.vehicleId] = (counts[f.vehicleId] || 0) + 1; });
     $('vehicleList').innerHTML = data.vehicles.map(function(v){
       return '<div class="veh-row"><span class="veh-name">' + esc(v.name) + '<small>' + (counts[v.id] || 0) + ' lần đổ</small></span>' +
@@ -675,6 +766,12 @@
     var ds = { version: obj.version, vehicles: obj.vehicles, fills: obj.fills };
     var err = validateDataset(ds);
     if(err) return { error: err };
+    // Not in validateDataset: a stored log must not turn "corrupt" just
+    // because the device clock went back a day.
+    var today = S.vnToday();
+    for(var i = 0; i < ds.fills.length; i++){
+      if(ds.fills[i].date > today) return { error: 'Lần đổ thứ ' + (i + 1) + ': ngày ' + S.fmtDate(ds.fills[i].date) + ' sau hôm nay.' };
+    }
     var clean = cleanDataset(ds);
     try{
       clean.vehicles.forEach(function(v){
@@ -705,12 +802,15 @@
       if(r.error){ S.showError('backupError', r.error); return; }
       var info = 'File có ' + r.data.fills.length + ' lần đổ, ' + r.data.vehicles.length + ' xe' +
         (r.exportedAt && isFinite(Date.parse(r.exportedAt)) ? ', lưu ngày ' + S.fmtDate(vnDayOf(Date.parse(r.exportedAt))) : '') + '.';
-      var hasCurrent = broken || data.fills.length > 0;
+      // Renamed/added vehicles with no fills are data too.
+      var def = emptyData().vehicles[0];
+      var customVehicles = data.vehicles.length !== 1 || data.vehicles[0].id !== def.id || data.vehicles[0].name !== def.name;
+      var hasCurrent = broken || data.fills.length > 0 || customVehicles;
       if(!hasCurrent){
         confirmDialog({ title: 'Khôi phục sổ xăng?', text: info, ok: 'Khôi phục', onOk: function(){ applyBackup(r.data); } });
         return;
       }
-      var curTxt = broken ? 'Dữ liệu hiện tại (bị lỗi)' : 'Sổ hiện tại (' + data.fills.length + ' lần đổ)';
+      var curTxt = broken ? 'Dữ liệu hiện tại (bị lỗi)' : 'Sổ hiện tại (' + data.fills.length + ' lần đổ, ' + data.vehicles.length + ' xe)';
       confirmDialog({
         title: 'Thay toàn bộ sổ xăng?',
         text: info + ' ' + curTxt + ' sẽ bị thay — app lưu nó ra file trước.',
@@ -736,7 +836,7 @@
   }
   document.addEventListener('fueltrack:history', function(){
     renderLog();
-    if($('fillSheet').classList.contains('open')){ refreshFuelOptions(); refreshListPrice(); }
+    if($('fillSheet').classList.contains('open')) refreshOpenForm();
   });
   document.addEventListener('fueltrack:tab', function(e){
     if(e.detail === 'log' || e.detail === 'settings') renderAll();

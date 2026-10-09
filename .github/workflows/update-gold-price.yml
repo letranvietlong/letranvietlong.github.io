@@ -87,9 +87,10 @@ jobs:
           if git diff --cached --quiet -- products/gold-track/data/gold-price.json products/gold-track/data/gold-price-history.json; then
             MSG="GoldTrack push state: $(date -u +%F)"
           else
-            BUY=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"buy\"]:,}'.replace(',', '.'))")
-            SELL=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"sell\"]:,}'.replace(',', '.'))")
-            MSG="Auto-update gold price: mua ${BUY} / ban ${SELL}"
+            # Chỉ để viết message: thiếu Ngọc Thịnh / JSON lạ KHÔNG được làm hỏng
+            # bước commit giá (shell chạy với -e) → `|| PRICES=""` + chữ dự phòng.
+            PRICES=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json',encoding='utf-8'))['ngoc-thinh']['types']['9999-nhan-tron'];f=lambda v:f'{int(v):,}'.replace(',','.');print('mua '+f(d['buy'])+' / ban '+f(d['sell']))" 2>/dev/null) || PRICES=""
+            if [ -n "$PRICES" ]; then MSG="Auto-update gold price: ${PRICES}"; else MSG="Auto-update gold price"; fi
           fi
           git commit -m "$MSG"
 

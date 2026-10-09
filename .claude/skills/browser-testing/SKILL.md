@@ -71,6 +71,12 @@ Báo cáo cả số thực nhận và số kỳ vọng — "khớp" không kèm 
 
 **Chụp ảnh và XEM ảnh** (Read file png) với mọi thay đổi giao diện; kiểm đúng tên file mới, đừng đọc nhầm ảnh cũ.
 
+**Đếm chữ hiển thị** (mục tiêu "bớt chữ"): đếm `innerText` của header + view đang hiện + sheet đang mở, **ẩn `.sr-only` trước khi đếm** (chữ cho trình đọc màn hình không phải chữ hiển thị). Nội dung trong `<details>` đóng có `innerText` rỗng — đọc bằng `textContent` khi cần kiểm nội dung.
+
+**Bug hunt (tester khám phá, không xem báo cáo coder):** đã tìm ra lỗi mất dữ liệu mà coder tự test bỏ sót. Kịch bản luôn thử: `visibilitychange` khi form đang mở (`page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'))})` rồi đổi lại `visible`), request chậm bằng `page.route` + delay (race đồng bộ), hoàn tác bằng **cú chạm thật** (`page.mouse.click` vào toạ độ nút, không gọi hàm), Esc rồi Enter, múi giờ `America/Los_Angeles`/`Asia/Tokyo` lúc ngày máy ≠ ngày VN, ranh giới 14:59/15:00 và 06:59/07:00/21:59/22:00 giờ VN, dữ liệu 200–300+ bản ghi, tên 40 ký tự + emoji, offline với `?fbclid=x` và URL thư mục. Xem skill `user-data-safety` §7.
+
+**Thông báo đẩy / service worker:** Playwright headless-shell mặc định luôn báo quyền thông báo `denied` → dùng `chromium.launch({channel:'chromium'})` (headless mới) cho test `showNotification`, và CDP `ServiceWorker.deliverPushMessage` để giao push. Push server giả + giải mã `http_ece`, venv pywebpush: skill `web-push` §7.
+
 ## 5. Giới hạn: lỗi chỉ xuất hiện trên iPhone
 
 Chromium **không** tái hiện: `env(safe-area-inset-*)` thật, viewport hụt của app Màn hình chính với `black-translucent`, việc WebKit cắt phần tử vẽ ngoài viewport, bàn phím ảo, **phông chữ iOS** (Windows có Cambria/Georgia mới nên chữ số luôn trông đúng).
@@ -84,6 +90,7 @@ Kết luận phải ghi **"chưa kiểm chứng trên máy thật"** và nêu s�
 
 ## 6. Windows
 
-- `print` tiếng Việt trong Python crash (cp1252) — ghi file UTF-8 rồi Read.
+- `print` tiếng Việt trong Python crash (cp1252) — ghi file UTF-8 rồi Read, hoặc chạy với `PYTHONUTF8=1` (giống runner Ubuntu của GitHub Actions — nên đặt khi mô phỏng workflow).
+- Nhiều agent chạy song song: mỗi agent một cổng riêng (`serve.sh start <port>` / `stop <port>`); **không bao giờ** `serve.sh stop` không kèm cổng — nó giết server của agent khác.
 - Heredoc bash nuốt backslash: tránh regex/đường dẫn có `\` trong script sinh bằng heredoc; dùng `/` hoặc viết file bằng Write.
 - `/tmp` của Git Bash khác `/tmp` mà Python/Node thấy — dùng scratchpad với đường dẫn Windows đầy đủ.

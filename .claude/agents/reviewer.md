@@ -30,12 +30,25 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Có đường nào khiến dữ liệu local bị bản Gist cũ ghi đè không? (cờ `goldtrack_gist_dirty_v1` phải được tôn trọng khi khởi động)
 - [ ] Thao tác xoá/ghi đè có xác nhận hoặc hoàn tác không?
 - [ ] Import/export còn giữ đủ field không? (`isValidTx` không lọc field lạ — field mới tự đi qua được)
+- [ ] Kéo dữ liệu từ Gist có thể đè sửa đổi cục bộ xảy ra **trong lúc** request đang bay không? Lựa chọn "giữ dữ liệu máy này" có thật sự đẩy lên/đánh dấu dirty không? (cả hai đã gây mất dữ liệu thật — skill `user-data-safety` §1)
+- [ ] Handler `visibilitychange`/timer có render lại hoặc tự điền/tính lại giá trị trong form đang mở không? (lỗi thật FuelTrack: quay lại app là giá/tiền đổi âm thầm)
+- [ ] Xoá bản ghi có kiểm ràng buộc sổ sách không? Nút hoàn tác có bấm được bằng cú chạm thật không (`pointer-events` của wrapper toast)?
+- [ ] Khôi phục từ file: validate từng bản ghi, ngày tương lai, tra id bằng Map/hasOwnProperty, giới hạn xuất = giới hạn nhập, bước lưu bản hiện tại trước khi đè?
+- [ ] Mọi "hôm nay"/nhóm tháng/tên file theo giờ VN, không getter giờ máy, không `+86400000` trên Date giờ máy?
 
 ### 3. Service worker / offline
 - [ ] Có thêm file mà app load lúc chạy không? Nếu có, đã thêm vào `products/gold-track/js/sw-core.js` chưa?
 - [ ] `CACHE_NAME` đã bump chưa? (không bump = client cũ giữ nguyên danh sách cache cũ) `?v=` trong `products/gold-track/sw-gold-track.js` có khớp không?
 - [ ] File hay thay đổi có bị để ở chế độ cache-first không? (sẽ kẹt bản cũ — lỗi này đã xảy ra rồi)
 - [ ] `products/gold-track/sw-gold-track.js` có bị lồng vào `html/`/`css/`/`js/`/`data/` không? (lồng vào = scope co lại = mất offline)
+- [ ] Fetch handler có khớp điều hướng có query string (`?fbclid=`) và URL thư mục không (`ignoreSearch`, thư mục → `index.html`)? Sửa `sw-core.js` đã bump `CACHE_NAME` + `?v=` của vỏ (LoveDays: cả `?v=` của `love-days-core.js` trong core) chưa?
+- [ ] Handler `push` có luôn kết thúc bằng `showNotification` không? Cắt chuỗi theo ký tự, không `.slice` UTF-16?
+
+### 3b. Workflow GitHub Actions / thông báo đẩy (skill `web-push`)
+- [ ] Bước "đã cấu hình" chỉ dựa vào secret subscriptions của chính app? (dựa vào khoá dùng chung = đỏ 6 lần/ngày)
+- [ ] Bước push có `continue-on-error` + `timeout-minutes`, commit giá vẫn chạy khi push/pip lỗi, `git add` file state có guard `[ -f ]`, commit message `python -c` chịu được dữ liệu thiếu?
+- [ ] Log có in endpoint/key/`str(e)` không? Inputs/secrets chỉ qua `env:`?
+- [ ] Notifier: so với giá đã báo, không gửi khi chẳng giá nào đổi, giờ yên lặng không ghi state, state hỏng không nuốt mất một lần báo?
 
 ### 4. iOS / PWA
 - [ ] Có giả định sai rằng khoảng trống đáy màn hình là bug không? (đa phần là safe-area home indicator, bình thường)

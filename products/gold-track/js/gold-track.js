@@ -87,7 +87,12 @@
       return { transactions: transactions };
     }catch(e){ return { transactions:[] }; }
   }
+  // Bumped on every local mutation (all of them go through saveState). A Gist
+  // pull or push that started at an older revision must not overwrite local
+  // state or clear the dirty flag — the edit made meanwhile would be lost.
+  var localRev = 0;
   function saveState(){
+    localRev++;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     markGistDirty();
     syncToGist();
@@ -115,12 +120,15 @@
   }
 
   // ---------- helpers ----------
-  function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
-  // Rounded before the sign is chosen, so a tiny negative never shows "-0,00%".
+  // `|| 0` turns Math.round(-0.4) === -0 into 0 — toLocaleString prints "-0".
+  function fmtVND(n){ return (Math.round(n) || 0).toLocaleString('vi-VN'); }
+  // Rounds the magnitude so ±0.005 round the same way (Math.round is
+  // half-up, which made -0.005 → "0,00%" but +0.005 → "+0,01%").
   function fmtPct(x){
-    var r = Math.round(x * 100) / 100;
-    if(!isFinite(r) || r === 0) return '0,00%';
-    return (r > 0 ? '+' : '-') + Math.abs(r).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+    if(!isFinite(x)) return '—';
+    var r = Math.round(Math.abs(x) * 100) / 100;
+    if(r === 0) return '0,00%';
+    return (x > 0 ? '+' : '-') + r.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
   }
   function fmtAmount(n){
     var r = Math.round(n*100)/100;
@@ -153,14 +161,24 @@
     indicator.style.transform = 'translateX(' + active.offsetLeft + 'px)';
     indicator.classList.toggle('sell', active.getAttribute('data-type') === 'sell');
   }
-  // Calendar day in the device's own timezone. Timestamps from the bot are
-  // UTC; slicing those directly would put anything before 07:00 VN time on
-  // the previous day.
-  function localDayKey(dateOrIso){
+  // Calendar day in Vietnam time (UTC+7, no DST), whatever the device's
+  // timezone: transaction dates and the shops' prices are VN days, so a phone
+  // set to another zone must not see a VN-today transaction as "future".
+  // Timestamps from the bot are UTC; slicing those directly would put
+  // anything before 07:00 VN time on the previous day.
+  var VN_OFFSET_MS = 7 * 3600000;
+  function vnDayKey(dateOrIso){
     var d = dateOrIso instanceof Date ? dateOrIso : new Date(dateOrIso);
-    return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+    if(isNaN(d.getTime())) return '';
+    return new Date(d.getTime() + VN_OFFSET_MS).toISOString().slice(0, 10);
   }
-  function todayISO(){ return localDayKey(new Date()); }
+  // UTC-day arithmetic on "YYYY-MM-DD": stepping a local Date by 86400000 ms
+  // repeats or skips a day across a DST change.
+  function addDays(day, n){
+    var p = day.split('-');
+    return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
+  }
+  function todayISO(){ return vnDayKey(new Date()); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -205,7 +223,7 @@
     } else {
       toastActionEl.hidden = true;
     }
-    toastTimer = setTimeout(hideToast, action ? 5000 : 2400);
+    toastTimer = setTimeout(hideToast, (action || msg.length > 60) ? 5000 : 2400);
   }
 
   // Deletes immediately (no confirm dialog) and offers a few seconds to undo
@@ -218,8 +236,16 @@
   var pendingDeleteBatch = null;
   function deleteTxWithUndo(id){
     var idx = state.transactions.findIndex(function(t){ return t.id === id; });
-    if(idx === -1) return;
+    if(idx === -1) return false;
     var tx = state.transactions[idx];
+    // Deleting a buy can starve a later sell in the same ledger — same rule
+    // as editing (findLedgerViolation), blocked outright, no confirm.
+    var groupWith = state.transactions.filter(function(t){ return groupKey(t) === groupKey(tx); });
+    var violation = findLedgerViolation(groupWith.filter(function(t){ return t.id !== id; }), groupWith);
+    if(violation){
+      showToast('Không xoá được: giao dịch bán ngày ' + fmtDate(violation.tx.date) + ' sẽ không còn đủ vàng (chỉ còn ' + fmtAmount(violation.available) + ' chỉ). Xoá hoặc sửa giao dịch bán đó trước.', 'err');
+      return false;
+    }
     state.transactions.splice(idx, 1);
     saveState();
     renderAll();
@@ -248,6 +274,7 @@
         showToast(batch.items.length > 1 ? ('Đã khôi phục ' + batch.items.length + ' giao dịch') : 'Đã khôi phục giao dịch', 'ok');
       }
     });
+    return true;
   }
 
   // ---------- in-app confirm dialog (replaces window.confirm) ----------
@@ -264,22 +291,27 @@
     confirmOkBtn.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-gold');
     confirmBackdrop.classList.add('open');
     confirmDialog.classList.add('open');
+    var dismissResult = 'dismissResult' in opts ? opts.dismissResult : false;
     return new Promise(function(resolve){
       function cleanup(result){
         confirmBackdrop.classList.remove('open');
         confirmDialog.classList.remove('open');
         confirmOkBtn.removeEventListener('click', onOk);
         confirmCancelBtn.removeEventListener('click', onCancel);
-        confirmBackdrop.removeEventListener('click', onCancel);
+        confirmBackdrop.removeEventListener('click', onDismiss);
+        confirmDismiss = null;
         resolve(result);
       }
       function onOk(){ cleanup(true); }
       function onCancel(){ cleanup(false); }
+      function onDismiss(){ cleanup(dismissResult); }
       confirmOkBtn.addEventListener('click', onOk);
       confirmCancelBtn.addEventListener('click', onCancel);
-      confirmBackdrop.addEventListener('click', onCancel);
+      confirmBackdrop.addEventListener('click', onDismiss);
+      confirmDismiss = onDismiss;
     });
   }
+  var confirmDismiss = null;
 
   // ---------- tab navigation ----------
   var TAB_VIEWS = { overview: 'viewOverview', prices: 'viewPrices', history: 'viewHistory', settings: 'viewSettings' };
@@ -378,7 +410,10 @@
   function hasUnsyncedChanges(){
     try{ return localStorage.getItem(GIST_DIRTY_KEY) === '1'; }catch(e){ return false; }
   }
-  function markSynced(){
+  // rev = localRev when the push started; a newer edit keeps the dirty flag
+  // (its own push is already scheduled and may still fail).
+  function markSynced(rev){
+    if(typeof rev === 'number' && rev !== localRev) return;
     try{ localStorage.removeItem(GIST_DIRTY_KEY); }catch(e){}
     localStorage.setItem(GIST_LAST_SYNC_KEY, new Date().toISOString());
     setGistStatus('synced');
@@ -408,14 +443,18 @@
   function doGistPush(){
     return githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'PATCH', { files: buildGistFiles() });
   }
+  function pushAndMarkSynced(){
+    var rev = localRev;
+    setGistStatus('syncing');
+    return doGistPush().then(function(){ markSynced(rev); });
+  }
 
   var gistSyncTimer = null;
   function syncToGist(){
     if(!gistConfig) return;
     clearTimeout(gistSyncTimer);
     gistSyncTimer = setTimeout(function(){
-      setGistStatus('syncing');
-      doGistPush().then(markSynced).catch(function(e){ setGistStatus('error', e.message); });
+      pushAndMarkSynced().catch(function(e){ setGistStatus('error', e.message); });
     }, 400);
   }
 
@@ -434,7 +473,11 @@
 
   function pullFromGist(){
     if(!gistConfig) return Promise.resolve(false);
+    var revAtStart = localRev;
     return githubApi('/gists/' + gistConfig.gistId, gistConfig.token, 'GET').then(function(gist){
+      // Edited while the GET was in flight: local is newer. Applying the
+      // older snapshot (then markSynced) would drop that edit for good.
+      if(localRev !== revAtStart){ syncToGist(); return false; }
       var file = gist.files && gist.files[GIST_FILENAME];
       if(!file || !file.content) return false;
       var data = JSON.parse(file.content);
@@ -459,16 +502,30 @@
       return githubApi('/gists', token, 'POST', { description: GIST_DESCRIPTION, public: false, files: buildGistFiles() })
         .then(function(g){ return { gistId: g.id, isExisting: false }; });
     }).then(function(result){
+      // Esc/backdrop resolve null = connect nothing: dismissing must not
+      // silently pick a side and overwrite either copy.
       var askProceed = (result.isExisting && state.transactions.length > 0)
-        ? showConfirm('Tìm thấy dữ liệu sao lưu sẵn có trên GitHub. Tải về sẽ THAY THẾ dữ liệu hiện có trên máy này. Tiếp tục?', { title: 'Khôi phục dữ liệu', confirmText: 'Tải về', cancelText: 'Giữ máy này' })
+        ? showConfirm('Tìm thấy dữ liệu sao lưu sẵn có trên GitHub.\n"Tải về": dữ liệu trên GitHub THAY THẾ dữ liệu trên máy này.\n"Giữ máy này": dữ liệu máy này được ghi lên GitHub, thay bản sao lưu cũ.', { title: 'Khôi phục dữ liệu', confirmText: 'Tải về', cancelText: 'Giữ máy này', dismissResult: null })
         : Promise.resolve(true);
       return askProceed.then(function(proceed){
+        if(proceed === null) return 'cancelled';
         saveGistConfig({ token: token, gistId: result.gistId });
         if(result.isExisting && proceed){
           return pullFromGist().then(function(){ renderAll(); });
         }
+        if(result.isExisting){
+          // "Giữ máy này": local must reach the Gist before any later launch
+          // can pull. Dirty first, so a failed push is retried (pushed, not
+          // pulled over) on the next launch.
+          markGistDirty();
+          return pushAndMarkSynced().catch(function(e){ setGistStatus('error', e.message); });
+        }
       });
-    }).then(function(){
+    }).then(function(outcome){
+      if(outcome === 'cancelled'){
+        showToast('Chưa kết nối — dữ liệu không thay đổi', 'err');
+        return;
+      }
       document.getElementById('gistToken').value = '';
       refreshGistUI();
       showToast('Đã kết nối đồng bộ GitHub Gist', 'ok');
@@ -484,9 +541,7 @@
     clearTimeout(gistSyncTimer); // an auto-sync debounce firing right after would just repeat this
     var btn = document.getElementById('btnGistSyncNow');
     btn.disabled = true;
-    setGistStatus('syncing');
-    doGistPush().then(function(){
-      markSynced();
+    pushAndMarkSynced().then(function(){
       showToast('Đã đồng bộ lên GitHub Gist', 'ok');
     }).catch(function(e){
       setGistStatus('error', e.message);
@@ -530,7 +585,10 @@
     document.getElementById(backdropId).classList.add('open');
   }
   function closeSheet(sheetId, backdropId){
-    document.getElementById(sheetId).classList.remove('open');
+    var sheet = document.getElementById(sheetId);
+    // Focus left in a hidden input lets Enter submit the cancelled form.
+    if(document.activeElement && sheet.contains(document.activeElement)) document.activeElement.blur();
+    sheet.classList.remove('open');
     document.getElementById(backdropId).classList.remove('open');
   }
   function wireSheet(sheetId, backdropId, closeBtnId){
@@ -539,10 +597,24 @@
   }
   wireSheet('txSheet','txBackdrop','txClose');
   wireSheet('versionSheet','versionBackdrop','versionClose');
+  // The sticky save bar sits over the bottom of the scrolling sheet; the
+  // browser's own focus scroll (and iOS keyboard scroll) can leave the
+  // focused field underneath it. scroll-padding-bottom covers most engines,
+  // this covers the rest.
+  document.getElementById('txSheet').addEventListener('focusin', function(e){
+    var sheet = this, field = e.target;
+    if(!field.matches || !field.matches('input, select, textarea')) return;
+    setTimeout(function(){
+      var bar = sheet.querySelector('.sheet-actions');
+      if(!bar || !sheet.classList.contains('open')) return;
+      var overlap = field.getBoundingClientRect().bottom + 8 - bar.getBoundingClientRect().top;
+      if(overlap > 0) sheet.scrollTop += overlap;
+    }, 60);
+  });
   // Esc closes the topmost layer only (the confirm dialog sits above sheets).
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
-    if(confirmDialog.classList.contains('open')) confirmCancelBtn.click();
+    if(confirmDialog.classList.contains('open')){ if(confirmDismiss) confirmDismiss(); }
     else if(document.getElementById('versionSheet').classList.contains('open')) closeSheet('versionSheet','versionBackdrop');
     else if(document.getElementById('txSheet').classList.contains('open')) closeSheet('txSheet','txBackdrop');
     else return;
@@ -863,7 +935,11 @@
 
   function chronoSort(list){
     return list.slice().sort(function(a,b){
-      return a.date.localeCompare(b.date) || (a.createdAt||0) - (b.createdAt||0);
+      // id as the final key makes this a total order: ties on (date, createdAt) —
+      // legacy rows have createdAt 0 — must not depend on array position, or an
+      // undo/edit that re-appends a row could reorder a buy after a sell.
+      return a.date.localeCompare(b.date) || (a.createdAt||0) - (b.createdAt||0) ||
+        (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0);
     });
   }
 
@@ -892,7 +968,36 @@
   // Checks every point in time, so it also catches the reverse direction:
   // backdating a sell (or shrinking an earlier buy) that starves a sell
   // recorded later on.
-  function findLedgerViolation(txList){
+  //
+  // With beforeList (the same ledger before the change), only a sell whose
+  // shortfall is NEW or LARGER than before counts: once imported/synced data
+  // already oversells, unrelated edits (a note, a later buy) must stay
+  // possible, while anything that makes it worse is still caught. Shortfalls
+  // are replayed with the same clamp-to-zero as computePortfolio.
+  function ledgerShortfalls(txList){
+    var held = 0, out = {};
+    chronoSort(txList).forEach(function(t){
+      if(txType(t) === 'sell'){
+        out[t.id] = { short: Math.max(0, t.amount - held), available: held };
+        held = Math.max(0, held - t.amount);
+      } else {
+        held += t.amount;
+      }
+    });
+    return out;
+  }
+  function findLedgerViolation(txList, beforeList){
+    if(beforeList){
+      var before = ledgerShortfalls(beforeList), after = ledgerShortfalls(txList);
+      var sorted = chronoSort(txList);
+      for(var j=0;j<sorted.length;j++){
+        var a = after[sorted[j].id];
+        if(!a || txType(sorted[j]) !== 'sell') continue;
+        var prev = before[sorted[j].id] ? before[sorted[j].id].short : 0;
+        if(a.short > prev + 1e-9) return { tx: sorted[j], available: a.available };
+      }
+      return null;
+    }
     var held = 0, chrono = chronoSort(txList);
     for(var i=0;i<chrono.length;i++){
       var t = chrono[i];
@@ -1071,6 +1176,7 @@
 
   document.getElementById('txForm').addEventListener('submit', function(e){
     e.preventDefault();
+    if(!document.getElementById('txSheet').classList.contains('open')) return;
     var amount = parseDecimal(document.getElementById('txAmount').value);
     var price = parseDigits(document.getElementById('txPrice').value);
     var shop = document.getElementById('txShop').value;
@@ -1097,22 +1203,23 @@
         date: date,
         createdAt: editing ? (editing.createdAt || 0) : Date.now()
       };
-      var sameGroup = state.transactions.filter(function(t){
-        return t.id !== editingTxId && txOwner(t) === owner && t.shop === shop && (t.goldType||null) === (goldType||null);
+      var targetGroupNow = state.transactions.filter(function(t){
+        return txOwner(t) === owner && t.shop === shop && (t.goldType||null) === (goldType||null);
       });
-      var prospective = sameGroup.concat([candidate]);
-      var violation = findLedgerViolation(prospective);
+      var prospective = targetGroupNow.filter(function(t){ return t.id !== editingTxId; }).concat([candidate]);
+      // Compared against the ledger as it is now: only a new or worse
+      // oversell blocks (see findLedgerViolation), so an already-inconsistent
+      // ledger (imported/synced data) stays editable and fixable.
+      var violation = findLedgerViolation(prospective, targetGroupNow);
       // Moving a tx to another (owner, shop, goldType) also removes it from
       // its old ledger — moving a buy away can starve that ledger's later
-      // sells. Only blocked when this edit causes it: an old ledger that was
-      // already inconsistent (legacy/imported data) must stay fixable by
-      // reassigning its rows.
+      // sells.
       if(!violation && editing && (txOwner(editing) !== owner || editing.shop !== shop || (editing.goldType||null) !== (goldType||null))){
         var oldGroupWith = state.transactions.filter(function(t){
           return txOwner(t) === txOwner(editing) && t.shop === editing.shop && (t.goldType||null) === (editing.goldType||null);
         });
         var oldGroupWithout = oldGroupWith.filter(function(t){ return t.id !== editingTxId; });
-        if(!findLedgerViolation(oldGroupWith)) violation = findLedgerViolation(oldGroupWithout);
+        violation = findLedgerViolation(oldGroupWithout, oldGroupWith);
       }
       if(violation){
         setFieldError('txAmount', true);
@@ -1143,8 +1250,7 @@
 
   document.getElementById('txDeleteBtn').addEventListener('click', function(){
     if(!editingTxId) return;
-    closeSheet('txSheet','txBackdrop');
-    deleteTxWithUndo(editingTxId);
+    if(deleteTxWithUndo(editingTxId)) closeSheet('txSheet','txBackdrop');
   });
 
   // ---------- settings ----------
@@ -1505,7 +1611,7 @@
   function signedVND(v){ return (v > 0 ? '+' : (v < 0 ? '-' : '')) + fmtVND(Math.abs(v)); }
   function priceChangeHtml(key, current, hist){
     var daily = aggregateDailyHistory(hist, 2);
-    var todayKey = localDayKey(new Date());
+    var todayKey = vnDayKey(new Date());
     if(daily.length !== 2 || daily[1].day !== todayKey) return '';
     var prevVal = daily[0][key];
     if(!prevVal) return '';
@@ -1555,7 +1661,7 @@
 
   function buildDailyPriceSeries(hist){
     var byDay = {};
-    hist.forEach(function(p){ byDay[localDayKey(p.at)] = p; }); // last entry of each local day wins (chronological order)
+    hist.forEach(function(p){ byDay[vnDayKey(p.at)] = p; }); // last entry of each VN day wins (chronological order)
     return Object.keys(byDay).sort().map(function(day){
       return { buy: byDay[day].buy, sell: byDay[day].sell, day: day };
     });
@@ -1574,7 +1680,7 @@
   function computePriceRange(hist, days){
     var daily = buildDailyPriceSeries(hist);
     if(daily.length === 0) return { insufficient: true };
-    var cutoffDay = localDayKey(new Date(Date.now() - (days-1)*86400000));
+    var cutoffDay = vnDayKey(new Date(Date.now() - (days-1)*86400000));
     if(daily[0].day > cutoffDay) return { insufficient: true };
     var windowed = daily.filter(function(p){ return p.day >= cutoffDay; });
     // daily[0].day <= cutoffDay only proves the series STARTS early enough —
@@ -1732,9 +1838,9 @@
   // Replays EVERY (shop, goldType) group the user holds in parallel, each
   // against its own price series (via groupTransactions()/getHistoryFor()),
   // then sums their per-day value/cost into one combined series — a group
-  // with no price data at all (e.g. shop 'khac') still contributes its real
-  // holdingCost every day, just 0 to value, matching how computePortfolioAll()
-  // treats an unpriced group's unrealizedPL as 0 rather than excluding it.
+  // with no price data at all (e.g. shop 'khac') contributes its holdingCost
+  // to both cost and value, matching how computePortfolioAll() treats an
+  // unpriced group's unrealizedPL as 0 rather than excluding it.
   function computePortfolioSeries(rangeKey){
     var groupsMap = groupTransactions(scopedTx());
     var groupKeys = Object.keys(groupsMap);
@@ -1776,7 +1882,7 @@
     var today = todayISO();
     var days = RANGE_DAYS[rangeKey] || Infinity;
     if(days !== Infinity){
-      var cutoff = localDayKey(new Date(Date.now() - (days-1)*86400000));
+      var cutoff = vnDayKey(new Date(Date.now() - (days-1)*86400000));
       if(cutoff > startDay) startDay = cutoff;
     }
     if(startDay > today) return [];
@@ -1787,26 +1893,36 @@
     });
 
     var series = [];
-    var d = new Date(startDay+"T00:00:00");
-    var endD = new Date(today+"T00:00:00");
+    var lastIncomplete = -1;
     var guard = 0;
     // 2000 (~5.48 years of daily steps) was a real but distant risk: this
     // loop would silently truncate the chart before reaching today once the
     // app had been used continuously past that point. Raised to ~54 years —
     // cheap to raise now while it's a hypothetical, rather than waiting for
     // it to become an actual bug.
-    while(d <= endD && guard < 20000){
+    for(var dayKey = startDay; dayKey <= today && guard < 20000; dayKey = addDays(dayKey, 1)){
       guard++;
-      var dayKey = localDayKey(d);
-      var totalValue = 0, totalCost = 0;
+      var totalValue = 0, totalCost = 0, incomplete = false;
       groups.forEach(function(g){
         while(g.txIdx < g.chrono.length && g.chrono[g.txIdx].date === dayKey){ applyTx(g, g.chrono[g.txIdx]); g.txIdx++; }
         while(g.priceIdx < g.priceSeries.length && g.priceSeries[g.priceIdx].day <= dayKey){ g.lastKnownBuy = g.priceSeries[g.priceIdx].buy; g.priceIdx++; }
-        totalValue += g.lastKnownBuy != null ? g.holdingAmount * g.lastKnownBuy : 0;
+        if(g.lastKnownBuy != null) totalValue += g.holdingAmount * g.lastKnownBuy;
+        // Never priced at all (shop 'khac'): valued at cost, the same
+        // fallback as Overview's "Giá trị hiện tại".
+        else if(g.priceSeries.length === 0) totalValue += g.holdingCost;
+        // Price history for this type starts later: no honest value exists
+        // for this day — plotting 0 read as a total loss.
+        else if(g.holdingAmount > 1e-9) incomplete = true;
         totalCost += g.holdingCost;
       });
+      if(incomplete) lastIncomplete = series.length;
       series.push({ day: dayKey, value: totalValue, cost: totalCost });
-      d = new Date(d.getTime() + 86400000);
+    }
+    // Starts at the first day from which every held type has a price
+    // (prices carry forward, so the rest stays complete).
+    if(lastIncomplete >= 0){
+      series = series.slice(lastIncomplete + 1);
+      series.trimmedFrom = startDay;
     }
     return series;
   }
@@ -1816,6 +1932,9 @@
     if(series.length < 2){
       return '<div class="chart-empty">Cần thêm dữ liệu qua nhiều ngày hơn để xem giá trị danh mục theo thời gian</div>';
     }
+    var trimNote = series.trimmedFrom
+      ? '<p class="field-hint">Bắt đầu từ ' + fmtDate(series[0].day).slice(0,5) + ' — trước đó chưa có giá của loại vàng bạn đang giữ.</p>'
+      : '';
     var w = 300, h = 110, padTop = 10, padBottom = 24, padX = 20;
     var allVals = series.map(function(p){ return p.value; }).concat(series.map(function(p){ return p.cost; }));
     var min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
@@ -1860,7 +1979,7 @@
     '<div class="chart-legend">' +
       '<span class="chart-legend-item"><span class="chart-legend-dot" style="background:'+lineColor+'"></span>Giá trị thị trường</span>' +
       '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Vốn</span>' +
-    '</div>';
+    '</div>' + trimNote;
   }
 
   // ---------- render: summary ----------
@@ -1904,11 +2023,11 @@
     var totalPL = pAll.totalRealizedPL + unrealizedPL;
     var totalPlPct = pAll.totalBuyCost ? (totalPL / pAll.totalBuyCost * 100) : 0;
     var firstTxDate = pAll.firstTxDate;
-    var bannerCls = !hasVal ? 'flat' : (totalPL > 0 ? 'up' : (totalPL < 0 ? 'down' : 'flat'));
-    var arrowPath = totalPL >= 0
+    var bannerCls = !hasVal ? 'flat' : (signClass(totalPL) || 'flat');
+    var arrowPath = Math.round(totalPL) >= 0
       ? '<path d="M6 15l6-6 6 6"/>'
       : '<path d="M6 9l6 6 6-6"/>';
-    var realizedCls = pAll.totalRealizedPL > 0 ? 'up' : (pAll.totalRealizedPL < 0 ? 'down' : '');
+    var realizedCls = signClass(pAll.totalRealizedPL);
     // Sum of priced groups' real market value + unpriced groups' cost basis
     // as a fallback (their unrealizedPL contributes 0, per the gap note).
     var currentValue = pAll.totalHoldingCost + unrealizedPL;
@@ -1919,12 +2038,12 @@
     content.innerHTML = warnHtml +
       '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
       '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>' +
-      (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt</span><span class="summary-val '+realizedCls+'">'+(pAll.totalRealizedPL>=0?'+':'')+fmtVND(pAll.totalRealizedPL)+' đ</span></div>' : '') +
+      (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt</span><span class="summary-val '+realizedCls+'">'+fmtSignedVND(pAll.totalRealizedPL)+'</span></div>' : '') +
       gapNote +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
+          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? fmtSignedVND(totalPL) : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
         (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+fmtPct(totalPlPct)+'</span>' : '') +
       '</div>' +
@@ -1984,7 +2103,8 @@
         }),
         priceSeries: buildDailyPriceSeries(getHistoryFor(shop, goldType)),
         holdingAmount: 0, holdingCost: 0, txIdx: 0, priceIdx: 0,
-        lastKnownBuy: null, prevUnreal: 0
+        lastKnownBuy: null, prevUnreal: 0,
+        live: getEffectivePrice(shop, goldType)
       };
     });
 
@@ -2013,22 +2133,21 @@
       return (!min || g.chrono[0].date < min) ? g.chrono[0].date : min;
     }, null);
     var today = todayISO();
-    var p = startDay.split('-');
-    var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
     var guard = 0;
-    while(localDayKey(d) <= today && guard < 20000){
+    for(var dayKey = startDay; dayKey <= today && guard < 20000; dayKey = addDays(dayKey, 1)){
       guard++;
-      var dayKey = localDayKey(d);
       var total = 0;
       groups.forEach(function(g){
         while(g.txIdx < g.chrono.length && g.chrono[g.txIdx].date === dayKey){ applyTx(g, g.chrono[g.txIdx]); g.txIdx++; }
         while(g.priceIdx < g.priceSeries.length && g.priceSeries[g.priceIdx].day <= dayKey){ g.lastKnownBuy = g.priceSeries[g.priceIdx].buy; g.priceIdx++; }
+        // Same rule as Overview (computePortfolioAll): a type with no live
+        // price today has its unrealized P&L counted as 0, so it is left out
+        // on every day (only its realized P&L counts) — otherwise the month
+        // total silently differs from "Tổng lãi/lỗ".
+        if(!g.live) return;
         // Today uses the same live price as Overview, so the days always add
         // up to its "Tổng lãi/lỗ" even if history lags the live fetch.
-        if(dayKey === today){
-          var eff = getEffectivePrice(g.shop, g.goldType);
-          if(eff) g.lastKnownBuy = eff.buy;
-        }
+        if(dayKey === today) g.lastKnownBuy = g.live.buy;
         var unreal = g.holdingAmount <= 1e-9 ? 0
           : (g.lastKnownBuy != null ? g.holdingAmount * g.lastKnownBuy - g.holdingCost : null);
         if(unreal === null) return;
@@ -2037,7 +2156,6 @@
       });
       var realized = realizedByDay[dayKey] || 0;
       result[dayKey] = { total: total + realized, realized: realized };
-      d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1);
     }
     return result;
   }
@@ -2138,13 +2256,13 @@
     content.innerHTML = report.order.map(function(key){
       var g = report.groups[key];
       var label = pnlGroupBy === 'year' ? ('Năm '+key) : ('Tháng '+parseInt(key.slice(5,7),10)+'/'+key.slice(0,4));
-      var cls = g.pl > 0 ? 'up' : (g.pl < 0 ? 'down' : '');
-      return '<div class="summary-row"><span class="summary-label">'+label+'</span><span class="summary-val '+cls+'">'+(g.pl>=0?'+':'')+fmtVND(g.pl)+' đ</span></div>';
+      var cls = signClass(g.pl);
+      return '<div class="summary-row"><span class="summary-label">'+label+'</span><span class="summary-val '+cls+'">'+fmtSignedVND(g.pl)+'</span></div>';
     }).join('');
     if(report.unrealizedPL !== null){
       var u = report.unrealizedPL;
-      var uCls = u > 0 ? 'up' : (u < 0 ? 'down' : '');
-      content.innerHTML += '<div class="summary-row pnl-unrealized-row"><span class="summary-label">Chưa chốt (theo giá hôm nay)</span><span class="summary-val '+uCls+'">'+(u>=0?'+':'')+fmtVND(u)+' đ</span></div>';
+      var uCls = signClass(u);
+      content.innerHTML += '<div class="summary-row pnl-unrealized-row"><span class="summary-label">Chưa chốt (theo giá hôm nay)</span><span class="summary-val '+uCls+'">'+fmtSignedVND(u)+'</span></div>';
     }
   }
 
@@ -2187,8 +2305,8 @@
       : held.map(function(g){
           var pct = totalCost ? (g.holdingCost / totalCost * 100) : 0;
           var label = shortGroupName(g.shop, g.goldType);
-          var plCls = g.hasPriceGap ? '' : (g.unrealizedPL > 0 ? 'up' : (g.unrealizedPL < 0 ? 'down' : ''));
-          var plTxt = g.hasPriceGap ? 'chưa có giá' : ((g.unrealizedPL>=0?'+':'')+fmtVND(g.unrealizedPL)+' đ');
+          var plCls = g.hasPriceGap ? '' : signClass(g.unrealizedPL);
+          var plTxt = g.hasPriceGap ? 'chưa có giá' : fmtSignedVND(g.unrealizedPL);
           return '<div class="store-bar-row">' +
             '<div class="store-bar-top"><span class="store-bar-name">'+escapeHtml(label)+'</span></div>' +
             (showBars ? '<div class="store-bar-track"><div class="store-bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>' : '') +
@@ -2307,8 +2425,8 @@
       var grid, keyHtml;
       if(isSell){
         var sellInfo = pAll.perTx[tx.id] || { avgCostAtSale: 0, pl: 0 };
-        var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
-        keyHtml = '<div class="tx-key"><div class="tx-cell-label">Đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>';
+        var plCls = signClass(sellInfo.pl);
+        keyHtml = '<div class="tx-key"><div class="tx-cell-label">Đã chốt</div><div class="tx-cell-val '+plCls+'">'+fmtSignedVND(sellInfo.pl)+'</div></div>';
         grid =
           '<div class="tx-grid">' +
             '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ/chỉ</div></div>' +
@@ -2357,7 +2475,7 @@
       btn.addEventListener('click', function(e){
         e.stopPropagation();
         openSwipeRowId = null;
-        deleteTxWithUndo(btn.getAttribute('data-del'));
+        if(!deleteTxWithUndo(btn.getAttribute('data-del'))) closeSwipeRow(btn.closest('.tx-row'));
       });
     });
     list.querySelectorAll('.tx-row').forEach(function(row){
@@ -2683,8 +2801,7 @@
       // Local edits never reached the Gist (app was offline, token had
       // expired, API hiccup...). Pulling here would overwrite and destroy
       // them, so push local up instead — it's the newer copy.
-      setGistStatus('syncing');
-      doGistPush().then(markSynced).catch(function(e){ setGistStatus('error', e.message); });
+      pushAndMarkSynced().catch(function(e){ setGistStatus('error', e.message); });
     } else {
       pullFromGist().then(function(changed){ if(changed) renderAll(); }).catch(function(e){ setGistStatus('error', e.message); });
     }

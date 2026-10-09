@@ -81,10 +81,35 @@
   }
   // On an adjustment day the new price only applies from 15:00, so the day
   // has two list prices: { before, after } (before = null for the first point).
+  // The source wrote the point before 07:00 VN of its own day (01/07/2026
+  // 00:20, 05/06/2026 00:00) → the day's record already had the new price
+  // when it was created, so that price applied all day. Not a later cut-off
+  // like 10:00: backfilled Thursdays 09/2025–02/2026 carry 07:50–08:00 VN and
+  // were real 15:00 adjustments. No detectedAt → treated as an adjustment.
+  var EARLY_VN_HOUR = 7;
+  function appliedAllDay(c){
+    var t = Date.parse(c && c.detectedAt || '');
+    if(!isFinite(t)) return false;
+    var vnMs = t + 7 * 3600000, day = msToDay(vnMs);
+    return day < c.date || (day === c.date && new Date(vnMs).getUTCHours() < EARLY_VN_HOUR);
+  }
+  // A real price adjustment: not applied-all-day, and an item listed on both
+  // sides changed price (adding/dropping an item alone is not one).
+  function isAdjustment(i){
+    var changes = getChanges();
+    if(i <= 0 || appliedAllDay(changes[i])) return false;
+    var a = changes[i - 1].prices || {}, b = changes[i].prices || {};
+    return Object.keys(b).some(function(id){ return a[id] != null && b[id] != null && a[id] !== b[id]; });
+  }
+  function lastAdjustmentDay(){
+    var changes = getChanges();
+    for(var i = changes.length - 1; i > 0; i--){ if(isAdjustment(i)) return changes[i].date; }
+    return null;
+  }
   function adjustmentOn(id, day){
     var changes = getChanges();
     var i = pointIndexOn(day);
-    if(i < 0 || changes[i].date !== day) return null;
+    if(i < 0 || changes[i].date !== day || appliedAllDay(changes[i])) return null;
     var after = (changes[i].prices || {})[id];
     var before = i > 0 ? (changes[i - 1].prices || {})[id] : null;
     if(after == null || before == null || after === before) return null;
@@ -505,14 +530,18 @@
     var vn = new Date(nowMs + 7 * 3600000);
     var y = vn.getUTCFullYear(), m = vn.getUTCMonth(), d = vn.getUTCDate();
     var today = msToDay(Date.UTC(y, m, d));
-    var changes = getChanges();
-    var last = changes.length ? changes[changes.length - 1].date : null;
-    var days = (4 - vn.getUTCDay() + 7) % 7;
-    if(days === 0){
-      if(last === today) days = 7;
-      // Past 15:00 on Thursday but the hourly bot hasn't recorded it yet.
-      else if(nowMs >= Date.UTC(y, m, d, EFFECTIVE_UTC_HOUR)) return { waiting: true, day: today };
+    var effToday = Date.UTC(y, m, d, EFFECTIVE_UTC_HOUR);
+    var la = lastAdjustmentDay();
+    // The bot can record the new prices a little before 15:00 (14:40–15:00).
+    if(la === today && nowMs < effToday){
+      return { waiting: false, announced: true, day: today, weekday: WEEKDAYS[vn.getUTCDay()], leftMs: effToday - nowMs };
     }
+    var days = (4 - vn.getUTCDay() + 7) % 7;
+    // An adjustment recorded up to 2 days before this Thursday (holiday shift:
+    // Wed 31/12/2025, Wed 29/04/2026) already was this week's period.
+    if(la && dayToMs(today) + days * DAY_MS - dayToMs(la) <= 2 * DAY_MS) days += 7;
+    // Past 15:00 on Thursday but the hourly bot hasn't recorded it yet.
+    else if(days === 0 && nowMs >= effToday) return { waiting: true, day: today };
     var targetMs = Date.UTC(y, m, d + days, EFFECTIVE_UTC_HOUR);
     return { waiting: false, day: msToDay(Date.UTC(y, m, d + days)), weekday: WEEKDAYS[(vn.getUTCDay() + days) % 7], leftMs: targetMs - nowMs };
   }
@@ -555,6 +584,10 @@
     var head = nx.waiting ?
       '<div class="next-when"><span class="next-date">Đang chờ giá kỳ ' + dayMonth(nx.day) + '</span></div>' +
       '<p class="next-meta">Giá mới áp dụng từ 15:00, app tự cập nhật khi có.</p>' :
+      nx.announced ?
+      '<div class="next-when"><span class="next-date">' + nx.weekday + ' ' + dayMonth(nx.day) + ' · 15:00</span></div>' +
+      '<p class="next-meta"><span class="next-left">' + fmtLeft(nx.leftMs) + '</span> · đã có giá mới</p>' +
+      '<p class="next-note">Giá ở trên là giá mới, áp dụng từ 15:00 hôm nay</p>' :
       '<div class="next-when"><span class="next-date">' + nx.weekday + ' ' + dayMonth(nx.day) + ' · 15:00</span></div>' +
       '<p class="next-meta"><span class="next-left">' + fmtLeft(nx.leftMs) + '</span> · dự kiến</p>' +
       '<p class="next-note">Có thể dời dịp lễ</p>';
@@ -948,9 +981,11 @@
 
   // ---------- Tải dữ liệu ----------
   var loading = false;
+  var lastLoadMs = 0;
   function loadAll(isRefresh){
     if(loading) return;
     loading = true;
+    lastLoadMs = Date.now();
     var pPrice = fetchJson('fuel-price.json').then(function(d){ priceDoc = d; }, function(){ if(!isRefresh) priceDoc = null; });
     var pHist = fetchJson('fuel-price-history.json').then(function(d){ historyDoc = d; }, function(){ if(!isRefresh) historyDoc = null; });
     var pLog = fetchJson('changelog.json').then(function(d){
@@ -980,8 +1015,14 @@
 
   initPush();
   loadAll(false);
-  // The countdown ticks by the minute.
-  setInterval(function(){ if(document.visibilityState === 'visible') renderForecast(); }, 60000);
+  // The countdown ticks by the minute. Data is re-fetched every 2 minutes
+  // while waiting for the bot to record Thursday's prices, else every 15.
+  setInterval(function(){
+    if(document.visibilityState !== 'visible') return;
+    var waiting = historyDoc && getChanges().length && nextAdjustment(Date.now()).waiting;
+    if(Date.now() - lastLoadMs >= (waiting ? 2 : 15) * 60000) loadAll(true);
+    else renderForecast();
+  }, 60000);
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState !== 'visible') return;
     renderForecast();

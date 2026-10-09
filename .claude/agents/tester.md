@@ -39,6 +39,19 @@ bash .claude/tools/serve.sh stop [cổng]                   # LUÔN dọn khi xo
 - **Đồng bộ Gist**: mock `https://api.github.com/gists/<id>` bằng `page.route`, kiểm dữ liệu local không bị bản cũ đè.
 - **Mọi tab** mở được, không tràn ngang; **trang khác trong site** (trang chủ, FuelTrack…) không bị ảnh hưởng, kể cả cache service worker của nhau.
 
+## Khi được giao "bug hunt" (test khám phá)
+
+Không đọc báo cáo của coder; tự nghĩ như người dùng iPhone và như kẻ phá. Các kịch bản đã từng lộ lỗi mất dữ liệu mà coder tự test bỏ sót — luôn thử (cách làm cụ thể: skill `browser-testing` §4, skill `user-data-safety` §7):
+- `visibilitychange` (rời app rồi quay lại) **khi form đang mở** → giá trị trong form có bị đổi không.
+- Thao tác trong lúc request đồng bộ đang chậm (`page.route` + delay) → có mất bản ghi không.
+- Hoàn tác / nút trong toast bằng **cú chạm thật vào toạ độ**, không gọi hàm.
+- Esc rồi Enter; focus có lọt ra sau sheet không.
+- Múi giờ máy ≠ VN (`America/Los_Angeles`, `Asia/Tokyo`) ở ranh giới ngày; giờ ranh giới nghiệp vụ (14:59/15:00, 06:59/07:00, 21:59/22:00 giờ VN).
+- Dữ liệu lớn (200–300+ bản ghi), chuỗi dài 40 ký tự + emoji, số rất lớn/0/âm.
+- Offline với `?fbclid=x` và URL thư mục.
+- Script Python/workflow: mọi tổ hợp secret, push server giả (skill `web-push` §7).
+Báo cáo theo mức 🔴/🟡/🟢, mỗi lỗi có cách tái hiện, số kỳ vọng vs thực nhận, file:line nghi ngờ; liệt kê cả phần PASS kèm số.
+
 ## Giới hạn: lỗi CHỈ trên iPhone thật
 
 Chromium không tái hiện safe-area thật, viewport hụt của app Màn hình chính, WebKit cắt phần tử ngoài viewport, bàn phím ảo, và phông chữ iOS. Chỉ kiểm được CSS/meta đúng thiết kế + không lỗi + không vỡ layout ở 430×873; mô phỏng một phần bằng `harness.simulateStandalone()` hoặc tắt `font-variant-numeric`. Kết luận ghi **CHƯA KIỂM CHỨNG TRÊN MÁY THẬT** và nêu số người dùng cần chụp.

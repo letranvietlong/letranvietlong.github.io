@@ -97,6 +97,13 @@ Hệ quả thiết kế: **đừng hardcode rgba của một theme rồi dùng c
 - [ ] Nút icon-only có `aria-label`.
 - [ ] Tab đang chọn có `aria-current="page"`.
 - [ ] Không có phần tử nào chỉ phân biệt bằng màu (thêm icon/mũi tên cho tăng/giảm).
+- [ ] Số làm tròn về 0 không hiện "-0 đ" (chuẩn hoá -0) và không tô đỏ; `%` làm tròn đối xứng theo giá trị tuyệt đối (không để -0,005 → "0,00%" mà +0,005 → "+0,01%"); NaN/Infinity hiện "—", không hiện "0,00%". Dấu thập phân vi-VN là **phẩy** ở mọi chỗ (`toLocaleString('vi-VN')`, không `toFixed`).
+- [ ] Cắt chuỗi theo **ký tự hiển thị** (Intl.Segmenter / Array.from), không `.slice()` UTF-16 — cắt đôi emoji ra "�" (lỗi thật ở ô emoji LoveDays, title thông báo).
+- [ ] Toast có nút (Hoàn tác…): nút phải nhận cú chạm (`pointer-events:auto` dù wrapper là `none` — lỗi thật GoldTrack), ≥44px, test bằng cú chạm thật; toast không được che chính nội dung vừa lưu (vd chú thích trong viewer); phần tử `role=status` xoá chữ sau khi ẩn và chỉ ghi khi chữ đổi.
+- [ ] Sheet/viewer/dialog: focus vào trong khi mở, Tab không lọt ra trang phía sau, trả focus khi đóng; Esc đóng lớp trên cùng **và** blur input bên trong (lỗi thật: Esc xong Enter vẫn lưu form đã huỷ); thanh lưu `position:sticky` cần `scroll-padding-bottom` để ô đang focus không bị che, và không có `transform` ở con (ios-pwa §6).
+- [ ] Không đặt `aria-live` lên vùng bị render lại theo timer.
+- [ ] Biểu đồ giá trị: không vẽ 0 giả cho ngày chưa có dữ liệu giá (trông như mất trắng) — bỏ điểm hoặc chỉ vẽ đường vốn.
+- [ ] Một thông điệp chỉ xuất hiện **một lần** trên màn (không lặp ở thẻ trạng thái + ghi chú + lỗi).
 
 ## 8. Đo chất lượng bằng Playwright
 

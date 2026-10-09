@@ -28,20 +28,21 @@ jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      # Until the user has created the secrets, end green instead of failing
-      # (and emailing) six times a day. Once configured, send_push.py itself
-      # exits 2 on any bad/missing value.
+      # Until the user has added this app's devices, end green instead of
+      # failing (and emailing) six times a day. Only LOVE_PUSH_SUBSCRIPTIONS
+      # decides: the VAPID key is shared with GoldTrack/FuelTrack, so it can
+      # exist long before LoveDays is set up. Once subscriptions exist,
+      # send_push.py itself exits 2 on any bad/missing value (key included).
       - name: Check secrets
         id: cfg
         env:
-          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
           LOVE_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_PUSH_SUBSCRIPTIONS }}
         run: |
-          if [ -z "$LOVE_VAPID_PRIVATE_KEY" ] && [ -z "$LOVE_PUSH_SUBSCRIPTIONS" ]; then
-            echo "::notice::Chưa cấu hình secret LOVE_VAPID_PRIVATE_KEY / LOVE_PUSH_SUBSCRIPTIONS — bỏ qua (xem products/love-days/docs/love-days.md)."
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
+          if [ -n "$LOVE_PUSH_SUBSCRIPTIONS" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Thông báo LoveDays chưa cấu hình (LOVE_PUSH_SUBSCRIPTIONS trống) — bỏ qua."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v4

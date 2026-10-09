@@ -481,6 +481,8 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
   transition:transform .2s cubic-bezier(.32,.72,0,1),opacity .2s}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast:empty{display:none}
+.toast.over-viewer{top:calc(62px + var(--safe-top));bottom:auto;transform:translate(-50%,-150%)}
+.toast.over-viewer.show{transform:translate(-50%,0)}
 
 .version-entry{padding:14px 0;border-bottom:1px solid var(--line)}
 .version-entry:last-child{border-bottom:none;padding-bottom:4px}

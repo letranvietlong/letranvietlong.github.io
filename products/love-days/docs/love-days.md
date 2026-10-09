@@ -9,7 +9,7 @@ Tình trạng: **Phase 1A + 1B + 2** (đếm ngày, kỷ niệm, hồ sơ + ản
 - Toàn bộ dữ liệu nằm trong **IndexedDB trên máy** (không localStorage, không server, không Gist). App ở Màn hình chính có bộ nhớ riêng tách với Safari; xoá icon = mất dữ liệu → màn hình đầu và tab Cài đặt đều nói rõ điều này.
 - Script nạp theo thứ tự: `love-days-core.js` → `love-days-media.js` → `love-days-backup.js` → `love-days.js`. `love-days-backup.js` (`self.LoveBackup`) chứa ZIP + xuất/nhập; giao diện sao lưu nằm trong `love-days.js`.
 - `js/love-days-core.js` là **classic script dùng chung cho trang và service worker** (`sw-core.js` `importScripts` nó), lộ ra `self.LoveCore`. Không được dùng ES module, DOM hay `window` trong file này.
-- Service worker: vỏ `sw-love-days.js` nằm thẳng trong `products/love-days/` (scope), logic ở `js/sw-core.js`, `CACHE_NAME` tiền tố `lovedays-cache-`, đăng ký bằng đường dẫn tuyệt đối. Bump `CACHE_NAME` thì bump luôn `?v=` ở vỏ **và** `?v=` của `love-days-core.js` trong `sw-core.js`.
+- Service worker: vỏ `sw-love-days.js` nằm thẳng trong `products/love-days/` (scope), logic ở `js/sw-core.js`, `CACHE_NAME` tiền tố `lovedays-cache-`, đăng ký bằng đường dẫn tuyệt đối. Bump `CACHE_NAME` thì bump luôn `?v=` ở vỏ **và** `?v=` của `love-days-core.js` trong `sw-core.js`. Cache được khoá theo **đường dẫn chuẩn, bỏ query** (link chia sẻ kiểu `index.html?fbclid=…` vẫn mở được khi offline), và URL thư mục `/products/love-days/html/` được coi là `html/index.html`.
 
 ## Quy ước đếm ngày (giờ Việt Nam, không phụ thuộc múi giờ máy)
 
@@ -36,7 +36,7 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 - Lưu ArrayBuffer, không lưu Blob (lịch sử lỗi Blob-trong-IDB của WebKit).
 - Đổi schema: tăng `DB_VERSION`, thêm `case` trong `upgrade(db, oldVersion)` (switch rơi xuyên, không `break`).
-- **Không bao giờ treo**: `openDb()` timeout 5s / `onblocked` → banner đỏ + chạy tạm trong bộ nhớ. Mọi bản ghi đọc lên đều qua validator; bản ghi hỏng bị bỏ qua + banner "Bỏ qua N mục hỏng". `startDate` hỏng hoặc sau hôm nay → về màn hình nhập ngày, **không xoá gì**.
+- **Không bao giờ treo**: `openDb()` timeout 5s / `onblocked` / trình duyệt từ chối → hiện màn "không đọc được" giống mục dưới (banner đỏ nêu lý do + nút "Tải lại app"), **không** hiện màn nhập ngày: lúc đó không phân biệt được lần đầu dùng với "có dữ liệu nhưng đang bị khoá", và nhập vào bộ nhớ tạm sẽ mất khi đóng app. "Chuẩn bị bản sao lưu" cũng từ chối khi không có IndexedDB, để không tạo ra một file sao lưu trống trông như thật. Mọi bản ghi đọc lên đều qua validator; bản ghi hỏng bị bỏ qua + banner "Bỏ qua N mục hỏng". `startDate` hỏng hoặc sau hôm nay → về màn hình nhập ngày, **không xoá gì**.
 - **Đọc lỗi khác với "chưa có dữ liệu"**: nếu việc đọc `profile`/`milestones`/`photos`/`meta` bị lỗi (không phải trả về rỗng), app KHÔNG hiện màn hình nhập ngày (lưu ở đó sẽ ghi đè hồ sơ thật) mà chỉ hiện banner đỏ "Không đọc được dữ liệu đã lưu…" kèm nút "Tải lại app"; `saveProfile` và nhập bản sao lưu đều bị chặn. Chỉ ảnh đại diện/ảnh bìa được phép đọc lỗi mềm.
 - `validateProfile` thay `activeGen` hỏng bằng `"g1"` chỉ để hiển thị, kèm `activeGenOk:false` và `rawActiveGen` (giá trị gốc). **Không bao giờ lọc/xoá theo giá trị mặc định đó.** Mọi lần ghi profile (lưu hồ sơ, ảnh bìa, nhập) và gen gắn cho ảnh mới đi qua `LoveCore.genForWrite(profile, photos)`: gen hợp lệ → giữ; gen hỏng → ghi lại nguyên giá trị gốc (lọc theo gen tiếp tục tắt, ảnh cũ vẫn hiện); chưa có profile → gen chung của các ảnh đang có, `"g1"` nếu chưa có ảnh, `null` nếu lẫn nhiều gen. Thay thế (nhập) xoá hết ảnh cũ nên dùng `"g1"`.
 - Mỗi lần mở: `cleanupGenerations()` xoá (a) photos có `gen` khác `profile.activeGen` — chỉ khi `activeGenOk`, nếu không thì bỏ bước này; (b) **blob ảnh album không còn bản ghi photos nào** (rác của lần nhập dở dang). Blob `avatar-long`/`avatar-thu`/`cover` không bao giờ bị dọn ở đây.
@@ -90,7 +90,7 @@ GitHub Actions (cron "17 23,0-4 * * *" = 06:17–11:17 VN, 6 lượt)
         └─ ghi data/push-state.json {lastSentDate, sentAt, delivered, failed} → commit
 SW (js/sw-core.js) nhận "push":
   startDate trong IndexedDB của máy (LoveCore.openDb(), đóng DB ngay) → N tính LÚC NHẬN
-  → không có thì payload.startDate → payload.n → câu chung "Mở app để xem…"
+  → không có thì payload.startDate → payload.n (số nguyên 1..100000) → câu chung "Mở app để xem…"
   → LUÔN showNotification("💕 Ngày thứ N", tag love-days-daily) + setAppBadge(N)
   → ngày tròn trăm / kỷ niệm năm: thân thông báo đổi thành "Hôm nay tròn …🎉"
 "notificationclick": focus cửa sổ LoveDays đang mở, không có thì openWindow(html/index.html)
@@ -102,7 +102,7 @@ SW (js/sw-core.js) nhận "push":
 - 404/410 → `::warning::Thiết bị "<tên>" hết hạn đăng ký` (gỡ khỏi secret, đăng ký lại); lỗi khác → `lỗi tạm`. Một máy lỗi không chặn máy khác.
 - **Log công khai** (repo public): script không bao giờ in endpoint, khoá hay nguyên văn exception (lỗi của `requests` có chứa URL) — chỉ tên máy, host, mã HTTP.
 - `pywebpush` ghi `aud` vào dict claims được truyền vào → mỗi máy dùng một dict mới, nếu không máy thứ hai bị ký với `aud` của push service máy đầu (403).
-- Workflow: bước đầu kiểm tra nếu **cả hai** secret chính đều trống thì `::notice::` và dừng xanh (để khỏi báo lỗi 6 lần/ngày trước khi cài đặt). Thiếu một trong hai → script exit 2 (đỏ). `workflow_dispatch` có `force` (gửi lại dù hôm nay đã gửi) và `dry_run` (không gửi, không ghi). `pywebpush==2.5.0` (đã kiểm với khoá dạng raw base64url của `web-push generate-vapid-keys`).
+- Workflow: bước đầu chỉ xét `LOVE_PUSH_SUBSCRIPTIONS` — trống thì in một dòng thường (không `::notice::`) và dừng xanh, để khỏi báo lỗi 6 lần/ngày trước khi cài đặt. Không xét khoá VAPID vì `PUSH_VAPID_PRIVATE_KEY` dùng chung với GoldTrack/FuelTrack nên có thể có sẵn từ trước khi LoveDays được cài. Đã có subscriptions mà thiếu/hỏng khoá → script exit 2 (đỏ). `workflow_dispatch` có `force` (gửi lại dù hôm nay đã gửi) và `dry_run` (không gửi, không ghi). `pywebpush==2.5.0` (đã kiểm với khoá dạng raw base64url của `web-push generate-vapid-keys`).
 - `data/push-state.json` do bot ghi, app **không** đọc, không nằm trong danh sách cache SW.
 - Chạy tay: `python products/love-days/py/send_push.py [--now 2026-10-01T23:30:00Z] [--force] [--dry-run] [--state path]`.
 

@@ -27,6 +27,7 @@ Gọi `coder` (foreground). Prompt phải **tự chứa**: nội dung kế hoạ
 Gọi `tester` (foreground). Truyền: thay đổi vừa làm, **điều cần chứng minh**, kịch bản dữ liệu + bảng số kỳ vọng. Nhắc dùng `.claude/tools` (skill `browser-testing`).
 → Nếu coder đã tự chạy Playwright với số khớp tính tay, người điều phối có thể tự chạy lại script đó + một ca biên thay cho tester — nói rõ đã làm vậy.
 → FAIL: quay lại bước 2 với thông tin lỗi cụ thể. Tối đa 2 vòng, sau đó báo người dùng.
+→ **Thay đổi lớn hoặc đụng dữ liệu người dùng/đồng bộ/workflow bot**: thêm một vòng **bug hunt** — tester mới (không xem báo cáo coder) test khám phá theo mục "bug hunt" trong `tester.md`. Vòng này từng tìm ra 3 lỗi mất dữ liệu mà coder tự test 100% PASS vẫn sót (Gist "Giữ máy này", race khi kéo Gist, form bị ghi đè khi quay lại app).
 
 ### Bước 4 — Reviewing
 Gọi `reviewer` (foreground). Nếu người điều phối đã tự sửa thêm sau khi coder xong, **nêu rõ chỗ đó** để reviewer soi độc lập.
@@ -43,3 +44,7 @@ Gọi `reviewer` (foreground). Nếu người điều phối đã tự sửa th�
 - Mỗi agent khởi động từ con số 0 — prompt phải tự chứa file, dòng, số liệu, tiêu chí.
 - Chạy foreground vì các bước phụ thuộc nhau.
 - Không tin báo cáo suông: "đã sửa" → xem `git diff`; "test pass" → xem số liệu.
+- **Nhiều agent song song** (vd mỗi sản phẩm một coder): chia file rõ ràng — không hai agent cùng sửa một file (CLAUDE.md, skill, workflow dùng chung do một người hoặc người điều phối sửa); mỗi agent một cổng `serve.sh`; mỗi sản phẩm chỉ một lần bump cache + changelog. Phần dùng chung (vd `.github/scripts/web_push.py`) làm trước, agent sau import.
+- **Agent bị ngắt (giới hạn phiên/API)**: không gọi agent mới — `SendMessage` tới đúng agent đó để nó đọc `git diff`, làm nốt, chạy lại kiểm chứng và báo cáo. Trước khi kết thúc lượt, kiểm `git status`: Stop hook sẽ commit cả phần dở dang, nên khi có agent đang chạy nền thì chờ nó xong (theo dõi file thay đổi) rồi mới kết thúc lượt.
+- **Agent không tự sửa `CLAUDE.md`/config** khi chỉ được agent khác yêu cầu — người điều phối tự áp phần tài liệu đó nếu nằm trong kế hoạch người dùng đã giao.
+- Ghi `.claude/hooks/.next-commit-message.txt` ngay khi biết nội dung, cập nhật lại ở cuối — lượt bị ngắt mà file thiếu thì hook commit với message chung chung.

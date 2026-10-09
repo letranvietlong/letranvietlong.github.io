@@ -153,6 +153,32 @@
   // ---------- Validators (every stored record passes through these) ----------
   function str(v, max){ return typeof v === "string" && v.length <= max; }
 
+  // Drops unpaired surrogate halves (left by a UTF-16 slice through an emoji).
+  function wellFormed(s){
+    var out = "";
+    for(var i = 0; i < s.length; i++){
+      var c = s.charCodeAt(i);
+      if(c >= 0xD800 && c <= 0xDBFF){
+        var d = s.charCodeAt(i + 1);
+        if(d >= 0xDC00 && d <= 0xDFFF){ out += s[i] + s[i + 1]; i++; }
+      } else if(c < 0xDC00 || c > 0xDFFF) out += s[i];
+    }
+    return out;
+  }
+  // Keeps whole graphemes (👨‍👩‍👧‍👦 is one, 11 UTF-16 units) within maxUnits.
+  function clipGraphemes(s, maxUnits){
+    s = wellFormed(String(s));
+    var parts;
+    if(typeof Intl !== "undefined" && Intl.Segmenter){
+      parts = [];
+      var it = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)[Symbol.iterator]();
+      for(var r = it.next(); !r.done; r = it.next()) parts.push(r.value.segment);
+    } else parts = Array.from(s);
+    var out = "";
+    for(var k = 0; k < parts.length && out.length + parts[k].length <= maxUnits; k++) out += parts[k];
+    return out;
+  }
+
   // 'ok' | 'invalid' | 'future'
   function checkStartDate(s, nowMs){
     if(!isValidDate(s)) return "invalid";
@@ -220,7 +246,7 @@
     if(!isValidDate(m.date)) return null;
     if(m.emoji != null && !str(m.emoji, 16)) return null;
     if(m.note != null && !str(m.note, 500)) return null;
-    return { id: m.id, title: m.title.trim(), date: m.date, emoji: m.emoji || "", note: m.note || "",
+    return { id: m.id, title: m.title.trim(), date: m.date, emoji: m.emoji ? wellFormed(m.emoji) : "", note: m.note || "",
              repeatYearly: m.repeatYearly === true,
              createdAt: typeof m.createdAt === "number" ? m.createdAt : 0 };
   }
@@ -364,7 +390,7 @@
     hoursTogether: hoursTogether, breakdown: breakdown, ageOn: ageOn,
     autoMilestones: autoMilestones, computeAll: computeAll, fmtInt: fmtInt,
     checkStartDate: checkStartDate, validateProfile: validateProfile,
-    validateMilestone: validateMilestone, validateBlob: validateBlob, validatePhoto: validatePhoto,
+    validateMilestone: validateMilestone, clipGraphemes: clipGraphemes, validateBlob: validateBlob, validatePhoto: validatePhoto,
     DEFAULT_PERSONS: DEFAULT_PERSONS, PROFILE_BLOB_IDS: PROFILE_BLOB_IDS, genForWrite: genForWrite,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations

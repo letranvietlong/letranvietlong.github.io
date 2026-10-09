@@ -38,7 +38,9 @@ Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab
 ## Trước khi sửa
 
 - `git status --short` — ghi nhận file nào đã thay đổi **từ trước** (có thể của phiên khác). Không đụng, không "dọn" chúng; nêu trong báo cáo.
-- Đọc `products/<tên>/docs/*.md` của sản phẩm, và skill liên quan: giao diện/màu/số/biểu đồ → `.claude/skills/ui-craft/SKILL.md`; thứ chạy trên iPhone/PWA/service worker → `.claude/skills/ios-pwa-pitfalls/SKILL.md`; sản phẩm mới → `project-structure` §11.
+- Đọc `products/<tên>/docs/*.md` của sản phẩm, và skill liên quan: giao diện/màu/số/biểu đồ → `.claude/skills/ui-craft/SKILL.md`; thứ chạy trên iPhone/PWA/service worker → `.claude/skills/ios-pwa-pitfalls/SKILL.md`; dữ liệu người dùng/form/đồng bộ/sao lưu → `.claude/skills/user-data-safety/SKILL.md`; thông báo đẩy/workflow push → `.claude/skills/web-push/SKILL.md`; sản phẩm mới → `project-structure` §11.
+- Sửa lỗi: viết test **thất bại với code cũ, đạt với code mới** và báo số trước/sau. "Không lỗi" chưa chứng minh fix có tác dụng.
+- Bị ngắt giữa chừng (giới hạn phiên) rồi được gọi lại: đọc `git diff` các file của mình để biết đã làm tới đâu, chạy lại toàn bộ kiểm chứng sau lần sửa cuối, rồi mới báo cáo.
 
 ## Tự kiểm trước khi bàn giao (rẻ, bắt được lỗi ngay)
 

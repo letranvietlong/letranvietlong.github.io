@@ -7,7 +7,7 @@
 // GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
 // GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
 // giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
-var CACHE_NAME = "goldtrack-cache-v12";
+var CACHE_NAME = "goldtrack-cache-v13";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -36,6 +36,7 @@ var DATA_PATHS = [
 ];
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
 var GOLDTRACK_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
+var HTML_DIR = "/products/gold-track/html/";
 
 self.addEventListener("install", function(event){
   event.waitUntil(
@@ -68,9 +69,13 @@ self.addEventListener("fetch", function(event){
   if(event.request.method !== "GET") return;
   var url = new URL(event.request.url);
   if(url.origin !== location.origin) return;
-  if(GOLDTRACK_PATHS.indexOf(url.pathname) === -1) return; // not ours — let the browser handle it normally
+  // Cache entries are keyed by clean path: a shared link carries a query
+  // (?fbclid=…) and the folder URL serves the same page — both used to miss
+  // the exact-URL match and fail to open offline.
+  var path = url.pathname === HTML_DIR ? HTML_DIR + "index.html" : url.pathname;
+  if(GOLDTRACK_PATHS.indexOf(path) === -1) return; // not ours — let the browser handle it normally
 
-  var isNetworkFirst = NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1;
+  var isNetworkFirst = NETWORK_FIRST_PATHS.indexOf(path) !== -1;
 
   if(isNetworkFirst){
     // Network-first: always show the freshest HTML/price/changelog when
@@ -83,22 +88,22 @@ self.addEventListener("fetch", function(event){
         // an error, serve that last working version if we have one.
         if(res.ok){
           var copy = res.clone();
-          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          caches.open(CACHE_NAME).then(function(cache){ cache.put(path, copy); });
           return res;
         }
-        return caches.match(event.request).then(function(cached){ return cached || res; });
+        return caches.match(path, { ignoreSearch: true }).then(function(cached){ return cached || res; });
       }).catch(function(){
-        return caches.match(event.request).then(function(cached){ return cached || Response.error(); });
+        return caches.match(path, { ignoreSearch: true }).then(function(cached){ return cached || Response.error(); });
       })
     );
   } else {
     // Cache-first for icons: instant load offline, refreshed in the background.
     event.respondWith(
-      caches.match(event.request).then(function(cached){
+      caches.match(path, { ignoreSearch: true }).then(function(cached){
         var fetchPromise = fetch(event.request).then(function(res){
           if(res.ok){
             var copy = res.clone();
-            caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+            caches.open(CACHE_NAME).then(function(cache){ cache.put(path, copy); });
           }
           return res;
         }).catch(function(){ return cached || Response.error(); });
@@ -117,8 +122,10 @@ var PUSH_ICON = "/products/gold-track/img/gold-track-icon-180.png";
 self.addEventListener("push", function(event){
   var p = null;
   try{ p = event.data ? event.data.json() : null; }catch(e){ p = null; }
-  var title = p && typeof p.title === "string" && p.title ? p.title.slice(0, 80) : "GoldTrack";
-  var body = p && typeof p.body === "string" && p.body ? p.body.slice(0, 300) : "Giá vàng vừa thay đổi — mở app để xem";
+  // Truncate by code point, not UTF-16 unit, so an emoji is never cut in half.
+  var clip = function(s, n){ return Array.from(s).slice(0, n).join(""); };
+  var title = p && typeof p.title === "string" && p.title ? clip(p.title, 80) : "GoldTrack";
+  var body = p && typeof p.body === "string" && p.body ? clip(p.body, 300) : "Giá vàng vừa thay đổi — mở app để xem";
   // iOS revokes the subscription if a push arrives without a visible
   // notification, so this path must always end in showNotification.
   event.waitUntil(self.registration.showNotification(title, { body: body, tag: "gold-price", icon: PUSH_ICON }));

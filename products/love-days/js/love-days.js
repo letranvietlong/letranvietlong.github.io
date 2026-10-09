@@ -18,7 +18,7 @@
 
   var state = {
     db: null, profile: null, milestones: [], blobs: {}, urls: {},
-    computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false,
+    computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false, dbError: null,
     photos: [], albumOrder: [], arranging: false,
     meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken" }
   };
@@ -153,14 +153,17 @@
 
   function showLoadFailed(){
     state.mode = "failed";
+    closeSheets();
     stopClock();
     $("tabbar").hidden = true;
     $("setupView").hidden = true;
     ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
     $("loadingView").hidden = false;
     $("loadingView").classList.add("failed");
-    setBanner("load", "Không đọc được dữ liệu đã lưu — dữ liệu vẫn còn nguyên.", "error",
-              { label: "Tải lại app", run: function(){ location.reload(); } });
+    setBanner("load", state.dbError
+      ? "Không mở được bộ nhớ của app (" + state.dbError + "). Dữ liệu đã lưu không bị ảnh hưởng — đóng các cửa sổ LoveDays khác rồi tải lại."
+      : "Không đọc được dữ liệu đã lưu — dữ liệu vẫn còn nguyên.", "error",
+      { label: "Tải lại app", run: function(){ location.reload(); } });
   }
 
   function showSetup(){
@@ -266,7 +269,7 @@
         return '<div class="card bday-card empty">' + head +
           '<button type="button" class="btn btn-soft btn-sm" data-goto="settings">Thêm ngày sinh</button></div>';
       }
-      var meta = fmtDayMonth(b.date) + " · tròn " + b.turning + " tuổi";
+      var meta = fmtDayMonth(b.date) + (b.turning > 0 ? " · tròn " + b.turning + " tuổi" : "");
       if(b.daysLeft === 0){
         return '<div class="card bday-card today">' + head + '<p class="bday-left today">Hôm nay 🎂</p><p class="bday-meta">' + meta + "</p></div>";
       }
@@ -344,7 +347,7 @@
     var list = state.computed.list;
     function row(x){
       var sub = fmtDate(x.date);
-      if(x.kind === "birthday") sub += " · tròn " + x.turning + " tuổi";
+      if(x.kind === "birthday" && x.turning > 0) sub += " · tròn " + x.turning + " tuổi";
       else if(x.kind === "user" && x.repeatYearly && x.years > 0) sub += " · lần thứ " + x.years;
       var label = escapeHtml(x.title + ", " + fmtDate(x.date) + ", " + daysLeftText(x));
       var inner = '<span class="ms-emoji" aria-hidden="true">' + escapeHtml(x.emoji) + "</span>" +
@@ -413,7 +416,7 @@
     state.milestones.forEach(function(x){ if(x.id === state.editingId) old = x; });
     var rec = C.validateMilestone({
       id: old ? old.id : "m" + now().toString(36) + Math.random().toString(36).slice(2, 7),
-      title: title, date: date, emoji: $("msEmoji").value.trim().slice(0, 8), note: $("msNote").value.trim(),
+      title: title, date: date, emoji: C.clipGraphemes($("msEmoji").value.trim(), 16), note: $("msNote").value.trim(),
       repeatYearly: $("msRepeat").checked, createdAt: old ? old.createdAt : now()
     });
     if(!rec){ showError("msError", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
@@ -473,7 +476,7 @@
 
   var DP_ROW = 40;
   var reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
-  var dp = { open: false, id: null, y: 2000, m: 1, d: 1, min: "", max: "", today: "", minY: 1900, maxY: 2000, raf: 0 };
+  var dp = { open: false, id: null, y: 2000, m: 1, d: 1, min: "", max: "", today: "", minY: 1900, maxY: 2000, raf: 0, dayTimer: 0 };
   var dpCols = [
     { key: "d", el: $("dpDay"), timer: null, prog: false, touching: false },
     { key: "m", el: $("dpMonth"), timer: null, prog: false, touching: false },
@@ -640,6 +643,23 @@
     $(id + "Btn").setAttribute("aria-expanded", "true");
     dpSync(false);
     dpCols[0].el.focus({ preventScroll: true });
+    dp.dayTimer = setInterval(dpRefreshToday, 15000);
+  }
+
+  // The picker may stay open across midnight: "Hôm nay" and a today-bounded
+  // max must follow the new day.
+  function dpRefreshToday(){
+    if(!dp.open) return;
+    var today = C.todayStr(now());
+    if(today === dp.today) return;
+    var cfg = DATE_FIELDS[dp.id], v = $(dp.id).value, oldMaxY = dp.maxY;
+    dp.today = today;
+    dp.max = cfg.futureYears ? C.addYearsClamp(today, cfg.futureYears) : today;
+    if(C.isValidDate(v) && v > dp.max) dp.max = v;
+    dp.maxY = +dp.max.slice(0, 4);
+    $("dpToday").hidden = today < dp.min || today > dp.max;
+    if(dp.maxY !== oldMaxY) dpBuild();
+    dpSync(false);
   }
 
   // how: true = Xong, "clear" = Xoá ngày, false = Huỷ.
@@ -652,6 +672,7 @@
       dpNormalize();
     }
     dp.open = false;
+    clearInterval(dp.dayTimer);
     dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; col.touching = false; });
     var sheet = $("datePicker"), id = dp.id;
     sheet.classList.remove("open");
@@ -671,8 +692,16 @@
 
   function onDatePickerKey(e){
     if(e.key === "Escape"){ e.preventDefault(); closeDatePicker(false); return; }
+    trapTab($("datePicker"), e);
+  }
+
+  // Keeps Tab inside an open dialog (date picker, sheets, viewer).
+  function trapTab(root, e){
     if(e.key !== "Tab") return;
-    var f = Array.prototype.filter.call($("datePicker").querySelectorAll("button,[tabindex]"), function(el){ return !el.hidden; });
+    var f = Array.prototype.filter.call(root.querySelectorAll('button,input,textarea,select,summary,a[href],[tabindex]:not([tabindex="-1"])'), function(el){
+      return !el.disabled && !el.hidden && el.getClientRects().length > 0;
+    });
+    if(!f.length){ e.preventDefault(); return; }
     var i = f.indexOf(document.activeElement);
     if(e.shiftKey && i <= 0){ e.preventDefault(); f[f.length - 1].focus(); }
     else if(!e.shiftKey && i === f.length - 1){ e.preventDefault(); f[0].focus(); }
@@ -684,6 +713,7 @@
   $("dpClear").addEventListener("click", function(){ closeDatePicker("clear"); });
   $("dpBackdrop").addEventListener("click", function(){ closeDatePicker(false); });
   $("dpToday").addEventListener("click", function(){
+    dpRefreshToday();
     dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; });
     dpSetParts(dp.today);
     dpNormalize();
@@ -1249,6 +1279,7 @@
   });
 
   function onViewerKey(e){
+    if(e.key === "Tab"){ trapTab($("viewer"), e); return; }
     if(viewer.editing){
       if(e.key === "Escape"){ e.preventDefault(); endCaptionEdit(); }
       return;
@@ -1339,6 +1370,7 @@
   }
 
   function prepareBackup(onProgress){
+    if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
     return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos, readBlob: readBlob },
@@ -1581,6 +1613,7 @@
       imp.result = res;
       imp.phase = "done";
       imp.parsed = null;
+      requestPersist();
       return reloadAll();
     }, function(err){
       imp.phase = "error";
@@ -1769,8 +1802,8 @@
     $("btnPushEnable").disabled = !canEnable || push.busy;
     $("btnPushEnable").textContent = push.busy ? "Đang bật…" : "Bật thông báo";
     $("btnPushTest").disabled = typeof Notification === "undefined" || perm === "denied" || !("serviceWorker" in navigator) || !state.computed;
-    var testWhy = typeof Notification === "undefined" ? "Mở app từ icon Màn hình chính để gửi thử." :
-      perm === "denied" ? "Đã chặn — bật lại ở Cài đặt iPhone → Thông báo → Long & Thư." : "";
+    // "denied" is already explained by the status tag.
+    var testWhy = typeof Notification === "undefined" ? "Mở app từ icon Màn hình chính để gửi thử." : "";
     var testNote = $("pushTestNote");
     if(testWhy){
       if(testNote.textContent !== testWhy) testNote.textContent = testWhy;
@@ -1829,7 +1862,7 @@
     push.busy = true;
     renderPush();
     Promise.resolve(permP).then(function(perm){
-      if(perm !== "granted") throw userErr(perm === "denied" ? "Bạn đã chọn Không cho phép. Bật lại trong Cài đặt iPhone → Thông báo → Long & Thư." : "Chưa được cho phép thông báo. Hãy chạm lại và chọn Cho phép.");
+      if(perm !== "granted") throw userErr(perm === "denied" ? "" : "Chưa được cho phép thông báo. Hãy chạm lại và chọn Cho phép.");
       return swReady();
     }).then(function(reg){
       return reg.pushManager.getSubscription().then(function(old){
@@ -1846,7 +1879,7 @@
       savePushRec();
       updateBadge();
     }).catch(function(err){
-      showError("pushError", (err && err.userMessage) || "Không bật được thông báo (" + (err && err.name || "lỗi") + "). Hãy thử lại.");
+      showError("pushError", err && typeof err.userMessage === "string" ? err.userMessage : "Không bật được thông báo (" + (err && err.name || "lỗi") + "). Hãy thử lại.");
     }).then(function(){
       push.busy = false;
       renderPush();
@@ -1889,7 +1922,7 @@
     note.hidden = true;
     var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
     Promise.resolve(permP).then(function(perm){
-      if(perm !== "granted") throw userErr("Cần cho phép thông báo thì mới gửi thử được.");
+      if(perm !== "granted") throw userErr(perm === "denied" ? "" : "Cần cho phép thông báo thì mới gửi thử được.");
       return swReady();
     }).then(function(reg){
       var n = state.computed.n;
@@ -1912,7 +1945,7 @@
       renderPush();
       renderDiag();
     }).catch(function(err){
-      showError("pushError", (err && err.userMessage) || "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
+      showError("pushError", err && typeof err.userMessage === "string" ? err.userMessage : "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
       renderPush();
     });
   });
@@ -1931,6 +1964,8 @@
     } else showToast(t, msg);
   }
   function showToast(t, msg){
+    // In the viewer the bottom holds the caption just edited — show it up top.
+    t.classList.toggle("over-viewer", viewer.open);
     t.textContent = msg;
     void t.offsetWidth; // the first toast leaves display:none (.toast:empty) — reflow so it slides in instead of popping
     t.classList.add("show");
@@ -1968,21 +2003,35 @@
   });
 
   // ---------- Sheets ----------
+  var sheetOpener = null;
   function openSheet(id){
+    var a = document.activeElement;
+    if(!document.querySelector(".sheet.open")) sheetOpener = a && a !== document.body ? a : null;
     $(id).classList.add("open");
     $("sheetBackdrop").classList.add("open");
+    // The close button rather than the first field: focusing an input would
+    // pop the iPhone keyboard over the sheet.
+    $(id).querySelector("[data-close-sheet]").focus({ preventScroll: true });
   }
   function closeSheets(){
     if(imp.phase === "importing") return;
-    Array.prototype.forEach.call(document.querySelectorAll(".sheet.open"), function(s){ s.classList.remove("open"); });
+    var open = document.querySelectorAll(".sheet.open");
+    if(!open.length) return;
+    Array.prototype.forEach.call(open, function(s){ s.classList.remove("open"); });
     $("sheetBackdrop").classList.remove("open");
+    var back = sheetOpener;
+    sheetOpener = null;
+    if(back && document.contains(back) && back.getClientRects().length) back.focus({ preventScroll: true });
   }
   $("sheetBackdrop").addEventListener("click", closeSheets);
   Array.prototype.forEach.call(document.querySelectorAll("[data-close-sheet]"), function(b){ b.addEventListener("click", closeSheets); });
   document.addEventListener("keydown", function(e){
     if(dp.open){ onDatePickerKey(e); return; }
     if(viewer.open){ onViewerKey(e); return; }
-    if(e.key === "Escape" && document.querySelector(".sheet.open")) closeSheets();
+    var sheet = document.querySelector(".sheet.open");
+    if(!sheet) return;
+    if(e.key === "Escape") closeSheets();
+    else trapTab(sheet, e);
   });
   Array.prototype.forEach.call(document.querySelectorAll(".sheet"), function(sheet){
     var handle = sheet.querySelector(".sheet-handle-hit");
@@ -2040,8 +2089,11 @@
     state.db = db;
     return Promise.resolve().then(loadAll).catch(function(){ state.loadFailed = true; });
   }, function(err){
-    var why = err && err.code === "blocked" ? "đang bị một cửa sổ LoveDays khác giữ" : err && err.code === "timeout" ? "quá thời gian chờ" : "trình duyệt từ chối";
-    setBanner("db", "Không mở được bộ nhớ (" + why + ") — thay đổi sẽ không được lưu. Đóng các cửa sổ LoveDays khác rồi mở lại.", "error");
+    // Without the DB, first run and "data exists but is locked" look the same:
+    // a setup form here would take input that is lost on close, and a backup
+    // made from memory would be an empty file that looks real.
+    state.dbError = err && err.code === "blocked" ? "đang bị một cửa sổ LoveDays khác giữ" : err && err.code === "timeout" ? "quá thời gian chờ" : "trình duyệt từ chối";
+    state.loadFailed = true;
   }).then(render).catch(function(){
     $("loadingView").hidden = true;
     setBanner("render", "Có lỗi khi hiển thị dữ liệu. Dữ liệu vẫn còn trên máy — hãy thử mở lại app.", "error");

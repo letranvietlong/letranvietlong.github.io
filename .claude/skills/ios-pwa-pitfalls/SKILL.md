@@ -77,6 +77,7 @@ File HTML/CSS/JS đang sửa thường xuyên mà để **cache-first** thì m�
 - Asset bất biến (icon) → cache-first.
 - Thêm file mới app load lúc chạy → **phải** thêm vào danh sách cache **và bump `CACHE_NAME`**, nếu không client cũ giữ nguyên danh sách cũ.
 - Cache HTML mà quên CSS/JS → offline lên trang trắng/không style.
+- **Khớp điều hướng phải chịu được query string và URL thư mục.** Icon Màn hình chính thêm từ link có `?fbclid=`/`?utm=`/tham số Zalo, hoặc mở `/products/<p>/html/`, sẽ ra trang trắng khi offline nếu `fetch` handler so pathname chính xác và `caches.match` không có `ignoreSearch` (lỗi thật FuelTrack, áp cho cả 3 app). Chuẩn hoá pathname (thư mục → `index.html`) và khớp app code bằng `ignoreSearch` **hoặc** khoá cache theo path đã chuẩn hoá (bỏ query) — dùng cùng một khoá cho cả `put` lẫn `match`. Test offline với `?fbclid=x` và URL thư mục.
 - **Cache Storage dùng chung cho cả origin** (mọi sản phẩm trên `letranvietlong.github.io`): `activate` chỉ được xoá cache mang **tiền tố của chính mình** (`k.indexOf("goldtrack-cache-")===0 && k!==CACHE_NAME`). Lọc trần `k !== CACHE_NAME` sẽ xoá sạch cache offline của sản phẩm khác (đã suýt xảy ra khi thêm FuelTrack).
 
 ## 6. `position:sticky` + `transform` ở phần tử con = lỗi render WebKit
@@ -156,3 +157,13 @@ Bắt buộc với sản phẩm lưu dữ liệu người dùng:
 - Trạng thái rỗng phải **giải thích** chuyện bộ nhớ tách riêng, không để màn hình trắng trơn (card ẩn hết khi không có dữ liệu = trông như app hỏng).
 - Có đường chuyển dữ liệu: xuất/nhập file hoặc đồng bộ (GoldTrack dùng GitHub Gist).
 - Khi phải yêu cầu người dùng xoá icon và thêm lại (mục 1b, 8), nhắc họ sao lưu/đồng bộ **trước**.
+
+## 15. `visibilitychange` bắn MỖI lần quay lại app — làm mới nền không được đụng form đang mở
+
+Trên iPhone người dùng thường chuyển sang Ảnh/Tin nhắn (xem hoá đơn, mã) rồi quay lại giữa lúc đang nhập form. Mỗi lần quay lại, handler `visibilitychange` (tải lại dữ liệu, render lại) chạy. Nếu nó render lại form hoặc tự điền/tính lại giá trị → dữ liệu người dùng bị đổi âm thầm (lỗi thật FuelTrack: giá và số tiền đổi khi quay lại app). Quy tắc: làm mới nền chỉ cập nhật phần hiển thị không có input đang mở; ô người dùng đã đặt thì không bao giờ ghi đè. Chi tiết và cách test: skill `user-data-safety` §2.
+
+Ngược lại, thứ **cần** tự cập nhật khi app để mở lâu (vd thẻ "Đang chờ giá kỳ…") không được chỉ dựa vào `visibilitychange`: `setInterval` chỉ render lại thì dữ liệu vẫn cũ — phải fetch lại (`cache:'no-store'`) khi đang ở trạng thái chờ. Và đừng gắn `aria-live` lên vùng bị render lại theo timer (VoiceOver đọc lại cả thẻ mỗi phút).
+
+## 16. Thông báo đẩy và số trên icon
+
+Chỉ chạy ở app mở từ icon Màn hình chính (iOS 16.4+), xin quyền trong cú chạm, push nào cũng phải hiện thông báo (không thì iOS thu hồi subscription). Toàn bộ kiến trúc, secret, workflow và cách test: skill `web-push`.

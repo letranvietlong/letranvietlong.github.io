@@ -251,9 +251,8 @@ a{color:var(--accent)}
 .confirm-actions{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 
 /* ---------- Sổ xăng ---------- */
-.vehicle-pick{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none}
-.vehicle-pick::-webkit-scrollbar{display:none}
-.vehicle-pick button{flex:none;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid var(--line);background:var(--glass);color:var(--muted);font-size:.84rem;font-weight:700}
+.vehicle-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.vehicle-pick button{flex:none;max-width:100%;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid var(--line);background:var(--glass);color:var(--muted);font-size:.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vehicle-pick button.active{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .empty-card{text-align:center;padding:28px 20px}
 .empty-icon{width:40px;height:40px;color:var(--muted2);margin:0 auto 10px;display:block}
@@ -302,6 +301,7 @@ a{color:var(--accent)}
 .veh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
 .veh-row:first-child{border-top:none;padding-top:0}
 .veh-name{font-size:.9rem;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.veh-row .btn{flex:none;white-space:nowrap}
 .veh-name small{display:block;font-size:.74rem;font-weight:500;color:var(--muted2);margin-top:2px}
 #vehicleList + .btn{margin-top:12px}
 .row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}

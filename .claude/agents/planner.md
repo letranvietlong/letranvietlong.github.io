@@ -31,6 +31,10 @@ Khảo sát code thật rồi trả về một kế hoạch thực thi cụ th�
 - **Sổ sách mua/bán chạy theo thứ tự thời gian** (`computePortfolio` replay chronologically). Mọi thay đổi liên quan số lượng/ngày phải kiểm tra bằng `findLedgerViolation`, không dùng tổng số dư bỏ qua ngày.
 - **Đồng bộ Gist có thể mất dữ liệu**: lúc khởi động, nếu có thay đổi chưa đồng bộ (cờ `goldtrack_gist_dirty_v1`) thì phải **đẩy lên**, không được kéo về đè.
 - **iOS/PWA**: khoảng trống đáy màn hình thường là safe-area của home indicator (bình thường, không sửa được) — NHƯNG nếu hở đúng ~59pt dưới thanh menu khi mở từ Màn hình chính thì là meta `black-translucent` làm hụt viewport, sửa bằng `default` (skill `ios-pwa-pitfalls` §1b). Chữ số cao thấp chỉ trên iPhone = phông không có trên iOS (skill `ui-craft` §3). Dữ liệu "mất" khi mở từ icon = bộ nhớ app Màn hình chính tách với Safari (§14). Lỗi chỉ-iPhone không kiểm được bằng Chromium → kế hoạch phải có bước lấy số đo trên máy thật. `100dvh` có thể kẹt sau khi đóng bàn phím → dùng `visualViewport`. `manifest.json` không khiến icon đã ghim trên iOS tự sửa URL khi trang di chuyển — iOS ghim theo URL cụ thể, không đọc lại `start_url`.
+- **Dữ liệu người dùng / form nhập liệu / đồng bộ / sao lưu** → đọc skill `user-data-safety` (đồng bộ không ghi đè sửa đổi cục bộ, `visibilitychange` không được ghi đè form đang mở, xoá cũng phải kiểm sổ sách, khôi phục an toàn, giờ VN). Mọi lỗi trong đó đã xảy ra thật.
+- **Thông báo đẩy / số trên icon / secret PUSH_*** → skill `web-push` (một cặp khoá chung, subscription riêng từng app, "đã cấu hình" chỉ dựa vào secret subscriptions của chính app, push không được làm hỏng bot giá).
+- **Service worker**: điều hướng phải khớp cả URL có query (`?fbclid=`) và URL thư mục (`ios-pwa-pitfalls` §5).
+- **Nhiều coder chạy song song**: kế hoạch phải chia file theo người (không hai coder cùng sửa một file), mỗi người một cổng server, và chỉ một lần bump cache/changelog cho mỗi sản phẩm.
 - **Text giao diện viết bằng tiếng Việt.**
 
 ## Định dạng trả về

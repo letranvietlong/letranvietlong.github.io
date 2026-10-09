@@ -3,9 +3,9 @@
 // love-days-core.js is shared with the page; the push handler opens
 // IndexedDB through LoveCore.openDb() so the DB is never created without its
 // stores. ?v= follows CACHE_NAME.
-importScripts('/products/love-days/js/love-days-core.js?v=3');
+importScripts('/products/love-days/js/love-days-core.js?v=4');
 
-var CACHE_NAME = "lovedays-cache-v3";
+var CACHE_NAME = "lovedays-cache-v4";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
@@ -54,30 +54,35 @@ self.addEventListener("fetch", function(event){
   if(event.request.method !== "GET") return;
   var url = new URL(event.request.url);
   if(url.origin !== location.origin) return;
-  if(LOVEDAYS_PATHS.indexOf(url.pathname) === -1) return;
+  // Shared links arrive as ".../index.html?fbclid=…" or as the bare html/
+  // folder; both must open offline, so cache entries are keyed by the
+  // canonical path without the query string.
+  var path = url.pathname === "/products/love-days/html/" ? APP_URL : url.pathname;
+  if(LOVEDAYS_PATHS.indexOf(path) === -1) return;
+  var key = location.origin + path;
 
-  if(NETWORK_FIRST_PATHS.indexOf(url.pathname) !== -1){
+  if(NETWORK_FIRST_PATHS.indexOf(path) !== -1){
     event.respondWith(
       fetch(event.request).then(function(res){
         // Only a good response may replace the offline copy; on a transient
         // 404/5xx serve the last working version if we have one.
         if(res.ok){
           var copy = res.clone();
-          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+          caches.open(CACHE_NAME).then(function(cache){ cache.put(key, copy); });
           return res;
         }
-        return caches.match(event.request).then(function(cached){ return cached || res; });
+        return caches.match(key).then(function(cached){ return cached || res; });
       }).catch(function(){
-        return caches.match(event.request).then(function(cached){ return cached || Response.error(); });
+        return caches.match(key).then(function(cached){ return cached || Response.error(); });
       })
     );
   } else {
     event.respondWith(
-      caches.match(event.request).then(function(cached){
+      caches.match(key).then(function(cached){
         var fetchPromise = fetch(event.request).then(function(res){
           if(res.ok){
             var copy = res.clone();
-            caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+            caches.open(CACHE_NAME).then(function(cache){ cache.put(key, copy); });
           }
           return res;
         }).catch(function(){ return cached || Response.error(); });
@@ -114,7 +119,7 @@ function pushInfo(payload){
     if(!start && payload && LoveCore.checkStartDate(payload.startDate, now) === "ok") start = payload.startDate;
     if(start) return { n: LoveCore.dayCount(start, now), start: start, now: now };
     var n = payload && payload.n;
-    if(typeof n === "number" && n >= 1 && Math.floor(n) === n) return { n: n, start: null, now: now };
+    if(typeof n === "number" && n >= 1 && n <= 100000 && Math.floor(n) === n) return { n: n, start: null, now: now };
     return null;
   });
 }

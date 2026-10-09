@@ -6,9 +6,15 @@ prices.
 Compares the newest change point in data/fuel-price-history.json with the
 LAST NOTIFIED prices (data/push-state.json), not with the previous commit:
   - no state yet          → store the current period as baseline, send nothing
+  - state file unreadable → ::warning::, baseline = the period before the
+    newest one if the newest is ≤ 2 days old (so it still gets notified),
+    else the newest one (never re-announce an old period)
   - same prices           → nothing to do
-  - newest entry equals an older period and is ≤ 3 days old → probably the
-    source's noisy record (fetch_fuel_price.py heals those within ~3 days) → wait
+  - no item listed on both sides changed price (an item was only added or
+    dropped, e.g. RON 95-III retired 05/06/2026) → update state, send nothing
+  - newest entry equals one of the last 6 periods (≤ 60 days) and is ≤ 3 days
+    old → probably the source's noisy record (fetch_fuel_price.py heals those
+    within ~3 days) → wait
   - 22:00–07:00 VN        → defer to a later run (cron is hourly)
   - otherwise             → send; same period changed again → title "(cập nhật)"
 
@@ -16,7 +22,8 @@ Env: PUSH_VAPID_PRIVATE_KEY, FUEL_PUSH_SUBSCRIPTIONS (GitHub secrets),
      PUSH_VAPID_SUB (optional). See products/fuel-track/docs/fuel-track.md.
 
 Exit codes: 0 sent to ≥ 1 device / nothing to send / deferred / dry run,
-            1 every device failed (state not written), 2 configuration error.
+            1 every device failed (state not written) or history file
+              unreadable/malformed, 2 configuration error.
 """
 
 import argparse
@@ -38,6 +45,10 @@ KEY_ENV = "PUSH_VAPID_PRIVATE_KEY"
 TTL_SECONDS = 24 * 3600
 VN = dt.timedelta(hours=7)
 NOISE_DAYS = 3
+NOISE_LOOKBACK = 6
+NOISE_LOOKBACK_DAYS = 60
+BAD_STATE_RECENT_DAYS = 2
+BAD_STATE = "bad"
 MINUS = "−"
 
 # Same order as ITEMS in fetch_fuel_price.py.
@@ -85,17 +96,30 @@ def read_json(path):
 
 
 def read_state(path):
+    """None = no state file yet; BAD_STATE = present but unusable."""
     try:
         data = read_json(path)
     except FileNotFoundError:
         return None
     except (ValueError, OSError):
-        log("::warning::Không đọc được %s — coi như chưa có mốc" % os.path.basename(path))
-        return None
+        log("::warning::Không đọc được %s" % os.path.basename(path))
+        return BAD_STATE
     n = data.get("notified") if isinstance(data, dict) else None
     if not (isinstance(n, dict) and isinstance(n.get("date"), str) and valid_prices(n.get("prices"))):
-        return None
+        log("::warning::%s không đúng định dạng" % os.path.basename(path))
+        return BAD_STATE
     return n
+
+
+def days_old(today_vn, date_str):
+    try:
+        return (today_vn - dt.date.fromisoformat(date_str)).days
+    except ValueError:
+        return None
+
+
+def moved_items(base, last):
+    return [k for k, v in last.items() if k in base and base[k] != v]
 
 
 def write_state(path, notified, now, delivered, failed):
@@ -162,18 +186,33 @@ def main(argv=None):
 
     try:
         history = read_json(args.history_file)
-        changes = [c for c in history.get("changes", [])
-                   if isinstance(c, dict) and isinstance(c.get("date"), str) and valid_prices(c.get("prices"))]
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError):
         log("::warning::Không đọc được lịch sử giá — bỏ qua thông báo")
-        return 0
+        return 1
+    if not (isinstance(history, dict) and isinstance(history.get("changes", []), list)
+            and isinstance(history.get("items") or {}, dict)):
+        log("::warning::Lịch sử giá sai cấu trúc (cần object có changes là mảng) — bỏ qua thông báo")
+        return 1
+    changes = [c for c in history.get("changes", [])
+               if isinstance(c, dict) and isinstance(c.get("date"), str) and valid_prices(c.get("prices"))]
     if not changes:
         log("Lịch sử giá trống — bỏ qua thông báo")
         return 0
     last = changes[-1]
     prev = changes[-2] if len(changes) >= 2 else None
 
+    today_vn = (now + VN).date()
     notified = read_state(args.state)
+    if notified == BAD_STATE:
+        age_last = days_old(today_vn, last["date"])
+        if prev and age_last is not None and 0 <= age_last <= BAD_STATE_RECENT_DAYS:
+            # The newest period may not have been announced yet — compare it
+            # with the one before, so a corrupt file can't swallow it.
+            notified = {"date": prev["date"], "prices": prev["prices"]}
+            log("::warning::Lấy kỳ %s làm mốc thay cho trạng thái hỏng" % prev["date"])
+        else:
+            notified = None
+            log("::warning::Lưu lại mốc từ kỳ %s thay cho trạng thái hỏng" % last["date"])
     if notified is None and not args.force:
         if args.dry_run:
             log("Chạy thử: chưa có mốc, lần chạy thật sẽ lưu kỳ %s làm mốc (không gửi)" % last["date"])
@@ -186,12 +225,20 @@ def main(argv=None):
         log("Giá không đổi so với lần báo gần nhất (kỳ %s)" % notified["date"])
         return 0
 
-    today_vn = (now + VN).date()
-    try:
-        age = (today_vn - dt.date.fromisoformat(last["date"])).days
-    except ValueError:
+    if notified and not moved_items(notified["prices"], last["prices"]) and not args.force:
+        log("::notice::Kỳ %s chỉ thêm/bớt mặt hàng, không mặt hàng nào đổi giá — cập nhật mốc, không gửi" % last["date"])
+        if not args.dry_run:
+            write_state(args.state, {"date": last["date"], "prices": last["prices"]}, now, 0, 0)
+        return 0
+
+    age = days_old(today_vn, last["date"])
+    if age is None:
         age = NOISE_DAYS + 1
-    dup = next((c["date"] for c in changes[:-1] if c["prices"] == last["prices"]), None)
+    # Only recent periods: a genuine adjustment can land on a price set from a
+    # year ago, and must not be held as "noise" for that.
+    recent = [c for c in changes[:-1][-NOISE_LOOKBACK:]
+              if days_old(today_vn, c["date"]) is not None and days_old(today_vn, c["date"]) <= NOISE_LOOKBACK_DAYS]
+    dup = next((c["date"] for c in recent if c["prices"] == last["prices"]), None)
     if dup and age <= NOISE_DAYS and not args.force:
         log("::notice::Nghi bản ghi lỗi của nguồn (trùng kỳ %s), chờ" % dup)
         return 0
