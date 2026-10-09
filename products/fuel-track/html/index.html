@@ -15,7 +15,7 @@
      tag at Add-to-Home-Screen time. -->
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="FuelTrack" />
-<meta name="description" content="Theo dõi giá xăng dầu PVOIL tại Đà Nẵng theo từng ngày: giá hôm nay, mức tăng/giảm mỗi kỳ điều hành và biểu đồ dao động." />
+<meta name="description" content="Giá xăng dầu PVOIL tại Đà Nẵng theo từng ngày: giá hôm nay, kỳ điều chỉnh tới, biểu đồ dao động và sổ xăng ghi chi tiêu, mức tiêu hao." />
 <title>FuelTrack — Giá xăng dầu PVOIL Đà Nẵng</title>
 <link rel="canonical" href="https://letranvietlong.github.io/products/fuel-track/html/index.html">
 <link rel="icon" type="image/svg+xml" href="/products/fuel-track/img/fuel-track-icon.svg">
@@ -38,6 +38,7 @@
     <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
   </header>
 
+  <div class="tab-view" id="viewPrices">
   <section class="card" aria-labelledby="priceTitle">
     <div class="card-head">
       <h2 class="card-title" id="priceTitle">Giá hôm nay</h2>
@@ -49,6 +50,14 @@
       <div class="skeleton-row"></div>
       <div class="skeleton-row"></div>
     </div>
+  </section>
+
+  <section class="card" aria-labelledby="nextTitle" id="nextCard">
+    <div class="card-head">
+      <h2 class="card-title" id="nextTitle">Kỳ điều chỉnh tới</h2>
+      <span class="card-meta">Thường thứ Năm, 15:00</span>
+    </div>
+    <div id="nextContent"><div class="skeleton-row"></div></div>
   </section>
 
   <section class="card" aria-labelledby="chartTitle" id="chartCard">
@@ -73,8 +82,128 @@
     <div id="historyList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
     <button class="btn-more" id="historyMore" type="button" hidden>Xem thêm</button>
   </section>
+  </div>
+
+  <div class="tab-view" id="viewLog" hidden>
+    <button class="btn btn-primary btn-block btn-add" id="btnAddFill" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Thêm lần đổ
+    </button>
+    <div class="vehicle-pick" id="vehiclePick" role="group" aria-label="Chọn xe" hidden></div>
+    <p class="banner warn" id="logBroken" role="alert" hidden>Dữ liệu sổ xăng trên máy bị lỗi nên chưa đọc được. App sẽ không ghi đè — vào Cài đặt → Khôi phục từ file nếu có bản sao lưu.</p>
+    <div class="card empty-card" id="logEmpty" hidden>
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M15 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/><path d="M7 7h5v4H7z"/></svg>
+      <p class="empty-title">Chưa có lần đổ nào. Bấm + để ghi lần đầu.</p>
+      <p class="empty-note">Dữ liệu chỉ lưu trên máy này. App ở Màn hình chính không dùng chung với Safari — chuyển bằng Sao lưu trong Cài đặt.</p>
+    </div>
+    <section class="card" aria-labelledby="sumTitle" id="sumCard" hidden>
+      <div class="card-head">
+        <h2 class="card-title" id="sumTitle">Tổng quan</h2>
+        <span class="card-meta" id="sumMeta"></span>
+      </div>
+      <div id="sumContent"></div>
+    </section>
+    <section class="card" aria-labelledby="monthTitle" id="monthCard" hidden>
+      <div class="card-head"><h2 class="card-title" id="monthTitle">Theo tháng</h2></div>
+      <div id="monthList"></div>
+    </section>
+    <section class="card" aria-labelledby="fillsTitle" id="fillsCard" hidden>
+      <div class="card-head">
+        <h2 class="card-title" id="fillsTitle">Các lần đổ</h2>
+        <span class="card-meta">Chạm để sửa</span>
+      </div>
+      <div id="fillList"></div>
+      <button class="btn-more" id="fillMore" type="button" hidden>Xem thêm</button>
+    </section>
+  </div>
+
+  <div class="tab-view" id="viewSettings" hidden>
+    <h2 class="group-title" id="vehTitle">Xe</h2>
+    <section class="card" aria-labelledby="vehTitle">
+      <div id="vehicleList"></div>
+      <button class="btn btn-soft btn-block" id="btnAddVehicle" type="button">Thêm xe</button>
+    </section>
+
+    <h2 class="group-title" id="backupTitle">Sao lưu sổ xăng</h2>
+    <section class="card" aria-labelledby="backupTitle">
+      <p class="card-text" id="backupLast"></p>
+      <div class="btn-pair">
+        <button class="btn btn-primary" id="btnBackup" type="button">Lưu file</button>
+        <button class="btn btn-soft" id="btnRestore" type="button">Khôi phục từ file</button>
+      </div>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+      <p class="form-error" id="backupError" role="alert" hidden></p>
+      <p class="card-hint">App ở Màn hình chính và Safari có bộ nhớ riêng — dùng file này để chuyển dữ liệu.</p>
+    </section>
+
+    <h2 class="group-title" id="pushTitle">Thông báo</h2>
+    <section class="card" id="pushCard" aria-labelledby="pushTitle">
+      <div class="row-head">
+        <p class="row-title">Thông báo khi giá đổi</p>
+        <p class="status-tag" id="pushStatus" role="status"></p>
+      </div>
+      <p class="card-text">Mỗi kỳ điều chỉnh nhận một thông báo giá mới (không báo 22:00–07:00).</p>
+      <div class="banner warn" id="pushChanged" role="status" hidden>
+        <p>Mã đăng ký của máy này đã đổi — sao chép lại và cập nhật secret.</p>
+        <button class="btn btn-soft btn-sm" id="btnPushDismiss" type="button" hidden>Tôi đã tắt thông báo</button>
+      </div>
+      <label class="field" id="pushLabelField">
+        <span class="field-label">Tên máy này</span>
+        <input type="text" id="pushLabel" maxlength="40" autocomplete="off" placeholder="Ví dụ: iPhone Long">
+      </label>
+      <div class="btn-pair">
+        <button type="button" class="btn btn-primary" id="btnPushEnable">Bật thông báo</button>
+        <button type="button" class="btn btn-soft" id="btnPushTest">Gửi thử trên máy này</button>
+      </div>
+      <p class="card-hint" id="pushTestNote" role="status" hidden></p>
+      <div class="push-sub" id="pushSubBox" hidden>
+        <label class="field">
+          <span class="field-label">Mã đăng ký của máy này</span>
+          <textarea id="pushSubJson" rows="5" readonly spellcheck="false"></textarea>
+        </label>
+        <button type="button" class="btn btn-soft btn-block" id="btnPushCopy">Sao chép</button>
+        <p class="card-hint" id="pushCopyNote" role="status">Chỉ dán vào secret, đừng đăng công khai.</p>
+      </div>
+      <p class="form-error" id="pushError" role="alert" hidden></p>
+      <details class="more">
+        <summary><span class="more-head">Cách cài đặt (làm một lần)</span></summary>
+        <ol class="push-steps">
+          <li>Safari → Chia sẻ → <b>Thêm vào MH chính</b>, mở app từ icon (iOS 16.4+).</li>
+          <li>Đặt tên máy → <b>Bật thông báo</b> → <b>Cho phép</b>.</li>
+          <li><b>Sao chép</b> mã, gửi người giữ repo.</li>
+          <li>GitHub → Settings → Secrets → Actions → <code>FUEL_PUSH_SUBSCRIPTIONS</code> = <code>[mã máy 1, mã máy 2]</code>.</li>
+          <li>App báo “mã đã đổi” → làm lại bước 2–4 trên máy đó.</li>
+        </ol>
+      </details>
+    </section>
+
+    <h2 class="group-title" id="infoTitle">Thông tin</h2>
+    <section class="card" aria-labelledby="infoTitle">
+      <p class="card-text">Giá PVOIL Đà Nẵng (Vùng 1) lấy từ giaxanghomnay.com, tự cập nhật mỗi giờ. Sổ xăng chỉ lưu trên máy này.</p>
+      <details class="more">
+        <summary><span class="more-head">Thông tin kỹ thuật</span></summary>
+        <p class="diag" id="diagLine"></p>
+      </details>
+      <div class="safe-probe" id="safeProbe" aria-hidden="true"></div>
+    </section>
+  </div>
 
 </main>
+
+<nav class="tabbar" id="tabbar" aria-label="Chuyển màn hình">
+  <button class="tabbar-btn active" data-tab="prices" type="button" aria-current="page">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+    <span>Giá</span>
+  </button>
+  <button class="tabbar-btn" data-tab="log" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M15 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/><path d="M7 7h5v4H7z"/></svg>
+    <span>Sổ xăng</span>
+  </button>
+  <button class="tabbar-btn" data-tab="settings" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="var(--tabbar-bg)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="var(--tabbar-bg)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2" fill="var(--tabbar-bg)"/></svg>
+    <span>Cài đặt</span>
+  </button>
+</nav>
 
 <div class="sheet-backdrop" id="versionBackdrop"></div>
 <div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle">
@@ -88,6 +217,110 @@
   <div id="versionContent"></div>
 </div>
 
+<div class="sheet-backdrop" id="fillBackdrop"></div>
+<div class="sheet" id="fillSheet" role="dialog" aria-modal="true" aria-labelledby="fillSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="fillSheetTitle">Thêm lần đổ</h3>
+    <button class="icon-btn" id="fillClose" aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form id="fillForm" novalidate>
+    <label class="field" id="fVehicleField" hidden>
+      <span class="field-label">Xe</span>
+      <select id="fVehicle"></select>
+    </label>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Ngày</span>
+        <input type="date" id="fDate">
+      </label>
+      <label class="field">
+        <span class="field-label">Loại</span>
+        <select id="fFuel"></select>
+      </label>
+    </div>
+    <p class="field-error" id="fDateErr" hidden></p>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Số lít</span>
+        <input type="text" id="fLiters" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </label>
+      <label class="field">
+        <span class="field-label">Số tiền (đ)</span>
+        <input type="text" id="fAmount" inputmode="numeric" autocomplete="off" placeholder="0">
+      </label>
+    </div>
+    <p class="field-error" id="fQtyErr" hidden></p>
+    <label class="field">
+      <span class="field-label">Giá/lít (đ) <em id="fPriceHint"></em></span>
+      <input type="text" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="Nhập giá">
+    </label>
+    <div class="price-chips" id="fPriceChips" role="group" aria-label="Chọn giá niêm yết" hidden></div>
+    <p class="field-error" id="fPriceErr" hidden></p>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Số km <em>(tuỳ chọn)</em></span>
+        <input type="text" id="fOdo" inputmode="numeric" autocomplete="off" placeholder="Đồng hồ xe">
+      </label>
+      <label class="switch-field">
+        <input type="checkbox" id="fFull">
+        <span class="switch" aria-hidden="true"></span>
+        <span class="switch-text">Đầy bình</span>
+      </label>
+    </div>
+    <p class="field-error" id="fOdoErr" hidden></p>
+    <p class="field-hint">Ghi km ở các lần đổ đầy bình để tính mức tiêu hao.</p>
+    <label class="field">
+      <span class="field-label">Ghi chú <em>(tuỳ chọn)</em></span>
+      <input type="text" id="fNote" maxlength="200" autocomplete="off">
+    </label>
+    <p class="form-error" id="fillError" role="alert" hidden></p>
+    <div class="btn-pair sheet-actions">
+      <button class="btn btn-danger" id="btnFillDelete" type="button" hidden>Xoá</button>
+      <button class="btn btn-primary" id="btnFillSave" type="submit">Lưu</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet-backdrop" id="vehBackdrop"></div>
+<div class="sheet" id="vehSheet" role="dialog" aria-modal="true" aria-labelledby="vehSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="vehSheetTitle">Thêm xe</h3>
+    <button class="icon-btn" id="vehClose" aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form id="vehForm" novalidate>
+    <label class="field">
+      <span class="field-label">Tên xe</span>
+      <input type="text" id="vehName" maxlength="40" autocomplete="off" placeholder="Ví dụ: Vision">
+    </label>
+    <p class="form-error" id="vehError" role="alert" hidden></p>
+    <div class="btn-pair sheet-actions">
+      <button class="btn btn-danger" id="btnVehDelete" type="button" hidden>Xoá xe</button>
+      <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet-backdrop" id="confirmBackdrop"></div>
+<div class="sheet" id="confirmSheet" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <h3 class="sheet-title" id="confirmTitle"></h3>
+  <p class="confirm-text" id="confirmText"></p>
+  <p class="form-error" id="confirmError" role="alert" hidden></p>
+  <div class="confirm-actions">
+    <button class="btn btn-primary btn-block" id="confirmOk" type="button"></button>
+    <button class="btn btn-soft btn-block" id="confirmCancel" type="button">Huỷ</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script src="../js/fuel-track.js"></script>
+<script src="../js/fuel-track-log.js"></script>
 </body>
 </html>

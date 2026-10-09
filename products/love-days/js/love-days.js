@@ -48,8 +48,9 @@
   // Big number + small unit; the row's aria-label carries the full wording.
   function bigDays(x, cls){
     if(x.daysLeft === 0) return '<span class="' + cls + ' today">Hôm nay 🎉</span>';
-    return '<span class="' + cls + (x.past ? " past" : "") + '"><span class="ms-num">' + fmtInt(Math.abs(x.daysLeft)) +
-      '</span><span class="ms-unit">ngày</span></span>';
+    var n = fmtInt(Math.abs(x.daysLeft));
+    return '<span class="' + cls + (x.past ? " past" : "") + '"><span class="sr-only">' + n + ' ngày</span><span class="ms-num" aria-hidden="true">' + n +
+      '</span><span class="ms-unit" aria-hidden="true">ngày</span></span>';
   }
   function clockText(b){
     return b.years + " năm " + b.months + " tháng " + b.days + " ngày · " + pad2(b.h) + ":" + pad2(b.mi) + ":" + pad2(b.s);
@@ -270,7 +271,9 @@
         return '<div class="card bday-card today">' + head + '<p class="bday-left today">Hôm nay 🎂</p><p class="bday-meta">' + meta + "</p></div>";
       }
       return '<div class="card bday-card">' + head +
-        '<p class="bday-left"><span class="sr-only">còn </span><span class="bday-num">' + fmtInt(b.daysLeft) + '</span><span class="bday-unit">ngày</span></p>' +
+        // Visible spans sit in a flex row, which drops the space between them for
+        // screen readers ("13ngày") — so they're aria-hidden and an sr-only copy is read instead.
+        '<p class="bday-left"><span class="sr-only">còn ' + fmtInt(b.daysLeft) + ' ngày</span><span class="bday-num" aria-hidden="true">' + fmtInt(b.daysLeft) + '</span><span class="bday-unit" aria-hidden="true">ngày</span></p>' +
         '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
   }
@@ -304,6 +307,7 @@
       recompute();
       renderHome();
       renderMilestones();
+      renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
       updateBadge();
       return;
     }
@@ -1460,8 +1464,10 @@
     } else if(imp.phase === "done"){
       var r = imp.result;
       var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm";
+      // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
+      var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones ? "Đã thêm " + what + "." : "Không có ảnh hay kỷ niệm mới.";
+        : r.addedPhotos || r.addedMilestones || r.images ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
         (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
@@ -1512,7 +1518,7 @@
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
-    else h += '<button type="button" class="btn btn-soft btn-block" data-imp="save">' + (backup.saved ? "Đã lưu ✓ · lưu lại" : "Lưu file (" + fmtMB(p.size) + ")") + "</button>";
+    else h += '<button type="button" class="btn btn-soft btn-block" data-imp="save">' + (backup.saved ? "Đã lưu ✓ · Lưu lần nữa" : "Lưu file (" + fmtMB(p.size) + ")") + "</button>";
     if(imp.prepMsg && busy !== "backup") h += '<p class="form-error">' + escapeHtml(imp.prepMsg) + "</p>";
     h += '<p class="import-step">Bước 2 · Thay thế</p>' +
       '<button type="button" class="btn btn-danger btn-block" data-imp="run"' + (busy ? " disabled" : "") + ">Thay thế bằng bản sao lưu</button>";
@@ -1754,7 +1760,7 @@
       canEnable = true;
       status = perm === "granted" ? "Đã cho phép, chưa có mã — chạm “Bật thông báo”." : "Chưa bật trên máy này";
     }
-    $("pushStatus").textContent = status;
+    if($("pushStatus").textContent !== status) $("pushStatus").textContent = status;
     $("pushStatus").classList.toggle("ok", ok);
     $("pushStatus").classList.toggle("warn", warn);
     // Without a key nothing can be enabled, so hide the controls for it.
@@ -1763,6 +1769,18 @@
     $("btnPushEnable").disabled = !canEnable || push.busy;
     $("btnPushEnable").textContent = push.busy ? "Đang bật…" : "Bật thông báo";
     $("btnPushTest").disabled = typeof Notification === "undefined" || perm === "denied" || !("serviceWorker" in navigator) || !state.computed;
+    var testWhy = typeof Notification === "undefined" ? "Mở app từ icon Màn hình chính để gửi thử." :
+      perm === "denied" ? "Đã chặn — bật lại ở Cài đặt iPhone → Thông báo → Long & Thư." : "";
+    var testNote = $("pushTestNote");
+    if(testWhy){
+      if(testNote.textContent !== testWhy) testNote.textContent = testWhy;
+      testNote.hidden = false;
+      testNote.dataset.why = "1";
+    } else if(testNote.dataset.why){
+      testNote.hidden = true;
+      testNote.textContent = "";
+      delete testNote.dataset.why;
+    }
     $("pushSubBox").hidden = !sub;
     if(sub) $("pushSubJson").value = subJson(sub);
   }
@@ -1900,13 +1918,27 @@
   });
 
   // ---------- Toast + segmented pill ----------
-  var toastTimer = null;
+  var toastTimer = null, toastLater = null;
   function toast(msg){
     var t = $("toast");
-    t.textContent = msg;
-    t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2500);
+    clearTimeout(toastLater);
+    // A live region only announces a change: the same text again is silent
+    // unless it is emptied first and refilled on a later task.
+    if(t.textContent === msg){
+      t.textContent = "";
+      toastLater = setTimeout(function(){ showToast(t, msg); }, 30);
+    } else showToast(t, msg);
+  }
+  function showToast(t, msg){
+    t.textContent = msg;
+    void t.offsetWidth; // the first toast leaves display:none (.toast:empty) — reflow so it slides in instead of popping
+    t.classList.add("show");
+    toastTimer = setTimeout(function(){
+      t.classList.remove("show");
+      // Emptied after the slide-out so VoiceOver can't reach a stale message.
+      toastLater = setTimeout(function(){ if(!t.classList.contains("show")) t.textContent = ""; }, 250);
+    }, 2500);
   }
 
   // One pill per segmented control, slid under the pressed button. Measure
@@ -1923,6 +1955,8 @@
     }
     var on = seg.querySelector('[aria-pressed="true"]');
     if(!on || !on.offsetWidth){ pill.style.opacity = "0"; return; }
+    // Coming out of hiding the pill still holds its old position — sliding from there looks like a glitch.
+    if(pill.style.opacity === "0") instant = true;
     if(instant) pill.classList.add("no-anim");
     pill.style.width = on.offsetWidth + "px";
     pill.style.transform = "translateX(" + on.offsetLeft + "px)";

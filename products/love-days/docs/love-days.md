@@ -110,7 +110,7 @@ SW (js/sw-core.js) nhận "push":
 
 | Secret | Bắt buộc | Nội dung |
 |---|---|---|
-| `LOVE_VAPID_PRIVATE_KEY` | có | chuỗi `privateKey` (base64url, 43 ký tự) |
+| `PUSH_VAPID_PRIVATE_KEY` (hoặc `LOVE_VAPID_PRIVATE_KEY` cũ) | có | chuỗi `privateKey` (base64url, 43 ký tự). Một cặp khoá dùng chung cho LoveDays, GoldTrack, FuelTrack — workflow đọc `PUSH_VAPID_PRIVATE_KEY`, không có thì dùng `LOVE_VAPID_PRIVATE_KEY` |
 | `LOVE_PUSH_SUBSCRIPTIONS` | có | mảng JSON các mã do nút "Sao chép" trong app tạo: `[{"label":"iPhone Long","endpoint":"https://web.push.apple.com/…","expirationTime":null,"keys":{"p256dh":"…","auth":"…"}}, {…máy Thư…}]` |
 | `LOVE_START_DATE` | không | `YYYY-MM-DD` — chỉ để dự phòng trong payload khi máy chưa có dữ liệu; máy luôn ưu tiên ngày của chính nó |
 | `LOVE_VAPID_SUB` | không | claim `sub` của VAPID, mặc định `https://letranvietlong.github.io` (Apple bắt buộc `mailto:` hoặc `https:`) |
@@ -118,7 +118,7 @@ SW (js/sw-core.js) nhận "push":
 ### Cài đặt một lần (người dùng tự làm)
 
 1. Trên máy tính của mình, ở thư mục **ngoài repo** (ví dụ Desktop), chạy `npx --yes web-push generate-vapid-keys --json` → được `{"publicKey":"B…","privateKey":"…"}`. **Không** lưu kết quả vào file nào trong repo — Stop hook chạy `git add -A` và push lên repo công khai.
-2. Dán `privateKey` vào secret `LOVE_VAPID_PRIVATE_KEY`.
+2. Dán `privateKey` vào secret `PUSH_VAPID_PRIVATE_KEY` (dùng chung cho cả 3 app; `LOVE_VAPID_PRIVATE_KEY` cũ vẫn được nhận làm dự phòng).
 3. Dán `publicKey` vào hằng `VAPID_PUBLIC_KEY` ở đầu `js/love-days.js` (khoá công khai, commit được), bump version + changelog. Khi hằng này trống, mục Thông báo hiện "Chưa cấu hình khoá thông báo", ô tên máy và nút "Bật thông báo" bị ẩn (chỉ còn "Gửi thử trên máy này").
 4. Trên **mỗi** iPhone (iOS 16.4+): Safari → Chia sẻ → Thêm vào MH chính → mở app từ icon → Cài đặt → Thông báo → đặt tên máy → Bật thông báo → Cho phép → Sao chép.
 5. Gộp mã của hai máy thành một mảng `[mã máy anh, mã máy em]` và dán vào secret `LOVE_PUSH_SUBSCRIPTIONS`. (Tuỳ chọn: `LOVE_START_DATE`, `LOVE_VAPID_SUB`.)

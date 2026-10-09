@@ -9,6 +9,15 @@ on:
     # ghi file khi giá thật sự đổi.
     - cron: "23 * * * *"
   workflow_dispatch:
+    inputs:
+      notify_force:
+        description: "Thông báo: gửi kể cả khi giá không đổi / giờ yên lặng"
+        type: boolean
+        default: false
+      notify_dry_run:
+        description: "Thông báo: chạy thử, không gửi, không ghi trạng thái"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,22 +40,66 @@ jobs:
 
       - run: python products/fuel-track/py/fetch_fuel_price.py
 
+      # Thông báo đẩy khi giá đổi. Mọi bước push đều continue-on-error: lỗi
+      # gửi / thiếu secret không bao giờ được chặn việc commit giá.
+      - name: Check push config
+        id: push_cfg
+        env:
+          SUBS: ${{ secrets.FUEL_PUSH_SUBSCRIPTIONS }}
+        run: |
+          if [ -n "$SUBS" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Push chưa cấu hình (FUEL_PUSH_SUBSCRIPTIONS trống) — bỏ qua."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pywebpush
+        if: steps.push_cfg.outputs.configured == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        run: pip install pywebpush==2.5.0
+
+      - name: Notify price change
+        if: steps.push_cfg.outputs.configured == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          PUSH_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
+          FUEL_PUSH_SUBSCRIPTIONS: ${{ secrets.FUEL_PUSH_SUBSCRIPTIONS }}
+          PUSH_VAPID_SUB: ${{ secrets.PUSH_VAPID_SUB }}
+          FORCE: ${{ inputs.notify_force }}
+          DRY_RUN: ${{ inputs.notify_dry_run }}
+        run: |
+          ARGS=""
+          if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python products/fuel-track/py/notify_fuel_price.py $ARGS
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add products/fuel-track/data/fuel-price.json products/fuel-track/data/fuel-price-history.json
+          # Chỉ có sau lượt push đầu tiên đã cấu hình; git add file không tồn
+          # tại là lỗi fatal và sẽ làm hỏng commit giá.
+          if [ -f products/fuel-track/data/push-state.json ]; then git add products/fuel-track/data/push-state.json; fi
           if git diff --cached --quiet; then
             echo "No price change to commit."
             exit 0
           fi
-          SUMMARY=$(python -c "
+          if git diff --cached --quiet -- products/fuel-track/data/fuel-price.json products/fuel-track/data/fuel-price-history.json; then
+            MSG="FuelTrack push state: $(date -u +%F)"
+          else
+            SUMMARY=$(python -c "
           import json
           d = {i['id']: i['price'] for i in json.load(open('products/fuel-track/data/fuel-price.json', encoding='utf-8'))['items']}
           f = lambda k: '{:,}'.format(d[k]).replace(',', '.') if k in d else '?'
           print('E5 %s / E10 %s / DO %s' % (f('e5-ron92-ii'), f('e10-ron95-iii'), f('do-005s-ii')))
           ")
-          git commit -m "Auto-update fuel price: ${SUMMARY}"
+            MSG="Auto-update fuel price: ${SUMMARY}"
+          fi
+          git commit -m "$MSG"
 
           for i in 1 2 3 4 5; do
             git fetch origin main

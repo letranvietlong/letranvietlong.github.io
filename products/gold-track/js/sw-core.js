@@ -7,7 +7,7 @@
 // GoldTrack, không rộng hơn. Mọi handler dưới đây vẫn kiểm tra
 // GOLDTRACK_PATHS trước khi làm gì, giữ nguyên tắc phòng thủ hai lớp dù scope
 // giờ đã tự nhiên hẹp lại đúng phạm vi GoldTrack.
-var CACHE_NAME = "goldtrack-cache-v11";
+var CACHE_NAME = "goldtrack-cache-v12";
 
 // The page plus its stylesheet and script — all actively edited, none with a
 // build hash in the URL, so all three must be network-first (see below).
@@ -106,4 +106,32 @@ self.addEventListener("fetch", function(event){
       })
     );
   }
+});
+
+// ---------- Price-change notifications ----------
+// Sent by py/notify_gold_price.py (price workflow). push-state.json is not
+// in DATA_PATHS: the page never reads it.
+var PUSH_APP_URL = "/products/gold-track/html/index.html";
+var PUSH_ICON = "/products/gold-track/img/gold-track-icon-180.png";
+
+self.addEventListener("push", function(event){
+  var p = null;
+  try{ p = event.data ? event.data.json() : null; }catch(e){ p = null; }
+  var title = p && typeof p.title === "string" && p.title ? p.title.slice(0, 80) : "GoldTrack";
+  var body = p && typeof p.body === "string" && p.body ? p.body.slice(0, 300) : "Giá vàng vừa thay đổi — mở app để xem";
+  // iOS revokes the subscription if a push arrives without a visible
+  // notification, so this path must always end in showNotification.
+  event.waitUntil(self.registration.showNotification(title, { body: body, tag: "gold-price", icon: PUSH_ICON }));
+});
+
+self.addEventListener("notificationclick", function(event){
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(list){
+      for(var i = 0; i < list.length; i++){
+        if(new URL(list[i].url).pathname.indexOf("/products/gold-track/") === 0 && "focus" in list[i]) return list[i].focus();
+      }
+      return self.clients.openWindow(PUSH_APP_URL);
+    })
+  );
 });

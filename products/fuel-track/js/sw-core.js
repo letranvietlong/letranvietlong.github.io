@@ -1,13 +1,14 @@
 // Logic service worker của FuelTrack. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/fuel-track/sw-fuel-track.js
 // (đọc file đó để biết vì sao vỏ phải nằm ngay trong products/fuel-track/).
-var CACHE_NAME = "fueltrack-cache-v2";
+var CACHE_NAME = "fueltrack-cache-v3";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
   "/products/fuel-track/html/index.html",
   "/products/fuel-track/css/fuel-track.css",
-  "/products/fuel-track/js/fuel-track.js"
+  "/products/fuel-track/js/fuel-track.js",
+  "/products/fuel-track/js/fuel-track-log.js"
 ];
 var ICON_PATHS = [
   "/products/fuel-track/img/fuel-track-icon.svg",
@@ -81,4 +82,31 @@ self.addEventListener("fetch", function(event){
       })
     );
   }
+});
+
+// Thông báo khi giá đổi: payload {v,title,body,tag,ts} do
+// products/fuel-track/py/notify_fuel_price.py gửi.
+var PUSH_APP_URL = "/products/fuel-track/html/index.html";
+var PUSH_ICON = "/products/fuel-track/img/fuel-track-icon-180.png";
+
+self.addEventListener("push", function(event){
+  var p = null;
+  try{ p = event.data ? event.data.json() : null; }catch(e){ p = null; }
+  var title = p && typeof p.title === "string" && p.title ? p.title.slice(0, 80) : "FuelTrack";
+  var body = p && typeof p.body === "string" && p.body ? p.body.slice(0, 300) : "Giá xăng dầu vừa điều chỉnh — mở app để xem";
+  // iOS revokes the subscription if a push arrives without a visible
+  // notification, so this path must always end in showNotification.
+  event.waitUntil(self.registration.showNotification(title, { body: body, tag: "fuel-price", icon: PUSH_ICON }));
+});
+
+self.addEventListener("notificationclick", function(event){
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(list){
+      for(var i = 0; i < list.length; i++){
+        if(new URL(list[i].url).pathname.indexOf("/products/fuel-track/") === 0 && "focus" in list[i]) return list[i].focus();
+      }
+      return self.clients.openWindow(PUSH_APP_URL);
+    })
+  );
 });

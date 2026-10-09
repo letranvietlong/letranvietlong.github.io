@@ -71,11 +71,10 @@
       </div>
       <div class="brand-text">
         <h1>GoldTrack</h1>
-        <span class="brand-sub">Made by LongLTV</span>
       </div>
     </div>
     <div class="header-actions">
-      <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
+      <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật"><span class="version-pill">v…</span></button>
     </div>
     <div class="segmented owner-filter" id="ownerFilter" role="group" aria-label="Xem số liệu của">
       <div class="segmented-indicator"></div>
@@ -90,8 +89,9 @@
     <!-- Empty state: shown instead of a blank screen when there are no transactions -->
     <div class="card" id="overviewEmpty" hidden>
       <div class="summary-title" style="margin-bottom:6px">Chưa có giao dịch nào</div>
-      <p class="field-hint" style="margin:0 0 8px">Thêm giao dịch mua vàng ở tab <b>Lịch sử</b> (nút +) để bắt đầu theo dõi lãi/lỗ.</p>
-      <p class="field-hint" style="margin:0">Lưu ý: app mở từ Màn hình chính dùng bộ nhớ riêng, tách biệt với Safari. Nếu đã nhập giao dịch trong Safari, hãy kết nối GitHub Gist (cùng token) ở tab <b>Cài đặt</b> trên cả hai nơi để đồng bộ.</p>
+      <p class="field-hint" style="margin:0 0 12px">Thêm giao dịch mua vàng đầu tiên để theo dõi lãi/lỗ.</p>
+      <button type="button" class="btn btn-gold btn-block" data-add-tx>Thêm giao dịch</button>
+      <p class="field-hint" style="margin:12px 0 0">Đã nhập ở Safari? App ở Màn hình chính có bộ nhớ riêng — kết nối Gist ở Cài đặt để đồng bộ.</p>
     </div>
 
     <!-- Portfolio summary -->
@@ -102,8 +102,7 @@
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="17" y="13" width="4" height="6" rx="1"/></svg>
         </div>
         <div>
-          <div class="summary-title" id="summaryTitle">Tổng quan danh mục</div>
-          <div class="summary-sub">Tính theo giá vốn trung bình</div>
+          <div class="summary-title" id="summaryTitle">Danh mục</div>
         </div>
       </div>
       <div id="summaryContent"></div>
@@ -118,14 +117,14 @@
         </div>
         <div>
           <div class="summary-title">Báo cáo lãi/lỗ</div>
-          <div class="summary-sub" id="pnlReportSub">Mỗi ngày: biến động giá vàng đang giữ + lãi đã chốt</div>
+          <div class="summary-sub" id="pnlReportSub">Lãi/lỗ từng ngày, kể cả vàng chưa bán</div>
         </div>
       </div>
       <div class="segmented" id="pnlGroupBy" role="group" aria-label="Nhóm theo" style="margin-bottom:14px">
         <div class="segmented-indicator"></div>
-        <button type="button" class="active" data-group="day">Theo ngày</button>
-        <button type="button" data-group="month">Theo tháng</button>
-        <button type="button" data-group="year">Theo năm</button>
+        <button type="button" class="active" data-group="day">Ngày</button>
+        <button type="button" data-group="month">Tháng</button>
+        <button type="button" data-group="year">Năm</button>
       </div>
       <div id="pnlReportContent"></div>
     </div>
@@ -182,9 +181,8 @@
       </button>
     </div>
     <div class="date-filter-row" id="dateFilterRow" hidden>
-      <input type="date" id="txDateFrom" class="input" aria-label="Từ ngày">
-      <span>—</span>
-      <input type="date" id="txDateTo" class="input" aria-label="Đến ngày">
+      <label class="date-field"><span>Từ</span><input type="date" id="txDateFrom" class="input"></label>
+      <label class="date-field"><span>Đến</span><input type="date" id="txDateTo" class="input"></label>
       <button type="button" class="btn btn-ghost btn-sm" id="btnClearDateFilter">Xoá</button>
     </div>
 
@@ -210,11 +208,12 @@
         </div>
         <div id="gistConnectForm">
           <div class="field" style="margin-bottom:8px">
-            <label for="gistToken">Personal Access Token (quyền "gist")</label>
+            <label for="gistToken">GitHub token (quyền gist)</label>
             <input class="input" id="gistToken" type="password" placeholder="ghp_..." autocomplete="off">
           </div>
           <button class="btn btn-gold btn-block btn-sm" id="btnGistConnect" type="button">Kết nối</button>
-          <p class="field-hint" style="margin-top:8px">Token chỉ lưu trên máy bạn, chỉ dùng để gọi thẳng GitHub API. <a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldTrack" target="_blank" rel="noopener">Tạo token tại đây</a> — chỉ tick quyền "gist", không cần quyền khác.</p>
+          <p class="field-hint" style="margin:8px 0">Token chỉ lưu trên máy này.</p>
+          <a class="btn btn-ghost btn-sm btn-block" href="https://github.com/settings/tokens/new?scopes=gist&amp;description=GoldTrack" target="_blank" rel="noopener">Tạo token (chỉ tick quyền gist)</a>
         </div>
         <div style="display:flex;gap:8px" id="gistConnectedActions" hidden>
           <button class="btn btn-ghost btn-sm" id="btnGistSyncNow" type="button" style="flex:1">Đồng bộ ngay</button>
@@ -223,18 +222,58 @@
       </div>
     </div>
 
+    <div class="card" id="pushCard">
+      <div class="push-head">
+        <span class="settings-row-title">Thông báo giá</span>
+        <span class="status-tag" id="pushStatus" role="status"></span>
+      </div>
+      <p class="settings-row-desc push-desc">Nhận thông báo khi giá Ngọc Thịnh 9999 hoặc Huy Thanh 24k đổi (không báo 22:00–07:00).</p>
+      <div class="push-warn" id="pushChanged" role="status" hidden>
+        <p>Mã đăng ký của máy này đã đổi — sao chép lại và cập nhật secret.</p>
+        <button class="btn btn-ghost btn-sm" id="btnPushDismiss" type="button" hidden>Tôi đã tắt thông báo</button>
+      </div>
+      <div class="field" id="pushLabelField">
+        <label for="pushLabel">Tên máy này</label>
+        <input class="input" type="text" id="pushLabel" maxlength="40" autocomplete="off" placeholder="Ví dụ: iPhone Long">
+      </div>
+      <div class="push-actions">
+        <button type="button" class="btn btn-gold btn-sm" id="btnPushEnable">Bật thông báo</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnPushTest">Gửi thử trên máy này</button>
+      </div>
+      <p class="field-hint" id="pushTestNote" role="status" hidden></p>
+      <div class="push-sub" id="pushSubBox" hidden>
+        <div class="field">
+          <label for="pushSubJson">Mã đăng ký của máy này</label>
+          <textarea class="input" id="pushSubJson" rows="5" readonly spellcheck="false"></textarea>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm btn-block" id="btnPushCopy">Sao chép</button>
+        <p class="field-hint" id="pushCopyNote" role="status">Chỉ dán vào secret, đừng đăng công khai.</p>
+      </div>
+      <p class="push-error" id="pushError" role="alert" hidden></p>
+      <details class="more">
+        <summary><span class="more-head">Cách cài đặt (làm một lần)<svg class="more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+        <ol class="push-steps">
+          <li>Safari → Chia sẻ → <b>Thêm vào MH chính</b>, mở app từ icon (iOS 16.4+).</li>
+          <li>Đặt tên máy → <b>Bật thông báo</b> → <b>Cho phép</b>.</li>
+          <li><b>Sao chép</b> mã, gửi người giữ repo.</li>
+          <li>GitHub → Settings → Secrets → Actions → <code>GOLD_PUSH_SUBSCRIPTIONS</code> = <code>[mã máy 1, mã máy 2]</code>.</li>
+          <li>App báo “mã đã đổi” → làm lại bước 2–4 trên máy đó.</li>
+        </ol>
+      </details>
+    </div>
+
     <div class="card">
       <div class="settings-row">
         <div class="settings-row-text">
-          <span class="settings-row-title">Xuất dữ liệu</span>
-          <span class="settings-row-desc">Tải file .json sao lưu toàn bộ dữ liệu</span>
+          <span class="settings-row-title">Xuất file sao lưu</span>
+          <span class="settings-row-desc">File .json chứa mọi giao dịch</span>
         </div>
         <button class="btn btn-ghost btn-sm" id="btnExport" type="button">Xuất</button>
       </div>
       <div class="settings-row">
         <div class="settings-row-text">
-          <span class="settings-row-title">Nhập dữ liệu</span>
-          <span class="settings-row-desc">Khôi phục từ file .json đã xuất trước đó</span>
+          <span class="settings-row-title">Nhập file sao lưu</span>
+          <span class="settings-row-desc">Thay toàn bộ dữ liệu trên máy này</span>
         </div>
         <button class="btn btn-ghost btn-sm" id="btnImport" type="button">Nhập</button>
         <input type="file" id="fileImport" accept="application/json" hidden>
@@ -247,8 +286,14 @@
         <button class="btn btn-danger btn-sm" id="btnClearAll" type="button">Xoá hết</button>
       </div>
     </div>
-    <p class="field-hint" style="margin-top:2px;text-align:center">Dữ liệu luôn được lưu trên trình duyệt này. Kết nối Gist ở trên nếu muốn có thêm bản sao lưu tự động và đồng bộ giữa các thiết bị.</p>
-    <p class="field-hint" id="displayDiag" style="margin-top:10px;text-align:center;opacity:.7"></p>
+
+    <div class="card card-compact">
+      <details class="more more-flush">
+        <summary><span class="more-head">Thông tin kỹ thuật<svg class="more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+        <p class="field-hint" id="appAbout">GoldTrack v… · Made by LongLTV</p>
+        <p class="field-hint" id="displayDiag"></p>
+      </details>
+    </div>
   </div>
 </div>
 
@@ -284,8 +329,7 @@
   </div>
   <form id="txForm">
     <div class="field">
-      <label id="txTypeLabel">Loại giao dịch</label>
-      <div class="segmented" role="group" aria-labelledby="txTypeLabel">
+      <div class="segmented" role="group" aria-label="Loại giao dịch">
         <div class="segmented-indicator"></div>
         <button type="button" class="active" data-type="buy">Mua vào</button>
         <button type="button" data-type="sell">Bán ra</button>
@@ -296,18 +340,18 @@
       <select class="input" id="txOwner"></select>
     </div>
     <div class="field">
-      <label for="txAmount">Số lượng vàng (chỉ)</label>
+      <label for="txAmount">Số lượng (chỉ)</label>
       <input class="input" id="txAmount" inputmode="decimal" placeholder="Ví dụ: 2" autocomplete="off" required>
       <div class="field-hint" id="txAmountHint"></div>
       <div class="field-error" id="txAmountError">Nhập số lượng lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label for="txPrice" id="txPriceLabel">Giá mua (VNĐ / chỉ)</label>
-      <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 8.750.000" autocomplete="off" required>
+      <label for="txPrice" id="txPriceLabel">Giá mua (đ/chỉ)</label>
+      <input class="input" id="txPrice" inputmode="numeric" placeholder="Ví dụ: 13.200.000" autocomplete="off" required>
       <div class="field-error">Nhập giá lớn hơn 0.</div>
     </div>
     <div class="field">
-      <label for="txShop">Cửa hàng</label>
+      <label for="txShop">Tiệm</label>
       <select class="input" id="txShop"></select>
     </div>
     <div class="field" id="txGoldTypeField">
@@ -315,8 +359,8 @@
       <select class="input" id="txGoldType"></select>
     </div>
     <div class="field">
-      <label for="txAddress">Địa chỉ cửa hàng (tuỳ chọn)</label>
-      <input class="input" id="txAddress" inputmode="text" placeholder="Ví dụ: 52 Nguyễn Trãi, Q.5, TP.HCM" autocomplete="off" maxlength="200">
+      <label for="txAddress">Địa chỉ (tuỳ chọn)</label>
+      <input class="input" id="txAddress" inputmode="text" placeholder="Ví dụ: 12 Lê Duẩn, Đà Nẵng" autocomplete="off" maxlength="200">
     </div>
     <div class="field">
       <label for="txDate" id="txDateLabel">Ngày mua</label>
@@ -358,7 +402,7 @@
   </div>
 </div>
 
-<div class="toast-wrap"><div class="toast" id="toast"><span id="toastMsg"></span><button class="toast-action" id="toastAction" type="button" hidden></button></div></div>
+<div class="toast-wrap"><div class="toast" id="toast"><span id="toastMsg" role="status" aria-live="polite"></span><button class="toast-action" id="toastAction" type="button" hidden></button></div></div>
 
 <script src="../js/gold-track.js"></script>
 </body>

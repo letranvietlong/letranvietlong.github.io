@@ -1,6 +1,12 @@
 (function(){
   "use strict";
   var STORAGE_KEY = "goldtrack_v1";
+  // VAPID PUBLIC key (base64url, 87 chars, starts with "B") for price-change
+  // notifications. Its private half lives ONLY in the GitHub secret
+  // PUSH_VAPID_PRIVATE_KEY, and it must be the SAME key as in FuelTrack and
+  // LoveDays (one key pair for all apps — a mismatch makes every push 403).
+  // Empty = notifications off. See docs/gold-track.md → "Thông báo giá".
+  var VAPID_PUBLIC_KEY = '';
 
   // Canonical shop + gold-type catalog. Must match fetch_gold_price.py's
   // NGOCTHINH_TYPES/HUYTHANH_TYPES exactly — these ids are the join key
@@ -30,6 +36,17 @@
   // the app's original/primary catalog entry.
   var DEFAULT_PRICE_SHOP = 'ngoc-thinh';
   var DEFAULT_PRICE_TYPE = '9999-nhan-tron';
+  // Display-only short names for list rows; SHOP_TYPES labels stay as they are.
+  var SHORT_GROUP = {
+    'ngoc-thinh::9999-nhan-tron': 'Ngọc Thịnh · 9999 nhẫn tròn',
+    'huy-thanh::24k-huy-thanh': 'Huy Thanh · 24k'
+  };
+  function shortGroupName(shop, goldType){
+    var short = SHORT_GROUP[shop + '::' + (goldType || '')];
+    if(short) return short;
+    var shopInfo = SHOPS.filter(function(s){ return s.id === shop; })[0];
+    return shopInfo ? shopInfo.name : (shop || '');
+  }
 
   // Fixed pair by the user's choice (no "add person" UI). The owner is read
   // through txOwner() instead of being written back into stored data: a
@@ -99,6 +116,12 @@
 
   // ---------- helpers ----------
   function fmtVND(n){ return Math.round(n).toLocaleString('vi-VN'); }
+  // Rounded before the sign is chosen, so a tiny negative never shows "-0,00%".
+  function fmtPct(x){
+    var r = Math.round(x * 100) / 100;
+    if(!isFinite(r) || r === 0) return '0,00%';
+    return (r > 0 ? '+' : '-') + Math.abs(r).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+  }
   function fmtAmount(n){
     var r = Math.round(n*100)/100;
     return (r % 1 === 0) ? String(r) : r.toLocaleString('vi-VN',{maximumFractionDigits:2});
@@ -153,7 +176,19 @@
   var toastActionHandler = null;
   // action: { label, onClick } — shows an inline button (e.g. "Hoàn tác") and
   // keeps the toast up longer so there's time to tap it.
+  var toastClearTimer = null;
+  function hideToast(){
+    toastEl.className = 'toast';
+    toastActionEl.hidden = true;
+    // Emptied after the fade so the status region doesn't keep stale text
+    // for screen readers.
+    clearTimeout(toastClearTimer);
+    toastClearTimer = setTimeout(function(){
+      if(!toastEl.classList.contains('show')) toastMsgEl.textContent = '';
+    }, 300);
+  }
   function showToast(msg, type, action){
+    clearTimeout(toastClearTimer);
     toastMsgEl.textContent = msg;
     toastEl.className = 'toast show' + (type ? ' '+type : '');
     clearTimeout(toastTimer);
@@ -163,14 +198,14 @@
       toastActionEl.hidden = false;
       toastActionHandler = function(){
         clearTimeout(toastTimer);
-        toastEl.className = 'toast';
+        hideToast();
         action.onClick();
       };
       toastActionEl.addEventListener('click', toastActionHandler);
     } else {
       toastActionEl.hidden = true;
     }
-    toastTimer = setTimeout(function(){ toastEl.className = 'toast'; toastActionEl.hidden = true; }, action ? 5000 : 2400);
+    toastTimer = setTimeout(hideToast, action ? 5000 : 2400);
   }
 
   // Deletes immediately (no confirm dialog) and offers a few seconds to undo
@@ -260,7 +295,11 @@
       if(isActive) btn.setAttribute('aria-current', 'page');
       else btn.removeAttribute('aria-current');
     });
-    if(tab === 'settings') refreshGistUI();
+    if(tab === 'settings'){ refreshGistUI(); renderPush(); renderDisplayDiag(); }
+    // Nothing on Settings depends on the owner, so the filter is hidden there;
+    // the fixed header changes height, so .app's top padding must follow.
+    document.getElementById('ownerFilter').hidden = (tab === 'settings');
+    syncHeaderHeight();
     // #txFilter lives inside a hidden tab-view (display:none), so its
     // offsetWidth is 0 until the tab is actually shown — any earlier
     // positioning attempt (e.g. at page load) would leave the pill at
@@ -500,6 +539,15 @@
   }
   wireSheet('txSheet','txBackdrop','txClose');
   wireSheet('versionSheet','versionBackdrop','versionClose');
+  // Esc closes the topmost layer only (the confirm dialog sits above sheets).
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    if(confirmDialog.classList.contains('open')) confirmCancelBtn.click();
+    else if(document.getElementById('versionSheet').classList.contains('open')) closeSheet('versionSheet','versionBackdrop');
+    else if(document.getElementById('txSheet').classList.contains('open')) closeSheet('txSheet','txBackdrop');
+    else return;
+    e.preventDefault();
+  });
 
   // Drag-to-dismiss via the handle only — the sheet body itself may scroll
   // (long forms, changelog list) so dragging is scoped to the handle's own
@@ -538,7 +586,8 @@
     return fetch('/products/gold-track/data/changelog.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
       if(!data || !Array.isArray(data.entries)) return;
       changelogData = data;
-      document.getElementById('btnVersion').textContent = 'v' + data.version;
+      document.querySelector('#btnVersion .version-pill').textContent = 'v' + data.version;
+      document.getElementById('appAbout').textContent = 'GoldTrack v' + data.version + ' · Made by LongLTV';
     }).catch(function(){ /* keep placeholder badge */ });
   }
   function renderChangelog(){
@@ -939,9 +988,9 @@
   });
   function updateTxFormLabels(){
     var isSell = selectedType === 'sell';
-    document.getElementById('txPriceLabel').textContent = isSell ? 'Giá bán (VNĐ / chỉ)' : 'Giá mua (VNĐ / chỉ)';
+    document.getElementById('txPriceLabel').textContent = isSell ? 'Giá bán (đ/chỉ)' : 'Giá mua (đ/chỉ)';
     document.getElementById('txDateLabel').textContent = isSell ? 'Ngày bán' : 'Ngày mua';
-    document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : (isSell ? 'Thêm giao dịch bán vàng' : 'Thêm giao dịch mua vàng');
+    document.getElementById('txSheetTitle').textContent = editingTxId ? 'Sửa giao dịch' : 'Thêm giao dịch';
     // Holdings as of the date currently in the form, not the net total —
     // picking an earlier date genuinely changes how much there is to sell.
     // Scoped to the group currently selected in the form (Part 3.6) — a
@@ -952,7 +1001,7 @@
     var typeVal = document.getElementById('txGoldType').value || null;
     var ownerVal = document.getElementById('txOwner').value || DEFAULT_OWNER;
     var holdings = holdingsAsOf(dateVal, editing ? (editing.createdAt || 0) : Date.now(), editingTxId, shopVal, typeVal, ownerVal);
-    document.getElementById('txAmountHint').textContent = isSell ? ('Ngày ' + fmtDate(dateVal) + ' ' + ownerVal + ' có ' + fmtAmount(holdings) + ' chỉ để bán.') : '';
+    document.getElementById('txAmountHint').textContent = isSell ? ('Còn ' + fmtAmount(holdings) + ' chỉ để bán (tính đến ' + fmtDate(dateVal) + ').') : '';
   }
   function populateOwnerSelect(selected){
     var sel = document.getElementById('txOwner');
@@ -1015,6 +1064,10 @@
     openSheet('txSheet','txBackdrop');
   }
   document.getElementById('fabAdd').addEventListener('click', openAddTx);
+  // Empty-state buttons are re-rendered, so they're handled by delegation.
+  document.addEventListener('click', function(e){
+    if(e.target.closest && e.target.closest('[data-add-tx]')) openAddTx();
+  });
 
   document.getElementById('txForm').addEventListener('submit', function(e){
     e.preventDefault();
@@ -1155,12 +1208,274 @@
     reader.readAsText(file);
   });
   document.getElementById('btnClearAll').addEventListener('click', function(){
-    showConfirm('Xoá toàn bộ dữ liệu? Hành động này không thể hoàn tác.', { title: 'Xoá toàn bộ dữ liệu', confirmText: 'Xoá hết', danger: true }).then(function(ok){
+    var clearMsg = gistConfig
+      ? 'Mọi giao dịch trên máy này và bản trên Gist sẽ bị xoá, không hoàn tác được.'
+      : 'Mọi giao dịch trên máy này sẽ bị xoá, không hoàn tác được.';
+    showConfirm(clearMsg, { title: 'Xoá toàn bộ dữ liệu', confirmText: 'Xoá hết', danger: true }).then(function(ok){
       if(!ok) return;
       state = { transactions:[] };
       saveState();
       renderAll();
       showToast('Đã xoá toàn bộ dữ liệu', 'ok');
+    });
+  });
+
+  // ---------- price-change notifications ----------
+  // The page only subscribes and shows the subscription JSON; the push itself
+  // comes from py/notify_gold_price.py in the price workflow. Device-local
+  // settings: never part of `state`, so not in Gist, export or "Xoá hết".
+  var PUSH_STORE = 'goldtrack_push_v1';
+  var PUSH_ICON = '/products/gold-track/img/gold-track-icon-180.png';
+  var PUSH_WATCH = [
+    { shop: 'ngoc-thinh', type: '9999-nhan-tron', name: 'Ngọc Thịnh 9999' },
+    { shop: 'huy-thanh', type: '24k-huy-thanh', name: 'Huy Thanh 24k' }
+  ];
+  var push = { reg: null, sub: null, busy: false, key: undefined, warned: false, rec: { deviceLabel: '', lastCopiedEndpointHash: null } };
+  function $id(id){ return document.getElementById(id); }
+
+  function isStandalone(){
+    return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  }
+  function pushSupported(){
+    return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+  }
+  function vapidKey(){
+    if(push.key !== undefined) return push.key;
+    push.key = null;
+    try{
+      var s = VAPID_PUBLIC_KEY;
+      var bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+      var u8 = new Uint8Array(bin.length);
+      for(var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      if(u8.length === 65 && u8[0] === 4) push.key = u8;
+    }catch(e){}
+    return push.key;
+  }
+  function keyMatches(sub, key){
+    var k = sub && sub.options && sub.options.applicationServerKey;
+    if(!k) return true;
+    var a = new Uint8Array(k);
+    if(a.length !== key.length) return false;
+    for(var i = 0; i < a.length; i++) if(a[i] !== key[i]) return false;
+    return true;
+  }
+  function currentSub(){
+    var key = vapidKey();
+    return push.sub && key && keyMatches(push.sub, key) ? push.sub : null;
+  }
+  // Only compared with itself, so a short non-crypto hash is enough.
+  function endpointHash(s){
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for(var i = 0; i < s.length; i++){
+      h1 = Math.imul(h1 ^ s.charCodeAt(i), 16777619) >>> 0;
+      h2 = Math.imul(h2 + s.charCodeAt(i), 2246822519) >>> 0;
+    }
+    return ('0000000' + h1.toString(16)).slice(-8) + ('0000000' + h2.toString(16)).slice(-8);
+  }
+  function loadPushRec(){
+    try{
+      var r = JSON.parse(localStorage.getItem(PUSH_STORE) || 'null');
+      if(!r || typeof r !== 'object') return;
+      if(typeof r.deviceLabel === 'string' && r.deviceLabel.length <= 40) push.rec.deviceLabel = r.deviceLabel;
+      if(typeof r.lastCopiedEndpointHash === 'string' && /^[0-9a-f]{16}$/.test(r.lastCopiedEndpointHash)) push.rec.lastCopiedEndpointHash = r.lastCopiedEndpointHash;
+    }catch(e){}
+  }
+  function savePushRec(){
+    try{ localStorage.setItem(PUSH_STORE, JSON.stringify(push.rec)); }catch(e){}
+  }
+  function pushLabel(){ return $id('pushLabel').value.trim().slice(0, 40) || 'iPhone'; }
+  function subJson(sub){
+    var j = sub.toJSON();
+    return JSON.stringify({ label: pushLabel(), endpoint: j.endpoint, expirationTime: j.expirationTime == null ? null : j.expirationTime, keys: j.keys });
+  }
+  function userErr(msg){ var e = new Error(msg); e.userMessage = msg; return e; }
+  function showPushError(msg){
+    $id('pushError').textContent = msg || '';
+    $id('pushError').hidden = !msg;
+  }
+  // Never waits forever: `ready` doesn't settle when the SW failed to install.
+  function swReady(){
+    if(push.reg) return Promise.resolve(push.reg);
+    return new Promise(function(resolve, reject){
+      var t = setTimeout(function(){ reject(userErr('App chưa sẵn sàng chạy nền. Hãy đóng hẳn app, mở lại rồi thử lại.')); }, 8000);
+      navigator.serviceWorker.ready.then(function(reg){ clearTimeout(t); push.reg = reg; resolve(reg); });
+    });
+  }
+  function refreshSub(){
+    if(!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration('/products/gold-track/').then(function(reg){
+      if(!reg) return;
+      push.reg = reg;
+      return reg.pushManager.getSubscription().then(function(sub){ push.sub = sub; });
+    }).catch(function(){});
+  }
+  function testBlockedReason(){
+    if(typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return 'Gửi thử cần mở app từ icon Màn hình chính (iOS 16.4+).';
+    if(Notification.permission === 'denied') return 'Gửi thử bị tắt vì thông báo đang bị chặn.';
+    return '';
+  }
+  function renderPush(){
+    var perm = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+    var key = vapidKey(), sub = currentSub();
+    var status = '', ok = false, warn = false, canEnable = false;
+    if(!VAPID_PUBLIC_KEY){
+      status = 'Chưa cấu hình khoá thông báo';
+    } else if(!key){
+      status = 'Khoá thông báo không hợp lệ';
+      warn = true;
+    } else if(!pushSupported() || !isStandalone()){
+      status = 'Chỉ bật được khi mở từ icon Màn hình chính (iOS 16.4+)';
+    } else if(perm === 'denied'){
+      status = 'Đã chặn — bật lại ở Cài đặt iPhone → Thông báo → GoldTrack';
+      warn = true;
+    } else if(sub){
+      ok = true;
+      status = 'Đã bật ✓';
+    } else {
+      canEnable = true;
+      status = perm === 'granted' ? 'Đã cho phép, chưa có mã' : 'Chưa bật trên máy này';
+    }
+    var st = $id('pushStatus');
+    if(st.textContent !== status) st.textContent = status;
+    st.classList.toggle('ok', ok);
+    st.classList.toggle('warn', warn);
+    $id('pushLabelField').hidden = !key;
+    $id('btnPushEnable').hidden = ok || !key;
+    $id('btnPushEnable').disabled = !canEnable || push.busy;
+    $id('btnPushEnable').textContent = push.busy ? 'Đang bật…' : 'Bật thông báo';
+    var blocked = testBlockedReason();
+    $id('btnPushTest').disabled = !!blocked;
+    var note = $id('pushTestNote');
+    if(blocked){ note.textContent = blocked; note.hidden = false; note.removeAttribute('data-kind'); }
+    else if(note.getAttribute('data-kind') !== 'result') note.hidden = true;
+    $id('pushSubBox').hidden = !sub;
+    if(sub) $id('pushSubJson').value = subJson(sub);
+    return checkPushChanged();
+  }
+  function checkPushChanged(){
+    var stored = push.rec.lastCopiedEndpointHash;
+    var sub = currentSub();
+    var changed = !!stored && !!vapidKey() && pushSupported() && (!sub || endpointHash(sub.endpoint) !== stored);
+    $id('pushChanged').hidden = !changed;
+    // No subscription at all may simply mean notifications were turned off
+    // on purpose — let the user say so, which forgets the stored hash.
+    $id('btnPushDismiss').hidden = !changed || !!sub;
+    return changed;
+  }
+  // Same line format as the real notification, with today's prices only
+  // (the deltas there are relative to the last notification, unknown here).
+  function pushTestBody(){
+    var lines = [];
+    PUSH_WATCH.forEach(function(w){
+      var eff = getEffectivePrice(w.shop, w.type);
+      if(eff) lines.push(w.name + ': mua ' + fmtVND(eff.buy) + ' · bán ' + fmtVND(eff.sell));
+    });
+    return lines.join('\n') || 'Thông báo thử trên máy này';
+  }
+  function initPush(){
+    loadPushRec();
+    $id('pushLabel').value = push.rec.deviceLabel;
+    renderPush();
+    refreshSub().then(function(){
+      if(renderPush() && !push.warned){
+        push.warned = true;
+        showToast('Mã thông báo của máy này đã đổi — xem Cài đặt', 'err');
+      }
+    });
+  }
+  $id('pushLabel').addEventListener('input', function(){
+    var sub = currentSub();
+    if(sub) $id('pushSubJson').value = subJson(sub);
+  });
+  $id('pushLabel').addEventListener('change', function(){
+    push.rec.deviceLabel = $id('pushLabel').value.trim().slice(0, 40);
+    savePushRec();
+  });
+  $id('btnPushDismiss').addEventListener('click', function(){
+    push.rec.lastCopiedEndpointHash = null;
+    savePushRec();
+    checkPushChanged();
+  });
+  // requestPermission() must be the first thing in the tap (iOS only shows
+  // the prompt during a user gesture).
+  $id('btnPushEnable').addEventListener('click', function(){
+    var key = vapidKey();
+    if(push.busy || !key || !pushSupported()) return;
+    showPushError(null);
+    var permP = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+    push.busy = true;
+    renderPush();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== 'granted') throw userErr(perm === 'denied' ? 'Bạn đã chọn Không cho phép. Bật lại trong Cài đặt iPhone → Thông báo → GoldTrack.' : 'Chưa được cho phép. Hãy chạm lại và chọn Cho phép.');
+      return swReady();
+    }).then(function(reg){
+      return reg.pushManager.getSubscription().then(function(old){
+        if(old && keyMatches(old, key)) return old;
+        // A subscription made with another VAPID key can't be reused:
+        // subscribe() would throw InvalidStateError.
+        return (old ? old.unsubscribe().catch(function(){}) : Promise.resolve()).then(function(){
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        });
+      });
+    }).then(function(sub){
+      push.sub = sub;
+      push.rec.deviceLabel = $id('pushLabel').value.trim().slice(0, 40);
+      savePushRec();
+    }).catch(function(err){
+      showPushError((err && err.userMessage) || 'Không bật được thông báo (' + (err && err.name || 'lỗi') + '). Hãy thử lại.');
+    }).then(function(){
+      push.busy = false;
+      renderPush();
+      renderDisplayDiag();
+    });
+  });
+  $id('btnPushCopy').addEventListener('click', function(){
+    var sub = currentSub();
+    if(!sub) return;
+    var ta = $id('pushSubJson'), txt = subJson(sub);
+    ta.value = txt;
+    function done(msg){
+      push.rec.lastCopiedEndpointHash = endpointHash(sub.endpoint);
+      push.rec.deviceLabel = $id('pushLabel').value.trim().slice(0, 40);
+      savePushRec();
+      checkPushChanged();
+      $id('pushCopyNote').textContent = msg;
+    }
+    function fallback(){
+      ta.focus();
+      ta.select();
+      try{ ta.setSelectionRange(0, txt.length); }catch(e){}
+      var ok = false;
+      try{ ok = document.execCommand('copy'); }catch(e){}
+      done(ok ? 'Đã sao chép ✓ Dán vào secret GOLD_PUSH_SUBSCRIPTIONS.' : 'Không tự sao chép được — mã đã được bôi đen, chạm giữ rồi chọn Sao chép.');
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        done('Đã sao chép ✓ Dán vào secret GOLD_PUSH_SUBSCRIPTIONS.');
+      }, fallback);
+    } else fallback();
+  });
+  $id('btnPushTest').addEventListener('click', function(){
+    if(testBlockedReason()) return;
+    showPushError(null);
+    var note = $id('pushTestNote');
+    note.hidden = true;
+    note.removeAttribute('data-kind');
+    var permP = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== 'granted') throw userErr('Cần cho phép thông báo thì mới gửi thử được.');
+      return swReady();
+    }).then(function(reg){
+      return reg.showNotification('Giá vàng (thử)', { body: pushTestBody(), tag: 'gold-price-test', icon: PUSH_ICON });
+    }).then(function(){
+      note.textContent = 'Đã gửi thử ✓ Không thấy? Xem Cài đặt iPhone → Thông báo.';
+      note.setAttribute('data-kind', 'result');
+      note.hidden = false;
+      renderPush();
+      renderDisplayDiag();
+    }).catch(function(err){
+      showPushError((err && err.userMessage) || 'Không gửi thử được (' + (err && err.name || 'lỗi') + ').');
+      renderPush();
     });
   });
 
@@ -1198,16 +1513,16 @@
     var pct = diff / prevVal * 100;
     var cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
     var arrowPath = diff > 0 ? '<path d="M12 19V6M6 12l6-6 6 6"/>' : (diff < 0 ? '<path d="M12 5v13M6 12l6 6 6-6"/>' : '<path d="M5 12h14"/>');
-    return '<div class="pb-change '+cls+'"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg>'+signedVND(diff)+' đ ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)</div>';
+    return '<div class="pb-change '+cls+'"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg>'+signedVND(diff)+' đ ('+fmtPct(pct)+')</div>';
   }
 
   function renderPrice(){
     var el = document.getElementById('priceContent');
     var subEl = document.getElementById('priceUpdatedSub');
     var titleEl = document.getElementById('priceCardTitle');
-    var shopInfo = SHOPS.filter(function(s){ return s.id === selectedPriceShop; })[0];
+    // The shop is already named by the selector right above the card.
     var typeInfo = (SHOP_TYPES[selectedPriceShop] || []).filter(function(t){ return t.id === selectedPriceType; })[0];
-    titleEl.textContent = (shopInfo && typeInfo) ? (shopInfo.name + ' · ' + typeInfo.label) : 'Giá vàng';
+    titleEl.textContent = typeInfo ? typeInfo.label : 'Giá vàng';
     var hist = getHistoryFor(selectedPriceShop, selectedPriceType);
     var eff = getEffectivePrice(selectedPriceShop, selectedPriceType);
 
@@ -1220,16 +1535,15 @@
       return;
     }
     var d = new Date(eff.at);
-    var whenTxt = pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' lúc '+pad2(d.getHours())+':'+pad2(d.getMinutes());
-    subEl.textContent = 'Cập nhật lần cuối ' + whenTxt;
+    subEl.textContent = 'Cập nhật ' + pad2(d.getHours())+':'+pad2(d.getMinutes()) + ' · ' + pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear();
 
     var p = computePortfolioForGroup(selectedPriceShop, selectedPriceType);
     var avgCost = p.holdingAmount > 0 ? p.avgCost : null;
 
     el.innerHTML =
       '<div class="price-grid">' +
-        '<div class="price-box"><div class="pb-label">Mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy, hist)+'</div>' +
-        '<div class="price-box"><div class="pb-label">Bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell, hist)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Tiệm mua vào</div><div class="pb-val">'+fmtVND(eff.buy)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('buy', eff.buy, hist)+'</div>' +
+        '<div class="price-box"><div class="pb-label">Tiệm bán ra</div><div class="pb-val">'+fmtVND(eff.sell)+'<span class="pb-unit">đ/chỉ</span></div>'+priceChangeHtml('sell', eff.sell, hist)+'</div>' +
       '</div>' +
       '<div class="chart-head">' +
         '<span class="chart-title">Xu hướng giá mua vào</span>' +
@@ -1273,17 +1587,22 @@
     return { insufficient: false, high: Math.max.apply(null, buys), low: Math.min.apply(null, buys) };
   }
   function renderPriceRangeCard(hist, currentBuy){
-    return '<div class="chart-head" style="margin-top:16px"><span class="chart-title">Vùng giá mua vào 30/90 ngày</span></div>' +
-      [30, 90].map(function(days){
-        var r = computePriceRange(hist, days);
-        if(r.insufficient) return '<div class="chart-empty">Chưa đủ dữ liệu '+days+' ngày</div>';
-        var pctFromHigh = (currentBuy - r.high) / r.high * 100;
-        var pctFromLow = (currentBuy - r.low) / r.low * 100;
-        return '<div class="summary-row"><span class="summary-label">Cao nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.high)+' đ/chỉ</span></div>' +
-          '<div class="summary-row"><span class="summary-label">Thấp nhất '+days+' ngày</span><span class="summary-val">'+fmtVND(r.low)+' đ/chỉ</span></div>' +
-          '<div class="summary-row"><span class="summary-label">Cách đỉnh '+days+' ngày</span><span class="summary-val">'+signedVND(currentBuy - r.high)+' đ ('+(pctFromHigh>=0?'+':'')+pctFromHigh.toFixed(2)+'%)</span></div>' +
-          '<div class="summary-row"><span class="summary-label">Cách đáy '+days+' ngày</span><span class="summary-val">'+signedVND(currentBuy - r.low)+' đ ('+(pctFromLow>=0?'+':'')+pctFromLow.toFixed(2)+'%)</span></div>';
-      }).join('');
+    var head = '<div class="chart-head" style="margin-top:16px"><span class="chart-title">Vùng giá mua vào (đ/chỉ)</span></div>';
+    var r30 = computePriceRange(hist, 30);
+    if(r30.insufficient) return head + '<div class="chart-empty">Chưa đủ 30 ngày dữ liệu</div>';
+    var r90 = computePriceRange(hist, 90);
+    // Second line = how far today's buy price is from that extreme.
+    function cell(r, key){
+      if(r.insufficient) return '<div class="range-cell"><b>—</b></div>';
+      var v = r[key];
+      return '<div class="range-cell"><b>'+fmtVND(v)+'</b><span>'+signedVND(currentBuy - v)+' đ ('+fmtPct((currentBuy - v) / v * 100)+')</span></div>';
+    }
+    return head +
+      '<div class="range-grid">' +
+        '<span></span><span class="range-col">30 ngày</span><span class="range-col">90 ngày</span>' +
+        '<span class="summary-label">Cao nhất</span>' + cell(r30, 'high') + cell(r90, 'high') +
+        '<span class="summary-label">Thấp nhất</span>' + cell(r30, 'low') + cell(r90, 'low') +
+      '</div>';
   }
 
   // Maps a daily series to SVG coordinates. minOverride/maxOverride let two
@@ -1540,7 +1859,7 @@
     '</svg>' +
     '<div class="chart-legend">' +
       '<span class="chart-legend-item"><span class="chart-legend-dot" style="background:'+lineColor+'"></span>Giá trị thị trường</span>' +
-      '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Vốn đã bỏ ra</span>' +
+      '<span class="chart-legend-item"><span class="chart-legend-dash"></span>Vốn</span>' +
     '</div>';
   }
 
@@ -1565,11 +1884,12 @@
     document.getElementById('overviewEmpty').hidden = state.transactions.length !== 0;
     if(state.transactions.length === 0){ card.hidden = true; return; }
     card.hidden = false;
-    document.getElementById('summaryTitle').textContent = 'Tổng quan danh mục' + (ownerFilter !== 'all' ? ' · ' + ownerFilter : '');
+    document.getElementById('summaryTitle').textContent = 'Danh mục' + (ownerFilter !== 'all' ? ' · ' + ownerFilter : '');
     var warnHtml = ledgerWarningHtml();
     if(scopedTx().length === 0){
       content.innerHTML = warnHtml +
-        '<p class="field-hint" style="margin:0">'+escapeHtml(ownerFilter)+' chưa có giao dịch nào. Thêm giao dịch ở tab <b>Lịch sử</b> (nút +) và chọn người sở hữu.</p>';
+        '<p class="field-hint" style="margin:0 0 12px">'+escapeHtml(ownerFilter)+' chưa có giao dịch nào.</p>' +
+        '<button type="button" class="btn btn-gold btn-block" data-add-tx>Thêm giao dịch</button>';
       return;
     }
 
@@ -1577,7 +1897,7 @@
     // holdingAmount/avgCost are deliberately NOT shown here anymore: chỉ of
     // different gold types are not fungible, so a blended "X chỉ đang nắm
     // giữ" or a blended "đ/chỉ trung bình" across types would be meaningless.
-    // A per-group breakdown lives in the "Theo cửa hàng & loại vàng" card.
+    // A per-group breakdown lives in History's "Đang giữ" card.
     var pAll = computePortfolioAll();
     var hasVal = pAll.groups.some(function(g){ return !g.hasPriceGap; });
     var unrealizedPL = pAll.totalUnrealizedPL;
@@ -1599,17 +1919,17 @@
     content.innerHTML = warnHtml +
       '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
       '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>' +
-      (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt (đã bán)</span><span class="summary-val '+realizedCls+'">'+(pAll.totalRealizedPL>=0?'+':'')+fmtVND(pAll.totalRealizedPL)+' đ</span></div>' : '') +
+      (pAll.totalRealizedPL !== 0 ? '<div class="summary-row"><span class="summary-label">Lãi/lỗ đã chốt</span><span class="summary-val '+realizedCls+'">'+(pAll.totalRealizedPL>=0?'+':'')+fmtVND(pAll.totalRealizedPL)+' đ</span></div>' : '') +
       gapNote +
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
           '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? (totalPL>=0?'+':'')+fmtVND(totalPL)+' đ' : 'Cập nhật giá để tính')+'</div></div>' +
         '</div>' +
-        (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+(totalPlPct>=0?'+':'')+totalPlPct.toFixed(2)+'%</span>' : '') +
+        (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+fmtPct(totalPlPct)+'</span>' : '') +
       '</div>' +
       '<div class="chart-head" style="margin-top:16px">' +
-        '<span class="chart-title">Giá trị danh mục theo thời gian</span>' +
+        '<span class="chart-title">Giá trị danh mục</span>' +
       '</div>' +
       renderRangeTabs('portfolioRangeTabs', portfolioChartRange) +
       '<div class="chart-wrap">' + renderPortfolioChart(portfolioChartRange) + '</div>';
@@ -1802,8 +2122,8 @@
     var card = document.getElementById('pnlReportCard');
     var content = document.getElementById('pnlReportContent');
     document.getElementById('pnlReportSub').textContent = pnlGroupBy === 'day'
-      ? 'Mỗi ngày: biến động giá vàng đang giữ + lãi đã chốt'
-      : 'Theo từng kỳ, dựa trên giao dịch đã bán';
+      ? 'Lãi/lỗ từng ngày, kể cả vàng chưa bán'
+      : 'Chỉ tính lãi/lỗ đã chốt (đã bán)';
     if(pnlGroupBy === 'day'){
       if(scopedTx().length === 0){ card.hidden = true; return; }
       card.hidden = false;
@@ -1860,35 +2180,25 @@
     });
     held.sort(function(a,b){ return b.holdingCost - a.holdingCost; });
     var totalCost = held.reduce(function(sum,g){ return sum + g.holdingCost; }, 0);
-    // Same numbers as the Overview summary card (reused, not recomputed) —
-    // shown here too so they're visible while browsing History without
-    // switching tabs.
-    var hasVal = pAll.groups.some(function(g){ return !g.hasPriceGap; });
-    var currentValue = pAll.totalHoldingCost + pAll.totalUnrealizedPL;
-    var totalsHtml =
-      '<div class="summary-row"><span class="summary-label">Tổng vốn hiện tại</span><span class="summary-val">'+fmtVND(pAll.totalHoldingCost)+' đ</span></div>' +
-      '<div class="summary-row"><span class="summary-label">Giá trị hiện tại</span><span class="summary-val">'+(hasVal ? fmtVND(currentValue)+' đ' : '—')+'</span></div>';
+    // A single group would always be a 100% bar — nothing to compare.
+    var showBars = held.length > 1;
     var groupsHtml = held.length === 0
       ? '<div class="field-hint">Hiện không còn giữ vàng.</div>'
       : held.map(function(g){
           var pct = totalCost ? (g.holdingCost / totalCost * 100) : 0;
-          var shopInfo = SHOPS.filter(function(s){ return s.id === g.shop; })[0];
-          var shopName = shopInfo ? shopInfo.name : g.shop;
-          var typeInfo = (SHOP_TYPES[g.shop] || []).filter(function(t){ return t.id === g.goldType; })[0];
-          var label = typeInfo ? (shopName + ' · ' + typeInfo.label) : shopName;
+          var label = shortGroupName(g.shop, g.goldType);
           var plCls = g.hasPriceGap ? '' : (g.unrealizedPL > 0 ? 'up' : (g.unrealizedPL < 0 ? 'down' : ''));
           var plTxt = g.hasPriceGap ? 'chưa có giá' : ((g.unrealizedPL>=0?'+':'')+fmtVND(g.unrealizedPL)+' đ');
           return '<div class="store-bar-row">' +
             '<div class="store-bar-top"><span class="store-bar-name">'+escapeHtml(label)+'</span></div>' +
-            '<div class="store-bar-track"><div class="store-bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>' +
-            '<div class="summary-row"><span class="summary-label">'+fmtAmount(g.holdingAmount)+' chỉ đang giữ · vốn TB '+fmtVND(g.avgCost)+' đ/chỉ</span><span class="summary-val '+plCls+'">'+plTxt+'</span></div>' +
+            (showBars ? '<div class="store-bar-track"><div class="store-bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>' : '') +
+            '<div class="summary-row"><span class="summary-label">'+fmtAmount(g.holdingAmount)+' chỉ · vốn TB '+fmtVND(g.avgCost)+' đ/chỉ</span><span class="summary-val '+plCls+'">'+plTxt+'</span></div>' +
           '</div>';
         }).join('');
     el.hidden = false;
     el.innerHTML =
       '<div class="card" style="padding:14px 18px">' +
-        totalsHtml +
-        '<div class="settings-row-title" style="margin:12px 0 8px">Theo cửa hàng &amp; loại vàng</div>' +
+        '<div class="store-head"><span class="settings-row-title">Đang giữ</span>' + (held.length ? '<span class="store-head-note">Lãi/lỗ chưa chốt</span>' : '') + '</div>' +
         groupsHtml +
       '</div>';
   }
@@ -1907,12 +2217,21 @@
       positionSegmentedIndicator(document.getElementById('txFilter'));
     });
   });
+  // Accent- and case-insensitive, so "ngoc" finds "Ngọc".
+  function foldText(s){
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  }
+  function txSearchText(t){
+    var shopInfo = SHOPS.filter(function(s){ return s.id === t.shop; })[0];
+    var typeInfo = (SHOP_TYPES[t.shop] || []).filter(function(x){ return x.id === t.goldType; })[0];
+    return foldText([txOwner(t), shopInfo ? shopInfo.name : '', typeInfo ? typeInfo.label : '', t.address, t.note, t.store].join(' '));
+  }
   var txSearchTimer = null;
   document.getElementById('txSearch').addEventListener('input', function(e){
     var val = e.target.value;
     clearTimeout(txSearchTimer);
     txSearchTimer = setTimeout(function(){
-      txSearchQuery = val.trim().toLowerCase();
+      txSearchQuery = foldText(val.trim());
       renderTx();
     }, 150);
   });
@@ -1950,26 +2269,26 @@
     renderStoreSummary(pAll);
     var all = scopedTx().slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.createdAt-a.createdAt; });
     count.textContent = all.length;
+    // Filters have nothing to filter yet.
+    document.getElementById('viewHistory').classList.toggle('no-tx', all.length === 0);
     var txs = all.filter(function(t){
       if(txFilter !== 'all' && txType(t) !== txFilter) return false;
       if(txDateFrom && t.date < txDateFrom) return false;
       if(txDateTo && t.date > txDateTo) return false;
-      if(txSearchQuery){
-        var haystack = (txOwner(t) + ' ' + (t.store||'') + ' ' + (t.note||'')).toLowerCase();
-        if(haystack.indexOf(txSearchQuery) === -1) return false;
-      }
+      if(txSearchQuery && txSearchText(t).indexOf(txSearchQuery) === -1) return false;
       return true;
     });
     if(txs.length === 0){
       var emptyMsg = state.transactions.length === 0
-        ? 'Chưa có giao dịch nào. Nhấn nút + để thêm giao dịch mua vàng đầu tiên.'
+        ? 'Chưa có giao dịch nào.'
         : all.length === 0
-          ? escapeHtml(ownerFilter) + ' chưa có giao dịch nào. Nhấn nút + để thêm.'
+          ? escapeHtml(ownerFilter) + ' chưa có giao dịch nào.'
           : 'Không có giao dịch nào khớp bộ lọc này.';
       list.innerHTML =
         '<div class="empty-state">' +
           '<svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
           '<p>'+emptyMsg+'</p>' +
+          (all.length === 0 ? '<button type="button" class="btn btn-gold" data-add-tx>Thêm giao dịch</button>' : '') +
         '</div>';
       return;
     }
@@ -1979,21 +2298,21 @@
       // Shop/type shown per-row now that a single list can mix multiple
       // (shop, goldType) groups — without this, two same-day transactions
       // at the same store but different gold types were indistinguishable.
-      var shopInfo = SHOPS.filter(function(s){ return s.id === tx.shop; })[0];
-      var typeInfo = (SHOP_TYPES[tx.shop] || []).filter(function(t){ return t.id === tx.goldType; })[0];
-      var groupTxt = typeInfo ? (shopInfo.name + ' · ' + typeInfo.label) : (shopInfo ? shopInfo.name : '');
-      var metaTxt = escapeHtml(txOwner(tx)) + ' · ' + (isSell ? 'Bán ngày ' : 'Mua ngày ') + fmtDate(tx.date) + (groupTxt ? ' · '+escapeHtml(groupTxt) : '') + (tx.store ? ' · '+escapeHtml(tx.store) : '') + (tx.address ? ' · '+escapeHtml(tx.address) : '');
+      // The owner is only worth repeating when the list mixes both people.
+      var groupTxt = shortGroupName(tx.shop, tx.goldType);
+      var metaTxt = fmtDate(tx.date) + (ownerFilter === 'all' ? ' · ' + escapeHtml(txOwner(tx)) : '');
+      var placeTxt = [groupTxt, tx.store, tx.address].filter(Boolean).map(escapeHtml).join(' · ');
       var noteHtml = tx.note ? '<div class="tx-note">'+escapeHtml(tx.note)+'</div>' : '';
 
-      var grid;
+      var grid, keyHtml;
       if(isSell){
         var sellInfo = pAll.perTx[tx.id] || { avgCostAtSale: 0, pl: 0 };
         var plCls = sellInfo.pl > 0 ? 'up' : (sellInfo.pl < 0 ? 'down' : '');
+        keyHtml = '<div class="tx-key"><div class="tx-cell-label">Đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>';
         grid =
           '<div class="tx-grid">' +
-            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ</div></div>' +
-            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+fmtVND(sellInfo.avgCostAtSale)+' đ</div></div>' +
-            '<div style="grid-column:1/-1"><div class="tx-cell-label">Lãi/Lỗ đã chốt</div><div class="tx-cell-val '+plCls+'">'+(sellInfo.pl>=0?'+':'')+fmtVND(sellInfo.pl)+' đ</div></div>' +
+            '<div><div class="tx-cell-label">Giá bán</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ/chỉ</div></div>' +
+            '<div><div class="tx-cell-label">Giá vốn lúc bán</div><div class="tx-cell-val">'+fmtVND(sellInfo.avgCostAtSale)+' đ/chỉ</div></div>' +
           '</div>';
       } else {
         // Own group's price, not a single global one — a Huy Thanh 18K buy
@@ -2004,12 +2323,13 @@
         var txEff = getEffectivePrice(tx.shop, tx.goldType);
         var diffPct = (txEff && tx.price > 0) ? ((txEff.buy - tx.price) / tx.price * 100) : null;
         var diffCls = diffPct === null ? '' : (diffPct > 0 ? 'up' : (diffPct < 0 ? 'down' : ''));
-        var diffTxt = diffPct === null ? '—' : ((diffPct>=0?'+':'')+diffPct.toFixed(1)+'%');
+        var diffTxt = diffPct === null ? '—' : fmtPct(diffPct);
+        var diffArrow = diffCls === 'up' ? '↑' : (diffCls === 'down' ? '↓' : '');
+        keyHtml = '<div class="tx-key"><div class="tx-cell-label">Chênh lệch</div><div class="tx-cell-val '+diffCls+'">'+(diffArrow ? '<span class="tx-arrow" aria-hidden="true">'+diffArrow+'</span>' : '')+'<span class="tx-key-val">'+diffTxt+'</span></div></div>';
         grid =
           '<div class="tx-grid">' +
             '<div><div class="tx-cell-label">Giá mua</div><div class="tx-cell-val">'+fmtVND(tx.price)+' đ/chỉ</div></div>' +
             '<div><div class="tx-cell-label">Giá tiệm mua vào hôm nay</div><div class="tx-cell-val">'+(txEff ? fmtVND(txEff.buy)+' đ/chỉ' : '—')+'</div></div>' +
-            '<div style="grid-column:1/-1"><div class="tx-cell-label">Chênh lệch giá</div><div class="tx-cell-val '+diffCls+'">'+diffTxt+'</div></div>' +
           '</div>';
       }
 
@@ -2023,7 +2343,8 @@
           '</div>' +
           '<div class="tx-item" data-id="'+tx.id+'">' +
             '<div class="tx-top">' +
-              '<div><div class="tx-amount">'+badge+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div></div>' +
+              '<div><div class="tx-amount">'+badge+fmtAmount(tx.amount)+' chỉ</div><div class="tx-date">'+metaTxt+'</div>'+(placeTxt ? '<div class="tx-date">'+placeTxt+'</div>' : '')+'</div>' +
+              keyHtml +
             '</div>' +
             grid +
             noteHtml +
@@ -2162,6 +2483,7 @@
   renderAll();
   loadLiveData();
   loadChangelog();
+  initPush();
 
   // ---------- real viewport height (fixes the intermittent bottom tab bar gap) ----------
   // See body's CSS comment: 100dvh can get stuck at the on-screen-keyboard-open
@@ -2175,7 +2497,7 @@
     if(!window.visualViewport) return;
     document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
   }
-  // Diagnostics only (bottom of Settings) — real on-device numbers are the
+  // Diagnostics only (Settings → "Thông tin kỹ thuật") — real on-device numbers are the
   // only way to verify iOS standalone layout, which headless test browsers
   // can't emulate. safe-top ≈ 59 means iOS still applies the old
   // black-translucent snapshot (icon needs removing + re-adding); 0 means
@@ -2194,7 +2516,9 @@
       ' · màn hình ' + screen.width + '×' + screen.height +
       ' · viewport ' + window.innerWidth + '×' + window.innerHeight +
       ' · safe ' + parseFloat(ps.paddingTop) + '/' + parseFloat(ps.paddingBottom) +
-      (tabbar ? ' · menu đáy ' + Math.round(tabbar.getBoundingClientRect().bottom) : '');
+      (tabbar ? ' · menu đáy ' + Math.round(tabbar.getBoundingClientRect().bottom) : '') +
+      ' · thông báo ' + (typeof Notification === 'undefined' ? 'không hỗ trợ' : Notification.permission) +
+      ' · push ' + (!pushSupported() ? 'không hỗ trợ' : currentSub() ? 'đã đăng ký' : 'chưa đăng ký');
   }
   syncAppHeight();
   window.addEventListener('resize', renderDisplayDiag);
@@ -2221,16 +2545,14 @@
   // content needs padding-top matching its real rendered height or content
   // would start underneath it. Measured live, not hardcoded, since
   // safe-area-inset-top varies by device.
-  (function(){
-    var appHeaderEl = document.getElementById('appHeader');
-    function syncHeaderHeight(){
-      document.documentElement.style.setProperty('--header-h', appHeaderEl.getBoundingClientRect().height + 'px');
-    }
-    syncHeaderHeight();
-    window.addEventListener('resize', syncHeaderHeight);
-    window.addEventListener('orientationchange', syncHeaderHeight);
-    if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeight);
-  })();
+  // A hoisted declaration: switchTab() (defined earlier) calls it too.
+  function syncHeaderHeight(){
+    document.documentElement.style.setProperty('--header-h', document.getElementById('appHeader').getBoundingClientRect().height + 'px');
+  }
+  syncHeaderHeight();
+  window.addEventListener('resize', syncHeaderHeight);
+  window.addEventListener('orientationchange', syncHeaderHeight);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeight);
 
   // ---------- pull-to-refresh ----------
   // Custom, not native — .app already sets overscroll-behavior-y:contain

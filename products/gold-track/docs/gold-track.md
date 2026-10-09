@@ -21,12 +21,47 @@ Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệ
 - **Đơn vị giá**: nguồn (Ngọc Thịnh Jewelry) ghi giá theo VNĐ/**chỉ**, không phải lượng (1 lượng = 10 chỉ) — toàn app thống nhất dùng chỉ. Từng có bug hiểu nhầm đơn vị sai 10 lần.
 - **Hai loại giá, đừng lẫn**: `buy` trong `gold-price.json` = giá **tiệm mua vào** (số tiền người dùng nhận khi bán) — dùng để định giá tài sản, tính lãi/lỗ chưa chốt, vẽ biểu đồ và tự điền giá bán. `sell` = giá tiệm bán ra (người dùng trả khi mua). Vừa mua xong đã "lỗ" đúng phần chênh lệch mua–bán (~2,6% ở Huy Thanh) — đúng, không phải bug.
 - **Catalog tiệm/loại vàng khai báo 2 nơi phải khớp tuyệt đối**: `SHOP_TYPES` trong `js/gold-track.js` và `NGOCTHINH_TYPES`/`HUYTHANH_TYPES` trong `py/fetch_gold_price.py` (id loại vàng là khoá nối giữa giao dịch và file giá).
-- **Hiển thị lãi/lỗ** (quy tắc chung ở skill `ui-craft` §10): dòng MUA trong Lịch sử chỉ so giá theo chỉ (%), không tính tiền lãi/lỗ; báo cáo theo tháng/năm chỉ chứa lãi đã chốt, lãi chưa chốt là dòng riêng; lịch "Theo ngày" = Δ lãi chưa chốt + lãi chốt trong ngày, ô hôm nay dùng giá trực tiếp để tổng các ngày = "Tổng lãi/lỗ" ở Tổng quan. Mọi con số phải lấy từ `computePortfolioAll()`/`perTx`, không tự tính lại.
-- **iPhone**: meta status bar là `default` (không phải `black-translucent` — xem skill `ios-pwa-pitfalls` §1b); chữ số dùng mặt phông riêng `GT Digits` vì iOS không có Cambria. Dòng chẩn đoán hiển thị (kích thước màn hình/viewport, safe-area, vị trí đáy menu) ở cuối tab Cài đặt — nhờ người dùng chụp khi có lỗi chỉ xuất hiện trên máy thật.
+- **Hiển thị lãi/lỗ** (quy tắc chung ở skill `ui-craft` §10): dòng MUA trong Lịch sử chỉ so giá theo chỉ (%), không tính tiền lãi/lỗ; báo cáo theo tháng/năm chỉ chứa lãi đã chốt, lãi chưa chốt là dòng riêng; lịch "Ngày" = Δ lãi chưa chốt + lãi chốt trong ngày, ô hôm nay dùng giá trực tiếp để tổng các ngày = "Tổng lãi/lỗ" ở Tổng quan. Mọi con số phải lấy từ `computePortfolioAll()`/`perTx`, không tự tính lại.
+- **iPhone**: meta status bar là `default` (không phải `black-translucent` — xem skill `ios-pwa-pitfalls` §1b); chữ số dùng mặt phông riêng `GT Digits` vì iOS không có Cambria. Dòng chẩn đoán (kích thước màn hình/viewport, safe-area, vị trí đáy menu, quyền thông báo, trạng thái push) nằm trong mục gập "Thông tin kỹ thuật" cuối tab Cài đặt (`#displayDiag`, cùng dòng "GoldTrack vX · Made by LongLTV") — nhờ người dùng mở mục đó rồi chụp khi có lỗi chỉ xuất hiện trên máy thật. Test đọc bằng `textContent` (mục gập đóng thì `innerText` rỗng).
 - **Khoảng thời gian biểu đồ cố ý KHÔNG lưu** qua các lần mở (luôn về 7 ngày) — đừng thêm lại localStorage cho nó.
 - **`gold-track.js` tự dọn service worker cũ**: trước khi đăng ký SW mới, code unregister mọi registration có scope đúng bằng gốc origin (`location.origin + '/'`) — đây là dọn dẹp cho người dùng cũ từ thời SW còn đăng ký ở root repo (trước khi chuyển vào `products/gold-track/`). Đừng xoá đoạn này tưởng là code thừa.
 
 ## Quy trình vận hành
 
 - **Đổi version + changelog**: mọi thay đổi người dùng thấy được (feature, fix, redesign — không phải refactor nội bộ) → bump field `"version"` + prepend entry vào `data/changelog.json` (tiếng Việt, mô tả cho người dùng). Chi tiết đầy đủ nằm trong `CLAUDE.md` ở root.
-- **Lấy dữ liệu**: 1 script Python, `py/fetch_gold_price.py` (giá), chạy qua `.github/workflows/*.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `goldtrack-data-pipeline`.
+- **Lấy dữ liệu**: `py/fetch_gold_price.py` (giá) rồi `py/notify_gold_price.py` (thông báo đẩy — xem "Thông báo giá"), chạy qua `.github/workflows/update-gold-price.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `goldtrack-data-pipeline`.
+
+## Thông báo giá
+
+```
+update-gold-price.yml (cron 7,37 mỗi giờ)
+  fetch_gold_price.py → (Check push config) → (Install pywebpush) → notify_gold_price.py → commit giá + data/push-state.json
+     notify_gold_price.py ── .github/scripts/web_push.py (VAPID, aes128gcm, TTL 6h, Urgency normal) ──▶ web.push.apple.com ──▶ iPhone
+SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"gold-price","ts"} → LUÔN showNotification (iOS thu hồi đăng ký nếu push không hiện gì);
+   payload hỏng → "GoldTrack" / "Giá vàng vừa thay đổi — mở app để xem". "notificationclick": focus cửa sổ GoldTrack, không có thì mở html/index.html.
+```
+
+- Theo dõi đúng 2 loại: Ngọc Thịnh 9999 (`ngoc-thinh/9999-nhan-tron`) và Huy Thanh 24k (`huy-thanh/24k-huy-thanh`), ngưỡng 0 đ, không giới hạn số lần/ngày.
+- **Bot giá commit MỌI lượt chạy** (`fetchedAt` luôn đổi) → "có commit" không có nghĩa "giá đổi". Notifier so `data/gold-price.json` với **giá đã báo lần cuối** (`data/push-state.json` = `{notified:{"<shop>/<type>":{buy,sell}}, notifiedAt, delivered, failed}`). Chưa có state → lưu giá hiện tại làm mốc, không gửi. Loại mới xuất hiện → thêm vào mốc, không gửi. Không đổi → thôi. 22:00–07:00 VN → để lượt sau, **không ghi state** (các lần đổi trong đêm gộp thành một thông báo buổi sáng, Δ tính từ mốc cũ). Gửi xong (≥ 1 máy) mới ghi state.
+- Tiêu đề: mọi Δ khác 0 đều tăng → "Giá vàng tăng", đều giảm → "Giá vàng giảm", lẫn lộn → "Giá vàng thay đổi" (`--force` khi không đổi → "Giá vàng hiện tại"). Nội dung một dòng mỗi loại đổi: `Ngọc Thịnh 9999: mua 13.200.000 (+70.000) · bán 13.320.000 (+60.000)`; phía không đổi không kèm Δ; dấu trừ U+2212.
+- Exit: 0 = đã gửi ≥ 1 / không có gì để gửi / hoãn / `--dry-run`; 1 = mọi máy lỗi (không ghi state); 2 = cấu hình sai. Workflow: mọi bước push `continue-on-error` + `timeout-minutes: 3` → **giá vẫn được commit dù push lỗi hay thiếu secret**; secret `GOLD_PUSH_SUBSCRIPTIONS` trống → bỏ qua hẳn (chỉ `echo`). Bước commit chỉ `git add` push-state.json khi file tồn tại (git add file không có là lỗi fatal); chỉ state đổi → message "GoldTrack push state: YYYY-MM-DD". `workflow_dispatch` có `notify_force`, `notify_dry_run`.
+- Log công khai: không in endpoint, khoá hay nguyên văn exception — chỉ tên máy, host, mã HTTP (do `web_push.py` dùng chung với FuelTrack).
+- Chạy tay: `python products/gold-track/py/notify_gold_price.py [--now 2026-10-08T07:16:00Z] [--force] [--dry-run] [--state …] [--price-file …]`.
+- `push-state.json` do bot tạo ở lượt đầu đã cấu hình; app không đọc, không nằm trong `DATA_PATHS` của SW.
+
+### Secrets & cài đặt một lần
+
+| Secret | Nội dung |
+|---|---|
+| `PUSH_VAPID_PRIVATE_KEY` | `privateKey` của cặp khoá VAPID **dùng chung** GoldTrack / FuelTrack / LoveDays (workflow tự dùng `LOVE_VAPID_PRIVATE_KEY` nếu secret này trống) |
+| `GOLD_PUSH_SUBSCRIPTIONS` | mảng JSON các mã do nút "Sao chép" trong GoldTrack tạo. Mã gắn với service worker của từng app → **mỗi app trên mỗi máy có mã riêng**, không dùng lại mã của FuelTrack/LoveDays |
+| `PUSH_VAPID_SUB` (tuỳ chọn) | claim `sub`, mặc định `https://letranvietlong.github.io` |
+
+1. Nếu chưa có cặp khoá: ở thư mục **ngoài repo**, `npx --yes web-push generate-vapid-keys --json` → `privateKey` vào secret `PUSH_VAPID_PRIVATE_KEY`. Không ghi khoá vào file nào trong repo (repo công khai, Stop hook `git add -A`).
+2. `publicKey` vào hằng `VAPID_PUBLIC_KEY` ở đầu `js/gold-track.js` — **phải giống hệt** hằng cùng tên trong FuelTrack và LoveDays. Trống → thẻ "Thông báo giá" hiện "Chưa cấu hình khoá thông báo", ẩn ô tên máy và nút Bật.
+3. Mỗi iPhone (iOS 16.4+): mở GoldTrack từ icon Màn hình chính → Cài đặt → Thông báo giá → đặt tên máy → Bật thông báo → Cho phép → Sao chép.
+4. Gộp mã các máy thành `[mã 1, mã 2]` → secret `GOLD_PUSH_SUBSCRIPTIONS`.
+5. Actions → "Update gold price" → Run workflow với `notify_dry_run` (log liệt kê tên máy và nội dung sẽ gửi; lượt đầu chỉ báo sẽ lưu mốc), rồi `notify_force` để nhận thử thật.
+
+- Thiết lập riêng của máy trong `localStorage` `goldtrack_push_v1` `{deviceLabel, lastCopiedEndpointHash}` — **không** đồng bộ Gist, không nằm trong file xuất, "Xoá hết" không đụng tới. Mở app thấy endpoint khác/mất so với lúc "Sao chép" → dòng cảnh báo trong thẻ + toast một lần (mất hẳn mã → thêm nút "Tôi đã tắt thông báo"). "Gửi thử trên máy này" gọi `showNotification` ngay trên máy với giá đang tải (tiêu đề "Giá vàng (thử)", không qua workflow); bị tắt thì dòng nhỏ dưới nút nói lý do.
+- Không kiểm chứng được trên Chromium: Web Push thật qua APNs, quyền thông báo trên iPhone.

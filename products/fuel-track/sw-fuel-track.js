@@ -15,4 +15,4 @@
 //
 // ?v= phải bump cùng lúc với CACHE_NAME trong core, để script được
 // importScripts chắc chắn được tải lại bất kể engine kiểm tra cập nhật ra sao.
-importScripts('/products/fuel-track/js/sw-core.js?v=2');
+importScripts('/products/fuel-track/js/sw-core.js?v=3');

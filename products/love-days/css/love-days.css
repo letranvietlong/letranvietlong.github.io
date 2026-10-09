@@ -95,7 +95,7 @@ h1,h2,h3,p{margin:0}
 /* Cards & text */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
 .card + .card,.card + .bday-grid,.bday-grid + .card{margin-top:14px}
-.card-kicker{font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.card-kicker{font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .card-text{font-size:.88rem;color:var(--muted);line-height:1.5}
 .card-hint{font-size:.78rem;color:var(--muted2);margin-top:10px}
 .group-title{font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 16px 8px}
@@ -324,12 +324,13 @@ button.ms-item:active{background:var(--card2)}
 .push-sub .card-hint{margin-top:0}
 #pushError{margin-top:12px}
 .more{margin-top:10px;border-top:1px solid var(--line)}
-.more summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin-bottom:-8px;list-style:none;cursor:pointer;
-  font-size:.9rem;font-weight:700;color:var(--accent-soft-ink)}
+/* Older WebKit does not lay out <summary> as a flex container, so the flex row lives on an inner span. */
+.more summary{display:block;margin-bottom:-8px;list-style:none;cursor:pointer}
 .more summary::-webkit-details-marker{display:none}
-.more summary::after{content:"";width:8px;height:8px;margin-right:4px;border-right:2px solid var(--muted2);border-bottom:2px solid var(--muted2);transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.more-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:.9rem;font-weight:700;color:var(--accent-soft-ink)}
+.more-chev{width:18px;height:18px;flex:none;margin-right:2px;color:var(--muted2);transition:transform .2s}
 .more[open] summary{margin-bottom:6px}
-.more[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+.more[open] .more-chev{transform:rotate(180deg)}
 .more summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .diag{font-size:.76rem;color:var(--muted);line-height:1.5;word-break:break-word}
 .safe-probe{position:fixed;left:-9999px;top:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);pointer-events:none}
@@ -491,5 +492,5 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
 @media (prefers-reduced-motion: reduce){
   .heart-beat svg,.heart-icon.pulse,.heart-icon.beat{animation:none}
   .sheet,.sheet-backdrop,.dp-sheet,.dp-sheet.open,.dp-backdrop,.date-field,.btn,.tabbar-btn svg,.switch,.switch::after,.seg-btn,.seg-pill,.viewer-stage img,.viewer-nav,button.album-thumb,
-  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more summary::after,.version-badge{transition:none}
+  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more-chev,.version-badge{transition:none}
 }

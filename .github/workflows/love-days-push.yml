@@ -34,7 +34,7 @@ jobs:
       - name: Check secrets
         id: cfg
         env:
-          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.LOVE_VAPID_PRIVATE_KEY }}
+          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
           LOVE_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_PUSH_SUBSCRIPTIONS }}
         run: |
           if [ -z "$LOVE_VAPID_PRIVATE_KEY" ] && [ -z "$LOVE_PUSH_SUBSCRIPTIONS" ]; then
@@ -58,7 +58,7 @@ jobs:
       - name: Send push
         if: steps.cfg.outputs.configured == 'true'
         env:
-          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.LOVE_VAPID_PRIVATE_KEY }}
+          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
           LOVE_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_PUSH_SUBSCRIPTIONS }}
           LOVE_START_DATE: ${{ secrets.LOVE_START_DATE }}
           LOVE_VAPID_SUB: ${{ secrets.LOVE_VAPID_SUB }}

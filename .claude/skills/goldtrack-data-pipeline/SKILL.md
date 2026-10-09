@@ -10,9 +10,12 @@ Site tĩnh không có backend. Dữ liệu được **GitHub Actions chạy đ�
 ```
 GitHub Actions (cron)
   └── products/gold-track/py/fetch_gold_price.py → products/gold-track/data/gold-price.json, gold-price-history.json
-                                     ↓ commit + push
+  └── products/gold-track/py/notify_gold_price.py → Web Push khi giá đổi + data/push-state.json (chỉ khi secret GOLD_PUSH_SUBSCRIPTIONS có)
+                                     ↓ commit + push (một commit cho cả giá lẫn push-state.json)
                   products/gold-track/js/gold-track.js fetch('/products/gold-track/data/*.json')
 ```
+
+**Bước thông báo (`notify_gold_price.py`) không bao giờ được làm hỏng việc commit giá:** 3 bước push (Check push config → Install pywebpush → Notify price change) đều `continue-on-error: true` + `timeout-minutes: 3`; secret trống thì bỏ qua hẳn. Bước commit chỉ `git add data/push-state.json` khi file tồn tại (`git add` file không có là lỗi fatal → mất commit giá). Notifier so với **giá đã báo lần cuối** trong `push-state.json`, không so với commit trước — vì bot ghi `fetchedAt` nên commit mỗi lượt dù giá không đổi. Thư viện gửi dùng chung với FuelTrack: `.github/scripts/web_push.py`. Chi tiết, secrets và cách test: `products/gold-track/docs/gold-track.md` → "Thông báo giá".
 
 Script tự tính đường dẫn dữ liệu tương đối theo chính vị trí của mình (`PRODUCT_ROOT = dirname(dirname(__file__))` trỏ về `products/gold-track/`), không hardcode `"products", "gold-track"` trong path — vì đã nằm sẵn trong đúng thư mục sản phẩm.
 

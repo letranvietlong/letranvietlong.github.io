@@ -19,10 +19,11 @@ Hai theme, chuyển theo cài đặt hệ thống, **không có nút đổi them
 |---|---|---|---|
 | `--text` | `#F8FAFC` | `#171B2B` | 16,6 / 16,8 |
 | `--muted` | `#A9B4CC` | `#5B6478` | 8,3 / 5,8 |
-| `--muted2` | `#7C88A6` | `#6B7280` | 4,9 / 4,8 |
+| `--muted2` | `#8794B0` | `#646B78` | 5,7 / 5,3 (cũ `#7C88A6`/`#6B7280` chỉ 4,25–4,37 trên nền ô giá, ô lịch, tab bar) |
 | `--gold2` (giá, link, tab active) | `#FBBF24` | `#A34608` | 9,0 / 5,5 |
 | `--green` (lãi) | `#34D399` | `#047857` | 9,0 / 5,4 |
-| `--red` (lỗ) | `#FB7185` | `#DC2626` | 6,4 / 4,7 |
+| `--red` (lỗ) | `#FB7185` | `#C81E1E` | 6,4 / 5,6 — trên nút nền `--red-soft` 4,6 (cũ `#DC2626` chỉ 3,89 ở nút "Xoá hết") |
+| `--blue` (badge BÁN, sáng) | `#60A5FA` | `#1D4ED8` | sáng trên `--blue-soft` 5,5 (cũ `#2563EB` 4,25) |
 
 **Bài học đã trả giá:** ở theme sáng, `--gold2` từng là `#D97706` (3,14:1) và `--green` từng là `#059669` (3,71:1) — tức **giá vàng và số lãi/lỗ, hai thông tin quan trọng nhất của app, đều dưới chuẩn**. Chữ 11–16px không đủ lớn để hưởng ngưỡng "chữ lớn" 3:1 (ngưỡng đó cần ≥24px thường hoặc ≥18,66px đậm).
 

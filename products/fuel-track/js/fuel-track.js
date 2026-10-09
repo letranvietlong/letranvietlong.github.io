@@ -1,6 +1,13 @@
 (function(){
   'use strict';
 
+  // VAPID PUBLIC key (base64url, 87 chars, starts with "B") for price-change
+  // notifications. Its private half lives ONLY in the GitHub secret
+  // PUSH_VAPID_PRIVATE_KEY, and it must be the SAME key as in GoldTrack and
+  // LoveDays (one key pair for all apps — a mismatch makes every push 403).
+  // Empty = notifications off. See docs/fuel-track.md → "Thông báo giá".
+  var VAPID_PUBLIC_KEY = '';
+
   var DATA_BASE = '/products/fuel-track/data/';
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
   var HISTORY_PAGE = 3;
@@ -55,6 +62,39 @@
   }
   function getChanges(){
     return historyDoc && Array.isArray(historyDoc.changes) ? historyDoc.changes : [];
+  }
+  var SHORT_LABELS = { 'e10-ron95-iii':'E10', 'e5-ron92-ii':'E5', 'ron95-iii':'RON 95', 'do-005s-ii':'DO', 'ko':'Dầu hỏa' };
+  function shortLabel(id){ return SHORT_LABELS[id] || itemLabel(id); }
+  // Index of the change point in effect on `day` (last one with date ≤ day),
+  // the same forward-fill as dailySeries; -1 before the first point.
+  function pointIndexOn(day){
+    var changes = getChanges();
+    for(var i = changes.length - 1; i >= 0; i--){ if(changes[i].date <= day) return i; }
+    return -1;
+  }
+  // Each change point is a full snapshot, so an item missing from it (e.g.
+  // RON 95-III after 06/2026) had no listed price that day.
+  function priceOn(id, day){
+    var i = pointIndexOn(day);
+    var p = i >= 0 ? getChanges()[i].prices || {} : {};
+    return p[id] != null ? p[id] : null;
+  }
+  // On an adjustment day the new price only applies from 15:00, so the day
+  // has two list prices: { before, after } (before = null for the first point).
+  function adjustmentOn(id, day){
+    var changes = getChanges();
+    var i = pointIndexOn(day);
+    if(i < 0 || changes[i].date !== day) return null;
+    var after = (changes[i].prices || {})[id];
+    var before = i > 0 ? (changes[i - 1].prices || {})[id] : null;
+    if(after == null || before == null || after === before) return null;
+    return { before: before, after: after };
+  }
+  function itemsOn(day){
+    var i = pointIndexOn(day);
+    if(i < 0) return [];
+    var prices = getChanges()[i].prices || {};
+    return itemOrder().filter(function(id){ return prices[id] != null; });
   }
 
   function changeChip(diff, small){
@@ -454,6 +494,84 @@
     renderHistory();
   });
 
+  // ---------- Kỳ điều chỉnh tới ----------
+  // Weekly on Thursday, effective 15:00 VN (Decree 80/2023). Holidays shift it
+  // and there's no reliable list, so it is labelled "dự kiến". No direction
+  // forecast on purpose: VN prices follow paid Platts data + the stabilisation
+  // fund, which nothing free predicts (see docs/fuel-track.md).
+  var WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  var EFFECTIVE_UTC_HOUR = 8;  // 15:00 VN
+  function nextAdjustment(nowMs){
+    var vn = new Date(nowMs + 7 * 3600000);
+    var y = vn.getUTCFullYear(), m = vn.getUTCMonth(), d = vn.getUTCDate();
+    var today = msToDay(Date.UTC(y, m, d));
+    var changes = getChanges();
+    var last = changes.length ? changes[changes.length - 1].date : null;
+    var days = (4 - vn.getUTCDay() + 7) % 7;
+    if(days === 0){
+      if(last === today) days = 7;
+      // Past 15:00 on Thursday but the hourly bot hasn't recorded it yet.
+      else if(nowMs >= Date.UTC(y, m, d, EFFECTIVE_UTC_HOUR)) return { waiting: true, day: today };
+    }
+    var targetMs = Date.UTC(y, m, d + days, EFFECTIVE_UTC_HOUR);
+    return { waiting: false, day: msToDay(Date.UTC(y, m, d + days)), weekday: WEEKDAYS[(vn.getUTCDay() + days) % 7], leftMs: targetMs - nowMs };
+  }
+  function fmtLeft(ms){
+    var mins = Math.max(0, Math.floor(ms / 60000));
+    var dd = Math.floor(mins / 1440), hh = Math.floor(mins % 1440 / 60), mm = mins % 60;
+    return dd >= 1 ? 'còn ' + dd + ' ngày ' + hh + ' giờ' : 'còn ' + hh + ' giờ ' + mm + ' phút';
+  }
+  function dayMonth(day){ return day.slice(8, 10) + '/' + day.slice(5, 7); }
+  // Last `max` real moves of one item between consecutive change points
+  // (points where only other items moved are skipped).
+  function recentDeltas(id, max){
+    var changes = getChanges(), out = [];
+    for(var i = changes.length - 1; i > 0 && out.length < max; i--){
+      var a = (changes[i - 1].prices || {})[id], b = (changes[i].prices || {})[id];
+      if(a == null || b == null || a === b) continue;
+      out.unshift(b - a);
+    }
+    return out;
+  }
+  function trendInfo(id){
+    var deltas = recentDeltas(id, 4);
+    var today = vnToday();
+    var cur = priceOn(id, today);
+    var base = priceOn(id, msToDay(dayToMs(today) - 30 * DAY_MS));
+    var streak = '';
+    if(deltas.length >= 2){
+      if(deltas.every(function(x){ return x > 0; })) streak = 'Tăng ' + deltas.length + ' kỳ liền';
+      else if(deltas.every(function(x){ return x < 0; })) streak = 'Giảm ' + deltas.length + ' kỳ liền';
+    }
+    return { deltas: deltas, d30: cur != null && base != null ? cur - base : null, base30: base, streak: streak };
+  }
+  function renderForecast(){
+    var el = $('nextContent');
+    if(!historyDoc || !getChanges().length){
+      el.innerHTML = '<p class="state-msg">Chưa có lịch sử giá để tính kỳ tới.</p>';
+      return;
+    }
+    var nx = nextAdjustment(Date.now());
+    var head = nx.waiting ?
+      '<div class="next-when"><span class="next-date">Đang chờ giá kỳ ' + dayMonth(nx.day) + '</span></div>' +
+      '<p class="next-meta">Giá mới áp dụng từ 15:00, app tự cập nhật khi có.</p>' :
+      '<div class="next-when"><span class="next-date">' + nx.weekday + ' ' + dayMonth(nx.day) + ' · 15:00</span></div>' +
+      '<p class="next-meta"><span class="next-left">' + fmtLeft(nx.leftMs) + '</span> · dự kiến</p>' +
+      '<p class="next-note">Có thể dời dịp lễ</p>';
+    var rows = chartItems().map(function(it){
+      var t = trendInfo(it.id);
+      var chips = t.deltas.map(function(dl){ return changeChip(dl, true); }).join('');
+      return '<div class="trend-row" data-item="' + escapeHtml(it.id) + '">' +
+        '<div class="trend-top"><span class="trend-name">' + escapeHtml(it.label) + '</span>' +
+          (t.d30 != null ? '<span class="trend-30"><span class="trend-30-lbl">30N</span>' + rangeChip(t.d30, t.base30) + '</span>' : '') +
+        '</div>' +
+        '<div class="trend-deltas">' + (chips || '<span class="trend-none">Chưa có kỳ đổi giá</span>') +
+          (t.streak ? '<span class="trend-streak">' + t.streak + '</span>' : '') + '</div>' +
+      '</div>';
+    }).join('');
+    el.innerHTML = head + (rows ? '<p class="trend-cap">4 kỳ đổi giá gần nhất</p><div class="trend-list">' + rows + '</div>' : '');
+  }
+
   // ---------- Changelog ----------
   function renderChangelog(){
     var el = $('versionContent');
@@ -468,23 +586,30 @@
       '</div>';
     }).join('');
   }
-  function openSheet(){
-    renderChangelog();
-    $('versionSheet').classList.add('open');
-    $('versionBackdrop').classList.add('open');
+  // ---------- Sheets (shared with fuel-track-log.js) ----------
+  // sheet id → backdrop id; onClose hooks let a sheet clean up however it was
+  // dismissed (button, backdrop, Escape, drag).
+  var SHEETS = { versionSheet: 'versionBackdrop', fillSheet: 'fillBackdrop', vehSheet: 'vehBackdrop', confirmSheet: 'confirmBackdrop' };
+  var sheetHooks = {};
+  var sheetStack = [];
+  function openSheet(id, onClose){
+    sheetHooks[id] = onClose || null;
+    $(id).classList.add('open');
+    $(SHEETS[id]).classList.add('open');
+    sheetStack = sheetStack.filter(function(s){ return s !== id; }).concat(id);
   }
-  function closeSheet(){
-    $('versionSheet').classList.remove('open');
-    $('versionBackdrop').classList.remove('open');
+  function closeSheet(id){
+    if(!$(id).classList.contains('open')) return;
+    $(id).classList.remove('open');
+    $(SHEETS[id]).classList.remove('open');
+    sheetStack = sheetStack.filter(function(s){ return s !== id; });
+    var hook = sheetHooks[id];
+    sheetHooks[id] = null;
+    if(hook) hook();
   }
-  $('btnVersion').addEventListener('click', openSheet);
-  $('versionClose').addEventListener('click', closeSheet);
-  $('versionBackdrop').addEventListener('click', closeSheet);
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && $('versionSheet').classList.contains('open')) closeSheet();
-  });
-  (function enableSheetDrag(){
-    var sheet = $('versionSheet');
+  Object.keys(SHEETS).forEach(function(id){
+    $(SHEETS[id]).addEventListener('click', function(){ closeSheet(id); });
+    var sheet = $(id);
     var handle = sheet.querySelector('.sheet-handle-hit');
     var startY = 0, currentY = 0, dragging = false;
     handle.addEventListener('pointerdown', function(e){
@@ -502,12 +627,324 @@
       dragging = false;
       sheet.style.transition = '';
       sheet.style.transform = '';
-      if(currentY > 120) closeSheet();
+      if(currentY > 120) closeSheet(id);
       currentY = 0;
     }
     handle.addEventListener('pointerup', endDrag);
     handle.addEventListener('pointercancel', endDrag);
-  })();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && sheetStack.length) closeSheet(sheetStack[sheetStack.length - 1]);
+  });
+  $('btnVersion').addEventListener('click', function(){ renderChangelog(); openSheet('versionSheet'); });
+  $('versionClose').addEventListener('click', function(){ closeSheet('versionSheet'); });
+
+  // iOS: 100dvh/svh can stay stale after the keyboard closes; visualViewport
+  // resize is reliable, so sheets size themselves from it (ios-pwa-pitfalls §3).
+  function syncViewport(){
+    if(window.visualViewport) document.documentElement.style.setProperty('--vv-height', Math.round(window.visualViewport.height) + 'px');
+  }
+  syncViewport();
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', syncViewport);
+
+  var toastTimer = null;
+  function toast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    void t.offsetWidth;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){
+      t.classList.remove('show');
+      // Clear the role=status text once hidden so screen readers can't land on a stale message.
+      toastTimer = setTimeout(function(){ if(!t.classList.contains('show')) t.textContent = ''; }, 300);
+    }, 2600);
+  }
+
+  // ---------- Tabs ----------
+  var TAB_VIEWS = { prices: 'viewPrices', log: 'viewLog', settings: 'viewSettings' };
+  var currentTab = 'prices';
+  function switchTab(tab){
+    if(!TAB_VIEWS[tab]) return;
+    currentTab = tab;
+    Object.keys(TAB_VIEWS).forEach(function(key){ $(TAB_VIEWS[key]).hidden = key !== tab; });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabbar-btn'), function(btn){
+      var active = btn.getAttribute('data-tab') === tab;
+      btn.classList.toggle('active', active);
+      if(active) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+    hideCursor();
+    window.scrollTo(0, 0);
+    if(tab === 'settings'){ renderPush(); renderDiag(); }
+    document.dispatchEvent(new CustomEvent('fueltrack:tab', { detail: tab }));
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tabbar-btn'), function(btn){
+    btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
+  });
+
+  // ---------- Thông báo khi giá đổi ----------
+  // The page only subscribes and shows the subscription JSON; the push itself
+  // comes from py/notify_fuel_price.py in the price workflow.
+  var PUSH_STORE = 'fueltrack_push_v1';
+  var PUSH_ICON = '/products/fuel-track/img/fuel-track-icon-180.png';
+  var push = { reg: null, sub: null, busy: false, key: undefined, rec: { deviceLabel: '', lastCopiedEndpointHash: null } };
+
+  function isStandalone(){
+    return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  }
+  function pushSupported(){
+    return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+  }
+  function vapidKey(){
+    if(push.key !== undefined) return push.key;
+    push.key = null;
+    try{
+      var s = VAPID_PUBLIC_KEY;
+      var bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+      var u8 = new Uint8Array(bin.length);
+      for(var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      if(u8.length === 65 && u8[0] === 4) push.key = u8;
+    }catch(e){}
+    return push.key;
+  }
+  function keyMatches(sub, key){
+    var k = sub && sub.options && sub.options.applicationServerKey;
+    if(!k) return true;
+    var a = new Uint8Array(k);
+    if(a.length !== key.length) return false;
+    for(var i = 0; i < a.length; i++) if(a[i] !== key[i]) return false;
+    return true;
+  }
+  function currentSub(){
+    var key = vapidKey();
+    return push.sub && key && keyMatches(push.sub, key) ? push.sub : null;
+  }
+  // Only compared with itself, so a short non-crypto hash is enough.
+  function endpointHash(s){
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for(var i = 0; i < s.length; i++){
+      h1 = Math.imul(h1 ^ s.charCodeAt(i), 16777619) >>> 0;
+      h2 = Math.imul(h2 + s.charCodeAt(i), 2246822519) >>> 0;
+    }
+    return ('0000000' + h1.toString(16)).slice(-8) + ('0000000' + h2.toString(16)).slice(-8);
+  }
+  function loadPushRec(){
+    try{
+      var r = JSON.parse(localStorage.getItem(PUSH_STORE) || 'null');
+      if(!r || typeof r !== 'object') return;
+      if(typeof r.deviceLabel === 'string' && r.deviceLabel.length <= 40) push.rec.deviceLabel = r.deviceLabel;
+      if(typeof r.lastCopiedEndpointHash === 'string' && /^[0-9a-f]{16}$/.test(r.lastCopiedEndpointHash)) push.rec.lastCopiedEndpointHash = r.lastCopiedEndpointHash;
+    }catch(e){}
+  }
+  function savePushRec(){
+    try{ localStorage.setItem(PUSH_STORE, JSON.stringify(push.rec)); }catch(e){}
+  }
+  function pushLabel(){ return $('pushLabel').value.trim().slice(0, 40) || 'iPhone'; }
+  function subJson(sub){
+    var j = sub.toJSON();
+    return JSON.stringify({ label: pushLabel(), endpoint: j.endpoint, expirationTime: j.expirationTime == null ? null : j.expirationTime, keys: j.keys });
+  }
+  function userErr(msg){ var e = new Error(msg); e.userMessage = msg; return e; }
+  function showError(id, msg){
+    $(id).textContent = msg || '';
+    $(id).hidden = !msg;
+  }
+  // Never waits forever: `ready` doesn't settle when the SW failed to install.
+  function swReady(){
+    if(push.reg) return Promise.resolve(push.reg);
+    return new Promise(function(resolve, reject){
+      var t = setTimeout(function(){ reject(userErr('App chưa sẵn sàng chạy nền. Hãy đóng hẳn app, mở lại rồi thử lại.')); }, 8000);
+      navigator.serviceWorker.ready.then(function(reg){ clearTimeout(t); push.reg = reg; resolve(reg); });
+    });
+  }
+  function refreshSub(){
+    if(!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration('/products/fuel-track/').then(function(reg){
+      if(!reg) return;
+      push.reg = reg;
+      return reg.pushManager.getSubscription().then(function(sub){ push.sub = sub; });
+    }).catch(function(){});
+  }
+  function testBlockedReason(){
+    if(typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return 'Gửi thử cần mở app từ icon Màn hình chính (iOS 16.4+).';
+    if(Notification.permission === 'denied') return 'Gửi thử bị tắt vì thông báo đang bị chặn.';
+    return '';
+  }
+  function renderPush(){
+    var perm = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
+    var key = vapidKey(), sub = currentSub();
+    var status = '', ok = false, warn = false, canEnable = false;
+    if(!VAPID_PUBLIC_KEY){
+      status = 'Chưa cấu hình khoá thông báo';
+    } else if(!key){
+      status = 'Khoá thông báo không hợp lệ';
+      warn = true;
+    } else if(!pushSupported() || !isStandalone()){
+      status = 'Chỉ bật được khi mở từ icon Màn hình chính (iOS 16.4+)';
+    } else if(perm === 'denied'){
+      status = 'Đã chặn — bật lại ở Cài đặt iPhone → Thông báo → FuelTrack';
+      warn = true;
+    } else if(sub){
+      ok = true;
+      status = 'Đã bật ✓';
+    } else {
+      canEnable = true;
+      status = perm === 'granted' ? 'Đã cho phép, chưa có mã' : 'Chưa bật trên máy này';
+    }
+    // role=status: only write when the text changes, or it re-announces on every visit.
+    if($('pushStatus').textContent !== status) $('pushStatus').textContent = status;
+    $('pushStatus').classList.toggle('ok', ok);
+    $('pushStatus').classList.toggle('warn', warn);
+    $('pushLabelField').hidden = !key;
+    $('btnPushEnable').hidden = ok || !key;
+    $('btnPushEnable').disabled = !canEnable || push.busy;
+    $('btnPushEnable').textContent = push.busy ? 'Đang bật…' : 'Bật thông báo';
+    var blocked = testBlockedReason();
+    $('btnPushTest').disabled = !!blocked;
+    var note = $('pushTestNote');
+    if(blocked){ note.textContent = blocked; note.hidden = false; }
+    else if(note.getAttribute('data-kind') !== 'result') note.hidden = true;
+    $('pushSubBox').hidden = !sub;
+    if(sub) $('pushSubJson').value = subJson(sub);
+    checkPushChanged();
+  }
+  function checkPushChanged(){
+    var stored = push.rec.lastCopiedEndpointHash;
+    var sub = currentSub();
+    var changed = !!stored && !!vapidKey() && pushSupported() && (!sub || endpointHash(sub.endpoint) !== stored);
+    $('pushChanged').hidden = !changed;
+    // No subscription at all may simply mean notifications were turned off
+    // on purpose — let the user say so, which forgets the stored hash.
+    $('btnPushDismiss').hidden = !changed || !!sub;
+  }
+  function testBody(){
+    var changes = getChanges();
+    if(!changes.length) return 'Thông báo thử trên máy này';
+    var last = changes[changes.length - 1].prices || {};
+    var prev = changes.length > 1 ? changes[changes.length - 2].prices || {} : {};
+    var parts = itemOrder().filter(function(id){ return last[id] != null; }).map(function(id){
+      if(prev[id] == null) return shortLabel(id) + ' ' + fmtVnd(last[id]) + ' (mới)';
+      if(last[id] === prev[id]) return '';
+      var d = last[id] - prev[id];
+      return shortLabel(id) + ' ' + fmtVnd(last[id]) + ' (' + (d > 0 ? '+' : '−') + fmtVnd(Math.abs(d)) + ')';
+    }).filter(Boolean);
+    return parts.join(' · ') || 'Thông báo thử trên máy này';
+  }
+  function initPush(){
+    loadPushRec();
+    $('pushLabel').value = push.rec.deviceLabel;
+    renderPush();
+    refreshSub().then(renderPush);
+  }
+  $('pushLabel').addEventListener('input', function(){
+    var sub = currentSub();
+    if(sub) $('pushSubJson').value = subJson(sub);
+  });
+  $('pushLabel').addEventListener('change', function(){
+    push.rec.deviceLabel = $('pushLabel').value.trim().slice(0, 40);
+    savePushRec();
+  });
+  $('btnPushDismiss').addEventListener('click', function(){
+    push.rec.lastCopiedEndpointHash = null;
+    savePushRec();
+    checkPushChanged();
+  });
+  // requestPermission() must be the first thing in the tap (iOS only shows
+  // the prompt during a user gesture).
+  $('btnPushEnable').addEventListener('click', function(){
+    var key = vapidKey();
+    if(push.busy || !key || !pushSupported()) return;
+    showError('pushError', null);
+    var permP = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+    push.busy = true;
+    renderPush();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== 'granted') throw userErr(perm === 'denied' ? 'Bạn đã chọn Không cho phép. Bật lại trong Cài đặt iPhone → Thông báo → FuelTrack.' : 'Chưa được cho phép. Hãy chạm lại và chọn Cho phép.');
+      return swReady();
+    }).then(function(reg){
+      return reg.pushManager.getSubscription().then(function(old){
+        if(old && keyMatches(old, key)) return old;
+        // A subscription made with another VAPID key can't be reused:
+        // subscribe() would throw InvalidStateError.
+        return (old ? old.unsubscribe().catch(function(){}) : Promise.resolve()).then(function(){
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        });
+      });
+    }).then(function(sub){
+      push.sub = sub;
+      push.rec.deviceLabel = $('pushLabel').value.trim().slice(0, 40);
+      savePushRec();
+    }).catch(function(err){
+      showError('pushError', (err && err.userMessage) || 'Không bật được thông báo (' + (err && err.name || 'lỗi') + '). Hãy thử lại.');
+    }).then(function(){
+      push.busy = false;
+      renderPush();
+      renderDiag();
+    });
+  });
+  $('btnPushCopy').addEventListener('click', function(){
+    var sub = currentSub();
+    if(!sub) return;
+    var ta = $('pushSubJson'), txt = subJson(sub);
+    ta.value = txt;
+    function done(msg){
+      push.rec.lastCopiedEndpointHash = endpointHash(sub.endpoint);
+      push.rec.deviceLabel = $('pushLabel').value.trim().slice(0, 40);
+      savePushRec();
+      checkPushChanged();
+      $('pushCopyNote').textContent = msg;
+    }
+    function fallback(){
+      ta.focus();
+      ta.select();
+      try{ ta.setSelectionRange(0, txt.length); }catch(e){}
+      var ok = false;
+      try{ ok = document.execCommand('copy'); }catch(e){}
+      done(ok ? 'Đã sao chép ✓ Dán vào secret FUEL_PUSH_SUBSCRIPTIONS.' : 'Không tự sao chép được — mã đã được bôi đen, chạm giữ rồi chọn Sao chép.');
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        done('Đã sao chép ✓ Dán vào secret FUEL_PUSH_SUBSCRIPTIONS.');
+      }, fallback);
+    } else fallback();
+  });
+  $('btnPushTest').addEventListener('click', function(){
+    if(testBlockedReason()) return;
+    showError('pushError', null);
+    var note = $('pushTestNote');
+    note.hidden = true;
+    note.removeAttribute('data-kind');
+    var permP = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== 'granted') throw userErr('Cần cho phép thông báo thì mới gửi thử được.');
+      return swReady();
+    }).then(function(reg){
+      return reg.showNotification('Giá xăng dầu (thử)', { body: testBody(), tag: 'fuel-price-test', icon: PUSH_ICON });
+    }).then(function(){
+      note.textContent = 'Đã gửi thử ✓ Không thấy? Xem Cài đặt iPhone → Thông báo.';
+      note.setAttribute('data-kind', 'result');
+      note.hidden = false;
+      renderPush();
+      renderDiag();
+    }).catch(function(err){
+      showError('pushError', (err && err.userMessage) || 'Không gửi thử được (' + (err && err.name || 'lỗi') + ').');
+      renderPush();
+    });
+  });
+
+  function renderDiag(){
+    var probe = getComputedStyle($('safeProbe'));
+    var bar = $('tabbar').getBoundingClientRect();
+    $('diagLine').textContent = [
+      'standalone ' + (isStandalone() ? 'có' : 'không'),
+      'thông báo ' + (typeof Notification === 'undefined' ? 'không hỗ trợ' : Notification.permission),
+      'push ' + (!pushSupported() ? 'không hỗ trợ' : currentSub() ? 'đã đăng ký' : 'chưa đăng ký'),
+      'màn hình ' + screen.height + ' / viewport ' + window.innerHeight,
+      'safe-area ' + parseFloat(probe.paddingTop) + '/' + parseFloat(probe.paddingBottom),
+      'tabbar đáy ' + Math.round(bar.bottom)
+    ].join(' · ');
+  }
 
   // ---------- Tải dữ liệu ----------
   var loading = false;
@@ -525,13 +962,31 @@
     Promise.all([pPrice, pHist, pLog]).then(function(){
       loading = false;
       renderPrices();
+      renderForecast();
       renderChartCard();
       renderHistory();
+      document.dispatchEvent(new Event('fueltrack:history'));
     });
   }
+
+  window.FuelTrackShared = {
+    getChanges: getChanges, priceOn: priceOn, adjustmentOn: adjustmentOn, itemsOn: itemsOn,
+    itemLabel: itemLabel, shortLabel: shortLabel, itemOrder: itemOrder,
+    vnToday: vnToday, fmtVnd: fmtVnd, fmtDate: fmtDate, dayToMs: dayToMs, msToDay: msToDay,
+    escapeHtml: escapeHtml, changeChip: changeChip,
+    openSheet: openSheet, closeSheet: closeSheet, toast: toast, showError: showError,
+    currentTab: function(){ return currentTab; }
+  };
+
+  initPush();
   loadAll(false);
+  // The countdown ticks by the minute.
+  setInterval(function(){ if(document.visibilityState === 'visible') renderForecast(); }, 60000);
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible') loadAll(true);
+    if(document.visibilityState !== 'visible') return;
+    renderForecast();
+    refreshSub().then(renderPush);
+    loadAll(true);
   });
 
   // Offline: see products/fuel-track/sw-fuel-track.js for why the shell lives

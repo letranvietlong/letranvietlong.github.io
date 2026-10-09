@@ -5,6 +5,15 @@ on:
     # Off the :00/:30 marks on purpose — GitHub queues those slots heavily and often skips them.
     - cron: "7,37 * * * *"
   workflow_dispatch:
+    inputs:
+      notify_force:
+        description: "Thông báo: gửi kể cả khi giá không đổi / giờ yên lặng"
+        type: boolean
+        default: false
+      notify_dry_run:
+        description: "Thông báo: chạy thử, không gửi, không ghi trạng thái"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -27,18 +36,62 @@ jobs:
 
       - run: python products/gold-track/py/fetch_gold_price.py
 
+      # Thông báo đẩy khi giá đổi. Mọi bước push đều continue-on-error: lỗi
+      # gửi / thiếu secret không bao giờ được chặn việc commit giá.
+      - name: Check push config
+        id: push_cfg
+        env:
+          SUBS: ${{ secrets.GOLD_PUSH_SUBSCRIPTIONS }}
+        run: |
+          if [ -n "$SUBS" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Push chưa cấu hình (GOLD_PUSH_SUBSCRIPTIONS trống) — bỏ qua."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pywebpush
+        if: steps.push_cfg.outputs.configured == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        run: pip install pywebpush==2.5.0
+
+      - name: Notify price change
+        if: steps.push_cfg.outputs.configured == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          PUSH_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
+          GOLD_PUSH_SUBSCRIPTIONS: ${{ secrets.GOLD_PUSH_SUBSCRIPTIONS }}
+          PUSH_VAPID_SUB: ${{ secrets.PUSH_VAPID_SUB }}
+          FORCE: ${{ inputs.notify_force }}
+          DRY_RUN: ${{ inputs.notify_dry_run }}
+        run: |
+          ARGS=""
+          if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python products/gold-track/py/notify_gold_price.py $ARGS
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add products/gold-track/data/gold-price.json products/gold-track/data/gold-price-history.json
+          # Chỉ có sau lượt push đầu tiên đã cấu hình; git add file không tồn
+          # tại là lỗi fatal và sẽ làm hỏng commit giá.
+          if [ -f products/gold-track/data/push-state.json ]; then git add products/gold-track/data/push-state.json; fi
           if git diff --cached --quiet; then
             echo "No price change to commit."
             exit 0
           fi
-          BUY=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"buy\"]:,}'.replace(',', '.'))")
-          SELL=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"sell\"]:,}'.replace(',', '.'))")
-          git commit -m "Auto-update gold price: mua ${BUY} / ban ${SELL}"
+          if git diff --cached --quiet -- products/gold-track/data/gold-price.json products/gold-track/data/gold-price-history.json; then
+            MSG="GoldTrack push state: $(date -u +%F)"
+          else
+            BUY=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"buy\"]:,}'.replace(',', '.'))")
+            SELL=$(python -c "import json;d=json.load(open('products/gold-track/data/gold-price.json'))['ngoc-thinh']['types']['9999-nhan-tron'];print(f'{d[\"sell\"]:,}'.replace(',', '.'))")
+            MSG="Auto-update gold price: mua ${BUY} / ban ${SELL}"
+          fi
+          git commit -m "$MSG"
 
           for i in 1 2 3 4 5; do
             git fetch origin main
