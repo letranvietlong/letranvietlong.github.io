@@ -1,6 +1,6 @@
 ---
-name: ui-craft
-description: Chuẩn mực craft giao diện cho site này — token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính (kể cả phông thiếu trên iPhone), biểu đồ, cách hiển thị lãi/lỗ không cộng trùng, độ sâu/viền, chuyển động, và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, chọn màu/phông, vẽ biểu đồ, hiển thị số liệu tài chính, thêm component mới, hoặc review UI trước khi giao.
+name: LongLTV_ui-craft
+description: Chuẩn mực craft giao diện cho site này — token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính (kể cả phông thiếu trên iPhone), biểu đồ, cách hiển thị lãi/lỗ không cộng trùng, độ sâu/viền, chuyển động, bảng Nên/Không nên về form, căn lề, câu chữ, màu theo nghĩa, vùng chạm, skeleton, chồng lớp (§12), và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, làm form nhập liệu, hộp xác nhận, menu/tab bar, trạng thái tải, chọn màu/phông/gradient, vẽ biểu đồ, hiển thị số liệu tài chính, thêm component mới, hoặc review UI trước khi giao.
 ---
 
 # UI Craft
@@ -8,6 +8,8 @@ description: Chuẩn mực craft giao diện cho site này — token màu đã �
 `ui-ux-pro-max` trả lời *"chọn phong cách/bảng màu nào"*. Tài liệu này trả lời câu khó hơn: **"vì sao cái này trông nghiệp dư, và sửa thế nào cho lên hạng"** — dựa trên số đo thật của repo này, không phải lý thuyết chung.
 
 Nguyên tắc bao trùm: **đo, đừng nhìn**. Mắt người rất tệ trong việc phán đoán tương phản trên nền bán trong suốt. Mọi con số dưới đây đều lấy từ phép đo thật trên DOM đã render.
+
+Làm màn hình/form/component mới thì đọc **§12 (Nên / Không nên)** trước, soát bằng §12.7 trước khi giao; §1–§10 là chi tiết đã đo của repo.
 
 ---
 
@@ -73,7 +75,7 @@ Hệ quả thiết kế: **đừng hardcode rgba của một theme rồi dùng c
 - Micro-interaction: **150–250ms**. Dưới 100ms là giật, trên 350ms là lề mề.
 - Chỉ animate `transform` và `opacity`. Animate `width/height/padding/font-size` → reflow, giật, và **nếu phần tử nằm trong vùng cuộn thì nó đánh nhau với ngón tay người dùng** (đã gặp: đặt `scrollTop=100` chỉ nhận được 79).
 - Vào nhanh ra chậm: `cubic-bezier(.32,.72,0,1)` cho sheet trượt lên — cảm giác iOS.
-- **Cảnh báo:** đừng đặt `transform` động lên phần tử con của `position:sticky` — WebKit render sai (xem skill `ios-pwa-pitfalls`).
+- **Cảnh báo:** đừng đặt `transform` động lên phần tử con của `position:sticky` — WebKit render sai (xem skill `LongLTV_ios-pwa-pitfalls`).
 - Tôn trọng `prefers-reduced-motion`.
 
 ## 6. Công thức component kiểu iOS (đã chạy thật trong repo)
@@ -177,3 +179,78 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
 2. **Đúng** — số liệu hiển thị chính xác, trạng thái phản ánh đúng dữ liệu.
 3. **Mượt** — không giật, không nhảy layout.
 4. **Đẹp** — sau cùng, và thường tự đến khi ba mục trên đã chuẩn.
+
+## 12. Nên / Không nên — bố cục, form, điều khiển, câu chữ
+
+Bộ quy tắc người dùng chốt (10/2026, từ 21 ảnh mẫu Do/Don't). Mỗi dòng là một quyết định mặc định: làm theo cột **Nên**, trừ khi có lý do ghi được ra. Cột cuối là cách kiểm, để reviewer/tester không phải phán bằng cảm giác.
+
+### 12.1 Form
+
+| # | Nên | Không nên | Kiểm |
+|---|---|---|---|
+| F1 | **Nhãn nằm TRÊN ô nhập**, mọi nhãn/ô/nút chung **một mép trái**; ô và nút chính rộng hết form | Nhãn bên trái ô (mắt phải đi zíc-zắc, nhãn dài bị xuống dòng, ô bị bóp hẹp trên điện thoại) | `label.getBoundingClientRect().bottom <= input.top`; mọi `left` bằng nhau |
+| F2 | Ô nhập có **placeholder là ví dụ đúng định dạng** (`13.260.000`, `dd/mm/yyyy`), nhãn vẫn luôn hiện | Dùng placeholder thay nhãn (gõ vào là mất ngữ cảnh) | — |
+| F3 | **2–3 lựa chọn → bày hết ra** (segmented control / radio / chip). Ví dụ: Mua/Bán, chủ sở hữu Viết Long/Minh Thư | `<select>` cho 2–3 giá trị (thêm 2 cú chạm, giấu mất lựa chọn) | grep `<select`, đếm `<option>` ≤ 3 |
+| F4 | **Danh sách dài (>~10) → gõ để lọc + cuộn** | `<select>` dài chỉ cuộn | — |
+| F5 | **Điều khiển sinh ra cho ngón tay**: bánh xe ngày/giờ kiểu iOS (LoveDays đã có), công tắc bật/tắt, stepper, sheet trượt lên | Ba `<select>` Giờ/Phút/AM cạnh nhau, ô ngày tí hon kèm icon lịch, checkbox 16px | vùng chạm ≥44px (§8) |
+| F6 | **Form dài (>~6 ô hoặc quá một màn) → chia bước, có thanh tiến độ** (bước đã xong / đang ở / còn lại), bước không bắt buộc có **Bỏ qua** cạnh **Tiếp** | Một cột ô nhập dài cuộn mãi không biết còn bao nhiêu | — |
+| F7 | **Lỗi hiện ngay tại ô sai + nói rõ vì sao + cách sửa**: viền đỏ ở ô, dòng chữ dưới ô; nhiều điều kiện thì liệt kê từng điều kiện đạt/chưa đạt | Một dòng "Có lỗi" chung chung ở đầu form; chỉ đổi màu viền mà không có chữ | ô lỗi có `aria-invalid` + `aria-describedby` trỏ tới câu lỗi |
+| F8 | Màn giới thiệu/hướng dẫn lần đầu **luôn có Bỏ qua** | Bắt bấm "Tiếp" qua hết mới vào được app | — |
+
+Không mâu thuẫn với `LongLTV_user-data-safety`: chia bước thì dữ liệu các bước trước phải còn nguyên khi lùi lại, và làm mới nền không được đụng form đang mở.
+
+### 12.2 Chữ và căn lề
+
+| # | Nên | Không nên |
+|---|---|---|
+| T1 | **Đoạn ≥4 dòng → căn trái.** Căn giữa chỉ cho tiêu đề, con số lớn, câu ≤3 dòng (empty state, hộp xác nhận) | Căn giữa đoạn dài — mép trái răng cưa, mắt mất điểm bắt đầu dòng. Kiểm ở **390px**: câu 2 dòng trên desktop thành 5 dòng trên điện thoại |
+| T2 | **Phông đơn giản, dễ đọc** cho mọi chữ giao diện: phông hệ thống hoặc stack đang dùng (§3). Phông trang trí chỉ cho logo / một tiêu đề lớn | Phông kiểu cách (script, display nét mảnh, bo méo) cho nhãn, nút, số liệu, đoạn văn. Phông mới còn phải có trên iOS và đủ dấu tiếng Việt |
+| T3 | **Câu chữ như người nói**, nút là động từ nói đúng việc sắp xảy ra: "Lưu giao dịch", "Chụp lại", "Trông ổn rồi", "Xoá 3 giao dịch" | Giọng máy: "Xác nhận và tiếp tục", "Thao tác thành công", "OK/Huỷ" cho hành động có hậu quả |
+| T4 | **Gọn nhưng đủ nghĩa**: bỏ câu giải thích thừa, GIỮ nhãn, đơn vị, trạng thái — "Kỳ #3", "42%", "đ/chỉ", "cập nhật 14:05" | "Siêu tối giản": con số trần không đơn vị, `#3` không biết là gì, thanh tiến độ không có %, icon không chú thích |
+
+T4 giải quyết chỗ dễ hiểu lầm: người dùng từng yêu cầu LoveDays "hạn chế bớt chữ" — nghĩa là cắt **văn xuôi**, không cắt **nhãn**. Phép thử: che phần chữ định bỏ, một người chưa dùng app còn hiểu con số/nút đó là gì không? Không → giữ.
+
+### 12.3 Màu
+
+| # | Nên | Không nên |
+|---|---|---|
+| C1 | **Giảm bão hoà trên nền tối**: accent dịu, sáng hơn (kiểu `#60A5FA`, `#FBBF24` ở §1) | Màu bão hoà 100% trên nền tối (`#0000FF`, `#FF0000`) — chói, rung mắt, chữ trắng đặt lên khó đọc. Đo lại tương phản sau khi đổi (§8) |
+| C2 | **Màu theo nghĩa**: đỏ = xoá / nguy hiểm / lỗ; xanh lá = lãi / thành công; màu thương hiệu = hành động chính an toàn. Nút "Xoá" trong hộp xác nhận là **đỏ**, nút "Huỷ" trung tính | Nút xoá mang màu thương hiệu giống nút "Lưu" — tay quen bấm nút chính sẽ xoá nhầm |
+| C3 | **Phân loại trạng thái bằng huy hiệu màu + chữ** (MUA/BÁN, tăng/giảm/không đổi, đã chốt/chưa chốt), nền huy hiệu theo §2 | Trạng thái là dòng chữ xám lẫn vào phụ đề. Ngược lại cũng sai: **chỉ** màu mà không có chữ/mũi tên (§7) |
+| C4 | **Gradient mượt**: hai màu cùng họ, lệch sắc độ ≤ ~40°, hoặc cùng màu khác độ sáng (`--gold2`→đậm hơn, hồng `#E8507F`→`#C2185B` của LoveDays) | Gradient nhảy hai màu đối nhau (đỏ→xanh dương) — vùng giữa ra màu bùn. Chữ đặt trên gradient phải đo tương phản ở **cả hai đầu** |
+
+Màu tăng/giảm của giá vẫn theo token `--green`/`--red` (§1); C2 không cho phép dùng đỏ để "làm nổi" thứ không nguy hiểm.
+
+### 12.4 Điều hướng và vùng chạm
+
+| # | Nên | Không nên |
+|---|---|---|
+| N1 | **Icon đi kèm nhãn** ở menu, tab bar, danh sách cài đặt | Chỉ chữ (khó quét mắt) hoặc chỉ icon (phải đoán). Nút icon-only chỉ chấp nhận cho ký hiệu phổ quát (✕, ‹, ⋯) và phải có `aria-label` |
+| N2 | **Vùng chạm là cả ô**, không phải riêng hình icon: mục tab bar chia đều bề ngang, cao ≥44px; dòng danh sách chạm được trên toàn dòng | `<a>` chỉ bọc quanh icon 24px; padding đặt ở thẻ cha thay vì thẻ nhận chạm |
+
+Kiểm N2: `getBoundingClientRect()` của **phần tử nhận sự kiện** (không phải icon con) — rộng ≈ bề ngang thanh ÷ số mục, cao ≥44.
+
+### 12.5 Tải, hình ảnh, chiều sâu
+
+| # | Nên | Không nên |
+|---|---|---|
+| L1 | **Khung xương (skeleton) đúng hình bố cục sắp hiện** khi tải nội dung màn hình (FuelTrack đã dùng): khối xám cùng kích thước card/dòng thật để không nhảy layout | Màn trắng với một vòng xoay ở giữa. Vòng xoay chỉ dùng **trong nút** đang xử lý hoặc thao tác <1 giây |
+| L2 | Skeleton tôn trọng `prefers-reduced-motion`, không để mãi: lỗi/offline phải chuyển sang trạng thái lỗi có nút thử lại (§7) | Skeleton chạy vô hạn khi fetch đã hỏng |
+| I1 | **Hình minh hoạ đúng nội dung** đang nói, cùng tông màu sản phẩm | Ảnh kho chung chung cho "đẹp"; ảnh nặng làm chậm lần tải đầu |
+| D1 | **Chồng lớp có chủ đích để tạo chiều sâu**: avatar đè mép ảnh bìa (LoveDays), chip nổi trên ảnh, sheet đè lên trang | Mọi khối xếp rời thành hàng phẳng. Ngược lại: chồng lớp che chữ/vùng chạm, hoặc phần đè bị `overflow:hidden` của cha cắt mất |
+
+### 12.6 Khi hai quy tắc kéo ngược nhau
+
+- **§11 thắng §12**: đọc được và đúng số trước, rồi mới tới mẫu trình bày. Chồng lớp, gradient, huy hiệu màu đều phải qua phép đo tương phản §8.
+- **Điều khiển cảm ứng (F5) vs. gõ nhanh**: số tiền, số lượng vẫn là ô gõ với `inputmode="decimal"` — bánh xe chỉ hợp với tập giá trị nhỏ có thứ tự (ngày, giờ).
+- **Chia bước (F6) vs. sửa nhanh**: form thêm mới dài thì chia bước; form **sửa** một bản ghi có sẵn giữ một màn để nhảy thẳng tới ô cần sửa.
+- **Skeleton (L1) vs. dữ liệu đã có trong cache**: có bản cũ thì hiện bản cũ kèm "đang cập nhật…", không thay bằng skeleton.
+
+### 12.7 Soát nhanh trước khi giao một màn hình
+
+- [ ] Nhãn trên ô, một mép trái (F1); 2–3 lựa chọn bày ra, không `<select>` (F3)
+- [ ] Lỗi nằm tại ô, nói rõ vì sao (F7); form dài có bước + tiến độ (F6); onboarding có Bỏ qua (F8)
+- [ ] Không đoạn căn giữa nào ≥4 dòng ở 390px (T1); nút là động từ đời thường (T3); số nào cũng có nhãn + đơn vị (T4)
+- [ ] Nút xoá màu đỏ, khác hẳn nút chính (C2); trạng thái có huy hiệu màu **và** chữ (C3); không màu bão hoà tối đa trên nền tối (C1); gradient cùng họ màu (C4)
+- [ ] Mục menu có icon + nhãn (N1); vùng chạm là cả ô ≥44px (N2)
+- [ ] Đang tải = skeleton đúng hình, có đường ra khi lỗi (L1–L2)

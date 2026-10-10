@@ -30,7 +30,7 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Có đường nào khiến dữ liệu local bị bản Gist cũ ghi đè không? (cờ `goldtrack_gist_dirty_v1` phải được tôn trọng khi khởi động)
 - [ ] Thao tác xoá/ghi đè có xác nhận hoặc hoàn tác không?
 - [ ] Import/export còn giữ đủ field không? (`isValidTx` không lọc field lạ — field mới tự đi qua được)
-- [ ] Kéo dữ liệu từ Gist có thể đè sửa đổi cục bộ xảy ra **trong lúc** request đang bay không? Lựa chọn "giữ dữ liệu máy này" có thật sự đẩy lên/đánh dấu dirty không? (cả hai đã gây mất dữ liệu thật — skill `user-data-safety` §1)
+- [ ] Kéo dữ liệu từ Gist có thể đè sửa đổi cục bộ xảy ra **trong lúc** request đang bay không? Lựa chọn "giữ dữ liệu máy này" có thật sự đẩy lên/đánh dấu dirty không? (cả hai đã gây mất dữ liệu thật — skill `LongLTV_user-data-safety` §1)
 - [ ] Handler `visibilitychange`/timer có render lại hoặc tự điền/tính lại giá trị trong form đang mở không? (lỗi thật FuelTrack: quay lại app là giá/tiền đổi âm thầm)
 - [ ] Xoá bản ghi có kiểm ràng buộc sổ sách không? Nút hoàn tác có bấm được bằng cú chạm thật không (`pointer-events` của wrapper toast)?
 - [ ] Khôi phục từ file: validate từng bản ghi, ngày tương lai, tra id bằng Map/hasOwnProperty, giới hạn xuất = giới hạn nhập, bước lưu bản hiện tại trước khi đè?
@@ -44,7 +44,7 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Fetch handler có khớp điều hướng có query string (`?fbclid=`) và URL thư mục không (`ignoreSearch`, thư mục → `index.html`)? Sửa `sw-core.js` đã bump `CACHE_NAME` + `?v=` của vỏ (LoveDays: cả `?v=` của `love-days-core.js` trong core) chưa?
 - [ ] Handler `push` có luôn kết thúc bằng `showNotification` không? Cắt chuỗi theo ký tự, không `.slice` UTF-16?
 
-### 3b. Workflow GitHub Actions / thông báo đẩy (skill `web-push`)
+### 3b. Workflow GitHub Actions / thông báo đẩy (skill `LongLTV_web-push`)
 - [ ] Bước "đã cấu hình" chỉ dựa vào secret subscriptions của chính app? (dựa vào khoá dùng chung = đỏ 6 lần/ngày)
 - [ ] Bước push có `continue-on-error` + `timeout-minutes`, commit giá vẫn chạy khi push/pip lỗi, `git add` file state có guard `[ -f ]`, commit message `python -c` chịu được dữ liệu thiếu?
 - [ ] Log có in endpoint/key/`str(e)` không? Inputs/secrets chỉ qua `env:`?
@@ -64,6 +64,16 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Có con số nào cộng trùng không? (vd lãi/lỗ chưa chốt trên từng lệnh mua trong khi lệnh bán đã chốt phần đó)
 - [ ] Báo cáo theo kỳ có trộn lãi chưa chốt vào một kỳ cụ thể không? Tổng lãi/lỗ theo ngày có khớp tổng ở màn tổng quan không?
 - [ ] Biểu đồ có kéo giãn trục Y để chứa đường tham chiếu ở xa, làm biến động thật trông như đi ngang không?
+
+### 4c. Mẫu giao diện Nên/Không nên (skill `LongLTV_ui-craft` §12 — chỉ soát khi diff đụng HTML/CSS/chữ hiển thị)
+- [ ] Form: nhãn nằm **trên** ô, chung một mép trái? Có `<select>` nào chỉ 2–3 lựa chọn (phải là segmented/radio)? Lỗi hiện **tại ô sai** kèm lý do, hay một dòng chung chung?
+- [ ] Nút xoá/huỷ dữ liệu có màu **đỏ**, khác hẳn nút chính không? (cùng màu thương hiệu = bấm nhầm theo thói quen)
+- [ ] Có đoạn chữ căn giữa nào thành ≥4 dòng ở 390px không? Chữ nút có phải động từ đời thường nói đúng việc sắp xảy ra không?
+- [ ] "Gọn" có cắt nhầm nhãn/đơn vị/% làm con số thành vô nghĩa không? Trạng thái có huy hiệu màu **và** chữ không?
+- [ ] Màu mới trên nền tối có bão hoà tối đa không? Gradient có nhảy hai họ màu đối nhau không? Chữ trên gradient/lớp chồng đã đo tương phản chưa?
+- [ ] Vùng chạm là cả ô (đo phần tử nhận sự kiện, không phải icon)? Mục menu có icon **kèm** nhãn?
+- [ ] Trạng thái tải là skeleton đúng hình bố cục (không phải màn trắng + vòng xoay), và có đường ra khi fetch lỗi?
+- [ ] Phông mới: đơn giản, có trên iOS, đủ dấu tiếng Việt?
 
 ### 5. Việc bị bỏ sót
 - [ ] Thay đổi người dùng thấy được → đã bump `products/<sản phẩm>/data/changelog.json` của đúng sản phẩm (cả field `"version"` ở đầu) chưa?

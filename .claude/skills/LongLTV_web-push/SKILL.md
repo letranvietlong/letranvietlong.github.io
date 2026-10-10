@@ -1,5 +1,5 @@
 ---
-name: web-push
+name: LongLTV_web-push
 description: Kiến trúc Web Push (thông báo đẩy + số trên icon) cho các app iPhone trong repo — một cặp khoá VAPID dùng chung, subscription riêng từng app/máy, gửi từ GitHub Actions không cần server, thư viện chung .github/scripts/web_push.py, handler push trong service worker, giao diện bật thông báo, và cách test bằng push server giả + CDP. Dùng khi thêm/sửa thông báo cho GoldTrack/FuelTrack/LoveDays hoặc app mới, khi workflow push đỏ, khi thông báo không tới, hoặc khi đụng tới secret PUSH_/LOVE_/GOLD_/FUEL_.
 ---
 

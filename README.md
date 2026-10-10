@@ -12,7 +12,7 @@
 
 ## 📖 Giới thiệu
 
-Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](products/) — mỗi sản phẩm có folder riêng mang tên kebab-case, kể cả sản phẩm chỉ có một file HTML tự chứa (inline CSS/JS). Sản phẩm quy mô lớn có thêm subfolder theo loại file bên trong (xem [products/worldcup-2026/](products/worldcup-2026/) làm ví dụ). Không có build step ở bất kỳ đâu, deploy thẳng bằng GitHub Pages. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `project-structure` ([.claude/skills/project-structure/SKILL.md](.claude/skills/project-structure/SKILL.md)).
+Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt **side project độc lập**, gom trong [products/](products/) — mỗi sản phẩm có folder riêng mang tên kebab-case, kể cả sản phẩm chỉ có một file HTML tự chứa (inline CSS/JS). Sản phẩm quy mô lớn có thêm subfolder theo loại file bên trong (xem [products/worldcup-2026/](products/worldcup-2026/) làm ví dụ). Không có build step ở bất kỳ đâu, deploy thẳng bằng GitHub Pages. Quy tắc đặt tên/cấu trúc đầy đủ nằm ở skill `LongLTV_project-structure` ([.claude/skills/LongLTV_project-structure/SKILL.md](.claude/skills/LongLTV_project-structure/SKILL.md)).
 
 ## 🧩 Products
 

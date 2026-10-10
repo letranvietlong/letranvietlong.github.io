@@ -1,5 +1,5 @@
 ---
-name: ios-pwa-pitfalls
+name: LongLTV_ios-pwa-pitfalls
 description: Cạm bẫy khi làm web app chạy như app trên iPhone (Add to Home Screen / standalone PWA) — status bar black-translucent làm hụt viewport, safe area, chiều cao viewport, bàn phím ảo, phông/chữ số thiếu trên iOS, bộ nhớ app Màn hình chính tách với Safari, service worker scope/cache, bug render của WebKit. Dùng khi tạo trang mới có thanh menu/nút cố định, khi sửa lỗi giao diện chỉ xuất hiện trên iPhone thật, lỗi thanh menu/header bị lệch hay hở đáy, dữ liệu "biến mất" khi mở từ icon, lỗi offline, hoặc khi thấy "sửa mãi không hết".
 ---
 
@@ -65,7 +65,7 @@ Service worker **chỉ điều khiển được trang ngang hàng hoặc nằm d
 ```
 SecurityError: The path of the provided scope ('/') is not under the max scope allowed ('/js/').
 ```
-Mở rộng scope cần HTTP header `Service-Worker-Allowed`, mà **GitHub Pages không cho tuỳ chỉnh header**. → File service worker phải nằm ở **cấp thư mục cha thấp nhất bao phủ đủ mọi trang/asset nó cần quản** — KHÔNG mặc định là root. Ví dụ GoldTrack chỉ cần quản chính nó nên vỏ nằm trong `products/gold-track/`, không phải repo root (xem skill `project-structure`). Chỉ đặt ở root khi thật sự cần quản nhiều sản phẩm cùng lúc.
+Mở rộng scope cần HTTP header `Service-Worker-Allowed`, mà **GitHub Pages không cho tuỳ chỉnh header**. → File service worker phải nằm ở **cấp thư mục cha thấp nhất bao phủ đủ mọi trang/asset nó cần quản** — KHÔNG mặc định là root. Ví dụ GoldTrack chỉ cần quản chính nó nên vỏ nằm trong `products/gold-track/`, không phải repo root (xem skill `LongLTV_project-structure`). Chỉ đặt ở root khi thật sự cần quản nhiều sản phẩm cùng lúc.
 
 **Di chuyển vỏ đã có registration thật trên site đang live**: trình duyệt người dùng cũ vẫn giữ registration ở scope cũ tới khi bị unregister — không tự hết hạn. Gọi `navigator.serviceWorker.getRegistrations()` và unregister registration có scope cũ trước khi đăng ký registration mới, nếu không người dùng cũ sẽ kẹt 2 service worker chồng nhau vô thời hạn.
 
@@ -160,10 +160,10 @@ Bắt buộc với sản phẩm lưu dữ liệu người dùng:
 
 ## 15. `visibilitychange` bắn MỖI lần quay lại app — làm mới nền không được đụng form đang mở
 
-Trên iPhone người dùng thường chuyển sang Ảnh/Tin nhắn (xem hoá đơn, mã) rồi quay lại giữa lúc đang nhập form. Mỗi lần quay lại, handler `visibilitychange` (tải lại dữ liệu, render lại) chạy. Nếu nó render lại form hoặc tự điền/tính lại giá trị → dữ liệu người dùng bị đổi âm thầm (lỗi thật FuelTrack: giá và số tiền đổi khi quay lại app). Quy tắc: làm mới nền chỉ cập nhật phần hiển thị không có input đang mở; ô người dùng đã đặt thì không bao giờ ghi đè. Chi tiết và cách test: skill `user-data-safety` §2.
+Trên iPhone người dùng thường chuyển sang Ảnh/Tin nhắn (xem hoá đơn, mã) rồi quay lại giữa lúc đang nhập form. Mỗi lần quay lại, handler `visibilitychange` (tải lại dữ liệu, render lại) chạy. Nếu nó render lại form hoặc tự điền/tính lại giá trị → dữ liệu người dùng bị đổi âm thầm (lỗi thật FuelTrack: giá và số tiền đổi khi quay lại app). Quy tắc: làm mới nền chỉ cập nhật phần hiển thị không có input đang mở; ô người dùng đã đặt thì không bao giờ ghi đè. Chi tiết và cách test: skill `LongLTV_user-data-safety` §2.
 
 Ngược lại, thứ **cần** tự cập nhật khi app để mở lâu (vd thẻ "Đang chờ giá kỳ…") không được chỉ dựa vào `visibilitychange`: `setInterval` chỉ render lại thì dữ liệu vẫn cũ — phải fetch lại (`cache:'no-store'`) khi đang ở trạng thái chờ. Và đừng gắn `aria-live` lên vùng bị render lại theo timer (VoiceOver đọc lại cả thẻ mỗi phút).
 
 ## 16. Thông báo đẩy và số trên icon
 
-Chỉ chạy ở app mở từ icon Màn hình chính (iOS 16.4+), xin quyền trong cú chạm, push nào cũng phải hiện thông báo (không thì iOS thu hồi subscription). Toàn bộ kiến trúc, secret, workflow và cách test: skill `web-push`.
+Chỉ chạy ở app mở từ icon Màn hình chính (iOS 16.4+), xin quyền trong cú chạm, push nào cũng phải hiện thông báo (không thì iOS thu hồi subscription). Toàn bộ kiến trúc, secret, workflow và cách test: skill `LongLTV_web-push`.

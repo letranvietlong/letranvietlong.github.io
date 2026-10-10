@@ -673,7 +673,7 @@
   $('versionClose').addEventListener('click', function(){ closeSheet('versionSheet'); });
 
   // iOS: 100dvh/svh can stay stale after the keyboard closes; visualViewport
-  // resize is reliable, so sheets size themselves from it (ios-pwa-pitfalls §3).
+  // resize is reliable, so sheets size themselves from it (LongLTV_ios-pwa-pitfalls §3).
   function syncViewport(){
     if(window.visualViewport) document.documentElement.style.setProperty('--vv-height', Math.round(window.visualViewport.height) + 'px');
   }

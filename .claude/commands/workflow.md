@@ -9,9 +9,9 @@ Thực hiện yêu cầu sau bằng pipeline tuần tự, **mỗi bước nhận
 ---
 
 ### Bước 0 — Phân loại và chuẩn bị (người điều phối tự làm)
-- **Tầm thường** (đổi text/màu/thứ tự, typo): nói thẳng là bỏ qua pipeline, sửa trực tiếp, chạy nhanh một lần kiểm chứng bằng `.claude/tools` (skill `browser-testing`), rồi kết thúc.
+- **Tầm thường** (đổi text/màu/thứ tự, typo): nói thẳng là bỏ qua pipeline, sửa trực tiếp, chạy nhanh một lần kiểm chứng bằng `.claude/tools` (skill `LongLTV_browser-testing`), rồi kết thúc.
 - `git status --short`: ghi nhận file đã thay đổi từ trước — có thể của **một phiên khác** đang làm song song (xem `CLAUDE.md`). Không đụng tới chúng.
-- **Lỗi chỉ trên iPhone thật**: trước hết lấy số đo thật (dòng chẩn đoán / đo trên ảnh người dùng gửi — skill `ios-pwa-pitfalls`), rồi mới lập kế hoạch sửa. Đoán mò đã từng làm hỏng thêm (GoldTrack v1.53).
+- **Lỗi chỉ trên iPhone thật**: trước hết lấy số đo thật (dòng chẩn đoán / đo trên ảnh người dùng gửi — skill `LongLTV_ios-pwa-pitfalls`), rồi mới lập kế hoạch sửa. Đoán mò đã từng làm hỏng thêm (GoldTrack v1.53).
 - Yêu cầu mơ hồ ("nâng cấp", "thêm thông tin hữu ích") → hỏi người dùng chọn hướng cụ thể trước khi chạy agent.
 
 ### Bước 1 — Planning
@@ -24,7 +24,7 @@ Gọi `coder` (foreground). Prompt phải **tự chứa**: nội dung kế hoạ
 → **Tự đọc `git diff`** xác nhận đúng thứ đã định; đọc mục "chỗ làm khác kế hoạch" của coder.
 
 ### Bước 3 — Testing
-Gọi `tester` (foreground). Truyền: thay đổi vừa làm, **điều cần chứng minh**, kịch bản dữ liệu + bảng số kỳ vọng. Nhắc dùng `.claude/tools` (skill `browser-testing`).
+Gọi `tester` (foreground). Truyền: thay đổi vừa làm, **điều cần chứng minh**, kịch bản dữ liệu + bảng số kỳ vọng. Nhắc dùng `.claude/tools` (skill `LongLTV_browser-testing`).
 → Nếu coder đã tự chạy Playwright với số khớp tính tay, người điều phối có thể tự chạy lại script đó + một ca biên thay cho tester — nói rõ đã làm vậy.
 → FAIL: quay lại bước 2 với thông tin lỗi cụ thể. Tối đa 2 vòng, sau đó báo người dùng.
 → **Thay đổi lớn hoặc đụng dữ liệu người dùng/đồng bộ/workflow bot**: thêm một vòng **bug hunt** — tester mới (không xem báo cáo coder) test khám phá theo mục "bug hunt" trong `tester.md`. Vòng này từng tìm ra 3 lỗi mất dữ liệu mà coder tự test 100% PASS vẫn sót (Gist "Giữ máy này", race khi kéo Gist, form bị ghi đè khi quay lại app).

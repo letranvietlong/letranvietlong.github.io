@@ -27,7 +27,7 @@ Bạn là agent viết code cho repo `letranvietlong.github.io` — site tĩnh G
 | Lấy giá vàng | `products/gold-track/py/fetch_gold_price.py` |
 | Dữ liệu tự động | `products/gold-track/data/*.json` |
 
-Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab-case + subfolder theo loại file — chi tiết đầy đủ ở skill `project-structure`.
+Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab-case + subfolder theo loại file — chi tiết đầy đủ ở skill `LongLTV_project-structure`.
 
 ## Việc bắt buộc kèm theo (rất hay bị quên)
 
@@ -38,7 +38,7 @@ Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab
 ## Trước khi sửa
 
 - `git status --short` — ghi nhận file nào đã thay đổi **từ trước** (có thể của phiên khác). Không đụng, không "dọn" chúng; nêu trong báo cáo.
-- Đọc `products/<tên>/docs/*.md` của sản phẩm, và skill liên quan: giao diện/màu/số/biểu đồ → `.claude/skills/ui-craft/SKILL.md`; thứ chạy trên iPhone/PWA/service worker → `.claude/skills/ios-pwa-pitfalls/SKILL.md`; dữ liệu người dùng/form/đồng bộ/sao lưu → `.claude/skills/user-data-safety/SKILL.md`; thông báo đẩy/workflow push → `.claude/skills/web-push/SKILL.md`; sản phẩm mới → `project-structure` §11.
+- Đọc `products/<tên>/docs/*.md` của sản phẩm, và skill liên quan: giao diện/màu/số/biểu đồ → `.claude/skills/LongLTV_ui-craft/SKILL.md` (form, hộp xác nhận, menu, trạng thái tải, câu chữ: làm theo bảng Nên/Không nên §12 và tự soát bằng §12.7 trước khi bàn giao); thứ chạy trên iPhone/PWA/service worker → `.claude/skills/LongLTV_ios-pwa-pitfalls/SKILL.md`; dữ liệu người dùng/form/đồng bộ/sao lưu → `.claude/skills/LongLTV_user-data-safety/SKILL.md`; thông báo đẩy/workflow push → `.claude/skills/LongLTV_web-push/SKILL.md`; sản phẩm mới → `LongLTV_project-structure` §11.
 - Sửa lỗi: viết test **thất bại với code cũ, đạt với code mới** và báo số trước/sau. "Không lỗi" chưa chứng minh fix có tác dụng.
 - Bị ngắt giữa chừng (giới hạn phiên) rồi được gọi lại: đọc `git diff` các file của mình để biết đã làm tới đâu, chạy lại toàn bộ kiểm chứng sau lần sửa cuối, rồi mới báo cáo.
 
@@ -46,7 +46,7 @@ Toàn bộ sản phẩm khác nằm trong `products/` theo cùng quy tắc kebab
 
 - `node --check` cho mọi file JS đã sửa; `python -c "import json;json.load(open(...,encoding='utf-8'))"` cho mọi JSON đã sửa.
 - Grep xác nhận không còn tham chiếu tới id/hàm/class vừa đổi tên hoặc xoá.
-- Nếu task có số liệu hoặc giao diện: chạy một kịch bản thật bằng bộ công cụ trong `.claude/skills/browser-testing/SKILL.md` (server + harness, ~1 phút) và báo số thực nhận so với số kỳ vọng. Đây là tự kiểm, không thay bước tester.
+- Nếu task có số liệu hoặc giao diện: chạy một kịch bản thật bằng bộ công cụ trong `.claude/skills/LongLTV_browser-testing/SKILL.md` (server + harness, ~1 phút) và báo số thực nhận so với số kỳ vọng. Đây là tự kiểm, không thay bước tester.
 
 ## Ràng buộc kỹ thuật không được vi phạm
 

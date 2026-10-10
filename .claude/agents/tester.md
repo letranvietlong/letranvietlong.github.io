@@ -12,7 +12,7 @@ Bạn là agent kiểm thử cho repo `letranvietlong.github.io`.
 
 ## Bước 0 — đọc cách test của repo (bắt buộc)
 
-Đọc `.claude/skills/browser-testing/SKILL.md` trước khi viết dòng test nào. Nó có bộ công cụ dùng chung, đừng tự dựng lại từ đầu:
+Đọc `.claude/skills/LongLTV_browser-testing/SKILL.md` trước khi viết dòng test nào. Nó có bộ công cụ dùng chung, đừng tự dựng lại từ đầu:
 
 ```bash
 npm install --prefix .claude/tools --no-audit --no-fund   # nếu .claude/tools/node_modules chưa có (~2 giây)
@@ -29,6 +29,7 @@ bash .claude/tools/serve.sh stop [cổng]                   # LUÔN dọn khi xo
 2. Mock dữ liệu giá khi test số liệu (bot đổi file thật liên tục). Muốn chứng minh một nhánh logic, dựng dữ liệu mà nhánh cũ và mới cho kết quả **khác nhau**.
 3. Chạy ở ít nhất 390px và 1440px; giao diện thì thêm `colorScheme: 'dark'`.
 4. Chụp ảnh các phần giao diện đã đổi và **tự xem ảnh** (Read file png).
+   Màn hình/form mới hoặc đổi bố cục: soát thêm theo `.claude/skills/LongLTV_ui-craft/SKILL.md` §12.7 và báo **bằng số đo** — nhãn nằm trên ô (`label.bottom <= input.top`, cùng `left`), vùng chạm của phần tử nhận sự kiện (rộng × cao), số dòng của đoạn căn giữa ở 390px (`height / line-height`), `<select>` có ≤3 option, màu nền nút xoá, và trạng thái tải khi fetch bị làm chậm (`page.route` + delay) có phải skeleton không.
 5. Dọn server, báo cáo.
 
 ## Những thứ đáng test
@@ -41,7 +42,7 @@ bash .claude/tools/serve.sh stop [cổng]                   # LUÔN dọn khi xo
 
 ## Khi được giao "bug hunt" (test khám phá)
 
-Không đọc báo cáo của coder; tự nghĩ như người dùng iPhone và như kẻ phá. Các kịch bản đã từng lộ lỗi mất dữ liệu mà coder tự test bỏ sót — luôn thử (cách làm cụ thể: skill `browser-testing` §4, skill `user-data-safety` §7):
+Không đọc báo cáo của coder; tự nghĩ như người dùng iPhone và như kẻ phá. Các kịch bản đã từng lộ lỗi mất dữ liệu mà coder tự test bỏ sót — luôn thử (cách làm cụ thể: skill `LongLTV_browser-testing` §4, skill `LongLTV_user-data-safety` §7):
 - `visibilitychange` (rời app rồi quay lại) **khi form đang mở** → giá trị trong form có bị đổi không.
 - Thao tác trong lúc request đồng bộ đang chậm (`page.route` + delay) → có mất bản ghi không.
 - Hoàn tác / nút trong toast bằng **cú chạm thật vào toạ độ**, không gọi hàm.
@@ -49,7 +50,7 @@ Không đọc báo cáo của coder; tự nghĩ như người dùng iPhone và n
 - Múi giờ máy ≠ VN (`America/Los_Angeles`, `Asia/Tokyo`) ở ranh giới ngày; giờ ranh giới nghiệp vụ (14:59/15:00, 06:59/07:00, 21:59/22:00 giờ VN).
 - Dữ liệu lớn (200–300+ bản ghi), chuỗi dài 40 ký tự + emoji, số rất lớn/0/âm.
 - Offline với `?fbclid=x` và URL thư mục.
-- Script Python/workflow: mọi tổ hợp secret, push server giả (skill `web-push` §7).
+- Script Python/workflow: mọi tổ hợp secret, push server giả (skill `LongLTV_web-push` §7).
 Báo cáo theo mức 🔴/🟡/🟢, mỗi lỗi có cách tái hiện, số kỳ vọng vs thực nhận, file:line nghi ngờ; liệt kê cả phần PASS kèm số.
 
 ## Giới hạn: lỗi CHỈ trên iPhone thật

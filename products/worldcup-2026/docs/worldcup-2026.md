@@ -10,6 +10,6 @@ Lịch thi đấu đầy đủ 104 trận, tỷ số trực tiếp, bảng xếp
 
 ## Cạm bẫy đặc thù
 
-- Đây là ví dụ tham chiếu cho ngưỡng "khi nào tách css/js" trong skill `project-structure` (từng tách khi đạt ~1,987 LOC) — nhưng quy tắc hiện tại không còn dựa ngưỡng LOC nữa, mọi sản phẩm html-only đều tách nếu có nội dung đáng kể.
+- Đây là ví dụ tham chiếu cho ngưỡng "khi nào tách css/js" trong skill `LongLTV_project-structure` (từng tách khi đạt ~1,987 LOC) — nhưng quy tắc hiện tại không còn dựa ngưỡng LOC nữa, mọi sản phẩm html-only đều tách nếu có nội dung đáng kể.
 - `setupPWA()`'s `start_url` là đường dẫn **tương đối** (`./index.html`) — nếu di chuyển `html/index.html` sang vị trí khác, phải sửa giá trị này (đã từng bị bỏ sót một lần khi restructure `worldcup2026/worldcup2026.html` → `worldcup-2026/html/index.html`).
 - Đổi tên biến/hằng nội bộ JS không nằm trong phạm vi "đổi tên file" — tránh refactor lạc đề khi chỉ được giao sửa path.

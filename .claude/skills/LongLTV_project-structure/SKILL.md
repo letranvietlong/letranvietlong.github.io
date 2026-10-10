@@ -1,5 +1,5 @@
 ---
-name: project-structure
+name: LongLTV_project-structure
 description: Nguyên tắc đặt tên file/folder và tổ chức thư mục cho site tĩnh nhiều sản phẩm này — cái gì được phép ở root, quy tắc kebab-case, tầng subfolder theo loại file bên trong mỗi sản phẩm, và cách di chuyển file mà không làm hỏng thứ khác. Dùng khi thêm sản phẩm/trang mới, thêm asset, tách file lớn, dọn cấu trúc, đổi tên file, hoặc khi phân vân "file này nên để đâu, đặt tên thế nào".
 ---
 
@@ -212,10 +212,10 @@ File này là gì?
 Sản phẩm mới nên sao chép cấu trúc GoldTrack/FuelTrack thay vì tự nghĩ lại. Trước khi coi là xong:
 
 - [ ] Thư mục `products/<ten>/` đúng mục 3; có `docs/<ten>.md` (mục 9).
-- [ ] Meta `apple-mobile-web-app-status-bar-style` = **`default`** (không phải `black-translucent`) nếu có thanh menu/nút cố định ở đáy — skill `ios-pwa-pitfalls` §1b.
-- [ ] Stack phông: nếu bắt đầu bằng phông không có trên iOS (Cambria…) thì thêm mặt phông chữ số riêng — skill `ui-craft` §3.
-- [ ] Lưu dữ liệu người dùng trên máy → có trạng thái rỗng giải thích bộ nhớ app Màn hình chính tách với Safari, và có đường xuất/nhập hoặc đồng bộ — skill `ios-pwa-pitfalls` §14.
-- [ ] Có service worker → vỏ nằm thẳng trong `products/<ten>/` (mục 1), `CACHE_NAME` mang **tiền tố riêng** (`<ten>-cache-vN`) và `activate` chỉ xoá cache cùng tiền tố — skill `ios-pwa-pitfalls` §5.
+- [ ] Meta `apple-mobile-web-app-status-bar-style` = **`default`** (không phải `black-translucent`) nếu có thanh menu/nút cố định ở đáy — skill `LongLTV_ios-pwa-pitfalls` §1b.
+- [ ] Stack phông: nếu bắt đầu bằng phông không có trên iOS (Cambria…) thì thêm mặt phông chữ số riêng — skill `LongLTV_ui-craft` §3.
+- [ ] Lưu dữ liệu người dùng trên máy → có trạng thái rỗng giải thích bộ nhớ app Màn hình chính tách với Safari, và có đường xuất/nhập hoặc đồng bộ — skill `LongLTV_ios-pwa-pitfalls` §14.
+- [ ] Có service worker → vỏ nằm thẳng trong `products/<ten>/` (mục 1), `CACHE_NAME` mang **tiền tố riêng** (`<ten>-cache-vN`) và `activate` chỉ xoá cache cùng tiền tố — skill `LongLTV_ios-pwa-pitfalls` §5.
 - [ ] Có badge phiên bản → `data/changelog.json` riêng, bump theo quy tắc "Product changelogs" trong `CLAUDE.md`.
-- [ ] Có biểu đồ/số liệu tài chính → đọc skill `ui-craft` §9-10 (trục Y, không cộng trùng lãi/lỗ).
+- [ ] Có biểu đồ/số liệu tài chính → đọc skill `LongLTV_ui-craft` §9-10 (trục Y, không cộng trùng lãi/lỗ).
 - [ ] Thêm vào `sitemap.xml`, card trên trang chủ `index.html`, và `README.md` nếu là sản phẩm công khai.

@@ -1,5 +1,5 @@
 ---
-name: browser-testing
+name: LongLTV_browser-testing
 description: Cách kiểm chứng thay đổi trên trình duyệt thật trong repo này — bộ công cụ dùng chung .claude/tools (server tĩnh, harness Playwright có mock dữ liệu, seed localStorage, giả lập app Màn hình chính, báo cáo lỗi console/tràn ngang/vùng chạm), các công thức test số liệu đã dùng thật, và giới hạn của Chromium với lỗi chỉ-iPhone. Dùng khi cần chạy thử app, viết test Playwright, xác minh số liệu tính toán, chụp ảnh giao diện, hoặc trước khi tuyên bố "đã hoạt động".
 ---
 
@@ -73,9 +73,9 @@ Báo cáo cả số thực nhận và số kỳ vọng — "khớp" không kèm 
 
 **Đếm chữ hiển thị** (mục tiêu "bớt chữ"): đếm `innerText` của header + view đang hiện + sheet đang mở, **ẩn `.sr-only` trước khi đếm** (chữ cho trình đọc màn hình không phải chữ hiển thị). Nội dung trong `<details>` đóng có `innerText` rỗng — đọc bằng `textContent` khi cần kiểm nội dung.
 
-**Bug hunt (tester khám phá, không xem báo cáo coder):** đã tìm ra lỗi mất dữ liệu mà coder tự test bỏ sót. Kịch bản luôn thử: `visibilitychange` khi form đang mở (`page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'))})` rồi đổi lại `visible`), request chậm bằng `page.route` + delay (race đồng bộ), hoàn tác bằng **cú chạm thật** (`page.mouse.click` vào toạ độ nút, không gọi hàm), Esc rồi Enter, múi giờ `America/Los_Angeles`/`Asia/Tokyo` lúc ngày máy ≠ ngày VN, ranh giới 14:59/15:00 và 06:59/07:00/21:59/22:00 giờ VN, dữ liệu 200–300+ bản ghi, tên 40 ký tự + emoji, offline với `?fbclid=x` và URL thư mục. Xem skill `user-data-safety` §7.
+**Bug hunt (tester khám phá, không xem báo cáo coder):** đã tìm ra lỗi mất dữ liệu mà coder tự test bỏ sót. Kịch bản luôn thử: `visibilitychange` khi form đang mở (`page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'))})` rồi đổi lại `visible`), request chậm bằng `page.route` + delay (race đồng bộ), hoàn tác bằng **cú chạm thật** (`page.mouse.click` vào toạ độ nút, không gọi hàm), Esc rồi Enter, múi giờ `America/Los_Angeles`/`Asia/Tokyo` lúc ngày máy ≠ ngày VN, ranh giới 14:59/15:00 và 06:59/07:00/21:59/22:00 giờ VN, dữ liệu 200–300+ bản ghi, tên 40 ký tự + emoji, offline với `?fbclid=x` và URL thư mục. Xem skill `LongLTV_user-data-safety` §7.
 
-**Thông báo đẩy / service worker:** Playwright headless-shell mặc định luôn báo quyền thông báo `denied` → dùng `chromium.launch({channel:'chromium'})` (headless mới) cho test `showNotification`, và CDP `ServiceWorker.deliverPushMessage` để giao push. Push server giả + giải mã `http_ece`, venv pywebpush: skill `web-push` §7.
+**Thông báo đẩy / service worker:** Playwright headless-shell mặc định luôn báo quyền thông báo `denied` → dùng `chromium.launch({channel:'chromium'})` (headless mới) cho test `showNotification`, và CDP `ServiceWorker.deliverPushMessage` để giao push. Push server giả + giải mã `http_ece`, venv pywebpush: skill `LongLTV_web-push` §7.
 
 ## 5. Giới hạn: lỗi chỉ xuất hiện trên iPhone
 

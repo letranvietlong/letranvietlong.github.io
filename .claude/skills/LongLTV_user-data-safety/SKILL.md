@@ -1,11 +1,11 @@
 ---
-name: user-data-safety
+name: LongLTV_user-data-safety
 description: Quy tắc giữ an toàn dữ liệu người dùng lưu trên máy (localStorage/IndexedDB) trong các app iPhone của repo — đồng bộ Gist không ghi đè sửa đổi cục bộ, làm mới nền không được ghi đè form đang mở, xoá/sửa sổ sách phải kiểm tra ràng buộc, sao lưu/khôi phục an toàn, dữ liệu hỏng không bao giờ bị ghi đè, ngày giờ luôn theo giờ VN. Dùng khi sửa bất cứ đường nào ghi/đọc/đồng bộ/nhập/xuất dữ liệu người dùng (GoldTrack, FuelTrack Sổ xăng, LoveDays, ThubeeFarmery) hoặc khi thêm form nhập liệu.
 ---
 
 # An toàn dữ liệu người dùng
 
-Mỗi mục dưới đây là một lỗi **đã xảy ra thật** (hoặc tester đã tái hiện) trong repo. Dữ liệu người dùng chỉ nằm trên máy (app Màn hình chính có bộ nhớ riêng, xoá icon là mất — `ios-pwa-pitfalls` §14), nên mất là mất hẳn.
+Mỗi mục dưới đây là một lỗi **đã xảy ra thật** (hoặc tester đã tái hiện) trong repo. Dữ liệu người dùng chỉ nằm trên máy (app Màn hình chính có bộ nhớ riêng, xoá icon là mất — `LongLTV_ios-pwa-pitfalls` §14), nên mất là mất hẳn.
 
 ## 1. Đồng bộ (GoldTrack ↔ GitHub Gist, "ghi sau thắng")
 

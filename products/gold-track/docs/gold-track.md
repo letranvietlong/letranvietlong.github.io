@@ -5,7 +5,7 @@ Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệ
 ## Cấu trúc thật (khác biệt so với mặt bằng chung)
 
 - Đã tách css/js từ lâu — không có `<style>`/`<script>` inline trong `html/index.html`.
-- **Có service worker thật** (duy nhất trong repo tính đến nay): `sw-gold-track.js` nằm ngay trong `products/gold-track/` (không lồng vào `js/`) — xem skill `project-structure` mục "Vỏ service worker bắt buộc ở đúng cấp thư mục nào?" để hiểu vì sao vị trí này bắt buộc. Logic thật ở `js/sw-core.js`, vỏ chỉ `importScripts` vào đó.
+- **Có service worker thật** (duy nhất trong repo tính đến nay): `sw-gold-track.js` nằm ngay trong `products/gold-track/` (không lồng vào `js/`) — xem skill `LongLTV_project-structure` mục "Vỏ service worker bắt buộc ở đúng cấp thư mục nào?" để hiểu vì sao vị trí này bắt buộc. Logic thật ở `js/sw-core.js`, vỏ chỉ `importScripts` vào đó.
 - Có `manifest.json` (Web App Manifest) — không tự khiến icon đã ghim trên iOS "tự sửa" nếu URL đổi (iOS ghim theo URL cụ thể, không đọc `start_url`).
 - Dữ liệu (`data/*.json`) do 1 script Python trong `py/` tự cập nhật qua GitHub Actions (cron), KHÔNG sửa tay các file này.
 - Đồng bộ nhiều thiết bị qua GitHub Gist (không có backend thật).
@@ -27,15 +27,15 @@ Theo dõi giá vàng và tính lời/lỗ danh mục vàng đã mua, qua 2 tiệ
 - **Đơn vị giá**: nguồn (Ngọc Thịnh Jewelry) ghi giá theo VNĐ/**chỉ**, không phải lượng (1 lượng = 10 chỉ) — toàn app thống nhất dùng chỉ. Từng có bug hiểu nhầm đơn vị sai 10 lần.
 - **Hai loại giá, đừng lẫn**: `buy` trong `gold-price.json` = giá **tiệm mua vào** (số tiền người dùng nhận khi bán) — dùng để định giá tài sản, tính lãi/lỗ chưa chốt, vẽ biểu đồ và tự điền giá bán. `sell` = giá tiệm bán ra (người dùng trả khi mua). Vừa mua xong đã "lỗ" đúng phần chênh lệch mua–bán (~2,6% ở Huy Thanh) — đúng, không phải bug.
 - **Catalog tiệm/loại vàng khai báo 2 nơi phải khớp tuyệt đối**: `SHOP_TYPES` trong `js/gold-track.js` và `NGOCTHINH_TYPES`/`HUYTHANH_TYPES` trong `py/fetch_gold_price.py` (id loại vàng là khoá nối giữa giao dịch và file giá).
-- **Hiển thị lãi/lỗ** (quy tắc chung ở skill `ui-craft` §10): dòng MUA trong Lịch sử chỉ so giá theo chỉ (%), không tính tiền lãi/lỗ; báo cáo theo tháng/năm chỉ chứa lãi đã chốt, lãi chưa chốt là dòng riêng; lịch "Ngày" = Δ lãi chưa chốt + lãi chốt trong ngày, ô hôm nay dùng giá trực tiếp để tổng các ngày = "Tổng lãi/lỗ" ở Tổng quan. Mọi con số phải lấy từ `computePortfolioAll()`/`perTx`, không tự tính lại.
-- **iPhone**: meta status bar là `default` (không phải `black-translucent` — xem skill `ios-pwa-pitfalls` §1b); chữ số dùng mặt phông riêng `GT Digits` vì iOS không có Cambria. Dòng chẩn đoán (kích thước màn hình/viewport, safe-area, vị trí đáy menu, quyền thông báo, trạng thái push) nằm trong mục gập "Thông tin kỹ thuật" cuối tab Cài đặt (`#displayDiag`, cùng dòng "GoldTrack vX · Made by LongLTV") — nhờ người dùng mở mục đó rồi chụp khi có lỗi chỉ xuất hiện trên máy thật. Test đọc bằng `textContent` (mục gập đóng thì `innerText` rỗng).
+- **Hiển thị lãi/lỗ** (quy tắc chung ở skill `LongLTV_ui-craft` §10): dòng MUA trong Lịch sử chỉ so giá theo chỉ (%), không tính tiền lãi/lỗ; báo cáo theo tháng/năm chỉ chứa lãi đã chốt, lãi chưa chốt là dòng riêng; lịch "Ngày" = Δ lãi chưa chốt + lãi chốt trong ngày, ô hôm nay dùng giá trực tiếp để tổng các ngày = "Tổng lãi/lỗ" ở Tổng quan. Mọi con số phải lấy từ `computePortfolioAll()`/`perTx`, không tự tính lại.
+- **iPhone**: meta status bar là `default` (không phải `black-translucent` — xem skill `LongLTV_ios-pwa-pitfalls` §1b); chữ số dùng mặt phông riêng `GT Digits` vì iOS không có Cambria. Dòng chẩn đoán (kích thước màn hình/viewport, safe-area, vị trí đáy menu, quyền thông báo, trạng thái push) nằm trong mục gập "Thông tin kỹ thuật" cuối tab Cài đặt (`#displayDiag`, cùng dòng "GoldTrack vX · Made by LongLTV") — nhờ người dùng mở mục đó rồi chụp khi có lỗi chỉ xuất hiện trên máy thật. Test đọc bằng `textContent` (mục gập đóng thì `innerText` rỗng).
 - **Khoảng thời gian biểu đồ cố ý KHÔNG lưu** qua các lần mở (luôn về 7 ngày) — đừng thêm lại localStorage cho nó.
 - **`gold-track.js` tự dọn service worker cũ**: trước khi đăng ký SW mới, code unregister mọi registration có scope đúng bằng gốc origin (`location.origin + '/'`) — đây là dọn dẹp cho người dùng cũ từ thời SW còn đăng ký ở root repo (trước khi chuyển vào `products/gold-track/`). Đừng xoá đoạn này tưởng là code thừa.
 
 ## Quy trình vận hành
 
 - **Đổi version + changelog**: mọi thay đổi người dùng thấy được (feature, fix, redesign — không phải refactor nội bộ) → bump field `"version"` + prepend entry vào `data/changelog.json` (tiếng Việt, mô tả cho người dùng). Chi tiết đầy đủ nằm trong `CLAUDE.md` ở root.
-- **Lấy dữ liệu**: `py/fetch_gold_price.py` (giá) rồi `py/notify_gold_price.py` (thông báo đẩy — xem "Thông báo giá"), chạy qua `.github/workflows/update-gold-price.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `goldtrack-data-pipeline`.
+- **Lấy dữ liệu**: `py/fetch_gold_price.py` (giá) rồi `py/notify_gold_price.py` (thông báo đẩy — xem "Thông báo giá"), chạy qua `.github/workflows/update-gold-price.yml`. Chi tiết cạm bẫy khi sửa script này (đơn vị, race condition khi commit, lịch cron không đáng tin) nằm trong skill `LongLTV_goldtrack-data-pipeline`.
 
 ## Thông báo giá
 

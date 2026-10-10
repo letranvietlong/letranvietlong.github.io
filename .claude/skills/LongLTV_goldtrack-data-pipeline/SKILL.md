@@ -1,5 +1,5 @@
 ---
-name: goldtrack-data-pipeline
+name: LongLTV_goldtrack-data-pipeline
 description: Cách GoldTrack tự lấy giá vàng qua GitHub Actions — nguồn dữ liệu (Ngọc Thịnh + Huy Thanh), quy tắc đơn vị chỉ/lượng, xử lý múi giờ, và race condition khi bot commit. Dùng khi sửa products/gold-track/py/fetch_gold_price.py, sửa workflow, thêm nguồn dữ liệu, hoặc khi giá không cập nhật.
 ---
 
