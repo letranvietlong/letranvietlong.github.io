@@ -360,17 +360,22 @@ def run_today():
     history = load_history()
     today = vn_today()
     parsed = None
+    errors = 0
     for day in (today, today - timedelta(days=1)):
         try:
             parsed = parse_day(fetch_day(day, RETRY_BACKOFF[:2]))
         except Exception as e:
+            # A failed request for one date must not stop the fallback to the
+            # other: the source has returned errors for "today" while
+            # yesterday's record (same prices between adjustments) still loads.
+            errors += 1
             print("error: fetch %s failed: %s" % (day, e), file=sys.stderr)
-            return 1
+            continue
         if parsed:
             break
         print("no PVOIL record for %s" % day)
     if not parsed:
-        print("error: no usable PVOIL data for today or yesterday", file=sys.stderr)
+        print("error: no usable PVOIL data for today or yesterday (%d request error(s))" % errors, file=sys.stderr)
         return 1
 
     date_str, prices, upd, sources = parsed

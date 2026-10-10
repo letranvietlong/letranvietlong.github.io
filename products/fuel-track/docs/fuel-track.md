@@ -23,7 +23,7 @@ File: `html/index.html` (markup), `css/fuel-track.css`, `js/fuel-track.js` (giá
 
 ## Script & lịch chạy
 
-- `py/fetch_fuel_price.py` (chạy thường): lấy ngày hôm nay theo giờ VN, không có thì hôm qua; lỗi mạng / không có dữ liệu → exit 1, không ghi file. Idempotent: chạy lại khi giá không đổi thì không đụng file nào.
+- `py/fetch_fuel_price.py` (chạy thường): lấy ngày hôm nay theo giờ VN, không có **hoặc request lỗi** thì thử hôm qua; chỉ khi cả hai đều không dùng được mới exit 1, không ghi file. (Trước 10/2026 một request lỗi cho "hôm nay" dừng ngay không thử hôm qua — nguồn từng lỗi 3 lượt liên tiếp 08–09/10/2026.) Dữ liệu hôm qua cũ hơn mốc cuối thì `apply_observation` bỏ qua, không ghi lùi lịch sử. Idempotent: chạy lại khi giá không đổi thì không đụng file nào.
 - `--backfill-from YYYY-MM-DD`: quét từng ngày tới hôm nay. Nếu bị chặn giữa chừng, script ghi phần đã có và in ngày để chạy tiếp. Ngày cũ hơn entry cuối bị bỏ qua, nên chỉ backfill được "về phía trước"; backfill từ đúng ngày của entry cuối sẽ thay entry đó tại chỗ (cách sửa một kỳ bị ghi sai). **Không dựng lại lịch sử từ đầu** — xem cạm bẫy "đổi tên áp dụng ngược".
 - `.github/workflows/update-fuel-price.yml`: cron `23 * * * *` (mỗi giờ, phút :23). Từng chỉ chạy 5 lượt/ngày quanh 15:00 VN nhưng GitHub hay bỏ lượt hẹn giờ khi quá tải, nên chạy dày; không sinh commit rác vì script chỉ ghi khi giá đổi. `git add` 2 file giá (+ `data/push-state.json` nếu có — xem "Thông báo giá"), vòng lặp fetch/rebase/push 5 lần để né race với các workflow khác.
 
