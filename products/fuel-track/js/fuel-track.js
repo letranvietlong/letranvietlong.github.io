@@ -6,7 +6,7 @@
   // PUSH_VAPID_PRIVATE_KEY, and it must be the SAME key as in GoldTrack and
   // LoveDays (one key pair for all apps — a mismatch makes every push 403).
   // Empty = notifications off. See docs/fuel-track.md → "Thông báo giá".
-  var VAPID_PUBLIC_KEY = '';
+  var VAPID_PUBLIC_KEY = 'BOiIqG0zhuwGbzvByX4y58FNcP4rV_Qm54q3LkWSQw1Fks2jETdEMPnHBmNUDZFXxOw2ZmiDrNWxJxhArdK0-h0';
 
   var DATA_BASE = '/products/fuel-track/data/';
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };

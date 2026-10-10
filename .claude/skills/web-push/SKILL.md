@@ -21,7 +21,8 @@ Không có backend. Mọi thông báo được gửi **từ GitHub Actions** b�
 ## 2. Khoá và secret
 
 - **Một cặp khoá VAPID cho mọi app.** Private key chỉ ở secret `PUSH_VAPID_PRIVATE_KEY` (workflow đọc `secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY` để tương thích ngược). Hằng `VAPID_PUBLIC_KEY` trong **mọi** app phải giống hệt nhau — lệch thì push service trả **403** (thư viện in cảnh báo riêng cho 403).
-- Tạo khoá: người dùng tự chạy `npx --yes web-push generate-vapid-keys --json` **ngoài repo**. Claude không tạo khoá thật (private key sẽ nằm trong log phiên). Khoá test chỉ tạo trong scratchpad.
+- Tạo khoá: `npx --yes web-push generate-vapid-keys --json` chạy **ngoài repo**. Nếu Claude tạo giúp thì ghi thẳng ra file ngoài repo (đã làm 10/2026: `Desktop/vapid-keys-GIU-BI-MAT.json`) và **chỉ đọc/in `publicKey`** — private key không được xuất hiện trong output lệnh, log phiên hay bất kỳ file nào trong repo; kiểm cặp khoá khớp bằng `py_vapid` mà không in private. Người dùng dán private vào secret rồi xoá file. Khoá test chỉ tạo trong scratchpad.
+- Khoá công khai hiện dùng (10/2026) đã gắn vào hằng `VAPID_PUBLIC_KEY` của cả 3 app. Đổi cặp khoá = mọi mã đăng ký của mọi app vô hiệu, mọi máy phải Bật lại và cập nhật 3 secret subscriptions.
 - Subscription gắn với **registration của service worker (scope)** → mỗi app trên mỗi máy có mã riêng: `GOLD_PUSH_SUBSCRIPTIONS`, `FUEL_PUSH_SUBSCRIPTIONS`, `LOVE_PUSH_SUBSCRIPTIONS`, mỗi secret là mảng JSON `[mã máy 1, mã máy 2]`.
 
 ## 3. Quy tắc workflow (đã có lỗi thật)

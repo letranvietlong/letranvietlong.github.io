@@ -7,7 +7,7 @@
   // GitHub secret LOVE_VAPID_PRIVATE_KEY — never into any file here (the repo
   // is public and a Stop hook pushes every change). Empty = notifications off.
   // Changing it invalidates every existing subscription (see docs/love-days.md).
-  var VAPID_PUBLIC_KEY = '';
+  var VAPID_PUBLIC_KEY = 'BOiIqG0zhuwGbzvByX4y58FNcP4rV_Qm54q3LkWSQw1Fks2jETdEMPnHBmNUDZFXxOw2ZmiDrNWxJxhArdK0-h0';
 
   var C = self.LoveCore, M = self.LoveMedia, B = self.LoveBackup;
   var $ = function(id){ return document.getElementById(id); };
