@@ -70,6 +70,23 @@ def parse_date(value, name):
         raise ConfigError("%s không phải ngày có thật" % name)
 
 
+def parse_subscriptions(raw):
+    """Accept what people actually paste into the secret: a JSON array, one
+    subscription object without brackets (the app's "Sao chép" output), or
+    several objects separated by commas / newlines. Same helper as
+    .github/scripts/web_push.py (this script doesn't import that library yet)."""
+    dec = json.JSONDecoder()
+    out, i, n = [], 0, len(raw)
+    while i < n:
+        while i < n and (raw[i].isspace() or raw[i] == ","):
+            i += 1
+        if i >= n:
+            break
+        val, i = dec.raw_decode(raw, i)
+        out.extend(val if isinstance(val, list) else [val])
+    return out
+
+
 def load_config(today_vn):
     key = os.environ.get("LOVE_VAPID_PRIVATE_KEY", "").strip()
     if not key:
@@ -84,11 +101,11 @@ def load_config(today_vn):
     if not raw:
         raise ConfigError("thiếu secret LOVE_PUSH_SUBSCRIPTIONS")
     try:
-        subs = json.loads(raw)
+        subs = parse_subscriptions(raw)
     except ValueError:
-        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS không phải JSON hợp lệ — cần dạng [mã máy 1, mã máy 2]")
-    if not isinstance(subs, list) or not subs:
-        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS phải là một mảng JSON không rỗng: [mã máy 1, mã máy 2]")
+        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS không phải JSON hợp lệ — dán nguyên mã do nút Sao chép trong app tạo ra (nhiều máy: các mã cách nhau bằng dấu phẩy)")
+    if not subs:
+        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS đang rỗng — dán mã do nút Sao chép trong app tạo ra")
     devices = []
     for i, s in enumerate(subs):
         keys = s.get("keys") if isinstance(s, dict) else None

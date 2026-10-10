@@ -49,16 +49,33 @@ def load_vapid(env_name):
         raise ConfigError("%s không phải khoá VAPID hợp lệ (cần chuỗi privateKey dạng base64url)" % env_name)
 
 
+def parse_subscriptions(raw):
+    """Accept what people actually paste into the secret: a JSON array, one
+    subscription object without brackets (the app's "Sao chép" output), or
+    several objects separated by commas / newlines. Returns a flat list;
+    raises ValueError when something doesn't parse."""
+    dec = json.JSONDecoder()
+    out, i, n = [], 0, len(raw)
+    while i < n:
+        while i < n and (raw[i].isspace() or raw[i] == ","):
+            i += 1
+        if i >= n:
+            break
+        val, i = dec.raw_decode(raw, i)
+        out.extend(val if isinstance(val, list) else [val])
+    return out
+
+
 def load_devices(env_name):
     raw = os.environ.get(env_name, "").strip()
     if not raw:
         raise ConfigError("thiếu secret %s" % env_name)
     try:
-        subs = json.loads(raw)
+        subs = parse_subscriptions(raw)
     except ValueError:
-        raise ConfigError("%s không phải JSON hợp lệ — cần dạng [mã máy 1, mã máy 2]" % env_name)
-    if not isinstance(subs, list) or not subs:
-        raise ConfigError("%s phải là một mảng JSON không rỗng: [mã máy 1, mã máy 2]" % env_name)
+        raise ConfigError("%s không phải JSON hợp lệ — dán nguyên mã do nút Sao chép trong app tạo ra (nhiều máy: các mã cách nhau bằng dấu phẩy)" % env_name)
+    if not subs:
+        raise ConfigError("%s đang rỗng — dán mã do nút Sao chép trong app tạo ra" % env_name)
     devices = []
     for i, s in enumerate(subs):
         keys = s.get("keys") if isinstance(s, dict) else None
