@@ -182,18 +182,13 @@ def build_message(history, last, prev, notified, current_only=False):
             lines.append("%s: %s · không đổi" % (name, fmt_int(price)))
     d = last["date"]
     day = "%s/%s" % (d[8:10], d[5:7])
-    if current_only:
-        title = "Giá xăng dầu hiện tại (kỳ %s)" % day
-    else:
-        if deltas and all(x > 0 for x in deltas):
-            title = "Giá xăng dầu tăng"
-        elif deltas and all(x < 0 for x in deltas):
-            title = "Giá xăng dầu giảm"
-        else:
-            title = "Giá xăng dầu điều chỉnh"
-        title += (" · %s" if applied_all_day(last) else " từ 15:00 · %s") % day
-        if notified and notified["date"] == last["date"] and notified["prices"] != last["prices"]:
-            title += " (cập nhật)"
+    # Same wording as GoldTrack ("Giá vàng thay đổi …", the user's choice,
+    # 10/2026): one fixed title; the direction of each item is in its line.
+    # A forced resend of an already-notified period uses the same title.
+    title = "Giá xăng dầu thay đổi"
+    title += (" · %s" if applied_all_day(last) else " từ 15:00 · %s") % day
+    if not current_only and notified and notified["date"] == last["date"] and notified["prices"] != last["prices"]:
+        title += " (cập nhật)"
     return title, "\n".join(lines) or "Mở app để xem giá mới"
 
 
