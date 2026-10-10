@@ -50,13 +50,15 @@ NOISE_LOOKBACK_DAYS = 60
 BAD_STATE_RECENT_DAYS = 2
 BAD_STATE = "bad"
 MINUS = "−"
+UP, DOWN = "▲", "▼"
+EARLY_VN_HOUR = 7
 
 # Same order as ITEMS in fetch_fuel_price.py.
 SHORT = {
-    "e10-ron95-iii": "E10",
-    "e5-ron92-ii": "E5",
-    "ron95-iii": "RON 95",
-    "do-005s-ii": "DO",
+    "e10-ron95-iii": "E10 RON95",
+    "e5-ron92-ii": "E5 RON92",
+    "ron95-iii": "RON95-III",
+    "do-005s-ii": "Dầu DO",
     "ko": "Dầu hỏa",
 }
 
@@ -82,8 +84,30 @@ def fmt_int(n):
     return "{:,}".format(int(n)).replace(",", ".")
 
 
-def fmt_delta(d):
-    return ("+" if d > 0 else MINUS) + fmt_int(abs(d))
+def fmt_change(d, old):
+    """'▲1.070 (+3,94%)' — percent of the old price, rounded half up."""
+    if old <= 0:
+        return "%s%s" % (UP if d > 0 else DOWN, fmt_int(abs(d)))
+    hundredths = (abs(d) * 20000 + old) // (2 * old)
+    pct = "%d,%02d" % divmod(hundredths, 100)
+    return "%s%s (%s%s%%)" % (UP if d > 0 else DOWN, fmt_int(abs(d)), "+" if d > 0 else MINUS, pct)
+
+
+def applied_all_day(change):
+    """Same rule as appliedAllDay() in js/fuel-track.js: a point the source
+    wrote before 07:00 VN of its own day applied all day, not from 15:00."""
+    raw = change.get("detectedAt")
+    if not isinstance(raw, str):
+        return False
+    try:
+        t = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=dt.timezone.utc)
+    vn = t.astimezone(dt.timezone.utc) + VN
+    day = vn.strftime("%Y-%m-%d")
+    return day < change["date"] or (day == change["date"] and vn.hour < EARLY_VN_HOUR)
 
 
 def valid_prices(p):
@@ -142,23 +166,35 @@ def item_order(history, ids):
     return known + extra + sorted(k for k in ids if k not in known and k not in extra)
 
 
-def build_message(history, last, prev, notified):
+def build_message(history, last, prev, notified, current_only=False):
     labels = history.get("items") or {}
     prev_prices = prev["prices"] if prev else {}
-    parts = []
+    lines, deltas = [], []
     for k in item_order(history, set(last["prices"])):
         price = last["prices"][k]
         name = SHORT.get(k) or labels.get(k) or k
         if k not in prev_prices:
-            parts.append("%s %s (mới)" % (name, fmt_int(price)))
+            lines.append("%s: %s (mới)" % (name, fmt_int(price)))
         elif price != prev_prices[k]:
-            parts.append("%s %s (%s)" % (name, fmt_int(price), fmt_delta(price - prev_prices[k])))
+            deltas.append(price - prev_prices[k])
+            lines.append("%s: %s %s" % (name, fmt_int(price), fmt_change(price - prev_prices[k], prev_prices[k])))
+        else:
+            lines.append("%s: %s · không đổi" % (name, fmt_int(price)))
     d = last["date"]
-    title = "Giá xăng dầu điều chỉnh %s/%s" % (d[8:10], d[5:7])
-    if notified and notified["date"] == last["date"] and notified["prices"] != last["prices"]:
-        title += " (cập nhật)"
-    body = " · ".join(parts) or "Mở app để xem giá mới"
-    return title, body
+    day = "%s/%s" % (d[8:10], d[5:7])
+    if current_only:
+        title = "Giá xăng dầu hiện tại (kỳ %s)" % day
+    else:
+        if deltas and all(x > 0 for x in deltas):
+            title = "Giá xăng dầu tăng"
+        elif deltas and all(x < 0 for x in deltas):
+            title = "Giá xăng dầu giảm"
+        else:
+            title = "Giá xăng dầu điều chỉnh"
+        title += (" · %s" if applied_all_day(last) else " từ 15:00 · %s") % day
+        if notified and notified["date"] == last["date"] and notified["prices"] != last["prices"]:
+            title += " (cập nhật)"
+    return title, "\n".join(lines) or "Mở app để xem giá mới"
 
 
 def main(argv=None):
@@ -247,7 +283,9 @@ def main(argv=None):
         log("Giờ yên lặng (22:00–07:00 giờ VN), để lượt sau")
         return 0
 
-    title, body = build_message(history, last, prev, notified)
+    # True only under --force: nothing new since the last notification.
+    unchanged = bool(notified) and notified["prices"] == last["prices"]
+    title, body = build_message(history, last, prev, notified, current_only=unchanged)
     payload = {"v": 1, "title": title, "body": body, "tag": "fuel-price",
                "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
 
@@ -256,7 +294,8 @@ def main(argv=None):
     if args.dry_run:
         log("Chạy thử (--dry-run), sẽ gửi tới %d thiết bị:" % len(devices))
         log("  Tiêu đề: %s" % title)
-        log("  Nội dung: %s" % body)
+        for line in body.split("\n"):
+            log("  Nội dung: %s" % line)
         for d in devices:
             log('  - "%s" (%s)' % (d["label"], d["host"]))
         return 0

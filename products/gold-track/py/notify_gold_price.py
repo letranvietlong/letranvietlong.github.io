@@ -39,6 +39,7 @@ KEY_ENV = "PUSH_VAPID_PRIVATE_KEY"
 TTL_SECONDS = 6 * 3600
 VN = dt.timedelta(hours=7)
 MINUS = "−"
+UP, DOWN = "▲", "▼"
 
 # Must match SHOP_TYPES in js/gold-track.js / the fetcher's catalog.
 WATCH = [
@@ -72,8 +73,24 @@ def fmt_int(n):
     return "{:,}".format(int(n)).replace(",", ".")
 
 
-def fmt_delta(d):
-    return ("+" if d > 0 else MINUS) + fmt_int(abs(d))
+def fmt_change(d, old):
+    """'▲70.000 (+0,53%)' — percent of the old price, rounded half up."""
+    hundredths = (abs(d) * 20000 + old) // (2 * old)
+    pct = "%d,%02d" % divmod(hundredths, 100)
+    return "%s%s (%s%s%%)" % (UP if d > 0 else DOWN, fmt_int(abs(d)), "+" if d > 0 else MINUS, pct)
+
+
+def fmt_when(iso):
+    """'07:56 · 08/10' in Vietnam time, or None when missing/invalid."""
+    if not isinstance(iso, str):
+        return None
+    try:
+        t = dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=dt.timezone.utc)
+    return (t.astimezone(dt.timezone.utc) + VN).strftime("%H:%M · %d/%m")
 
 
 def valid_price(v):
@@ -113,6 +130,14 @@ def read_state(path):
     return {k: {"buy": v["buy"], "sell": v["sell"]} for k, v in n.items() if isinstance(k, str) and valid_pair(v)}
 
 
+def read_notified_at(path):
+    try:
+        data = read_json(path)
+    except (ValueError, OSError):
+        return None
+    return data.get("notifiedAt") if isinstance(data, dict) else None
+
+
 def write_state(path, notified, now, delivered, failed):
     state = {
         "notified": {k: notified[k] for k in sorted(notified)},
@@ -128,30 +153,64 @@ def write_state(path, notified, now, delivered, failed):
 
 
 def side(label, price, old):
-    d = price - old if old is not None else 0
-    return "%s %s" % (label, fmt_int(price)) + (" (%s)" % fmt_delta(d) if d else "")
+    if old is None or price == old:
+        return "%s %s · không đổi" % (label, fmt_int(price))
+    return "%s %s %s" % (label, fmt_int(price), fmt_change(price - old, old))
 
 
-def build_message(cur, notified, keys):
-    lines, deltas = [], []
+def previous_from_history(path, cur):
+    """For a forced send while nothing changed: the last DIFFERENT price of each
+    watched type in gold-price-history.json, so the test notification still
+    shows a real up/down instead of "không đổi" everywhere. Returns
+    ({key: {buy, sell}}, iso time that old price was last seen) — ({} , None)
+    when the history is missing/unusable."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            hist = json.load(f)
+    except (OSError, ValueError):
+        return {}, None
+    prev, when = {}, None
+    for shop, gold_type, _name in WATCH:
+        k = wkey(shop, gold_type)
+        points = (hist.get(shop) or {}).get(gold_type) if isinstance(hist, dict) else None
+        if k not in cur or not isinstance(points, list):
+            continue
+        for p in reversed(points):
+            if not isinstance(p, dict) or not all(
+                    isinstance(p.get(f), int) and not isinstance(p.get(f), bool) and p.get(f) > 0 for f in ("buy", "sell")):
+                continue
+            if p["buy"] != cur[k]["buy"] or p["sell"] != cur[k]["sell"]:
+                prev[k] = {"buy": p["buy"], "sell": p["sell"]}
+                if isinstance(p.get("at"), str) and (when is None or p["at"] > when):
+                    when = p["at"]
+                break
+    return prev, when
+
+
+def build_message(cur, notified, keys, notified_at=None, forced=False):
+    lines, deltas, first = [], [], None
     for shop, gold_type, name in WATCH:
         k = wkey(shop, gold_type)
         if k not in keys or k not in cur:
             continue
         old = notified.get(k) or {}
         c = cur[k]
-        lines.append("%s: %s · %s" % (name, side("mua", c["buy"], old.get("buy")), side("bán", c["sell"], old.get("sell"))))
-        for f in ("buy", "sell"):
-            if old.get(f) is not None and c[f] != old[f]:
-                deltas.append(c[f] - old[f])
-    if not deltas:
-        title = "Giá vàng hiện tại"
+        lines += [name, side("Mua vào", c["buy"], old.get("buy")), side("Bán ra", c["sell"], old.get("sell"))]
+        moved = [c[f] - old[f] for f in ("buy", "sell") if old.get(f) is not None and c[f] != old[f]]
+        if moved and first is None:
+            first = abs(moved[0])
+        deltas += moved
+    if not deltas or forced:
+        title = "Giá vàng hôm nay"
     elif all(d > 0 for d in deltas):
-        title = "Giá vàng tăng"
+        title = "Giá vàng tăng %s%s đ/chỉ" % (UP, fmt_int(first))
     elif all(d < 0 for d in deltas):
-        title = "Giá vàng giảm"
+        title = "Giá vàng giảm %s%s đ/chỉ" % (DOWN, fmt_int(first))
     else:
         title = "Giá vàng thay đổi"
+    when = fmt_when(notified_at)
+    if lines and when:
+        lines.append(("So với mức giá trước · %s" if forced and deltas else "So với %s" if deltas else "Không đổi từ %s") % when)
     return title, "\n".join(lines) or "Mở app để xem giá mới"
 
 
@@ -213,7 +272,16 @@ def main(argv=None):
         log("Giờ yên lặng (22:00–07:00 giờ VN), để lượt sau")
         return 0
 
-    title, body = build_message(cur, notified, set(changed) or set(cur))
+    if changed:
+        title, body = build_message(cur, notified, set(changed), read_notified_at(args.state))
+    else:
+        # --force with nothing new: compare with the previous price in the
+        # history file so the message still shows a real difference.
+        prev, prev_at = previous_from_history(os.path.join(os.path.dirname(args.price_file), "gold-price-history.json"), cur)
+        if prev:
+            title, body = build_message(cur, prev, set(cur), prev_at, forced=True)
+        else:
+            title, body = build_message(cur, notified, set(cur), read_notified_at(args.state))
     payload = {"v": 1, "title": title, "body": body, "tag": "gold-price",
                "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
 

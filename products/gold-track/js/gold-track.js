@@ -1468,14 +1468,33 @@
     $id('btnPushDismiss').hidden = !changed || !!sub;
     return changed;
   }
-  // Same line format as the real notification, with today's prices only
-  // (the deltas there are relative to the last notification, unknown here).
+  // Same layout as py/notify_gold_price.py. The real deltas are against the
+  // last notified price, which the app can't know; here they are against the
+  // last recorded point before today (VN). History only stores changes, so
+  // at the newest of those points every shop still had its own reference price.
+  function pushTestSide(label, price, old){
+    var d = price - old;
+    if(!(old > 0) || !d) return label + ' ' + fmtVND(price) + ' · không đổi';
+    var pct = (Math.round(Math.abs(d) / old * 10000) / 100).toFixed(2).replace('.', ',');
+    return label + ' ' + fmtVND(price) + ' ' + (d > 0 ? '▲' : '▼') + fmtVND(Math.abs(d)) + ' (' + (d > 0 ? '+' : '−') + pct + '%)';
+  }
   function pushTestBody(){
-    var lines = [];
+    var today = todayISO(), lines = [], refMs = 0, moved = false;
     PUSH_WATCH.forEach(function(w){
       var eff = getEffectivePrice(w.shop, w.type);
-      if(eff) lines.push(w.name + ': mua ' + fmtVND(eff.buy) + ' · bán ' + fmtVND(eff.sell));
+      if(!eff) return;
+      var ref = getHistoryFor(w.shop, w.type).filter(function(p){
+        var day = p && vnDayKey(p.at);
+        return day && day < today;
+      }).pop() || {};
+      if(ref.at) refMs = Math.max(refMs, Date.parse(ref.at));
+      if((ref.buy > 0 && ref.buy !== eff.buy) || (ref.sell > 0 && ref.sell !== eff.sell)) moved = true;
+      lines.push(w.name, pushTestSide('Mua vào', eff.buy, ref.buy), pushTestSide('Bán ra', eff.sell, ref.sell));
     });
+    if(lines.length && refMs){
+      var t = new Date(refMs + VN_OFFSET_MS);
+      lines.push((moved ? 'So với ' : 'Không đổi từ ') + pad2(t.getUTCHours()) + ':' + pad2(t.getUTCMinutes()) + ' · ' + pad2(t.getUTCDate()) + '/' + pad2(t.getUTCMonth() + 1));
+    }
     return lines.join('\n') || 'Thông báo thử trên máy này';
   }
   function initPush(){

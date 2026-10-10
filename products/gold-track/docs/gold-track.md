@@ -49,7 +49,18 @@ SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"gold-price","ts"
 
 - Theo dõi đúng 2 loại: Ngọc Thịnh 9999 (`ngoc-thinh/9999-nhan-tron`) và Huy Thanh 24k (`huy-thanh/24k-huy-thanh`), ngưỡng 0 đ, không giới hạn số lần/ngày.
 - **Bot giá commit MỌI lượt chạy** (`fetchedAt` luôn đổi) → "có commit" không có nghĩa "giá đổi". Notifier so `data/gold-price.json` với **giá đã báo lần cuối** (`data/push-state.json` = `{notified:{"<shop>/<type>":{buy,sell}}, notifiedAt, delivered, failed}`). Chưa có state → lưu giá hiện tại làm mốc, không gửi. Loại mới xuất hiện → thêm vào mốc, không gửi. Không đổi → thôi. 22:00–07:00 VN → để lượt sau, **không ghi state** (các lần đổi trong đêm gộp thành một thông báo buổi sáng, Δ tính từ mốc cũ). Gửi xong (≥ 1 máy) mới ghi state.
-- Tiêu đề: mọi Δ khác 0 đều tăng → "Giá vàng tăng", đều giảm → "Giá vàng giảm", lẫn lộn → "Giá vàng thay đổi" (`--force` khi không đổi → "Giá vàng hiện tại"). Nội dung một dòng mỗi loại đổi: `Ngọc Thịnh 9999: mua 13.200.000 (+70.000) · bán 13.320.000 (+60.000)`; phía không đổi không kèm Δ; dấu trừ U+2212.
+- Tiêu đề: mọi Δ khác 0 đều tăng → "Giá vàng tăng ▲70.000 đ/chỉ", đều giảm → "Giá vàng giảm ▼40.000 đ/chỉ", lẫn lộn → "Giá vàng thay đổi". Số trong tiêu đề = |Δ giá mua vào| của loại đổi **đầu tiên** theo thứ tự WATCH (mua vào không đổi thì lấy Δ bán ra).
+- Nội dung (v1.65): mỗi loại **có đổi** một khối 3 dòng theo thứ tự WATCH, rồi một dòng chân ghi mốc so sánh = `notifiedAt` của state đổi sang giờ VN (thiếu/sai định dạng → bỏ dòng chân). % = Δ / giá cũ × 100, 2 chữ số thập phân, làm tròn nửa lên bằng số nguyên; dấu trừ U+2212; phía không đổi ghi "· không đổi":
+  ```
+  Ngọc Thịnh 9999
+  Mua vào 13.200.000 ▲70.000 (+0,53%)
+  Bán ra 13.320.000 ▲60.000 (+0,45%)
+  Huy Thanh 24k
+  Mua vào 13.900.000 · không đổi
+  Bán ra 14.270.000 ▼30.000 (−0,21%)
+  So với 07:56 · 08/10
+  ```
+  `--force` khi không đổi → tiêu đề "Giá vàng hôm nay", khối của **mọi** loại với hai phía "· không đổi", dòng chân "Không đổi từ HH:MM · dd/mm". Dài nhất thực tế (2 tiệm, giá 9 chữ số) ~214 ký tự, SW cắt ở 300.
 - Exit: 0 = đã gửi ≥ 1 / không có gì để gửi / hoãn / `--dry-run`; 1 = mọi máy lỗi (không ghi state); 2 = cấu hình sai. Workflow: mọi bước push `continue-on-error` + `timeout-minutes: 3` → **giá vẫn được commit dù push lỗi hay thiếu secret**; secret `GOLD_PUSH_SUBSCRIPTIONS` trống → bỏ qua hẳn (chỉ `echo`). Bước commit chỉ `git add` push-state.json khi file tồn tại (git add file không có là lỗi fatal); chỉ state đổi → message "GoldTrack push state: YYYY-MM-DD". `workflow_dispatch` có `notify_force`, `notify_dry_run`.
 - Log công khai: không in endpoint, khoá hay nguyên văn exception — chỉ tên máy, host, mã HTTP (do `web_push.py` dùng chung với FuelTrack).
 - Chạy tay: `python products/gold-track/py/notify_gold_price.py [--now 2026-10-08T07:16:00Z] [--force] [--dry-run] [--state …] [--price-file …]`.
@@ -69,5 +80,5 @@ SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"gold-price","ts"
 4. Gộp mã các máy thành `[mã 1, mã 2]` → secret `GOLD_PUSH_SUBSCRIPTIONS`.
 5. Actions → "Update gold price" → Run workflow với `notify_dry_run` (log liệt kê tên máy và nội dung sẽ gửi; lượt đầu chỉ báo sẽ lưu mốc), rồi `notify_force` để nhận thử thật.
 
-- Thiết lập riêng của máy trong `localStorage` `goldtrack_push_v1` `{deviceLabel, lastCopiedEndpointHash}` — **không** đồng bộ Gist, không nằm trong file xuất, "Xoá hết" không đụng tới. Mở app thấy endpoint khác/mất so với lúc "Sao chép" → dòng cảnh báo trong thẻ + toast một lần (mất hẳn mã → thêm nút "Tôi đã tắt thông báo"). "Gửi thử trên máy này" gọi `showNotification` ngay trên máy với giá đang tải (tiêu đề "Giá vàng (thử)", không qua workflow); bị tắt thì dòng nhỏ dưới nút nói lý do.
+- Thiết lập riêng của máy trong `localStorage` `goldtrack_push_v1` `{deviceLabel, lastCopiedEndpointHash}` — **không** đồng bộ Gist, không nằm trong file xuất, "Xoá hết" không đụng tới. Mở app thấy endpoint khác/mất so với lúc "Sao chép" → dòng cảnh báo trong thẻ + toast một lần (mất hẳn mã → thêm nút "Tôi đã tắt thông báo"). "Gửi thử trên máy này" gọi `showNotification` ngay trên máy với giá đang tải, cùng bố cục với thông báo thật (tiêu đề "Giá vàng (thử)", không qua workflow; app không biết giá đã báo lần cuối nên Δ tính so với **điểm lịch sử cuối cùng trước hôm nay (giờ VN)** của từng loại, dòng chân lấy giờ của điểm mới nhất trong số đó; chưa có điểm nào → "· không đổi", không có dòng chân); bị tắt thì dòng nhỏ dưới nút nói lý do.
 - Không kiểm chứng được trên Chromium: Web Push thật qua APNs, quyền thông báo trên iPhone.

@@ -851,18 +851,20 @@
     // on purpose — let the user say so, which forgets the stored hash.
     $('btnPushDismiss').hidden = !changed || !!sub;
   }
+  // Same names and line layout as py/notify_fuel_price.py, so the test looks
+  // like the real notification.
+  var PUSH_NAMES = { 'e10-ron95-iii':'E10 RON95', 'e5-ron92-ii':'E5 RON92', 'ron95-iii':'RON95-III', 'do-005s-ii':'Dầu DO', 'ko':'Dầu hỏa' };
   function testBody(){
-    var changes = getChanges();
-    if(!changes.length) return 'Thông báo thử trên máy này';
-    var last = changes[changes.length - 1].prices || {};
-    var prev = changes.length > 1 ? changes[changes.length - 2].prices || {} : {};
-    var parts = itemOrder().filter(function(id){ return last[id] != null; }).map(function(id){
-      if(prev[id] == null) return shortLabel(id) + ' ' + fmtVnd(last[id]) + ' (mới)';
-      if(last[id] === prev[id]) return '';
-      var d = last[id] - prev[id];
-      return shortLabel(id) + ' ' + fmtVnd(last[id]) + ' (' + (d > 0 ? '+' : '−') + fmtVnd(Math.abs(d)) + ')';
-    }).filter(Boolean);
-    return parts.join(' · ') || 'Thông báo thử trên máy này';
+    var items = priceDoc && Array.isArray(priceDoc.items) ? priceDoc.items : [];
+    var lines = items.filter(function(it){ return it && typeof it.price === 'number'; }).map(function(it){
+      var head = (PUSH_NAMES[it.id] || it.label || it.id) + ': ' + fmtVnd(it.price);
+      var d = it.change, old = it.prevPrice;
+      if(typeof d !== 'number' || typeof old !== 'number') return head + ' (mới)';
+      if(d === 0 || old <= 0) return head + ' · không đổi';
+      var pct = (Math.round(Math.abs(d) / old * 10000) / 100).toFixed(2).replace('.', ',');
+      return head + ' ' + (d > 0 ? '▲' : '▼') + fmtVnd(Math.abs(d)) + ' (' + (d > 0 ? '+' : '−') + pct + '%)';
+    });
+    return lines.join('\n') || 'Thông báo thử trên máy này';
   }
   function initPush(){
     loadPushRec();
