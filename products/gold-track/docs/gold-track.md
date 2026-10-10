@@ -49,7 +49,7 @@ SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"gold-price","ts"
 
 - Theo dõi đúng 2 loại: Ngọc Thịnh 9999 (`ngoc-thinh/9999-nhan-tron`) và Huy Thanh 24k (`huy-thanh/24k-huy-thanh`), ngưỡng 0 đ, không giới hạn số lần/ngày.
 - **Bot giá commit MỌI lượt chạy** (`fetchedAt` luôn đổi) → "có commit" không có nghĩa "giá đổi". Notifier so `data/gold-price.json` với **giá đã báo lần cuối** (`data/push-state.json` = `{notified:{"<shop>/<type>":{buy,sell}}, notifiedAt, delivered, failed}`). Chưa có state → lưu giá hiện tại làm mốc, không gửi. Loại mới xuất hiện → thêm vào mốc, không gửi. Không đổi → thôi. 22:00–07:00 VN → để lượt sau, **không ghi state** (các lần đổi trong đêm gộp thành một thông báo buổi sáng, Δ tính từ mốc cũ). Gửi xong (≥ 1 máy) mới ghi state.
-- Tiêu đề: mọi Δ khác 0 đều tăng → "Giá vàng tăng ▲70.000 đ/chỉ", đều giảm → "Giá vàng giảm ▼40.000 đ/chỉ", lẫn lộn → "Giá vàng thay đổi". Số trong tiêu đề = |Δ giá mua vào| của loại đổi **đầu tiên** theo thứ tự WATCH (mua vào không đổi thì lấy Δ bán ra).
+- Tiêu đề: mọi Δ khác 0 đều tăng → "Giá vàng thay đổi ▲70.000 đ/chỉ", đều giảm → "Giá vàng thay đổi ▼40.000 đ/chỉ", lẫn lộn → "Giá vàng thay đổi". Số trong tiêu đề = |Δ giá mua vào| của loại đổi **đầu tiên** theo thứ tự WATCH (mua vào không đổi thì lấy Δ bán ra).
 - Nội dung (v1.65): mỗi loại **có đổi** một khối 3 dòng theo thứ tự WATCH, rồi một dòng chân ghi mốc so sánh = `notifiedAt` của state đổi sang giờ VN (thiếu/sai định dạng → bỏ dòng chân). % = Δ / giá cũ × 100, 2 chữ số thập phân, làm tròn nửa lên bằng số nguyên; dấu trừ U+2212; phía không đổi ghi "· không đổi":
   ```
   Ngọc Thịnh 9999
@@ -60,7 +60,7 @@ SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"gold-price","ts"
   Bán ra 14.270.000 ▼30.000 (−0,21%)
   So với 07:56 · 08/10
   ```
-  `--force` khi không đổi → tiêu đề "Giá vàng hôm nay", khối của **mọi** loại với hai phía "· không đổi", dòng chân "Không đổi từ HH:MM · dd/mm". Dài nhất thực tế (2 tiệm, giá 9 chữ số) ~214 ký tự, SW cắt ở 300.
+  `--force` khi không đổi → so với mức giá khác gần nhất trong `gold-price-history.json` (tiêu đề theo quy tắc thường, dòng chân "So với mức giá trước · HH:MM · dd/mm"); chỉ khi không có lịch sử để so mới ra tiêu đề "Giá vàng hôm nay", khối của **mọi** loại với hai phía "· không đổi", dòng chân "Không đổi từ HH:MM · dd/mm". Dài nhất thực tế (2 tiệm, giá 9 chữ số) ~214 ký tự, SW cắt ở 300.
 - Exit: 0 = đã gửi ≥ 1 / không có gì để gửi / hoãn / `--dry-run`; 1 = mọi máy lỗi (không ghi state); 2 = cấu hình sai. Workflow: mọi bước push `continue-on-error` + `timeout-minutes: 3` → **giá vẫn được commit dù push lỗi hay thiếu secret**; secret `GOLD_PUSH_SUBSCRIPTIONS` trống → bỏ qua hẳn (chỉ `echo`). Bước commit chỉ `git add` push-state.json khi file tồn tại (git add file không có là lỗi fatal); chỉ state đổi → message "GoldTrack push state: YYYY-MM-DD". `workflow_dispatch` có `notify_force`, `notify_dry_run`.
 - Log công khai: không in endpoint, khoá hay nguyên văn exception — chỉ tên máy, host, mã HTTP (do `web_push.py` dùng chung với FuelTrack).
 - Chạy tay: `python products/gold-track/py/notify_gold_price.py [--now 2026-10-08T07:16:00Z] [--force] [--dry-run] [--state …] [--price-file …]`.

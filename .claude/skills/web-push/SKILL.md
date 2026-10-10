@@ -44,7 +44,7 @@ Không có backend. Mọi thông báo được gửi **từ GitHub Actions** b�
 - Log: chỉ tên máy, host, mã HTTP, tên loại exception. **Không bao giờ** in endpoint, p256dh, auth, private key, `str(e)` (secret chỉ được che khi khớp nguyên chuỗi). Tên máy qua `clean_label` (bỏ `\r\n:%` để không chèn lệnh workflow).
 - `pywebpush` ghi `aud` vào chính dict claims → **mỗi máy một dict claims mới** (dùng chung thì máy thứ hai khác host bị 403).
 - Payload: `{"v":1,"title","body","tag","ts"}` JSON gọn; TTL vàng 6h, xăng 24h, LoveDays 12h.
-- **Bố cục chữ (10/2026, người dùng yêu cầu "chuyên nghiệp, có chênh lệch so với lần trước")**: số kiểu vi-VN, mũi tên ▲▼ + Δ tuyệt đối + `(+0,53%)` / `(−0,21%)` (dấu trừ U+2212, % làm tròn nửa lên bằng số nguyên), phía không đổi ghi "· không đổi", nhiều dòng ngắn thay cho một dòng dài. Vàng: tiêu đề "Giá vàng tăng ▲70.000 đ/chỉ" / "giảm ▼…" / "thay đổi"; mỗi loại đổi 3 dòng (tên, "Mua vào …", "Bán ra …"), dòng chân "So với HH:MM · dd/mm" (= `notifiedAt` giờ VN). Xăng: tiêu đề "Giá xăng dầu tăng|giảm|điều chỉnh từ 15:00 · dd/mm", mỗi mặt hàng một dòng `E10 RON95: 28.250 ▲1.070 (+3,94%)`. Nội dung phải ≤ 300 code point (SW cắt) — có assert trong bộ test. Nút "Gửi thử trên máy này" của app dựng cùng bố cục; đổi định dạng thì sửa cả hai nơi. `notify_force` khi giá vàng không đổi: so với **mức giá khác gần nhất trong `gold-price-history.json`** (`previous_from_history`), tiêu đề "Giá vàng hôm nay", dòng chân "So với mức giá trước · HH:MM · dd/mm" — để lần thử nào cũng thấy chênh lệch thật; thiếu/hỏng lịch sử thì lùi về "· không đổi".
+- **Bố cục chữ (10/2026, người dùng yêu cầu "chuyên nghiệp, có chênh lệch so với lần trước")**: số kiểu vi-VN, mũi tên ▲▼ + Δ tuyệt đối + `(+0,53%)` / `(−0,21%)` (dấu trừ U+2212, % làm tròn nửa lên bằng số nguyên), phía không đổi ghi "· không đổi", nhiều dòng ngắn thay cho một dòng dài. Vàng: tiêu đề luôn mở đầu "Giá vàng thay đổi" (người dùng chọn chữ này), thêm " ▲70.000 đ/chỉ" / " ▼…" khi mọi biến động cùng chiều; mỗi loại đổi 3 dòng (tên, "Mua vào …", "Bán ra …"), dòng chân "So với HH:MM · dd/mm" (= `notifiedAt` giờ VN). Xăng: tiêu đề "Giá xăng dầu tăng|giảm|điều chỉnh từ 15:00 · dd/mm", mỗi mặt hàng một dòng `E10 RON95: 28.250 ▲1.070 (+3,94%)`. Nội dung phải ≤ 300 code point (SW cắt) — có assert trong bộ test. Nút "Gửi thử trên máy này" của app dựng cùng bố cục; đổi định dạng thì sửa cả hai nơi. `notify_force` khi giá vàng không đổi: so với **mức giá khác gần nhất trong `gold-price-history.json`** (`previous_from_history`), tiêu đề theo quy tắc thường ("Giá vàng thay đổi …"), dòng chân "So với mức giá trước · HH:MM · dd/mm" — để lần thử nào cũng thấy chênh lệch thật; thiếu/hỏng lịch sử thì lùi về "· không đổi".
 
 ## 5. Service worker
 
@@ -53,6 +53,8 @@ Không có backend. Mọi thông báo được gửi **từ GitHub Actions** b�
 - LoveDays tính số ngày từ IndexedDB của máy (nguồn chuẩn), payload chỉ là dự phòng; kiểm tra số hợp lý (không hiện "Ngày thứ 1e+21"). Vàng/xăng không đặt badge.
 - `notificationclick`: focus cửa sổ cùng prefix sản phẩm, không có thì `openWindow` trang chính.
 - Thêm handler = sửa `sw-core.js` → bump `CACHE_NAME` + `?v=` (xem CLAUDE.md).
+
+- **Dòng "from <tên app>" dưới tiêu đề là do iOS tự chèn** cho mọi thông báo của web app Màn hình chính — không có API nào tắt được (người dùng đã hỏi 10/2026). Muốn gọn thì rút nội dung của mình, đừng hứa bỏ dòng đó. Tên hiện ở đó lấy từ tên app lúc Thêm vào MH chính.
 
 ## 6. Giao diện bật thông báo
 

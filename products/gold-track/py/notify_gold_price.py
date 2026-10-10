@@ -200,12 +200,14 @@ def build_message(cur, notified, keys, notified_at=None, forced=False):
         if moved and first is None:
             first = abs(moved[0])
         deltas += moved
-    if not deltas or forced:
+    # Title always reads "Giá vàng thay đổi" (user's wording, 10/2026); the
+    # arrow + amount is appended only when every move goes the same way.
+    if not deltas:
         title = "Giá vàng hôm nay"
     elif all(d > 0 for d in deltas):
-        title = "Giá vàng tăng %s%s đ/chỉ" % (UP, fmt_int(first))
+        title = "Giá vàng thay đổi %s%s đ/chỉ" % (UP, fmt_int(first))
     elif all(d < 0 for d in deltas):
-        title = "Giá vàng giảm %s%s đ/chỉ" % (DOWN, fmt_int(first))
+        title = "Giá vàng thay đổi %s%s đ/chỉ" % (DOWN, fmt_int(first))
     else:
         title = "Giá vàng thay đổi"
     when = fmt_when(notified_at)
