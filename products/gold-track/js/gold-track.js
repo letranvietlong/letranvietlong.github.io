@@ -142,6 +142,25 @@
     var s = String(str||'').replace(',', '.').replace(/[^\d.]/g,'');
     return s ? parseFloat(s) : NaN;
   }
+  // Strict parsers for what the user typed into the transaction form. The
+  // lenient ones above strip every stray character, so "-1" saved as 1,
+  // "1e3" as 13 and "1,5,5" as 1,55 — a typo silently became a different
+  // number in the ledger. These return NaN instead, which the form reports
+  // at the field. Upper bounds only catch a slipped finger, not real trades.
+  var MAX_TX_AMOUNT = 100000;          // chỉ
+  var MAX_TX_PRICE = 1000000000;       // đ/chỉ
+  function parseAmountInput(str){
+    var s = String(str == null ? '' : str).trim();
+    if(!/^\d+([.,]\d+)?$/.test(s)) return NaN;
+    var n = parseFloat(s.replace(',', '.'));
+    return n <= MAX_TX_AMOUNT ? n : NaN;
+  }
+  function parsePriceInput(str){
+    var s = String(str == null ? '' : str).trim();
+    if(!/^\d[\d.,\s]*$/.test(s)) return NaN;
+    var n = parseInt(s.replace(/[^\d]/g, ''), 10);
+    return n <= MAX_TX_PRICE ? n : NaN;
+  }
   function fmtDate(iso){
     var d = new Date(iso+"T00:00:00");
     if(isNaN(d)) return iso;
@@ -822,10 +841,22 @@
     return t ? { buy: t.buy, sell: t.sell, at: shopData.fetchedAt } : null;
   }
 
+  // A request that never answers (captive portal, dead connection) used to
+  // leave the price tab on its loading skeleton forever. Give up after 15s —
+  // body download included — so the tab falls through to "Thử lại".
+  var LIVE_FETCH_TIMEOUT_MS = 15000;
+  function fetchLiveJson(url){
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, LIVE_FETCH_TIMEOUT_MS) : null;
+    var done = function(v){ if(timer) clearTimeout(timer); return v; };
+    return fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(done, function(){ return done(null); });
+  }
   function loadLiveData(){
     return Promise.all([
-      fetch('/products/gold-track/data/gold-price.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
-      fetch('/products/gold-track/data/gold-price-history.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      fetchLiveJson('/products/gold-track/data/gold-price.json'),
+      fetchLiveJson('/products/gold-track/data/gold-price-history.json')
     ]).then(function(results){
       if(results[0]) liveData = results[0];
       // gold-price-history.json is keyed by shop then goldType (each an
@@ -1197,7 +1228,7 @@
 
   // ---------- field errors shown at the field ----------
   var AMOUNT_ERROR_DEFAULT = 'Nhập số lượng lớn hơn 0.';
-  var positiveFields = { txAmount: parseDecimal, txPrice: parseDigits };
+  var positiveFields = { txAmount: parseAmountInput, txPrice: parsePriceInput };
   var invalidFocusPending = false;
   ['txAmount', 'txPrice', 'txDate'].forEach(function(id){
     var input = document.getElementById(id);
@@ -1281,10 +1312,16 @@
   document.getElementById('txForm').addEventListener('submit', function(e){
     e.preventDefault();
     if(!document.getElementById('txSheet').classList.contains('open')) return;
-    var amount = parseDecimal(document.getElementById('txAmount').value);
-    var price = parseDigits(document.getElementById('txPrice').value);
+    var amount = parseAmountInput(document.getElementById('txAmount').value);
+    var price = parsePriceInput(document.getElementById('txPrice').value);
     var shop = document.getElementById('txShop').value;
     var goldType = document.getElementById('txGoldType').value || null;
+    // A transaction whose shop this app doesn't know (hand-edited or foreign
+    // import) has no entry in the gold-type list, so the select is empty.
+    // Saving it untouched must not rewrite its goldType to null — that would
+    // move the record into a different ledger group.
+    var editingRec = editingTxId ? state.transactions.find(function(t){ return t.id === editingTxId; }) : null;
+    if(editingRec && editingRec.shop === shop && !SHOPS.some(function(s){ return s.id === shop; })) goldType = editingRec.goldType || null;
     var owner = document.getElementById('txOwner').value || DEFAULT_OWNER;
     var address = document.getElementById('txAddress').value.trim();
     var note = document.getElementById('txNote').value.trim();
@@ -1293,6 +1330,9 @@
     document.getElementById('txAmountError').textContent = AMOUNT_ERROR_DEFAULT;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
     if(!(price > 0)){ setFieldError('txPrice', true); ok = false; } else clearFieldError('txPrice');
+    // The date input's own max/required only guard the native picker; check
+    // here too so a future or malformed date can never reach the ledger.
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > todayISO()){ setFieldError('txDate', true); ok = false; } else clearFieldError('txDate');
     // Validate the whole prospective timeline, not just this one row: a buy
     // edited downwards (or a backdated sell) can invalidate a DIFFERENT sell
     // recorded later, so both directions have to be checked here. Scoped to
