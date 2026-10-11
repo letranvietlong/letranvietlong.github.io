@@ -24,6 +24,24 @@
 
   function fail(msg){ var e = new Error(msg); e.userMessage = msg; throw e; }
 
+  // Reads the cycle list of a backup. A malformed list (not an array, too
+  // long, an item the validator rejects) returns null and refuses the file.
+  // Cycles that merely clash with an earlier one (same id, same start,
+  // overlapping) are dropped one by one and counted: the writer exports the
+  // log as it is, so a clash must never make a backup unreadable.
+  function readCycles(list){
+    if(!Array.isArray(list) || list.length > C.MAX_CYCLES) return null;
+    var out = [], ids = Object.create(null), skipped = 0;
+    for(var i = 0; i < list.length; i++){
+      var v = C.validateCycle(list[i]);
+      if(!v) return null;
+      if(ids[v.id] || C.cycleConflict(out, v, null)){ skipped++; continue; }
+      ids[v.id] = true;
+      out.push(v);
+    }
+    return { items: out, skipped: skipped };
+  }
+
   // ---------- CRC32 ----------
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -117,10 +135,18 @@
     };
   }
 
-  // src: { profile, milestones, photos (validated metadata), readBlob(id) → Promise<record|null> }
+  // src: { profile, milestones, photos (validated metadata), cycles (validated; null or empty = no "cycles" key),
+  //        readBlob(id) → Promise<record|null> }
   async function buildBackup(src, nowMs, onProgress){
     if(src.photos.length > MAX_PHOTOS) fail("Album có " + C.fmtInt(src.photos.length) + " ảnh, vượt giới hạn " + C.fmtInt(MAX_PHOTOS) + " ảnh của một bản sao lưu. Hãy xoá bớt ảnh rồi thử lại.");
     if(src.milestones.length > MAX_MILESTONES) fail("Có " + C.fmtInt(src.milestones.length) + " kỷ niệm, vượt giới hạn " + C.fmtInt(MAX_MILESTONES) + " kỷ niệm của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+    // An empty log writes no "cycles" key at all: importing with "Thay thế"
+    // must never read "this backup has no cycles" as "delete the device's".
+    var cycles = null;
+    if(src.cycles && src.cycles.length){
+      if(src.cycles.length > C.MAX_CYCLES) fail("Có " + C.fmtInt(src.cycles.length) + " kỳ, vượt giới hạn " + C.fmtInt(C.MAX_CYCLES) + " kỳ của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      cycles = src.cycles.map(function(c){ return { id: c.id, start: c.start, end: c.end, note: c.note, createdAt: c.createdAt }; });
+    }
     var zip = zipWriter(nowMs);
     var photos = src.photos.slice().sort(function(a, b){ return a.order - b.order; });
     var manifestPhotos = [], images = {}, done = 0;
@@ -157,13 +183,15 @@
       photos: manifestPhotos,
       images: images
     };
+    if(cycles) manifest.cycles = cycles;
     // Written last because it records the byte size of every image read
     // above; entry order doesn't matter to readZip().
     zip.add(MANIFEST, utf8Bytes(JSON.stringify(manifest)));
     var blob = zip.finish();
     var name = "love-days-backup-" + C.todayStr(nowMs) + ".zip";
     return { file: new File([blob], name, { type: "application/zip" }), name: name, size: blob.size,
-             counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length } };
+             counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length,
+                       cycles: cycles ? cycles.length : null } };
   }
 
   // ---------- ZIP reader ----------
@@ -280,19 +308,33 @@
     });
     profile.hasCover = !!images.cover;
 
+    // null = the file brings no cycles (older backup, or an empty list): the
+    // device's log is then left alone in both import modes.
+    var cycles = null, cyclesSkipped = 0;
+    if(data.cycles != null){
+      var rc = readCycles(data.cycles);
+      if(!rc) badData("danh sách chu kỳ sai");
+      if(rc.items.length) cycles = rc.items;
+      cyclesSkipped = rc.skipped;
+    }
+
     // Dry run: the exact derivation the home/milestone screens perform.
     try{
       var r = C.computeAll(C.validateProfile(profile, nowMs), milestones, nowMs);
       if(!r || !isFinite(r.n)) throw new Error("n");
+      if(cycles){
+        var cs = C.cycleStats(cycles, nowMs);
+        if(!cs || !isFinite(cs.cycleLen) || cs.list.length !== cycles.length) throw new Error("cycles");
+      }
     }catch(e){ fail("Dữ liệu trong bản sao lưu không hiển thị được nên không nhập."); }
 
     var exportedAt = Date.parse(data.exportedAt);
-    return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images,
+    return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images, cycles: cycles, cyclesSkipped: cyclesSkipped,
              exportedAt: isFinite(exportedAt) ? exportedAt : null };
   }
 
   // What a MERGE would add, for the confirmation screen.
-  function planMerge(parsed, local){
+  function planMerge(parsed, local, nowMs){
     var shas = {}, seen = {}, add = 0, skip = 0;
     local.photos.forEach(function(p){ if(p.sha256) shas[p.sha256] = true; });
     parsed.photos.forEach(function(p){
@@ -303,7 +345,28 @@
     var ids = {};
     local.milestones.forEach(function(m){ ids[m.id] = true; });
     var addM = parsed.milestones.filter(function(m){ return !ids[m.id]; }).length;
-    return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM };
+    var cy = planCycles(parsed, local, false, nowMs);
+    return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM,
+             addCycles: cy.added, skipCycles: cy.skipped };
+  }
+
+  // What an import does to the cycle log. record = the kv record to write, or
+  // null to leave the stored one untouched: a file without a cycle list never
+  // clears the device's, and an unreadable stored record is never overwritten.
+  function planCycles(parsed, local, replace, nowMs){
+    var mine = local.cycles || [], bad = local.cyclesBad || [];
+    if(!parsed.cycles) return { record: null, added: 0, skipped: 0, kept: replace && (mine.length > 0 || bad.length > 0 || !!local.cyclesBroken) };
+    if(local.cyclesBroken) return { record: null, added: 0, skipped: 0, kept: true };
+    var next, added, skipped = 0;
+    if(replace){ next = parsed.cycles; added = next.length; }
+    else {
+      var mg = C.mergeCycles(mine, parsed.cycles, nowMs);
+      next = mg.items; added = mg.added; skipped = mg.skipped;
+    }
+    // The stamp must differ from the one other windows loaded (see saveCycles in love-days.js).
+    var stamp = typeof local.cyclesStamp === "number" && nowMs <= local.cyclesStamp ? local.cyclesStamp + 1 : nowMs;
+    return { record: replace || added ? { key: "cycles", items: next.concat(bad), updatedAt: stamp } : null,
+             added: added, skipped: skipped, kept: false };
   }
 
   function newId(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -316,7 +379,8 @@
   // milestones, avatars/cover — is ONE final transaction. Existing records are
   // never rewritten before that point; REPLACE deletes them inside it.
   //
-  // ctx: { db, parsed, mode:'merge'|'replace', local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool} },
+  // ctx: { db, parsed, mode:'merge'|'replace',
+  //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp },
   //        nowMs, onProgress(done,total) }
   async function importBackup(ctx){
     var db = ctx.db, parsed = ctx.parsed, local = ctx.local, replace = ctx.mode === "replace";
@@ -396,10 +460,12 @@
     local.milestones.forEach(function(m){ localMIds[m.id] = true; });
     var newMilestones = replace ? parsed.milestones : parsed.milestones.filter(function(m){ return !localMIds[m.id]; });
 
+    var cy = planCycles(parsed, local, replace, ctx.nowMs);
+
     try{
       await finalSwitch(db, {
         replace: replace, staged: staged, records: records, profile: profile,
-        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen
+        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record
       });
     }catch(err){
       await discardStaged();
@@ -409,7 +475,9 @@
     }
     try{ await C.cleanupGenerations(db, gens.trusted); }catch(e){}
     return { addedPhotos: records.length, skippedPhotos: parsed.photos.length - records.length,
-             addedMilestones: newMilestones.length, images: Object.keys(imageBufs).length, profileKept: keepProfile };
+             addedMilestones: newMilestones.length, images: Object.keys(imageBufs).length, profileKept: keepProfile,
+             cyclesInFile: !!parsed.cycles, addedCycles: cy.added, skippedCycles: cy.skipped, cyclesKept: cy.kept,
+             clashedCycles: parsed.cyclesSkipped || 0 };
   }
 
   function finalSwitch(db, s){
@@ -446,6 +514,7 @@
           blobs.put({ id: id, gen: s.activeGen, mime: "image/jpeg", data: s.imageBufs[id], thumb: null });
         });
         tx.objectStore("kv").put(s.profile);
+        if(s.cycles) tx.objectStore("kv").put(s.cycles);
       }
       if(!pending){ writeAll(); return; }
       s.staged.forEach(function(id){

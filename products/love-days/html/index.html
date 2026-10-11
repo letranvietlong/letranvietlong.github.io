@@ -116,6 +116,14 @@
     </section>
 
     <div class="bday-grid" id="birthdays"></div>
+
+    <section class="card cycle-card" id="cycleCard" aria-labelledby="cycleTitle" hidden>
+      <h2 class="card-kicker" id="cycleTitle">Chu kỳ</h2>
+      <div id="cycleBody"></div>
+      <p class="form-error" id="cycleCardErr" role="alert" hidden></p>
+      <button type="button" class="btn btn-soft btn-block" id="cycleQuick" data-act="start" hidden>Bắt đầu hôm nay</button>
+      <button type="button" class="btn btn-ghost btn-block" id="cycleAddPast" hidden>Thêm kỳ đã qua</button>
+    </section>
   </section>
 
   <!-- Kỷ niệm -->
@@ -226,6 +234,20 @@
       <p class="photo-busy" id="photoBusy" role="status" hidden>Đang xử lý ảnh…</p>
     </section>
 
+    <h3 class="group-title" id="cycleSetTitle">Chu kỳ</h3>
+    <section class="card" id="cycleSetCard" aria-labelledby="cycleSetTitle">
+      <label class="check">
+        <input type="checkbox" id="cycleShow" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Hiện thẻ Chu kỳ ở Trang chủ</span>
+      </label>
+      <button type="button" class="row-link" id="btnCycleBook">
+        <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4zM6 18a2 2 0 0 1 2-2h11M10 8h5"/></svg>
+        <span class="row-link-label">Mở sổ chu kỳ</span>
+        <svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
     <h3 class="group-title" id="backupTitle">Sao lưu</h3>
     <section class="card" aria-labelledby="backupTitle">
       <p class="backup-last" id="backupLast">Chưa sao lưu lần nào</p>
@@ -235,7 +257,7 @@
         <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
         <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
       </div>
-      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
+      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
       <p class="form-error" id="backupError" role="alert" hidden></p>
     </section>
 
@@ -355,6 +377,46 @@
     <p class="form-error" id="msError" role="alert" hidden></p>
     <button type="submit" class="btn btn-primary btn-block">Lưu kỷ niệm</button>
     <button type="button" class="btn btn-danger btn-block" id="msDelete" hidden>Xoá kỷ niệm này</button>
+  </form>
+</div>
+
+<div class="sheet" id="cycleSheet" role="dialog" aria-modal="true" aria-labelledby="cycleSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="cycleSheetTitle">Sổ chu kỳ</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="cycle-list" id="cycleList"></div>
+  <form class="form" id="cycleForm" novalidate hidden>
+    <button type="button" class="btn btn-ghost btn-sm cycle-back" id="cycleBack">‹ Danh sách</button>
+    <div class="field">
+      <span class="field-label" id="cyStartLabel">Ngày bắt đầu</span>
+      <input type="hidden" id="cyStart">
+      <button type="button" class="date-field is-empty" id="cyStartBtn" data-date-for="cyStart" data-date-title="Ngày bắt đầu kỳ" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="cyStartLabel cyStartBtn" aria-describedby="cyStartErr"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="cyStartErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="cyEndLabel">Ngày kết thúc <em>(không bắt buộc)</em></span>
+      <input type="hidden" id="cyEnd">
+      <button type="button" class="date-field is-empty" id="cyEndBtn" data-date-for="cyEnd" data-date-title="Ngày kết thúc kỳ" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="cyEndLabel cyEndBtn" aria-describedby="cyEndErr"><span class="date-field-text">Chưa kết thúc</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="cyEndErr" role="alert" hidden></p>
+    </div>
+    <label class="field">
+      <span class="field-label">Ghi chú</span>
+      <textarea id="cyNote" maxlength="200" rows="2"></textarea>
+    </label>
+    <p class="form-error" id="cycleFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="cycleSave">Lưu kỳ này</button>
+    <button type="button" class="btn btn-danger btn-block" id="cycleDelete" hidden>Xoá kỳ này</button>
+    <div class="confirm-row" id="cycleConfirm" hidden>
+      <p class="confirm-text" id="cycleConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="cycleConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="cycleConfirmNo">Giữ lại</button>
+      </div>
+    </div>
   </form>
 </div>
 

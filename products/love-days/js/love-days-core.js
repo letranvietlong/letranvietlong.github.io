@@ -276,6 +276,116 @@
     return b;
   }
 
+  // ---------- Cycles (period log, stored whole in kv 'cycles') ----------
+  var CYCLE_MIN = 15, CYCLE_MAX = 60;   // a gap outside this range is "unusual" and left out of the average
+  var CYCLE_AVG_N = 6;
+  var CYCLE_DEFAULT = 28;
+  var CYCLE_OPEN_MAX = 10;              // a cycle with no end date counts as ongoing for this many days
+  var CYCLE_MAX_LEN = 31;
+  var MAX_CYCLES = 600;
+
+  function validateCycle(c){
+    if(!c || typeof c !== "object") return null;
+    if(!str(c.id, 64) || !ID_RE.test(c.id)) return null;
+    if(!isValidDate(c.start)) return null;
+    if(c.end != null){
+      if(!isValidDate(c.end)) return null;
+      var d = dayIdx(c.end) - dayIdx(c.start);
+      if(d < 0 || d > CYCLE_MAX_LEN - 1) return null;
+    }
+    if(c.note != null && !str(c.note, 200)) return null;
+    if(!num(c.createdAt)) return null;
+    return { id: c.id, start: c.start, end: c.end == null ? null : c.end, note: c.note || "", createdAt: c.createdAt };
+  }
+
+  function newCycleId(nowMs){ return "c" + nowMs.toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  // Would adding/replacing `cand` (matched by id) break the log? null = fine,
+  // else { code, field: 'start'|'end', other }. nowMs == null skips the
+  // "future" check (reading a backup: a cycle logged while the clock was
+  // ahead must not make the whole file unreadable).
+  // A cycle with no end date holds its start + CYCLE_OPEN_MAX - 1 days, the
+  // same span cycleStats treats as "ongoing": code "openOverlap", with
+  // self:true when the open one is `cand` itself.
+  function cycleConflict(items, cand, nowMs){
+    var s = dayIdx(cand.start), e = cand.end == null ? null : dayIdx(cand.end);
+    if(nowMs != null){
+      var t = todayIdx(nowMs);
+      if(s > t) return { code: "future", field: "start", other: null };
+      if(e !== null && e > t) return { code: "future", field: "end", other: null };
+    }
+    if(e !== null && e < s) return { code: "endBeforeStart", field: "end", other: null };
+    if(e !== null && e - s + 1 > CYCLE_MAX_LEN) return { code: "tooLong", field: "end", other: null };
+    var count = 0, hit = null;
+    for(var i = 0; i < items.length; i++){
+      var o = items[i];
+      if(o.id === cand.id) continue;
+      count++;
+      if(hit) continue;
+      if(o.start === cand.start) hit = { code: "dupStart", field: "start", other: o };
+      else if(o.start < cand.start){
+        if(o.end != null){ if(o.end >= cand.start) hit = { code: "overlap", field: "start", other: o }; }
+        else if(dayIdx(o.start) + CYCLE_OPEN_MAX - 1 >= s) hit = { code: "openOverlap", field: "start", other: o, self: false };
+      } else if(cand.end != null){ if(cand.end >= o.start) hit = { code: "overlap", field: "end", other: o }; }
+      else if(s + CYCLE_OPEN_MAX - 1 >= dayIdx(o.start)) hit = { code: "openOverlap", field: "end", other: o, self: true };
+    }
+    if(hit) return hit;
+    if(count >= MAX_CYCLES) return { code: "full", field: "start", other: null };
+    return null;
+  }
+
+  // Adds each incoming cycle that fits. The import preview and the import
+  // itself both call this, so the two counts cannot differ.
+  function mergeCycles(local, incoming, nowMs){
+    var items = local.slice(), ids = Object.create(null), added = 0, skipped = 0;
+    items.forEach(function(c){ ids[c.id] = true; });
+    incoming.forEach(function(c){
+      var cand = { id: c.id, start: c.start, end: c.end, note: c.note, createdAt: c.createdAt };
+      while(ids[cand.id]) cand.id = newCycleId(nowMs);
+      if(cycleConflict(items, cand, nowMs)){ skipped++; return; }
+      ids[cand.id] = true;
+      items.push(cand);
+      added++;
+    });
+    return { items: items, added: added, skipped: skipped };
+  }
+
+  // Never throws for validated items (an empty list included).
+  function cycleStats(items, nowMs){
+    var tIdx = todayIdx(nowMs);
+    var list = (items || []).slice().sort(function(a, b){
+      if(a.start !== b.start) return a.start < b.start ? -1 : 1;
+      if(a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    }).map(function(c, i, arr){
+      var gap = i ? dayIdx(c.start) - dayIdx(arr[i - 1].start) : null;
+      return { id: c.id, start: c.start, end: c.end, note: c.note, createdAt: c.createdAt,
+               gap: gap, gapOk: gap !== null && gap >= CYCLE_MIN && gap <= CYCLE_MAX,
+               len: c.end == null ? null : dayIdx(c.end) - dayIdx(c.start) + 1 };
+    });
+    // Filter first, then take the latest N: one skipped month must not shrink the sample.
+    var gaps = list.filter(function(x){ return x.gapOk; }).slice(-CYCLE_AVG_N);
+    var n = gaps.length, sum = 0;
+    gaps.forEach(function(x){ sum += x.gap; });
+    var lens = list.filter(function(x){ return x.len !== null; }).slice(-CYCLE_AVG_N), lenSum = 0;
+    lens.forEach(function(x){ lenSum += x.len; });
+    var out = {
+      list: list, n: n, sum: sum, avgGap: n ? sum / n : null,
+      cycleLen: n ? Math.floor((2 * sum + n) / (2 * n)) : CYCLE_DEFAULT, usedDefault: n === 0,
+      avgLen: lens.length ? lenSum / lens.length : null, lenN: lens.length,
+      last: null, next: null, daysLeft: null, inPeriod: false, dayOfPeriod: null, sinceLast: null
+    };
+    if(!list.length) return out;
+    var last = list[list.length - 1], sIdx = dayIdx(last.start);
+    out.last = last;
+    out.next = addDays(last.start, out.cycleLen);
+    out.daysLeft = dayIdx(out.next) - tIdx;
+    out.sinceLast = tIdx - sIdx;
+    out.dayOfPeriod = tIdx - sIdx + 1;
+    out.inPeriod = tIdx >= sIdx && (last.end != null ? tIdx <= dayIdx(last.end) : out.dayOfPeriod <= CYCLE_OPEN_MAX);
+    return out;
+  }
+
   // ---------- IndexedDB ----------
   // Page and SW MUST both open through this: an indexedDB.open() without a
   // version from the SW before the page ever ran would create an EMPTY v1 DB,
@@ -392,6 +502,10 @@
     checkStartDate: checkStartDate, validateProfile: validateProfile,
     validateMilestone: validateMilestone, clipGraphemes: clipGraphemes, validateBlob: validateBlob, validatePhoto: validatePhoto,
     DEFAULT_PERSONS: DEFAULT_PERSONS, PROFILE_BLOB_IDS: PROFILE_BLOB_IDS, genForWrite: genForWrite,
+    CYCLE_MIN: CYCLE_MIN, CYCLE_MAX: CYCLE_MAX, CYCLE_AVG_N: CYCLE_AVG_N, CYCLE_DEFAULT: CYCLE_DEFAULT,
+    CYCLE_OPEN_MAX: CYCLE_OPEN_MAX, CYCLE_MAX_LEN: CYCLE_MAX_LEN, MAX_CYCLES: MAX_CYCLES,
+    validateCycle: validateCycle, newCycleId: newCycleId, cycleConflict: cycleConflict,
+    mergeCycles: mergeCycles, cycleStats: cycleStats,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations
   };

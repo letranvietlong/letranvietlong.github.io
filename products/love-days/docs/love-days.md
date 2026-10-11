@@ -36,7 +36,7 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 | Store | keyPath | Nội dung |
 |---|---|---|
-| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort}; `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy) |
+| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle}; `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ) |
 | `milestones` | `id` | {id, title, date, emoji, note, repeatYearly, createdAt} |
 | `photos` | `id` | {id, gen, caption, takenAt: ms hoặc null, addedAt, order, w, h, bytes, sha256}; index `gen`/`takenAt`/`addedAt`/`order` |
 | `blobs` | `id` | {id, gen, mime, data: **ArrayBuffer**, thumb}; id `avatar-long`, `avatar-thu`, `cover`, hoặc id ảnh |
@@ -58,9 +58,35 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 - Lưới: thumbnail lấy từ `blobs.thumb` qua object URL, nạp lười bằng IntersectionObserver; rời tab Album thì revoke hết.
 - Xem ảnh: lớp phủ `position:fixed; inset:0` ngay trên album (không đổi trang). Khoá cuộn bằng `body{position:fixed; top:-scrollY}` và trả lại đúng `scrollY` khi đóng (không dùng `overflow:hidden` trên html). Vuốt ngang ≥50px, nút ‹ ›, phím ←/→/Esc, nạp trước ảnh bên cạnh, chỉ giữ object URL của ảnh hiện tại ± 1, revoke hết khi đóng. Sửa chú thích tại chỗ (≤200 ký tự), xoá có xác nhận (xoá photos + blob cùng transaction).
 
+## Chu kỳ
+
+Sổ ghi kỳ kinh: thẻ "Chu kỳ" cuối Trang chủ (ẩn được bằng công tắc ở Cài đặt → Chu kỳ, lưu `kv.meta.showCycle`, mặc định bật; "Mở sổ chu kỳ" ở đó vẫn vào được khi thẻ ẩn) và sheet `#cycleSheet` có hai chế độ trong một sheet — danh sách `#cycleList` (JS dựng) và form tĩnh `#cycleForm`. Không có tab riêng.
+
+- **Lưu**: cả sổ là MỘT bản ghi `kv` khoá `cycles` (không nâng `DB_VERSION`). Vì mỗi lần ghi là ghi cả mảng: mục không qua `validateCycle` được giữ nguyên văn trong `state.cyclesBad` và nối lại vào `items` ở mọi lần ghi (kể cả khi nhập bản sao lưu); bản ghi tồn tại mà `items` không phải mảng → `state.cyclesBroken`: thẻ và sổ báo "Không đọc được dữ liệu chu kỳ — dữ liệu vẫn còn nguyên", mọi đường ghi bị khoá, bản sao lưu bỏ hẳn khoá `cycles`, nhập cũng không đè. Mục có `id` trùng với một mục đứng trước trong mảng cũng bị coi là mục hỏng (sửa "kỳ đó" sẽ xoá mất kỳ sinh đôi). **Mục hỏng (`cyclesBad`) không đi theo bản sao lưu** — chỉ nằm lại trong bản ghi trên máy. Mọi lần ghi đi qua `saveCycles()` (ghi xong mới gán `state.cycles`); cờ `cyc.saving` chặn bấm đúp, và `cycleWrite` gọi nó bên trong một `then()` để lỗi ném đồng bộ (`db.transaction` trên kết nối đang đóng) cũng nhả nút.
+- **Hai cửa sổ**: `updatedAt` của bản ghi là dấu (`state.cyclesStamp`, đặt mỗi lần nạp/ghi; hai lần ghi trong cùng mili-giây vẫn ra dấu khác nhau). `saveCycles` đọc lại bản ghi **trong chính transaction ghi**; dấu khác với lúc nạp → không ghi gì, nạp sổ mới từ DB vào `state`, dựng lại thẻ/danh sách và báo "Sổ vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại." (form đang mở giữ nguyên chữ; bấm Lưu lần nữa là được). Bước nhập bản sao lưu cũng ghi một dấu mới.
+- Sau mỗi lần ghi thành công, mọi cú chạm trong thẻ và trong sổ bị bỏ qua 400ms (`cyc.quiet`): bố cục vừa dịch dưới ngón tay, cú chạm thứ hai của một lần chạm đúp không được rơi vào nút/hàng vừa trượt tới.
+- **Tính toán** nằm trong `love-days-core.js` (thuần, không DOM), mọi ngày theo giờ VN:
+
+```
+khoảng cách[i] = dayIdx(start[i]) − dayIdx(start[i−1])        // sắp theo start
+hợp lệ khi 15 ≤ khoảng cách ≤ 60 (CYCLE_MIN/CYCLE_MAX); ngoài khoảng đó thì không tính vào trung bình
+lấy các khoảng hợp lệ TRƯỚC, rồi 6 cái gần nhất (CYCLE_AVG_N): n, sum
+chu kỳ trung bình (hiển thị) = sum / n, một chữ số thập phân
+cycleLen = n ? floor((2·sum + n) / (2·n)) : 28                // làm tròn nửa lên; 28 = CYCLE_DEFAULT khi chưa có khoảng hợp lệ
+kỳ tới = start kỳ cuối + cycleLen;  còn = dayIdx(kỳ tới) − hôm nay
+số ngày mỗi kỳ = trung bình (end − start + 1) của 6 kỳ gần nhất có end
+đang trong kỳ: hôm nay ≤ end kỳ cuối; hoặc kỳ cuối chưa có end và hôm nay − start + 1 ≤ 10 (CYCLE_OPEN_MAX)
+```
+- **Câu trạng thái**: đang trong kỳ → "Ngày thứ N của kỳ"; còn > 0 → "Còn N ngày"; = 0 → "Dự kiến hôm nay"; < 0 và cách kỳ cuối ≤ 60 ngày → "Trễ N ngày"; > 60 → "Đã N ngày từ kỳ gần nhất" (khi đó cả thẻ lẫn dòng đầu của sổ đổi thành "Kỳ gần nhất" + ngày kỳ gần nhất + "N ngày trước", không hiện ngày dự kiến đã qua). Khoảng cách ngoài 15–60 ngày ghi "N ngày · không tính trung bình" (không dùng chữ "bất thường"). Trên thẻ câu này nằm trong `aria-label` của `#cycleOpen` (phần nhìn thấy là số lớn + đơn vị, hoặc huy hiệu "Trễ N ngày"); trong sổ nó là huy hiệu cạnh "Kỳ tới dự kiến".
+- **Ràng buộc** (`cycleConflict`, dùng chung cho form, nút nhanh, gộp và đọc bản sao lưu): không ngày tương lai ("Chưa ghi được ngày ở tương lai"), end ≥ start, một kỳ ≤ 31 ngày, không hai kỳ cùng ngày bắt đầu, không chồng nhau, tối đa 600 kỳ. **Kỳ chưa có ngày kết thúc chiếm `start … start + 9`** (10 ngày, `CYCLE_OPEN_MAX` — đúng khoảng mà `cycleStats` coi là "đang trong kỳ"), xét ở cả hai chiều: mã `openOverlap`. Kỳ khác chưa kết thúc → lỗi ở ô bắt đầu (và trên thẻ khi bấm "Bắt đầu hôm nay"): "Kỳ 25/09/2026 chưa ghi ngày kết thúc — hãy ghi ngày kết thúc cho kỳ đó trước."; chính kỳ đang nhập chưa kết thúc mà sát kỳ sau (`self: true`) → lỗi ở ô kết thúc: "Kỳ này cách kỳ … chưa tới 10 ngày — hãy ghi ngày kết thúc.". Lỗi hiện ngay dưới ô sai; khi end < start, câu lỗi nằm ở ô người dùng vừa đổi (đổi ngày bắt đầu → "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc"). Sửa mà không đổi ngày (chỉ ghi chú) thì không kiểm lại, để bản ghi vốn đã lệch vẫn sửa được.
+- Nút nhanh trên thẻ: "Bắt đầu hôm nay" ghi ngay một kỳ mới; "Kết thúc hôm nay" khi kỳ cuối chưa có end và đang trong kỳ; ẩn khi hôm nay ≤ end kỳ cuối. "Hôm nay" lấy tại lúc bấm.
+- Xoá kỳ: hàng xác nhận ngay trong sheet (nút đỏ đặc "Xoá" + "Giữ lại"), không dùng `window.confirm`.
+- Đồng hồ qua ngày mới: thẻ và nửa danh sách của sổ tự dựng lại; **form đang mở không bao giờ bị đụng** (kể cả `visibilitychange`).
+- **Không đồng bộ giữa hai máy.** Muốn chuyển sổ sang máy kia: xuất bản sao lưu rồi nhập ở chế độ Gộp.
+
 ## Sao lưu (ZIP STORE)
 
-File `love-days-backup-YYYY-MM-DD.zip` (ngày VN), không nén (method 0), không zip64 (tối đa 4 GB), tối đa **10.000 ảnh và 2.000 kỷ niệm** — cùng một giới hạn cho xuất và nhập, để app không bao giờ tạo ra file mà chính nó từ chối đọc (10.000 ảnh 1600px đã chạm trần 4 GB). Vượt giới hạn → báo lỗi ngay khi bấm "Chuẩn bị bản sao lưu". Tên mục ASCII:
+File `love-days-backup-YYYY-MM-DD.zip` (ngày VN), không nén (method 0), không zip64 (tối đa 4 GB), tối đa **10.000 ảnh, 2.000 kỷ niệm và 600 kỳ** — cùng một giới hạn cho xuất và nhập, để app không bao giờ tạo ra file mà chính nó từ chối đọc (10.000 ảnh 1600px đã chạm trần 4 GB). Vượt giới hạn → báo lỗi ngay khi bấm "Chuẩn bị bản sao lưu". Tên mục ASCII:
 
 ```
 photos/<id>.jpg ...        ảnh album (JPEG 1600px, không kèm thumbnail — tạo lại khi nhập)
@@ -68,7 +94,8 @@ avatars/long.jpg, avatars/thu.jpg, cover.jpg   chỉ những ảnh đang có
 love-days.json             {app:'love-days', format:1, exportedAt (ISO),
                             profile:{startDate, persons[2]{id,name,dob}, hasCover},
                             milestones:[...], photos:[{id, caption, takenAt, addedAt, order, w, h, bytes, sha256, file}],
-                            images:{'avatar-long':'avatars/long.jpg', ...}}
+                            images:{'avatar-long':'avatars/long.jpg', ...},
+                            cycles:[{id, start, end, note, createdAt}]}   (từ v1.8; vẫn format 1 — app cũ bỏ qua khoá lạ nên đọc được file mới)
 ```
 
 - **Lưu hai bước**: "Chuẩn bị bản sao lưu" dựng file → "Lưu file (xx MB)" gọi `navigator.share({files})` **ngay trong cú chạm** khi `canShare` (iPhone: "Lưu vào Tệp"), nếu không thì `a.download` + revoke sau 10s. Safari mất "user activation" sau await dài → share ném `NotAllowedError`, nên không gộp hai bước. Mọi thay đổi dữ liệu làm file đã chuẩn bị hết hiệu lực. Lưu xong ghi `kv.meta.lastBackupAt`; thẻ Sao lưu hiện "Lần cuối: hôm nay, 21:30" / "Lần cuối: 31 ngày trước (01/09/2026)" (đếm theo ngày lịch VN), tô màu cảnh báo khi chưa sao lưu lần nào hoặc đã ≥ 30 ngày.
@@ -78,6 +105,12 @@ love-days.json             {app:'love-days', format:1, exportedAt (ISO),
 ### Nhập: Gộp (mặc định) / Thay thế
 
 - **Gộp**: ảnh trùng sha256 với ảnh đang có → giữ ảnh đang có, bỏ ảnh trong file; kỷ niệm trùng id → giữ bản đang có; hồ sơ giữ nguyên trừ khi máy chưa có hồ sơ hợp lệ; ảnh đại diện/ảnh bìa chỉ lấy từ file khi máy chưa có. Ảnh mới xếp sau ảnh hiện có trong thứ tự Tuỳ chỉnh.
+- **Chu kỳ** (`planCycles` trong `love-days-backup.js`, ghi trong chính transaction cuối):
+  - **Xuất không bao giờ bị sổ chu kỳ chặn**: mọi kỳ đã qua `validateCycle` đều được ghi ra, kể cả khi trong sổ có hai kỳ trùng/chồng nhau (chỉ còn giới hạn 600 kỳ, bằng giới hạn lúc nhập). Sổ rỗng hoặc không đọc được → **không ghi khoá `cycles`**.
+  - **Đọc** (`readCycles`): danh sách sai định dạng (không phải mảng, quá 600, có mục không qua `validateCycle` như end < start hay ngày không có thật) → từ chối cả file. Kỳ chỉ **xung đột theo cặp** với kỳ đứng trước trong file (trùng id, trùng ngày bắt đầu, chồng nhau, `openOverlap`) → bỏ riêng kỳ đó và đếm; xem trước ghi "Bỏ qua N kỳ trùng trong file", kết quả ghi "Bỏ qua N kỳ trùng.". Ngày tương lai KHÔNG bị kiểm lúc đọc file (kỳ ghi lúc đồng hồ máy chạy nhanh không được làm cả bản sao lưu ảnh thành vô dụng) — khi Gộp các kỳ đó bị bỏ qua.
+  - File không có khoá `cycles` **hoặc có `cycles: []`** → coi là "file không mang chu kỳ": sổ trên máy **giữ nguyên ở cả hai chế độ**, màn hình ghi "Chu kỳ đã ghi trên máy giữ nguyên (bản sao lưu này không có)". Thay thế vì thế không bao giờ xoá trắng sổ.
+  - Gộp → `LoveCore.mergeCycles` thêm từng kỳ của file nếu `cycleConflict` cho qua (trùng id thì cấp id mới); màn xem trước và bước nhập thật gọi cùng hàm đó nên hai con số luôn bằng nhau. Thay thế → dùng danh sách của file.
+  - Sổ trên máy đang không đọc được → chu kỳ trong file không được nhập ở cả hai chế độ, và màn xem trước nói rõ điều đó (không ghi "đã có trên máy").
 - **Thay thế**: xoá toàn bộ ảnh, kỷ niệm, hồ sơ, ảnh đại diện/bìa rồi dùng nội dung file. Sheet có "Bước 1 · Sao lưu dữ liệu hiện tại trước" (Chuẩn bị → Lưu file, hai cú chạm vì lý do user activation ở trên) và hộp xác nhận nhắc nếu chưa lưu.
 - **An toàn khi bị ngắt giữa chừng** (IndexedDB tự commit qua mỗi await nên không thể dùng một transaction dài): mỗi ảnh nhập vào được ghi trước thành **blob với id MỚI và chưa có bản ghi photos** — vô hình với app, không đè lên bất cứ thứ gì đang có. Sau khi mọi ảnh đã đọc + kiểm xong, **một transaction cuối** kiểm các blob đó còn đủ, rồi ghi toàn bộ bản ghi photos, kỷ niệm, profile, ảnh đại diện/bìa (nhỏ, giữ trong bộ nhớ vì id cố định không "dàn dựng" được) — Thay thế thì `clear()` photos/milestones trong chính transaction đó. Lỗi trước bước cuối → xoá các blob đã dàn dựng; app bị tắt/tải lại giữa chừng → `cleanupGenerations()` lần mở sau xoá blob mồ côi. Ảnh đang có không bao giờ bị ghi lại hay đổi `gen`, nên không thể mất hay nhân đôi. Gộp ghi `activeGen` theo `genForWrite` (giữ nguyên gen của ảnh đang có, kể cả khi nó hỏng); Thay thế ghi `"g1"`.
 - Nếu một cửa sổ LoveDays khác mở trong lúc nhập (nó chạy dọn dẹp và xoá blob đang dàn dựng), transaction cuối phát hiện thiếu blob và huỷ: "Có cửa sổ LoveDays khác vừa mở…".

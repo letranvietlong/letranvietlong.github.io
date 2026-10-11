@@ -14,7 +14,7 @@
   --ring:#FFFFFF;
   --warn-bg:#FFF4D6;--warn-fg:#6B4400;--warn-line:rgba(160,110,0,.3);
   --err-bg:#FFE3E3;--err-fg:#8F1D1D;--err-line:rgba(180,30,30,.3);
-  --danger:#B42318;
+  --danger:#B42318;--danger-ink:#FFFFFF;
   --focus-ring:rgba(194,24,91,.18);
   --radius:22px;--radius-sm:14px;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
@@ -38,7 +38,7 @@
     --ring:#26161D;
     --warn-bg:#3A2C10;--warn-fg:#FFDFA0;--warn-line:rgba(255,200,90,.25);
     --err-bg:#3D1518;--err-fg:#FFC2C2;--err-line:rgba(255,120,120,.28);
-    --danger:#FF9A8F;
+    --danger:#FF9A8F;--danger-ink:#3A0B1C;
     --focus-ring:rgba(255,143,171,.3);
   }
 }
@@ -254,6 +254,36 @@ h1,h2,h3,p{margin:0}
 .bday-meta{font-size:.8rem;color:var(--muted)}
 .bday-card .btn{margin-top:8px}
 
+/* Cycles */
+.cycle-card{padding:14px 18px 16px}
+.cycle-card .card-kicker{margin-bottom:6px}
+.cycle-row{min-height:56px}
+.cycle-row .ms-chev{margin-left:-6px}
+.cycle-row .status-tag{flex:none}
+.cycle-card .btn,.cycle-card .form-error{margin-top:12px}
+.cycle-card .btn + .btn{margin-top:8px}
+.cycle-stats{margin:0 0 14px;padding:4px 14px;border-radius:var(--radius-sm);background:var(--card2)}
+.cycle-stat{padding:10px 0}
+.cycle-stat + .cycle-stat{border-top:1px solid var(--line)}
+.cycle-stat dt{font-size:.78rem;font-weight:700;color:var(--muted)}
+.cycle-stat dd{margin:2px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:1rem}
+.cycle-stat dd b{font-weight:800}
+.cycle-stat-sub{font-size:.82rem;color:var(--muted)}
+.cycle-empty{margin-bottom:12px}
+.cycle-list .ms-group{box-shadow:none}
+.cycle-list .ms-group > li + li::before{left:14px}
+.cycle-item{min-height:60px}
+.cycle-item .status-tag{display:inline-block;padding:1px 8px;font-size:.76rem}
+.cycle-note{overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cycle-back{align-self:flex-start;margin-left:-4px}
+.field-error{font-size:.84rem;font-weight:600;line-height:1.4;color:var(--err-fg)}
+.date-field[aria-invalid=true]{border-color:var(--err-fg);box-shadow:0 0 0 1px var(--err-fg)}
+.confirm-row{padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--err-line);background:var(--err-bg)}
+.confirm-text{font-size:.95rem;font-weight:800;color:var(--err-fg)}
+.confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.confirm-btns .btn-ghost{background:var(--card);color:var(--text)}
+.btn-danger-solid{background:var(--danger);color:var(--danger-ink)}
+
 /* Milestones */
 .ms-list{margin:0;padding:0}
 .ms-list > .group-title:first-child{margin-top:8px}
@@ -421,7 +451,7 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
 .import-ok{background:var(--accent-soft);color:var(--accent-soft-ink);border-color:transparent}
 .import-step{font-size:.76rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
 #importContent .card-text + .btn,#importContent .card-text + .btn-block{margin-top:12px}
-#importContent .form-error{margin-top:8px}
+#importContent .form-error,#importContent .card-text + .card-text{margin-top:8px}
 
 /* Tab bar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;

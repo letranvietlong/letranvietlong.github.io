@@ -92,6 +92,59 @@ const sel = {
   importContent: '#importContent', backupLast: '#backupLast'
 };
 
+// ---------- Chu kỳ (v1.8) ----------
+// kv 'cycles' — { key:'cycles', items:[{ id, start:'YYYY-MM-DD', end:'YYYY-MM-DD'|null, note:'', createdAt }], updatedAt }
+// updatedAt doubles as the "did another window write since I loaded" stamp: a save is refused when it changed.
+// A cycle without an end date holds start..start+9 (openOverlap); a repeated id in the stored list is treated as a broken item.
+// After a successful write the card and the sheet ignore taps for 400ms — wait ≥500ms before the next click.
+// Seed: ld.seed(page, { profile: ld.profile, extra: [['kv', ld.cyclesRecord(ld.cycles.S1.items)]] })
+// Gap = days between consecutive starts; valid 15..60; average = latest 6 VALID gaps;
+// next = last start + round-half-up(average); no valid gap → 28.
+// Card: status sentence is in #cycleOpen's aria-label (visible: big number + unit, or the
+// "Trễ N ngày" badge); the sheet shows it as a .status-tag next to "Kỳ tới dự kiến".
+const cy = (start, end, id) => ({ id: id || 'c' + start.replace(/-/g, ''), start, end: end === undefined ? null : end, note: '', createdAt: 1 });
+const fiveDays = starts => starts.map(s => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 4); return cy(s, d.toISOString().slice(0, 10)); });
+const cyclesRecord = items => ({ key: 'cycles', items, updatedAt: 1 });
+const cycleNow = '2026-10-11T12:00:00+07:00'; // Chủ nhật
+const S1items = [cy('2026-06-03', '2026-06-07'), cy('2026-07-01', '2026-07-05'), cy('2026-07-30', '2026-08-04'), cy('2026-08-27', '2026-08-31'), cy('2026-09-25', '2026-09-29')];
+const cycles = {
+  // gaps 28, 29, 28, 29 → 28,5 → 29 → next 24/10/2026 (Thứ bảy); lengths 5,5,6,5,5 → 5,2
+  S1: { items: S1items, avg: '28,5 ngày', n: 4, next: '2026-10-24', len: '5,2 ngày',
+    byNow: [
+      ['2026-10-11T12:00:00+07:00', 'Còn 13 ngày'], ['2026-09-29T12:00:00+07:00', 'Ngày thứ 5 của kỳ'],
+      ['2026-09-30T12:00:00+07:00', 'Còn 24 ngày'], ['2026-10-24T12:00:00+07:00', 'Dự kiến hôm nay'],
+      ['2026-10-27T12:00:00+07:00', 'Trễ 3 ngày'], ['2026-11-24T12:00:00+07:00', 'Trễ 31 ngày'],
+      ['2026-11-25T12:00:00+07:00', 'Đã 61 ngày từ kỳ gần nhất']
+    ] },
+  // last cycle still open: day ≤ 10 counts as ongoing ("Kết thúc hôm nay"), day 11 does not.
+  S1b: { items: S1items.slice(0, 4).concat([cy('2026-09-25', null)]),
+    byNow: [['2026-09-27T12:00:00+07:00', 'Ngày thứ 3 của kỳ', 'Kết thúc hôm nay'], ['2026-10-04T12:00:00+07:00', 'Ngày thứ 10 của kỳ', 'Kết thúc hôm nay'],
+            ['2026-10-05T12:00:00+07:00', 'Còn 19 ngày', 'Bắt đầu hôm nay']] },
+  // S1 + "Bắt đầu hôm nay" at cycleNow: gap 16 → (28+29+28+29+16)/5 = 26 → next 06/11/2026; then "Kết thúc hôm nay" → lengths +1 → 27/6 = 4,5
+  S1c: { avg: '26 ngày', n: 5, next: '2026-11-06', status: 'Ngày thứ 1 của kỳ', lenAfterEnd: '4,5 ngày' },
+  // gaps 28, 70 (unusual, excluded), 28, 29 → 85/3 = 28,3 → 28 → next 31/10
+  S2: { items: [cy('2026-05-01', '2026-05-05'), cy('2026-05-29', '2026-06-02'), cy('2026-08-07', '2026-08-11'), cy('2026-09-04', '2026-09-08'), cy('2026-10-03', '2026-10-07')],
+    avg: '28,3 ngày', n: 3, next: '2026-10-31', status: 'Còn 20 ngày', unusual: '70 ngày · không tính trung bình' },
+  // 8 gaps: 35, 35, 28 ×6 → only the latest 6 count → 28 → next 29/10
+  S3: { items: fiveDays(['2026-02-05', '2026-03-12', '2026-04-16', '2026-05-14', '2026-06-11', '2026-07-09', '2026-08-06', '2026-09-03', '2026-10-01']),
+    avg: '28 ngày', n: 6, next: '2026-10-29', status: 'Còn 18 ngày' },
+  // gaps 34, 28, 28, 70, 28, 28, 28 → filter first, THEN latest 6: (34+28×5)/6 = 29 → next 30/10.
+  // (Taking the latest 6 first and filtering after would give 28 → 29/10.)
+  S3b: { items: fiveDays(['2026-01-30', '2026-03-05', '2026-04-02', '2026-04-30', '2026-07-09', '2026-08-06', '2026-09-03', '2026-10-01']),
+    avg: '29 ngày', n: 6, next: '2026-10-30', status: 'Còn 19 ngày' },
+  // one cycle → default 28 → next 23/10
+  S4: { items: [cy('2026-09-25', '2026-09-29')], next: '2026-10-23', status: 'Còn 12 ngày', note: 'Ước tính theo 28 ngày', avgText: 'Cần ít nhất 2 kỳ' },
+  // across New Year, now = 2027-01-12T12:00+07: gap 29 → next 04/02/2027
+  S6: { now: '2027-01-12T12:00:00+07:00', items: [cy('2026-12-08', '2026-12-12'), cy('2027-01-06', '2027-01-10')], avg: '29 ngày', n: 1, next: '2027-02-04', status: 'Còn 23 ngày' }
+};
+const cycleSel = {
+  card: '#cycleCard', open: '#cycleOpen', quick: '#cycleQuick', addPast: '#cycleAddPast', cardErr: '#cycleCardErr',
+  sheet: '#cycleSheet', list: '#cycleList', stats: '#cycleList .cycle-stat', rows: '#cycleList [data-cy-id]', add: '#cycleList [data-cy="add"]',
+  form: '#cycleForm', back: '#cycleBack', start: '#cyStart', end: '#cyEnd', note: '#cyNote', startErr: '#cyStartErr', endErr: '#cyEndErr',
+  save: '#cycleSave', del: '#cycleDelete', confirm: '#cycleConfirm', confirmYes: '#cycleConfirmYes', confirmNo: '#cycleConfirmNo',
+  show: '#cycleShow', book: '#btnCycleBook'
+};
+
 // Replaces every store's content. blobs: { id: base64 } (ArrayBuffers can't
 // cross page.evaluate). raw: true stores records as-is (for corrupt-data tests).
 async function seed(page, data) {
@@ -145,4 +198,5 @@ function badgeStubScript() {
   try { Object.defineProperty(Notification, 'permission', { get: () => 'granted', configurable: true }); } catch (e) {}
 }
 
-module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript };
+module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
+  cy, cyclesRecord, cycleNow, cycles, cycleSel };

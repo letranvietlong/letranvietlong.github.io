@@ -20,7 +20,8 @@
     db: null, profile: null, milestones: [], blobs: {}, urls: {},
     computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false, dbError: null,
     photos: [], albumOrder: [], arranging: false,
-    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken" }
+    cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
+    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true }
   };
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
   // One long job at a time: album add, backup build, import.
@@ -92,7 +93,7 @@
   function loadAll(){
     var db = state.db;
     var safe = function(p, fallback){ return p.catch(function(){ return fallback; }); };
-    // A failed read of profile/milestones/photos/meta rejects the whole load:
+    // A failed read of profile/milestones/photos/meta/cycles rejects the whole load:
     // treating it as "nothing stored" would show first-run setup and let the
     // next save overwrite the real data. Only avatar/cover reads may fail soft.
     return Promise.all([
@@ -100,7 +101,8 @@
       C.idbGetAll(db, "milestones"),
       Promise.all(PHOTO_IDS.map(function(id){ return safe(C.idbGet(db, "blobs", id), undefined); })),
       C.idbGetAll(db, "photos"),
-      C.idbGet(db, "kv", "meta")
+      C.idbGet(db, "kv", "meta"),
+      C.idbGet(db, "kv", "cycles")
     ]).then(function(r){
       var skipped = 0;
       if(r[0] !== undefined){
@@ -131,7 +133,9 @@
       if(meta && typeof meta === "object"){
         if(typeof meta.lastBackupAt === "number" && isFinite(meta.lastBackupAt)) state.meta.lastBackupAt = meta.lastBackupAt;
         if(SORTS.indexOf(meta.albumSort) !== -1) state.meta.albumSort = meta.albumSort;
+        if(meta.showCycle === false) state.meta.showCycle = false;
       }
+      skipped += applyCyclesRec(r[5]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
@@ -205,6 +209,7 @@
 
   function switchTab(name){
     if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
+    showError("cycleCardErr", null);
     state.tab = name;
     ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -279,6 +284,7 @@
         '<p class="bday-left"><span class="sr-only">còn ' + fmtInt(b.daysLeft) + ' ngày</span><span class="bday-num" aria-hidden="true">' + fmtInt(b.daysLeft) + '</span><span class="bday-unit" aria-hidden="true">ngày</span></p>' +
         '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
+    renderCycleCard();
   }
   function goTo(e){
     var btn = e.target.closest("[data-goto]");
@@ -311,6 +317,8 @@
       renderHome();
       renderMilestones();
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
+      // Only the list half of the cycle sheet follows the date; an open form is the user's.
+      if(cyc.mode === "list" && $("cycleSheet").classList.contains("open")) renderCycleSheet();
       updateBadge();
       return;
     }
@@ -443,6 +451,355 @@
     }, function(){ showError("msError", "Không xoá được. Hãy thử lại."); });
   });
 
+  // ---------- Cycles ----------
+  // The whole log is one kv record, so every write carries state.cyclesBad
+  // (items the validator rejected, kept verbatim) back with it, and nothing is
+  // written at all when the stored record itself was unreadable.
+  var cyc = { mode: "list", editingId: null, saving: false, quiet: false, lastDate: null };
+  var CYCLE_BROKEN_TEXT = "Không đọc được dữ liệu chu kỳ — dữ liệu vẫn còn nguyên";
+  var CHEV = '<svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
+  // Identifies the stored record this window last saw; undefined (no record
+  // yet) and a record without a numeric updatedAt each get their own value.
+  function cyclesStampOf(rec){
+    return rec === undefined ? null : rec && typeof rec.updatedAt === "number" ? rec.updatedAt : "?";
+  }
+  // Puts a stored kv 'cycles' record into state; returns how many items were set aside.
+  function applyCyclesRec(cy){
+    var skipped = 0, seen = Object.create(null);
+    state.cycles = []; state.cyclesBad = []; state.cyclesBroken = false;
+    state.cyclesStamp = cyclesStampOf(cy);
+    if(cy === undefined) return 0;
+    if(!cy || typeof cy !== "object" || !Array.isArray(cy.items)){ state.cyclesBroken = true; return 0; }
+    // Without validateCycle (older cached core) nothing can be judged: keep it all verbatim.
+    if(!C.validateCycle){ state.cyclesBad = cy.items.slice(); return 0; }
+    cy.items.forEach(function(it){
+      var v = C.validateCycle(it);
+      // A repeated id is set aside too: editing "that" cycle would otherwise drop its twin.
+      if(v && !seen[v.id]){ seen[v.id] = true; state.cycles.push(v); }
+      else { state.cyclesBad.push(it); skipped++; }
+    });
+    return skipped;
+  }
+
+  // The stored record is re-read inside the write transaction: if another
+  // LoveDays window changed it since this one loaded it, nothing is written —
+  // the newer log is loaded instead and the caller reports it.
+  function saveCycles(next){
+    if(state.loadFailed || state.cyclesBroken || !C.cycleStats) return Promise.reject(new Error("cycles locked"));
+    // An import works from a snapshot and writes the log back in its last step.
+    if(busy === "import") return Promise.reject(userErr("Đang nhập bản sao lưu. Hãy đợi xong rồi thử lại."));
+    var stamp = now();
+    // Two writes inside the same millisecond must still get different stamps.
+    if(typeof state.cyclesStamp === "number" && stamp <= state.cyclesStamp) stamp = state.cyclesStamp + 1;
+    var rec = { key: "cycles", items: next.concat(state.cyclesBad), updatedAt: stamp };
+    function done(){
+      state.cycles = next;
+      state.cyclesStamp = stamp;
+      dataChanged();
+    }
+    if(!state.db) return put("kv", rec).then(done);
+    var tx = state.db.transaction("kv", "readwrite"), st = tx.objectStore("kv"), stale = false, found;
+    var rq = st.get("cycles");
+    rq.onsuccess = function(){
+      found = rq.result;
+      if(cyclesStampOf(found) !== state.cyclesStamp) stale = true; else st.put(rec);
+    };
+    return C.txDone(tx).then(function(){
+      if(!stale){ done(); return; }
+      applyCyclesRec(found);
+      renderCycleCard();
+      if(cyc.mode === "list" && $("cycleSheet").classList.contains("open")) renderCycleSheet();
+      throw userErr("Sổ vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
+    });
+  }
+  function cycleById(id){
+    for(var i = 0; i < state.cycles.length; i++) if(state.cycles[i].id === id) return state.cycles[i];
+    return null;
+  }
+  function fmtAvg(x){
+    var r = Math.round(x * 10) / 10;
+    return (r === Math.floor(r) ? String(r) : r.toFixed(1).replace(".", ",")) + " ngày";
+  }
+  function fmtCycleRange(c){
+    if(c.end == null || c.end === c.start) return fmtDate(c.start);
+    return (c.start.slice(0, 4) === c.end.slice(0, 4) ? fmtDayMonth(c.start) : fmtDate(c.start)) + " – " + fmtDate(c.end);
+  }
+  function cycleErrText(cf){
+    if(cf.code === "dupStart") return "Đã có kỳ bắt đầu ngày " + fmtDate(cf.other.start);
+    if(cf.code === "overlap") return "Trùng với kỳ " + fmtCycleRange(cf.other);
+    if(cf.code === "openOverlap"){
+      return cf.self ? "Kỳ này cách kỳ " + fmtDate(cf.other.start) + " chưa tới " + C.CYCLE_OPEN_MAX + " ngày — hãy ghi ngày kết thúc."
+        : "Kỳ " + fmtDate(cf.other.start) + " chưa ghi ngày kết thúc — hãy ghi ngày kết thúc cho kỳ đó trước.";
+    }
+    if(cf.code === "endBeforeStart") return "Ngày kết thúc phải từ ngày bắt đầu trở đi";
+    if(cf.code === "tooLong") return "Một kỳ dài tối đa " + C.CYCLE_MAX_LEN + " ngày";
+    if(cf.code === "future") return "Chưa ghi được ngày ở tương lai";
+    return "Đã đủ " + C.MAX_CYCLES + " kỳ";
+  }
+  function cycleView(st){
+    if(st.inPeriod) return { kind: "in", status: "Ngày thứ " + st.dayOfPeriod + " của kỳ" };
+    if(st.daysLeft > 0) return { kind: "left", status: "Còn " + fmtInt(st.daysLeft) + " ngày" };
+    if(st.daysLeft === 0) return { kind: "today", status: "Dự kiến hôm nay" };
+    if(st.sinceLast <= C.CYCLE_MAX) return { kind: "late", status: "Trễ " + (-st.daysLeft) + " ngày" };
+    return { kind: "long", status: "Đã " + fmtInt(st.sinceLast) + " ngày từ kỳ gần nhất" };
+  }
+  function bigRight(num, unit, unitFirst){
+    var n = '<span class="up-num">' + num + "</span>", u = '<span class="up-unit">' + unit + "</span>";
+    return '<span class="up-left" aria-hidden="true">' + (unitFirst ? u + n : n + u) + "</span>";
+  }
+
+  function renderCycleCard(){
+    var card = $("cycleCard");
+    // An older cached love-days-core.js can be paired with this page offline.
+    if(!C.cycleStats){ card.hidden = true; $("cycleSetCard").hidden = true; $("cycleSetTitle").hidden = true; return; }
+    card.hidden = state.meta.showCycle === false;
+    $("cycleShow").checked = state.meta.showCycle !== false;
+    var body = $("cycleBody"), quick = $("cycleQuick"), past = $("cycleAddPast");
+    if(state.cyclesBroken){
+      body.innerHTML = '<p class="card-text">' + CYCLE_BROKEN_TEXT + ".</p>";
+      quick.hidden = true; past.hidden = true;
+      return;
+    }
+    var t = now(), st = C.cycleStats(state.cycles, t);
+    if(!st.last){
+      body.innerHTML = '<p class="card-text">Chưa ghi kỳ nào</p>';
+      quick.hidden = false; quick.setAttribute("data-act", "start"); quick.textContent = "Bắt đầu hôm nay";
+      past.hidden = false;
+      return;
+    }
+    var v = cycleView(st), title = "Kỳ tới dự kiến", sub = weekday(st.next) + ", " + fmtDate(st.next), right;
+    if(v.kind === "in"){
+      title = "Đang trong kỳ"; sub = "Kỳ tới dự kiến " + fmtDate(st.next);
+      right = bigRight(st.dayOfPeriod, "ngày thứ", true);
+    } else if(v.kind === "left") right = bigRight(fmtInt(st.daysLeft), "ngày nữa");
+    else if(v.kind === "today") right = '<span class="up-left today" aria-hidden="true">Hôm nay</span>';
+    else if(v.kind === "late") right = '<span class="status-tag warn" aria-hidden="true">' + v.status + "</span>";
+    else {
+      title = "Kỳ gần nhất"; sub = weekday(st.last.start) + ", " + fmtDate(st.last.start);
+      right = bigRight(fmtInt(st.sinceLast), "ngày trước");
+    }
+    var est = st.usedDefault && v.kind !== "long" ? "Ước tính theo " + C.CYCLE_DEFAULT + " ngày" : "";
+    body.innerHTML = '<button type="button" class="up-row cycle-row" id="cycleOpen" aria-label="' +
+      escapeHtml(v.status + ". " + title + ": " + sub + (est ? ". " + est : "") + ". Mở sổ chu kỳ") + '">' +
+      '<span class="up-main"><span class="up-title">' + title + '</span><span class="up-date">' + sub + "</span>" +
+      (est ? '<span class="up-date">' + est + "</span>" : "") + "</span>" + right + CHEV + "</button>";
+    past.hidden = true;
+    var ending = st.last.end == null && st.inPeriod;
+    quick.hidden = st.last.end != null && st.inPeriod;
+    quick.setAttribute("data-act", ending ? "end" : "start");
+    quick.textContent = ending ? "Kết thúc hôm nay" : "Bắt đầu hôm nay";
+  }
+
+  // Rebuilds the list half only; the form is never re-rendered from here.
+  function renderCycleSheet(){
+    var el = $("cycleList");
+    if(state.cyclesBroken){ el.innerHTML = '<p class="card-text">' + CYCLE_BROKEN_TEXT + ".</p>"; return; }
+    var st = C.cycleStats(state.cycles, now()), h = "";
+    function stat(label, value, extra){
+      return '<div class="cycle-stat"><dt>' + label + "</dt><dd><b>" + value + "</b>" + (extra ? " " + extra : "") + "</dd></div>";
+    }
+    if(st.last){
+      var v = cycleView(st);
+      h += '<dl class="cycle-stats">' +
+        (v.kind === "long"
+          ? stat("Kỳ gần nhất", weekday(st.last.start) + ", " + fmtDate(st.last.start), '<span class="status-tag warn">' + fmtInt(st.sinceLast) + " ngày trước</span>")
+          : stat("Kỳ tới dự kiến", weekday(st.next) + ", " + fmtDate(st.next),
+              '<span class="status-tag' + (v.kind === "late" ? " warn" : " ok") + '">' + v.status + "</span>")) +
+        stat("Chu kỳ trung bình", st.n ? fmtAvg(st.avgGap) : st.list.length < 2 ? "Cần ít nhất 2 kỳ" : "Chưa có khoảng cách nào từ " + C.CYCLE_MIN + " đến " + C.CYCLE_MAX + " ngày",
+          '<span class="cycle-stat-sub">' + (st.n ? "(" + st.n + " chu kỳ gần nhất)" : "Ước tính theo " + C.CYCLE_DEFAULT + " ngày") + "</span>") +
+        stat("Số ngày mỗi kỳ", st.avgLen !== null ? fmtAvg(st.avgLen) : "Chưa ghi ngày kết thúc",
+          st.lenN ? '<span class="cycle-stat-sub">(trung bình ' + st.lenN + " kỳ gần nhất)</span>" : "") +
+        "</dl>";
+    } else h += '<p class="card-text cycle-empty">Chưa ghi kỳ nào</p>';
+    h += '<button type="button" class="btn btn-primary btn-block" data-cy="add">Thêm kỳ</button>';
+    if(st.list.length){
+      h += '<h4 class="import-step">Các kỳ đã ghi</h4><ul class="ms-group">' + st.list.slice().reverse().map(function(x){
+        var title = fmtCycleRange(x) + (x.len !== null ? " · " + x.len + " ngày" : "");
+        var gap = x.gap === null ? "Kỳ đầu tiên đã ghi" : x.gapOk ? "Cách kỳ trước " + x.gap + " ngày" : "Cách kỳ trước " + x.gap + " ngày · không tính trung bình";
+        var gapHtml = x.gap === null || x.gapOk ? gap : 'Cách kỳ trước <span class="status-tag warn">' + x.gap + " ngày · không tính trung bình</span>";
+        var open = x.len === null ? " · chưa ghi ngày kết thúc" : "";
+        return '<li class="ms-item-wrap"><button type="button" class="ms-item cycle-item" data-cy-id="' + escapeHtml(x.id) + '" aria-label="' +
+          escapeHtml("Kỳ " + title + ", " + gap + open + (x.note ? ", " + x.note : "") + ". Sửa") + '">' +
+          '<span class="ms-main"><span class="ms-title">' + title + '</span><span class="ms-sub">' + gapHtml + open + "</span>" +
+          (x.note ? '<span class="ms-sub cycle-note">' + escapeHtml(x.note) + "</span>" : "") + "</span>" + CHEV + "</button></li>";
+      }).join("") + "</ul>";
+    }
+    el.innerHTML = h;
+  }
+
+  function showCycleMode(mode){
+    cyc.mode = mode;
+    $("cycleList").hidden = mode !== "list";
+    $("cycleForm").hidden = mode !== "form";
+    $("cycleSheetTitle").textContent = mode === "list" ? "Sổ chu kỳ" : cyc.editingId ? "Sửa kỳ" : "Thêm kỳ";
+    $("cycleSheet").scrollTop = 0;
+  }
+  function cycleFieldError(id, msg){
+    showError(id + "Err", msg);
+    if(msg) $(id + "Btn").setAttribute("aria-invalid", "true"); else $(id + "Btn").removeAttribute("aria-invalid");
+  }
+  function clearCycleErrors(){
+    cycleFieldError("cyStart", null);
+    cycleFieldError("cyEnd", null);
+    showError("cycleFormErr", null);
+  }
+  function openCycleList(){
+    cyc.editingId = null;
+    renderCycleSheet();
+    showCycleMode("list");
+  }
+  function openCycleForm(c){
+    cyc.editingId = c ? c.id : null;
+    setDateValue("cyStart", c ? c.start : "");
+    setDateValue("cyEnd", c && c.end ? c.end : "");
+    $("cyNote").value = c ? c.note : "";
+    $("cycleDelete").hidden = !c;
+    $("cycleConfirm").hidden = true;
+    cyc.lastDate = null;
+    clearCycleErrors();
+    showCycleMode("form");
+  }
+  function openCycleSheet(form){
+    if(!C.cycleStats) return;
+    if(form && !state.cyclesBroken) openCycleForm(null); else openCycleList();
+    openSheet("cycleSheet");
+  }
+
+  // One write at a time: the flag goes up before the put and comes down on
+  // both outcomes, so a double tap can't log two cycles.
+  function cycleWrite(btn, next, ok, fail){
+    if(cyc.saving) return;
+    var label = btn.textContent;
+    cyc.saving = true;
+    btn.disabled = true;
+    btn.textContent = "Đang lưu…";
+    function release(){ cyc.saving = false; btn.disabled = false; btn.textContent = label; }
+    // Inside a then() so that a synchronous throw (db.transaction on a closing
+    // connection) also lands in the failure branch and the button is released.
+    Promise.resolve().then(function(){ return saveCycles(next); }).then(function(){
+      release();
+      // The layout has just moved under the finger: the second tap of a double
+      // tap must not land on whatever slid into that spot.
+      cyc.quiet = true;
+      setTimeout(function(){ cyc.quiet = false; }, 400);
+      showError("cycleCardErr", null);
+      renderCycleCard();
+      ok();
+    }, function(err){
+      release();
+      fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
+    });
+  }
+
+  ["cycleCard", "cycleSheet"].forEach(function(id){
+    $(id).addEventListener("click", function(e){
+      if(cyc.quiet){ e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  });
+  $("cycleBody").addEventListener("click", function(e){
+    if(e.target.closest("#cycleOpen")) openCycleSheet(false);
+  });
+  $("cycleAddPast").addEventListener("click", function(){ openCycleSheet(true); });
+  $("btnCycleBook").addEventListener("click", function(){ openCycleSheet(false); });
+  $("cycleShow").addEventListener("change", function(){
+    state.meta.showCycle = this.checked;
+    saveMeta();
+    renderCycleCard();
+  });
+
+  $("cycleQuick").addEventListener("click", function(){
+    if(cyc.saving || state.cyclesBroken || !C.cycleStats) return;
+    showError("cycleCardErr", null);
+    var btn = this, t = now(), today = C.todayStr(t), st = C.cycleStats(state.cycles, t);
+    var ending = !!st.last && st.last.end == null && st.inPeriod;
+    // The label may be a moment behind the date (midnight): act only on what it says.
+    if((btn.getAttribute("data-act") === "end") !== ending){ renderCycleCard(); return; }
+    var cand = ending
+      ? { id: st.last.id, start: st.last.start, end: today, note: st.last.note, createdAt: st.last.createdAt }
+      : { id: C.newCycleId(t), start: today, end: null, note: "", createdAt: t };
+    var cf = C.cycleConflict(state.cycles, cand, t);
+    if(cf){ showError("cycleCardErr", cycleErrText(cf)); return; }
+    var next = state.cycles.filter(function(x){ return x.id !== cand.id; }).concat([cand]);
+    cycleWrite(btn, next, function(){
+      toast(ending ? "Đã ghi kỳ kết thúc hôm nay" : "Đã ghi kỳ bắt đầu hôm nay");
+    }, function(msg){ showError("cycleCardErr", msg); });
+  });
+
+  $("cycleList").addEventListener("click", function(e){
+    if(state.cyclesBroken) return;
+    var item = e.target.closest("[data-cy-id]");
+    var c = item ? cycleById(item.getAttribute("data-cy-id")) : null;
+    if(!c && !e.target.closest('[data-cy="add"]')) return;
+    openCycleForm(c);
+    $("cycleBack").focus({ preventScroll: true });
+  });
+  function backToCycleList(){
+    openCycleList();
+    $("cycleSheet").querySelector("[data-close-sheet]").focus({ preventScroll: true });
+  }
+  $("cycleBack").addEventListener("click", function(){ if(!cyc.saving) backToCycleList(); });
+  ["cyStart", "cyEnd"].forEach(function(id){
+    $(id).addEventListener("change", function(){ cyc.lastDate = id; clearCycleErrors(); });
+  });
+
+  $("cycleForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(cyc.saving) return;
+    clearCycleErrors();
+    var t = now(), start = $("cyStart").value, end = $("cyEnd").value || null;
+    if(!C.isValidDate(start)){ cycleFieldError("cyStart", "Hãy chọn ngày bắt đầu"); return; }
+    var old = cyc.editingId ? cycleById(cyc.editingId) : null;
+    if(cyc.editingId && !old){ showError("cycleFormErr", "Kỳ này không còn trong sổ. Quay lại danh sách rồi thử lại."); return; }
+    var cand = { id: old ? old.id : C.newCycleId(t), start: start, end: end, note: $("cyNote").value.trim(), createdAt: old ? old.createdAt : t };
+    // Dates untouched = a note-only edit: nothing new to check, and a record
+    // that was already off (clock moved back, old data) stays editable.
+    var cf = old && old.start === start && old.end === end ? null : C.cycleConflict(state.cycles, cand, t);
+    if(cf){
+      if(cf.code === "full") showError("cycleFormErr", cycleErrText(cf));
+      else {
+        // The message goes to the date the user just moved.
+        var startMoved = cf.code === "endBeforeStart" && cyc.lastDate === "cyStart";
+        var fid = cf.field === "end" && !startMoved ? "cyEnd" : "cyStart";
+        cycleFieldError(fid, startMoved ? "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc" : cycleErrText(cf));
+        $(fid + "Err").scrollIntoView({ block: "nearest" });
+      }
+      return;
+    }
+    var rec = C.validateCycle(cand);
+    if(!rec){ showError("cycleFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    var next = state.cycles.filter(function(x){ return x.id !== rec.id; }).concat([rec]);
+    cycleWrite($("cycleSave"), next, function(){
+      backToCycleList();
+      toast(old ? "Đã lưu kỳ ✓" : "Đã thêm kỳ");
+    }, function(msg){ showError("cycleFormErr", msg); });
+  });
+
+  $("cycleDelete").addEventListener("click", function(){
+    var c = cycleById(cyc.editingId);
+    if(!c || cyc.saving) return;
+    $("cycleConfirmText").textContent = "Xoá kỳ " + fmtDate(c.start) + "?";
+    $("cycleDelete").hidden = true;
+    $("cycleConfirm").hidden = false;
+    $("cycleConfirmNo").focus({ preventScroll: true });
+    $("cycleConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("cycleConfirmNo").addEventListener("click", function(){
+    if(cyc.saving) return;
+    $("cycleConfirm").hidden = true;
+    $("cycleDelete").hidden = false;
+    $("cycleDelete").focus({ preventScroll: true });
+  });
+  $("cycleConfirmYes").addEventListener("click", function(){
+    var id = cyc.editingId;
+    if(cyc.saving || !cycleById(id)) return;
+    showError("cycleFormErr", null);
+    cycleWrite(this, state.cycles.filter(function(x){ return x.id !== id; }), function(){
+      backToCycleList();
+      toast("Đã xoá kỳ");
+    }, function(msg){ showError("cycleFormErr", msg); });
+  });
+
   // ---------- Date fields + wheel picker ----------
   // Each date is a hidden input (its .value stays 'YYYY-MM-DD' or '') plus a
   // button showing it. Always write through setDateValue so the button never
@@ -456,7 +813,9 @@
     pfDobThu:     { min: "1900-01-01", optional: true, def: "2000-01-01" },
     // 1900 matches validateMilestone, so an older stored milestone opens on its
     // own date instead of being moved to the bound when "Xong" is pressed.
-    msDate:       { min: "1900-01-01", optional: false, futureYears: 20 }
+    msDate:       { min: "1900-01-01", optional: false, futureYears: 20 },
+    cyStart:      { min: "2000-01-01", optional: false },
+    cyEnd:        { min: "2000-01-01", optional: true, empty: "Chưa kết thúc", defFrom: "cyStart" }
   };
 
   function setDateValue(id, v){
@@ -646,7 +1005,8 @@
     // save path still validates (e.g. future start dates are rejected there).
     if(C.isValidDate(v)){ if(v < dp.min) dp.min = v; if(v > dp.max) dp.max = v; }
     dp.minY = +dp.min.slice(0, 4); dp.maxY = +dp.max.slice(0, 4);
-    dpSetParts(C.isValidDate(v) ? v : cfg.def || today);
+    var from = cfg.defFrom ? $(cfg.defFrom).value : "";
+    dpSetParts(C.isValidDate(v) ? v : C.isValidDate(from) ? from : cfg.def || today);
     dpNormalize();
     dpBuild();
     dpCols.forEach(function(col){ clearTimeout(col.timer); col.timer = null; col.touching = false; col.prog = false; });
@@ -1356,6 +1716,7 @@
   }
   function backupContents(c){
     var parts = [fmtInt(c.photos) + " ảnh", fmtInt(c.milestones) + " kỷ niệm"];
+    if(typeof c.cycles === "number") parts.push(fmtInt(c.cycles) + " kỳ");
     if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
     return parts.join(", ");
   }
@@ -1383,7 +1744,7 @@
     if(busy !== "backup"){
       $("backupStatus").textContent = p
         ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
-        : "File .zip gồm hồ sơ, kỷ niệm và ảnh · iPhone: chọn “Lưu vào Tệp”.";
+        : "File .zip gồm hồ sơ, kỷ niệm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -1391,7 +1752,9 @@
     if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
-    return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos, readBlob: readBlob },
+    // An unreadable cycle record is left out of the file.
+    return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos,
+                           cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles, readBlob: readBlob },
                          now(), onProgress).then(function(r){
       busy = null;
       if(version === backup.version){ backup.prepared = r; backup.saved = false; }
@@ -1457,12 +1820,13 @@
     PHOTO_IDS.forEach(function(id){ hasBlob[id] = !!state.blobs[id]; });
     return {
       profileOk: !!(state.profile && state.profile.startStatus === "ok"),
-      profile: state.profile, photos: state.photos, milestones: state.milestones, hasBlob: hasBlob
+      profile: state.profile, photos: state.photos, milestones: state.milestones, hasBlob: hasBlob,
+      cycles: state.cycles, cyclesBad: state.cyclesBad, cyclesBroken: state.cyclesBroken, cyclesStamp: state.cyclesStamp
     };
   }
   function hasLocalData(){
     var l = localSnapshot();
-    return l.profileOk || l.photos.length > 0 || l.milestones.length > 0;
+    return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken;
   }
 
   function onImportFile(input){
@@ -1486,7 +1850,7 @@
     busy = "import";
     B.parseBackup(f, now()).then(function(parsed){
       imp.parsed = parsed;
-      imp.plan = B.planMerge(parsed, localSnapshot());
+      imp.plan = B.planMerge(parsed, localSnapshot(), now());
       imp.phase = "ready";
     }, function(err){
       imp.phase = "error";
@@ -1513,19 +1877,28 @@
         '<p class="card-hint">Đừng đóng app. Bị gián đoạn thì dữ liệu cũ vẫn nguyên — nhập lại là được.</p>';
     } else if(imp.phase === "done"){
       var r = imp.result;
-      var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm";
+      var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm" +
+        (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "");
       // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
       var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones || r.images ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
+        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
-        (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") + "</div>" +
+        (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") +
+        (r.cyclesKept ? "<p>" + cyclesKeptText(r.cyclesInFile) + "</p>" : "") +
+        (r.skippedCycles + r.clashedCycles ? "<p>Bỏ qua " + fmtInt(r.skippedCycles + r.clashedCycles) + " kỳ trùng.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
     }
     el.innerHTML = h;
     placeSegPill(el.querySelector(".segmented"), true);
+  }
+
+  // Why an import left the device's cycle log alone.
+  function cyclesKeptText(inFile){
+    return inFile ? "Dữ liệu chu kỳ trên máy đang không đọc được nên được giữ nguyên."
+      : "Chu kỳ đã ghi trên máy giữ nguyên (bản sao lưu này không có).";
   }
 
   function importProgressText(){
@@ -1537,7 +1910,9 @@
     var when = ps.exportedAt ? "Bản sao lưu ngày " + fmtStamp(ps.exportedAt) : "Bản sao lưu";
     var imgs = Object.keys(ps.images).length;
     var h = '<div class="import-summary"><p class="import-when">' + escapeHtml(when) + "</p><ul>" +
-      "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
+      "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
+      (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
+      (ps.cyclesSkipped ? "<li>Bỏ qua " + fmtInt(ps.cyclesSkipped) + " kỳ trùng trong file</li>" : "") +
       "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
       "</ul></div>";
     if(!hasLocalData()){
@@ -1550,21 +1925,27 @@
     if(imp.mode === "merge"){
       // Merge only takes avatars/cover the device doesn't have yet.
       var fillImgs = Object.keys(ps.images).filter(function(id){ return !local.hasBlob[id]; }).length;
-      var skipped = pl.skipPhotos + pl.skipMilestones;
-      if(!pl.addPhotos && !pl.addMilestones && !fillImgs && local.profileOk){
-        return h + '<p class="card-text">Không có gì mới — mọi ảnh và kỷ niệm đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' +
+      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles;
+      // The device's cycle record is unreadable: the file's cycles are not imported, and must not be reported as "already here".
+      var cyBlocked = !!ps.cycles && local.cyclesBroken;
+      var blockedNote = cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "";
+      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !fillImgs && local.profileOk){
+        return h + '<p class="card-text">Không có gì mới — mọi ảnh' + (ps.cycles && !cyBlocked ? ", kỷ niệm và kỳ" : " và kỷ niệm") + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
           '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
       }
       var adds = [fmtInt(pl.addPhotos) + " ảnh", fmtInt(pl.addMilestones) + " kỷ niệm"];
+      if(ps.cycles && !cyBlocked) adds.push(fmtInt(pl.addCycles) + " kỳ");
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
-      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + " đã có, bỏ qua)" : "") + ". " +
-        (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" +
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+        (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" + blockedNote +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
     }
     var p = backup.prepared;
     h += '<div class="import-box import-warn"><p class="import-box-title">Toàn bộ dữ liệu hiện tại sẽ bị xoá</p><p>' +
-      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p></div>" +
+      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, " + (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
+      "hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p>" +
+      (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") + "</div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -1573,6 +1954,12 @@
     h += '<p class="import-step">Bước 2 · Thay thế</p>' +
       '<button type="button" class="btn btn-danger btn-block" data-imp="run"' + (busy ? " disabled" : "") + ">Thay thế bằng bản sao lưu</button>";
     return h;
+  }
+
+  // Mirrors planCycles() in love-days-backup.js for the "Thay thế" wording.
+  function replacesCycles(ps, local){ return !!ps.cycles && !local.cyclesBroken; }
+  function keepsCycles(ps, local){
+    return ps.cycles ? local.cyclesBroken : local.cycles.length > 0 || local.cyclesBad.length > 0 || local.cyclesBroken;
   }
 
   $("importContent").addEventListener("click", function(e){
@@ -1611,7 +1998,8 @@
     var mode = hasLocalData() ? imp.mode : "merge";
     if(mode === "replace"){
       var l = localSnapshot();
-      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm và hồ sơ hiện tại, thay bằng bản sao lưu?" +
+      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesCycles(imp.parsed, l) ? ", " + l.cycles.length + " kỳ" : "") +
+        " và hồ sơ hiện tại, thay bằng bản sao lưu?" +
         (backup.saved ? "" : "\n\nBạn CHƯA lưu bản sao lưu dữ liệu hiện tại — sau khi thay sẽ không lấy lại được.");
       if(!window.confirm(msg)) return;
     }
@@ -1649,6 +2037,7 @@
     releaseAlbumThumbs();
     Object.keys(state.urls).forEach(function(k){ if(state.urls[k]) URL.revokeObjectURL(state.urls[k]); });
     state.urls = {}; state.blobs = {}; state.photos = []; state.milestones = []; state.profile = null;
+    state.cycles = []; state.cyclesBad = []; state.cyclesBroken = false; state.cyclesStamp = null;
     setBanner("skipped", null);
     setBanner("load", null);
     state.loadFailed = false;
