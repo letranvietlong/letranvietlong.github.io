@@ -1,6 +1,6 @@
 // Logic service worker của PowerTrack. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/power-track/sw-power-track.js.
-var CACHE_NAME = "powertrack-cache-v2";
+var CACHE_NAME = "powertrack-cache-v3";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [

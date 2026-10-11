@@ -84,6 +84,20 @@
       <p class="chart-legend" id="chartLegend" hidden><span class="legend-swatch" aria-hidden="true"></span><span id="chartLegendText">Cột nhạt: ước tính theo biểu giá</span></p>
     </section>
 
+    <section class="card" id="ovDiffCard" aria-labelledby="diffTitle" hidden>
+      <div class="card-head">
+        <h2 class="card-title" id="diffTitle">Chênh lệch so với tháng trước</h2>
+        <span class="card-meta" id="diffUnit"></span>
+      </div>
+      <p class="chart-legend" id="diffEmpty" hidden>Cần ít nhất hai tháng liền nhau để so sánh.</p>
+      <div id="diffBody">
+        <div class="chart-wrap" id="diffChart" tabindex="0" role="group" aria-label="Biểu đồ chênh lệch từng tháng — phím mũi tên trái, phải để xem từng tháng"></div>
+        <p class="chart-value" id="diffValue" aria-live="polite"></p>
+        <p class="chart-legend" id="diffLegend" hidden><span class="legend-swatch" aria-hidden="true"></span><span id="diffLegendText"></span></p>
+        <p class="chart-sum" id="diffSum" hidden></p>
+      </div>
+    </section>
+
     <section class="card" id="ovYearCard" aria-labelledby="yearTitle" hidden>
       <div class="card-head"><h2 class="card-title" id="yearTitle">So sánh</h2></div>
       <div class="cmp-row" id="ovYoY" hidden></div>

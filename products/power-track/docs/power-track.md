@@ -132,3 +132,7 @@ Bộ chọn tháng gốc của iOS cho `<input type="month">` (kể cả việc 
 - Gộp theo id khi hai cửa sổ cùng sửa (hiện là từ chối + tải lại).
 - Xác minh cách EVN làm tròn khi kỳ vắt qua ngày đổi giá, rồi bỏ nhãn "ước tính" nếu khớp.
 - Đọc ảnh/PDF hoá đơn; gộp dữ liệu khi khôi phục (hiện chỉ thay toàn bộ).
+
+## Biểu đồ chênh lệch từng tháng (v1.2)
+
+Thẻ "Chênh lệch so với tháng trước" ở Tổng quan (`renderDiffChart` trong `js/power-track.js`), ngay dưới biểu đồ 12 tháng và dùng chung khung tháng (`chartMonths`), tháng đang chọn (`chartSel`) và nút Tiền/kWh (`chartMode`). Cột tháng M = giá trị(M) − giá trị(M−1), chỉ vẽ khi cả hai tháng liền kề đều có số (tháng đầu khung vẫn so với tháng nằm ngoài khung nếu có); thiếu thì để trống, không vẽ 0 giả. Trục đối xứng quanh 0. Tăng = cột hướng lên màu đỏ (▲ trong dòng chữ), giảm = hướng xuống màu xanh (▼), bằng nhau = vạch mảnh. Cột nhạt khi một trong hai tháng là số ước tính (chế độ Tiền) hoặc kWh suy ra (chế độ kWh). Chưa có cặp tháng liền nhau nào → câu "Cần ít nhất hai tháng liền nhau để so sánh."

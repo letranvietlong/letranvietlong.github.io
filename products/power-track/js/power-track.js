@@ -264,6 +264,7 @@
     $('ovEmpty').hidden = !none || broken;
     $('ovMain').hidden = none;
     $('ovChartCard').hidden = none;
+    $('ovDiffCard').hidden = none;
     $('ovYearCard').hidden = none;
     if(none){
       var first = !data.bills.length;
@@ -307,6 +308,7 @@
     $('ovYearNote').hidden = !yn;
 
     renderChart(cur.period, map);
+    renderDiffChart(map);
   }
 
   function niceMax(v){
@@ -375,6 +377,80 @@
     else txt += (!money && sel.inferred ? '≈' : '') + fmtVnd(sel.value) + ' ' + unit + (money ? (sel.kind === 'est' ? ' · ước tính' : ' · theo hoá đơn') : sel.inferred ? ' · suy ra từ số tiền' : '');
     if($('chartValue').textContent !== txt) $('chartValue').textContent = txt;
   }
+  // Month-over-month change for the same 12 months as the chart above, sharing
+  // its Tiền/kWh switch and selected month. Up = more than the month before
+  // (red, ▲ in the text), down = less (green, ▼). A bar exists only when both
+  // consecutive months have a figure — a missing month never becomes a fake 0.
+  function renderDiffChart(map){
+    var money = chartMode === 'money', unit = money ? 'đ' : 'kWh';
+    function val(p){
+      var b = map[p];
+      if(!b) return null;
+      var v = billView(b), x = money ? v.money : b.kwh;
+      return x == null ? null : { value: x, soft: money ? v.kind === 'est' : !!v.inferred };
+    }
+    var pts = chartMonths.map(function(p){
+      var prevP = C.addMonths(p, -1), a = val(p), b = val(prevP);
+      return { period: p, prev: prevP, cur: a, base: b, delta: a && b ? a.value - b.value : null, soft: !!(a && b && (a.soft || b.soft)) };
+    });
+    var have = pts.filter(function(p){ return p.delta != null; });
+    $('diffUnit').textContent = unit;
+    $('diffEmpty').hidden = have.length > 0;
+    $('diffBody').hidden = !have.length;
+    if(!have.length){ $('diffChart').innerHTML = ''; return; }
+
+    var W = 320, H = 168, L = 46, R = 2, T = 10, B = 22;
+    var plotW = W - L - R, plotH = H - T - B, half = plotH / 2, mid = T + half, slot = plotW / 12, barW = Math.min(18, slot * 0.64);
+    var max = niceMax(Math.max.apply(null, have.map(function(p){ return Math.abs(p.delta); })));
+    var svg = '';
+    [1, 0, -1].forEach(function(f){
+      var y = mid - half * f;
+      svg += '<line class="chart-grid' + (f === 0 ? ' zero' : '') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/>' +
+        '<text class="chart-axis" x="' + (L - 5) + '" y="' + (y + 3.5) + '" text-anchor="end">' + (f === 0 ? '0' : (f > 0 ? '+' : MINUS) + axisLabel(max, money)) + '</text>';
+    });
+    pts.forEach(function(p, idx){
+      var cx = L + slot * idx + slot / 2;
+      svg += '<text class="chart-axis" x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + (+p.period.slice(5, 7)) + '</text>';
+      if(p.delta != null){
+        var h = p.delta === 0 ? 1.5 : Math.max(2, half * Math.abs(p.delta) / max);
+        var y = p.delta > 0 ? mid - h : p.delta < 0 ? mid : mid - 0.75;
+        svg += '<rect class="dbar ' + (p.delta > 0 ? 'up' : p.delta < 0 ? 'down' : 'flat') + (p.soft ? ' soft' : '') + (p.period === chartSel ? ' sel' : '') +
+          '" x="' + (cx - barW / 2).toFixed(2) + '" y="' + y.toFixed(2) + '" width="' + barW.toFixed(2) + '" height="' + h.toFixed(2) + '" rx="2"/>';
+      }
+      svg += '<rect class="hit" data-period="' + p.period + '" x="' + (L + slot * idx).toFixed(2) + '" y="0" width="' + slot.toFixed(2) + '" height="' + H + '"/>';
+    });
+    function signed(d){ return (d > 0 ? '+' : MINUS) + fmtVnd(Math.abs(d)) + ' ' + unit; }
+    function shortMonth(p){ return 'T' + (+p.slice(5, 7)) + '/' + p.slice(0, 4); }
+    var ups = have.filter(function(p){ return p.delta > 0; }).sort(function(a, b){ return b.delta - a.delta; });
+    var downs = have.filter(function(p){ return p.delta < 0; }).sort(function(a, b){ return a.delta - b.delta; });
+    var label = 'Biểu đồ chênh lệch ' + (money ? 'tiền điện' : 'số kWh') + ' từng tháng so với tháng trước: ' + have.length + ' tháng so được' +
+      (ups.length ? ', tăng nhiều nhất ' + monthName(ups[0].period) + ' ' + signed(ups[0].delta) : '') +
+      (downs.length ? ', giảm nhiều nhất ' + monthName(downs[0].period) + ' ' + signed(downs[0].delta) : '') + '.';
+    $('diffChart').innerHTML = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + svg + '</svg>';
+    $('diffLegend').hidden = !pts.some(function(p){ return p.soft; });
+    $('diffLegendText').textContent = money ? 'Cột nhạt: có tháng là số ước tính' : 'Cột nhạt: có tháng kWh suy ra từ số tiền';
+
+    var sel = pts.filter(function(p){ return p.period === chartSel; })[0];
+    var txt = capFirst(monthName(chartSel)) + ': ';
+    if(!sel || !map[chartSel]) txt += 'chưa có hoá đơn';
+    else if(!sel.cur) txt += money ? 'chưa có số tiền để so' : 'chưa có số kWh để so';
+    else if(!sel.base) txt += 'chưa đủ dữ liệu để so (thiếu ' + monthName(sel.prev) + ')';
+    else if(sel.delta === 0) txt += 'không đổi so với ' + monthName(sel.prev);
+    else {
+      var up = sel.delta > 0;
+      txt += (up ? '▲' : '▼') + fmtVnd(Math.abs(sel.delta)) + ' ' + unit +
+        (sel.base.value > 0 ? ' (' + (up ? '+' : MINUS) + fmtDec(sel.delta / sel.base.value * 100, 2) + '%)' : '') + ' so với ' + monthName(sel.prev);
+    }
+    if($('diffValue').textContent !== txt) $('diffValue').textContent = txt;
+
+    var sum = [];
+    if(have.length >= 2){
+      if(ups.length) sum.push('Tăng nhiều nhất: ' + shortMonth(ups[0].period) + ' (' + signed(ups[0].delta) + ')');
+      if(downs.length) sum.push('Giảm nhiều nhất: ' + shortMonth(downs[0].period) + ' (' + signed(downs[0].delta) + ')');
+    }
+    $('diffSum').hidden = !sum.length;
+    $('diffSum').textContent = sum.join(' · ');
+  }
   // The chart box itself takes focus; ←/→ walk the months.
   var chartMonths = [];
   $('chart').addEventListener('keydown', function(e){
@@ -386,6 +462,21 @@
     renderOverview();
   });
   $('chart').addEventListener('click', function(e){
+    var hit = e.target.closest ? e.target.closest('.hit') : null;
+    if(!hit) return;
+    chartSel = hit.getAttribute('data-period');
+    renderOverview();
+  });
+  // The difference chart follows the same selected month.
+  $('diffChart').addEventListener('keydown', function(e){
+    var step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    if(!step || !chartMonths.length) return;
+    e.preventDefault();
+    chartSel = chartMonths[Math.max(0, Math.min(chartMonths.length - 1, chartMonths.indexOf(chartSel) + step))];
+    renderOverview();
+    $('diffChart').focus({ preventScroll: true });
+  });
+  $('diffChart').addEventListener('click', function(e){
     var hit = e.target.closest ? e.target.closest('.hit') : null;
     if(!hit) return;
     chartSel = hit.getAttribute('data-period');
