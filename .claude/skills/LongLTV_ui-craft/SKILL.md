@@ -1,11 +1,11 @@
 ---
 name: LongLTV_ui-craft
-description: Chuẩn mực craft giao diện cho site này — token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính (kể cả phông thiếu trên iPhone), biểu đồ, cách hiển thị lãi/lỗ không cộng trùng, độ sâu/viền, chuyển động, bảng Nên/Không nên về form, căn lề, câu chữ, màu theo nghĩa, vùng chạm, skeleton, chồng lớp (§12), và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, làm form nhập liệu, hộp xác nhận, menu/tab bar, trạng thái tải, chọn màu/phông/gradient, vẽ biểu đồ, hiển thị số liệu tài chính, thêm component mới, hoặc review UI trước khi giao.
+description: Chuẩn mực craft giao diện cho site này — skill UI/UX duy nhất của repo: token màu đã đo tương phản, bẫy tint chồng tint, chữ số tài chính (kể cả phông thiếu trên iPhone), biểu đồ, cách hiển thị lãi/lỗ không cộng trùng, độ sâu/viền, chuyển động, bảng Nên/Không nên về form, căn lề, câu chữ, màu theo nghĩa, vùng chạm, skeleton, chồng lớp (§12), quy tắc nền về truy cập/focus/hover/bàn phím ảo (§13), kho tra cứu phong cách-bảng màu-cặp phông-loại biểu đồ khi dựng sản phẩm mới (§14), và cách ĐO chất lượng bằng Playwright thay vì nhìn bằng mắt. Dùng khi thiết kế/sửa giao diện, làm form nhập liệu, hộp xác nhận, menu/tab bar, trạng thái tải, chọn màu/phông/gradient, vẽ biểu đồ, hiển thị số liệu tài chính, thêm component mới, bắt đầu một sản phẩm/landing page mới, hoặc review UI trước khi giao.
 ---
 
 # UI Craft
 
-`ui-ux-pro-max` trả lời *"chọn phong cách/bảng màu nào"*. Tài liệu này trả lời câu khó hơn: **"vì sao cái này trông nghiệp dư, và sửa thế nào cho lên hạng"** — dựa trên số đo thật của repo này, không phải lý thuyết chung.
+Đây là skill UI/UX **duy nhất** của repo (10/2026 đã gộp skill ngoài `ui-ux-pro-max` vào: quy tắc chung của nó nằm ở §13, kho tra cứu phong cách/bảng màu/phông nằm ở `reference/`, cách dùng ở §14). Trọng tâm vẫn là câu khó: **"vì sao cái này trông nghiệp dư, và sửa thế nào cho lên hạng"** — dựa trên số đo thật của repo này, không phải lý thuyết chung. Khi §1–§12 (đã đo, đã được chủ repo chốt) khác với kho tra cứu, §1–§12 thắng.
 
 Nguyên tắc bao trùm: **đo, đừng nhìn**. Mắt người rất tệ trong việc phán đoán tương phản trên nền bán trong suốt. Mọi con số dưới đây đều lấy từ phép đo thật trên DOM đã render.
 
@@ -254,3 +254,36 @@ Kiểm N2: `getBoundingClientRect()` của **phần tử nhận sự kiện** (k
 - [ ] Nút xoá màu đỏ, khác hẳn nút chính (C2); trạng thái có huy hiệu màu **và** chữ (C3); không màu bão hoà tối đa trên nền tối (C1); gradient cùng họ màu (C4)
 - [ ] Mục menu có icon + nhãn (N1); vùng chạm là cả ô ≥44px (N2)
 - [ ] Đang tải = skeleton đúng hình, có đường ra khi lỗi (L1–L2)
+
+## 13. Quy tắc nền (gộp từ skill ngoài, đã lọc theo repo này)
+
+Những thứ §1–§12 chưa nói tới. Đã bỏ các lời khuyên không hợp repo: Tailwind/CDN/thư viện icon (site không có build step, không thêm dependency), navbar nổi cách mép (app ở đây dùng tab bar đáy sát mép + safe-area), `cursor-pointer` cho mọi thẻ (app cảm ứng).
+
+| # | Nên | Không nên |
+|---|---|---|
+| A1 | **Focus nhìn thấy được** cho người dùng bàn phím: `:focus-visible` có viền/outline đủ tương phản | `outline:none` mà không có gì thay thế |
+| A2 | Thứ tự Tab trùng thứ tự nhìn; mọi ô nhập có `<label for>` (hoặc `aria-label` khi nhãn là icon); ảnh có nghĩa có `alt` | Nhãn chỉ là `<div>` đứng cạnh ô; `alt` rỗng cho ảnh mang thông tin |
+| A3 | Lỗi/kết quả được **đọc lên**: câu lỗi tại ô có `role="alert"` hoặc nối bằng `aria-describedby` (F7); kiểm khi rời ô (blur), không đợi tới lúc bấm Lưu | Chỉ viền đỏ; chỉ báo lỗi sau khi gửi |
+| A4 | **Ô nhập trên iPhone cỡ chữ ≥16px** — nhỏ hơn thì Safari tự phóng to trang khi focus; chọn đúng bàn phím bằng `inputmode`/`type` (`decimal`, `numeric`, `tel`) | `font-size:14px` cho input; bàn phím chữ cho ô số tiền |
+| A5 | Nút đang xử lý thì **khoá + đổi chữ** ("Đang lưu…"), tránh bấm đúp ghi hai bản ghi | Nút vẫn bấm được trong lúc request đang bay |
+| A6 | **Giữ chỗ cho nội dung tải sau** (chiều cao tối thiểu / skeleton L1) để trang không nhảy; ảnh có `width`/`height`, ảnh dưới màn đầu `loading="lazy"` | Nội dung chèn vào đẩy nút đang định bấm đi chỗ khác |
+| A7 | Hover/active chỉ đổi màu, bóng, độ mờ; trên cảm ứng phải có trạng thái `:active` thấy được | Hover phóng to làm xô lệch layout; hành động chỉ hiện khi hover (điện thoại không có hover) |
+| A8 | **Thang z-index cố định** (nội dung < thanh dính < tab bar < sheet < toast < viewer), ghi thành token/chú thích | Số z-index tuỳ hứng (`9999`) — lớp mới đè nhầm lớp cũ |
+| A9 | Chữ thân bài: line-height 1,5–1,75, dòng dài 65–75 ký tự trên màn rộng; chữ nhỏ nhất của nội dung 12px, thân bài điện thoại ≥15–16px | Dòng chạy hết bề ngang màn 1440px; chữ 10px cho thông tin cần đọc |
+| A10 | **Icon là SVG cùng một bộ nét, cùng kích thước khung**; emoji chỉ khi nó là *nội dung* (ô emoji kỷ niệm LoveDays) hay điểm nhấn cảm xúc | Emoji làm icon chức năng ở nơi cần đồng nhất (mỗi máy vẽ một kiểu); trộn icon nét mảnh với icon đặc |
+| A11 | Biểu đồ: chọn loại theo dữ liệu (xu hướng theo thời gian → đường; so sánh ít hạng mục → cột; tỉ trọng ≤5 phần → thanh chồng/donut), có số liệu dạng chữ đi kèm cho người không đọc được biểu đồ | Biểu đồ tròn nhiều lát; chỉ có hình, không có con số |
+| A12 | Kiểm ở 375–390, 768, 1024, 1440px, **cả hai theme** | Chỉ nhìn ở kích thước cửa sổ đang mở |
+
+## 14. Kho tra cứu khi dựng sản phẩm/trang MỚI (`reference/`)
+
+Dùng khi cần **ý tưởng khởi đầu** cho một sản phẩm chưa có nhận diện (phong cách, bảng màu, cặp phông, cấu trúc landing page, loại biểu đồ). Không dùng để "sửa lại" GoldTrack/FuelTrack/LoveDays — các app đó đã có token riêng ở §1.
+
+```bash
+# chạy từ thư mục NGOÀI repo (scratchpad): script có thể ghi file ra thư mục hiện tại, mà Stop hook thì `git add -A`
+PYTHONUTF8=1 python <repo>/.claude/skills/LongLTV_ui-craft/reference/scripts/search.py "<loại sản phẩm> <ngành> <từ khoá>" --design-system
+PYTHONUTF8=1 python <repo>/.claude/skills/LongLTV_ui-craft/reference/scripts/search.py "<từ khoá>" --domain <style|color|typography|landing|chart|ux|web|product> -n 5
+```
+
+- Kết quả là **gợi ý thô**: mọi màu phải đo lại tương phản trên cả hai theme (§8), mọi phông phải qua T2 + có trên iOS (§3), mọi mẫu trình bày phải qua §12.
+- Đừng dùng `--persist` trong repo (tạo thư mục `design-system/` ở root — trái `LongLTV_project-structure`). Nhận diện đã chốt của một sản phẩm ghi vào `products/<tên>/docs/*.md`.
+- `--stack …` (React, Vue, Tailwind…) không áp dụng cho repo này: site tĩnh, CSS/JS thuần.
