@@ -277,7 +277,7 @@
   }
 
   // ---------- Cycles (period log, stored whole in kv 'cycles') ----------
-  var CYCLE_MIN = 15, CYCLE_MAX = 60;   // a gap outside this range is "unusual" and left out of the average
+  var CYCLE_MIN = 15, CYCLE_MAX = 90;   // a gap outside this range is "unusual" and left out of the average
   var CYCLE_AVG_N = 6;
   var CYCLE_DEFAULT = 28;
   var CYCLE_OPEN_MAX = 10;              // a cycle with no end date counts as ongoing for this many days
@@ -373,12 +373,22 @@
       list: list, n: n, sum: sum, avgGap: n ? sum / n : null,
       cycleLen: n ? Math.floor((2 * sum + n) / (2 * n)) : CYCLE_DEFAULT, usedDefault: n === 0,
       avgLen: lens.length ? lenSum / lens.length : null, lenN: lens.length,
-      last: null, next: null, daysLeft: null, inPeriod: false, dayOfPeriod: null, sinceLast: null
+      last: null, next: null, daysLeft: null, inPeriod: false, dayOfPeriod: null, sinceLast: null,
+      gapMin: null, gapMax: null, nextMin: null, nextMax: null
     };
+    gaps.forEach(function(x){
+      if(out.gapMin === null || x.gap < out.gapMin) out.gapMin = x.gap;
+      if(out.gapMax === null || x.gap > out.gapMax) out.gapMax = x.gap;
+    });
     if(!list.length) return out;
     var last = list[list.length - 1], sIdx = dayIdx(last.start);
     out.last = last;
     out.next = addDays(last.start, out.cycleLen);
+    // Earliest/latest start the recent cycles suggest; only meaningful when they differ.
+    if(n >= 2 && out.gapMin !== out.gapMax){
+      out.nextMin = addDays(last.start, out.gapMin);
+      out.nextMax = addDays(last.start, out.gapMax);
+    }
     out.daysLeft = dayIdx(out.next) - tIdx;
     out.sinceLast = tIdx - sIdx;
     out.dayOfPeriod = tIdx - sIdx + 1;

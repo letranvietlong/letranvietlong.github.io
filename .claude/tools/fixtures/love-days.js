@@ -98,7 +98,7 @@ const sel = {
 // A cycle without an end date holds start..start+9 (openOverlap); a repeated id in the stored list is treated as a broken item.
 // After a successful write the card and the sheet ignore taps for 400ms — wait ≥500ms before the next click.
 // Seed: ld.seed(page, { profile: ld.profile, extra: [['kv', ld.cyclesRecord(ld.cycles.S1.items)]] })
-// Gap = days between consecutive starts; valid 15..60; average = latest 6 VALID gaps;
+// Gap = days between consecutive starts; valid 15..90 (60 before v1.10); average = latest 6 VALID gaps;
 // next = last start + round-half-up(average); no valid gap → 28.
 // Card: status sentence is in #cycleOpen's aria-label (visible: big number + unit, or the
 // "Trễ N ngày" badge); the sheet shows it as a .status-tag next to "Kỳ tới dự kiến".
@@ -137,10 +137,13 @@ const cycles = {
   // across New Year, now = 2027-01-12T12:00+07: gap 29 → next 04/02/2027
   S6: { now: '2027-01-12T12:00:00+07:00', items: [cy('2026-12-08', '2026-12-12'), cy('2027-01-06', '2027-01-10')], avg: '29 ngày', n: 1, next: '2027-02-04', status: 'Còn 23 ngày' }
 };
+// v1.10: the log lives on its own tab (#tab-cycle, tabbar button [data-tab="cycle"]); #cycleSheet holds only the add/edit form.
+// CYCLE_MAX is 90 since v1.10, so a 70-day gap now COUNTS toward the average (S2/S3b expectations written for 60 no longer hold).
 const cycleSel = {
+  tab: '.tabbar-btn[data-tab="cycle"]', view: '#tab-cycle', quickTab: '#cycleList [data-cy="quick"]', tabErr: '#cycleTabErr', chart: '#cycleList .cycle-chart',
   card: '#cycleCard', open: '#cycleOpen', quick: '#cycleQuick', addPast: '#cycleAddPast', cardErr: '#cycleCardErr',
   sheet: '#cycleSheet', list: '#cycleList', stats: '#cycleList .cycle-stat', rows: '#cycleList [data-cy-id]', add: '#cycleList [data-cy="add"]',
-  form: '#cycleForm', back: '#cycleBack', start: '#cyStart', end: '#cyEnd', note: '#cyNote', startErr: '#cyStartErr', endErr: '#cyEndErr',
+  form: '#cycleForm', start: '#cyStart', end: '#cyEnd', note: '#cyNote', startErr: '#cyStartErr', endErr: '#cyEndErr',
   save: '#cycleSave', del: '#cycleDelete', confirm: '#cycleConfirm', confirmYes: '#cycleConfirmYes', confirmNo: '#cycleConfirmNo',
   show: '#cycleShow', book: '#btnCycleBook'
 };

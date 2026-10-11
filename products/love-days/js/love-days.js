@@ -161,7 +161,7 @@
     stopClock();
     $("tabbar").hidden = true;
     $("setupView").hidden = true;
-    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
+    ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
     $("loadingView").hidden = false;
     $("loadingView").classList.add("failed");
     setBanner("load", state.dbError
@@ -174,7 +174,7 @@
     state.mode = "setup";
     stopClock();
     $("tabbar").hidden = true;
-    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
+    ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = true; });
     $("setupView").hidden = false;
     var p = state.profile;
     if(p){
@@ -210,8 +210,9 @@
   function switchTab(name){
     if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
     showError("cycleCardErr", null);
+    showError("cycleTabErr", null);
     state.tab = name;
-    ["home", "milestones", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
+    ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
       if(b.getAttribute("data-tab") === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -221,6 +222,7 @@
     }
     window.scrollTo(0, 0);
     if(name === "album") renderAlbum();
+    if(name === "cycle" && C.cycleStats) renderCycleSheet();
   }
   Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
     b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
@@ -317,8 +319,8 @@
       renderHome();
       renderMilestones();
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
-      // Only the list half of the cycle sheet follows the date; an open form is the user's.
-      if(cyc.mode === "list" && $("cycleSheet").classList.contains("open")) renderCycleSheet();
+      // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
+      if(C.cycleStats) renderCycleSheet();
       updateBadge();
       return;
     }
@@ -509,7 +511,7 @@
       if(!stale){ done(); return; }
       applyCyclesRec(found);
       renderCycleCard();
-      if(cyc.mode === "list" && $("cycleSheet").classList.contains("open")) renderCycleSheet();
+      renderCycleSheet();
       throw userErr("Sổ vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
     });
   }
@@ -541,7 +543,10 @@
     if(st.inPeriod) return { kind: "in", status: "Ngày thứ " + st.dayOfPeriod + " của kỳ" };
     if(st.daysLeft > 0) return { kind: "left", status: "Còn " + fmtInt(st.daysLeft) + " ngày" };
     if(st.daysLeft === 0) return { kind: "today", status: "Dự kiến hôm nay" };
-    if(st.sinceLast <= C.CYCLE_MAX) return { kind: "late", status: "Trễ " + (-st.daysLeft) + " ngày" };
+    // Late is counted from the predicted day. Only when the wait is past twice
+    // the usual cycle does it stop being "late" and start looking like a
+    // period that was never logged.
+    if(st.sinceLast <= Math.max(C.CYCLE_MAX, st.cycleLen * 2)) return { kind: "late", status: "Trễ " + (-st.daysLeft) + " ngày" };
     return { kind: "long", status: "Đã " + fmtInt(st.sinceLast) + " ngày từ kỳ gần nhất" };
   }
   function bigRight(num, unit, unitFirst){
@@ -552,7 +557,11 @@
   function renderCycleCard(){
     var card = $("cycleCard");
     // An older cached love-days-core.js can be paired with this page offline.
-    if(!C.cycleStats){ card.hidden = true; $("cycleSetCard").hidden = true; $("cycleSetTitle").hidden = true; return; }
+    if(!C.cycleStats){
+      card.hidden = true; $("cycleSetCard").hidden = true; $("cycleSetTitle").hidden = true;
+      document.querySelector('.tabbar-btn[data-tab="cycle"]').hidden = true;
+      return;
+    }
     card.hidden = state.meta.showCycle === false;
     $("cycleShow").checked = state.meta.showCycle !== false;
     var body = $("cycleBody"), quick = $("cycleQuick"), past = $("cycleAddPast");
@@ -581,7 +590,7 @@
     }
     var est = st.usedDefault && v.kind !== "long" ? "Ước tính theo " + C.CYCLE_DEFAULT + " ngày" : "";
     body.innerHTML = '<button type="button" class="up-row cycle-row" id="cycleOpen" aria-label="' +
-      escapeHtml(v.status + ". " + title + ": " + sub + (est ? ". " + est : "") + ". Mở sổ chu kỳ") + '">' +
+      escapeHtml(v.status + ". " + title + ": " + sub + (est ? ". " + est : "") + ". Mở tab Chu kỳ") + '">' +
       '<span class="up-main"><span class="up-title">' + title + '</span><span class="up-date">' + sub + "</span>" +
       (est ? '<span class="up-date">' + est + "</span>" : "") + "</span>" + right + CHEV + "</button>";
     past.hidden = true;
@@ -591,7 +600,35 @@
     quick.textContent = ending ? "Kết thúc hôm nay" : "Bắt đầu hôm nay";
   }
 
-  // Rebuilds the list half only; the form is never re-rendered from here.
+  // Bars = days between consecutive period starts (latest 12), dashed line =
+  // the average in use. Gaps left out of the average are drawn faint.
+  function cycleChartHtml(st){
+    var gaps = st.list.filter(function(x){ return x.gap !== null; }).slice(-12);
+    if(gaps.length < 2) return "";
+    var W = 320, H = 150, padL = 6, padR = 6, top = 22, base = 118;
+    var max = 0;
+    gaps.forEach(function(x){ if(x.gap > max) max = x.gap; });
+    if(st.avgGap && st.avgGap > max) max = st.avgGap;
+    var slot = (W - padL - padR) / gaps.length, bw = Math.min(30, slot * 0.62), s = "";
+    gaps.forEach(function(x, i){
+      var cx = padL + slot * i + slot / 2, bh = Math.max(2, (base - top) * x.gap / max), y = base - bh;
+      s += '<rect class="cy-bar' + (x.gapOk ? "" : " off") + '" x="' + (cx - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="4"/>' +
+        '<text class="cy-val" x="' + cx.toFixed(1) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle">' + x.gap + "</text>" +
+        '<text class="cy-lbl" x="' + cx.toFixed(1) + '" y="' + (base + 15) + '" text-anchor="middle">' + fmtDayMonth(x.start) + "</text>";
+    });
+    if(st.n){
+      var ay = base - (base - top) * st.avgGap / max;
+      s += '<line class="cy-avg" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + ay.toFixed(1) + '" y2="' + ay.toFixed(1) + '"/>';
+    }
+    var label = "Khoảng cách giữa các kỳ, tính bằng ngày: " + gaps.map(function(x){ return fmtDayMonth(x.start) + " " + x.gap; }).join(", ") +
+      (st.n ? ". Trung bình " + fmtAvg(st.avgGap) : "");
+    return '<h4 class="import-step">Khoảng cách giữa các kỳ <span class="cycle-stat-sub">(ngày)</span></h4>' +
+      '<div class="cycle-chart"><svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + escapeHtml(label) + '">' + s + "</svg>" +
+      '<p class="cycle-legend">Mỗi cột là số ngày từ kỳ trước tới kỳ bắt đầu ngày ghi dưới cột' + (st.n ? " · nét đứt: trung bình " + fmtAvg(st.avgGap) : "") +
+      (gaps.some(function(x){ return !x.gapOk; }) ? " · cột nhạt: không tính trung bình" : "") + "</p></div>";
+  }
+
+  // Rebuilds the Chu kỳ tab only; the form in the sheet is never re-rendered from here.
   function renderCycleSheet(){
     var el = $("cycleList");
     if(state.cyclesBroken){ el.innerHTML = '<p class="card-text">' + CYCLE_BROKEN_TEXT + ".</p>"; return; }
@@ -606,13 +643,26 @@
           ? stat("Kỳ gần nhất", weekday(st.last.start) + ", " + fmtDate(st.last.start), '<span class="status-tag warn">' + fmtInt(st.sinceLast) + " ngày trước</span>")
           : stat("Kỳ tới dự kiến", weekday(st.next) + ", " + fmtDate(st.next),
               '<span class="status-tag' + (v.kind === "late" ? " warn" : " ok") + '">' + v.status + "</span>")) +
+        (st.nextMin && v.kind !== "long" ? stat("Có thể rơi vào", fmtDayMonth(st.nextMin) + " – " + fmtDate(st.nextMax),
+          '<span class="cycle-stat-sub">(chu kỳ gần đây từ ' + st.gapMin + " đến " + st.gapMax + " ngày)</span>") : "") +
         stat("Chu kỳ trung bình", st.n ? fmtAvg(st.avgGap) : st.list.length < 2 ? "Cần ít nhất 2 kỳ" : "Chưa có khoảng cách nào từ " + C.CYCLE_MIN + " đến " + C.CYCLE_MAX + " ngày",
           '<span class="cycle-stat-sub">' + (st.n ? "(" + st.n + " chu kỳ gần nhất)" : "Ước tính theo " + C.CYCLE_DEFAULT + " ngày") + "</span>") +
         stat("Số ngày mỗi kỳ", st.avgLen !== null ? fmtAvg(st.avgLen) : "Chưa ghi ngày kết thúc",
           st.lenN ? '<span class="cycle-stat-sub">(trung bình ' + st.lenN + " kỳ gần nhất)</span>" : "") +
         "</dl>";
-    } else h += '<p class="card-text cycle-empty">Chưa ghi kỳ nào</p>';
-    h += '<button type="button" class="btn btn-primary btn-block" data-cy="add">Thêm kỳ</button>';
+      if(v.kind === "long") h += '<p class="card-text cycle-hint">Đã quá hai lần chu kỳ thường lệ — có thể còn một kỳ chưa ghi.</p>';
+      var ending = st.last.end == null && st.inPeriod;
+      if(!(st.last.end != null && st.inPeriod)){
+        h += '<button type="button" class="btn btn-primary btn-block" data-cy="quick" data-act="' + (ending ? "end" : "start") + '">' +
+          (ending ? "Kết thúc hôm nay" : "Bắt đầu hôm nay") + "</button>";
+      }
+      h += '<button type="button" class="btn btn-soft btn-block" data-cy="add">Thêm kỳ đã qua</button>';
+      h += cycleChartHtml(st);
+    } else {
+      h += '<p class="card-text cycle-empty">Chưa ghi kỳ nào. Ghi ngày bắt đầu mỗi kỳ để app tính khoảng cách và dự đoán kỳ tới.</p>' +
+        '<button type="button" class="btn btn-primary btn-block" data-cy="quick" data-act="start">Bắt đầu hôm nay</button>' +
+        '<button type="button" class="btn btn-soft btn-block" data-cy="add">Thêm kỳ đã qua</button>';
+    }
     if(st.list.length){
       h += '<h4 class="import-step">Các kỳ đã ghi</h4><ul class="ms-group">' + st.list.slice().reverse().map(function(x){
         var title = fmtCycleRange(x) + (x.len !== null ? " · " + x.len + " ngày" : "");
@@ -630,9 +680,7 @@
 
   function showCycleMode(mode){
     cyc.mode = mode;
-    $("cycleList").hidden = mode !== "list";
-    $("cycleForm").hidden = mode !== "form";
-    $("cycleSheetTitle").textContent = mode === "list" ? "Sổ chu kỳ" : cyc.editingId ? "Sửa kỳ" : "Thêm kỳ";
+    $("cycleSheetTitle").textContent = cyc.editingId ? "Sửa kỳ" : "Thêm kỳ";
     $("cycleSheet").scrollTop = 0;
   }
   function cycleFieldError(id, msg){
@@ -660,10 +708,11 @@
     clearCycleErrors();
     showCycleMode("form");
   }
+  // form = true opens the add form; otherwise the Chu kỳ tab is shown.
   function openCycleSheet(form){
     if(!C.cycleStats) return;
-    if(form && !state.cyclesBroken) openCycleForm(null); else openCycleList();
-    openSheet("cycleSheet");
+    if(form && !state.cyclesBroken){ openCycleForm(null); openSheet("cycleSheet"); }
+    else switchTab("cycle");
   }
 
   // One write at a time: the flag goes up before the put and comes down on
@@ -692,7 +741,7 @@
     });
   }
 
-  ["cycleCard", "cycleSheet"].forEach(function(id){
+  ["cycleCard", "cycleSheet", "tab-cycle"].forEach(function(id){
     $(id).addEventListener("click", function(e){
       if(cyc.quiet){ e.stopPropagation(); e.preventDefault(); }
     }, true);
@@ -708,37 +757,45 @@
     renderCycleCard();
   });
 
-  $("cycleQuick").addEventListener("click", function(){
+  // Shared by the Home card button and the one on the Chu kỳ tab.
+  function cycleQuickAct(btn, errId){
     if(cyc.saving || state.cyclesBroken || !C.cycleStats) return;
-    showError("cycleCardErr", null);
-    var btn = this, t = now(), today = C.todayStr(t), st = C.cycleStats(state.cycles, t);
+    showError(errId, null);
+    var t = now(), today = C.todayStr(t), st = C.cycleStats(state.cycles, t);
     var ending = !!st.last && st.last.end == null && st.inPeriod;
     // The label may be a moment behind the date (midnight): act only on what it says.
-    if((btn.getAttribute("data-act") === "end") !== ending){ renderCycleCard(); return; }
+    if((btn.getAttribute("data-act") === "end") !== ending){ renderCycleCard(); renderCycleSheet(); return; }
     var cand = ending
       ? { id: st.last.id, start: st.last.start, end: today, note: st.last.note, createdAt: st.last.createdAt }
       : { id: C.newCycleId(t), start: today, end: null, note: "", createdAt: t };
     var cf = C.cycleConflict(state.cycles, cand, t);
-    if(cf){ showError("cycleCardErr", cycleErrText(cf)); return; }
+    if(cf){ showError(errId, cycleErrText(cf)); return; }
     var next = state.cycles.filter(function(x){ return x.id !== cand.id; }).concat([cand]);
     cycleWrite(btn, next, function(){
+      showError(errId, null);
+      renderCycleSheet();
       toast(ending ? "Đã ghi kỳ kết thúc hôm nay" : "Đã ghi kỳ bắt đầu hôm nay");
-    }, function(msg){ showError("cycleCardErr", msg); });
-  });
+    }, function(msg){ showError(errId, msg); });
+  }
+  $("cycleQuick").addEventListener("click", function(){ cycleQuickAct(this, "cycleCardErr"); });
 
   $("cycleList").addEventListener("click", function(e){
     if(state.cyclesBroken) return;
+    var quick = e.target.closest('[data-cy="quick"]');
+    if(quick){ cycleQuickAct(quick, "cycleTabErr"); return; }
     var item = e.target.closest("[data-cy-id]");
     var c = item ? cycleById(item.getAttribute("data-cy-id")) : null;
     if(!c && !e.target.closest('[data-cy="add"]')) return;
     openCycleForm(c);
-    $("cycleBack").focus({ preventScroll: true });
+    openSheet("cycleSheet");
   });
+  // After a save or delete: close the form sheet and refresh the tab behind it.
   function backToCycleList(){
-    openCycleList();
-    $("cycleSheet").querySelector("[data-close-sheet]").focus({ preventScroll: true });
+    cyc.editingId = null;
+    cyc.mode = "list";
+    closeSheets();
+    renderCycleSheet();
   }
-  $("cycleBack").addEventListener("click", function(){ if(!cyc.saving) backToCycleList(); });
   ["cyStart", "cyEnd"].forEach(function(id){
     $(id).addEventListener("change", function(){ cyc.lastDate = id; clearCycleErrors(); });
   });
