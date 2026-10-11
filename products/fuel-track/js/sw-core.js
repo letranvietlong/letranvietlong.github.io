@@ -1,7 +1,7 @@
 // Logic service worker của FuelTrack. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/fuel-track/sw-fuel-track.js
 // (đọc file đó để biết vì sao vỏ phải nằm ngay trong products/fuel-track/).
-var CACHE_NAME = "fueltrack-cache-v5";
+var CACHE_NAME = "fueltrack-cache-v6";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [

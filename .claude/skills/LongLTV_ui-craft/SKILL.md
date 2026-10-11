@@ -254,6 +254,8 @@ Rút từ lần làm lại header LoveDays (v1.7, 10/2026): hàng tên app + huy
 | H7 | Header trang chủ **cuộn theo nội dung** | Sticky kèm co giãn khi cuộn (đụng bẫy `transform` trong sticky, ios-pwa §6) | — |
 | H8 | **Header đủ bố cục khi chưa có ảnh** (gradient cùng họ màu + chữ cái đầu), cả hai theme; tên dài cắt "…" từng tên, không làm mất tên thứ hai | Chỉ thiết kế cho trường hợp đã có ảnh đẹp và tên ngắn | hồ sơ không ảnh; tên 40 ký tự + emoji |
 
+**Thanh cuộn**: app iPhone không hiện thanh cuộn ở bất kỳ đâu (khối CSS chuẩn và cách đo ở `LongLTV_ios-pwa-pitfalls` §18); bù lại phải cho thấy "còn nội dung" bằng cách để lộ một phần mục kế tiếp ở mép.
+
 ### 12.6 Khi hai quy tắc kéo ngược nhau
 
 - **§11 thắng §12**: đọc được và đúng số trước, rồi mới tới mẫu trình bày. Chồng lớp, gradient, huy hiệu màu đều phải qua phép đo tương phản §8.
@@ -268,6 +270,8 @@ Rút từ lần làm lại header LoveDays (v1.7, 10/2026): hàng tên app + huy
 - [ ] Không đoạn căn giữa nào ≥4 dòng ở 390px (T1); nút là động từ đời thường (T3); số nào cũng có nhãn + đơn vị (T4)
 - [ ] Nút xoá màu đỏ, khác hẳn nút chính (C2); trạng thái có huy hiệu màu **và** chữ (C3); không màu bão hoà tối đa trên nền tối (C1); gradient cùng họ màu (C4)
 - [ ] Mục menu có icon + nhãn (N1); vùng chạm là cả ô ≥44px (N2)
+- [ ] Header: nội dung chính trong 40% trên, không lặp thông tin, phiên bản nằm ở Cài đặt, lớp phủ đóng thì `hidden` (H1–H8)
+- [ ] App iPhone: không thanh cuộn nào hiện ra, trang vẫn cuộn được (ios-pwa §18)
 - [ ] Đang tải = skeleton đúng hình, có đường ra khi lỗi (L1–L2)
 
 ## 13. Quy tắc nền (gộp từ skill ngoài, đã lọc theo repo này)

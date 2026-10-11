@@ -179,3 +179,32 @@ Chỉ chạy ở app mở từ icon Màn hình chính (iOS 16.4+), xin quyền t
 **Áp cho mọi app iPhone trong repo**: lớp phủ fixed toàn màn không được tồn tại ở trạng thái `display≠none` khi đóng. Kiểm bằng Playwright: khi không mở gì, đếm phần tử `position:fixed` có nền, `top ≤ 0`, `display ≠ none` → phải là 0 (trừ header cố định có chủ đích, khi đó nền của nó phải là màu muốn thấy ở dải trạng thái).
 
 **Trạng thái**: Chromium không vẽ dải này. Cho tới khi chủ repo gửi ảnh chụp v1.7 trên iPhone (theme sáng, không mở sheet) thì đây vẫn là giả thuyết. Nếu ảnh mới vẫn còn dải xám: giả thuyết sai — thêm vào dòng chẩn đoán danh sách phần tử fixed chạm mép trên + hỏi phiên bản iOS, không đoán tiếp. Cập nhật mục này theo kết quả.
+
+## 18. Không hiện thanh cuộn trong app iPhone (chủ repo yêu cầu 10/2026)
+
+App mở từ icon Màn hình chính phải trông như app: **không thanh cuộn nào hiện ra khi vuốt** — trang, sheet, danh sách ngang, bánh xe ngày. Cuộn vẫn hoạt động bình thường.
+
+Khối CSS chuẩn, đặt ngay sau rule `html{…}` của mọi app iPhone trong repo (GoldTrack 1.68, FuelTrack 1.14, LoveDays 1.9 đã có):
+
+```css
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0}
+```
+
+- `scrollbar-width:none` đặt trên `html` lan ra viewport (Safari 18.2+, Chromium, Firefox); `::-webkit-scrollbar` lo WebKit/Chromium cũ hơn. Cần **cả hai**.
+- **Không** dùng `overflow:hidden` để "giấu" thanh cuộn — nó tắt luôn việc cuộn. Không dùng mẹo padding âm/che mép.
+- Vùng cuộn mới thêm sau này tự được phủ nhờ bộ chọn `*`; không cần viết lại cho từng class.
+- Ẩn thanh cuộn thì người dùng mất dấu hiệu "còn nội dung phía dưới" → danh sách ngang phải lộ một phần mục kế tiếp ở mép, sheet dài phải có nội dung bị cắt ngang ở mép dưới (đừng để vừa khít một khối).
+- Chỉ áp cho app iPhone. Trang web thường (trang chủ, ThubeeFarmery, worldcup-2026) giữ thanh cuộn — người dùng chuột cần nó.
+
+**Kiểm bằng Playwright**: Playwright mặc định chạy Chromium với `--hide-scrollbars`, nên phép đo luôn ra 0 dù CSS sai. Phải `chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] })`, viewport desktop (1440×500) để nội dung dài hơn màn hình. Số đã đo ở FuelTrack: trước 15px, sau 0px, `scrollY` vẫn 300.
+```js
+// 0 = không còn thanh cuộn của trang; và trang vẫn cuộn được
+window.innerWidth - document.documentElement.clientWidth
+window.scrollTo(0, 300); window.scrollY   // > 0 nếu trang cuộn (app dùng vùng cuộn riêng như GoldTrack `.app` thì đo scrollTop của vùng đó)
+// mọi vùng cuộn con
+[...document.querySelectorAll('*')].filter(el => el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY))
+  .map(el => el.offsetWidth - el.clientWidth - parseFloat(getComputedStyle(el).borderLeftWidth) - parseFloat(getComputedStyle(el).borderRightWidth))  // đều 0
+```
+
+**CHƯA KIỂM CHỨNG TRÊN MÁY THẬT**: với app cuộn bằng trang (FuelTrack, LoveDays), vạch cuộn của iOS là của hệ thống; nếu trên iPhone vẫn thấy vạch mảnh bên phải khi vuốt thì chuyển sang mô hình GoldTrack — `body` không cuộn, một vùng `.app{height:100%;overflow-y:auto}` cuộn bên trong (xem `products/gold-track/css/gold-track.css`) — vùng cuộn con thì `::-webkit-scrollbar{display:none}` ẩn được chắc chắn. Đổi mô hình cuộn là việc lớn (đụng mọi phần tử `position:fixed`, §1–§4), phải đi qua pipeline.

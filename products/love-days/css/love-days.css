@@ -46,6 +46,10 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
 html{background:var(--bg);-webkit-text-size-adjust:100%}
+/* Không hiện thanh cuộn ở bất kỳ đâu (app Màn hình chính, không phải trang web); cuộn vẫn hoạt động bình thường.
+   scrollbar-width trên html lan ra viewport (Safari 18.2+); ::-webkit-scrollbar cho WebKit/Chromium cũ hơn. */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0}
 body{
   margin:0;min-height:100vh;min-height:100dvh;
   color:var(--text);font-family:var(--font);

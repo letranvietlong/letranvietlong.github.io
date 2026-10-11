@@ -74,6 +74,7 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Vùng chạm là cả ô (đo phần tử nhận sự kiện, không phải icon)? Mục menu có icon **kèm** nhãn?
 - [ ] Trạng thái tải là skeleton đúng hình bố cục (không phải màn trắng + vòng xoay), và có đường ra khi fetch lỗi?
 - [ ] Phông mới: đơn giản, có trên iOS, đủ dấu tiếng Việt?
+- [ ] App iPhone: vùng cuộn mới có lộ thanh cuộn không (khối CSS chuẩn ở `LongLTV_ios-pwa-pitfalls` §18 còn nguyên, không ai "giấu" bằng `overflow:hidden`)? Lớp phủ toàn màn mới có `hidden` khi đóng không (§17)? Header có lặp thông tin / đẩy nội dung chính xuống quá 40% màn đầu không (`LongLTV_ui-craft` §12.5b)?
 
 ### 5. Việc bị bỏ sót
 - [ ] Thay đổi người dùng thấy được → đã bump `products/<sản phẩm>/data/changelog.json` của đúng sản phẩm (cả field `"version"` ở đầu) chưa?
