@@ -163,10 +163,13 @@
     var calc = tariffDoc ? C.calcBill(b, tariffDoc) : null;
     var hasCalc = !!calc && !calc.noTariff;
     var money = b.amount != null ? b.amount : hasCalc ? calc.total : null;
+    // kWh derived from the amount itself: comparing it back with the amount
+    // would always "match", so no comparison is shown for such a bill.
+    var inferred = b.kwhInferred === true;
     return {
-      calc: calc, hasCalc: hasCalc, money: money,
+      calc: calc, hasCalc: hasCalc, money: money, inferred: inferred,
       kind: b.amount != null ? 'bill' : money != null ? 'est' : 'none',
-      cmp: b.amount != null && hasCalc ? C.compareBill(b.amount, calc.total) : null
+      cmp: b.amount != null && hasCalc && !inferred && b.kwh != null ? C.compareBill(b.amount, calc.total) : null
     };
   }
   function badgeHtml(kind){
@@ -193,16 +196,21 @@
   function compareRow(cur, curView, other, label){
     var ov = billView(other), chips = '';
     if(curView.money != null && ov.money != null) chips += deltaChip(curView.money - ov.money, ov.money, 'đ', 'money');
-    chips += deltaChip(cur.kwh - other.kwh, other.kwh, 'kWh', 'kwh');
-    return '<span class="cmp-label">' + label + ' ' + monthName(other.period) + (ov.kind === 'est' ? ' (số ước tính)' : '') + '</span>' +
+    if(cur.kwh != null && other.kwh != null) chips += deltaChip(cur.kwh - other.kwh, other.kwh, 'kWh', 'kwh');
+    var tags = [];
+    if(ov.kind === 'est') tags.push('số ước tính');
+    if(ov.inferred) tags.push('kWh suy ra');
+    return '<span class="cmp-label">' + label + ' ' + monthName(other.period) + (tags.length ? ' (' + tags.join(', ') + ')' : '') + '</span>' +
       '<div class="cmp-chips">' + chips + '</div>';
   }
   function yearSummary(list, year){
-    var s = { money: 0, kwh: 0, est: 0, none: 0, count: 0 };
+    var s = { money: 0, kwh: 0, est: 0, none: 0, count: 0, inferred: 0, noKwh: 0 };
     list.forEach(function(b){
       if(b.period.slice(0, 4) !== year) return;
       var v = billView(b);
-      s.count++; s.kwh += b.kwh;
+      s.count++;
+      if(b.kwh != null) s.kwh += b.kwh; else s.noKwh++;
+      if(v.inferred) s.inferred++;
       if(v.money != null) s.money += v.money;
       if(v.kind === 'est') s.est++;
       if(v.kind === 'none') s.none++;
@@ -213,6 +221,8 @@
     var parts = [];
     if(s.est) parts.push('gồm ' + s.est + ' tháng ước tính');
     if(s.none) parts.push('chưa tính ' + s.none + ' tháng không có số tiền');
+    if(s.inferred) parts.push('gồm ' + s.inferred + ' tháng kWh suy ra');
+    if(s.noKwh) parts.push(s.noKwh + ' tháng chưa có số kWh');
     return parts.join(' · ');
   }
 
@@ -271,13 +281,16 @@
     $('ovBadge').outerHTML = badgeHtml(v.kind).replace('<span ', '<span id="ovBadge" ');
     $('ovMoney').innerHTML = v.money != null ? fmtVnd(v.money) + ' <span class="unit">đ</span>' : '<span class="muted">' + (tariffLoading() ? '…' : '—') + '</span>';
     var note = v.kind === 'none' ? noMoneyReason() :
-      v.kind === 'est' && v.calc.estimated ? 'Kỳ vắt qua ngày đổi giá — chia theo số ngày, chỉ là ước tính.' : '';
+      v.kind === 'est' && v.calc.estimated ? 'Kỳ vắt qua ngày đổi giá — chia theo số ngày, chỉ là ước tính.' :
+      v.inferred ? 'kWh suy ra từ số tiền' :
+      cur.kwh == null ? 'Chưa có biểu giá cho kỳ này nên chưa tính được số kWh' : '';
     $('ovNote').textContent = note;
     $('ovNote').hidden = !note;
-    $('ovKwh').innerHTML = fmtVnd(cur.kwh) + '<small>kWh</small>';
-    $('ovPerKwh').innerHTML = v.money != null && cur.kwh > 0 ? fmtVnd(Math.round(v.money / cur.kwh)) + '<small>đ/kWh</small>' : '—';
+    var ap = v.inferred ? '≈' : '';
+    $('ovKwh').innerHTML = cur.kwh == null ? '—' : ap + fmtVnd(cur.kwh) + '<small>kWh</small>';
+    $('ovPerKwh').innerHTML = v.money != null && cur.kwh > 0 ? ap + fmtVnd(Math.round(v.money / cur.kwh)) + '<small>đ/kWh</small>' : '—';
     var pd = C.perDay(cur);
-    $('ovPerDay').innerHTML = (pd.approx ? '≈' : '') + fmtDec(pd.value, 2) + '<small>kWh/ngày</small>';
+    $('ovPerDay').innerHTML = pd.value == null ? '—' : (pd.approx || v.inferred ? '≈' : '') + fmtDec(pd.value, 2) + '<small>kWh/ngày</small>';
 
     var prev = map[C.addMonths(cur.period, -1)];
     $('ovPrev').hidden = !prev;
@@ -319,7 +332,7 @@
       var b = map[p];
       if(!b) return { period: p, value: null };
       var v = billView(b);
-      return { period: p, value: money ? v.money : b.kwh, est: money && v.kind === 'est', kind: v.kind };
+      return { period: p, value: money ? v.money : b.kwh, est: money ? v.kind === 'est' : v.inferred, kind: v.kind, inferred: v.inferred };
     });
     var have = pts.filter(function(p){ return p.value != null; });
     if(!chartSel || months.indexOf(chartSel) < 0) chartSel = endPeriod;
@@ -353,12 +366,13 @@
         ', mới nhất ' + monthName(last.period) + ' ' + fmtVnd(last.value) + ' ' + unit + '.' : 'chưa có số liệu.');
     $('chart').innerHTML = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + svg + '</svg>';
     $('chartLegend').hidden = !pts.some(function(p){ return p.est; });
+    $('chartLegendText').textContent = money ? 'Cột nhạt: ước tính theo biểu giá' : 'Cột nhạt: kWh suy ra từ số tiền';
 
     var sel = pts.filter(function(p){ return p.period === chartSel; })[0];
     var txt = capFirst(monthName(chartSel)) + ': ';
     if(!map[chartSel]) txt += 'chưa có hoá đơn';
-    else if(sel.value == null) txt += noMoneyReason().toLowerCase();
-    else txt += fmtVnd(sel.value) + ' ' + unit + (money ? (sel.kind === 'est' ? ' · ước tính' : ' · theo hoá đơn') : '');
+    else if(sel.value == null) txt += money ? noMoneyReason().toLowerCase() : 'chưa có số kWh';
+    else txt += (!money && sel.inferred ? '≈' : '') + fmtVnd(sel.value) + ' ' + unit + (money ? (sel.kind === 'est' ? ' · ước tính' : ' · theo hoá đơn') : sel.inferred ? ' · suy ra từ số tiền' : '');
     if($('chartValue').textContent !== txt) $('chartValue').textContent = txt;
   }
   // The chart box itself takes focus; ←/→ walk the months.
@@ -406,11 +420,13 @@
       var ys = yearSummary(list, year), yn = yearNote(ys);
       var rows = list.filter(function(b){ return b.period.slice(0, 4) === year; }).reverse().map(function(b){
         var v = billView(b);
-        var meta = fmtVnd(b.kwh) + ' kWh' + (v.money != null && b.kwh > 0 ? ' · ' + fmtVnd(Math.round(v.money / b.kwh)) + ' đ/kWh' : '');
+        var ap = v.inferred ? '≈' : '';
+        var meta = (b.kwh == null ? '— kWh' : ap + fmtVnd(b.kwh) + ' kWh') + (v.money != null && b.kwh > 0 ? ' · ' + ap + fmtVnd(Math.round(v.money / b.kwh)) + ' đ/kWh' : '');
         return '<button type="button" class="bill-row" data-bill="' + esc(b.id) + '">' +
           '<span class="bill-main"><span class="bill-period">' + capFirst(monthName(b.period)) + '</span>' +
             '<span class="bill-meta">' + meta + '</span>' +
-            (v.cmp ? '<span class="bill-cmp ' + (v.cmp.match ? 'ok' : 'off') + '">' + cmpText(v.cmp) + '</span>' : '') + '</span>' +
+            (v.cmp ? '<span class="bill-cmp ' + (v.cmp.match ? 'ok' : 'off') + '">' + cmpText(v.cmp) + '</span>' : '') +
+            (v.inferred ? '<span class="bill-hint">kWh suy ra từ số tiền</span>' : '') + '</span>' +
           '<span class="bill-right"><span class="bill-amount">' + (v.money != null ? fmtVnd(v.money) + ' đ' : tariffLoading() ? '…' : '—') + '</span>' + badgeHtml(v.kind) + '</span>' +
         '</button>';
       }).join('');
@@ -426,10 +442,11 @@
   });
 
   // ---------- Form hoá đơn ----------
-  // mode: which inputs give the kWh ('index' | 'kwh' | 'paste'). source: how
-  // the saved figures were entered. oldAuto: "Chỉ số cũ" holds a suggestion
-  // (last month's new reading) the user has not touched.
-  var form = { editing: null, mode: 'index', source: 'index', placeId: null, oldAuto: false };
+  // mode: which inputs give the kWh ('amount' | 'kwh' | 'index' | 'paste').
+  // source: how the saved figures were entered. oldAuto: "Chỉ số cũ" holds a
+  // suggestion (last month's new reading) the user has not touched. kwhAuto:
+  // "Số kWh" holds the figure derived from the amount, not typed by the user.
+  var form = { editing: null, mode: 'amount', source: 'amount', placeId: null, oldAuto: false, kwhAuto: false };
 
   // Error line → the inputs it speaks for (red border + aria-invalid);
   // `inputs` narrows it to the field actually wrong.
@@ -457,6 +474,9 @@
     $('fIdxBox').hidden = mode !== 'index';
     $('fKwhBox').hidden = mode !== 'kwh';
     $('fPasteBox').hidden = mode !== 'paste';
+    // One money field for every mode: in "Số tiền" it is the input the kWh is
+    // derived from (required); elsewhere it is the optional bill amount.
+    $('fAmountLabel').innerHTML = mode === 'amount' ? 'Số tiền đã trả <em>(đ)</em>' : 'Tiền trên hoá đơn <em>(đ, không bắt buộc)</em>';
     // Nothing can be saved straight from the pasted text: it has to be
     // filled into the fields and checked first.
     $('btnBillSave').hidden = mode === 'paste';
@@ -483,11 +503,45 @@
     '<li>Nhiều hộ dùng chung một công tơ nên định mức mỗi bậc được nhân lên.</li>' +
     '<li>Công tơ tính theo giá khác giá sinh hoạt (kinh doanh, thuê trọ…).</li>' +
     '<li>Biểu giá trong app chưa cập nhật quyết định mới nhất.</li></ul></details>';
+  function formDates(){
+    var from = $('fFrom').value, to = $('fTo').value;
+    return { fromDate: C.realDate(from) ? from : null, toDate: C.realDate(to) ? to : null };
+  }
+  // "Số tiền" mode: the kWh for the amount in the form.
+  // → null (nothing to derive from yet) | { wait: true } (no tariff loaded) | kwhFromAmount's result.
+  // A saved bill whose amount, period and dates are untouched keeps the kWh it
+  // was saved with, even if the tariff file has been corrected since.
+  function inferNow(){
+    var txt = $('fAmount').value.trim(), amount = C.parseIntStrict(txt), period = $('fPeriod').value;
+    if(!txt || !isFinite(amount) || amount > C.MAX_AMOUNT || !C.validPeriod(period)) return null;
+    var d = formDates(), ed = form.editing;
+    if(ed && ed.source === 'amount' && ed.amount === amount && ed.period === period && ed.fromDate === ($('fFrom').value || null) && ed.toDate === ($('fTo').value || null)){
+      return { kwh: ed.kwh, noTariff: ed.kwh == null, kept: true, exact: true, calcTotal: amount, diff: 0 };
+    }
+    if(!tariffDoc) return { wait: true };
+    return C.kwhFromAmount({ amount: amount, period: period, fromDate: d.fromDate, toDate: d.toDate }, tariffDoc);
+  }
+  function inferHtml(){
+    var r = inferNow();
+    if(!r) return '';
+    if(r.wait) return '<div class="calc-box-row"><span class="calc-box-k">' + noMoneyReason() + '</span></div>';
+    if(r.noTariff) return '<div class="calc-box-row"><span class="calc-box-k" id="fInferNote">Chưa có biểu giá cho kỳ này — vẫn lưu được số tiền</span></div>';
+    var html = '<div class="calc-box-row"><span class="calc-box-k">Số kWh suy ra</span><b id="fInferKwh">≈ ' + fmtVnd(r.kwh) + ' kWh</b></div>';
+    if(r.kept) return html;
+    html += r.exact ? '<p class="cmp ok" id="fInferNote">Khớp chính xác biểu giá</p>' :
+      '<p class="cmp near" id="fInferNote">Gần nhất: ' + fmtVnd(r.kwh) + ' kWh (' + fmtVnd(r.calcTotal) + ' đ), lệch ' + (r.diff > 0 ? '+' : MINUS) + fmtVnd(Math.abs(r.diff)) + ' đ</p>';
+    var d = formDates();
+    var calc = C.calcBill({ kwh: r.kwh, period: $('fPeriod').value, fromDate: d.fromDate, toDate: d.toDate }, tariffDoc);
+    return html + '<details class="more" data-key="lines"><summary><span class="more-head">Chi tiết từng bậc</span></summary>' + linesHtml(calc) +
+      '<div class="calc-line"><span class="calc-line-k">Trước VAT</span><span class="calc-line-v">' + fmtVnd(calc.subtotal) + ' đ</span></div>' +
+      '<div class="calc-line"><span class="calc-line-k">VAT</span><span class="calc-line-v">' + fmtVnd(calc.vat) + ' đ</span></div>' +
+      (calc.estimated ? '<p class="field-hint">Kỳ vắt qua ngày đổi giá: chia theo số ngày, chỉ là ước tính.</p>' : '') + '</details>';
+  }
   // Rewrites only the computed box — never an input.
   function updateCalc(){
     var box = $('fCalc');
     var kwh = formKwh(), period = $('fPeriod').value;
-    var html = '';
+    var html = form.mode === 'amount' ? inferHtml() : '';
     if(form.mode === 'index' && isFinite(kwh)) html += '<div class="calc-box-row"><span class="calc-box-k">Tiêu thụ</span><b id="fUsage">' + fmtVnd(kwh) + ' kWh</b></div>';
     if(isFinite(kwh) && kwh <= C.MAX_KWH && C.validPeriod(period)){
       if(!tariffDoc){
@@ -573,8 +627,9 @@
     setFieldError('fKwhErr', null);
     return true;
   }
-  function checkAmount(){
+  function checkAmount(showEmpty){
     var t = $('fAmount').value.trim(), n = C.parseIntStrict(t);
+    if(!t && showEmpty){ setFieldError('fAmountErr', 'Nhập số tiền đã trả, ví dụ 990.000.'); return false; }
     if(t && isNaN(n)){ setFieldError('fAmountErr', MSG_AMOUNT); return false; }
     if(t && n > C.MAX_AMOUNT){ setFieldError('fAmountErr', 'Số tiền tối đa 1.000.000.000 đ.'); return false; }
     setFieldError('fAmountErr', null);
@@ -609,9 +664,14 @@
     });
     $(id).addEventListener('blur', function(){ if(sheetOpen('billSheet')) checkIndex(false); });
   });
-  $('fKwh').addEventListener('input', function(){ setFieldError('fKwhErr', null); updateCalc(); });
+  $('fKwh').addEventListener('input', function(){ form.kwhAuto = false; setFieldError('fKwhErr', null); updateCalc(); });
   $('fKwh').addEventListener('blur', function(){ if(sheetOpen('billSheet')) checkKwh(false); });
-  $('fAmount').addEventListener('input', function(){ setFieldError('fAmountErr', null); updateCalc(); });
+  $('fAmount').addEventListener('input', function(){
+    // A kWh carried over from "Số tiền" belongs to the old amount.
+    if(form.mode !== 'amount') form.kwhAuto = false;
+    setFieldError('fAmountErr', null);
+    updateCalc();
+  });
   $('fAmount').addEventListener('blur', function(){
     if(!sheetOpen('billSheet')) return;
     if(checkAmount() && $('fAmount').value.trim()) $('fAmount').value = fmtVnd(C.parseIntStrict($('fAmount').value));
@@ -634,8 +694,16 @@
     if(!b) return;
     var mode = b.getAttribute('data-mode');
     if(mode === form.mode) return;
-    // Going from readings to plain kWh: carry the difference over, into an empty field only.
-    if(mode === 'kwh' && form.mode === 'index' && !$('fKwh').value.trim() && isFinite(formKwh())) $('fKwh').value = String(formKwh());
+    // Going to plain kWh: carry over what the current mode already knows —
+    // the difference of the readings, or the kWh derived from the amount —
+    // into an empty field only.
+    if(mode === 'kwh' && (!$('fKwh').value.trim() || form.kwhAuto)){
+      if(form.mode === 'index' && isFinite(formKwh())){ $('fKwh').value = String(formKwh()); form.kwhAuto = false; }
+      else if(form.mode === 'amount'){
+        var inf = inferNow();
+        if(inf && inf.kwh != null){ $('fKwh').value = String(inf.kwh); form.kwhAuto = true; }
+      }
+    }
     if(mode !== 'paste') form.source = mode;
     setMode(mode);
     updateCalc();
@@ -668,13 +736,14 @@
     if(r.kwh != null) names.push('số kWh');
     if(r.amount != null) names.push('số tiền');
     if(!names.length){
-      setFieldError('fPasteErr', 'Không tìm thấy kỳ, chỉ số, số kWh hay số tiền trong nội dung này. Hãy nhập tay ở “Chỉ số công tơ” hoặc “Số kWh”.');
+      setFieldError('fPasteErr', 'Không tìm thấy kỳ, chỉ số, số kWh hay số tiền trong nội dung này. Hãy nhập tay ở “Số tiền” hoặc “Số kWh”.');
       return;
     }
     clearBillErrors();
     if(r.period) $('fPeriod').value = r.period;
     if(r.fromDate){ $('fFrom').value = r.fromDate; $('fTo').value = r.toDate; $('fMore').open = true; }
-    var mode = form.mode === 'paste' ? 'index' : form.mode;
+    // A receipt with only the period and the money goes to "Số tiền".
+    var mode = 'amount';
     if(r.oldIndex != null){
       $('fOld').value = String(r.oldIndex); $('fNew').value = String(r.newIndex);
       form.oldAuto = false; $('fOldHint').textContent = '';
@@ -682,6 +751,7 @@
     }
     if(r.kwh != null){
       $('fKwh').value = String(r.kwh);
+      form.kwhAuto = false;
       // Readings that don't add up to the stated kWh (meter multiplier,
       // replaced meter): trust the kWh figure.
       if(r.oldIndex == null || r.newIndex - r.oldIndex !== r.kwh) mode = 'kwh';
@@ -689,11 +759,11 @@
     if(r.amount != null) $('fAmount').value = fmtVnd(r.amount);
     // The text itself is not kept anywhere.
     $('fPaste').value = '';
-    form.source = 'paste';
+    form.source = mode === 'amount' ? 'amount' : 'paste';
     setMode(mode);
     var missing = [];
     if(!r.period) missing.push('kỳ');
-    if(r.oldIndex == null && r.kwh == null) missing.push('chỉ số hoặc số kWh');
+    if(r.oldIndex == null && r.kwh == null && r.amount == null) missing.push('chỉ số hoặc số kWh');
     if(r.amount == null) missing.push('số tiền');
     $('fPasteMsg').textContent = 'Đã điền ' + names.join(', ') + '.' + (missing.length ? ' Chưa thấy ' + missing.join(', ') + '.' : '') + ' Soát lại các ô trước khi lưu.';
     $('fPasteMsg').hidden = false;
@@ -706,8 +776,8 @@
     if(!bill && data.bills.length >= C.MAX_BILLS){ toast('Đã đủ ' + fmtVnd(C.MAX_BILLS) + ' hoá đơn — xoá bớt trước khi thêm.'); return; }
     clearBillErrors();
     var hasIdx = !!bill && bill.oldIndex != null && bill.newIndex != null;
-    form = { editing: bill || null, mode: 'index', source: bill ? bill.source : 'index',
-      placeId: bill ? bill.placeId : selectedPlace || data.places[0].id, oldAuto: false };
+    form = { editing: bill || null, mode: 'amount', source: bill ? bill.source : 'amount',
+      placeId: bill ? bill.placeId : selectedPlace || data.places[0].id, oldAuto: false, kwhAuto: false };
     $('billSheetTitle').textContent = bill ? 'Sửa hoá đơn ' + monthName(bill.period) : 'Thêm hoá đơn';
     $('btnBillSave').textContent = bill ? 'Lưu thay đổi' : 'Lưu hoá đơn';
     $('btnBillDelete').hidden = !bill;
@@ -720,7 +790,8 @@
     // Readings that don't add up to the stored kWh (meter multiplier, a
     // restored file): show the stored kWh, never recompute it from them.
     var byIndex = hasIdx && bill.newIndex - bill.oldIndex === bill.kwh;
-    $('fKwh').value = bill && !byIndex ? String(bill.kwh) : '';
+    var byAmount = !!bill && (bill.source === 'amount' || bill.kwh == null);
+    $('fKwh').value = bill && !byIndex && !byAmount ? String(bill.kwh) : '';
     $('fAmount').value = bill && bill.amount != null ? fmtVnd(bill.amount) : '';
     $('fFrom').value = bill && bill.fromDate ? bill.fromDate : '';
     $('fTo').value = bill && bill.toDate ? bill.toDate : '';
@@ -730,7 +801,7 @@
     $('fOldHint').textContent = '';
     $('fMore').open = !!bill;
     $('fCalc').innerHTML = '';
-    setMode(bill && !byIndex ? 'kwh' : 'index');
+    setMode(!bill || byAmount ? 'amount' : byIndex ? 'index' : 'kwh');
     suggestOld();
     updateCalc();
     openSheet('billSheet', function(){ form.editing = null; });
@@ -750,8 +821,19 @@
     if(!period){ setFieldError('fPeriodErr', 'Chọn kỳ hoá đơn (tháng và năm).'); ok = false; }
     else if(!checkPeriod()) ok = false;
 
-    var kwh = NaN, oldIndex = null, newIndex = null, source = form.source;
-    if(form.mode === 'paste'){
+    var kwh = NaN, oldIndex = null, newIndex = null, source = form.source, inferred = false;
+    if(form.mode === 'amount'){
+      if(checkAmount(true)){
+        var inf = inferNow();
+        if(!inf) ok = false;   // the period is wrong; its own error is already showing
+        else if(inf.wait){
+          setFieldError('fAmountErr', 'Chưa tải được biểu giá nên chưa tính được số kWh — thử lại sau, hoặc chọn “Số kWh”.');
+          ok = false;
+        } else {
+          kwh = inf.kwh; inferred = kwh != null && (!inf.kept || form.editing.kwhInferred === true); source = 'amount';
+        }
+      } else ok = false;
+    } else if(form.mode === 'paste'){
       setFieldError('fPasteErr', $('fPaste').value.trim() ? 'Bấm “Điền từ thông báo” để điền vào các ô, soát lại rồi mới lưu.' :
         'Dán thông báo rồi bấm “Điền từ thông báo”, hoặc chọn cách nhập khác.');
       ok = false;
@@ -769,9 +851,12 @@
         if(e0 && e0.oldIndex != null && e0.newIndex != null && (kwh === e0.kwh || kwh === e0.newIndex - e0.oldIndex)){
           oldIndex = e0.oldIndex; newIndex = e0.newIndex; source = e0.source;
         }
+        // The kWh shown was carried over from "Số tiền" and never retyped:
+        // it is still a derived figure.
+        if(form.kwhAuto && $('fAmount').value.trim()){ source = 'amount'; inferred = true; }
       } else ok = false;
     }
-    if(!checkAmount()) ok = false;
+    if(form.mode !== 'amount' && !checkAmount()) ok = false;
     if(!checkDates()){ ok = false; $('fMore').open = true; }
     if(!ok) return;
     var stale = readRaw() !== loadedRaw;
@@ -789,6 +874,7 @@
       source: source, note: clip($('fNote').value.trim(), C.MAX_NOTE),
       createdAt: ed ? ed.createdAt : now, updatedAt: now
     };
+    if(inferred) bill.kwhInferred = true;
     var next = cloneData();
     next.bills = next.bills.filter(function(b){ return !ed || b.id !== ed.id; }).concat(bill);
     var err = C.validateDataset(next) || persist(next);
@@ -827,7 +913,7 @@
     var v = billView(ed);
     confirmDialog({
       title: 'Xoá hoá đơn ' + monthName(ed.period) + '?',
-      text: fmtVnd(ed.kwh) + ' kWh' + (v.money != null ? ' · ' + fmtVnd(v.money) + ' đ' : '') + '.',
+      text: [ed.kwh != null ? fmtVnd(ed.kwh) + ' kWh' : '', v.money != null ? fmtVnd(v.money) + ' đ' : ''].filter(Boolean).join(' · ') + '.',
       ok: 'Xoá hoá đơn', danger: true,
       onOk: function(){
         var next = cloneData();

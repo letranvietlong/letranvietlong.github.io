@@ -49,6 +49,7 @@
     <div class="card empty-card" id="ovEmpty" hidden>
       <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
       <p class="empty-title" id="ovEmptyTitle">Chưa có hoá đơn nào</p>
+      <p class="empty-note">Chỉ cần tháng và số tiền đã trả (ví dụ từ biên lai ví điện tử) — app tự tính ra số kWh.</p>
       <p class="empty-note" id="ovEmptyNote">Dữ liệu chỉ lưu trên máy này. App mở từ Màn hình chính có bộ nhớ riêng, không dùng chung với Safari.</p>
       <button class="btn btn-primary btn-block" id="btnAddFirst" type="button">Thêm hoá đơn đầu tiên</button>
       <button class="btn btn-soft btn-block" id="btnEmptyRestore" type="button">Khôi phục từ file</button>
@@ -80,7 +81,7 @@
       </div>
       <div class="chart-wrap" id="chart" tabindex="0" role="group" aria-label="Biểu đồ 12 tháng — phím mũi tên trái, phải để xem từng tháng"></div>
       <p class="chart-value" id="chartValue" aria-live="polite"></p>
-      <p class="chart-legend" id="chartLegend" hidden><span class="legend-swatch" aria-hidden="true"></span>Cột nhạt: ước tính theo biểu giá</p>
+      <p class="chart-legend" id="chartLegend" hidden><span class="legend-swatch" aria-hidden="true"></span><span id="chartLegendText">Cột nhạt: ước tính theo biểu giá</span></p>
     </section>
 
     <section class="card" id="ovYearCard" aria-labelledby="yearTitle" hidden>
@@ -99,7 +100,7 @@
     <div class="card empty-card" id="billsEmpty" hidden>
       <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
       <p class="empty-title" id="billsEmptyTitle">Chưa có hoá đơn nào</p>
-      <p class="empty-note">Bấm “Thêm hoá đơn” để ghi tháng đầu tiên — nhập chỉ số công tơ, số kWh, hoặc dán thông báo tiền điện.</p>
+      <p class="empty-note">Chỉ cần tháng và số tiền đã trả (ví dụ từ biên lai ví điện tử) — app tự tính ra số kWh.</p>
     </div>
     <div id="billGroups"></div>
   </div>
@@ -170,7 +171,7 @@
 
     <h2 class="group-title" id="autoTitle">Tự động lấy hoá đơn</h2>
     <section class="card" aria-labelledby="autoTitle">
-      <p class="card-text">App chưa tự lấy được hoá đơn: EVN yêu cầu đăng nhập và không cho ứng dụng ngoài truy cập. Hãy dán thông báo tiền điện để app tự điền.</p>
+      <p class="card-text">App chưa tự lấy được hoá đơn: EVN yêu cầu đăng nhập và không cho ứng dụng ngoài truy cập. Hãy dán thông báo tiền điện để app tự điền. Thanh toán qua ví nên không có số điện? Chọn cách nhập Số tiền.</p>
     </section>
 
     <h2 class="group-title" id="infoTitle">Thông tin</h2>
@@ -239,9 +240,10 @@
     <div class="field">
       <span class="field-label" id="fModeLabel">Cách nhập</span>
       <div class="seg" id="fModeSeg" role="radiogroup" aria-labelledby="fModeLabel">
-        <button type="button" role="radio" data-mode="index" class="active" aria-checked="true">Chỉ số công tơ</button>
+        <button type="button" role="radio" data-mode="amount" class="active" aria-checked="true">Số tiền</button>
         <button type="button" role="radio" data-mode="kwh" aria-checked="false">Số kWh</button>
-        <button type="button" role="radio" data-mode="paste" aria-checked="false">Dán thông báo</button>
+        <button type="button" role="radio" data-mode="index" aria-checked="false">Chỉ số</button>
+        <button type="button" role="radio" data-mode="paste" aria-checked="false">Dán</button>
       </div>
     </div>
     <p class="field-ok" id="fPasteMsg" role="status" hidden></p>
@@ -252,7 +254,7 @@
     </label>
     <p class="field-error" id="fPeriodErr" role="alert" hidden></p>
 
-    <div id="fIdxBox">
+    <div id="fIdxBox" hidden>
       <div class="field-row">
         <label class="field" for="fOld">
           <span class="field-label">Chỉ số cũ <em id="fOldHint"></em></span>
@@ -277,7 +279,7 @@
     <div id="fPasteBox" hidden>
       <label class="field" for="fPaste">
         <span class="field-label">Nội dung thông báo tiền điện</span>
-        <textarea id="fPaste" rows="5" autocomplete="off" spellcheck="false" placeholder="Dán tin nhắn hoặc email báo tiền điện vào đây"></textarea>
+        <textarea id="fPaste" rows="5" autocomplete="off" spellcheck="false" placeholder="Dán tin nhắn, email báo tiền điện hoặc biên lai thanh toán vào đây"></textarea>
       </label>
       <p class="field-error" id="fPasteErr" role="alert" hidden></p>
       <button class="btn btn-soft btn-block" id="btnPasteFill" type="button">Điền từ thông báo</button>
@@ -285,7 +287,7 @@
     </div>
 
     <label class="field" for="fAmount">
-      <span class="field-label">Tiền trên hoá đơn <em>(đ, không bắt buộc)</em></span>
+      <span class="field-label" id="fAmountLabel">Số tiền đã trả <em>(đ)</em></span>
       <input type="text" id="fAmount" inputmode="numeric" autocomplete="off" placeholder="990.000">
     </label>
     <p class="field-error" id="fAmountErr" role="alert" hidden></p>

@@ -9,7 +9,7 @@
   var PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
   var MAX_PLACES = 3, MAX_BILLS = 2000, MAX_KWH = 100000, MAX_AMOUNT = 1e9, MAX_INDEX = 999999999;
   var MAX_NAME = 30, MAX_CODE = 20, MAX_NOTE = 200, MAX_SPAN_DAYS = 100;
-  var SOURCES = { index: 1, kwh: 1, paste: 1 };
+  var SOURCES = { index: 1, kwh: 1, paste: 1, amount: 1 };
 
   function isInt(n){ return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
   function pad2(n){ return (n < 10 ? '0' : '') + n; }
@@ -156,6 +156,31 @@
     return out;
   }
 
+  // The reverse of calcBill: the whole number of kWh whose bill is closest to
+  // `amount` (a payment receipt gives the money but no meter figures). The
+  // total grows with every kWh, so a binary search over calcBill itself
+  // finds it — every rule (tariff of the period, VAT, split periods) is the
+  // forward one by construction. A tie goes to the smaller kWh.
+  // → { kwh, calcTotal, diff = amount − calcTotal, exact (|diff| ≤ 2 đ), noTariff }
+  function kwhFromAmount(bill, doc){
+    var none = { kwh: null, calcTotal: null, diff: null, exact: false, noTariff: true };
+    if(!bill || !isInt(bill.amount) || bill.amount < 0) return none;
+    function total(k){ return calcBill({ kwh: k, period: bill.period, fromDate: bill.fromDate, toDate: bill.toDate }, doc); }
+    if(total(0).noTariff) return none;
+    var lo = 0, hi = MAX_KWH;
+    if(total(hi).total < bill.amount) lo = hi;
+    while(lo < hi){
+      var mid = Math.floor((lo + hi) / 2);
+      if(total(mid).total >= bill.amount) hi = mid; else lo = mid + 1;
+    }
+    var k = lo, t = total(k).total;
+    if(k > 0){
+      var below = total(k - 1).total;
+      if(Math.abs(bill.amount - below) <= Math.abs(t - bill.amount)){ k = k - 1; t = below; }
+    }
+    return { kwh: k, calcTotal: t, diff: bill.amount - t, exact: Math.abs(bill.amount - t) <= 2, noTariff: false };
+  }
+
   function compareBill(amount, total){
     var diff = amount - total;
     return { diff: diff, match: Math.abs(diff) <= Math.max(1000, 0.005 * total) };
@@ -164,6 +189,7 @@
   // kWh per day: by the reading dates when both are known, else by the days
   // of the calendar month (approx = true → the UI adds "≈").
   function perDay(bill){
+    if(!isInt(bill.kwh)) return { value: null, approx: true };
     var d = usableDates(bill);
     if(d.from && d.to) return { value: bill.kwh / daysInclusive(d.from, d.to), approx: false };
     return { value: bill.kwh / daysInMonth(bill.period), approx: true };
@@ -271,7 +297,7 @@
     }
 
     var periods = [];
-    [/\bky\s*(?:hoa\s*don|hd)?\s*(?:\d\s+)?(?:thang\s*)?:?\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})\b/g,
+    [/\bky\s*(?:hoa\s*don|hd|thanh\s*toan|cuoc)?\s*(?:\d\s+)?(?:thang\s*)?:?\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})\b/g,
      /\bthang\s*:?\s*(\d{1,2})\s*(?:[\/\-.]|nam)\s*(\d{4})\b/g,
      /\bt\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})\b/g].forEach(function(re){
       var x;
@@ -376,9 +402,12 @@
       if(b.fromDate && b.toDate && b.fromDate > b.toDate) return n + 'từ ngày nằm sau đến ngày.';
       if(!optIndex(b.oldIndex) || !optIndex(b.newIndex)) return n + 'chỉ số công tơ không hợp lệ.';
       if(b.oldIndex !== null && b.newIndex !== null && b.newIndex < b.oldIndex) return n + 'chỉ số mới nhỏ hơn chỉ số cũ.';
-      if(!isInt(b.kwh) || b.kwh < 0 || b.kwh > MAX_KWH) return n + 'số kWh phải từ 0 đến 100.000.';
-      if(b.amount !== null && (!isInt(b.amount) || b.amount < 0 || b.amount > MAX_AMOUNT)) return n + 'số tiền không hợp lệ.';
       if(typeof b.source !== 'string' || SOURCES[b.source] !== 1) return n + 'cách nhập không hợp lệ.';
+      // Only a bill entered by amount for a period without a tariff may lack kWh.
+      if(!(b.kwh === null && b.source === 'amount') && (!isInt(b.kwh) || b.kwh < 0 || b.kwh > MAX_KWH)) return n + 'số kWh phải từ 0 đến 100.000.';
+      if(b.kwhInferred != null && typeof b.kwhInferred !== 'boolean') return n + 'trường "kWh suy ra" không hợp lệ.';
+      if(b.kwhInferred === true && b.kwh === null) return n + 'trường "kWh suy ra" không hợp lệ.';
+      if(b.amount !== null && (!isInt(b.amount) || b.amount < 0 || b.amount > MAX_AMOUNT)) return n + 'số tiền không hợp lệ.';
       if(typeof b.note !== 'string' || b.note.length > MAX_NOTE) return n + 'ghi chú quá dài.';
       if(!isInt(b.createdAt) || !isInt(b.updatedAt)) return n + 'thời điểm tạo không hợp lệ.';
     }
@@ -389,9 +418,12 @@
       version: 1,
       places: d.places.map(function(p){ return { id: p.id, name: p.name.trim(), customerCode: typeof p.customerCode === 'string' ? p.customerCode.trim() : '' }; }),
       bills: d.bills.map(function(b){
-        return { id: b.id, placeId: b.placeId, period: b.period, fromDate: b.fromDate, toDate: b.toDate,
+        var out = { id: b.id, placeId: b.placeId, period: b.period, fromDate: b.fromDate, toDate: b.toDate,
           oldIndex: b.oldIndex, newIndex: b.newIndex, kwh: b.kwh, amount: b.amount, source: b.source,
           note: b.note, createdAt: b.createdAt, updatedAt: b.updatedAt };
+        // Written only when true, so records from 1.0 stay byte-identical.
+        if(b.kwhInferred === true) out.kwhInferred = true;
+        return out;
       })
     };
   }
@@ -418,6 +450,7 @@
         var c = calcBill(b, tariffDoc);
         if(!isFinite(c.total) || c.total < 0) throw new Error('calc');
         perDay(b);
+        if(b.amount !== null) kwhFromAmount(b, tariffDoc);
       });
     }catch(e){
       return { error: 'File có dữ liệu app không tính được — không khôi phục.' };
@@ -431,7 +464,7 @@
     realDate: realDate, dayToMs: dayToMs, msToDay: msToDay, vnToday: vnToday, vnMonth: vnMonth, validPeriod: validPeriod,
     daysInMonth: daysInMonth, lastDay: lastDay, addMonths: addMonths, addDays: addDays, daysInclusive: daysInclusive,
     validTariffDoc: validTariffDoc, usableDates: usableDates, dateFitsPeriod: dateFitsPeriod, tariffOn: tariffOn, vatOn: vatOn, tierLines: tierLines,
-    calcBill: calcBill, compareBill: compareBill, perDay: perDay,
+    calcBill: calcBill, kwhFromAmount: kwhFromAmount, compareBill: compareBill, perDay: perDay,
     parseIntStrict: parseIntStrict, parsePaste: parsePaste,
     emptyData: emptyData, isDefaultData: isDefaultData, validateDataset: validateDataset, cleanDataset: cleanDataset, parseBackup: parseBackup
   };

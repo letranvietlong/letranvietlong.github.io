@@ -1,4 +1,4 @@
-// Standard PowerTrack test scenario with hand-computed expectations (v1.0, after the first review round).
+// Standard PowerTrack test scenario with hand-computed expectations (v1.1: entry by amount, kWh derived backwards).
 // Pair with harness.open({ path: pt.path, now: pt.now.main, mocks: pt.mocks, localStorage: pt.localStorage }).
 //
 // Data shapes:
@@ -6,8 +6,9 @@
 //                                  vat:[{ effectiveFrom, pct, provisional? }] }   — hand-written; prices are before VAT.
 //   localStorage powertrack_v1   { version:1, places:[{ id, name ≤30, customerCode ≤20 }] (1–3),
 //                                  bills:[{ id, placeId, period 'YYYY-MM', fromDate|null, toDate|null, oldIndex|null, newIndex|null,
-//                                           kwh int, amount int|null (VAT included, as on the bill), source 'index'|'kwh'|'paste',
-//                                           note ≤200, createdAt, updatedAt }] }   — one bill per (placeId, period)
+//                                           kwh int (null only for source 'amount' in a period without tariff), amount int|null (VAT included),
+//                                           source 'amount'|'kwh'|'index'|'paste', note ≤200, createdAt, updatedAt,
+//                                           kwhInferred?: true (kWh derived from the amount; key absent otherwise) }] }   — one bill per (placeId, period)
 //   localStorage powertrack_last_backup_v1   ISO string of the last "Lưu file"
 // Backup file: { app:'power-track', kind:'power-log', version:1, exportedAt, places, bills }, name power-track-YYYY-MM-DD.json (VN date).
 // Pure maths lives in window.PowerTrackCore (also loadable with node: require('<repo>/products/power-track/js/power-track-core.js')).
@@ -69,6 +70,27 @@ const calcCases = [
     lines: [[99200, 102500, 238000]], subtotal: 439700, vat: 35176, total: 474876, estimated: false }
 ];
 
+// kwhFromAmount({amount, period}) → kWh whose bill is closest to the amount. [amount, period, kwh, exact, calcTotal, diff]
+const amountCases = [
+  [1388405, '2026-09', 461, true, 1388405, 0],     // 1.074.500 + 61×3.460 = 1.285.560; VAT 102.845
+  [107136, '2026-09', 50, true, 107136, 0],
+  [217836, '2026-09', 100, true, 217836, 0],
+  [1952662, '2026-09', 612, true, 1952662, 0],
+  [990000, '2026-09', 353, false, 990414, -414],   // 352 kWh = 986.796 is further away
+  [0, '2026-09', 0, true, 0, 0],
+  [1000, '2026-09', 0, false, 0, 1000],            // 1 kWh = 2.143, 0 is nearer
+  [421229, '2025-03', 187, true, 421229, 0],       // QĐ 2699 (end of 03/2025)
+  [193270, '2023-06', 100, true, 193270, 0],       // QĐ 1062, VAT 10%
+  [500000, '2023-03', null, false, null, null]     // no tariff
+];
+// UI scenario from an empty app: add 2026-09 with 1.388.405, then 2026-08 with 990.000 (both by "Số tiền").
+const amountFlow = {
+  first: { inferKwh: '≈ 461 kWh', note: 'Khớp chính xác biểu giá', saved: { period: '2026-09', kwh: 461, amount: 1388405, source: 'amount', kwhInferred: true },
+    money: '1.388.405 đ', kwh: '≈461 kWh', perKwh: '≈3.012 đ/kWh' },      // 1.388.405 / 461 = 3.011,7
+  second: { inferKwh: '≈ 353 kWh', note: 'Gần nhất: 353 kWh (990.414 đ), lệch −414 đ' },
+  prev: { money: '▲398.405 đ (+40,24%)', kwh: '▲108 kWh (+30,59%)' }
+};
+
 // Overview scenario, place "Nhà", now.main.
 const bill = (id, period, kwh, amount, extra) => Object.assign({ id, placeId: 'p1', period, fromDate: null, toDate: null,
   oldIndex: null, newIndex: null, kwh, amount, source: 'kwh', note: '', createdAt: 1, updatedAt: 1 }, extra || {});
@@ -116,6 +138,8 @@ const pasteMore = [
   ['Tien dien thang 09/2026: 990.000 dong. Thoi gian thanh toan tu 21/09/2026 den 27/09/2026', { period: '2026-09', fromDate: null, toDate: null, amount: 990000 }],
   // tier lines repeat "N kWh": not the month's total
   ['Bậc 1: 50 kWh. Bậc 2: 50 kWh. Tiền điện 217.836 đ', { kwh: null, amount: 217836 }],
+  // e-wallet receipt (made up): only the payment period and the money
+  ['Thanh toan tien dien thanh cong. Ky thanh toan 09/2026. So tien 1.388.405 d. Ma giao dich 88001234567', { period: '2026-09', amount: 1388405, kwh: null, oldIndex: null, fromDate: null }],
   // a house number followed by "Đ." is not money
   ['Khach hang tai so 12 Đ. Le Loi, dien tieu thu 350 kWh', { kwh: 350, amount: null }]
 ];
@@ -130,7 +154,8 @@ const sel = {
     chartHit: period => '#chart rect.hit[data-period="' + period + '"]', chartValue: '#chartValue' },
   addBill: '#btnAddBill',
   billRow: id => '.bill-row[data-bill="' + id + '"]',
-  form: { sheet: '#billSheet', mode: m => '#fModeSeg button[data-mode="' + m + '"]', place: id => '#fPlaceSeg button[data-place="' + id + '"]',
+  form: { sheet: '#billSheet', mode: m => '#fModeSeg button[data-mode="' + m + '"]',   // amount (default) | kwh | index | paste
+    inferKwh: '#fInferKwh', inferNote: '#fInferNote', amountLabel: '#fAmountLabel', place: id => '#fPlaceSeg button[data-place="' + id + '"]',
     period: '#fPeriod', old: '#fOld', neu: '#fNew', kwh: '#fKwh', paste: '#fPaste', pasteFill: '#btnPasteFill', pasteMsg: '#fPasteMsg',
     amount: '#fAmount', from: '#fFrom', to: '#fTo', note: '#fNote', more: '#fMore', calc: '#fCalc', calcTotal: '#fCalcTotal',
     save: '#btnBillSave', del: '#btnBillDelete',
@@ -145,6 +170,6 @@ const sel = {
 };
 
 module.exports = {
-  path, tariff, mocks, now, calculator, lines612, calcCases, bills, data, expected, paste, pasteExpected, pasteMore, pasteGarbage, sel,
+  path, tariff, mocks, now, calculator, lines612, calcCases, amountCases, amountFlow, bills, data, expected, paste, pasteExpected, pasteMore, pasteGarbage, sel,
   localStorage: { powertrack_v1: data }
 };
