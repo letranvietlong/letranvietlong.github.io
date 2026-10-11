@@ -295,7 +295,7 @@
 
     var rev = list.slice().reverse();
     $('fillList').innerHTML = rev.slice(0, fillsShown).map(function(f){
-      var meta = [fmtLiters(f.liters) + ' L × ' + fmtVnd(f.price)];
+      var meta = [fmtLiters(f.liters) + ' L × ' + fmtVnd(f.price) + ' đ/L'];
       if(f.odo != null) meta.push(fmtVnd(f.odo) + ' km');
       return '<button type="button" class="fill-row" data-fill="' + esc(f.id) + '">' +
         '<span class="fill-main"><span class="fill-date">' + S.fmtDate(f.date) + ' · ' + esc(S.shortLabel(f.fuelId)) + '</span>' +
@@ -335,7 +335,21 @@
   var form = { editing: null, pMode: 'empty', order: [], derived: null, priceSet: false };
   var FIELD_IDS = { L: 'fLiters', A: 'fAmount', P: 'fPrice' };
 
-  function setFieldError(id, msg){ $(id).textContent = msg || ''; $(id).hidden = !msg; }
+  // Error line → the inputs it speaks for. `inputs` narrows the red border and
+  // aria-invalid to the field(s) actually wrong (default: the whole group).
+  var ERR_INPUTS = { fDateErr: ['fDate', 'fFuel'], fQtyErr: ['fLiters', 'fAmount'], fPriceErr: ['fPrice'], fOdoErr: ['fOdo'] };
+  function setFieldError(id, msg, inputs){
+    $(id).textContent = msg || '';
+    $(id).hidden = !msg;
+    var group = ERR_INPUTS[id];
+    if(!group) return;
+    group.forEach(function(f){ $(f).removeAttribute('aria-invalid'); $(f).removeAttribute('aria-describedby'); });
+    if(msg) (inputs || group).forEach(function(f){ $(f).setAttribute('aria-invalid', 'true'); $(f).setAttribute('aria-describedby', id); });
+  }
+  var MSG_AMOUNT = 'Số tiền chỉ gồm chữ số, ví dụ 93.100.';
+  var MSG_LITERS = 'Số lít không đúng dạng, ví dụ 3,5.';
+  var MSG_PRICE = 'Giá/lít chỉ gồm chữ số, ví dụ 26.560.';
+  var MSG_ODO = 'Số km chỉ gồm chữ số.';
   function clearErrors(){ ['fDateErr', 'fQtyErr', 'fPriceErr', 'fOdoErr', 'fillError'].forEach(function(id){ setFieldError(id, null); }); }
 
   function fuelChoices(day, keep){
@@ -351,7 +365,7 @@
     var keep = [form.editing ? form.editing.fuelId : null, keepCurrent ? prev : null];
     var ids = fuelChoices($('fDate').value, keep);
     sel.innerHTML = ids.map(function(id){
-      var label = form.editing && form.editing.fuelId === id && form.editing.fuelLabel ? form.editing.fuelLabel : S.itemLabel(id);
+      var label = form.editing && form.editing.fuelId === id && form.editing.fuelLabel && form.editing.fuelLabel !== id ? form.editing.fuelLabel : S.itemLabel(id);
       return '<option value="' + esc(id) + '">' + esc(label) + '</option>';
     }).join('');
     if(prev && ids.indexOf(prev) >= 0) sel.value = prev;
@@ -446,11 +460,19 @@
     recalc(false, 'P');
     renderChips(listInfo());
   });
-  ['fAmount', 'fPrice', 'fOdo'].forEach(function(id){
+  // Leaving a field: tidy a valid number, or say right away that the text is
+  // not a number (an empty field is not an error until save). Only the
+  // message is set — the value stays as typed and nothing is recomputed.
+  [['fAmount', 'fQtyErr', MSG_AMOUNT], ['fPrice', 'fPriceErr', MSG_PRICE], ['fOdo', 'fOdoErr', MSG_ODO]].forEach(function(c){
+    var id = c[0];
     $(id).addEventListener('blur', function(){
       var n = parseInteger($(id).value);
       if(isFinite(n)) $(id).value = fmtVnd(n);
+      else if($(id).value.trim() && $('fillSheet').classList.contains('open')) setFieldError(c[1], c[2], [id]);
     });
+  });
+  $('fLiters').addEventListener('blur', function(){
+    if($('fLiters').value.trim() && isNaN(parseLiters($('fLiters').value)) && $('fillSheet').classList.contains('open')) setFieldError('fQtyErr', MSG_LITERS, ['fLiters']);
   });
   $('fPriceChips').addEventListener('click', function(e){
     var b = e.target.closest('button[data-price]');
@@ -490,16 +512,43 @@
     renderChips(li);
   }
 
+  // 2–3 vehicles: one button each instead of the <select>. #fVehicle.value
+  // stays the single place the chosen vehicle lives (save reads it). Called
+  // from openForm and a tap only — never from a background refresh.
+  function renderVehicleSeg(seg){
+    $('fVehicleSeg').hidden = !seg;
+    var cur = $('fVehicle').value;
+    $('fVehicleSeg').innerHTML = !seg ? '' : data.vehicles.map(function(v){
+      var on = v.id === cur;
+      return '<button type="button" role="radio" data-vehicle="' + esc(v.id) + '" aria-checked="' + on + '"' + (on ? ' class="active"' : '') + '>' + esc(v.name) + '</button>';
+    }).join('');
+  }
+  $('fVehicleSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-vehicle]');
+    if(!b) return;
+    $('fVehicle').value = b.getAttribute('data-vehicle');
+    // Updated in place: rebuilding the buttons would drop keyboard focus.
+    Array.prototype.forEach.call($('fVehicleSeg').querySelectorAll('button[data-vehicle]'), function(x){
+      var on = x === b;
+      x.classList.toggle('active', on);
+      x.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  });
+
   function openForm(fill){
     if(broken) return;
     clearErrors();
     form = { editing: fill || null, pMode: 'empty', order: fill ? ['L', 'A'] : [], derived: null, priceSet: false };
     var vid = fill ? fill.vehicleId : selectedVehicle || data.vehicles[0].id;
     $('fillSheetTitle').textContent = fill ? 'Sửa lần đổ' : 'Thêm lần đổ';
+    $('btnFillSave').textContent = fill ? 'Lưu thay đổi' : 'Lưu lần đổ';
     $('btnFillDelete').hidden = !fill;
     $('fVehicleField').hidden = data.vehicles.length < 2;
     $('fVehicle').innerHTML = data.vehicles.map(function(v){ return '<option value="' + esc(v.id) + '">' + esc(v.name) + '</option>'; }).join('');
     $('fVehicle').value = vid;
+    var seg = data.vehicles.length >= 2 && data.vehicles.length <= 3;
+    $('fVehicle').hidden = seg;
+    renderVehicleSeg(seg);
     var today = S.vnToday();
     $('fDate').max = today;
     $('fDate').value = fill ? fill.date : today;
@@ -542,24 +591,28 @@
 
   $('fillForm').addEventListener('submit', function(e){
     e.preventDefault();
+    // A successful save closes the sheet synchronously, so a second submit
+    // right behind it (double tap, Enter + tap) stops here instead of
+    // writing the fill twice.
+    if(!$('fillSheet').classList.contains('open')) return;
     if(broken) return;
     clearErrors();
     var ok = true;
     var day = $('fDate').value, today = S.vnToday();
-    if(!realDate(day)){ setFieldError('fDateErr', 'Chọn ngày đổ.'); ok = false; }
-    else if(day > today){ setFieldError('fDateErr', 'Ngày không được sau hôm nay.'); ok = false; }
+    if(!realDate(day)){ setFieldError('fDateErr', 'Chọn ngày đổ.', ['fDate']); ok = false; }
+    else if(day > today){ setFieldError('fDateErr', 'Ngày không được sau hôm nay.', ['fDate']); ok = false; }
     var fuelId = $('fFuel').value;
-    if(!fuelId){ setFieldError('fDateErr', 'Chọn loại nhiên liệu.'); ok = false; }
+    if(!fuelId){ setFieldError('fDateErr', 'Chọn loại nhiên liệu.', ['fFuel']); ok = false; }
     recalc(true);
     var v = formValues(), L = v.L, A = v.A, P = v.P;
     var aBad = $('fAmount').value.trim() && isNaN(A), lBad = $('fLiters').value.trim() && isNaN(L);
-    if(aBad){ setFieldError('fQtyErr', 'Số tiền chỉ gồm chữ số, ví dụ 93.100.'); ok = false; }
-    else if(lBad){ setFieldError('fQtyErr', 'Số lít không đúng dạng, ví dụ 3,5.'); ok = false; }
-    else if(!(L > 0 && L <= 1000)){ setFieldError('fQtyErr', 'Nhập số lít (lớn hơn 0, tối đa 1.000).'); ok = false; }
-    else if(!(A > 0 && A <= 1e9)){ setFieldError('fQtyErr', 'Nhập số tiền.'); ok = false; }
+    if(aBad){ setFieldError('fQtyErr', MSG_AMOUNT, ['fAmount']); ok = false; }
+    else if(lBad){ setFieldError('fQtyErr', MSG_LITERS, ['fLiters']); ok = false; }
+    else if(!(L > 0 && L <= 1000)){ setFieldError('fQtyErr', 'Nhập số lít (lớn hơn 0, tối đa 1.000).', ['fLiters']); ok = false; }
+    else if(!(A > 0 && A <= 1e9)){ setFieldError('fQtyErr', 'Nhập số tiền.', ['fAmount']); ok = false; }
     if(!(P > 0 && P <= 1e6)){
-      setFieldError('fPriceErr', $('fPrice').value.trim() && isNaN(P) ? 'Giá/lít chỉ gồm chữ số, ví dụ 26.560.' :
-        $('fPriceChips').hidden ? 'Nhập giá/lít.' : 'Chọn giá trước hay từ 15h, hoặc nhập giá.');
+      setFieldError('fPriceErr', $('fPrice').value.trim() && isNaN(P) ? MSG_PRICE :
+        $('fPriceChips').hidden ? 'Nhập giá/lít.' : 'Chọn giá trước hay từ 15h, hoặc nhập giá.', ['fPrice']);
       ok = false;
     }
     var li = listInfo();
@@ -567,7 +620,7 @@
     var odoTxt = $('fOdo').value.trim(), odo = null;
     if(odoTxt){
       odo = parseInteger(odoTxt);
-      if(!isFinite(odo) || odo > 9999999){ setFieldError('fOdoErr', 'Số km chỉ gồm chữ số.'); ok = false; odo = null; }
+      if(!isFinite(odo) || odo > 9999999){ setFieldError('fOdoErr', MSG_ODO, ['fOdo']); ok = false; odo = null; }
     }
     var note = $('fNote').value.trim().slice(0, 200);
     if(!ok) return;
@@ -577,7 +630,7 @@
     var fill = {
       id: ed ? ed.id : newId('f'), date: day, vehicleId: $('fVehicle').value || selectedVehicle,
       fuelId: fuelId,
-      fuelLabel: ed && ed.fuelId === fuelId ? ed.fuelLabel : S.itemLabel(fuelId),
+      fuelLabel: ed && ed.fuelId === fuelId && ed.fuelLabel !== fuelId ? ed.fuelLabel : S.itemLabel(fuelId),
       liters: L, amount: A, price: P, priceSource: isList ? 'list' : 'user',
       odo: odo, full: $('fFull').checked, note: note,
       createdAt: ed ? ed.createdAt : now, updatedAt: now
@@ -585,11 +638,11 @@
     var others = data.fills.filter(function(f){ return !ed || f.id !== ed.id; });
     if(odo != null){
       var bound = odoBoundsError(fill, others);
-      if(bound){ setFieldError('fOdoErr', bound); return; }
+      if(bound){ setFieldError('fOdoErr', bound, ['fOdo']); return; }
     }
     var next = cloneData();
     next.fills = others.map(function(f){ return JSON.parse(JSON.stringify(f)); }).concat(fill);
-    if(findOdoViolation(next.fills, fill.vehicleId)){ setFieldError('fOdoErr', 'Số km không khớp thứ tự ngày.'); return; }
+    if(findOdoViolation(next.fills, fill.vehicleId)){ setFieldError('fOdoErr', 'Số km không khớp thứ tự ngày.', ['fOdo']); return; }
     var err = validateDataset(next) || persist(next);
     if(err){ setFieldError('fillError', err); return; }
     selectedVehicle = fill.vehicleId;
@@ -604,7 +657,7 @@
     confirmDialog({
       title: 'Xoá lần đổ ' + S.fmtDate(ed.date) + '?',
       text: fmtLiters(ed.liters) + ' L · ' + fmtVnd(ed.amount) + ' đ. Không hoàn tác được.',
-      ok: 'Xoá', danger: true,
+      ok: 'Xoá lần đổ', danger: true,
       onOk: function(){
         var next = cloneData();
         next.fills = next.fills.filter(function(f){ return f.id !== ed.id; });
@@ -647,6 +700,7 @@
   function openVehicle(v){
     vehEditing = v || null;
     $('vehSheetTitle').textContent = v ? 'Đổi tên xe' : 'Thêm xe';
+    $('btnVehSave').textContent = v ? 'Lưu tên xe' : 'Thêm xe';
     $('vehName').value = v ? v.name : '';
     S.showError('vehError', null);
     var hasFills = v && data.fills.some(function(f){ return f.vehicleId === v.id; });
@@ -663,6 +717,7 @@
   $('vehClose').addEventListener('click', function(){ S.closeSheet('vehSheet'); });
   $('vehForm').addEventListener('submit', function(e){
     e.preventDefault();
+    if(!$('vehSheet').classList.contains('open')) return;
     var name = $('vehName').value.trim().slice(0, 40);
     if(!name){ S.showError('vehError', 'Nhập tên xe.'); return; }
     var next = cloneData();
@@ -673,8 +728,9 @@
     }
     var err = persist(next);
     if(err){ S.showError('vehError', err); return; }
+    var renamed = !!vehEditing;
     S.closeSheet('vehSheet');
-    S.toast(vehEditing ? 'Đã đổi tên' : 'Đã thêm xe');
+    S.toast(renamed ? 'Đã đổi tên xe' : 'Đã thêm xe');
     renderAll();
   });
   $('btnVehDelete').addEventListener('click', function(){
@@ -807,7 +863,7 @@
       var customVehicles = data.vehicles.length !== 1 || data.vehicles[0].id !== def.id || data.vehicles[0].name !== def.name;
       var hasCurrent = broken || data.fills.length > 0 || customVehicles;
       if(!hasCurrent){
-        confirmDialog({ title: 'Khôi phục sổ xăng?', text: info, ok: 'Khôi phục', onOk: function(){ applyBackup(r.data); } });
+        confirmDialog({ title: 'Khôi phục sổ xăng?', text: info, ok: 'Khôi phục sổ xăng', onOk: function(){ applyBackup(r.data); } });
         return;
       }
       var curTxt = broken ? 'Dữ liệu hiện tại (bị lỗi)' : 'Sổ hiện tại (' + data.fills.length + ' lần đổ, ' + data.vehicles.length + ' xe)';

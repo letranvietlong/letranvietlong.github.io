@@ -14,9 +14,9 @@
   // catalog directly (not from liveData) so a temporarily-missing live
   // price never removes a type from the form's dropdowns.
   var SHOPS = [
-    { id: 'ngoc-thinh', name: 'Ngọc Thịnh Jewelry' },
-    { id: 'huy-thanh', name: 'Huy Thanh Jewelry' },
-    { id: 'khac', name: 'Khác' }
+    { id: 'ngoc-thinh', name: 'Ngọc Thịnh Jewelry', short: 'Ngọc Thịnh' },
+    { id: 'huy-thanh', name: 'Huy Thanh Jewelry', short: 'Huy Thanh' },
+    { id: 'khac', name: 'Khác', short: 'Khác' }
   ];
   // Each shop is tracked for exactly one gold type, per the user's choice —
   // Ngọc Thịnh's/Huy Thanh's other published rows are deliberately not
@@ -156,10 +156,30 @@
   function positionSegmentedIndicator(segmentedEl){
     var indicator = segmentedEl.querySelector('.segmented-indicator');
     var active = segmentedEl.querySelector('button.active');
-    if(!indicator || !active) return;
+    if(!indicator) return;
+    if(!active){ indicator.style.width = '0px'; return; }
     indicator.style.width = active.offsetWidth + 'px';
     indicator.style.transform = 'translateX(' + active.offsetLeft + 'px)';
     indicator.classList.toggle('sell', active.getAttribute('data-type') === 'sell');
+  }
+  // Segmented choice backed by a hidden input (#txOwner, #txShop): the input
+  // keeps the stored string, the buttons in #<id>Seg only mirror it. Called
+  // from the form's own open/click paths only — never from a render function,
+  // or a background refresh would reset what the user picked.
+  function renderChoiceButtons(id, items){
+    document.getElementById(id + 'Seg').innerHTML = '<div class="segmented-indicator"></div>' + items.map(function(it){
+      return '<button type="button" role="radio" aria-checked="false" data-value="'+escapeHtml(it.value)+'">'+escapeHtml(it.label)+'</button>';
+    }).join('');
+  }
+  function setChoice(id, value){
+    document.getElementById(id).value = value;
+    var seg = document.getElementById(id + 'Seg');
+    seg.querySelectorAll('button').forEach(function(b){
+      var on = b.getAttribute('data-value') === value;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    positionSegmentedIndicator(seg);
   }
   // Calendar day in Vietnam time (UTC+7, no DST), whatever the device's
   // timezone: transaction dates and the shops' prices are VN days, so a phone
@@ -285,17 +305,27 @@
   function showConfirm(message, opts){
     opts = opts || {};
     document.getElementById('confirmTitle').textContent = opts.title || 'Xác nhận';
-    document.getElementById('confirmMessage').textContent = message;
+    var msgEl = document.getElementById('confirmMessage');
+    msgEl.textContent = message;
+    msgEl.classList.remove('long');
+    if(Math.round(msgEl.offsetHeight / parseFloat(getComputedStyle(msgEl).lineHeight)) >= 4) msgEl.classList.add('long');
     confirmOkBtn.textContent = opts.confirmText || 'Đồng ý';
     confirmCancelBtn.textContent = opts.cancelText || 'Huỷ';
     confirmOkBtn.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-gold');
+    var prevFocus = document.activeElement;
+    confirmDialog.inert = false;
     confirmBackdrop.classList.add('open');
     confirmDialog.classList.add('open');
+    confirmCancelBtn.focus();
     var dismissResult = 'dismissResult' in opts ? opts.dismissResult : false;
     return new Promise(function(resolve){
       function cleanup(result){
         confirmBackdrop.classList.remove('open');
         confirmDialog.classList.remove('open');
+        confirmDialog.inert = true;
+        // Not back into a text field: refocusing one from here reopens the
+        // iOS keyboard over the result the user is about to read.
+        if(prevFocus && prevFocus !== document.body && document.contains(prevFocus) && !prevFocus.matches('input, textarea, select')) prevFocus.focus();
         confirmOkBtn.removeEventListener('click', onOk);
         confirmCancelBtn.removeEventListener('click', onCancel);
         confirmBackdrop.removeEventListener('click', onDismiss);
@@ -493,7 +523,8 @@
 
   document.getElementById('btnGistConnect').addEventListener('click', function(){
     var token = document.getElementById('gistToken').value.trim();
-    if(!token){ showToast('Nhập Personal Access Token trước', 'err'); return; }
+    if(!token){ setFieldError('gistToken', true); document.getElementById('gistToken').focus(); return; }
+    clearFieldError('gistToken');
     var btn = document.getElementById('btnGistConnect');
     btn.disabled = true; btn.textContent = 'Đang kết nối…';
     githubApi('/gists', token, 'GET').then(function(gists){
@@ -536,18 +567,22 @@
     });
   });
 
+  document.getElementById('gistToken').addEventListener('input', function(){
+    if(this.value.trim()) clearFieldError('gistToken');
+  });
+
   document.getElementById('btnGistSyncNow').addEventListener('click', function(){
     if(!gistConfig) return;
     clearTimeout(gistSyncTimer); // an auto-sync debounce firing right after would just repeat this
     var btn = document.getElementById('btnGistSyncNow');
-    btn.disabled = true;
+    btn.disabled = true; btn.textContent = 'Đang đồng bộ…';
     pushAndMarkSynced().then(function(){
       showToast('Đã đồng bộ lên GitHub Gist', 'ok');
     }).catch(function(e){
       setGistStatus('error', e.message);
       showToast('Đồng bộ thất bại: ' + e.message, 'err');
     }).finally(function(){
-      btn.disabled = false;
+      btn.disabled = false; btn.textContent = 'Đồng bộ ngay';
     });
   });
 
@@ -580,15 +615,23 @@
   // iOS Safari's dynamic viewport height (100dvh) stuck stale — a plausible
   // cause of the bottom tab bar intermittently sitting short of the real
   // bottom edge.
+  // A closed sheet stays in the DOM (transformed off-screen), so it is `inert`
+  // until opened — otherwise Tab / a screen reader walks into the hidden form.
+  // Every close path goes through closeSheet().
   function openSheet(sheetId, backdropId){
-    document.getElementById(sheetId).classList.add('open');
+    var sheet = document.getElementById(sheetId);
+    sheet.inert = false;
+    sheet.scrollTop = 0;
+    sheet.classList.add('open');
     document.getElementById(backdropId).classList.add('open');
+    sheet.querySelectorAll('.segmented').forEach(positionSegmentedIndicator);
   }
   function closeSheet(sheetId, backdropId){
     var sheet = document.getElementById(sheetId);
     // Focus left in a hidden input lets Enter submit the cancelled form.
     if(document.activeElement && sheet.contains(document.activeElement)) document.activeElement.blur();
     sheet.classList.remove('open');
+    sheet.inert = true;
     document.getElementById(backdropId).classList.remove('open');
   }
   function wireSheet(sheetId, backdropId, closeBtnId){
@@ -708,7 +751,7 @@
   // toggle resetting per load (while still working normally within a
   // session via in-memory state) is the expected, simpler behavior here.
   var RANGE_DAYS = { '7':7, '30':30, '90':90, 'all':Infinity };
-  var RANGE_LABELS = { '7':'7N', '30':'30N', '90':'90N', 'all':'Tất cả' };
+  var RANGE_LABELS = { '7':'7 ngày', '30':'30 ngày', '90':'90 ngày', 'all':'Tất cả' };
   var priceChartRange = '7';
   var portfolioChartRange = '7';
   var pnlGroupBy = 'day';
@@ -722,6 +765,14 @@
     '</div>';
   }
   document.getElementById('priceCard').addEventListener('click', function(e){
+    var retry = e.target.closest('[data-retry-price]');
+    if(retry){
+      retry.disabled = true;
+      liveLoading = true;
+      renderPrice();
+      loadLiveData();
+      return;
+    }
     var btn = e.target.closest('#priceRangeTabs button');
     if(!btn) return;
     priceChartRange = btn.getAttribute('data-range');
@@ -808,8 +859,15 @@
   window.addEventListener('pageshow', function(e){ syncAppHeight(); if(e.persisted){ loadLiveData(); } });
 
   function setFieldError(inputId, on){
-    var field = document.getElementById(inputId).closest('.field');
-    field.classList.toggle('invalid', !!on);
+    var input = document.getElementById(inputId);
+    input.closest('.field').classList.toggle('invalid', !!on);
+    if(on){
+      input.setAttribute('aria-invalid', 'true');
+      input.setAttribute('aria-describedby', inputId + 'Error');
+    } else {
+      input.removeAttribute('aria-invalid');
+      input.removeAttribute('aria-describedby');
+    }
   }
   function clearFieldError(inputId){ setFieldError(inputId, false); }
 
@@ -1014,12 +1072,13 @@
   // ---------- transaction sheet ----------
   var editingTxId = null;
   var selectedType = 'buy';
-  var typeButtons = document.querySelectorAll('#txForm .segmented button');
+  var typeButtons = document.querySelectorAll('#txTypeSeg button');
   typeButtons.forEach(function(btn){
     btn.addEventListener('click', function(){
       typeButtons.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       selectedType = btn.getAttribute('data-type');
+      clearFieldError('txAmount');
       updateTxFormLabels();
       prefillSellPrice();
       positionSegmentedIndicator(btn.closest('.segmented'));
@@ -1027,8 +1086,7 @@
   });
   // ---------- shop / gold-type selects ----------
   function populateShopSelect(){
-    var sel = document.getElementById('txShop');
-    sel.innerHTML = SHOPS.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>'; }).join('');
+    renderChoiceButtons('txShop', SHOPS.map(function(s){ return { value: s.id, label: s.short }; }));
   }
   // 'khac' has no catalog (Part 1 — no known types for an arbitrary shop),
   // so its type select is disabled with a placeholder rather than left
@@ -1048,8 +1106,15 @@
     sel.value = types.some(function(t){ return t.id === preferredTypeId; }) ? preferredTypeId : types[0].id;
   }
   populateShopSelect();
-  document.getElementById('txShop').addEventListener('change', function(){
-    populateGoldTypeSelect(this.value, null);
+  setChoice('txShop', SHOPS[0].id);
+  document.getElementById('txShopSeg').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-value]');
+    if(!btn) return;
+    var value = btn.getAttribute('data-value');
+    if(value === document.getElementById('txShop').value) return;
+    setChoice('txShop', value);
+    populateGoldTypeSelect(value, null);
+    clearFieldError('txAmount');
     updateTxFormLabels();
     prefillSellPrice();
   });
@@ -1109,11 +1174,10 @@
     document.getElementById('txAmountHint').textContent = isSell ? ('Còn ' + fmtAmount(holdings) + ' chỉ để bán (tính đến ' + fmtDate(dateVal) + ').') : '';
   }
   function populateOwnerSelect(selected){
-    var sel = document.getElementById('txOwner');
     var owners = ownerList();
     if(owners.indexOf(selected) === -1) selected = DEFAULT_OWNER;
-    sel.innerHTML = owners.map(function(o){ return '<option value="'+escapeHtml(o)+'">'+escapeHtml(o)+'</option>'; }).join('');
-    sel.value = selected;
+    renderChoiceButtons('txOwner', owners.map(function(o){ return { value: o, label: o }; }));
+    setChoice('txOwner', selected);
   }
   function defaultFormOwner(){
     if(ownerFilter !== 'all') return ownerFilter;
@@ -1121,14 +1185,52 @@
     try{ last = localStorage.getItem(LAST_OWNER_KEY); }catch(e){}
     return ownerList().indexOf(last) !== -1 ? last : DEFAULT_OWNER;
   }
-  document.getElementById('txOwner').addEventListener('change', function(){
+  document.getElementById('txOwnerSeg').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-value]');
+    if(!btn) return;
+    var value = btn.getAttribute('data-value');
+    if(value === document.getElementById('txOwner').value) return;
+    setChoice('txOwner', value);
     updateTxFormLabels();
     clearFieldError('txAmount');
+  });
+
+  // ---------- field errors shown at the field ----------
+  var AMOUNT_ERROR_DEFAULT = 'Nhập số lượng lớn hơn 0.';
+  var positiveFields = { txAmount: parseDecimal, txPrice: parseDigits };
+  var invalidFocusPending = false;
+  ['txAmount', 'txPrice', 'txDate'].forEach(function(id){
+    var input = document.getElementById(id);
+    // preventDefault replaces the browser's own (English) validation bubble
+    // with the Vietnamese line under the field; `required`/`max` stay native.
+    input.addEventListener('invalid', function(e){
+      e.preventDefault();
+      if(id === 'txAmount') document.getElementById('txAmountError').textContent = AMOUNT_ERROR_DEFAULT;
+      setFieldError(id, true);
+      if(!invalidFocusPending){
+        invalidFocusPending = true;
+        input.focus();
+        setTimeout(function(){ invalidFocusPending = false; }, 0);
+      }
+    });
+    var parse = positiveFields[id];
+    if(!parse){
+      input.addEventListener('change', function(){ if(input.checkValidity()) clearFieldError(id); });
+      return;
+    }
+    input.addEventListener('input', function(){
+      if(input.closest('.field').classList.contains('invalid') && parse(input.value) > 0) clearFieldError(id);
+    });
+    input.addEventListener('blur', function(){
+      if(input.value.trim() === '' || parse(input.value) > 0) return;
+      if(id === 'txAmount') document.getElementById('txAmountError').textContent = AMOUNT_ERROR_DEFAULT;
+      setFieldError(id, true);
+    });
   });
   function setType(type){
     selectedType = type;
     typeButtons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-type') === type); });
-    positionSegmentedIndicator(document.querySelector('#txForm .segmented'));
+    positionSegmentedIndicator(document.getElementById('txTypeSeg'));
   }
 
   function openAddTx(){
@@ -1138,16 +1240,17 @@
     document.getElementById('txPrice').value = '';
     delete document.getElementById('txPrice').dataset.autofilled;
     // Defaults to this app's original/primary shop+type.
-    document.getElementById('txShop').value = 'ngoc-thinh';
+    setChoice('txShop', 'ngoc-thinh');
     populateGoldTypeSelect('ngoc-thinh', '9999-nhan-tron');
     populateOwnerSelect(defaultFormOwner());
     document.getElementById('txAddress').value = '';
     document.getElementById('txNote').value = '';
+    document.getElementById('txMore').open = false;
     document.getElementById('txDate').value = todayISO();
     document.getElementById('txDate').max = todayISO();
     setType('buy');
     updateTxFormLabels();
-    clearFieldError('txAmount'); clearFieldError('txPrice');
+    clearFieldError('txAmount'); clearFieldError('txPrice'); clearFieldError('txDate');
     openSheet('txSheet','txBackdrop');
   }
   function openEditTx(tx){
@@ -1156,16 +1259,17 @@
     document.getElementById('txAmount').value = String(tx.amount);
     document.getElementById('txPrice').value = fmtVND(tx.price);
     delete document.getElementById('txPrice').dataset.autofilled;
-    document.getElementById('txShop').value = tx.shop || 'ngoc-thinh';
+    setChoice('txShop', tx.shop || 'ngoc-thinh');
     populateGoldTypeSelect(tx.shop || 'ngoc-thinh', tx.goldType || '9999-nhan-tron');
     populateOwnerSelect(txOwner(tx));
     document.getElementById('txAddress').value = tx.address || '';
     document.getElementById('txNote').value = tx.note || '';
+    document.getElementById('txMore').open = !!(tx.address || tx.note);
     document.getElementById('txDate').value = tx.date;
     document.getElementById('txDate').max = todayISO();
     setType(txType(tx));
     updateTxFormLabels();
-    clearFieldError('txAmount'); clearFieldError('txPrice');
+    clearFieldError('txAmount'); clearFieldError('txPrice'); clearFieldError('txDate');
     openSheet('txSheet','txBackdrop');
   }
   document.getElementById('fabAdd').addEventListener('click', openAddTx);
@@ -1186,6 +1290,7 @@
     var note = document.getElementById('txNote').value.trim();
     var date = document.getElementById('txDate').value;
     var ok = true;
+    document.getElementById('txAmountError').textContent = AMOUNT_ERROR_DEFAULT;
     if(!(amount > 0)){ setFieldError('txAmount', true); ok = false; } else clearFieldError('txAmount');
     if(!(price > 0)){ setFieldError('txPrice', true); ok = false; } else clearFieldError('txPrice');
     // Validate the whole prospective timeline, not just this one row: a buy
@@ -1308,7 +1413,7 @@
         state = { transactions: validTx };
         saveState();
         renderAll();
-        showToast(skipped > 0 ? 'Đã nhập ' + validTx.length + ' giao dịch, bỏ qua ' + skipped + ' dòng lỗi' : 'Đã nhập dữ liệu thành công', 'ok');
+        showToast(skipped > 0 ? 'Đã nhập ' + validTx.length + ' giao dịch, bỏ qua ' + skipped + ' dòng lỗi' : 'Đã nhập ' + validTx.length + ' giao dịch', 'ok');
       });
     };
     reader.readAsText(file);
@@ -1652,13 +1757,26 @@
     var eff = getEffectivePrice(selectedPriceShop, selectedPriceType);
 
     if(!eff){
-      subEl.textContent = liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động';
+      if(liveLoading){
+        subEl.textContent = 'Đang tải giá vàng…';
+        el.setAttribute('aria-busy', 'true');
+        el.innerHTML =
+          '<div class="price-grid"><div class="price-box skel"></div><div class="price-box skel"></div></div>' +
+          '<div class="skel skel-bar"></div>' +
+          '<div class="skel skel-chart"></div>' +
+          '<div class="skel skel-range"></div>';
+        return;
+      }
+      el.removeAttribute('aria-busy');
+      subEl.textContent = 'Chưa lấy được giá vàng';
       el.innerHTML =
         '<div class="price-empty">' +
-          '<p>'+(liveLoading ? 'Đang tải giá vàng…' : 'Chưa lấy được giá tự động.')+'</p>' +
+          '<p>Chưa lấy được giá vàng. Kiểm tra mạng rồi thử lại.</p>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-retry-price>Thử lại</button>' +
         '</div>';
       return;
     }
+    el.removeAttribute('aria-busy');
     var d = new Date(eff.at);
     subEl.textContent = 'Cập nhật ' + pad2(d.getHours())+':'+pad2(d.getMinutes()) + ' · ' + pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear();
 
@@ -2062,7 +2180,9 @@
       '<div class="pl-banner '+bannerCls+'">' +
         '<div class="pl-left">' +
           '<div class="pl-badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'+arrowPath+'</svg></div>' +
-          '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? fmtSignedVND(totalPL) : 'Cập nhật giá để tính')+'</div></div>' +
+          (liveLoading && !hasVal
+            ? '<div><div class="pl-title">Đang tải giá vàng…</div><div class="pl-amount"><span class="skel skel-line"></span></div></div>'
+            : '<div><div class="pl-title">'+(!hasVal?'Chưa có giá hiện tại':('Tổng lãi/lỗ'+(firstTxDate?' · từ '+fmtDate(firstTxDate):'')))+'</div><div class="pl-amount">'+(hasVal ? fmtSignedVND(totalPL) : 'Cập nhật giá để tính')+'</div></div>') +
         '</div>' +
         (hasVal && pAll.totalBuyCost ? '<span class="pl-pct">'+fmtPct(totalPlPct)+'</span>' : '') +
       '</div>' +
@@ -2666,7 +2786,7 @@
   }
   // txForm's segmented control lives inside a sheet (hidden via transform,
   // not display:none), so unlike #txFilter it's already measurable now.
-  positionSegmentedIndicator(document.querySelector('#txForm .segmented'));
+  positionSegmentedIndicator(document.getElementById('txTypeSeg'));
   var segmentedResizeTimer = null;
   window.addEventListener('resize', function(){
     clearTimeout(segmentedResizeTimer);

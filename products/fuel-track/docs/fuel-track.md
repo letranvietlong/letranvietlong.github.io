@@ -68,6 +68,16 @@ File: `html/index.html` (markup), `css/fuel-track.css`, `js/fuel-track.js` (giá
 - **Sao lưu**: file `fuel-track-so-xang-YYYY-MM-DD.json` (ngày VN) = `{app:'fuel-track', kind:'fuel-log', version:1, exportedAt, vehicles, fills}`; "Lưu file" gọi `navigator.share({files})` **ngay trong cú chạm** (iPhone: "Lưu vào Tệp"), không có thì `a.download`. Ghi `fueltrack_log_last_backup_v1` (ISO); "Sao lưu lần cuối" tính theo ngày VN, ≥ 30 ngày hoặc chưa từng sao lưu (khi có dữ liệu) → màu cảnh báo.
 - **Khôi phục**: chỉ nhận đúng định dạng trên (app/kind, version 1 — mới hơn thì báo cập nhật app), id `^[\w-]+$` (không nhận `__proto__`; tra id bằng map `Object.create(null)` — với `{}` thì xe "toString"/"constructor" bị coi là có), ngày có thật và không sau hôm nay (giờ VN; chỉ kiểm khi khôi phục, không kiểm khi mở sổ, để lệch đồng hồ máy không làm sổ thành "lỗi"), 0 < lít ≤ 1000, tiền nguyên 0…1e9, 0 < giá ≤ 1e6, km null hoặc nguyên ≥ 0, `full` bool, ghi chú ≤ 200, xe tồn tại, km không giảm theo ngày; chạy thử `computeStats` trước khi ghi. File lỗi → thông báo riêng từng lỗi, dữ liệu không đổi. Sổ hiện tại không rỗng (có lần đổ, **hoặc** có xe khác xe mặc định — đổi tên/thêm xe cũng là dữ liệu) → nút duy nhất "Lưu bản hiện tại rồi khôi phục": share bản hiện tại trong cú chạm, **chỉ ghi đè sau khi share thành công**; huỷ share → không khôi phục.
 
+## Giao diện: lớp, trạng thái tải, form (v1.13)
+
+- **Thang z-index là token trong `:root`** (`css/fuel-track.css`), thấp → cao: `--z-tip` 2 (tooltip biểu đồ) < `--z-tabbar` 35 < `--z-backdrop` 40 < `--z-sheet` 50 < `--z-confirm-backdrop` 54 < `--z-confirm` 55 < `--z-toast` 60. Hộp xác nhận mở **trên** form sửa lần đổ, nên nền mờ của nó (54) phải cao hơn sheet (50) — trước đây nền mờ 40 nằm dưới form, form vẫn sáng và bấm được khi hộp xoá đang mở. Chạm nền mờ hộp xác nhận chỉ đóng hộp, form vẫn mở. Lớp mới thì thêm token, không viết số cứng. `openSheet` gỡ toast đang hiện để nó không đè nút của sheet.
+- **Tải lỗi**: mọi `fetchJson` bị huỷ sau **15 giây** (`AbortController`) — request treo từng để skeleton chạy mãi và kẹt cờ `loading` của `loadAll`. Không có giá → thẻ "Giá hôm nay" hiện **một** thông báo + nút "Thử lại", ba thẻ Kỳ tới / Biểu đồ / Lịch sử ẩn hẳn (không lặp thông báo). Có giá mà thiếu lịch sử → Kỳ tới và Biểu đồ ẩn, thẻ Lịch sử hiện thông báo + "Thử lại". Nút gọi `loadAll(true)` — **phải là `true`**: `false` xoá phần đã tải được. Lần làm mới hỏng khi đang có dữ liệu thì giữ nguyên dữ liệu cũ.
+- **Skeleton** có chiều cao bằng nội dung thật ở 390px (giá 328, kỳ tới 344, biểu đồ theo tỉ lệ 300/170, lịch sử 428) — class `.skeleton-price/-next-head/-trend/-hist`. Đổi bố cục thẻ nào thì đo lại khối skeleton của thẻ đó.
+- **Chọn xe trong form**: 2–3 xe → hàng nút `#fVehicleSeg` (`role=radio`), ≥ 4 xe → `<select id="fVehicle">`, 1 xe → ẩn cả ô. Dù hiện kiểu nào, **`#fVehicle.value` là nơi duy nhất giữ xe đang chọn** (lúc lưu chỉ đọc nó); nút chỉ ghi vào đó. `renderVehicleSeg` chỉ được gọi từ `openForm` — không gọi từ `refreshOpenForm` (làm mới nền không đụng form đang mở).
+- **Lỗi tại ô**: `setFieldError(id, msg, inputs)` đặt `aria-invalid` + `aria-describedby` (viền đỏ `--err-fg`) lên đúng ô sai theo bảng `ERR_INPUTS`; câu lỗi có `role="alert"`. Rời ô (blur) mà chữ không phải số → báo ngay bằng đúng câu dùng lúc lưu (số hợp lệ vẫn được định dạng lại như cũ, vd `93100` → `93.100`, không đổi giá trị); ô trống chỉ báo khi bấm lưu. Handler blur chỉ đặt câu lỗi, không sửa giá trị, không tính lại.
+- **Chốt lưu trùng**: handler `submit` của `fillForm`/`vehForm` thoát ngay nếu sheet của nó không còn class `open`. Lưu thành công gỡ `open` đồng bộ (`closeSheet`), nên lần submit thứ hai liền sau (chạm đúp, Enter + chạm) không ghi bản thứ hai — trước đây thêm mới ghi 2 bản, đang sửa thì lần hai tạo bản mới vì `form.editing` đã về `null`.
+- **Focus và Tab**: sheet đóng có `visibility:hidden` (đổi sau khi trượt xong 0,24s) nên ô bên trong không còn nằm trong thứ tự Tab. `openSheet` nhớ phần tử đang focus **theo từng sheet** (hộp xác nhận chồng lên form) rồi focus nút ✕ (hộp xác nhận: "Huỷ") — không focus ô nhập để khỏi bật bàn phím; `closeSheet` blur phần tử trong sheet và trả focus về chỗ cũ, trừ khi chỗ cũ là ô nhập hoặc nằm trong một sheet đã đóng.
+
 ## Thông báo giá
 
 ```
@@ -98,12 +108,12 @@ SW (js/sw-core.js) "push": payload {"v":1,"title","body","tag":"fuel-price","ts"
 | Secret | Nội dung |
 |---|---|
 | `PUSH_VAPID_PRIVATE_KEY` | `privateKey` của cặp khoá VAPID **dùng chung** GoldTrack / FuelTrack / LoveDays (workflow tự dùng `LOVE_VAPID_PRIVATE_KEY` nếu secret này trống) |
-| `FUEL_PUSH_SUBSCRIPTIONS` | mảng JSON các mã do nút "Sao chép" trong FuelTrack tạo. Mã đăng ký gắn với service worker của từng app, nên **mỗi app trên mỗi máy có mã riêng** — không dùng lại mã của LoveDays/GoldTrack |
+| `FUEL_PUSH_SUBSCRIPTIONS` | mảng JSON các mã do nút "Sao chép mã" trong FuelTrack tạo. Mã đăng ký gắn với service worker của từng app, nên **mỗi app trên mỗi máy có mã riêng** — không dùng lại mã của LoveDays/GoldTrack |
 | `PUSH_VAPID_SUB` (tuỳ chọn) | claim `sub`, mặc định `https://letranvietlong.github.io` |
 
 1. Nếu chưa có cặp khoá: ở thư mục **ngoài repo**, `npx --yes web-push generate-vapid-keys --json` → `privateKey` vào secret `PUSH_VAPID_PRIVATE_KEY`. Không ghi khoá vào file nào trong repo (repo công khai, Stop hook `git add -A`).
 2. `publicKey` vào hằng `VAPID_PUBLIC_KEY` ở đầu `js/fuel-track.js` — **phải giống hệt** hằng cùng tên trong GoldTrack và LoveDays. Trống → mục Thông báo hiện "Chưa cấu hình khoá thông báo", ẩn ô tên máy và nút Bật.
-3. Mỗi iPhone (iOS 16.4+): Safari → Thêm vào MH chính → mở FuelTrack từ icon → Cài đặt → Thông báo → đặt tên máy → Bật thông báo → Cho phép → Sao chép.
+3. Mỗi iPhone (iOS 16.4+): Safari → Thêm vào MH chính → mở FuelTrack từ icon → Cài đặt → Thông báo → đặt tên máy → Bật thông báo → Cho phép → Sao chép mã.
 4. Gộp mã các máy thành `[mã 1, mã 2]` → secret `FUEL_PUSH_SUBSCRIPTIONS`.
 5. Actions → "Update fuel price" → Run workflow với `notify_dry_run` (log liệt kê tên máy và nội dung sẽ gửi), rồi `notify_force` để nhận thử thật.
 

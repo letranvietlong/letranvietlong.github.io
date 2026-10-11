@@ -44,12 +44,22 @@
   }
   function msToDay(ms){ return new Date(ms).toISOString().slice(0, 10); }
 
+  // A request that never answers would leave the skeleton up and loadAll's
+  // `loading` flag set for good, so every fetch is aborted after 15 s.
+  var FETCH_TIMEOUT_MS = 15000;
   function fetchJson(name){
-    return fetch(DATA_BASE + name, { cache: 'no-store' }).then(function(r){
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, FETCH_TIMEOUT_MS) : null;
+    function done(){ if(timer) clearTimeout(timer); }
+    return fetch(DATA_BASE + name, ctrl ? { cache: 'no-store', signal: ctrl.signal } : { cache: 'no-store' }).then(function(r){
       if(!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
-    });
+    }).then(function(d){ done(); return d; }, function(e){ done(); throw e; });
   }
+  function retryHtml(msg){
+    return '<div class="state-msg"><p>' + msg + '</p><button type="button" class="btn btn-soft" data-retry>Thử lại</button></div>';
+  }
+  function pricesLoaded(){ return !!priceDoc && Array.isArray(priceDoc.items) && priceDoc.items.length > 0; }
 
   function itemLabel(id){
     if(historyDoc && historyDoc.items && historyDoc.items[id]) return historyDoc.items[id];
@@ -134,8 +144,8 @@
   // ---------- Giá hôm nay ----------
   function renderPrices(){
     var list = $('priceList');
-    if(!priceDoc || !Array.isArray(priceDoc.items) || !priceDoc.items.length){
-      list.innerHTML = '<p class="state-msg">Không tải được giá. Kiểm tra kết nối rồi mở lại app.</p>';
+    if(!pricesLoaded()){
+      list.innerHTML = retryHtml('Không tải được giá. Kiểm tra kết nối rồi thử lại.');
       $('effectiveDate').textContent = '';
       return;
     }
@@ -457,9 +467,10 @@
       b.classList.toggle('active', active);
       b.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    $('chartCard').hidden = !historyDoc;
     if(!historyDoc){
       chartState = null;
-      $('chart').innerHTML = '<div class="chart-empty">Không tải được lịch sử giá. Kiểm tra kết nối rồi mở lại app.</div>';
+      $('chart').innerHTML = '';
       $('chartLegend').innerHTML = '';
       return;
     }
@@ -479,8 +490,11 @@
   function renderHistory(){
     var list = $('historyList');
     var more = $('historyMore');
+    // One error message per screen: when the prices failed too, their card
+    // already carries the message and the retry button.
+    $('historyCard').hidden = !historyDoc && !pricesLoaded();
     if(!historyDoc){
-      list.innerHTML = '<p class="state-msg">Không tải được lịch sử giá. Kiểm tra kết nối rồi mở lại app.</p>';
+      list.innerHTML = pricesLoaded() ? retryHtml('Không tải được lịch sử giá. Kiểm tra kết nối rồi thử lại.') : '';
       more.hidden = true;
       return;
     }
@@ -517,6 +531,14 @@
   $('historyMore').addEventListener('click', function(){
     historyShown += HISTORY_PAGE;
     renderHistory();
+  });
+  // loadAll(true): a refresh keeps whatever did load; (false) would drop it.
+  $('viewPrices').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-retry]');
+    if(!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Đang tải…';
+    loadAll(true);
   });
 
   // ---------- Kỳ điều chỉnh tới ----------
@@ -576,7 +598,9 @@
   }
   function renderForecast(){
     var el = $('nextContent');
-    if(!historyDoc || !getChanges().length){
+    $('nextCard').hidden = !historyDoc;
+    if(!historyDoc) return;
+    if(!getChanges().length){
       el.innerHTML = '<p class="state-msg">Chưa có lịch sử giá để tính kỳ tới.</p>';
       return;
     }
@@ -602,7 +626,7 @@
           (t.streak ? '<span class="trend-streak">' + t.streak + '</span>' : '') + '</div>' +
       '</div>';
     }).join('');
-    el.innerHTML = head + (rows ? '<p class="trend-cap">4 kỳ đổi giá gần nhất</p><div class="trend-list">' + rows + '</div>' : '');
+    el.innerHTML = head + (rows ? '<p class="trend-cap">4 kỳ đổi giá gần nhất (đ/lít)</p><div class="trend-list">' + rows + '</div>' : '');
   }
 
   // ---------- Changelog ----------
@@ -625,17 +649,43 @@
   var SHEETS = { versionSheet: 'versionBackdrop', fillSheet: 'fillBackdrop', vehSheet: 'vehBackdrop', confirmSheet: 'confirmBackdrop' };
   var sheetHooks = {};
   var sheetStack = [];
+  // Element that had focus when each sheet opened — per sheet, because the
+  // confirm sheet opens on top of the fill form.
+  var sheetOpener = {};
+  function focusQuiet(el){
+    try{ el.focus({ preventScroll: true }); }catch(e){}
+  }
   function openSheet(id, onClose){
+    var sheet = $(id);
     sheetHooks[id] = onClose || null;
-    $(id).classList.add('open');
+    if(!sheet.classList.contains('open')) sheetOpener[id] = document.activeElement;
+    // An old toast would sit on top of the sheet's buttons.
+    $('toast').classList.remove('show');
+    sheet.classList.add('open');
     $(SHEETS[id]).classList.add('open');
     sheetStack = sheetStack.filter(function(s){ return s !== id; }).concat(id);
+    // The close button, never an input: focusing one would pop the keyboard.
+    var first = id === 'confirmSheet' ? $('confirmCancel') : sheet.querySelector('.sheet-head .icon-btn');
+    if(first) focusQuiet(first);
   }
   function closeSheet(id){
-    if(!$(id).classList.contains('open')) return;
-    $(id).classList.remove('open');
+    var sheet = $(id);
+    if(!sheet.classList.contains('open')) return;
+    sheet.classList.remove('open');
     $(SHEETS[id]).classList.remove('open');
     sheetStack = sheetStack.filter(function(s){ return s !== id; });
+    var active = document.activeElement;
+    var inside = !!active && sheet.contains(active);
+    if(inside) active.blur();
+    var opener = sheetOpener[id];
+    sheetOpener[id] = null;
+    // Focus goes back only when it would otherwise be lost, never into a
+    // sheet that is closed, and never to a text field: Safari keeps focus on
+    // the input while a button is tapped, and refocusing it would reopen the
+    // keyboard.
+    var lost = inside || !active || active === document.body;
+    if(lost && opener && opener.closest && document.contains(opener) &&
+       !opener.closest('.sheet:not(.open)') && !/^(INPUT|TEXTAREA|SELECT)$/.test(opener.tagName)) focusQuiet(opener);
     var hook = sheetHooks[id];
     sheetHooks[id] = null;
     if(hook) hook();

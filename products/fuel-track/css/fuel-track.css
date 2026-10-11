@@ -33,6 +33,10 @@
   --danger:#E11D48;--danger-ink:#FFFFFF;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   --font:'App Digits',Cambria,Georgia,'Times New Roman',Times,serif;
+  /* Thang lớp, thấp → cao: tooltip biểu đồ < tab bar < nền mờ < sheet <
+     nền mờ hộp xác nhận < hộp xác nhận < toast. Hộp xác nhận mở TRÊN một
+     sheet khác (xoá lần đổ), nên nền mờ của nó phải che được sheet đó. */
+  --z-tip:2;--z-tabbar:35;--z-backdrop:40;--z-sheet:50;--z-confirm-backdrop:54;--z-confirm:55;--z-toast:60;
 }
 @media (prefers-color-scheme: light){
   :root{
@@ -104,10 +108,10 @@ a{color:var(--accent)}
 .price-row:first-child{border-top:none;padding-top:2px}
 .price-row:last-child{padding-bottom:2px}
 .price-name{font-size:.9rem;font-weight:700;min-width:0}
-.price-name small{display:block;font-size:.7rem;font-weight:500;color:var(--muted2);margin-top:2px}
+.price-name small{display:block;font-size:.75rem;font-weight:500;color:var(--muted2);margin-top:2px}
 .price-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
 .price-val{font-family:var(--font);font-size:1.3rem;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
-.price-unit{font-size:.7rem;font-weight:500;color:var(--muted2);margin-left:3px}
+.price-unit{font-size:.75rem;font-weight:500;color:var(--muted2);margin-left:3px}
 .price-note{font-size:.74rem;color:var(--muted2);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 
 .chip{display:inline-flex;align-items:center;gap:3px;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:100px;white-space:nowrap;font-family:var(--font)}
@@ -116,10 +120,19 @@ a{color:var(--accent)}
 .chip.flat{background:var(--chip-flat-bg);color:var(--muted)}
 
 .state-msg{padding:18px 4px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.5}
+.state-msg .btn{margin-top:12px}
 
 /* ---------- Skeleton ---------- */
+/* Chiều cao từng khối = chiều cao nội dung thật ở 390px (giá 328, kỳ tới
+   344, biểu đồ 184, lịch sử 428) để trang không nhảy khi dữ liệu về. */
 .skeleton-row{height:44px;border-radius:var(--radius-sm);background:var(--skeleton);margin:8px 0;animation:skel 1.2s ease-in-out infinite alternate}
-.skeleton-chart{height:120px;border-radius:var(--radius-sm);background:var(--skeleton);animation:skel 1.2s ease-in-out infinite alternate}
+.skeleton-row:first-child{margin-top:0}
+.skeleton-row:last-child{margin-bottom:0}
+.skeleton-price{height:76px}
+.skeleton-next-head{height:72px}
+.skeleton-trend{height:60px}
+.skeleton-hist{height:137px}
+.skeleton-chart{aspect-ratio:300/170;height:auto;border-radius:var(--radius-sm);background:var(--skeleton);animation:skel 1.2s ease-in-out infinite alternate}
 @keyframes skel{from{opacity:.55}to{opacity:1}}
 
 /* ---------- Chart controls ---------- */
@@ -135,7 +148,7 @@ a{color:var(--accent)}
 .chart-dot{stroke:var(--card);stroke-width:1.5}
 .chart-point{stroke:var(--card);stroke-width:1.2}
 .chart-empty{padding:28px 6px;text-align:center;color:var(--muted);font-size:.84rem;line-height:1.5}
-.chart-tip{position:absolute;top:0;left:0;z-index:2;pointer-events:none;background:var(--sheet-bg);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;font-size:.74rem;line-height:1.35;max-width:100%}
+.chart-tip{position:absolute;top:0;left:0;z-index:var(--z-tip);pointer-events:none;background:var(--sheet-bg);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;font-size:.74rem;line-height:1.35;max-width:100%}
 .chart-tip-date{font-weight:800;margin-bottom:4px}
 .chart-tip-row{display:flex;align-items:center;gap:6px;padding:1px 0}
 .chart-tip-name{color:var(--muted);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -156,20 +169,24 @@ a{color:var(--accent)}
 .hist-item-right{display:flex;align-items:center;gap:8px;flex:none}
 .hist-item-price{font-family:var(--font);font-weight:700;white-space:nowrap}
 .hist-item.same .hist-item-price{color:var(--muted)}
-.hist-item .chip{font-size:.68rem;padding:2px 7px;min-width:64px;justify-content:flex-end}
+.hist-item .chip{font-size:.75rem;padding:2px 7px;min-width:64px;justify-content:flex-end}
 .btn-more{display:block;width:100%;min-height:44px;margin-top:10px;border-radius:100px;border:1px solid var(--line);background:var(--glass);color:var(--accent);font-size:.84rem;font-weight:700;transition:background .2s}
 .btn-more:hover{background:var(--glass2)}
 
 /* ---------- Footer ---------- */
 
 /* ---------- Sheet ---------- */
-.sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s}
+.sheet-backdrop{position:fixed;inset:0;background:rgba(4,7,14,.6);z-index:var(--z-backdrop);opacity:0;pointer-events:none;transition:opacity .22s}
 .sheet-backdrop.open{opacity:1;pointer-events:auto}
 /* translateY(100% + 100px): the shadow travels with the box, a plain 100%
    would let it bleed back over the bottom edge while "closed". */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:480px;margin:0 auto;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));transition:transform .24s cubic-bezier(.32,.72,0,1);max-height:88svh;max-height:calc(var(--vv-height,100svh) * .88);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+/* visibility:hidden takes a closed sheet's controls out of the Tab order;
+   it flips only after the slide-out has finished (delay = slide duration). */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-sheet);max-width:480px;margin:0 auto;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px calc(22px + var(--safe-bottom));transform:translateY(calc(100% + 100px));visibility:hidden;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s linear .24s;max-height:88svh;max-height:calc(var(--vv-height,100svh) * .88);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 .sheet::-webkit-scrollbar{display:none}
-.sheet.open{transform:translateY(0)}
+.sheet.open{transform:translateY(0);visibility:visible;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s}
+#confirmBackdrop{z-index:var(--z-confirm-backdrop)}
+#confirmSheet{z-index:var(--z-confirm)}
 .sheet-handle-hit{padding:8px 0 16px;display:flex;justify-content:center;touch-action:none;cursor:grab}
 .sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2)}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -206,6 +223,8 @@ a{color:var(--accent)}
 .btn:active{transform:scale(.98)}
 .btn:disabled{opacity:.45;cursor:default;transform:none}
 .btn:focus-visible,.tabbar-btn:focus-visible,.fill-row:focus-visible,.price-chip:focus-visible,.vehicle-pick button:focus-visible,details.more summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.range-tabs button:not(.active):active,.vehicle-pick button:not(.active):active,.price-chip:not(.active):active,.btn-more:active,.version-badge:active,.icon-btn:active{background:var(--glass2)}
+.tabbar-btn:active{background:var(--glass)}
 .btn-primary{background:var(--accent);color:var(--accent-ink)}
 .btn-soft{background:var(--glass2);color:var(--text);border-color:var(--line)}
 .btn-danger{background:var(--danger);color:var(--danger-ink)}
@@ -228,6 +247,8 @@ a{color:var(--accent)}
 .field input[type=date]{display:block;line-height:44px}
 .field input::placeholder{color:var(--muted2);opacity:1}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(96,165,250,.25)}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--err-fg)}
+.field input[aria-invalid="true"]:focus,.field select[aria-invalid="true"]:focus{border-color:var(--err-fg);box-shadow:0 0 0 3px var(--err-bg)}
 .field-hint{font-size:.74rem;color:var(--muted2);margin-top:8px;line-height:1.45}
 .field-error{font-size:.8rem;font-weight:600;color:var(--err-fg);margin-top:6px}
 .form-error{font-size:.84rem;color:var(--err-fg);background:var(--err-bg);border-radius:12px;padding:9px 12px;margin-top:12px;line-height:1.45}
@@ -254,6 +275,7 @@ a{color:var(--accent)}
 .vehicle-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .vehicle-pick button{flex:none;max-width:100%;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid var(--line);background:var(--glass);color:var(--muted);font-size:.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vehicle-pick button.active{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.field .vehicle-pick{margin-bottom:0}
 .empty-card{text-align:center;padding:28px 20px}
 .empty-icon{width:40px;height:40px;color:var(--muted2);margin:0 auto 10px;display:block}
 .empty-title{font-size:.95rem;font-weight:700}
@@ -291,7 +313,7 @@ a{color:var(--accent)}
 .fill-meta{font-size:.76rem;color:var(--muted);display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
 .fill-note{font-size:.74rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .fill-amount{font-size:.95rem;font-weight:800;flex:none;font-family:var(--font)}
-.tag{display:inline-block;font-size:.66rem;font-weight:700;padding:1px 7px;border-radius:100px;background:var(--glass2);color:var(--muted)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:1px 7px;border-radius:100px;background:var(--glass2);color:var(--muted)}
 
 /* ---------- Cài đặt ---------- */
 .group-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 6px 8px}
@@ -327,12 +349,12 @@ details.more[open] .more-head::after{transform:rotate(-135deg);margin-top:3px}
 .safe-probe{position:absolute;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 
 /* ---------- Toast ---------- */
-.toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-bottom));z-index:60;max-width:calc(100% - 32px);transform:translate(-50%,150%);opacity:0;pointer-events:none;background:var(--text);color:var(--bg);font-size:.86rem;font-weight:700;padding:10px 16px;border-radius:100px;box-shadow:var(--shadow);transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s}
+.toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-bottom));z-index:var(--z-toast);max-width:calc(100% - 32px);transform:translate(-50%,150%);opacity:0;pointer-events:none;background:var(--text);color:var(--bg);font-size:.86rem;font-weight:700;padding:10px 16px;border-radius:100px;box-shadow:var(--shadow);transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s}
 .toast.show{transform:translate(-50%,0);opacity:1}
 .toast:empty{display:none}
 
 /* ---------- Tab bar (copied from GoldTrack; active = accent) ---------- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-tabbar);display:flex;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:none;color:var(--muted2);padding:3px 0;min-height:44px;border-radius:12px;transition:color .2s}
 .tabbar-btn .icon{width:21px;height:21px}
 .tabbar-btn span{font-size:.66rem;font-weight:700;letter-spacing:.01em}

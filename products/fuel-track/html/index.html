@@ -45,10 +45,10 @@
       <span class="card-meta" id="effectiveDate"></span>
     </div>
     <div id="priceList" aria-live="polite">
-      <div class="skeleton-row"></div>
-      <div class="skeleton-row"></div>
-      <div class="skeleton-row"></div>
-      <div class="skeleton-row"></div>
+      <div class="skeleton-row skeleton-price"></div>
+      <div class="skeleton-row skeleton-price"></div>
+      <div class="skeleton-row skeleton-price"></div>
+      <div class="skeleton-row skeleton-price"></div>
     </div>
   </section>
 
@@ -57,7 +57,7 @@
       <h2 class="card-title" id="nextTitle">Kỳ điều chỉnh tới</h2>
       <span class="card-meta">Thường thứ Năm, 15:00</span>
     </div>
-    <div id="nextContent"><div class="skeleton-row"></div></div>
+    <div id="nextContent"><div class="skeleton-row skeleton-next-head"></div><div class="skeleton-row skeleton-trend"></div><div class="skeleton-row skeleton-trend"></div><div class="skeleton-row skeleton-trend"></div><div class="skeleton-row skeleton-trend"></div></div>
   </section>
 
   <section class="card" aria-labelledby="chartTitle" id="chartCard">
@@ -75,11 +75,12 @@
     <ul class="chart-legend" id="chartLegend" aria-label="Chú thích biểu đồ"></ul>
   </section>
 
-  <section class="card" aria-labelledby="historyTitle">
+  <section class="card" aria-labelledby="historyTitle" id="historyCard">
     <div class="card-head">
       <h2 class="card-title" id="historyTitle">Lịch sử điều chỉnh</h2>
+      <span class="card-meta">đ/lít</span>
     </div>
-    <div id="historyList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+    <div id="historyList"><div class="skeleton-row skeleton-hist"></div><div class="skeleton-row skeleton-hist"></div><div class="skeleton-row skeleton-hist"></div></div>
     <button class="btn-more" id="historyMore" type="button" hidden>Xem thêm</button>
   </section>
   </div>
@@ -161,7 +162,7 @@
           <span class="field-label">Mã đăng ký của máy này</span>
           <textarea id="pushSubJson" rows="5" readonly spellcheck="false"></textarea>
         </label>
-        <button type="button" class="btn btn-soft btn-block" id="btnPushCopy">Sao chép</button>
+        <button type="button" class="btn btn-soft btn-block" id="btnPushCopy">Sao chép mã</button>
         <p class="card-hint" id="pushCopyNote" role="status">Chỉ dán vào secret, đừng đăng công khai.</p>
       </div>
       <p class="form-error" id="pushError" role="alert" hidden></p>
@@ -227,10 +228,11 @@
     </button>
   </div>
   <form id="fillForm" novalidate>
-    <label class="field" id="fVehicleField" hidden>
-      <span class="field-label">Xe</span>
-      <select id="fVehicle"></select>
-    </label>
+    <div class="field" id="fVehicleField" hidden>
+      <span class="field-label" id="fVehicleLabel">Xe</span>
+      <div class="vehicle-pick" id="fVehicleSeg" role="radiogroup" aria-labelledby="fVehicleLabel" hidden></div>
+      <select id="fVehicle" aria-labelledby="fVehicleLabel"></select>
+    </div>
     <div class="field-row">
       <label class="field">
         <span class="field-label">Ngày</span>
@@ -241,28 +243,28 @@
         <select id="fFuel"></select>
       </label>
     </div>
-    <p class="field-error" id="fDateErr" hidden></p>
+    <p class="field-error" id="fDateErr" role="alert" hidden></p>
     <div class="field-row">
       <label class="field">
         <span class="field-label">Số lít</span>
-        <input type="text" id="fLiters" inputmode="decimal" autocomplete="off" placeholder="0,00">
+        <input type="text" id="fLiters" inputmode="decimal" autocomplete="off" placeholder="3,5">
       </label>
       <label class="field">
         <span class="field-label">Số tiền (đ)</span>
-        <input type="text" id="fAmount" inputmode="numeric" autocomplete="off" placeholder="0">
+        <input type="text" id="fAmount" inputmode="numeric" autocomplete="off" placeholder="93.100">
       </label>
     </div>
-    <p class="field-error" id="fQtyErr" hidden></p>
+    <p class="field-error" id="fQtyErr" role="alert" hidden></p>
     <label class="field">
       <span class="field-label">Giá/lít (đ) <em id="fPriceHint"></em></span>
-      <input type="text" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="Nhập giá">
+      <input type="text" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="26.560">
     </label>
     <div class="price-chips" id="fPriceChips" role="group" aria-label="Chọn giá niêm yết" hidden></div>
-    <p class="field-error" id="fPriceErr" hidden></p>
+    <p class="field-error" id="fPriceErr" role="alert" hidden></p>
     <div class="field-row">
       <label class="field">
-        <span class="field-label">Số km <em>(tuỳ chọn)</em></span>
-        <input type="text" id="fOdo" inputmode="numeric" autocomplete="off" placeholder="Đồng hồ xe">
+        <span class="field-label">Số km đồng hồ <em>(tuỳ chọn)</em></span>
+        <input type="text" id="fOdo" inputmode="numeric" autocomplete="off" placeholder="12.300">
       </label>
       <label class="switch-field">
         <input type="checkbox" id="fFull">
@@ -270,7 +272,7 @@
         <span class="switch-text">Đầy bình</span>
       </label>
     </div>
-    <p class="field-error" id="fOdoErr" hidden></p>
+    <p class="field-error" id="fOdoErr" role="alert" hidden></p>
     <p class="field-hint">Ghi km ở các lần đổ đầy bình để tính mức tiêu hao.</p>
     <label class="field">
       <span class="field-label">Ghi chú <em>(tuỳ chọn)</em></span>
@@ -278,8 +280,8 @@
     </label>
     <p class="form-error" id="fillError" role="alert" hidden></p>
     <div class="btn-pair sheet-actions">
-      <button class="btn btn-danger" id="btnFillDelete" type="button" hidden>Xoá</button>
-      <button class="btn btn-primary" id="btnFillSave" type="submit">Lưu</button>
+      <button class="btn btn-danger" id="btnFillDelete" type="button" hidden>Xoá lần đổ</button>
+      <button class="btn btn-primary" id="btnFillSave" type="submit">Lưu lần đổ</button>
     </div>
   </form>
 </div>
@@ -301,7 +303,7 @@
     <p class="form-error" id="vehError" role="alert" hidden></p>
     <div class="btn-pair sheet-actions">
       <button class="btn btn-danger" id="btnVehDelete" type="button" hidden>Xoá xe</button>
-      <button class="btn btn-primary" type="submit">Lưu</button>
+      <button class="btn btn-primary" id="btnVehSave" type="submit">Thêm xe</button>
     </div>
   </form>
 </div>
