@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F4FB" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0D0F1E" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!-- "default", NOT "black-translucent": on an iPhone Home Screen app the
+     translucent mode reports a viewport 59pt short, so the fixed tab bar
+     floats above the real bottom (LongLTV_ios-pwa-pitfalls §1b). iOS
+     snapshots this tag at Add-to-Home-Screen time. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="PowerTrack" />
+<meta name="description" content="Theo dõi tiền điện hằng tháng: ghi hoá đơn, so với tháng trước, xem biểu giá điện sinh hoạt bậc thang và tính thử tiền điện." />
+<title>PowerTrack — Tiền điện hằng tháng</title>
+<link rel="canonical" href="https://letranvietlong.github.io/products/power-track/html/index.html">
+<link rel="icon" type="image/svg+xml" href="/products/power-track/img/power-track-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/products/power-track/img/power-track-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/products/power-track/img/power-track-icon-180.png">
+<link rel="manifest" href="/products/power-track/manifest.json">
+<link rel="stylesheet" href="../css/power-track.css">
+</head>
+<body>
+<main class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-mark" src="/products/power-track/img/power-track-icon.svg" alt="" width="28" height="28">
+      <h1>PowerTrack</h1>
+    </div>
+    <button class="place-btn" id="btnPlace" type="button" aria-haspopup="dialog" hidden>
+      <span class="place-btn-name" id="placeBtnName"></span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </header>
+
+  <div class="banner warn" id="brokenBanner" role="alert" hidden>
+    <p>Dữ liệu hoá đơn trên máy bị lỗi nên chưa đọc được. App không ghi đè lên nó — hãy lưu bản lỗi ra file, rồi khôi phục từ bản sao lưu nếu có.</p>
+    <div class="btn-pair">
+      <button class="btn btn-soft" id="btnBrokenSave" type="button">Lưu bản lỗi ra file</button>
+      <button class="btn btn-soft" id="btnBrokenRestore" type="button">Khôi phục từ file</button>
+    </div>
+    <p class="form-error" id="brokenError" hidden></p>
+  </div>
+
+  <div class="tab-view" id="viewOverview">
+    <div class="card empty-card" id="ovEmpty" hidden>
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+      <p class="empty-title" id="ovEmptyTitle">Chưa có hoá đơn nào</p>
+      <p class="empty-note" id="ovEmptyNote">Dữ liệu chỉ lưu trên máy này. App mở từ Màn hình chính có bộ nhớ riêng, không dùng chung với Safari.</p>
+      <button class="btn btn-primary btn-block" id="btnAddFirst" type="button">Thêm hoá đơn đầu tiên</button>
+      <button class="btn btn-soft btn-block" id="btnEmptyRestore" type="button">Khôi phục từ file</button>
+    </div>
+
+    <section class="card" id="ovMain" aria-labelledby="ovTitle" hidden>
+      <div class="card-head">
+        <h2 class="card-title" id="ovTitle"></h2>
+        <span class="badge" id="ovBadge"></span>
+      </div>
+      <p class="big-money" id="ovMoney"></p>
+      <p class="big-note" id="ovNote" hidden></p>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-k">Tiêu thụ</span><span class="stat-v" id="ovKwh"></span></div>
+        <div class="stat"><span class="stat-k">Trung bình</span><span class="stat-v" id="ovPerKwh"></span></div>
+        <div class="stat"><span class="stat-k">Mỗi ngày</span><span class="stat-v" id="ovPerDay"></span></div>
+      </div>
+      <div class="cmp-row" id="ovPrev" hidden></div>
+    </section>
+
+    <section class="card" id="ovChartCard" aria-labelledby="chartTitle" hidden>
+      <div class="card-head">
+        <h2 class="card-title" id="chartTitle">12 tháng gần nhất</h2>
+        <span class="card-meta" id="chartRange"></span>
+      </div>
+      <div class="seg" id="chartSeg" role="radiogroup" aria-label="Biểu đồ theo">
+        <button type="button" role="radio" data-mode="money" class="active" aria-checked="true">Tiền</button>
+        <button type="button" role="radio" data-mode="kwh" aria-checked="false">kWh</button>
+      </div>
+      <div class="chart-wrap" id="chart" tabindex="0" role="group" aria-label="Biểu đồ 12 tháng — phím mũi tên trái, phải để xem từng tháng"></div>
+      <p class="chart-value" id="chartValue" aria-live="polite"></p>
+      <p class="chart-legend" id="chartLegend" hidden><span class="legend-swatch" aria-hidden="true"></span>Cột nhạt: ước tính theo biểu giá</p>
+    </section>
+
+    <section class="card" id="ovYearCard" aria-labelledby="yearTitle" hidden>
+      <div class="card-head"><h2 class="card-title" id="yearTitle">So sánh</h2></div>
+      <div class="cmp-row" id="ovYoY" hidden></div>
+      <div class="sum-row" id="ovYear"></div>
+      <p class="sum-note" id="ovYearNote" hidden></p>
+    </section>
+  </div>
+
+  <div class="tab-view" id="viewBills" hidden>
+    <button class="btn btn-primary btn-block btn-add" id="btnAddBill" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Thêm hoá đơn
+    </button>
+    <div class="card empty-card" id="billsEmpty" hidden>
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+      <p class="empty-title" id="billsEmptyTitle">Chưa có hoá đơn nào</p>
+      <p class="empty-note">Bấm “Thêm hoá đơn” để ghi tháng đầu tiên — nhập chỉ số công tơ, số kWh, hoặc dán thông báo tiền điện.</p>
+    </div>
+    <div id="billGroups"></div>
+  </div>
+
+  <div class="tab-view" id="viewTariff" hidden>
+    <section class="card" aria-labelledby="tariffTitle">
+      <div class="card-head">
+        <h2 class="card-title" id="tariffTitle">Giá điện sinh hoạt</h2>
+        <span class="card-meta">đ/kWh</span>
+      </div>
+      <div id="tariffTable">
+        <div class="skeleton-row skeleton-th"></div>
+        <div class="skeleton-row skeleton-tr"></div><div class="skeleton-row skeleton-tr"></div><div class="skeleton-row skeleton-tr"></div>
+        <div class="skeleton-row skeleton-tr"></div><div class="skeleton-row skeleton-tr"></div><div class="skeleton-row skeleton-tr"></div>
+      </div>
+      <p class="skeleton-row skeleton-meta" id="tariffMeta"></p>
+    </section>
+
+    <section class="card" id="calcCard" aria-labelledby="calcTitle">
+      <div class="card-head"><h2 class="card-title" id="calcTitle">Tính thử tiền điện</h2></div>
+      <div id="calcBody" hidden>
+        <label class="field" for="calcKwh">
+          <span class="field-label">Số kWh trong tháng</span>
+          <input type="text" id="calcKwh" inputmode="numeric" autocomplete="off" placeholder="187">
+        </label>
+        <p class="field-error" id="calcErr" role="alert" hidden></p>
+        <div id="calcResult" hidden>
+          <div id="calcLines"></div>
+          <div class="calc-sum">
+            <div class="sum-row"><span class="sum-k">Trước VAT</span><span class="sum-v" id="calcSubtotal"></span></div>
+            <div class="sum-row"><span class="sum-k" id="calcVatLabel">VAT</span><span class="sum-v" id="calcVat"></span></div>
+            <div class="sum-row total"><span class="sum-k">Tổng tiền</span><span class="sum-v" id="calcTotal"></span></div>
+          </div>
+        </div>
+      </div>
+      <div id="calcSkeleton"><div class="skeleton-row skeleton-input"></div></div>
+    </section>
+
+    <section class="card" id="tariffHistCard" aria-labelledby="tariffHistTitle">
+      <div class="card-head">
+        <h2 class="card-title" id="tariffHistTitle">Lịch sử điều chỉnh</h2>
+        <span class="card-meta">đ/kWh, chưa VAT</span>
+      </div>
+      <div id="tariffHist"><div class="skeleton-row skeleton-hist"></div><div class="skeleton-row skeleton-hist"></div><div class="skeleton-row skeleton-hist"></div><div class="skeleton-row skeleton-hist"></div></div>
+      <p class="card-hint" id="tariffNotice" hidden></p>
+    </section>
+  </div>
+
+  <div class="tab-view" id="viewSettings" hidden>
+    <h2 class="group-title" id="placesTitle">Nơi dùng điện</h2>
+    <section class="card" aria-labelledby="placesTitle">
+      <div id="placeList"></div>
+      <button class="btn btn-soft btn-block" id="btnAddPlace" type="button">Thêm nơi</button>
+      <p class="card-hint" id="placeHint"></p>
+    </section>
+
+    <h2 class="group-title" id="backupTitle">Sao lưu</h2>
+    <section class="card" aria-labelledby="backupTitle">
+      <p class="card-text" id="backupLast"></p>
+      <div class="btn-pair">
+        <button class="btn btn-primary" id="btnBackup" type="button">Lưu file</button>
+        <button class="btn btn-soft" id="btnRestore" type="button">Khôi phục từ file</button>
+      </div>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+      <p class="form-error" id="backupError" role="alert" hidden></p>
+      <p class="card-hint">App ở Màn hình chính và Safari có bộ nhớ riêng — dùng file này để chuyển dữ liệu. Xoá icon là xoá luôn dữ liệu.</p>
+    </section>
+
+    <h2 class="group-title" id="autoTitle">Tự động lấy hoá đơn</h2>
+    <section class="card" aria-labelledby="autoTitle">
+      <p class="card-text">App chưa tự lấy được hoá đơn: EVN yêu cầu đăng nhập và không cho ứng dụng ngoài truy cập. Hãy dán thông báo tiền điện để app tự điền.</p>
+    </section>
+
+    <h2 class="group-title" id="infoTitle">Thông tin</h2>
+    <section class="card card-list" aria-labelledby="infoTitle">
+      <button class="row-link" id="btnVersion" type="button">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="row-link-text">Lịch sử cập nhật<span class="row-link-meta" id="versionLabel"></span></span>
+        <svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <details class="more">
+        <summary><span class="more-head">Thông tin kỹ thuật</span></summary>
+        <p class="diag" id="diagLine"></p>
+      </details>
+      <div class="safe-probe" id="safeProbe" aria-hidden="true"></div>
+    </section>
+  </div>
+
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Chuyển màn hình">
+  <button class="tabbar-btn active" data-tab="overview" type="button" aria-current="page">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21v-7"/><path d="M12 21V5"/><path d="M18 21v-11"/></svg>
+    <span>Tổng quan</span>
+  </button>
+  <button class="tabbar-btn" data-tab="bills" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+    <span>Hoá đơn</span>
+  </button>
+  <button class="tabbar-btn" data-tab="tariff" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+    <span>Giá điện</span>
+  </button>
+  <button class="tabbar-btn" data-tab="settings" type="button">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h3M11 6h9"/><circle cx="9" cy="6" r="2"/><path d="M4 12h9M17 12h3"/><circle cx="15" cy="12" r="2"/><path d="M4 18h1M9 18h11"/><circle cx="7" cy="18" r="2"/></svg>
+    <span>Cài đặt</span>
+  </button>
+</nav>
+
+<div class="sheet-backdrop" id="placePickBackdrop" hidden></div>
+<div class="sheet" id="placePickSheet" role="dialog" aria-modal="true" aria-labelledby="placePickTitle" hidden>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="placePickTitle">Xem nơi nào?</h3>
+    <button class="icon-btn" data-close aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="pick-list sheet-body" id="placePickList" role="radiogroup" aria-labelledby="placePickTitle"></div>
+</div>
+
+<div class="sheet-backdrop" id="billBackdrop" hidden></div>
+<div class="sheet" id="billSheet" role="dialog" aria-modal="true" aria-labelledby="billSheetTitle" hidden>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="billSheetTitle">Thêm hoá đơn</h3>
+    <button class="icon-btn" data-close aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="sheet-body" id="billForm" novalidate>
+    <div class="field" id="fPlaceField" hidden>
+      <span class="field-label" id="fPlaceLabel">Nơi dùng điện</span>
+      <div class="seg" id="fPlaceSeg" role="radiogroup" aria-labelledby="fPlaceLabel"></div>
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="fModeLabel">Cách nhập</span>
+      <div class="seg" id="fModeSeg" role="radiogroup" aria-labelledby="fModeLabel">
+        <button type="button" role="radio" data-mode="index" class="active" aria-checked="true">Chỉ số công tơ</button>
+        <button type="button" role="radio" data-mode="kwh" aria-checked="false">Số kWh</button>
+        <button type="button" role="radio" data-mode="paste" aria-checked="false">Dán thông báo</button>
+      </div>
+    </div>
+    <p class="field-ok" id="fPasteMsg" role="status" hidden></p>
+
+    <label class="field" for="fPeriod">
+      <span class="field-label">Kỳ hoá đơn (tháng)</span>
+      <input type="month" id="fPeriod" min="2000-01" placeholder="2026-09" autocomplete="off">
+    </label>
+    <p class="field-error" id="fPeriodErr" role="alert" hidden></p>
+
+    <div id="fIdxBox">
+      <div class="field-row">
+        <label class="field" for="fOld">
+          <span class="field-label">Chỉ số cũ <em id="fOldHint"></em></span>
+          <input type="text" id="fOld" inputmode="numeric" autocomplete="off" placeholder="12612">
+        </label>
+        <label class="field" for="fNew">
+          <span class="field-label">Chỉ số mới</span>
+          <input type="text" id="fNew" inputmode="numeric" autocomplete="off" placeholder="12962">
+        </label>
+      </div>
+      <p class="field-error" id="fIdxErr" role="alert" hidden></p>
+    </div>
+
+    <div id="fKwhBox" hidden>
+      <label class="field" for="fKwh">
+        <span class="field-label">Số kWh đã dùng</span>
+        <input type="text" id="fKwh" inputmode="numeric" autocomplete="off" placeholder="350">
+      </label>
+      <p class="field-error" id="fKwhErr" role="alert" hidden></p>
+    </div>
+
+    <div id="fPasteBox" hidden>
+      <label class="field" for="fPaste">
+        <span class="field-label">Nội dung thông báo tiền điện</span>
+        <textarea id="fPaste" rows="5" autocomplete="off" spellcheck="false" placeholder="Dán tin nhắn hoặc email báo tiền điện vào đây"></textarea>
+      </label>
+      <p class="field-error" id="fPasteErr" role="alert" hidden></p>
+      <button class="btn btn-soft btn-block" id="btnPasteFill" type="button">Điền từ thông báo</button>
+      <p class="field-hint">App chỉ lấy kỳ, ngày, chỉ số, số kWh và số tiền — không lưu nội dung thông báo.</p>
+    </div>
+
+    <label class="field" for="fAmount">
+      <span class="field-label">Tiền trên hoá đơn <em>(đ, không bắt buộc)</em></span>
+      <input type="text" id="fAmount" inputmode="numeric" autocomplete="off" placeholder="990.000">
+    </label>
+    <p class="field-error" id="fAmountErr" role="alert" hidden></p>
+
+    <div class="calc-box" id="fCalc" hidden></div>
+
+    <details class="more" id="fMore">
+      <summary><span class="more-head">Thêm chi tiết</span></summary>
+      <div class="field-row">
+        <label class="field" for="fFrom">
+          <span class="field-label">Ghi chỉ số từ ngày</span>
+          <input type="date" id="fFrom">
+        </label>
+        <label class="field" for="fTo">
+          <span class="field-label">Đến ngày</span>
+          <input type="date" id="fTo">
+        </label>
+      </div>
+      <p class="field-error" id="fDateErr" role="alert" hidden></p>
+      <label class="field" for="fNote">
+        <span class="field-label">Ghi chú</span>
+        <input type="text" id="fNote" maxlength="200" autocomplete="off" placeholder="Ví dụ: tháng bật điều hoà nhiều">
+      </label>
+    </details>
+
+    <p class="form-error" id="billError" role="alert" hidden></p>
+    <div class="sheet-actions">
+      <button class="btn btn-primary btn-block" id="btnBillSave" type="submit">Lưu hoá đơn</button>
+      <button class="btn btn-danger-soft btn-block" id="btnBillDelete" type="button" hidden>Xoá hoá đơn</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet-backdrop" id="placeBackdrop" hidden></div>
+<div class="sheet" id="placeSheet" role="dialog" aria-modal="true" aria-labelledby="placeSheetTitle" hidden>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="placeSheetTitle">Thêm nơi</h3>
+    <button class="icon-btn" data-close aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="sheet-body" id="placeForm" novalidate>
+    <label class="field" for="pName">
+      <span class="field-label">Tên nơi dùng điện</span>
+      <input type="text" id="pName" maxlength="30" autocomplete="off" placeholder="Ví dụ: Nhà, Phòng trọ">
+    </label>
+    <p class="field-error" id="pNameErr" role="alert" hidden></p>
+    <label class="field" for="pCode">
+      <span class="field-label">Mã khách hàng <em>(không bắt buộc)</em></span>
+      <input type="text" id="pCode" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Mã in trên hoá đơn">
+    </label>
+    <p class="field-hint">Mã chỉ để bạn tự ghi nhớ; app không kết nối với EVN. Mã có nằm trong file sao lưu.</p>
+    <p class="form-error" id="placeError" role="alert" hidden></p>
+    <div class="sheet-actions">
+      <button class="btn btn-primary btn-block" id="btnPlaceSave" type="submit">Thêm nơi</button>
+      <button class="btn btn-danger-soft btn-block" id="btnPlaceDelete" type="button" hidden>Xoá nơi này</button>
+    </div>
+    <p class="field-hint" id="placeDeleteHint" hidden></p>
+  </form>
+</div>
+
+<div class="sheet-backdrop" id="versionBackdrop" hidden></div>
+<div class="sheet" id="versionSheet" role="dialog" aria-modal="true" aria-labelledby="versionSheetTitle" hidden>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="versionSheetTitle">Lịch sử cập nhật</h3>
+    <button class="icon-btn" data-close aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="versionContent"></div>
+</div>
+
+<div class="sheet-backdrop" id="confirmBackdrop" hidden></div>
+<div class="sheet" id="confirmSheet" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" hidden>
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-body">
+  <h3 class="sheet-title" id="confirmTitle"></h3>
+  <p class="confirm-text" id="confirmText"></p>
+  <p class="form-error" id="confirmError" role="alert" hidden></p>
+  <div class="confirm-actions">
+    <button class="btn btn-primary btn-block" id="confirmOk" type="button"></button>
+    <button class="btn btn-soft btn-block" id="confirmCancel" type="button">Huỷ</button>
+  </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-msg" id="toastMsg" role="status" aria-live="polite"></span>
+  <button class="toast-action" id="toastAction" type="button" hidden></button>
+</div>
+
+<script src="../js/power-track-core.js"></script>
+<script src="../js/power-track.js"></script>
+</body>
+</html>

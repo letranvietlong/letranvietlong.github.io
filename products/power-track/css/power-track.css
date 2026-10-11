@@ -1,0 +1,364 @@
+/* Digits-only face (unicode-range 0-9), same fix as GoldTrack/FuelTrack:
+   iPhones don't ship Cambria, so the stack falls back to Georgia, whose iOS
+   digits are old-style only (lining-nums can't fix it). Digits come from
+   Cambria where installed, else Times New Roman (lining). */
+@font-face{font-family:'App Digits';src:local('Cambria'),local('Times New Roman'),local('TimesNewRomanPSMT');font-weight:100 500;unicode-range:U+0030-0039}
+@font-face{font-family:'App Digits';src:local('Cambria Bold'),local('Cambria-Bold'),local('Times New Roman Bold'),local('TimesNewRomanPS-BoldMT');font-weight:600 900;unicode-range:U+0030-0039}
+:root{
+  --bg:#0D0F1E;--bg3:#0A0B18;
+  --card:#161933;
+  --glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.16);
+  --text:#F8FAFC;--muted:#A9B4CC;--muted2:#8794B0;
+  --accent:#A78BFA;--accent-ink:#0D0F1E;
+  --accent-soft:rgba(167,139,250,.16);--accent-soft-fg:#C4B5FD;
+  /* Same-family gradient for the main button; the ink is measured on both ends. */
+  --btn-from:#C4B5FD;--btn-to:#A78BFA;
+  --radius:22px;--radius-sm:14px;
+  --shadow:0 20px 60px rgba(0,0,0,.4);
+  --sheet-bg:#12142A;
+  --chip-up-bg:rgba(251,113,133,.14);--chip-up-fg:#FB7185;
+  --chip-down-bg:rgba(52,211,153,.14);--chip-down-fg:#34D399;
+  --chip-flat-bg:rgba(255,255,255,.07);
+  --skeleton:rgba(255,255,255,.07);
+  --tabbar-bg:rgba(13,15,30,.94);
+  --input-bg:rgba(255,255,255,.05);
+  --warn-fg:#FBBF24;--warn-bg:rgba(251,191,36,.12);
+  --err-fg:#FDA4AF;--err-bg:rgba(251,113,133,.12);
+  --ok-fg:#6EE7B7;--ok-bg:rgba(52,211,153,.12);
+  --danger:#E11D48;--danger-ink:#FFFFFF;
+  --danger-soft-bg:rgba(251,113,133,.14);--danger-soft-fg:#FDA4AF;
+  --toast-action:#6D28D9;
+  --bar:#A78BFA;--bar-est:rgba(167,139,250,.38);
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+  --font:'App Digits',Cambria,Georgia,'Times New Roman',Times,serif;
+  /* Thang lớp, thấp → cao: tab bar < nền mờ < sheet < nền mờ hộp xác nhận <
+     hộp xác nhận < toast. Hộp xác nhận mở TRÊN form hoá đơn nên nền mờ của
+     nó phải che được sheet đó. Lớp mới thì thêm token, không viết số cứng. */
+  --z-tabbar:35;--z-backdrop:40;--z-sheet:50;--z-confirm-backdrop:54;--z-confirm:55;--z-toast:60;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#F5F4FB;--bg3:#ECE9F8;
+    --card:#FFFFFF;
+    --glass:rgba(23,20,60,.045);--glass2:rgba(23,20,60,.075);
+    --line:rgba(23,20,60,.18);--line2:rgba(23,20,60,.26);
+    --text:#171B2B;--muted:#5B6478;--muted2:#646B78;
+      --accent:#6D28D9;--accent-ink:#FFFFFF;
+    --accent-soft:rgba(109,40,217,.08);--accent-soft-fg:#5B21B6;
+    --btn-from:#7C3AED;--btn-to:#5B21B6;
+    --shadow:0 14px 36px rgba(23,20,60,.10);
+    --sheet-bg:#FFFFFF;
+    --chip-up-bg:rgba(200,30,30,.08);--chip-up-fg:#B91C1C;
+    --chip-down-bg:rgba(5,150,105,.08);--chip-down-fg:#047857;
+    --chip-flat-bg:rgba(23,20,60,.06);
+    --skeleton:rgba(23,20,60,.07);
+    --tabbar-bg:rgba(255,255,255,.95);
+    --input-bg:#F8F7FD;
+    --warn-fg:#92400E;--warn-bg:rgba(217,119,6,.10);
+    --err-fg:#B91C1C;--err-bg:rgba(220,38,38,.08);
+    --ok-fg:#047857;--ok-bg:rgba(5,150,105,.09);
+    --danger:#DC2626;--danger-ink:#FFFFFF;
+    --danger-soft-bg:rgba(220,38,38,.08);--danger-soft-fg:#B91C1C;
+    --toast-action:#C4B5FD;
+    --bar:#6D28D9;--bar-est:rgba(109,40,217,.30);
+  }
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+/* Không hiện thanh cuộn ở bất kỳ đâu (app Màn hình chính, không phải trang web); cuộn vẫn hoạt động bình thường.
+   scrollbar-width trên html lan ra viewport (Safari 18.2+); ::-webkit-scrollbar cho WebKit/Chromium cũ hơn. */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0}
+body{
+  margin:0;min-height:100vh;min-height:100dvh;
+  color:var(--text);font-family:var(--font);
+  font-variant-numeric:lining-nums tabular-nums;
+  background-color:var(--bg);
+  /* First layer fades to the solid page colour at y=0 so the iOS status-bar
+     strip and the top of the page are the same colour (ios-pwa §17). */
+  background-image:
+    linear-gradient(to bottom, var(--bg), transparent 120px),
+    radial-gradient(circle at 10% 0%, rgba(167,139,250,.16), transparent 38%),
+    radial-gradient(circle at 95% 6%, rgba(139,92,246,.10), transparent 34%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg3) 55%,var(--bg) 100%);
+  background-attachment:fixed;
+  /* 84px = tab bar (≈52px) + breathing room above it. */
+  padding:calc(8px + var(--safe-top)) 14px calc(84px + var(--safe-bottom));
+}
+button{font:inherit;color:inherit;cursor:pointer}
+h1,h2,h3,p{margin:0}
+.app{max-width:480px;margin:0 auto}
+.icon{width:20px;height:20px;flex:none;display:block}
+
+/* ---------- Header: one thin row, scrolls with the page ---------- */
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:0 2px;margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand-mark{width:28px;height:28px;border-radius:8px;flex:none;display:block}
+.brand h1{font-size:1.15rem;font-weight:800;letter-spacing:-.01em}
+.place-btn{flex:0 1 auto;min-width:44px;max-width:60%;min-height:44px;display:flex;align-items:center;gap:6px;padding:0 12px 0 14px;border-radius:100px;border:1px solid var(--line);background:var(--glass);color:var(--text);font-size:.84rem;font-weight:700}
+.place-btn-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place-btn .icon{width:16px;height:16px;color:var(--muted)}
+.place-btn:active,.icon-btn:active,.row-link:active,.bill-row:active,.pick-row:active{background:var(--glass2)}
+
+/* ---------- Cards ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card-title{font-size:1rem;font-weight:800}
+.card-meta{font-size:.76rem;color:var(--muted2)}
+.card-text{font-size:.86rem;color:var(--muted);line-height:1.5}
+.card-hint{font-size:.76rem;color:var(--muted2);margin-top:10px;line-height:1.5}
+.group-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 6px 8px}
+.muted{color:var(--muted)}
+.warn-text{color:var(--warn-fg);font-weight:700}
+
+.badge{display:inline-block;font-size:.75rem;font-weight:700;line-height:1.3;padding:3px 9px;border-radius:100px;white-space:nowrap}
+.badge.bill{background:var(--ok-bg);color:var(--ok-fg)}
+.badge.est{background:var(--accent-soft);color:var(--accent-soft-fg)}
+.badge.none{background:var(--chip-flat-bg);color:var(--muted)}
+
+.chip{display:inline-block;font-size:.76rem;font-weight:700;padding:4px 9px;border-radius:100px;white-space:nowrap;font-family:var(--font)}
+.chip.up{background:var(--chip-up-bg);color:var(--chip-up-fg)}
+.chip.down{background:var(--chip-down-bg);color:var(--chip-down-fg)}
+.chip.flat{background:var(--chip-flat-bg);color:var(--muted)}
+
+/* ---------- Tổng quan ---------- */
+.big-money{font-family:var(--font);font-size:2.3rem;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.big-money .unit{font-size:1.1rem;font-weight:600;color:var(--muted);margin-left:5px;letter-spacing:0}
+.big-note{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.45}
+.stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.stat{display:flex;flex-direction:column;gap:3px;min-width:0;padding:10px;border-radius:var(--radius-sm);background:var(--glass);border:1px solid var(--line)}
+.stat-k{font-size:.75rem;color:var(--muted)}
+.stat-v{font-family:var(--font);font-size:.98rem;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.stat-v small{display:block;font-size:.75rem;font-weight:500;color:var(--muted)}
+.cmp-row{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.cmp-label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:7px}
+.cmp-chips{display:flex;flex-wrap:wrap;gap:6px}
+#ovYoY{margin-top:0;padding-top:0;border-top:none;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.sum-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sum-row + .sum-row{margin-top:8px}
+.sum-k{font-size:.84rem;color:var(--muted);flex:none}
+.sum-v{font-size:.92rem;font-weight:700;text-align:right;font-family:var(--font)}
+.sum-note{font-size:.76rem;color:var(--muted2);text-align:right;margin-top:3px}
+
+.seg{display:flex;gap:4px;padding:4px;border-radius:var(--radius-sm);background:var(--glass);border:1px solid var(--line)}
+.seg button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-size:.8rem;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;transition:background .2s,color .2s}
+.seg button.active{background:var(--accent);color:var(--accent-ink)}
+.seg button:not(.active):active{background:var(--glass2)}
+
+.chart-wrap{margin-top:10px;border-radius:10px}
+.chart-svg{width:100%;height:auto;display:block;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.chart-axis{fill:var(--muted);font-family:var(--font);font-size:10.5px}
+.chart-grid{stroke:var(--line);stroke-width:1}
+.bar{fill:var(--bar)}
+.bar.est{fill:var(--bar-est);stroke:var(--bar);stroke-width:1;stroke-dasharray:3 2}
+.bar.sel{stroke:var(--text);stroke-width:1.5;stroke-dasharray:none}
+.hit{fill:transparent;cursor:pointer}
+.chart-value{font-size:.86rem;font-weight:700;margin-top:8px;min-height:1.3em;font-family:var(--font)}
+.chart-legend{display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);margin-top:6px}
+.legend-swatch{flex:none;width:14px;height:10px;border-radius:3px;background:var(--bar-est);border:1px dashed var(--bar)}
+
+/* ---------- Trạng thái ---------- */
+.state-msg{padding:18px 4px;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.5}
+.state-msg .btn{margin-top:12px}
+.empty-card{text-align:center;padding:26px 20px}
+.empty-icon{width:40px;height:40px;color:var(--accent);margin:0 auto 10px;display:block}
+.empty-title{font-size:.98rem;font-weight:800}
+.empty-note{font-size:.82rem;color:var(--muted);line-height:1.5;margin-top:8px}
+.empty-card .btn{margin-top:14px}
+.empty-card .btn + .btn{margin-top:10px}
+.banner{font-size:.84rem;line-height:1.5;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px}
+.banner.warn{background:var(--warn-bg);color:var(--warn-fg)}
+.banner p{margin:0}
+
+/* Chiều cao khối = nội dung thật ở 390px để trang không nhảy khi dữ liệu về. */
+.skeleton-row{border-radius:10px;background:var(--skeleton);margin:6px 0;animation:skel 1.2s ease-in-out infinite alternate}
+.skeleton-row:first-child{margin-top:0}
+.skeleton-row:last-child{margin-bottom:0}
+.skeleton-th{height:24px}
+.skeleton-tr{height:29px}
+.skeleton-meta{height:36px;margin-top:10px}
+.skeleton-input{height:89px}
+.skeleton-hist{height:78px}
+@keyframes skel{from{opacity:.55}to{opacity:1}}
+
+/* ---------- Giá điện ---------- */
+.tariff-table{width:100%;border-collapse:collapse;font-size:.86rem}
+.tariff-table th{font-size:.75rem;font-weight:700;color:var(--muted);text-align:right;padding:0 0 8px}
+.tariff-table th:first-child,.tariff-table td:first-child{text-align:left}
+.tariff-table td{padding:9px 0;border-top:1px solid var(--line);text-align:right;font-family:var(--font);white-space:nowrap}
+.tariff-table td:first-child{font-weight:700}
+.tariff-table td:first-child small{font-weight:500;color:var(--muted);margin-left:2px;font-size:.78rem}
+.tariff-table td:last-child{font-weight:800}
+.tariff-table td.pre{color:var(--muted)}
+.calc-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:.84rem}
+.calc-line:first-child{border-top:none}
+.calc-line-k{color:var(--muted);min-width:0}
+.calc-line-v{font-family:var(--font);font-weight:700;white-space:nowrap}
+.calc-seg-title{font-size:.78rem;font-weight:700;color:var(--muted);margin-top:8px}
+#calcLines{margin-top:12px}
+.calc-sum{margin-top:6px;padding-top:10px;border-top:1px solid var(--line2)}
+.sum-row.total .sum-k{color:var(--text);font-weight:800}
+.sum-row.total .sum-v{font-size:1.2rem;font-weight:800}
+.hist-entry{padding:12px 0;border-top:1px solid var(--line)}
+.hist-entry:first-child{border-top:none;padding-top:0}
+.hist-date{font-size:.86rem;font-weight:800}
+.hist-date span{font-weight:500;color:var(--muted);font-size:.78rem;margin-left:6px}
+.hist-prices{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.5;font-family:var(--font)}
+
+/* ---------- Hoá đơn ---------- */
+.card-list{padding-top:8px;padding-bottom:8px}
+.bill-card{padding-bottom:8px}
+.bill-row,.row-link,.pick-row{display:flex;width:100%;align-items:center;gap:10px;min-height:56px;padding:10px 2px;border:none;border-top:1px solid var(--line);background:transparent;text-align:left;border-radius:0}
+.bill-row{justify-content:space-between}
+.bill-card .bill-row:first-of-type{border-top:none}
+.bill-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.bill-period{font-size:.9rem;font-weight:800}
+.bill-meta{font-size:.78rem;color:var(--muted)}
+.bill-cmp{font-size:.76rem;font-weight:700}
+.bill-cmp.ok{color:var(--ok-fg)}
+.bill-cmp.off{color:var(--warn-fg)}
+.bill-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.bill-amount{font-size:1rem;font-weight:800;font-family:var(--font);white-space:nowrap}
+.row-link{min-height:52px;font-size:.9rem;font-weight:700}
+.card-list > .row-link:first-child,#placeList .row-link:first-child,.pick-list .pick-row:first-child{border-top:none}
+#placeList .row-link:first-child{padding-top:0;min-height:46px}
+.row-link .icon{color:var(--muted)}
+.row-link .chev{width:16px;height:16px;margin-left:auto}
+.row-link-text{min-width:0;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.row-link-meta{font-size:.78rem;font-weight:500;color:var(--muted)}
+#btnVersion .row-link-text{flex-direction:row;flex-wrap:wrap;gap:0 6px;align-items:baseline}
+#placeList + .btn{margin-top:10px}
+.pick-row{font-size:.92rem;font-weight:700}
+.pick-row .icon{margin-left:auto;color:var(--accent);visibility:hidden}
+.pick-row[aria-checked="true"] .icon{visibility:visible}
+
+/* ---------- Buttons / forms ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 16px;border-radius:14px;border:1px solid transparent;font-size:.9rem;font-weight:700;transition:opacity .2s,filter .15s}
+.btn:active{filter:brightness(.92)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.btn-primary{background-color:var(--btn-to);background-image:linear-gradient(135deg,var(--btn-from),var(--btn-to));color:var(--accent-ink)}
+.btn-soft{background:var(--glass2);color:var(--text);border-color:var(--line)}
+.btn-danger{background:var(--danger);color:var(--danger-ink)}
+.btn-danger-soft{background:var(--danger-soft-bg);color:var(--danger-soft-fg)}
+.btn-block{display:flex;width:100%}
+.btn-add{margin-bottom:14px;min-height:50px;font-size:.95rem}
+.btn-add .icon{width:18px;height:18px}
+.btn-pair{display:flex;gap:10px;margin-top:12px}
+.btn-pair .btn{flex:1 1 0;min-width:0;padding:0 10px}
+.btn:focus-visible,.tabbar-btn:focus-visible,.seg button:focus-visible,.icon-btn:focus-visible,.place-btn:focus-visible,.bill-row:focus-visible,.row-link:focus-visible,.pick-row:focus-visible,.toast-action:focus-visible,details.more summary:focus-visible,.chart-wrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;margin-top:14px}
+.field-row{display:flex;gap:10px;align-items:flex-end}
+.field-row .field{flex:1 1 0}
+.field-label{font-size:.8rem;font-weight:700;color:var(--muted)}
+.field-label em{font-style:normal;font-weight:500;color:var(--muted2)}
+.field input,.field textarea{
+  width:100%;min-width:0;min-height:46px;border-radius:12px;border:1px solid var(--line2);background:var(--input-bg);color:var(--text);
+  font-family:var(--font);font-size:16px;padding:0 12px;-webkit-appearance:none;appearance:none}
+.field textarea{padding:10px 12px;line-height:1.4;resize:none;min-height:120px;display:block}
+.field input[type=date],.field input[type=month]{display:block;line-height:44px}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted2);opacity:1}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field input[aria-invalid="true"],.field textarea[aria-invalid="true"]{border-color:var(--err-fg)}
+.field input[aria-invalid="true"]:focus,.field textarea[aria-invalid="true"]:focus{border-color:var(--err-fg);box-shadow:0 0 0 3px var(--err-bg)}
+.field-hint{font-size:.76rem;color:var(--muted2);margin-top:8px;line-height:1.45}
+/* The error line keeps its place while empty (one line reserved), so showing
+   it on blur does not push the button the finger is already heading for. */
+.field-error{font-size:.8rem;font-weight:600;color:var(--err-fg);margin:4px 0 -8px;min-height:18px;line-height:1.4}
+.field-error[hidden]{display:block !important;visibility:hidden}
+.field-ok{font-size:.8rem;font-weight:600;color:var(--ok-fg);margin-top:8px;line-height:1.4}
+.form-error{font-size:.84rem;color:var(--err-fg);background:var(--err-bg);border-radius:12px;padding:9px 12px;margin-top:12px;line-height:1.45}
+#fPasteBox .btn{margin-top:10px}
+
+.calc-box{margin-top:14px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--glass);border:1px solid var(--line);font-size:.86rem;line-height:1.45}
+.calc-box-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.calc-box-row + .calc-box-row{margin-top:4px}
+.calc-box-row b{font-family:var(--font);font-size:1rem;white-space:nowrap}
+.calc-box-k{color:var(--muted)}
+.calc-box .cmp{font-weight:700;margin-top:8px}
+.calc-box .cmp.ok{color:var(--ok-fg)}
+.calc-box .cmp.off{color:var(--warn-fg)}
+.calc-box details.more{margin-top:8px}
+.calc-box ul{margin:0 0 4px;padding-left:18px;color:var(--muted);font-size:.82rem;line-height:1.55}
+
+details.more{margin-top:12px;border-top:1px solid var(--line);padding-top:2px}
+/* The flex row lives on an inner span: older WebKit ignores display:flex on <summary> itself. */
+details.more summary{display:block;font-size:.84rem;font-weight:700;color:var(--accent);cursor:pointer;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more .more-head{min-height:44px;display:flex;align-items:center}
+details.more .more-head::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-left:8px;margin-top:-3px}
+details.more[open] .more-head::after{transform:rotate(-135deg);margin-top:3px}
+details.more > .field-row:first-of-type .field,details.more > summary + .field{margin-top:4px}
+.card-list details.more{margin-top:0}
+.diag{font-size:.75rem;color:var(--muted2);line-height:1.5;overflow-wrap:anywhere;padding-bottom:6px}
+.safe-probe{position:absolute;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ---------- Sheet ---------- */
+/* Closed backdrops and sheets carry the `hidden` attribute (display:none), not
+   just opacity 0: a transparent fixed layer touching the top edge can still
+   tint the iOS status-bar strip (ios-pwa §17). JS removes `hidden`, forces a
+   reflow, then adds .open; on close it removes .open and sets `hidden` after
+   the slide-out. */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(5,5,14,.62);z-index:var(--z-backdrop);opacity:0;transition:opacity .22s}
+.sheet-backdrop.open{opacity:1}
+/* translateY(100% + 100px): the shadow travels with the box. visibility keeps
+   a sliding-out sheet's controls out of the Tab order. */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-sheet);max-width:480px;margin:0 auto;background:var(--sheet-bg);border-top:1px solid var(--line2);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5);padding:10px 18px 0;transform:translateY(calc(100% + 100px));visibility:hidden;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s linear .24s;max-height:88svh;max-height:calc(var(--vv-height,100svh) * .88);display:flex;flex-direction:column;overflow:hidden}
+/* Handle and title row stay put; only the body scrolls (no sticky, so no
+   WebKit sticky+transform trouble). */
+.sheet-handle-hit,.sheet-head{flex:none}
+.sheet-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scroll-padding-bottom:80px;margin:0 -18px;padding:0 18px calc(22px + var(--safe-bottom))}
+/* Fixed height: the bill form's top edge (✕, the mode buttons) must not move
+   when an error line or the computed box appears — a tap would miss. */
+#billSheet{height:88svh;height:calc(var(--vv-height,100svh) * .88)}
+.sheet.open{transform:translateY(0);visibility:visible;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s}
+#confirmBackdrop{z-index:var(--z-confirm-backdrop)}
+#confirmSheet{z-index:var(--z-confirm)}
+.sheet-handle-hit{padding:8px 0 14px;display:flex;justify-content:center;touch-action:none;cursor:grab}
+.sheet-handle{width:38px;height:4px;border-radius:100px;background:var(--line2)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:4px}
+.sheet-title{font-size:1.05rem;font-weight:800}
+.icon-btn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:flex;align-items:center;justify-content:center}
+.sheet-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.confirm-text{font-size:.9rem;color:var(--muted);line-height:1.5;margin-top:6px}
+.confirm-actions{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.version-entry{padding:14px 0;border-bottom:1px solid var(--line)}
+.version-entry:last-child{border-bottom:none;padding-bottom:4px}
+.version-entry-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.version-num{font-weight:800;font-size:.9rem;color:var(--accent)}
+.version-date{font-size:.76rem;color:var(--muted2)}
+.version-changes{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem;line-height:1.6}
+
+/* ---------- Toast ---------- */
+/* The wrapper ignores touches while hidden; .show turns them back on so the
+   "Hoàn tác" button is tappable. */
+.toast{position:fixed;left:50%;bottom:calc(76px + var(--safe-bottom));z-index:var(--z-toast);max-width:calc(100% - 28px);width:max-content;display:flex;align-items:center;gap:4px;transform:translate(-50%,150%);opacity:0;visibility:hidden;pointer-events:none;background:var(--text);color:var(--bg);font-size:.86rem;font-weight:700;padding:0 6px 0 16px;min-height:48px;border-radius:100px;box-shadow:var(--shadow);transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s,visibility 0s linear .22s}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible;pointer-events:auto;transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s,visibility 0s}
+.toast-msg{padding:10px 10px 10px 0;line-height:1.35;min-width:0}
+.toast-action{flex:none;min-height:44px;min-width:44px;padding:0 12px;border:none;border-radius:100px;background:transparent;color:var(--toast-action);font-size:.86rem;font-weight:800}
+.toast-action:active{opacity:.7}
+
+/* ---------- Tab bar ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-tabbar);display:flex;justify-content:center;background:var(--tabbar-bg);border-top:1px solid var(--line);padding:5px 6px calc(3px + var(--safe-bottom));transform:translateZ(0);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.tabbar-btn{flex:1 1 0;max-width:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:none;color:var(--muted2);padding:3px 0;min-height:46px;border-radius:12px;transition:color .2s}
+.tabbar-btn .icon{width:21px;height:21px}
+.tabbar-btn span{font-size:.75rem;font-weight:700;letter-spacing:.01em}
+.tabbar-btn.active{color:var(--accent)}
+.tabbar-btn:active{background:var(--glass)}
+/* Floor at 34px (home-indicator inset of every Face-ID iPhone) for iOS
+   standalone only, where env(safe-area-inset-bottom) can under-resolve on an
+   icon added before viewport-fit=cover — same fix as GoldTrack/FuelTrack. */
+@supports (-webkit-touch-callout:none){
+  @media (display-mode:standalone){
+    .tabbar{padding-bottom:calc(3px + max(var(--safe-bottom), 34px))}
+    body{padding-bottom:calc(84px + max(var(--safe-bottom), 34px))}
+    .toast{bottom:calc(76px + max(var(--safe-bottom), 34px))}
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}

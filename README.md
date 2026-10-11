@@ -23,6 +23,7 @@ Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt 
 | **Thanh Thu Fruit** | Trang giới thiệu cửa hàng hoa quả tươi sạch. | [thanh-thu-fruit/html/index.html](products/thanh-thu-fruit/html/index.html) |
 | **GoldTrack** | Theo dõi giá vàng 9999 và tính lời/lỗ danh mục vàng đã mua. | [gold-track/html/index.html](products/gold-track/html/index.html) |
 | **FuelTrack** | Theo dõi giá xăng dầu PVOIL tại Đà Nẵng theo từng ngày — chỉ xem giá, không mua bán. | [fuel-track/html/index.html](products/fuel-track/html/index.html) |
+| **PowerTrack** | Ghi tiền điện hằng tháng, so với tháng trước/cùng kỳ; biểu giá điện sinh hoạt bậc thang và máy tính tiền điện. Dữ liệu chỉ lưu trên máy. | [power-track/html/index.html](products/power-track/html/index.html) |
 | **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](products/thubee-farmery/html/index.html) |
 | **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](products/viet-long-creator/html/index.html) |
 | **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](products/viet-long-social/html/index.html) |
@@ -109,6 +110,19 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   └── data/             # Cập nhật tự động bởi GitHub Actions (update-fuel-price.yml)
 │   │       ├── fuel-price.json       # Giá hiện hành + mức thay đổi so với kỳ trước
 │   │       ├── fuel-price-history.json # Các điểm thay đổi giá (biểu đồ, lịch sử)
+│   │       └── changelog.json        # Lịch sử cập nhật hiện trong app
+│   ├── power-track/          # Tiền điện hằng tháng + giá điện sinh hoạt — cùng mẫu với fuel-track, không có bot
+│   │   ├── sw-power-track.js # Vỏ service worker 1 dòng — ngang hàng html/css/js/json/data, KHÔNG lồng vào js/
+│   │   ├── html/index.html
+│   │   ├── css/power-track.css
+│   │   ├── js/power-track-core.js # Tính tiền theo bậc, đọc thông báo dán vào, kiểm tra dữ liệu — không DOM
+│   │   ├── js/power-track.js
+│   │   ├── js/sw-core.js     # Logic service worker thật (nạp qua importScripts từ vỏ)
+│   │   ├── json/electricity-tariff.json # Biểu giá bậc thang + lịch VAT — VIẾT TAY, sửa khi có quyết định giá mới
+│   │   ├── img/power-track-icon.svg, img/power-track-icon-*.png  # Favicon + apple-touch-icon (32/180)
+│   │   ├── manifest.json     # Web App Manifest
+│   │   ├── docs/power-track.md
+│   │   └── data/
 │   │       └── changelog.json        # Lịch sử cập nhật hiện trong app
 │   ├── love-days/            # Riêng tư (không index, không có trên trang chủ) — đếm ngày yêu nhau, cùng mẫu với fuel-track
 │   │   ├── sw-love-days.js   # Vỏ service worker 1 dòng — ngang hàng html/css/js/data, KHÔNG lồng vào js/
