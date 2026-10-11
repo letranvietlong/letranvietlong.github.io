@@ -167,3 +167,15 @@ Ngược lại, thứ **cần** tự cập nhật khi app để mở lâu (vd th
 ## 16. Thông báo đẩy và số trên icon
 
 Chỉ chạy ở app mở từ icon Màn hình chính (iOS 16.4+), xin quyền trong cú chạm, push nào cũng phải hiện thông báo (không thì iOS thu hồi subscription). Toàn bộ kiến trúc, secret, workflow và cách test: skill `LongLTV_web-push`.
+
+## 17. Dải thanh trạng thái lạc màu (xám/nâu úp lên app) — CHƯA KIỂM CHỨNG TRÊN MÁY THẬT
+
+**Triệu chứng** (LoveDays v1.6, iPhone 14 Pro Max, app mở từ icon, theme sáng): 59pt trên cùng là một dải xám-nâu đục (~`#9A8D92`) cắt ngang cứng với nền hồng của trang, dù `theme-color`, `html`, `body`, manifest đều khai báo màu hồng `#FFF5F7`.
+
+**Giả thuyết đang dùng**: iOS mới không còn theo `theme-color` mà lấy màu vùng trên từ `background-color` của phần tử `position:fixed` chạm mép trên viewport (không có thì lấy nền body). App có hai backdrop `position:fixed; inset:0` nền `rgba(40,8,22,.45)` chỉ ẩn bằng `opacity:0` — phủ màu đó lên `#FFF5F7` ra `#9E8A92`, khớp màu đo trên ảnh (lệch ≤4 mỗi kênh). Ở theme tối cùng phép tính ra màu gần trùng nền nên không thấy lỗi.
+
+**Cách sửa đã áp (v1.7)**: backdrop đóng thì `hidden` (`display:none`), mở thì bỏ `hidden` → reflow → thêm `.open`; đóng thì gỡ `.open` rồi `setTimeout` 260ms mới đặt `hidden` (không dùng `transitionend` vì reduced-motion tắt transition; có `clearTimeout` để đóng-mở nhanh không bị ẩn nhầm). Thêm lớp nền đầu tiên của `body` là `linear-gradient(to bottom, var(--bg), transparent 120px)` để mép trên trang đúng bằng màu đặc.
+
+**Áp cho mọi app iPhone trong repo**: lớp phủ fixed toàn màn không được tồn tại ở trạng thái `display≠none` khi đóng. Kiểm bằng Playwright: khi không mở gì, đếm phần tử `position:fixed` có nền, `top ≤ 0`, `display ≠ none` → phải là 0 (trừ header cố định có chủ đích, khi đó nền của nó phải là màu muốn thấy ở dải trạng thái).
+
+**Trạng thái**: Chromium không vẽ dải này. Cho tới khi chủ repo gửi ảnh chụp v1.7 trên iPhone (theme sáng, không mở sheet) thì đây vẫn là giả thuyết. Nếu ảnh mới vẫn còn dải xám: giả thuyết sai — thêm vào dòng chẩn đoán danh sách phần tử fixed chạm mép trên + hỏi phiên bản iOS, không đoán tiếp. Cập nhật mục này theo kết quả.

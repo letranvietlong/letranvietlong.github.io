@@ -239,6 +239,21 @@ Kiểm N2: `getBoundingClientRect()` của **phần tử nhận sự kiện** (k
 | I1 | **Hình minh hoạ đúng nội dung** đang nói, cùng tông màu sản phẩm | Ảnh kho chung chung cho "đẹp"; ảnh nặng làm chậm lần tải đầu |
 | D1 | **Chồng lớp có chủ đích để tạo chiều sâu**: avatar đè mép ảnh bìa (LoveDays), chip nổi trên ảnh, sheet đè lên trang | Mọi khối xếp rời thành hàng phẳng. Ngược lại: chồng lớp che chữ/vùng chạm, hoặc phần đè bị `overflow:hidden` của cha cắt mất |
 
+### 12.5b Phần đầu màn hình (header) của app iPhone
+
+Rút từ lần làm lại header LoveDays (v1.7, 10/2026): hàng tên app + huy hiệu phiên bản + ảnh bìa + dòng tên chiếm 370pt/932pt trước khi tới con số chính, và lặp cùng một thông tin hai lần.
+
+| # | Nên | Không nên | Kiểm |
+|---|---|---|---|
+| H1 | **Nội dung chính của màn (con số, giá, tổng) nằm trong 40% trên của màn đầu** | Nhận diện + trang trí đẩy nội dung chính xuống nửa dưới | `top` của số chính ≤ 0,4 × `innerHeight` ở 430×873 |
+| H2 | **Mỗi dòng ở đầu trang một vai khác nhau** | Lặp một thông tin hai lần trong 300pt đầu (tên app "Long & Thư" rồi lại "Viết Long ♥ Minh Thư"; hai trái tim) | đọc lại 300pt đầu, gạch mọi thứ nói lần hai |
+| H3 | **Phiên bản, lịch sử cập nhật, chẩn đoán nằm ở Cài đặt**, dạng dòng cả hàng ≥44px | Huy hiệu phiên bản ở góc phải header — vị trí đắt nhất màn hình dành cho thứ ít dùng nhất. Góc phải header chỉ dành cho hành động dùng thường xuyên, không có thì để trống | — |
+| H4 | **Các phần tử chồng lên mép ảnh bìa có tâm trên cùng một trục** (avatar, chip tim): tâm nằm đúng mép ảnh | Mỗi phần tử một `margin-top` riêng → cái cắt mép 50%, cái cắt 10%, trông như lỗi | \|Δ tâm y\| ≤ 1px giữa các phần tử; tâm − đáy ảnh bìa = 0 ± 1 |
+| H5 | **Dải thanh trạng thái cùng màu mép trên của trang**: `html` và `body` có `background-color` đặc; gradient trang trí phải mờ về đúng màu đó tại y=0 | Dựa vào `theme-color`; để gradient đậm ở mép trên tạo đường cắt ngang với dải trạng thái | xem `LongLTV_ios-pwa-pitfalls` §17 |
+| H6 | **Lớp phủ toàn màn (backdrop, viewer) là `display:none`/`hidden` khi đóng** | Chỉ `opacity:0` + `pointer-events:none` — lớp vẫn nằm đó, có thể nhuộm màu dải trạng thái iOS | không mở gì: 0 phần tử `position:fixed`, `display≠none`, `top≤0`, có nền |
+| H7 | Header trang chủ **cuộn theo nội dung** | Sticky kèm co giãn khi cuộn (đụng bẫy `transform` trong sticky, ios-pwa §6) | — |
+| H8 | **Header đủ bố cục khi chưa có ảnh** (gradient cùng họ màu + chữ cái đầu), cả hai theme; tên dài cắt "…" từng tên, không làm mất tên thứ hai | Chỉ thiết kế cho trường hợp đã có ảnh đẹp và tên ngắn | hồ sơ không ảnh; tên 40 ký tự + emoji |
+
 ### 12.6 Khi hai quy tắc kéo ngược nhau
 
 - **§11 thắng §12**: đọc được và đúng số trước, rồi mới tới mẫu trình bày. Chồng lớp, gradient, huy hiệu màu đều phải qua phép đo tương phản §8.

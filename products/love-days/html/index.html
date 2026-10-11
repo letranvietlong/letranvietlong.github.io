@@ -24,13 +24,7 @@
 <body>
 <main class="app">
 
-  <header class="app-header">
-    <div class="brand">
-      <img class="brand-mark" src="/products/love-days/img/love-days-icon.svg" alt="" width="40" height="40">
-      <h1 class="brand-name">Long &amp; Thư</h1>
-    </div>
-    <button class="version-badge" id="btnVersion" type="button" aria-label="Xem lịch sử cập nhật">v…</button>
-  </header>
+  <h1 class="sr-only">Long &amp; Thư</h1>
 
   <div id="banners" class="banners" aria-live="polite"></div>
 
@@ -95,7 +89,7 @@
         </div>
         <div class="avatar" id="avatarThu"><img alt="" hidden><span class="avatar-initial"></span></div>
       </div>
-      <p class="couple-names"><span id="nameLong"></span> <span class="amp" aria-label="và">♥</span> <span id="nameThu"></span></p>
+      <p class="couple-names"><span id="nameLong"></span> <span class="amp" aria-label="và">&amp;</span> <span id="nameThu"></span></p>
     </div>
 
     <section class="card count-card" aria-labelledby="countLabel">
@@ -285,6 +279,12 @@
     <h3 class="group-title" id="storageTitle">Thông tin</h3>
     <section class="card" aria-labelledby="storageTitle">
       <p class="card-text" id="storageInfo">Đang đo…</p>
+      <button type="button" class="row-link" id="btnVersion">
+        <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="row-link-label">Lịch sử cập nhật</span>
+        <span class="row-link-value" id="versionText">v…</span>
+        <svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
       <details class="more">
         <summary><span class="more-head">Thông tin kỹ thuật<svg class="more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></summary>
         <p class="diag" id="diagLine"></p>
@@ -316,7 +316,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 
 <div class="sheet" id="milestoneSheet" role="dialog" aria-modal="true" aria-labelledby="msSheetTitle">
   <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
@@ -409,7 +409,7 @@
   <div id="versionContent"></div>
 </div>
 
-<div class="dp-backdrop" id="dpBackdrop"></div>
+<div class="dp-backdrop" id="dpBackdrop" hidden></div>
 <div class="dp-sheet" id="datePicker" role="dialog" aria-modal="true" aria-labelledby="dpTitle" aria-hidden="true">
   <div class="dp-head">
     <button type="button" class="dp-action" id="dpCancel">Huỷ</button>

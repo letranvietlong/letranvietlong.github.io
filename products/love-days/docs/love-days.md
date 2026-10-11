@@ -11,6 +11,13 @@ Tình trạng: **Phase 1A + 1B + 2** (đếm ngày, kỷ niệm, hồ sơ + ản
 - `js/love-days-core.js` là **classic script dùng chung cho trang và service worker** (`sw-core.js` `importScripts` nó), lộ ra `self.LoveCore`. Không được dùng ES module, DOM hay `window` trong file này.
 - Service worker: vỏ `sw-love-days.js` nằm thẳng trong `products/love-days/` (scope), logic ở `js/sw-core.js`, `CACHE_NAME` tiền tố `lovedays-cache-`, đăng ký bằng đường dẫn tuyệt đối. Bump `CACHE_NAME` thì bump luôn `?v=` ở vỏ **và** `?v=` của `love-days-core.js` trong `sw-core.js`. Cache được khoá theo **đường dẫn chuẩn, bỏ query** (link chia sẻ kiểu `index.html?fbclid=…` vẫn mở được khi offline), và URL thư mục `/products/love-days/html/` được coi là `html/index.html`.
 
+## Bố cục phần đầu trang
+
+- **Không có hàng tiêu đề/thương hiệu.** Trang chỉ có `<h1 class="sr-only">Long & Thư</h1>` cho trình đọc màn hình; Trang chủ mở đầu bằng hero, các tab khác bằng `.view-title` của chính nó. (Hàng "Long & Thư" + huy hiệu phiên bản cũ chiếm 58pt và lặp với dòng tên trong hero — bỏ từ v1.7.)
+- **Hero** (cuộn theo trang, không sticky): ảnh bìa `.cover` cao 128px; hai `.avatar` 72px có `margin-top:-36px` nên **tâm avatar nằm đúng mép dưới ảnh bìa**; `.heart-beat` là chip tròn 36px nền `--card`, căn giữa theo trục avatar và đè 8px vào mỗi avatar (hai avatar cách nhau 20px). Dòng tên dùng `&` màu `--muted` (trái tim duy nhất là chip), tối đa 2 dòng: mỗi tên tự cắt "…" trên một dòng riêng khi quá dài, để tên thứ nhất dài không đẩy mất tên thứ hai.
+- **Phiên bản** nằm ở Cài đặt → thẻ "Thông tin": nút cả hàng `#btnVersion` ("Lịch sử cập nhật" + `#versionText`) mở sheet `#versionSheet`.
+- **Lớp phủ đóng thì `display:none`**: `#sheetBackdrop` và `#dpBackdrop` mang thuộc tính `hidden` khi không mở gì; chỉ bật/tắt qua `showBackdrop(el)` / `hideBackdrop(el)` trong `love-days.js` (ẩn sau 260ms bằng `setTimeout`, không dùng `transitionend` vì `prefers-reduced-motion` tắt transition) — đừng thêm/gỡ `.open` trực tiếp. Lý do: ảnh chụp iPhone 14 Pro Max (app Màn hình chính) cho thấy dải thanh trạng thái có màu xám-nâu ~`#9A8D92`, gần đúng `rgba(40,8,22,.45)` của backdrop phủ lên `#FFF5F7`; **giả thuyết** là iOS lấy màu dải trên cùng từ `background-color` của phần tử `position:fixed` chạm mép trên, kể cả khi `opacity:0`. Cùng lý do đó, lớp nền đầu tiên của `body` là `linear-gradient(to bottom, var(--bg), transparent 120px)` để mép trên trang đúng bằng `--bg`. **Chưa kiểm chứng trên máy thật** — nếu dải trên vẫn lệch màu thì giả thuyết sai, cần tìm tiếp. Quy tắc đi kèm: không để phần tử `position:fixed` nào có nền, `top ≤ 0`, mà vẫn `display` khác `none` khi không mở gì.
+
 ## Quy ước đếm ngày (giờ Việt Nam, không phụ thuộc múi giờ máy)
 
 ```

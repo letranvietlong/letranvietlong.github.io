@@ -619,6 +619,24 @@
     });
   });
 
+  // A closed backdrop must be display:none, not just opacity:0: iOS appears to
+  // tint the status-bar strip with the background of a fixed element touching
+  // the top edge, even a fully transparent one.
+  function showBackdrop(el){
+    clearTimeout(el.hideTimer);
+    el.hidden = false;
+    void el.offsetWidth;
+    el.classList.add("open");
+  }
+  // A timer rather than transitionend: reduced motion switches the transition off.
+  function hideBackdrop(el){
+    el.classList.remove("open");
+    clearTimeout(el.hideTimer);
+    el.hideTimer = setTimeout(function(){
+      if(!el.classList.contains("open")) el.hidden = true;
+    }, 260);
+  }
+
   function openDatePicker(id){
     var cfg = DATE_FIELDS[id], today = C.todayStr(now()), v = $(id).value;
     dp.id = id; dp.today = today; dp.min = cfg.min;
@@ -639,7 +657,7 @@
     var sheet = $("datePicker");
     sheet.setAttribute("aria-hidden", "false");
     sheet.classList.add("open");
-    $("dpBackdrop").classList.add("open");
+    showBackdrop($("dpBackdrop"));
     $(id + "Btn").setAttribute("aria-expanded", "true");
     dpSync(false);
     dpCols[0].el.focus({ preventScroll: true });
@@ -677,7 +695,7 @@
     var sheet = $("datePicker"), id = dp.id;
     sheet.classList.remove("open");
     sheet.setAttribute("aria-hidden", "true");
-    $("dpBackdrop").classList.remove("open");
+    hideBackdrop($("dpBackdrop"));
     if(how){
       var val = how === "clear" ? "" : dpValue(), input = $(id);
       if(input.value !== val){
@@ -2008,7 +2026,7 @@
     var a = document.activeElement;
     if(!document.querySelector(".sheet.open")) sheetOpener = a && a !== document.body ? a : null;
     $(id).classList.add("open");
-    $("sheetBackdrop").classList.add("open");
+    showBackdrop($("sheetBackdrop"));
     // The close button rather than the first field: focusing an input would
     // pop the iPhone keyboard over the sheet.
     $(id).querySelector("[data-close-sheet]").focus({ preventScroll: true });
@@ -2018,7 +2036,7 @@
     var open = document.querySelectorAll(".sheet.open");
     if(!open.length) return;
     Array.prototype.forEach.call(open, function(s){ s.classList.remove("open"); });
-    $("sheetBackdrop").classList.remove("open");
+    hideBackdrop($("sheetBackdrop"));
     var back = sheetOpener;
     sheetOpener = null;
     if(back && document.contains(back) && back.getClientRects().length) back.focus({ preventScroll: true });
@@ -2080,7 +2098,7 @@
   }).then(function(d){
     if(d && Array.isArray(d.entries)){
       changelogData = d;
-      $("btnVersion").textContent = "v" + d.version;
+      $("versionText").textContent = "v" + d.version;
     }
   }).catch(function(){});
 
