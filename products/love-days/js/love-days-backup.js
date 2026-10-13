@@ -42,6 +42,21 @@
     return { items: out, skipped: skipped };
   }
 
+  // Same contract for the "Muốn làm" list: a malformed list refuses the file,
+  // a repeated id only drops that one item.
+  function readWishes(list){
+    if(!Array.isArray(list) || list.length > C.MAX_WISHES) return null;
+    var out = [], ids = Object.create(null), skipped = 0;
+    for(var i = 0; i < list.length; i++){
+      var v = C.validateWish(list[i]);
+      if(!v) return null;
+      if(ids[v.id]){ skipped++; continue; }
+      ids[v.id] = true;
+      out.push(v);
+    }
+    return { items: out, skipped: skipped };
+  }
+
   // ---------- CRC32 ----------
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -136,7 +151,7 @@
   }
 
   // src: { profile, milestones, photos (validated metadata), cycles (validated; null or empty = no "cycles" key),
-  //        readBlob(id) → Promise<record|null> }
+  //        wishes (same rule as cycles), readBlob(id) → Promise<record|null> }
   async function buildBackup(src, nowMs, onProgress){
     if(src.photos.length > MAX_PHOTOS) fail("Album có " + C.fmtInt(src.photos.length) + " ảnh, vượt giới hạn " + C.fmtInt(MAX_PHOTOS) + " ảnh của một bản sao lưu. Hãy xoá bớt ảnh rồi thử lại.");
     if(src.milestones.length > MAX_MILESTONES) fail("Có " + C.fmtInt(src.milestones.length) + " kỷ niệm, vượt giới hạn " + C.fmtInt(MAX_MILESTONES) + " kỷ niệm của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
@@ -146,6 +161,13 @@
     if(src.cycles && src.cycles.length){
       if(src.cycles.length > C.MAX_CYCLES) fail("Có " + C.fmtInt(src.cycles.length) + " kỳ, vượt giới hạn " + C.fmtInt(C.MAX_CYCLES) + " kỳ của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
       cycles = src.cycles.map(function(c){ return { id: c.id, start: c.start, end: c.end, note: c.note, createdAt: c.createdAt }; });
+    }
+    var wishes = null;
+    if(src.wishes && src.wishes.length){
+      if(src.wishes.length > C.MAX_WISHES) fail("Có " + C.fmtInt(src.wishes.length) + " việc muốn làm, vượt giới hạn " + C.fmtInt(C.MAX_WISHES) + " việc của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      wishes = src.wishes.map(function(w){
+        return { id: w.id, title: w.title, cat: w.cat, note: w.note, planDate: w.planDate, doneDate: w.doneDate, milestoneId: w.milestoneId, createdAt: w.createdAt };
+      });
     }
     var zip = zipWriter(nowMs);
     var photos = src.photos.slice().sort(function(a, b){ return a.order - b.order; });
@@ -172,18 +194,23 @@
       }
       if(onProgress) onProgress(++done, total);
     }
+    // A link to a photo that isn't in this file (deleted, or its blob is gone) would point at nothing after import.
+    var inFile = Object.create(null);
+    manifestPhotos.forEach(function(x){ inFile[x.id] = true; });
     var pr = src.profile;
     var manifest = {
       app: APP, format: FORMAT, exportedAt: new Date(nowMs).toISOString(),
       profile: { startDate: pr.startDate, persons: pr.persons.map(function(x){ return { id: x.id, name: x.name, dob: x.dob }; }),
                  hasCover: !!images.cover },
       milestones: src.milestones.map(function(m){
-        return { id: m.id, title: m.title, date: m.date, emoji: m.emoji, note: m.note, repeatYearly: m.repeatYearly, createdAt: m.createdAt };
+        return { id: m.id, title: m.title, date: m.date, emoji: m.emoji, note: m.note, repeatYearly: m.repeatYearly, createdAt: m.createdAt,
+                 photoIds: (m.photoIds || []).filter(function(id){ return inFile[id]; }) };
       }),
       photos: manifestPhotos,
       images: images
     };
     if(cycles) manifest.cycles = cycles;
+    if(wishes) manifest.wishes = wishes;
     // Written last because it records the byte size of every image read
     // above; entry order doesn't matter to readZip().
     zip.add(MANIFEST, utf8Bytes(JSON.stringify(manifest)));
@@ -191,7 +218,7 @@
     var name = "love-days-backup-" + C.todayStr(nowMs) + ".zip";
     return { file: new File([blob], name, { type: "application/zip" }), name: name, size: blob.size,
              counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length,
-                       cycles: cycles ? cycles.length : null } };
+                       cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null } };
   }
 
   // ---------- ZIP reader ----------
@@ -317,6 +344,13 @@
       if(rc.items.length) cycles = rc.items;
       cyclesSkipped = rc.skipped;
     }
+    var wishes = null, wishesSkipped = 0;
+    if(data.wishes != null){
+      var rw = readWishes(data.wishes);
+      if(!rw) badData("danh sách việc muốn làm sai");
+      if(rw.items.length) wishes = rw.items;
+      wishesSkipped = rw.skipped;
+    }
 
     // Dry run: the exact derivation the home/milestone screens perform.
     try{
@@ -326,10 +360,15 @@
         var cs = C.cycleStats(cycles, nowMs);
         if(!cs || !isFinite(cs.cycleLen) || cs.list.length !== cycles.length) throw new Error("cycles");
       }
+      if(wishes){
+        var wv = C.wishView(wishes, nowMs);
+        if(!wv || wv.soon.length + wv.open.length + wv.done.length !== wishes.length) throw new Error("wishes");
+      }
     }catch(e){ fail("Dữ liệu trong bản sao lưu không hiển thị được nên không nhập."); }
 
     var exportedAt = Date.parse(data.exportedAt);
     return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images, cycles: cycles, cyclesSkipped: cyclesSkipped,
+             wishes: wishes, wishesSkipped: wishesSkipped,
              exportedAt: isFinite(exportedAt) ? exportedAt : null };
   }
 
@@ -346,8 +385,25 @@
     local.milestones.forEach(function(m){ ids[m.id] = true; });
     var addM = parsed.milestones.filter(function(m){ return !ids[m.id]; }).length;
     var cy = planCycles(parsed, local, false, nowMs);
+    var wi = planWishes(parsed, local, false, nowMs);
     return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM,
-             addCycles: cy.added, skipCycles: cy.skipped };
+             addCycles: cy.added, skipCycles: cy.skipped, addWishes: wi.added, skipWishes: wi.skipped, overWishes: wi.over };
+  }
+
+  // planCycles' twin for the "Muốn làm" list (kv 'wishes'), same rules.
+  function planWishes(parsed, local, replace, nowMs){
+    var mine = local.wishes || [], bad = local.wishesBad || [];
+    if(!parsed.wishes) return { record: null, added: 0, skipped: 0, over: 0, kept: replace && (mine.length > 0 || bad.length > 0 || !!local.wishesBroken) };
+    if(local.wishesBroken) return { record: null, added: 0, skipped: 0, over: 0, kept: true };
+    var next, added, skipped = 0, over = 0;
+    if(replace){ next = parsed.wishes; added = next.length; }
+    else {
+      var mg = C.mergeWishes(mine, parsed.wishes);
+      next = mg.items; added = mg.added; skipped = mg.skipped; over = mg.over || 0;
+    }
+    var stamp = typeof local.wishesStamp === "number" && nowMs <= local.wishesStamp ? local.wishesStamp + 1 : nowMs;
+    return { record: replace || added ? { key: "wishes", items: next.concat(bad), updatedAt: stamp } : null,
+             added: added, skipped: skipped, over: over, kept: false };
   }
 
   // What an import does to the cycle log. record = the kv record to write, or
@@ -380,7 +436,8 @@
   // never rewritten before that point; REPLACE deletes them inside it.
   //
   // ctx: { db, parsed, mode:'merge'|'replace',
-  //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp },
+  //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp,
+  //                wishes, wishesBad, wishesBroken, wishesStamp },
   //        nowMs, onProgress(done,total) }
   async function importBackup(ctx){
     var db = ctx.db, parsed = ctx.parsed, local = ctx.local, replace = ctx.mode === "replace";
@@ -388,13 +445,17 @@
     // whatever gen the existing photos are filtered by (see genForWrite).
     var gens = replace ? { write: "g1", trusted: "g1", tag: "g1" } : C.genForWrite(local.profile, local.photos);
     var activeGen = gens.tag;
-    var shas = {};
-    if(!replace) local.photos.forEach(function(p){ if(p.sha256) shas[p.sha256] = true; });
+    // Photo ids change on import (fresh id per staged photo; a duplicate keeps
+    // the copy already on the device), so milestone links are rewritten through
+    // idMap: id in the file → id the photo ends up with.
+    var shaLocal = Object.create(null), shaFile = Object.create(null), idMap = Object.create(null), sameAs = [];
+    if(!replace) local.photos.forEach(function(p){ if(p.sha256 && !shaLocal[p.sha256]) shaLocal[p.sha256] = p.id; });
 
     var todo = [];
     parsed.photos.slice().sort(function(a, b){ return a.order - b.order; }).forEach(function(p){
-      if(p.sha256 && shas[p.sha256]) return;
-      if(p.sha256) shas[p.sha256] = true;
+      if(p.sha256 && shaLocal[p.sha256]){ idMap[p.id] = shaLocal[p.sha256]; return; }
+      if(p.sha256 && shaFile[p.sha256]){ sameAs.push([p.id, shaFile[p.sha256]]); return; }
+      if(p.sha256) shaFile[p.sha256] = p.id;
       todo.push(p);
     });
 
@@ -424,6 +485,7 @@
         var id = newId();
         await C.idbPut(db, "blobs", { id: id, gen: activeGen, mime: "image/jpeg", data: buf, thumb: thumb });
         staged.push(id);
+        idMap[p.id] = id;
         records.push({ id: id, gen: activeGen, caption: p.caption, takenAt: p.takenAt, addedAt: p.addedAt,
                        order: replace ? i : baseOrder + i, w: p.w, h: p.h, bytes: buf.byteLength, sha256: sha || p.sha256 || null });
         buf = null; thumb = null;
@@ -458,14 +520,23 @@
 
     var localMIds = {};
     local.milestones.forEach(function(m){ localMIds[m.id] = true; });
-    var newMilestones = replace ? parsed.milestones : parsed.milestones.filter(function(m){ return !localMIds[m.id]; });
+    sameAs.forEach(function(a){ idMap[a[0]] = idMap[a[1]]; });
+    var newMilestones = (replace ? parsed.milestones : parsed.milestones.filter(function(m){ return !localMIds[m.id]; })).map(function(m){
+      var seen = Object.create(null), ids = [];
+      (m.photoIds || []).forEach(function(old){
+        var id = idMap[old];
+        if(id && !seen[id]){ seen[id] = true; ids.push(id); }
+      });
+      return Object.assign({}, m, { photoIds: ids });
+    });
 
     var cy = planCycles(parsed, local, replace, ctx.nowMs);
+    var wi = planWishes(parsed, local, replace, ctx.nowMs);
 
     try{
       await finalSwitch(db, {
         replace: replace, staged: staged, records: records, profile: profile,
-        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record
+        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record
       });
     }catch(err){
       await discardStaged();
@@ -477,7 +548,9 @@
     return { addedPhotos: records.length, skippedPhotos: parsed.photos.length - records.length,
              addedMilestones: newMilestones.length, images: Object.keys(imageBufs).length, profileKept: keepProfile,
              cyclesInFile: !!parsed.cycles, addedCycles: cy.added, skippedCycles: cy.skipped, cyclesKept: cy.kept,
-             clashedCycles: parsed.cyclesSkipped || 0 };
+             clashedCycles: parsed.cyclesSkipped || 0,
+             wishesInFile: !!parsed.wishes, addedWishes: wi.added, skippedWishes: wi.skipped, overWishes: wi.over, wishesKept: wi.kept,
+             clashedWishes: parsed.wishesSkipped || 0 };
   }
 
   function finalSwitch(db, s){
@@ -515,6 +588,7 @@
         });
         tx.objectStore("kv").put(s.profile);
         if(s.cycles) tx.objectStore("kv").put(s.cycles);
+        if(s.wishes) tx.objectStore("kv").put(s.wishes);
       }
       if(!pending){ writeAll(); return; }
       s.staged.forEach(function(id){

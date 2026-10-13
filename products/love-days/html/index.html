@@ -138,7 +138,15 @@
         Thêm
       </button>
     </div>
+    <div class="segmented ms-seg" id="msSeg" role="group" aria-label="Danh sách đang xem">
+      <button type="button" class="seg-btn" data-ms-seg="ms" aria-pressed="true">Kỷ niệm</button>
+      <button type="button" class="seg-btn" data-ms-seg="wishes" aria-pressed="false">Muốn làm</button>
+    </div>
     <div class="ms-list" id="milestoneList"></div>
+    <div id="wishPane" hidden>
+      <p class="form-error" id="wishErr" role="alert" hidden></p>
+      <div class="ms-list wish-list" id="wishList"></div>
+    </div>
   </section>
 
   <!-- Album -->
@@ -285,7 +293,7 @@
         <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
         <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
       </div>
-      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
+      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
       <p class="form-error" id="backupError" role="alert" hidden></p>
     </section>
 
@@ -375,6 +383,9 @@
 <div class="sheet" id="milestoneSheet" role="dialog" aria-modal="true" aria-labelledby="msSheetTitle">
   <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
   <div class="sheet-head">
+    <button class="icon-btn" id="msPickBack" aria-label="Quay lại kỷ niệm" type="button" hidden>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
     <h3 class="sheet-title" id="msSheetTitle">Thêm kỷ niệm</h3>
     <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -401,6 +412,11 @@
       <span class="field-label">Ghi chú <em>(không bắt buộc)</em></span>
       <textarea id="msNote" maxlength="500" rows="2"></textarea>
     </label>
+    <div class="field">
+      <span class="field-label" id="msPhotoLabel">Ảnh</span>
+      <ul class="tl-photos ms-photos" id="msPhotos" aria-labelledby="msPhotoLabel" hidden></ul>
+      <button type="button" class="btn btn-soft btn-block" id="msPickOpen">Chọn ảnh từ Album</button>
+    </div>
     <label class="check">
       <input type="checkbox" id="msRepeat">
       <span class="switch" aria-hidden="true"></span>
@@ -410,6 +426,74 @@
     <button type="submit" class="btn btn-primary btn-block">Lưu kỷ niệm</button>
     <button type="button" class="btn btn-soft btn-block" id="msShare" hidden>Tạo ảnh chia sẻ</button>
     <button type="button" class="btn btn-danger btn-block" id="msDelete" hidden>Xoá kỷ niệm này</button>
+    <div class="confirm-row" id="msConfirm" hidden>
+      <p class="confirm-text" id="msConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="msConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="msConfirmNo">Giữ lại</button>
+      </div>
+    </div>
+  </form>
+  <div class="pick" id="msPick" hidden>
+    <p class="card-text" id="msPickEmpty" hidden>Album chưa có ảnh — thêm ảnh ở tab Album trước.</p>
+    <ul class="album-grid" id="msPickGrid" aria-label="Ảnh trong Album"></ul>
+    <div class="pick-bar">
+      <p class="pick-limit" id="msPickLimit" role="status" hidden>Tối đa 60 ảnh cho một kỷ niệm</p>
+      <button type="button" class="btn btn-primary btn-block" id="msPickDone">Xong</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="wishSheet" role="dialog" aria-modal="true" aria-labelledby="wishSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="wishSheetTitle">Thêm việc muốn làm</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="wishForm" novalidate>
+    <div class="field">
+      <label class="field-label" for="wTitle">Muốn làm gì</label>
+      <input type="text" id="wTitle" maxlength="80" placeholder="Ví dụ: Ngắm hoàng hôn ở Hội An" autocomplete="off" aria-describedby="wTitleErr">
+      <p class="field-error" id="wTitleErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="wCatLabel">Loại <em>(không bắt buộc)</em></span>
+      <div class="wish-cats" id="wCats" role="group" aria-labelledby="wCatLabel">
+        <button type="button" class="wish-cat" data-wish-cat="go" aria-pressed="false"><span class="wish-cat-emoji" aria-hidden="true">✈️</span>Đi đâu</button>
+        <button type="button" class="wish-cat" data-wish-cat="eat" aria-pressed="false"><span class="wish-cat-emoji" aria-hidden="true">🍜</span>Ăn gì</button>
+        <button type="button" class="wish-cat" data-wish-cat="watch" aria-pressed="false"><span class="wish-cat-emoji" aria-hidden="true">🎬</span>Xem gì</button>
+        <button type="button" class="wish-cat" data-wish-cat="other" aria-pressed="false"><span class="wish-cat-emoji" aria-hidden="true">✨</span>Khác</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="wPlanLabel">Ngày dự định <em>(không bắt buộc)</em></span>
+      <input type="hidden" id="wPlan">
+      <button type="button" class="date-field is-empty" id="wPlanBtn" data-date-for="wPlan" data-date-title="Ngày dự định" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="wPlanLabel wPlanBtn"><span class="date-field-text">Chưa hẹn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+    </div>
+    <div class="field" id="wDoneField" hidden>
+      <span class="field-label" id="wDoneLabel">Ngày đã làm</span>
+      <input type="hidden" id="wDone">
+      <button type="button" class="date-field is-empty" id="wDoneBtn" data-date-for="wDone" data-date-title="Ngày đã làm" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="wDoneLabel wDoneBtn" aria-describedby="wDoneErr"><span class="date-field-text">Chưa làm</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="wDoneErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="wNote">Ghi chú</label>
+      <textarea id="wNote" maxlength="300" rows="2"></textarea>
+    </div>
+    <p class="form-error" id="wishFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="wishSave">Lưu việc này</button>
+    <button type="button" class="btn btn-soft btn-block" id="wishToMs" hidden>Thêm vào Kỷ niệm</button>
+    <p class="wish-linked" id="wishLinked" hidden>Đã có trong Kỷ niệm ✓</p>
+    <button type="button" class="btn btn-danger btn-block" id="wishDelete" hidden>Xoá việc này</button>
+    <div class="confirm-row" id="wishConfirm" hidden>
+      <p class="confirm-text" id="wishConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="wishConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="wishConfirmNo">Giữ lại</button>
+      </div>
+    </div>
   </form>
 </div>
 

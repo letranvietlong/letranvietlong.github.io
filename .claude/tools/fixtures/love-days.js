@@ -8,7 +8,7 @@
 // Stores (see products/love-days/js/love-days-core.js upgrade()):
 //   kv         keyPath key   — { key:'profile', startDate:'YYYY-MM-DD', persons:[{id:'long',name,dob|null},{id:'thu',name,dob|null}],
 //                                hasCover:bool, activeGen:'g1', updatedAt }
-//   milestones keyPath id    — { id, title, date:'YYYY-MM-DD', emoji, note, repeatYearly:bool, createdAt }
+//   milestones keyPath id    — { id, title, date:'YYYY-MM-DD', emoji, note, repeatYearly:bool, createdAt, photoIds:[album photo id] (v1.13; missing = []) }
 //   photos     keyPath id    — album metadata { id, gen, caption, takenAt:ms|null, addedAt:ms, order, w, h, bytes, sha256 }
 //   blobs      keyPath id    — { id:'avatar-long'|'avatar-thu'|'cover'|<photoId>, gen, mime:'image/jpeg', data:ArrayBuffer, thumb:ArrayBuffer|null }
 //   kv 'meta'                — { key:'meta', schemaVersion:1, lastBackupAt:ms|null, albumSort:'taken'|'added'|'custom', showCycle:bool,
@@ -48,17 +48,23 @@ const edges = [
   { startDate: '2026-01-31', now: '2026-03-01T12:00:00+07:00', n: '30', clock: '0 năm 1 tháng 1 ngày · 12:00:00' }
 ];
 
-// Milestones tab at `now`, in display order (= each .ms-item's aria-label;
-// visibly the row shows only the big number + "ngày"). The first 6 sit under
-// the "Sắp tới" group title, the last under "Đã qua". Upcoming card = first row.
+// Milestones tab at `now`: the "Sắp tới" group in display order (= each .ms-item's aria-label;
+// visibly the row shows only the big number + "ngày"). Upcoming card = first row.
+// Since v1.13 everything already past sits in "Dòng thời gian" below it — see `timeline`.
 const milestoneRows = [
   'Ngày gặp nhau, 05/10/2026, còn 3 ngày',             // .ms-sub "05/10/2026 · lần thứ 3" (repeat yearly from 2023)
   'Sinh nhật Minh Thư, 15/10/2026, còn 13 ngày',       // .ms-sub "… · tròn 26 tuổi"
   'Ngày thứ 1.000, 09/11/2026, còn 38 ngày',           // wrong convention → 10/11, 39
   'Du lịch Đà Lạt, 24/12/2026, còn 83 ngày',
   'Kỷ niệm 3 năm, 14/02/2027, còn 135 ngày',
-  'Sinh nhật Viết Long, 20/05/2027, còn 230 ngày',     // .ms-sub "… · tròn 29 tuổi"
-  'Lần đầu tặng hoa, 08/03/2024, đã qua 938 ngày'
+  'Sinh nhật Viết Long, 20/05/2027, còn 230 ngày'      // .ms-sub "… · tròn 29 tuổi"
+];
+// "Dòng thời gian" at the same `now` (sel.timelineRows, aria-labels): user milestones whose ORIGINAL date is on or
+// before today, newest first, under one <h3 class="group-title tl-year"> per year; a yearly one is listed here at its
+// original date AND in "Sắp tới" at its next one. The start day is a plain <div class="ms-item tl-start"> (no aria-label).
+const timelineRows = [
+  'Lần đầu tặng hoa, Thứ sáu, 08/03/2024, 938 ngày trước',   // year 2024, followed by the "Ngày bắt đầu · Thứ tư, 14/02/2024" row
+  'Ngày gặp nhau, Thứ năm, 05/10/2023, 1.093 ngày trước'     // year 2023
 ];
 // Home birthday tiles: big number (.bday-num) + .bday-meta. No current age shown.
 const birthdays = { long: { left: '230', meta: '20/05 · tròn 29 tuổi' }, thu: { left: '13', meta: '15/10 · tròn 26 tuổi' } };
@@ -75,7 +81,9 @@ const sel = {
   tab: name => '.tabbar-btn[data-tab="' + name + '"]',    // home | milestones | cycle | album | settings
   dayCount: '#dayCount', hours: '#hoursCount', clock: '#liveClock',
   upcoming: '#upcomingBody', birthdays: '#birthdays .bday-card',
-  milestoneRows: '#milestoneList .ms-item',               // aria-label = milestoneRows; .ms-title, .ms-sub, .ms-left (.ms-num + .ms-unit); every row is a <button>: user rows open the edit form, .ms-item.auto rows open #shareSheet (v1.12)
+  milestoneRows: '#milestoneList > .ms-group:first-of-type .ms-item',   // "Sắp tới": aria-label = milestoneRows; .ms-title, .ms-sub, .ms-left (.ms-num + .ms-unit); every row is a <button>: user rows open the edit form, .ms-item.auto rows open #shareSheet (v1.12)
+  timelineRows: '#milestoneList .tl-year ~ .ms-group button.ms-item',   // aria-label = timelineRows; tapping opens the edit form
+  timelineYears: '#milestoneList .tl-year', timelineStart: '#milestoneList .tl-start', timelineEmpty: '#milestoneList .empty-state',
   goalText: '#goalText', goalFill: '#goalFill', countInfo: '#btnCountInfo', toast: '#toast',
   addMilestone: '#btnAddMilestone',
   setupView: '#setupView', setupStart: '#setupStart', setupError: '#setupError',
@@ -249,6 +257,101 @@ const shareSel = {
   ready: '#btnShareSave:not([disabled])'                 // disabled until the picture is built (and again after every change)
 };
 
+// ---------- Ảnh gắn vào kỷ niệm + dòng thời gian (v1.13) ----------
+// Seed: ld.seed(page, { profile: ld.profile, milestones: ld.timeline.milestones }); await ld.seedPhotos(page, 6); reload.
+// seedPhotos ids are seed001…seed006, takenAt 15/02/2024 … 20/02/2024. Links live on the milestone record (photoIds);
+// a link to a photo that no longer exists ("khong-co") is skipped when read and dropped the next time that milestone is saved.
+// Photos show by takenAt (else addedAt) ascending, never in stored order. Thumbnails are <img data-tl="<photoId>">.
+// Photo ids CHANGE on import (fresh id each; a sha256 duplicate keeps the device's copy) — compare links by sha256, not id.
+const timelineNow = '2026-10-13T09:00:00+07:00';
+const timeline = {
+  now: timelineNow,
+  milestones: milestones.map(m => Object.assign({}, m,
+    m.id === 'm-hoa' ? { photoIds: ['seed003', 'seed001', 'khong-co'] } : m.id === 'm-gap' ? { photoIds: ['seed003'] } : {})),
+  upcoming: ['Sinh nhật Minh Thư, 15/10/2026, còn 2 ngày', 'Ngày thứ 1.000, 09/11/2026, còn 27 ngày', 'Du lịch Đà Lạt, 24/12/2026, còn 72 ngày',
+    'Kỷ niệm 3 năm, 14/02/2027, còn 124 ngày', 'Sinh nhật Viết Long, 20/05/2027, còn 219 ngày', 'Ngày gặp nhau, 05/10/2027, còn 357 ngày'],
+  years: ['2024', '2023'],
+  // [aria-label, photo ids in display order]; "Du lịch Đà Lạt" (future) is not in the timeline
+  rows: [
+    ['Lần đầu tặng hoa, Thứ sáu, 08/03/2024, 949 ngày trước', ['seed001', 'seed003']],
+    ['Ngày gặp nhau, Thứ năm, 05/10/2023, 1.104 ngày trước', ['seed003']]
+  ],
+  start: '💕 Ngày bắt đầu Thứ tư, 14/02/2024',                  // innerText of sel.timelineStart, last row of year 2024
+  photoLabel: 'Ảnh 2 trên 2 của Lần đầu tặng hoa',              // at most 4 tiles (72×72); the 4th carries .tl-more "+N" when there are more
+  viewer: { count: '2 / 2', closeLabel: 'Đóng, quay lại kỷ niệm' },   // opened from a tile: #viewerDelete hidden, ‹ › / swipe stay inside that milestone's photos
+  empty: 'Chưa có kỷ niệm nào đã qua. Thêm một ngày đáng nhớ và gắn ảnh từ Album.',
+  // form: pick seed005 → Xong → Lưu kỷ niệm → IndexedDB photoIds of m-hoa (as a set); nothing is written before "Lưu kỷ niệm"
+  afterPick: ['seed001', 'seed003', 'seed005'],
+  // deleting seed003 in the Album: ONE readwrite transaction over photos+blobs+milestones; afterwards m-hoa [seed001], m-gap []
+  max: 60, limitText: 'Tối đa 60 ảnh cho một kỷ niệm', pickEmpty: 'Album chưa có ảnh — thêm ảnh ở tab Album trước.',
+  deleteConfirm: 'Xoá kỷ niệm “Lần đầu tặng hoa”? Ảnh trong Album vẫn còn.',   // red row inside the sheet; window.confirm is never called
+  importBusy: 'Đang nhập bản sao lưu — đợi xong rồi thử lại.',
+  timezones: [['America/Los_Angeles', '2026-10-13T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-13T23:30:00+07:00']]   // still "949 ngày trước"
+};
+const timelineSel = {
+  photos: id => '#milestoneList .tl-photo[data-tl-ms="' + id + '"]',     // buttons; data-tl-open = photo id
+  photo: (id, photoId) => '#milestoneList .tl-photo[data-tl-ms="' + id + '"][data-tl-open="' + photoId + '"]',
+  more: '.tl-more', note: '.tl-note',
+  formPhotos: '#msPhotos > li', pickOpen: '#msPickOpen',                 // button text "Chọn ảnh từ Album · 3 ảnh"
+  pick: '#msPick', pickGrid: '#msPickGrid', pickTile: id => '#msPickGrid [data-pick="' + id + '"]',   // aria-pressed; aria-disabled once 60 are chosen
+  pickDone: '#msPickDone', pickBack: '#msPickBack', pickLimit: '#msPickLimit', pickEmpty: '#msPickEmpty',   // "Xong · 3 ảnh"; back / Esc drops the uncommitted choice
+  save: '#milestoneForm button[type=submit]', del: '#msDelete', confirm: '#msConfirm', confirmText: '#msConfirmText', confirmYes: '#msConfirmYes', confirmNo: '#msConfirmNo'
+};
+
+// ---------- Muốn làm (v1.14) ----------
+// kv 'wishes' — { key:'wishes', items:[{ id, title, cat:'go'|'eat'|'watch'|'other'|'', note, planDate:'YYYY-MM-DD'|null,
+//                 doneDate:'YYYY-MM-DD'|null, milestoneId:id|null, createdAt }], updatedAt } — stored and guarded exactly like 'cycles':
+// updatedAt is the two-window stamp, items the validator rejects (or a repeated id) stay verbatim in the record across every save,
+// and a record whose items is not an array locks the list (no add, no export, no import over it) without failing the app.
+// Seed: ld.seed(page, { profile: ld.profile, extra: [['kv', ld.wishesRecord(ld.wishes.items)]] }), now = ld.wishes.now.
+// The list sits in the Kỷ niệm tab behind the segmented control (default "Kỷ niệm"; not remembered between launches).
+// After a successful write #wishList and #wishSheet ignore taps for 400ms — wait ≥500ms before the next click.
+const wi = (id, title, cat, planDate, doneDate, createdAt) => ({ id, title, cat, note: '', planDate: planDate || null, doneDate: doneDate || null, milestoneId: null, createdAt });
+const wishesRecord = items => ({ key: 'wishes', items, updatedAt: 1 });
+const wishNow = '2026-10-13T09:00:00+07:00'; // Thứ ba
+const wishes = {
+  now: wishNow,
+  items: [
+    wi('w1', 'Ngắm hoàng hôn Hội An', 'go', '2026-11-01', null, 1), wi('w2', 'Ăn lẩu nấm', 'eat', '2026-10-13', null, 2),
+    wi('w3', 'Xem phim mới', 'watch', null, null, 3), wi('w4', 'Đón giao thừa', 'other', '2027-01-01', null, 4),
+    wi('w5', 'Cắm trại', 'go', '2026-10-10', null, 5), wi('w6', 'Đi Đà Lạt', 'go', null, '2026-09-20', 6)
+  ],
+  emoji: { go: '✈️', eat: '🍜', watch: '🎬', other: '✨', '': '✨' },
+  // group title → rows as [id, .ms-sub text ('' = no sub line), right side text]
+  groups: [
+    ['Sắp tới', [['w2', 'Thứ ba, 13/10/2026', 'Hôm nay'], ['w1', 'Chủ nhật, 01/11/2026', '19 ngày nữa'], ['w4', 'Thứ sáu, 01/01/2027', '80 ngày nữa']]],
+    ['Chưa hẹn ngày', [['w5', 'Dự định 10/10/2026 đã qua 3 ngày', ''], ['w3', '', '']]],     // newest createdAt first
+    ['Đã làm', [['w6', 'Đã làm 20/09/2026', 'Đã làm']]]
+  ],
+  // Home "Sắp tới" card: row 1 stays the nearest milestone, row 2 = nearest dated wish; tapping row 2 opens the tab on "Muốn làm"
+  home: { row1: 'Sinh nhật Minh Thư', row1Left: '2 ngày nữa', row2: 'Ăn lẩu nấm', row2Date: 'Thứ ba, 13/10/2026', row2Left: 'Hôm nay' },
+  timezones: [['America/Los_Angeles', '2026-10-13T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-13T23:30:00+07:00']],   // w2 "Hôm nay", w1 19
+  // setFixedTime(before) → load → setFixedTime(after) → wait 1.2s: w1 18; w2 drops to "Chưa hẹn ngày"; Home row 2 = w1
+  rollover: { before: '2026-10-13T23:59:59+07:00', after: '2026-10-14T00:00:01+07:00', w1: '18 ngày nữa', w2: 'Dự định 13/10/2026 đã qua 1 ngày', homeRow2: 'Ngắm hoàng hôn Hội An' },
+  toggle: { doneDate: '2026-10-13', toastOn: 'Đã làm ✓', toastOff: 'Đã bỏ đánh dấu' },   // real tap on the round button of w3; a double tap writes once
+  toMilestone: { id: 'w6', title: 'Đi Đà Lạt', date: '2026-09-20', emoji: '✈️', linked: 'Đã có trong Kỷ niệm ✓' },   // nothing is created until "Lưu kỷ niệm"
+  empty: 'Chưa có việc nào. Ghi lại nơi muốn đi, món muốn ăn, phim muốn xem cùng nhau.',
+  broken: 'Không đọc được danh sách — dữ liệu vẫn còn nguyên.',
+  stale: 'Danh sách vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.',
+  errors: { title: 'Hãy ghi việc muốn làm', doneFuture: 'Ngày đã làm không được sau hôm nay', full: 'Đã đủ 500 việc — xoá bớt việc đã làm rồi thêm tiếp.' },
+  max: 500,
+  // backup: manifest key "wishes" (absent when the list is empty or unreadable); a file without it, or with [], leaves the
+  // device's list alone in BOTH import modes; merge keeps the device's copy of a repeated id; 501 items or an invalid item refuse the file
+  kept: 'Việc muốn làm trên máy giữ nguyên (bản sao lưu này không có).'
+};
+const wishSel = {
+  seg: '#msSeg', segBtn: k => '#msSeg [data-ms-seg="' + k + '"]',     // ms | wishes (aria-pressed)
+  pane: '#wishPane', list: '#wishList', listErr: '#wishErr', add: '#btnAddMilestone', emptyAdd: '#wishList [data-wish-add]',
+  groupTitles: '#wishList .group-title', rows: '#wishList .wish-row',
+  row: id => '#wishList [data-wish-id="' + id + '"]',                 // the whole-row button: tap = edit; .ms-title, .ms-sub, .ms-left / .status-tag
+  check: id => '#wishList [data-wish-check="' + id + '"]',            // sibling round button, aria-pressed = done
+  sheet: '#wishSheet', form: '#wishForm', title: '#wTitle', titleErr: '#wTitleErr', cat: k => '#wCats [data-wish-cat="' + k + '"]',
+  plan: '#wPlan', planBtn: '#wPlanBtn', done: '#wDone', doneBtn: '#wDoneBtn', doneField: '#wDoneField', doneErr: '#wDoneErr', note: '#wNote',
+  formErr: '#wishFormErr', save: '#wishSave', toMilestone: '#wishToMs', linked: '#wishLinked',
+  del: '#wishDelete', confirm: '#wishConfirm', confirmText: '#wishConfirmText', confirmYes: '#wishConfirmYes', confirmNo: '#wishConfirmNo',
+  homeRows: '#upcomingBody .up-row', homeWish: '#upcomingBody .up-row[data-seg="wishes"]'
+};
+
 // Replaces every store's content. blobs: { id: base64 } (ArrayBuffers can't
 // cross page.evaluate). raw: true stores records as-is (for corrupt-data tests).
 async function seed(page, data) {
@@ -302,5 +405,6 @@ function badgeStubScript() {
   try { Object.defineProperty(Notification, 'permission', { get: () => 'granted', configurable: true }); } catch (e) {}
 }
 
-module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
-  cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel };
+module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
+  cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
+  wi, wishesRecord, wishes, wishSel };

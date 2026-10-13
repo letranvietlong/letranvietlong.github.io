@@ -241,12 +241,13 @@ h1,h2,h3,p{margin:0}
 .up-row:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .up-emoji{width:52px;height:52px;flex:none;border-radius:var(--radius-sm);background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem}
 .up-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.up-title{font-size:1.05rem;font-weight:800;overflow-wrap:anywhere}
+.up-title{font-size:1.05rem;font-weight:800;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .up-date{font-size:.82rem;color:var(--muted)}
 .up-left{display:flex;flex-direction:column;align-items:flex-end;flex:none;color:var(--accent)}
 .up-num{font-size:2rem;font-weight:800;line-height:1}
 .up-unit{font-size:.76rem;font-weight:700;color:var(--muted)}
 .up-left.today{font-size:1.05rem;font-weight:800}
+.up-sep{display:block;height:1px;margin:12px 0;background:var(--line)}
 
 /* Birthdays */
 .bday-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -344,7 +345,7 @@ h1,h2,h3,p{margin:0}
 .field-error{font-size:.84rem;font-weight:600;line-height:1.4;color:var(--err-fg)}
 .date-field[aria-invalid=true]{border-color:var(--err-fg);box-shadow:0 0 0 1px var(--err-fg)}
 .confirm-row{padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--err-line);background:var(--err-bg)}
-.confirm-text{font-size:.95rem;font-weight:800;color:var(--err-fg)}
+.confirm-text{font-size:.95rem;font-weight:800;color:var(--err-fg);overflow-wrap:anywhere}
 .confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .confirm-btns .btn-ghost{background:var(--card);color:var(--text)}
 .btn-danger-solid{background:var(--danger);color:var(--danger-ink)}
@@ -374,6 +375,65 @@ button.ms-item:active{background:var(--card2)}
 .ms-left.today{font-size:.92rem;font-weight:800}
 .ms-chev{width:18px;height:18px;flex:none;margin-left:-4px;color:var(--muted2)}
 .ms-item:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+
+/* Muốn làm (wish list inside the Kỷ niệm tab) */
+.ms-seg{margin:0 0 10px}
+#wishPane > .form-error{margin-top:10px}
+.wish-row{display:flex;align-items:stretch}
+.wish-list .ms-group > li + li::before{left:56px}
+.wish-check{flex:none;width:50px;min-height:64px;padding:0 0 0 6px;border:none;background:transparent;color:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.wish-ring{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted2);display:flex;align-items:center;justify-content:center;color:transparent;transition:background .15s,border-color .15s}
+.wish-ring svg{width:16px;height:16px}
+.wish-check[aria-pressed=true] .wish-ring{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.wish-check:active .wish-ring{border-color:var(--accent)}
+.wish-check:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.wish-item{flex:1;min-width:0;padding-left:4px;gap:10px}
+.wish-item .ms-emoji{width:38px;height:38px;font-size:1.2rem}
+.wish-item .status-tag{flex:none}
+.wish-item .ms-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.wish-row.is-done .ms-title{color:var(--muted)}
+.wish-cats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.wish-cat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;padding:6px 2px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:.8rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s}
+.wish-cat-emoji{font-size:1.3rem;line-height:1.2}
+.wish-cat[aria-pressed=true]{border:2px solid var(--accent);background:var(--accent-soft);color:var(--accent-soft-ink)}
+.wish-cat:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wish-linked{font-size:.88rem;font-weight:700;color:var(--accent-soft-ink);background:var(--accent-soft);border-radius:var(--radius-sm);padding:12px 14px;text-align:center}
+.field input[aria-invalid=true]{border-color:var(--err-fg);box-shadow:0 0 0 1px var(--err-fg)}
+
+/* Timeline (past milestones by year) + the photos linked to a milestone */
+.tl-year{font-size:1rem;letter-spacing:0;color:var(--text);margin:14px 16px 8px}
+.group-title + .tl-year{margin-top:4px}
+.tl-note{margin-top:3px;font-size:.8rem;line-height:1.4;color:var(--muted2);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tl-start{min-height:56px}
+.tl-photos{list-style:none;margin:0;padding:0 14px 12px;display:flex;gap:8px}
+.tl-photos > li{display:block;flex:none}
+.tl-photo{position:relative;display:block;width:72px;height:72px;flex:none;padding:0;border:none;border-radius:var(--radius-sm);overflow:hidden;
+  background:linear-gradient(135deg,var(--accent-soft),var(--card2))}
+.tl-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.tl-photo img:not([src]){visibility:hidden}
+button.tl-photo{cursor:pointer;transition:opacity .15s}
+button.tl-photo:active{opacity:.7}
+button.tl-photo:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tl-more{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(40,8,22,.6);color:#FFFFFF;font-size:1.05rem;font-weight:800}
+.ms-photos{padding:0}
+
+/* Choosing photos inside the milestone sheet. Chosen = ring + tick, not colour alone. */
+#milestoneSheet .sheet-head{gap:10px}
+#milestoneSheet .sheet-title{flex:1;min-width:0}
+.pick-tile[aria-pressed=true]::after{content:"";position:absolute;inset:0;border:3px solid var(--accent);border-radius:inherit;pointer-events:none}
+.pick-check{position:absolute;top:6px;right:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  border:2px solid #FFFFFF;background:rgba(40,8,22,.35);color:transparent}
+.pick-check svg{width:14px;height:14px}
+.pick-tile[aria-pressed=true] .pick-check{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.pick-tile[aria-disabled=true]{opacity:.4;cursor:default}
+/* Sticky inside the scrolling sheet: nothing in it may carry a transform (ios-pwa §6), hence no press-scale on the button. */
+/* The sheet's own bottom padding moves into the bar while choosing, so the bar reaches the sheet's edge whichever box the engine sticks to. */
+.sheet.picking{padding-bottom:0}
+.pick-bar{position:sticky;bottom:0;z-index:2;margin:12px -18px 0;padding:10px 18px calc(22px + var(--safe-bottom));
+  background:var(--sheet-bg);border-top:1px solid var(--line)}
+.pick-bar .btn:active{transform:none;opacity:.85}
+.pick-limit{margin-bottom:8px;font-size:.84rem;font-weight:700;color:var(--warn-fg);text-align:center}
 
 /* Empty state */
 .empty-state{text-align:center;padding:30px 20px}
@@ -479,7 +539,8 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
 .viewer-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(6px + var(--safe-top)) 10px 6px}
 .viewer-btn{width:44px;height:44px;flex:none;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .viewer-btn svg{width:22px;height:22px}
-.viewer-count{font-size:.92rem;font-weight:700;color:rgba(255,255,255,.86)}
+.viewer-count{flex:1;text-align:center;font-size:.92rem;font-weight:700;color:rgba(255,255,255,.86)}
+.viewer.no-delete .viewer-count{margin-right:54px}
 .viewer-stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 .viewer-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:transform .22s cubic-bezier(.32,.72,0,1);-webkit-user-drag:none;-webkit-touch-callout:none}
 .viewer-stage img:not([src]){visibility:hidden}
@@ -605,5 +666,5 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
 @media (prefers-reduced-motion: reduce){
   .heart-beat svg,.heart-icon.pulse,.heart-icon.beat,.share-preview.is-loading{animation:none}
   .sheet,.sheet-backdrop,.dp-sheet,.dp-sheet.open,.dp-backdrop,.date-field,.btn,.tabbar-btn svg,.switch,.switch::after,.seg-btn,.seg-pill,.viewer-stage img,.viewer-nav,button.album-thumb,
-  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more-chev,.row-link,.cal-nav{transition:none}
+  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more-chev,.row-link,.cal-nav,button.tl-photo,.wish-ring,.wish-cat{transition:none}
 }

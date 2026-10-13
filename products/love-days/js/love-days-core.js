@@ -110,7 +110,8 @@
 
   function userMilestoneView(m, tIdx){
     var v = { id: m.id, kind: "user", auto: false, emoji: m.emoji || "💗", title: m.title,
-              note: m.note || "", repeatYearly: !!m.repeatYearly, origDate: m.date, date: m.date };
+              note: m.note || "", repeatYearly: !!m.repeatYearly, origDate: m.date, date: m.date,
+              photoIds: Array.isArray(m.photoIds) ? m.photoIds : [] };
     if(m.repeatYearly){
       var nx = nextYearly(m.date, tIdx, 0);
       v.date = nx.date; v.years = nx.n;
@@ -239,6 +240,21 @@
     return { write: write, trusted: isGen(write) ? write : null, tag: isGen(write) ? write : "g1" };
   }
 
+  var MAX_MS_PHOTOS = 60;
+  // Links from a milestone to album photos. A bad or repeated entry is dropped
+  // on its own: a broken link must never cost the milestone itself.
+  function cleanPhotoIds(list){
+    var out = [], seen = Object.create(null);
+    if(!Array.isArray(list)) return out;
+    for(var i = 0; i < list.length && out.length < MAX_MS_PHOTOS; i++){
+      var v = list[i];
+      if(!str(v, 64) || !ID_RE.test(v) || seen[v]) continue;
+      seen[v] = true;
+      out.push(v);
+    }
+    return out;
+  }
+
   function validateMilestone(m){
     if(!m || typeof m !== "object") return null;
     if(!str(m.id, 64) || !ID_RE.test(m.id)) return null;
@@ -248,7 +264,8 @@
     if(m.note != null && !str(m.note, 500)) return null;
     return { id: m.id, title: m.title.trim(), date: m.date, emoji: m.emoji ? wellFormed(m.emoji) : "", note: m.note || "",
              repeatYearly: m.repeatYearly === true,
-             createdAt: typeof m.createdAt === "number" ? m.createdAt : 0 };
+             createdAt: typeof m.createdAt === "number" ? m.createdAt : 0,
+             photoIds: cleanPhotoIds(m.photoIds) };
   }
 
   function num(v){ return typeof v === "number" && isFinite(v); }
@@ -459,6 +476,67 @@
     return "🌸 " + (quiet ? when : "Kỳ tới dự kiến " + when);
   }
 
+  // ---------- Wishes ("Muốn làm", stored whole in kv 'wishes') ----------
+  var MAX_WISHES = 500;
+  var WISH_CATS = ["go", "eat", "watch", "other"];
+
+  function validateWish(w){
+    if(!w || typeof w !== "object") return null;
+    if(!str(w.id, 64) || !ID_RE.test(w.id)) return null;
+    if(!str(w.title, 80) || !w.title.trim()) return null;
+    if(w.cat != null && w.cat !== "" && WISH_CATS.indexOf(w.cat) === -1) return null;
+    if(w.note != null && !str(w.note, 300)) return null;
+    if(w.planDate != null && !isValidDate(w.planDate)) return null;
+    if(w.doneDate != null && !isValidDate(w.doneDate)) return null;
+    if(w.milestoneId != null && (!str(w.milestoneId, 64) || !ID_RE.test(w.milestoneId))) return null;
+    if(!num(w.createdAt)) return null;
+    return { id: w.id, title: w.title.trim(), cat: w.cat || "", note: w.note || "",
+             planDate: w.planDate == null ? null : w.planDate, doneDate: w.doneDate == null ? null : w.doneDate,
+             milestoneId: w.milestoneId == null ? null : w.milestoneId, createdAt: w.createdAt };
+  }
+
+  function newWishId(nowMs){ return "w" + nowMs.toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  // Each item gains done + daysLeft (null without a planned date), split into:
+  // soon (not done, planned today or later, nearest first), open (not done, no
+  // date or the date has passed, newest first), done (latest first).
+  // Every order ends on id, so the same items always come out the same way.
+  function wishView(items, nowMs){
+    var tIdx = todayIdx(nowMs), soon = [], open = [], done = [];
+    function byId(a, b){ return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; }
+    (items || []).forEach(function(w){
+      var v = { id: w.id, title: w.title, cat: w.cat, note: w.note, planDate: w.planDate, doneDate: w.doneDate,
+                milestoneId: w.milestoneId, createdAt: w.createdAt,
+                done: w.doneDate != null, daysLeft: w.planDate == null ? null : dayIdx(w.planDate) - tIdx };
+      if(v.done) done.push(v);
+      else if(v.daysLeft !== null && v.daysLeft >= 0) soon.push(v);
+      else open.push(v);
+    });
+    soon.sort(function(a, b){ return a.daysLeft - b.daysLeft || a.createdAt - b.createdAt || byId(a, b); });
+    open.sort(function(a, b){ return b.createdAt - a.createdAt || byId(a, b); });
+    done.sort(function(a, b){
+      if(a.doneDate !== b.doneDate) return a.doneDate < b.doneDate ? 1 : -1;
+      return b.createdAt - a.createdAt || byId(a, b);
+    });
+    return { soon: soon, open: open, done: done, nearest: soon.length ? soon[0] : null };
+  }
+
+  // Adds each incoming wish whose id the device doesn't have; the device's own
+  // copy always wins. The import preview and the import itself both call this.
+  function mergeWishes(local, incoming){
+    var items = local.slice(), ids = Object.create(null), added = 0, skipped = 0, over = 0;
+    items.forEach(function(w){ ids[w.id] = true; });
+    incoming.forEach(function(w){
+      if(ids[w.id]){ skipped++; return; }
+      if(items.length >= MAX_WISHES){ over++; return; }
+      ids[w.id] = true;
+      items.push(w);
+      added++;
+    });
+    // skipped = already on the device; over = new but the list is full.
+    return { items: items, added: added, skipped: skipped, over: over };
+  }
+
   // ---------- IndexedDB ----------
   // Page and SW MUST both open through this: an indexedDB.open() without a
   // version from the SW before the page ever ran would create an EMPTY v1 DB,
@@ -573,7 +651,7 @@
     hoursTogether: hoursTogether, breakdown: breakdown, ageOn: ageOn,
     autoMilestones: autoMilestones, computeAll: computeAll, fmtInt: fmtInt,
     checkStartDate: checkStartDate, validateProfile: validateProfile,
-    validateMilestone: validateMilestone, clipGraphemes: clipGraphemes, validateBlob: validateBlob, validatePhoto: validatePhoto,
+    validateMilestone: validateMilestone, MAX_MS_PHOTOS: MAX_MS_PHOTOS, clipGraphemes: clipGraphemes, validateBlob: validateBlob, validatePhoto: validatePhoto,
     DEFAULT_PERSONS: DEFAULT_PERSONS, PROFILE_BLOB_IDS: PROFILE_BLOB_IDS, genForWrite: genForWrite,
     CYCLE_MIN: CYCLE_MIN, CYCLE_MAX: CYCLE_MAX, CYCLE_AVG_N: CYCLE_AVG_N, CYCLE_DEFAULT: CYCLE_DEFAULT,
     CYCLE_OPEN_MAX: CYCLE_OPEN_MAX, CYCLE_MAX_LEN: CYCLE_MAX_LEN, MAX_CYCLES: MAX_CYCLES,
@@ -581,6 +659,7 @@
     mergeCycles: mergeCycles, cycleStats: cycleStats,
     monthGrid: monthGrid, cycleDayMarks: cycleDayMarks, REMIND_DAYS: REMIND_DAYS,
     cycleReminder: cycleReminder, reminderLine: reminderLine,
+    MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations
   };

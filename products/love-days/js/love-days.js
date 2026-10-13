@@ -21,6 +21,7 @@
     computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false, dbError: null,
     photos: [], albumOrder: [], arranging: false,
     cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
+    wishes: [], wishesBad: [], wishesBroken: false, wishesStamp: null,
     // cycleRemind (days ahead, 0 = off) and cycleRemindQuiet are read by the
     // service worker's push handler; like the rest of meta they stay on this device.
     meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true }
@@ -96,7 +97,7 @@
   function loadAll(){
     var db = state.db;
     var safe = function(p, fallback){ return p.catch(function(){ return fallback; }); };
-    // A failed read of profile/milestones/photos/meta/cycles rejects the whole load:
+    // A failed read of profile/milestones/photos/meta/cycles/wishes rejects the whole load:
     // treating it as "nothing stored" would show first-run setup and let the
     // next save overwrite the real data. Only avatar/cover reads may fail soft.
     return Promise.all([
@@ -105,7 +106,8 @@
       Promise.all(PHOTO_IDS.map(function(id){ return safe(C.idbGet(db, "blobs", id), undefined); })),
       C.idbGetAll(db, "photos"),
       C.idbGet(db, "kv", "meta"),
-      C.idbGet(db, "kv", "cycles")
+      C.idbGet(db, "kv", "cycles"),
+      C.idbGet(db, "kv", "wishes")
     ]).then(function(r){
       var skipped = 0;
       if(r[0] !== undefined){
@@ -141,6 +143,7 @@
         if(meta.cycleRemindQuiet === false) state.meta.cycleRemindQuiet = false;
       }
       skipped += applyCyclesRec(r[5]);
+      skipped += applyWishesRec(r[6]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
@@ -204,6 +207,7 @@
     recompute();
     renderHome();
     renderMilestones();
+    renderWishes();
     fillProfileForm();
     renderPhotoRows();
     renderBackupCard();
@@ -214,8 +218,10 @@
 
   function switchTab(name){
     if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
+    if(state.tab === "milestones" && name !== "milestones") releaseTl();
     showError("cycleCardErr", null);
     showError("cycleTabErr", null);
+    showError("wishErr", null);
     state.tab = name;
     ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -227,6 +233,7 @@
     }
     window.scrollTo(0, 0);
     if(name === "album") renderAlbum();
+    if(name === "milestones"){ syncTl(); placeSegPill($("msSeg"), true); }
     if(name === "cycle" && C.cycleStats) renderCycleSheet();
   }
   Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -260,18 +267,7 @@
     $("liveClock").textContent = clockText(c.breakdown);
     $("sinceLine").textContent = "Từ " + fmtDate(p.startDate);
     renderGoal(c.n);
-
-    var u = c.upcoming;
-    $("upcomingBody").innerHTML = u ?
-      '<button type="button" class="up-row" data-goto="milestones" aria-label="' +
-      escapeHtml(u.title + ", " + weekday(u.date) + " " + fmtDate(u.date) + ", " + (u.daysLeft === 0 ? "hôm nay" : "còn " + fmtInt(u.daysLeft) + " ngày") + ". Xem tất cả kỷ niệm") + '">' +
-      '<span class="up-emoji" aria-hidden="true">' + escapeHtml(u.emoji) + '</span>' +
-      '<span class="up-main"><span class="up-title">' + escapeHtml(u.title) + '</span><span class="up-date">' + weekday(u.date) + ", " + fmtDate(u.date) + "</span></span>" +
-      (u.daysLeft === 0
-        ? '<span class="up-left today">Hôm nay 🎉</span>'
-        : '<span class="up-left"><span class="up-num">' + fmtInt(u.daysLeft) + '</span><span class="up-unit">ngày nữa</span></span>') +
-      "</button>"
-      : '<p class="card-text">Chưa có mốc nào sắp tới.</p>';
+    renderUpcoming();
 
     $("birthdays").innerHTML = p.persons.map(function(person){
       var b = null;
@@ -293,9 +289,33 @@
     }).join("");
     renderCycleCard();
   }
+  // The "Sắp tới" card: the nearest milestone, then the nearest dated wish (if any).
+  function renderUpcoming(){
+    var u = state.computed.upcoming;
+    var w = state.wishesBroken || !C.wishView ? null : C.wishView(state.wishes, now()).nearest;
+    function row(seg, emoji, title, date, daysLeft, todayText, more){
+      var when = weekday(date) + ", " + fmtDate(date);
+      return '<button type="button" class="up-row" data-goto="milestones"' + (seg ? ' data-seg="' + seg + '"' : "") + ' aria-label="' +
+        escapeHtml(title + ", " + weekday(date) + " " + fmtDate(date) + ", " + (daysLeft === 0 ? "hôm nay" : "còn " + fmtInt(daysLeft) + " ngày") + ". " + more) + '">' +
+        '<span class="up-emoji" aria-hidden="true">' + escapeHtml(emoji) + '</span>' +
+        '<span class="up-main"><span class="up-title">' + escapeHtml(title) + '</span><span class="up-date">' + when + "</span></span>" +
+        (daysLeft === 0
+          ? '<span class="up-left today">' + todayText + "</span>"
+          : '<span class="up-left"><span class="up-num">' + fmtInt(daysLeft) + '</span><span class="up-unit">ngày nữa</span></span>') +
+        "</button>";
+    }
+    var rows = [];
+    if(u) rows.push(row("", u.emoji, u.title, u.date, u.daysLeft, "Hôm nay 🎉", "Xem tất cả kỷ niệm"));
+    if(w) rows.push(row("wishes", wishEmoji(w.cat), w.title, w.planDate, w.daysLeft, "Hôm nay", "Xem việc muốn làm"));
+    $("upcomingBody").innerHTML = rows.length ? rows.join('<span class="up-sep" aria-hidden="true"></span>')
+      : '<p class="card-text">Chưa có mốc nào sắp tới.</p>';
+  }
   function goTo(e){
     var btn = e.target.closest("[data-goto]");
-    if(btn) switchTab(btn.getAttribute("data-goto"));
+    if(!btn) return;
+    var tab = btn.getAttribute("data-goto");
+    if(tab === "milestones") setMsSeg(btn.getAttribute("data-seg") === "wishes" ? "wishes" : "ms");
+    switchTab(tab);
   }
   $("birthdays").addEventListener("click", goTo);
   $("upcomingBody").addEventListener("click", goTo);
@@ -323,6 +343,7 @@
       recompute();
       renderHome();
       renderMilestones();
+      renderWishes(); // countdowns follow the date; the form in #wishSheet is the user's and is never touched
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
       if(C.cycleStats) renderCycleSheet();
@@ -378,10 +399,162 @@
       if(!items.length) return "";
       return '<h3 class="group-title">' + title + '</h3><ul class="ms-group">' + items.map(row).join("") + "</ul>";
     }
-    $("milestoneList").innerHTML = group("Sắp tới", list.filter(function(x){ return !x.past; })) +
-      group("Đã qua", list.filter(function(x){ return x.past; }));
+    $("milestoneList").innerHTML = group("Sắp tới", list.filter(function(x){ return !x.past; })) + timelineHtml();
+    syncTl();
   }
+
+  // Everything the user recorded that has already happened, newest first, at
+  // its ORIGINAL date (a yearly one also sits in "Sắp tới" at its next date).
+  function timelineHtml(){
+    var tIdx = state.lastIdx, start = state.profile.startDate;
+    var entries = state.milestones.filter(function(m){ return C.dayIdx(m.date) <= tIdx; }).map(function(m){
+      return { idx: C.dayIdx(m.date), date: m.date, m: m };
+    });
+    var head = '<h3 class="group-title">Dòng thời gian</h3>';
+    if(!entries.length){
+      return head + '<div class="card empty-state"><p class="empty-text">Chưa có kỷ niệm nào đã qua. Thêm một ngày đáng nhớ và gắn ảnh từ Album.</p></div>';
+    }
+    entries.push({ idx: C.dayIdx(start), date: start, m: null });
+    entries.sort(function(a, b){
+      if(a.idx !== b.idx) return b.idx - a.idx;
+      if(!a.m || !b.m) return a.m ? -1 : 1;
+      return b.m.createdAt - a.m.createdAt || (a.m.id < b.m.id ? -1 : 1);
+    });
+    function item(e){
+      var m = e.m, when = weekday(e.date) + ", " + fmtDate(e.date);
+      if(!m){
+        return '<li class="ms-item-wrap"><div class="ms-item tl-start"><span class="ms-emoji" aria-hidden="true">💕</span>' +
+          '<span class="ms-main"><span class="ms-title">Ngày bắt đầu</span><span class="ms-sub">' + when + "</span></span></div></li>";
+      }
+      var ago = tIdx - e.idx, agoText = ago === 0 ? "hôm nay" : fmtInt(ago) + " ngày trước";
+      var photos = msPhotos(m.photoIds);
+      return '<li class="ms-item-wrap"><button type="button" class="ms-item" data-ms-id="' + escapeHtml(m.id) + '" aria-label="' + escapeHtml(m.title + ", " + when + ", " + agoText) + '">' +
+        '<span class="ms-emoji" aria-hidden="true">' + escapeHtml(m.emoji || "💗") + "</span>" +
+        '<span class="ms-main"><span class="ms-title">' + escapeHtml(m.title) + '</span><span class="ms-sub">' + when + "</span>" +
+        (m.note ? '<span class="tl-note">' + escapeHtml(m.note) + "</span>" : "") + "</span>" +
+        (ago === 0 ? '<span class="ms-left today">Hôm nay 🎉</span>'
+          : '<span class="ms-left past"><span class="sr-only">' + agoText + '</span><span class="ms-num" aria-hidden="true">' + fmtInt(ago) +
+            '</span><span class="ms-unit" aria-hidden="true">ngày trước</span></span>') + CHEV + "</button>" +
+        (photos.length ? '<ul class="tl-photos" aria-label="' + escapeHtml("Ảnh của " + m.title) + '">' + photoStrip(photos, m.title, m.id) + "</ul>" : "") + "</li>";
+    }
+    var h = head, year = null;
+    entries.forEach(function(e){
+      var y = e.date.slice(0, 4);
+      if(y !== year){
+        h += (year === null ? "" : "</ul>") + '<h3 class="group-title tl-year">' + y + '</h3><ul class="ms-group">';
+        year = y;
+      }
+      h += item(e);
+    });
+    return h + "</ul>";
+  }
+
+  // ---------- Milestone photos ----------
+  // photoIds on a milestone point at album photos. A link whose photo is gone
+  // is skipped when read; it only leaves the record when the user saves it again.
+  var MAX_MS = C.MAX_MS_PHOTOS || 60, TL_MAX = 4;
+  // photoIds = what "Lưu kỷ niệm" will write; pick = the working copy while choosing (null otherwise).
+  var msDraft = { photoIds: [], pick: null, saving: false };
+  var PICK_CHECK = '<span class="pick-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
+  // Shown by the day they were taken, whatever order they were picked in.
+  function msPhotos(ids){
+    return (ids || []).map(photoById).filter(Boolean).sort(function(a, b){
+      var ka = a.takenAt != null ? a.takenAt : a.addedAt, kb = b.takenAt != null ? b.takenAt : b.addedAt;
+      return ka - kb || a.addedAt - b.addedAt || (a.id < b.id ? -1 : 1);
+    });
+  }
+  function msPhotoIds(ids){ return msPhotos(ids).map(function(p){ return p.id; }); }
+  function tlImg(id){ return '<img alt="" data-tl="' + id + '"' + (tlUrls[id] ? ' src="' + tlUrls[id] + '"' : "") + ">"; }
+  // At most TL_MAX tiles, the last one carrying "+N" for the rest. With msId
+  // the tiles are buttons that open the viewer; without, plain pictures.
+  function photoStrip(photos, title, msId){
+    var n = photos.length, more = n - TL_MAX;
+    return photos.slice(0, TL_MAX).map(function(p, i){
+      var over = more > 0 && i === TL_MAX - 1 ? '<span class="tl-more" aria-hidden="true">+' + more + "</span>" : "";
+      if(!msId) return '<li class="tl-photo">' + tlImg(p.id) + over + "</li>";
+      return '<li><button type="button" class="tl-photo" data-tl-open="' + p.id + '" data-tl-ms="' + escapeHtml(msId) + '" aria-label="' +
+        escapeHtml("Ảnh " + (i + 1) + " trên " + n + " của " + title) + '">' + tlImg(p.id) + over + "</button></li>";
+    }).join("");
+  }
+
+  // Thumbnails of the timeline and of the milestone sheet. A pool of its own:
+  // the album's is tied to the Album tab and emptied on leaving it. A URL
+  // lives only while an <img data-tl> that is on show uses it.
+  var tlUrls = Object.create(null), tlWanted = [], tlTimer = null;
+  var tlIO = "IntersectionObserver" in window ? new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      tlIO.unobserve(e.target);
+      wantTl(e.target.getAttribute("data-tl"));
+    });
+  }, { rootMargin: "300px 0px" }) : null;
+
+  function msSheetOpen(){ return $("milestoneSheet").classList.contains("open"); }
+  function tlImgs(){
+    var out = [];
+    function add(root){ Array.prototype.push.apply(out, root.querySelectorAll("img[data-tl]")); }
+    if(state.mode === "app" && state.tab === "milestones") add($("milestoneList"));
+    if(msSheetOpen()) add($("milestoneSheet"));
+    return out;
+  }
+  function wantTl(id){
+    tlWanted.push(id);
+    if(!tlTimer) tlTimer = setTimeout(flushTl, 16);
+  }
+  function flushTl(){
+    tlTimer = null;
+    var ids = tlWanted.filter(function(id, i, a){ return a.indexOf(id) === i && !tlUrls[id]; });
+    tlWanted = [];
+    if(!ids.length) return;
+    readBlobs(ids).then(function(recs){
+      var imgs = tlImgs();
+      recs.forEach(function(rec, i){
+        var id = ids[i];
+        var mine = imgs.filter(function(img){ return img.getAttribute("data-tl") === id; });
+        if(!rec || !mine.length || !photoById(id)) return;
+        if(!tlUrls[id]){
+          var buf = rec.thumb instanceof ArrayBuffer && rec.thumb.byteLength ? rec.thumb : rec.data;
+          if(!(buf instanceof ArrayBuffer)) return;
+          tlUrls[id] = URL.createObjectURL(new Blob([buf], { type: "image/jpeg" }));
+        }
+        mine.forEach(function(img){ img.src = tlUrls[id]; });
+      });
+    });
+  }
+  function revokeTl(id){
+    if(tlUrls[id]){ URL.revokeObjectURL(tlUrls[id]); delete tlUrls[id]; }
+  }
+  // Gives every thumbnail on show its URL and revokes the ones nothing shows any more.
+  function syncTl(){
+    if(tlIO) tlIO.disconnect();
+    var imgs = tlImgs(), need = Object.create(null);
+    imgs.forEach(function(img){ need[img.getAttribute("data-tl")] = true; });
+    Object.keys(tlUrls).forEach(function(id){ if(!need[id]) revokeTl(id); });
+    imgs.forEach(function(img){
+      var id = img.getAttribute("data-tl");
+      if(tlUrls[id]){ if(img.getAttribute("src") !== tlUrls[id]) img.src = tlUrls[id]; }
+      else if(tlIO) tlIO.observe(img);
+      else wantTl(id);
+    });
+  }
+  function releaseTl(){
+    if(tlIO) tlIO.disconnect();
+    Object.keys(tlUrls).forEach(revokeTl);
+    Array.prototype.forEach.call(document.querySelectorAll("img[data-tl][src]"), function(img){ img.removeAttribute("src"); });
+  }
+
+  function openMsViewer(msId, photoId){
+    var m = null;
+    state.milestones.forEach(function(x){ if(x.id === msId) m = x; });
+    if(!m) return;
+    viewer.msId = msId;
+    openViewer(photoId, msPhotoIds(m.photoIds), "ms");
+  }
+
   $("milestoneList").addEventListener("click", function(e){
+    var tile = e.target.closest("[data-tl-open]");
+    if(tile){ openMsViewer(tile.getAttribute("data-tl-ms"), tile.getAttribute("data-tl-open")); return; }
     var btn = e.target.closest("button[data-ms-id]");
     if(!btn) return;
     var id = btn.getAttribute("data-ms-id");
@@ -392,7 +565,10 @@
     // "Ngày thứ 1.000" already says the day number — no second line for it.
     if(auto) openShare("milestone", { title: auto.title, emoji: auto.emoji, date: auto.date, dayNo: auto.kind === "hundred" ? null : undefined });
   });
-  $("btnAddMilestone").addEventListener("click", function(){ openMilestoneSheet(null); });
+  // One "Thêm" button for the tab: it adds whichever list is on show.
+  $("btnAddMilestone").addEventListener("click", function(){
+    if(wish.seg === "wishes") openWishSheet(null); else openMilestoneSheet(null);
+  });
 
   $("emojiPicks").innerHTML = EMOJI_PICKS.map(function(e){
     return '<button type="button" class="emoji-pick" data-emoji="' + e + '" aria-label="Chọn ' + e + '" aria-pressed="false">' + e + "</button>";
@@ -413,6 +589,7 @@
   $("msEmoji").addEventListener("input", markEmoji);
 
   function openMilestoneSheet(m){
+    pendingWishId = null;
     state.editingId = m ? m.id : null;
     $("msSheetTitle").textContent = m ? "Sửa kỷ niệm" : "Thêm kỷ niệm";
     $("msTitle").value = m ? m.title : "";
@@ -422,9 +599,89 @@
     $("msNote").value = m ? m.note : "";
     $("msRepeat").checked = m ? m.repeatYearly : false;
     $("msDelete").hidden = !m;
+    $("msConfirm").hidden = true;
     $("msShare").hidden = !m;
     showError("msError", null);
+    msDraft.photoIds = m ? msPhotoIds(m.photoIds) : [];
+    msDraft.saving = false;
+    setPickMode(false);
+    renderMsPhotos();
     openSheet("milestoneSheet");
+    syncTl();
+  }
+
+  function renderMsPhotos(){
+    var photos = msPhotos(msDraft.photoIds), n = photos.length;
+    $("msPhotos").innerHTML = photoStrip(photos, "", null);
+    $("msPhotos").hidden = !n;
+    $("msPickOpen").textContent = "Chọn ảnh từ Album" + (n ? " · " + n + " ảnh" : "");
+  }
+
+  // Choosing happens inside the same sheet (a second sheet can't stack): the
+  // form is only hidden, so whatever was typed in it is still there afterwards.
+  function setPickMode(on){
+    msDraft.pick = on ? msDraft.photoIds.slice() : null;
+    $("milestoneForm").hidden = on;
+    $("msPick").hidden = !on;
+    $("msPickBack").hidden = !on;
+    $("milestoneSheet").classList.toggle("picking", on);
+    $("msSheetTitle").textContent = on ? "Chọn ảnh" : state.editingId ? "Sửa kỷ niệm" : "Thêm kỷ niệm";
+    if(!on){ $("msPickGrid").innerHTML = ""; return; }
+    var list = sortedPhotos();
+    $("msPickEmpty").hidden = list.length > 0;
+    $("msPickGrid").hidden = !list.length;
+    $("msPickGrid").innerHTML = list.map(function(p, i){
+      var label = "Ảnh " + (i + 1) + ", " + photoDateText(p).toLowerCase() + (p.caption ? ": " + p.caption : "");
+      return '<li class="album-tile"><button type="button" class="album-thumb pick-tile" data-pick="' + p.id + '" aria-label="' + escapeHtml(label) + '">' +
+        tlImg(p.id) + PICK_CHECK + "</button></li>";
+    }).join("");
+    paintPick();
+    $("milestoneSheet").scrollTop = 0;
+  }
+  function paintPick(){
+    var sel = Object.create(null), n = msDraft.pick.length, full = n >= MAX_MS;
+    msDraft.pick.forEach(function(id){ sel[id] = true; });
+    Array.prototype.forEach.call($("msPickGrid").querySelectorAll("[data-pick]"), function(b){
+      var on = !!sel[b.getAttribute("data-pick")];
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      if(full && !on) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
+    });
+    $("msPickDone").textContent = "Xong" + (n ? " · " + n + " ảnh" : "");
+    $("msPickLimit").hidden = !full;
+  }
+  function leavePick(){
+    setPickMode(false);
+    renderMsPhotos();
+    syncTl();
+    $("msPickOpen").focus({ preventScroll: true });
+  }
+  $("msPickOpen").addEventListener("click", function(){
+    if(msDraft.saving) return;
+    setPickMode(true);
+    syncTl();
+    $("msPickBack").focus({ preventScroll: true });
+  });
+  $("msPickGrid").addEventListener("click", function(e){
+    var b = e.target.closest("[data-pick]");
+    if(!b || !msDraft.pick) return;
+    var id = b.getAttribute("data-pick"), i = msDraft.pick.indexOf(id);
+    if(i !== -1) msDraft.pick.splice(i, 1);
+    else if(msDraft.pick.length < MAX_MS) msDraft.pick.push(id);
+    paintPick();
+  });
+  $("msPickDone").addEventListener("click", function(){
+    if(!msDraft.pick) return;
+    msDraft.photoIds = msDraft.pick.slice();
+    leavePick();
+  });
+  $("msPickBack").addEventListener("click", leavePick);
+  // After the slide-out, so the pictures don't blank while the sheet is still on screen.
+  function cleanMsSheet(){
+    if(msSheetOpen()) return;
+    msDraft.pick = null;
+    $("msPickGrid").innerHTML = "";
+    $("msPhotos").innerHTML = "";
+    syncTl();
   }
 
   $("milestoneForm").addEventListener("submit", function(e){
@@ -432,21 +689,34 @@
     var title = $("msTitle").value.trim(), date = $("msDate").value;
     if(!title){ showError("msError", "Hãy đặt tên cho kỷ niệm."); return; }
     if(!C.isValidDate(date)){ showError("msError", "Hãy chọn ngày hợp lệ."); return; }
+    if(msDraft.saving) return;
+    // An import gives photos new ids in its last step; links saved now could point at nothing.
+    if(busy === "import"){ showError("msError", "Đang nhập bản sao lưu — đợi xong rồi thử lại."); return; }
+    // An older cached core has no photoIds in validateMilestone and would drop the links without a word.
+    if(!C.MAX_MS_PHOTOS){ showError("msError", "App vừa cập nhật — hãy đóng hẳn rồi mở lại app, sau đó lưu lại."); return; }
     var old = null;
     state.milestones.forEach(function(x){ if(x.id === state.editingId) old = x; });
     var rec = C.validateMilestone({
       id: old ? old.id : "m" + now().toString(36) + Math.random().toString(36).slice(2, 7),
       title: title, date: date, emoji: C.clipGraphemes($("msEmoji").value.trim(), 16), note: $("msNote").value.trim(),
-      repeatYearly: $("msRepeat").checked, createdAt: old ? old.createdAt : now()
+      repeatYearly: $("msRepeat").checked, createdAt: old ? old.createdAt : now(),
+      photoIds: msPhotoIds(msDraft.photoIds)
     });
     if(!rec){ showError("msError", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
-    put("milestones", rec).then(function(){
+    msDraft.saving = true;
+    Promise.resolve().then(function(){ return put("milestones", rec); }).then(function(){
+      msDraft.saving = false;
+      var linkId = old ? null : pendingWishId;
       state.milestones = state.milestones.filter(function(x){ return x.id !== rec.id; }).concat([rec]);
       dataChanged();
       closeSheets();
       recompute(); renderHome(); renderMilestones();
       toast(old ? "Đã lưu kỷ niệm ✓" : "Đã thêm kỷ niệm 💕");
-    }, function(){ showError("msError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
+      if(linkId) linkWish(linkId, rec.id);
+    }, function(){
+      msDraft.saving = false;
+      showError("msError", "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
+    });
   });
 
   // The picture is made from the SAVED record; unsaved edits in the form are
@@ -456,7 +726,8 @@
     state.milestones.forEach(function(x){ if(x.id === state.editingId) m = x; });
     if(!m) return;
     if($("msTitle").value.trim() !== m.title || $("msDate").value !== m.date || C.clipGraphemes($("msEmoji").value.trim(), 16) !== (m.emoji || "") ||
-       $("msNote").value.trim() !== (m.note || "") || $("msRepeat").checked !== !!m.repeatYearly){
+       $("msNote").value.trim() !== (m.note || "") || $("msRepeat").checked !== !!m.repeatYearly ||
+       msDraft.photoIds.slice().sort().join() !== msPhotoIds(m.photoIds).sort().join()){
       showError("msError", "Hãy lưu kỷ niệm trước rồi tạo ảnh.");
       return;
     }
@@ -465,17 +736,38 @@
   });
 
   $("msDelete").addEventListener("click", function(){
-    var id = state.editingId;
-    var m = null;
+    var id = state.editingId, m = null;
     state.milestones.forEach(function(x){ if(x.id === id) m = x; });
-    if(!m || !window.confirm('Xoá kỷ niệm "' + m.title + '"?')) return;
-    del("milestones", id).then(function(){
+    if(!m || msDraft.saving) return;
+    $("msConfirmText").textContent = "Xoá kỷ niệm “" + m.title + "”? Ảnh trong Album vẫn còn.";
+    $("msDelete").hidden = true;
+    $("msConfirm").hidden = false;
+    $("msConfirmNo").focus({ preventScroll: true });
+    $("msConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("msConfirmNo").addEventListener("click", function(){
+    if(msDraft.saving) return;
+    $("msConfirm").hidden = true;
+    $("msDelete").hidden = false;
+    $("msDelete").focus({ preventScroll: true });
+  });
+  $("msConfirmYes").addEventListener("click", function(){
+    var id = state.editingId, m = null;
+    state.milestones.forEach(function(x){ if(x.id === id) m = x; });
+    if(!m || msDraft.saving) return;
+    if(busy === "import"){ showError("msError", "Đang nhập bản sao lưu — đợi xong rồi thử lại."); return; }
+    msDraft.saving = true;
+    Promise.resolve().then(function(){ return del("milestones", id); }).then(function(){
+      msDraft.saving = false;
       state.milestones = state.milestones.filter(function(x){ return x.id !== id; });
       dataChanged();
       closeSheets();
       recompute(); renderHome(); renderMilestones();
       toast("Đã xoá kỷ niệm");
-    }, function(){ showError("msError", "Không xoá được. Hãy thử lại."); });
+    }, function(){
+      msDraft.saving = false;
+      showError("msError", "Không xoá được. Hãy thử lại.");
+    });
   });
 
   // ---------- Cycles ----------
@@ -1068,6 +1360,331 @@
     }, function(msg){ showError("cycleFormErr", msg); });
   });
 
+  // ---------- Wishes ("Muốn làm") ----------
+  // Stored exactly like the cycle log: one kv record ('wishes'), items the
+  // validator rejects kept verbatim in state.wishesBad and written back with
+  // every save, nothing written at all while the stored record is unreadable.
+  // seg = which list the Kỷ niệm tab shows ("ms" | "wishes"); not persisted.
+  // undone: done dates just removed by a tap on the circle, so tapping again within a minute puts the same date back.
+  var wish = { seg: "ms", editingId: null, cat: "", saving: false, quiet: false, undone: Object.create(null) };
+  // Set while the milestone form is open from "Thêm vào Kỷ niệm": saving that
+  // milestone links it to this wish; closing the form without saving drops it.
+  var pendingWishId = null;
+  var WISH_BROKEN_TEXT = "Không đọc được danh sách — dữ liệu vẫn còn nguyên";
+  var WISH_EMOJI = { go: "✈️", eat: "🍜", watch: "🎬", other: "✨" };
+  var WISH_CHECK = '<span class="wish-ring" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
+  function wishEmoji(cat){ return WISH_EMOJI[cat] || "✨"; }
+  function wishById(id){
+    for(var i = 0; i < state.wishes.length; i++) if(state.wishes[i].id === id) return state.wishes[i];
+    return null;
+  }
+  function wishesLocked(){ return state.wishesBroken || !C.wishView; }
+
+  function applyWishesRec(rec){
+    var skipped = 0, seen = Object.create(null);
+    state.wishes = []; state.wishesBad = []; state.wishesBroken = false;
+    state.wishesStamp = cyclesStampOf(rec);
+    if(rec === undefined) return 0;
+    if(!rec || typeof rec !== "object" || !Array.isArray(rec.items)){ state.wishesBroken = true; return 0; }
+    // Without validateWish (older cached core) nothing can be judged: keep it all verbatim.
+    if(!C.validateWish){ state.wishesBad = rec.items.slice(); return 0; }
+    rec.items.forEach(function(it){
+      var v = C.validateWish(it);
+      if(v && !seen[v.id]){ seen[v.id] = true; state.wishes.push(v); }
+      else { state.wishesBad.push(it); skipped++; }
+    });
+    return skipped;
+  }
+
+  // saveCycles' twin: the record is re-read inside the write transaction and
+  // nothing is written when another window changed it since this one loaded it.
+  function saveWishes(next){
+    if(state.loadFailed || wishesLocked()) return Promise.reject(new Error("wishes locked"));
+    if(busy === "import") return Promise.reject(userErr("Đang nhập bản sao lưu. Hãy đợi xong rồi thử lại."));
+    var stamp = now();
+    if(typeof state.wishesStamp === "number" && stamp <= state.wishesStamp) stamp = state.wishesStamp + 1;
+    var rec = { key: "wishes", items: next.concat(state.wishesBad), updatedAt: stamp };
+    function done(){
+      state.wishes = next;
+      state.wishesStamp = stamp;
+      dataChanged();
+    }
+    if(!state.db) return put("kv", rec).then(done);
+    var tx = state.db.transaction("kv", "readwrite"), st = tx.objectStore("kv"), stale = false, found;
+    var rq = st.get("wishes");
+    rq.onsuccess = function(){
+      found = rq.result;
+      if(cyclesStampOf(found) !== state.wishesStamp) stale = true; else st.put(rec);
+    };
+    return C.txDone(tx).then(function(){
+      if(!stale){ done(); return; }
+      applyWishesRec(found);
+      renderWishes();
+      renderUpcoming();
+      throw userErr("Danh sách vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
+    });
+  }
+
+  // One write at a time; btn (optional) shows "Đang lưu…" meanwhile.
+  function wishWrite(btn, next, ok, fail){
+    if(wish.saving) return;
+    var label = btn ? btn.textContent : "";
+    wish.saving = true;
+    if(btn){ btn.disabled = true; btn.textContent = "Đang lưu…"; }
+    function release(){
+      wish.saving = false;
+      if(btn){ btn.disabled = false; btn.textContent = label; }
+    }
+    // Inside a then() so a synchronous throw also releases the flag.
+    Promise.resolve().then(function(){ return saveWishes(next); }).then(function(){
+      release();
+      // Rows have just moved under the finger: the second tap of a double tap must not land on another row.
+      wish.quiet = true;
+      setTimeout(function(){ wish.quiet = false; }, 400);
+      showError("wishErr", null);
+      renderWishes();
+      renderUpcoming();
+      ok();
+    }, function(err){
+      release();
+      fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
+    });
+  }
+  ["wishList", "wishSheet"].forEach(function(id){
+    $(id).addEventListener("click", function(e){
+      if(wish.quiet){ e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  });
+
+  function setMsSeg(seg){
+    wish.seg = seg === "wishes" ? "wishes" : "ms";
+    Array.prototype.forEach.call($("msSeg").querySelectorAll("[data-ms-seg]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-ms-seg") === wish.seg ? "true" : "false");
+    });
+    $("milestoneList").hidden = wish.seg !== "ms";
+    $("wishPane").hidden = wish.seg !== "wishes";
+    showError("wishErr", null);
+    syncWishAdd();
+    placeSegPill($("msSeg"));
+  }
+  function syncWishAdd(){
+    $("btnAddMilestone").hidden = wish.seg === "wishes" && wishesLocked();
+    $("btnAddMilestone").setAttribute("aria-label", wish.seg === "wishes" ? "Thêm việc muốn làm" : "Thêm kỷ niệm");
+  }
+  $("msSeg").addEventListener("click", function(e){
+    var b = e.target.closest("[data-ms-seg]");
+    if(b) setMsSeg(b.getAttribute("data-ms-seg"));
+  });
+
+  function renderWishes(){
+    var el = $("wishList");
+    syncWishAdd();
+    if(wishesLocked()){ el.innerHTML = '<div class="card"><p class="card-text">' + WISH_BROKEN_TEXT + ".</p></div>"; return; }
+    if(!state.wishes.length){
+      el.innerHTML = '<div class="card empty-state"><p class="empty-text">Chưa có việc nào. Ghi lại nơi muốn đi, món muốn ăn, phim muốn xem cùng nhau.</p>' +
+        '<button type="button" class="btn btn-primary empty-action" data-wish-add>Thêm việc muốn làm</button></div>';
+      return;
+    }
+    var v = C.wishView(state.wishes, now());
+    function row(x){
+      var sub, right = "", said;
+      if(x.done){
+        sub = "Đã làm " + fmtDate(x.doneDate);
+        said = sub;
+        right = '<span class="status-tag ok">Đã làm</span>';
+      } else if(x.daysLeft === null){
+        sub = ""; said = "chưa hẹn ngày";
+      } else if(x.daysLeft < 0){
+        sub = "Dự định " + fmtDate(x.planDate) + " đã qua " + fmtInt(-x.daysLeft) + " ngày";
+        said = sub;
+      } else {
+        sub = weekday(x.planDate) + ", " + fmtDate(x.planDate);
+        said = sub + ", " + (x.daysLeft === 0 ? "hôm nay" : "còn " + fmtInt(x.daysLeft) + " ngày");
+        right = x.daysLeft === 0 ? '<span class="ms-left today">Hôm nay</span>'
+          : '<span class="ms-left"><span class="ms-num" aria-hidden="true">' + fmtInt(x.daysLeft) + '</span><span class="ms-unit" aria-hidden="true">ngày nữa</span></span>';
+      }
+      var id = escapeHtml(x.id);
+      return '<li class="ms-item-wrap wish-row' + (x.done ? " is-done" : "") + '">' +
+        '<button type="button" class="wish-check" data-wish-check="' + id + '" aria-pressed="' + (x.done ? "true" : "false") + '" aria-label="' +
+        escapeHtml("Đánh dấu đã làm: " + x.title) + '">' + WISH_CHECK + "</button>" +
+        '<button type="button" class="ms-item wish-item" data-wish-id="' + id + '" aria-label="' + escapeHtml(x.title + ", " + said + ". Sửa") + '">' +
+        '<span class="ms-emoji" aria-hidden="true">' + wishEmoji(x.cat) + "</span>" +
+        '<span class="ms-main"><span class="ms-title">' + escapeHtml(x.title) + "</span>" +
+        (sub ? '<span class="ms-sub">' + sub + "</span>" : "") +
+        (x.note ? '<span class="tl-note">' + escapeHtml(x.note) + "</span>" : "") + "</span>" + right + CHEV + "</button></li>";
+    }
+    function group(title, items){
+      if(!items.length) return "";
+      return '<h3 class="group-title">' + title + '</h3><ul class="ms-group">' + items.map(row).join("") + "</ul>";
+    }
+    el.innerHTML = group("Sắp tới", v.soon) + group("Chưa hẹn ngày", v.open) + group("Đã làm", v.done);
+  }
+
+  function wishToggle(id){
+    var w = wishById(id);
+    if(!w || wish.saving || wishesLocked()) return;
+    var done = !w.doneDate, today = C.todayStr(now()), prev = wish.undone[id];
+    var back = done && prev && now() - prev.at < 60000 && prev.date <= today ? prev.date : null;
+    var rec = C.validateWish(Object.assign({}, w, { doneDate: done ? back || today : null }));
+    if(!rec) return;
+    showError("wishErr", null);
+    wishWrite(null, state.wishes.map(function(x){ return x.id === id ? rec : x; }), function(){
+      if(done) delete wish.undone[id]; else wish.undone[id] = { date: w.doneDate, at: now() };
+      toast(done ? "Đã làm ✓" : "Đã bỏ đánh dấu");
+    }, function(msg){ showError("wishErr", msg); });
+  }
+  $("wishList").addEventListener("click", function(e){
+    if(wishesLocked()) return;
+    var check = e.target.closest("[data-wish-check]");
+    if(check){ wishToggle(check.getAttribute("data-wish-check")); return; }
+    if(e.target.closest("[data-wish-add]")){ openWishSheet(null); return; }
+    var item = e.target.closest("[data-wish-id]");
+    var w = item ? wishById(item.getAttribute("data-wish-id")) : null;
+    if(w) openWishSheet(w);
+  });
+
+  function setWishCat(cat){
+    wish.cat = cat;
+    Array.prototype.forEach.call($("wCats").children, function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-wish-cat") === cat ? "true" : "false");
+    });
+  }
+  $("wCats").addEventListener("click", function(e){
+    var b = e.target.closest("[data-wish-cat]");
+    if(!b) return;
+    var cat = b.getAttribute("data-wish-cat");
+    setWishCat(wish.cat === cat ? "" : cat);
+  });
+  // el = the control the message belongs to (the text input, or the date button).
+  function wishFieldError(id, el, msg){
+    showError(id + "Err", msg);
+    if(msg) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid");
+  }
+  function clearWishErrors(){
+    wishFieldError("wTitle", $("wTitle"), null);
+    wishFieldError("wDone", $("wDoneBtn"), null);
+    showError("wishFormErr", null);
+  }
+  function wishLinked(w){
+    return !!w && !!w.milestoneId && state.milestones.some(function(m){ return m.id === w.milestoneId; });
+  }
+  function openWishSheet(w){
+    if(wishesLocked()) return;
+    wish.editingId = w ? w.id : null;
+    $("wishSheetTitle").textContent = w ? "Sửa việc muốn làm" : "Thêm việc muốn làm";
+    $("wTitle").value = w ? w.title : "";
+    setWishCat(w ? w.cat : "");
+    setDateValue("wPlan", w && w.planDate ? w.planDate : "");
+    setDateValue("wDone", w && w.doneDate ? w.doneDate : "");
+    $("wDoneField").hidden = !w;
+    $("wNote").value = w ? w.note : "";
+    var linked = wishLinked(w);
+    $("wishLinked").hidden = !linked;
+    $("wishToMs").hidden = !w || !w.doneDate || linked;
+    $("wishDelete").hidden = !w;
+    $("wishConfirm").hidden = true;
+    clearWishErrors();
+    $("wishSheet").scrollTop = 0;
+    openSheet("wishSheet");
+  }
+  $("wTitle").addEventListener("input", function(){ wishFieldError("wTitle", this, null); });
+  $("wDone").addEventListener("change", function(){ wishFieldError("wDone", $("wDoneBtn"), null); });
+
+  $("wishForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(wish.saving) return;
+    clearWishErrors();
+    var t = now(), old = wish.editingId ? wishById(wish.editingId) : null;
+    if(wish.editingId && !old){ showError("wishFormErr", "Việc này không còn trong danh sách. Đóng bảng này rồi thử lại."); return; }
+    var title = $("wTitle").value.trim();
+    if(!title){
+      wishFieldError("wTitle", $("wTitle"), "Hãy ghi việc muốn làm");
+      $("wTitleErr").scrollIntoView({ block: "nearest" });
+      return;
+    }
+    var done = old ? $("wDone").value || null : null;
+    // Only when the date was moved: a record that is already off stays editable.
+    if(done && done !== old.doneDate && done > C.todayStr(t)){
+      wishFieldError("wDone", $("wDoneBtn"), "Ngày đã làm không được sau hôm nay");
+      $("wDoneErr").scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if(!old && state.wishes.length >= C.MAX_WISHES){
+      showError("wishFormErr", "Đã đủ " + C.MAX_WISHES + " việc — xoá bớt việc đã làm rồi thêm tiếp.");
+      return;
+    }
+    var rec = C.validateWish({
+      id: old ? old.id : C.newWishId(t), title: title, cat: wish.cat, note: $("wNote").value.trim(),
+      planDate: $("wPlan").value || null, doneDate: done, milestoneId: old ? old.milestoneId : null, createdAt: old ? old.createdAt : t
+    });
+    if(!rec){ showError("wishFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    var next = old ? state.wishes.map(function(x){ return x.id === rec.id ? rec : x; }) : state.wishes.concat([rec]);
+    wishWrite($("wishSave"), next, function(){
+      closeSheets();
+      toast(old ? "Đã lưu ✓" : "Đã thêm việc muốn làm");
+    }, function(msg){ showError("wishFormErr", msg); });
+  });
+
+  // The milestone form opens pre-filled from the SAVED wish; nothing is created until "Lưu kỷ niệm".
+  $("wishToMs").addEventListener("click", function(){
+    var w = wishById(wish.editingId);
+    if(!w || !w.doneDate || wish.saving) return;
+    if($("wTitle").value.trim() !== w.title || wish.cat !== w.cat || ($("wPlan").value || null) !== w.planDate ||
+       ($("wDone").value || null) !== w.doneDate || $("wNote").value.trim() !== w.note.trim()){
+      showError("wishFormErr", "Hãy lưu việc này trước rồi thêm vào Kỷ niệm.");
+      return;
+    }
+    closeSheets();
+    openMilestoneSheet(null);
+    $("msTitle").value = w.title;
+    setDateValue("msDate", w.doneDate);
+    $("msEmoji").value = wishEmoji(w.cat);
+    markEmoji();
+    $("msNote").value = w.note;
+    pendingWishId = w.id;
+  });
+  // Losing this write only loses the "Đã có trong Kỷ niệm" mark, so it never reports an error.
+  // It takes the same one-write-at-a-time flag as every other write, and tries again when another
+  // window changed the list meanwhile (saveWishes has reloaded it by then).
+  function linkWish(wishId, milestoneId, left){
+    if(left === undefined) left = 2;
+    var w = wishById(wishId);
+    if(!w) return;
+    function again(){ if(left > 0) setTimeout(function(){ linkWish(wishId, milestoneId, left - 1); }, 250); }
+    if(wish.saving){ again(); return; }
+    var rec = Object.assign({}, w, { milestoneId: milestoneId });
+    wish.saving = true;
+    Promise.resolve().then(function(){
+      return saveWishes(state.wishes.map(function(x){ return x.id === wishId ? rec : x; }));
+    }).then(function(){ wish.saving = false; renderWishes(); }, function(){ wish.saving = false; again(); });
+  }
+
+  $("wishDelete").addEventListener("click", function(){
+    var w = wishById(wish.editingId);
+    if(!w || wish.saving) return;
+    $("wishConfirmText").textContent = "Xoá “" + w.title + "”?";
+    $("wishDelete").hidden = true;
+    $("wishConfirm").hidden = false;
+    $("wishConfirmNo").focus({ preventScroll: true });
+    $("wishConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("wishConfirmNo").addEventListener("click", function(){
+    if(wish.saving) return;
+    $("wishConfirm").hidden = true;
+    $("wishDelete").hidden = false;
+    $("wishDelete").focus({ preventScroll: true });
+  });
+  $("wishConfirmYes").addEventListener("click", function(){
+    var id = wish.editingId;
+    if(wish.saving || !wishById(id)) return;
+    showError("wishFormErr", null);
+    wishWrite(this, state.wishes.filter(function(x){ return x.id !== id; }), function(){
+      closeSheets();
+      toast("Đã xoá việc này");
+    }, function(msg){ showError("wishFormErr", msg); });
+  });
+
   // ---------- Date fields + wheel picker ----------
   // Each date is a hidden input (its .value stays 'YYYY-MM-DD' or '') plus a
   // button showing it. Always write through setDateValue so the button never
@@ -1083,7 +1700,9 @@
     // own date instead of being moved to the bound when "Xong" is pressed.
     msDate:       { min: "1900-01-01", optional: false, futureYears: 20 },
     cyStart:      { min: "2000-01-01", optional: false },
-    cyEnd:        { min: "2000-01-01", optional: true, empty: "Chưa kết thúc", defFrom: "cyStart" }
+    cyEnd:        { min: "2000-01-01", optional: true, empty: "Chưa kết thúc", defFrom: "cyStart" },
+    wPlan:        { min: "2000-01-01", optional: true, empty: "Chưa hẹn ngày", futureYears: 20 },
+    wDone:        { min: "2000-01-01", optional: true, empty: "Chưa làm" }
   };
 
   function setDateValue(id, v){
@@ -1531,12 +2150,40 @@
     list.forEach(function(p){ tx.objectStore("photos").put(p); });
     return C.txDone(tx);
   }
+  // One transaction: the photo, its blob, and the link to it in every
+  // milestone (read inside the transaction, so the stored records are the ones
+  // rewritten). Resolves with how many milestones in state lost the link.
   function deletePhoto(id){
-    if(!state.db){ delete mem.photos[id]; delete mem.blobs[id]; return Promise.resolve(); }
-    var tx = state.db.transaction(["photos", "blobs"], "readwrite");
+    function unlink(){
+      var n = 0;
+      state.milestones = state.milestones.map(function(m){
+        if(!m.photoIds || m.photoIds.indexOf(id) === -1) return m;
+        n++;
+        return Object.assign({}, m, { photoIds: m.photoIds.filter(function(x){ return x !== id; }) });
+      });
+      return n;
+    }
+    if(!state.db){
+      delete mem.photos[id]; delete mem.blobs[id];
+      var n = unlink();
+      state.milestones.forEach(function(m){ if(mem.milestones[m.id]) mem.milestones[m.id] = m; });
+      return Promise.resolve(n);
+    }
+    var tx = state.db.transaction(["photos", "blobs", "milestones"], "readwrite");
     tx.objectStore("photos").delete(id);
     tx.objectStore("blobs").delete(id);
-    return C.txDone(tx);
+    var rq = tx.objectStore("milestones").openCursor();
+    rq.onsuccess = function(){
+      var cur = rq.result;
+      if(!cur) return;
+      var v = cur.value;
+      if(v && Array.isArray(v.photoIds) && v.photoIds.indexOf(id) !== -1){
+        v.photoIds = v.photoIds.filter(function(x){ return x !== id; });
+        cur.update(v);
+      }
+      cur.continue();
+    };
+    return C.txDone(tx).then(unlink);
   }
   function saveMeta(){ return put("kv", state.meta).catch(function(){}); }
   function photoById(id){
@@ -1772,7 +2419,10 @@
   // A fixed overlay on top of the album: no navigation, so closing lands on
   // the same grid. The page behind is locked with body{position:fixed} (iOS
   // ignores overflow:hidden on body) and scrollY is restored on close.
-  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false };
+  // ctx "album" = every photo, in the album's order. ctx "ms" = only the photos
+  // of milestone msId, opened from the timeline at photo `from`: no delete
+  // there (it would delete from the Album, not unlink from the milestone).
+  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false, ctx: "album", msId: null, from: null };
 
   function lockScroll(){
     viewer.scrollY = window.scrollY;
@@ -1785,12 +2435,19 @@
     window.scrollTo(0, viewer.scrollY);
   }
 
-  function openViewer(id){
-    var idx = state.albumOrder.indexOf(id);
+  function openViewer(id, ids, ctx){
+    ids = ids || state.albumOrder;
+    var idx = ids.indexOf(id);
     if(idx < 0) return;
-    viewer.ids = state.albumOrder.slice();
+    var ms = ctx === "ms";
+    viewer.ids = ids.slice();
+    viewer.ctx = ms ? "ms" : "album";
+    viewer.from = id;
     viewer.open = true;
     viewer.dirty = false;
+    $("viewerDelete").hidden = ms;
+    $("viewer").classList.toggle("no-delete", ms);
+    $("viewerClose").setAttribute("aria-label", ms ? "Đóng, quay lại kỷ niệm" : "Đóng, quay lại album");
     lockScroll();
     $("viewer").hidden = false;
     showViewerAt(idx);
@@ -1804,6 +2461,16 @@
     $("viewer").hidden = true;
     $("viewerImg").removeAttribute("src");
     Object.keys(viewer.urls).forEach(dropFull);
+    if(viewer.ctx === "ms"){
+      if(viewer.dirty && state.mode === "app") renderMilestones();
+      unlockScroll();
+      var back = null;
+      Array.prototype.forEach.call($("milestoneList").querySelectorAll("[data-tl-open]"), function(b){
+        if(b.getAttribute("data-tl-ms") === viewer.msId && b.getAttribute("data-tl-open") === viewer.from) back = b;
+      });
+      if(back) back.focus({ preventScroll: true });
+      return;
+    }
     if(viewer.dirty) renderAlbum();
     unlockScroll();
     var tile = document.querySelector('.album-tile[data-id="' + viewer.ids[viewer.index] + '"] .album-thumb');
@@ -1838,7 +2505,8 @@
     $("viewerNext").disabled = i === ids.length - 1;
     var img = $("viewerImg");
     img.style.transform = "";
-    if(thumbUrls[id]) img.src = thumbUrls[id]; else img.removeAttribute("src");
+    var small = tlUrls[id] || thumbUrls[id];
+    if(small) img.src = small; else img.removeAttribute("src");
     img.alt = p.caption || photoDateText(p);
     loadFull(id).then(function(url){
       if(url && viewer.open && viewer.ids[viewer.index] === id) img.src = url;
@@ -1910,10 +2578,11 @@
   $("viewerNext").addEventListener("click", function(){ viewerStep(1); });
   $("viewerDelete").addEventListener("click", function(){
     var id = viewer.ids[viewer.index];
-    if(!photoById(id) || busy) return;
+    if(viewer.ctx !== "album" || !photoById(id) || busy) return;
     if(!window.confirm("Xoá ảnh này khỏi album? Không thể hoàn tác.")) return;
-    deletePhoto(id).then(function(){
+    deletePhoto(id).then(function(unlinked){
       state.photos = state.photos.filter(function(p){ return p.id !== id; });
+      if(unlinked && state.mode === "app") renderMilestones();
       dropFull(id);
       revokeThumb(id);
       viewer.ids.splice(viewer.index, 1);
@@ -1984,6 +2653,7 @@
   }
   function backupContents(c){
     var parts = [fmtInt(c.photos) + " ảnh", fmtInt(c.milestones) + " kỷ niệm"];
+    if(typeof c.wishes === "number") parts.push(fmtInt(c.wishes) + " việc");
     if(typeof c.cycles === "number") parts.push(fmtInt(c.cycles) + " kỳ");
     if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
     return parts.join(", ");
@@ -2012,7 +2682,7 @@
     if(busy !== "backup"){
       $("backupStatus").textContent = p
         ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
-        : "File .zip gồm hồ sơ, kỷ niệm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
+        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -2020,9 +2690,10 @@
     if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
-    // An unreadable cycle record is left out of the file.
+    // An unreadable cycle or wish record is left out of the file.
     return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos,
-                           cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles, readBlob: readBlob },
+                           cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles,
+                           wishes: wishesLocked() ? null : state.wishes, readBlob: readBlob },
                          now(), onProgress).then(function(r){
       busy = null;
       if(version === backup.version){ backup.prepared = r; backup.saved = false; }
@@ -2192,12 +2863,15 @@
     return {
       profileOk: !!(state.profile && state.profile.startStatus === "ok"),
       profile: state.profile, photos: state.photos, milestones: state.milestones, hasBlob: hasBlob,
-      cycles: state.cycles, cyclesBad: state.cyclesBad, cyclesBroken: state.cyclesBroken, cyclesStamp: state.cyclesStamp
+      cycles: state.cycles, cyclesBad: state.cyclesBad, cyclesBroken: state.cyclesBroken, cyclesStamp: state.cyclesStamp,
+      // An older cached core can't judge the list, so it counts as unreadable: never imported over.
+      wishes: state.wishes, wishesBad: state.wishesBad, wishesBroken: wishesLocked(), wishesStamp: state.wishesStamp
     };
   }
   function hasLocalData(){
     var l = localSnapshot();
-    return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken;
+    return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken ||
+      l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken;
   }
 
   function onImportFile(input){
@@ -2249,15 +2923,19 @@
     } else if(imp.phase === "done"){
       var r = imp.result;
       var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm" +
+        (r.wishesInFile && !r.wishesKept ? ", " + fmtInt(r.addedWishes) + " việc" : "") +
         (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "");
       // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
       var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
+        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
         (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") +
         (r.cyclesKept ? "<p>" + cyclesKeptText(r.cyclesInFile) + "</p>" : "") +
-        (r.skippedCycles + r.clashedCycles ? "<p>Bỏ qua " + fmtInt(r.skippedCycles + r.clashedCycles) + " kỳ trùng.</p>" : "") + "</div>" +
+        (r.wishesKept ? "<p>" + wishesKeptText(r.wishesInFile) + "</p>" : "") +
+        (r.skippedCycles + r.clashedCycles ? "<p>Bỏ qua " + fmtInt(r.skippedCycles + r.clashedCycles) + " kỳ trùng.</p>" : "") +
+        (r.skippedWishes + r.clashedWishes ? "<p>Bỏ qua " + fmtInt(r.skippedWishes + r.clashedWishes) + " việc đã có hoặc trùng.</p>" : "") +
+        (r.overWishes ? "<p>" + fmtInt(r.overWishes) + " việc không được thêm vì danh sách đã đủ " + fmtInt(C.MAX_WISHES) + " việc.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
@@ -2272,6 +2950,11 @@
       : "Chu kỳ đã ghi trên máy giữ nguyên (bản sao lưu này không có).";
   }
 
+  function wishesKeptText(inFile){
+    return inFile ? "Danh sách việc muốn làm trên máy đang không đọc được nên được giữ nguyên."
+      : "Việc muốn làm trên máy giữ nguyên (bản sao lưu này không có).";
+  }
+
   function importProgressText(){
     return imp.total ? "Đang nhập " + imp.done + "/" + imp.total + "…" : "Đang nhập…";
   }
@@ -2281,9 +2964,11 @@
     var when = ps.exportedAt ? "Bản sao lưu ngày " + fmtStamp(ps.exportedAt) : "Bản sao lưu";
     var imgs = Object.keys(ps.images).length;
     var h = '<div class="import-summary"><p class="import-when">' + escapeHtml(when) + "</p><ul>" +
-      "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
+      "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (ps.wishes ? " · " + fmtInt(ps.wishes.length) + " việc" : "") +
+      (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
       (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
       (ps.cyclesSkipped ? "<li>Bỏ qua " + fmtInt(ps.cyclesSkipped) + " kỳ trùng trong file</li>" : "") +
+      (ps.wishesSkipped ? "<li>Bỏ qua " + fmtInt(ps.wishesSkipped) + " việc trùng trong file</li>" : "") +
       "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
       "</ul></div>";
     if(!hasLocalData()){
@@ -2296,27 +2981,36 @@
     if(imp.mode === "merge"){
       // Merge only takes avatars/cover the device doesn't have yet.
       var fillImgs = Object.keys(ps.images).filter(function(id){ return !local.hasBlob[id]; }).length;
-      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles;
+      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles + pl.skipWishes;
       // The device's cycle record is unreadable: the file's cycles are not imported, and must not be reported as "already here".
       var cyBlocked = !!ps.cycles && local.cyclesBroken;
-      var blockedNote = cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "";
-      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !fillImgs && local.profileOk){
-        return h + '<p class="card-text">Không có gì mới — mọi ảnh' + (ps.cycles && !cyBlocked ? ", kỷ niệm và kỳ" : " và kỷ niệm") + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
+      var wiBlocked = !!ps.wishes && local.wishesBroken;
+      var blockedNote = (cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "") +
+        (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "");
+      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !fillImgs && local.profileOk){
+        var kinds = ["ảnh", "kỷ niệm"];
+        if(ps.wishes && !wiBlocked) kinds.push("việc muốn làm");
+        if(ps.cycles && !cyBlocked) kinds.push("kỳ");
+        return h + '<p class="card-text">Không có gì mới — mọi ' + kinds.slice(0, -1).join(", ") + " và " + kinds[kinds.length - 1] + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
           '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
       }
       var adds = [fmtInt(pl.addPhotos) + " ảnh", fmtInt(pl.addMilestones) + " kỷ niệm"];
+      if(ps.wishes && !wiBlocked) adds.push(fmtInt(pl.addWishes) + " việc");
       if(ps.cycles && !cyBlocked) adds.push(fmtInt(pl.addCycles) + " kỳ");
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
       h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+        (pl.overWishes ? fmtInt(pl.overWishes) + " việc không được thêm vì danh sách chỉ chứa " + fmtInt(C.MAX_WISHES) + " việc. " : "") +
         (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" + blockedNote +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
     }
     var p = backup.prepared;
     h += '<div class="import-box import-warn"><p class="import-box-title">Toàn bộ dữ liệu hiện tại sẽ bị xoá</p><p>' +
-      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, " + (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
+      fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, " + (replacesWishes(ps, local) ? local.wishes.length + " việc, " : "") +
+      (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
       "hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p>" +
-      (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") + "</div>" +
+      (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") +
+      (keepsWishes(ps, local) ? "<p>" + wishesKeptText(!!ps.wishes) + "</p>" : "") + "</div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -2331,6 +3025,12 @@
   function replacesCycles(ps, local){ return !!ps.cycles && !local.cyclesBroken; }
   function keepsCycles(ps, local){
     return ps.cycles ? local.cyclesBroken : local.cycles.length > 0 || local.cyclesBad.length > 0 || local.cyclesBroken;
+  }
+
+  // Mirror planWishes() the same way.
+  function replacesWishes(ps, local){ return !!ps.wishes && !local.wishesBroken; }
+  function keepsWishes(ps, local){
+    return ps.wishes ? local.wishesBroken : local.wishes.length > 0 || local.wishesBad.length > 0 || local.wishesBroken;
   }
 
   $("importContent").addEventListener("click", function(e){
@@ -2369,7 +3069,7 @@
     var mode = hasLocalData() ? imp.mode : "merge";
     if(mode === "replace"){
       var l = localSnapshot();
-      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesCycles(imp.parsed, l) ? ", " + l.cycles.length + " kỳ" : "") +
+      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(imp.parsed, l) ? ", " + l.wishes.length + " việc" : "") + (replacesCycles(imp.parsed, l) ? ", " + l.cycles.length + " kỳ" : "") +
         " và hồ sơ hiện tại, thay bằng bản sao lưu?" +
         (backup.saved ? "" : "\n\nBạn CHƯA lưu bản sao lưu dữ liệu hiện tại — sau khi thay sẽ không lấy lại được.");
       if(!window.confirm(msg)) return;
@@ -2406,9 +3106,11 @@
   function reloadAll(){
     closeViewer();
     releaseAlbumThumbs();
+    releaseTl();
     Object.keys(state.urls).forEach(function(k){ if(state.urls[k]) URL.revokeObjectURL(state.urls[k]); });
     state.urls = {}; state.blobs = {}; state.photos = []; state.milestones = []; state.profile = null;
     state.cycles = []; state.cyclesBad = []; state.cyclesBroken = false; state.cyclesStamp = null;
+    state.wishes = []; state.wishesBad = []; state.wishesBroken = false; state.wishesStamp = null;
     setBanner("skipped", null);
     setBanner("load", null);
     state.loadFailed = false;
@@ -2794,13 +3496,31 @@
     // pop the iPhone keyboard over the sheet.
     $(id).querySelector("[data-close-sheet]").focus({ preventScroll: true });
   }
+  // A closed sheet stops taking taps at once, so the second tap of a double tap on "Lưu" used to
+  // land on the tab or row underneath. Only a real tap at the same spot is held back — a tap
+  // somewhere else right after closing, a key press (detail 0) and code calling .click() go through.
+  var sheetQuiet = null, lastTap = null;
+  document.addEventListener("click", function(e){
+    if(!e.isTrusted || !e.detail) return;
+    if(sheetQuiet && Math.abs(e.clientX - sheetQuiet.x) < 48 && Math.abs(e.clientY - sheetQuiet.y) < 48){
+      e.stopPropagation(); e.preventDefault();
+      return;
+    }
+    lastTap = { x: e.clientX, y: e.clientY, at: Date.now() };
+  }, true);
   function closeSheets(){
     if(imp.phase === "importing") return;
     var open = document.querySelectorAll(".sheet.open");
     if(!open.length) return;
     if(shareSheetOpen()) resetShare();
+    if(msSheetOpen()){ pendingWishId = null; setTimeout(cleanMsSheet, 300); }
     Array.prototype.forEach.call(open, function(s){ s.classList.remove("open"); });
     hideBackdrop($("sheetBackdrop"));
+    // The save behind a tap on "Lưu" is asynchronous, so the tap that closed the sheet can be a moment old.
+    if(lastTap && Date.now() - lastTap.at < 700){
+      var spot = sheetQuiet = lastTap;
+      setTimeout(function(){ if(sheetQuiet === spot) sheetQuiet = null; }, 500);
+    }
     var back = sheetOpener;
     sheetOpener = null;
     if(back && document.contains(back) && back.getClientRects().length) back.focus({ preventScroll: true });
@@ -2812,8 +3532,9 @@
     if(viewer.open){ onViewerKey(e); return; }
     var sheet = document.querySelector(".sheet.open");
     if(!sheet) return;
-    if(e.key === "Escape") closeSheets();
-    else trapTab(sheet, e);
+    if(e.key === "Escape"){
+      if(msDraft.pick && sheet.id === "milestoneSheet") leavePick(); else closeSheets();
+    } else trapTab(sheet, e);
   });
   Array.prototype.forEach.call(document.querySelectorAll(".sheet"), function(sheet){
     var handle = sheet.querySelector(".sheet-handle-hit");
