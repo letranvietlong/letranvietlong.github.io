@@ -27,7 +27,7 @@ Repo này là source code cho trang cá nhân (`index.html`) cùng một loạt 
 | **Thubee Farmery** 🔒 | Dashboard quản lý doanh thu nội bộ cho iPhone — đơn hàng, sản phẩm, khách hàng, người bán hàng. Yêu cầu đăng nhập. | [thubee-farmery/html/index.html](products/thubee-farmery/html/index.html) |
 | **VietLong Creator** | Tạo video âm nhạc chuẩn YouTube/TikTok miễn phí — 60+ template, beat sync, xuất MP4 2K. | [viet-long-creator/html/index.html](products/viet-long-creator/html/index.html) |
 | **VietLongSocial** | Social intelligence — theo dõi số liệu realtime YouTube, TikTok, Instagram. | [viet-long-social/html/index.html](products/viet-long-social/html/index.html) |
-| **GameHub Offline** | 30 mini game chơi không cần internet, tối ưu cho điện thoại. | [mini-game-hub/html/index.html](products/mini-game-hub/html/index.html) |
+| **GameHub Offline** | 30 mini game chơi được cả khi không có mạng (có service worker), tối ưu cho điện thoại: cấp độ, nhiệm vụ mỗi ngày, chuỗi ngày, kỷ lục, sao lưu tiến trình. | [mini-game-hub/html/index.html](products/mini-game-hub/html/index.html) |
 | **FIFA World Cup 2026** | Lịch thi đấu 104 trận, tỷ số trực tiếp, bảng xếp hạng, nhánh knockout. | [worldcup-2026/html/index.html](products/worldcup-2026/html/index.html) |
 
 > Toàn bộ danh sách trên cũng được liệt kê tại tab **Products** của [trang chủ](https://letranvietlong.github.io).
@@ -59,7 +59,12 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   ├── mini-game-hub/
 │   │   ├── html/index.html
 │   │   ├── css/mini-game-hub.css
-│   │   └── js/mini-game-hub.js
+│   │   ├── js/mini-game-hub-core.js          ← logic thuần (XP, nhiệm vụ, migrate, sao lưu), test được bằng node
+│   │   ├── js/mini-game-hub-games-action.js  ← 15 game hành động/phản xạ/may mắn
+│   │   ├── js/mini-game-hub-games-mind.js    ← 15 game trí tuệ + 5 game IDLE
+│   │   ├── js/mini-game-hub.js               ← vỏ app: lưu trữ, tab, host game, cài đặt
+│   │   ├── js/sw-core.js + sw-mini-game-hub.js (vỏ service worker ở gốc sản phẩm)
+│   │   ├── manifest.json, img/, data/changelog.json, docs/mini-game-hub.md
 │   ├── thanh-thu-fruit/
 │   │   ├── html/index.html
 │   │   ├── css/thanh-thu-fruit.css
@@ -190,7 +195,7 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 | thanh-thu-fruit (html/index.html + css + js) | 281 + 823 + 60 | 0 |
 | viet-long-social (html/index.html + css + js) | 173 + 312 + 662 | 0 |
 | kol-vu-thi-minh-thu (html/index.html + css + js) | 572 + 244 + 109 | **39 (11.7 MB)** |
-| mini-game-hub (html/index.html + css + js) | 117 + 89 + 463 | 0 |
+| mini-game-hub (html + css + 5 js) | 254 + 288 + ~4.060 | 0 |
 | viet-long-creator/html/privacy.html + css/privacy.css | 84 + 14 | 0 |
 | viet-long-creator/html/terms.html + css/terms.css | 67 + 13 | 0 |
 

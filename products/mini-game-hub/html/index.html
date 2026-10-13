@@ -1,117 +1,254 @@
 <!DOCTYPE html>
-<!-- FULL_FEATURE_BUILD: 2026-05-21 | 30 games | XP/level | missions | themes | highscores | audio | saver | export-import -->
-<html lang="vi">
+<html lang="vi" data-theme="default">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1020" />
-  <meta name="description" content="GameHub Offline - 30 mini game chơi không cần internet, tối ưu cho điện thoại." />
-  <meta name="format-detection" content="telephone=no" />
-  <meta name="mobile-web-app-capable" content="yes" />
-
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="GameHub Offline" />
-  <title>GameHub Offline</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxODAgMTgwJz4KPGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSdnJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agc3RvcC1jb2xvcj0nIzYwYTVmYScvPjxzdG9wIG9mZnNldD0nMScgc3RvcC1jb2xvcj0nI2E3OGJmYScvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPgo8cmVjdCB3aWR0aD0nMTgwJyBoZWlnaHQ9JzE4MCcgcng9JzQyJyBmaWxsPScjMGIxMDIwJy8+CjxjaXJjbGUgY3g9JzkwJyBjeT0nOTAnIHI9JzYyJyBmaWxsPSd1cmwoI2cpJy8+CjxwYXRoIGQ9J001NSA5NWMwLTE5IDE1LTM0IDM1LTM0czM1IDE1IDM1IDM0LTE1IDM0LTM1IDM0LTM1LTE1LTM1LTM0WicgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScxMCcvPgo8cGF0aCBkPSdNNjYgOTNoMjJNNzcgODJ2MjJNMTAzIDg4aC4xTTExOCAxMDFoLjEnIHN0cm9rZT0nd2hpdGUnIHN0cm9rZS13aWR0aD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgo8L3N2Zz4=" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxODAgMTgwJz4KPGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSdnJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agc3RvcC1jb2xvcj0nIzYwYTVmYScvPjxzdG9wIG9mZnNldD0nMScgc3RvcC1jb2xvcj0nI2E3OGJmYScvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPgo8cmVjdCB3aWR0aD0nMTgwJyBoZWlnaHQ9JzE4MCcgcng9JzQyJyBmaWxsPScjMGIxMDIwJy8+CjxjaXJjbGUgY3g9JzkwJyBjeT0nOTAnIHI9JzYyJyBmaWxsPSd1cmwoI2cpJy8+CjxwYXRoIGQ9J001NSA5NWMwLTE5IDE1LTM0IDM1LTM0czM1IDE1IDM1IDM0LTE1IDM0LTM1IDM0LTM1LTE1LTM1LTM0WicgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScxMCcvPgo8cGF0aCBkPSdNNjYgOTNoMjJNNzcgODJ2MjJNMTAzIDg4aC4xTTExOCAxMDFoLjEnIHN0cm9rZT0nd2hpdGUnIHN0cm9rZS13aWR0aD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgo8L3N2Zz4=" />
-
-  <link rel="stylesheet" href="../css/mini-game-hub.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#070B16" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!-- "default", KHÔNG "black-translucent": app Màn hình chính trên iPhone ở chế độ
+     translucent báo viewport hụt 59pt, tab bar cố định sẽ lơ lửng trên đáy thật
+     (LongLTV_ios-pwa-pitfalls §1b). iOS chụp thẻ này lúc Thêm vào Màn hình chính. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="GameHub" />
+<meta name="description" content="GameHub Offline — 30 mini game chơi không cần mạng trên điện thoại: có cấp độ, nhiệm vụ mỗi ngày, kỷ lục và sao lưu tiến trình." />
+<title>GameHub Offline — 30 mini game</title>
+<link rel="canonical" href="https://letranvietlong.github.io/products/mini-game-hub/html/index.html">
+<link rel="icon" type="image/svg+xml" href="/products/mini-game-hub/img/mini-game-hub-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/products/mini-game-hub/img/mini-game-hub-icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/products/mini-game-hub/img/mini-game-hub-icon-180.png">
+<link rel="manifest" href="/products/mini-game-hub/manifest.json">
+<link rel="stylesheet" href="/products/mini-game-hub/css/mini-game-hub.css">
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="logo">
-        <div class="logo-mark">🎮</div>
-        <div><h1>GameHub Offline</h1><p>30 trò chơi · offline · cảm ứng</p></div>
-      </div>
-      <div class="status" id="netStatus">Đang kiểm tra...</div>
-    </header>
-    <main id="home" class="screen active">
-      <section class="hero">
-        <h2>Game offline gọn nhẹ, mở là chơi.</h2>
-        <p>Một file HTML duy nhất, không cần CDN hay thư viện ngoài. Phù hợp để lưu vào điện thoại, bật chế độ máy bay và chơi trong lúc di chuyển.</p>
-        <div class="cta-row"><button class="primary" onclick="switchTab('games')">Chơi ngay</button><button class="secondary" onclick="randomGame()">Game ngẫu nhiên</button></div>
-      </section>
-      <section class="grid">
-        <div class="card"><h3>✈️ Airplane mode</h3><p>Góc phải trên sẽ báo Online/Offline thực tế theo kết nối hiện tại.</p></div>
-        <div class="card"><h3>💾 Lưu tiến trình</h3><p>Một số game lưu điểm, level, tiền và nâng cấp offline.</p></div>
-        <div class="card"><h3>🕹️ 30 mini game</h3><p>Arcade, trí tuệ, phản xạ, may mắn và IDLE.</p></div>
-        <div class="card"><h3>📦 1 file duy nhất</h3><p>Không cần ảnh, font, CDN hay thư viện bên ngoài.</p></div>
-        <div class="card"><h3>🧹 Dọn dữ liệu</h3><p>Xóa điểm và tiến trình nếu muốn chơi lại từ đầu.</p><button class="small-btn" style="margin-top:10px" onclick="resetAllProgress()">Reset</button></div>
-        <div class="card"><h3>🔋 Tối ưu pin</h3><p>Game đang mở sẽ tự dừng khi bạn thoát màn chơi.</p></div>
-      </section>
-    
-      <section class="feature-stack">
-        <div class="feature-panel">
-          <h3>👤 Hồ sơ người chơi</h3>
-          <div class="profile-row">
-            <div class="avatar" id="playerAvatar">🎮</div>
-            <div>
-              <div class="level-title" id="playerLevelText">Level 1</div>
-              <div class="progress"><div class="bar" id="playerXpBar"></div></div>
-              <p id="playerXpText">0 XP</p>
-            </div>
-          </div>
-          <div class="action-row">
-            <button class="tiny-btn" onclick="toggleSound()">Âm thanh: <span id="soundState">Bật</span></button>
-            <button class="tiny-btn" onclick="toggleBatterySaver()">Tiết kiệm pin: <span id="batteryState">Tắt</span></button>
-            <button class="tiny-btn" onclick="showHighScores()">Bảng điểm</button>
-          </div>
-        </div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11 12 3.8 20.5 11"/><path d="M5.5 9.6V20h13V9.6"/><path d="M10 20v-5.5h4V20"/></symbol>
+  <symbol id="i-games" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.8 10.8v3.4M6.1 12.5h3.4"/><circle cx="15.4" cy="11.4" r=".6"/><circle cx="17.6" cy="13.6" r=".6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5 8 12l6.5 7"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.4a2.7 2.7 0 1 1 3.9 2.4c-.8.5-1.3 1-1.3 2"/><path d="M12 17v.2"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.4-5.5"/><path d="M19.8 3.8v4.4h-4.4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5Z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="16.5" height="9" rx="2.5"/><path d="M21.5 10.5v3"/><path d="M6 10.5v3M9 10.5v3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 16.5V19a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-2.5"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M12 15V4.5M7.5 9 12 4.5 16.5 9"/><path d="M4.5 16.5V19a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-2.5"/></symbol>
+  <symbol id="i-paste" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2.5"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1l.8-12"/><path d="M10 11v5M14 11v5"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/></symbol>
+</svg>
+<div class="safe-probe" id="safeProbe" aria-hidden="true"></div>
 
-        <div class="feature-panel">
-          <h3>📅 Nhiệm vụ hôm nay</h3>
-          <p>Hoàn thành nhiệm vụ để nhận XP. Tất cả lưu offline.</p>
-          <div class="mini-list" id="dailyMissions"></div>
-        </div>
-
-        <div class="feature-panel">
-          <h3>🏆 Huy hiệu</h3>
-          <p>Mở khóa khi chơi nhiều game, đạt XP hoặc cày IDLE.</p>
-          <div class="mini-list" id="achievementList"></div>
-        </div>
-
-        <div class="feature-panel">
-          <h3>🎨 Shop theme</h3>
-          <p>Dùng XP để mở khóa theme. Theme đã mở sẽ lưu offline.</p>
-          <div class="theme-grid" id="themeShop"></div>
-        </div>
-
-        <div class="feature-panel">
-          <h3>⏱️ Bộ sưu tập theo thời lượng</h3>
-          <p>Lọc nhanh game theo thời gian phù hợp khi đang bay.</p>
-          <div class="filter" id="durationFilters"></div>
-        </div>
-
-        <div class="feature-panel">
-          <h3>💾 Sao lưu tiến trình</h3>
-          <p>Export mã save để lưu lại, hoặc import để khôi phục trên máy khác.</p>
-          <div class="action-row">
-            <button class="tiny-btn" onclick="exportSave()">Export save</button>
-            <button class="tiny-btn" onclick="importSave()">Import save</button>
-          </div>
-          <textarea class="data-box" id="saveBox" placeholder="Mã save sẽ hiện ở đây..."></textarea>
-        </div>
-
-        <div class="feature-panel">
-          <h3>🚀 PWA nâng cao cho GitHub Pages</h3>
-          <p>File này vẫn là 1 HTML duy nhất. Với GitHub Pages, để có service worker chuẩn 100%, cần thêm 1 file phụ sw.js. Bản hiện tại vẫn chơi offline khi mở trực tiếp hoặc khi trình duyệt đã cache trang.</p>
-          <div class="action-row">
-            <button class="tiny-btn" onclick="showPwaGuide()">Xem hướng dẫn sw.js</button>
-          </div>
-        </div>
-      </section>
-
-    </main>
-    <main id="games" class="screen">
-      <div class="filter" id="filters"></div>
-      <section class="game-list" id="gameList"></section>
-    </main>
+<div class="app" id="app">
+  <div class="banner" id="corruptBanner" role="alert" hidden>
+    <b>Không đọc được tiến trình</b>
+    <p>Dữ liệu lưu trên máy bị lỗi nên app chưa ghi đè gì lên nó. Bạn vẫn chơi được, nhưng những lượt chơi lúc này sẽ không được lưu.</p>
+    <div class="banner-actions">
+      <button type="button" class="btn" id="btnBrokenSave">Lưu bản lỗi ra file</button>
+      <button type="button" class="btn" id="btnBrokenRestore">Khôi phục từ file</button>
+      <button type="button" class="btn danger-soft" id="btnBrokenReset">Bắt đầu lại</button>
+    </div>
+    <p class="field-error" id="brokenError" hidden></p>
   </div>
-  <nav class="tabs"><button id="tabHome" class="tab-btn active" onclick="switchTab('home')">🏠 Trang chủ</button><button id="tabGames" class="tab-btn" onclick="switchTab('games')">🎮 Trò chơi</button></nav>
-  <div class="modal" id="modal"><div class="game-panel"><div class="game-head"><h2 id="gameTitle">Game</h2><div class="mini-actions"><button class="icon-btn" title="Toàn màn hình" onclick="toggleNativeFullscreen()">⛶</button><button class="xbtn" title="Đóng game" onclick="closeGame()">×</button></div></div><div class="scorebar" id="scorebar"></div><div class="game-area" id="gameArea"></div></div></div><div class="toast" id="toast"></div>
 
-<script src="../js/mini-game-hub.js"></script>
+  <main>
+    <section class="view" id="viewHome" aria-labelledby="homeTitle">
+      <header class="page-head"><h1 id="homeTitle">GameHub</h1></header>
+      <div class="card profile">
+        <div class="profile-top"><span class="level" id="levelText">Cấp 1</span><span class="streak" id="streakText"></span></div>
+        <div class="bar" id="xpBar" role="progressbar" aria-label="Kinh nghiệm trong cấp" aria-valuemin="0"><i id="xpFill"></i></div>
+        <div class="profile-xp" id="xpText"></div>
+      </div>
+      <h2 class="sec-title" id="recentTitle">Chơi tiếp</h2>
+      <div class="recent-row" id="recentRow"></div>
+      <div class="storage-note" id="newNote" hidden>
+        <p>App ở Màn hình chính có bộ nhớ riêng, không chung với Safari. Đã chơi ở nơi khác?</p>
+        <button type="button" class="btn small" id="btnEmptyRestore">Khôi phục từ file</button>
+      </div>
+      <p class="field-error" id="emptyError" hidden></p>
+      <section class="card" id="missionCard" aria-labelledby="missionTitle">
+        <h2 id="missionTitle">Nhiệm vụ hôm nay</h2>
+        <div id="missionList"></div>
+      </section>
+      <section class="card" aria-labelledby="achTitle">
+        <h2 id="achTitle">Huy hiệu</h2>
+        <div id="achList"></div>
+      </section>
+      <section class="card" aria-labelledby="statTitle">
+        <h2 id="statTitle">Thống kê</h2>
+        <div class="stat-grid" id="statGrid"></div>
+      </section>
+    </section>
+
+    <section class="view" id="viewGames" aria-labelledby="gamesTitle" hidden>
+      <header class="page-head"><h1 id="gamesTitle">Trò chơi</h1></header>
+      <div class="search">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" id="searchInput" aria-label="Tìm game" placeholder="vd: rắn, 2048" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" maxlength="40" />
+        <button type="button" class="icon-btn" id="searchClear" aria-label="Xoá tìm kiếm" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Lọc game"></div>
+      <div class="game-grid" id="gameGrid"></div>
+    </section>
+
+    <section class="view" id="viewSettings" aria-labelledby="settingsTitle" hidden>
+      <header class="page-head"><h1 id="settingsTitle">Cài đặt</h1></header>
+      <div class="card list">
+        <button type="button" class="row" id="swSound" role="switch" aria-checked="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-sound"/></svg>
+          <span class="row-label">Âm thanh</span><span class="switch" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="row" id="swSaver" role="switch" aria-checked="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-battery"/></svg>
+          <span class="row-label">Tiết kiệm pin<small>Game chạy khoảng 30 khung hình/giây, bớt hiệu ứng nền</small></span><span class="switch" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <h2 class="sec-title">Giao diện</h2>
+      <div class="theme-grid" id="themeGrid"></div>
+
+      <h2 class="sec-title">Dữ liệu</h2>
+      <div class="card list">
+        <button type="button" class="row" id="btnBackup">
+          <svg class="icon" aria-hidden="true"><use href="#i-save"/></svg>
+          <span class="row-label">Lưu file<small id="backupHint">Giữ tiến trình thành một file để cất hoặc chuyển máy</small></span>
+        </button>
+        <button type="button" class="row" id="btnRestore">
+          <svg class="icon" aria-hidden="true"><use href="#i-restore"/></svg>
+          <span class="row-label">Khôi phục từ file</span>
+        </button>
+        <p class="field-error" id="dataError" hidden></p>
+        <details id="legacyBox">
+          <summary class="row">
+            <svg class="icon" aria-hidden="true"><use href="#i-paste"/></svg>
+            <span class="row-label">Dán mã save cũ<small>Mã đã Export từ bản GameHub 1.x</small></span>
+            <svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg>
+          </summary>
+          <div class="legacy-body">
+            <label for="legacyText">Mã save</label>
+            <textarea id="legacyText" placeholder="vd: eyJwcm9maWxlIjp7InhwIjo5MCwi…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="legacyError"></textarea>
+            <p class="field-error" id="legacyError" hidden></p>
+            <button type="button" class="btn" id="btnLegacy">Đọc mã này</button>
+          </div>
+        </details>
+        <button type="button" class="row danger" id="btnReset">
+          <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+          <span class="row-label">Xoá hết tiến trình</span>
+        </button>
+      </div>
+
+      <h2 class="sec-title">Giới thiệu</h2>
+      <div class="card list">
+        <button type="button" class="row" id="btnChangelog">
+          <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>
+          <span class="row-label">Lịch sử cập nhật</span><span class="row-value" id="versionText">Phiên bản …</span>
+        </button>
+        <div class="about">
+          <p>App mở từ icon Màn hình chính có bộ nhớ riêng, không dùng chung với Safari — tiến trình chơi ở bên này không tự hiện ở bên kia. Dùng Lưu file rồi Khôi phục từ file để chuyển.</p>
+          <p>Muốn đổi sang icon mới: Lưu file → xoá icon → thêm lại vào Màn hình chính → Khôi phục từ file.</p>
+        </div>
+        <details id="diagBox">
+          <summary class="row">
+            <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+            <span class="row-label">Thông tin chẩn đoán</span>
+            <svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg>
+          </summary>
+          <p class="diag-line" id="diagLine"></p>
+        </details>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Điều hướng chính">
+  <button type="button" class="tabbar-btn" data-tab="home" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Trang chủ</span></button>
+  <button type="button" class="tabbar-btn" data-tab="games"><svg class="icon" aria-hidden="true"><use href="#i-games"/></svg><span>Trò chơi</span></button>
+  <button type="button" class="tabbar-btn" data-tab="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span>Cài đặt</span></button>
+</nav>
+
+<section class="game-screen" id="gameScreen" role="dialog" aria-modal="true" aria-labelledby="gameTitle" hidden>
+  <header class="game-bar">
+    <button type="button" class="icon-btn" id="gameClose" aria-label="Đóng game"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+    <h2 id="gameTitle"></h2>
+    <button type="button" class="icon-btn" id="gameHelp" aria-label="Cách chơi"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></button>
+    <button type="button" class="icon-btn" id="gameRestart" aria-label="Chơi lại"><svg class="icon" aria-hidden="true"><use href="#i-restart"/></svg></button>
+  </header>
+  <div class="game-stats" id="gameStats"></div>
+  <div class="game-stage" id="gameStage">
+    <div class="game-root" id="gameRoot"></div>
+    <div class="game-layer" id="pauseLayer" hidden>
+      <p class="layer-title">Tạm dừng</p>
+      <button type="button" class="btn primary" id="btnResume">Chơi tiếp</button>
+    </div>
+    <div class="game-layer" id="errorLayer" role="alert" hidden>
+      <p class="layer-title">Game gặp lỗi</p>
+      <p class="layer-text">Ván này không chạy tiếp được. Tiến trình của bạn vẫn còn nguyên.</p>
+      <button type="button" class="btn primary" id="btnErrRetry">Chơi lại</button>
+      <button type="button" class="btn" id="btnErrOther">Game khác</button>
+    </div>
+  </div>
+</section>
+
+<div class="backdrop" id="backdrop" hidden></div>
+
+<div class="sheet result" id="resultSheet" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+  <h2 id="resultTitle"></h2>
+  <div class="result-score" id="resultScore"></div>
+  <div class="result-badge" id="resultBadge" hidden>Kỷ lục mới</div>
+  <p class="result-sub" id="resultSub"></p>
+  <p class="result-xp" id="resultXp"></p>
+  <div class="sheet-actions">
+    <button type="button" class="btn primary" id="btnAgain">Chơi lại</button>
+    <button type="button" class="btn" id="btnOther">Game khác</button>
+  </div>
+</div>
+
+<div class="sheet" id="helpSheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <h2 id="helpTitle">Cách chơi</h2>
+  <p class="sheet-text" id="helpText"></p>
+  <div class="sheet-actions"><button type="button" class="btn primary" id="btnHelpOk">Đã hiểu</button></div>
+</div>
+
+<div class="sheet" id="confirmSheet" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+  <h2 id="confirmTitle"></h2>
+  <p class="sheet-text" id="confirmBody"></p>
+  <div class="sheet-actions">
+    <button type="button" class="btn" id="confirmOk"></button>
+    <button type="button" class="btn" id="confirmCancel">Thôi</button>
+  </div>
+</div>
+
+<div class="sheet" id="restoreSheet" role="dialog" aria-modal="true" aria-labelledby="restoreTitle" hidden>
+  <h2 id="restoreTitle">Khôi phục tiến trình này?</h2>
+  <p class="sheet-text" id="restoreInfo"></p>
+  <p class="sheet-text" id="restoreWarn" hidden></p>
+  <p class="field-error" id="restoreError" role="alert" hidden></p>
+  <div class="sheet-actions">
+    <button type="button" class="btn primary" id="btnRestoreSaveFirst">Lưu bản hiện tại rồi khôi phục</button>
+    <button type="button" class="btn" id="btnRestoreNow">Khôi phục</button>
+    <button type="button" class="btn" id="btnRestoreCancel">Thôi</button>
+  </div>
+</div>
+
+<div class="sheet" id="changelogSheet" role="dialog" aria-modal="true" aria-labelledby="changelogTitle" hidden>
+  <div class="sheet-head">
+    <h2 id="changelogTitle">Lịch sử cập nhật</h2>
+    <button type="button" class="icon-btn" id="changelogClose" aria-label="Đóng"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div id="changelogBody"></div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden />
+
+<script src="/products/mini-game-hub/js/mini-game-hub-core.js"></script>
+<script src="/products/mini-game-hub/js/mini-game-hub-games-action.js"></script>
+<script src="/products/mini-game-hub/js/mini-game-hub-games-mind.js"></script>
+<script src="/products/mini-game-hub/js/mini-game-hub.js"></script>
 </body>
 </html>
