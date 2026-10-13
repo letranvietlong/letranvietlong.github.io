@@ -168,6 +168,7 @@ const cycleSel = {
 
 // ---------- Lịch tháng + nhắc trước kỳ (v1.11) ----------
 // Weeks start on Monday; a month is always 35 or 42 cells. Days are listed as 'MM-DD'.
+// v1.15: every .cal-day is ≥ 44×44 at 375px wide (45,28 × 44; was 42,42).
 // A: gaps 44, 58, 48, 46, 46 → 48,4 → 48 → next Thứ hai 28/09/2026 ("Trễ 15 ngày" at calNow); range = last + 44 … last + 58.
 const threeDays = starts => starts.map(s => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 2); return cy(s, d.toISOString().slice(0, 10)); });
 const mmdd = (mm, a, b) => { const o = []; for (let i = a; i <= b; i++) o.push(mm + '-' + String(i).padStart(2, '0')); return o; };
@@ -285,6 +286,15 @@ const timeline = {
   // deleting seed003 in the Album: ONE readwrite transaction over photos+blobs+milestones; afterwards m-hoa [seed001], m-gap []
   max: 60, limitText: 'Tối đa 60 ảnh cho một kỷ niệm', pickEmpty: 'Album chưa có ảnh — thêm ảnh ở tab Album trước.',
   deleteConfirm: 'Xoá kỷ niệm “Lần đầu tặng hoa”? Ảnh trong Album vẫn còn.',   // red row inside the sheet; window.confirm is never called
+  // v1.15: no window.confirm/alert anywhere (page.on('dialog') must never fire). Album viewer on seed003 → sel.viewerDelete opens the row:
+  photoDeleteConfirm: 'Xoá ảnh này khỏi Album? Không lấy lại được. Ảnh cũng rời khỏi 2 kỷ niệm.',   // second sentence only when linked
+  photoDeleteError: 'Không xoá được ảnh. Hãy thử lại.',                                               // #viewerErr
+  // "Thay thế" import: [data-imp=run] turns into #impConfirm ([data-imp=run-yes] "Thay thế" / [data-imp=run-no] "Giữ lại");
+  // with timeline.milestones + wishes.items + calendar.A.items + seedPhotos(6):
+  replaceConfirm: 'Xoá 6 ảnh, 3 kỷ niệm, 6 việc, 6 kỳ và hồ sơ hiện tại, thay bằng bản sao lưu?',
+  replaceNotSaved: 'Bạn chưa lưu bản sao lưu dữ liệu hiện tại — thay xong sẽ không lấy lại được.',
+  // Cài đặt → Ảnh: [data-remove=cover|avatar-long|avatar-thu] opens #photoConfirm (#photoConfirmYes "Gỡ" / #photoConfirmNo "Giữ lại")
+  removeConfirm: { cover: 'Gỡ ảnh bìa?', 'avatar-long': 'Gỡ ảnh đại diện của Viết Long?' },
   importBusy: 'Đang nhập bản sao lưu — đợi xong rồi thử lại.',
   timezones: [['America/Los_Angeles', '2026-10-13T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-13T23:30:00+07:00']]   // still "949 ngày trước"
 };
@@ -295,7 +305,9 @@ const timelineSel = {
   formPhotos: '#msPhotos > li', pickOpen: '#msPickOpen',                 // button text "Chọn ảnh từ Album · 3 ảnh"
   pick: '#msPick', pickGrid: '#msPickGrid', pickTile: id => '#msPickGrid [data-pick="' + id + '"]',   // aria-pressed; aria-disabled once 60 are chosen
   pickDone: '#msPickDone', pickBack: '#msPickBack', pickLimit: '#msPickLimit', pickEmpty: '#msPickEmpty',   // "Xong · 3 ảnh"; back / Esc drops the uncommitted choice
-  save: '#milestoneForm button[type=submit]', del: '#msDelete', confirm: '#msConfirm', confirmText: '#msConfirmText', confirmYes: '#msConfirmYes', confirmNo: '#msConfirmNo'
+  save: '#milestoneForm button[type=submit]', del: '#msDelete', confirm: '#msConfirm', confirmText: '#msConfirmText', confirmYes: '#msConfirmYes', confirmNo: '#msConfirmNo',
+  viewerConfirm: '#viewerConfirm', viewerConfirmText: '#viewerConfirmText', viewerConfirmYes: '#viewerConfirmYes', viewerConfirmNo: '#viewerConfirmNo', viewerErr: '#viewerErr',
+  impConfirm: '#impConfirm', photoConfirm: '#photoConfirm', photoConfirmText: '#photoConfirmText'
 };
 
 // ---------- Muốn làm (v1.14) ----------
@@ -305,7 +317,10 @@ const timelineSel = {
 // and a record whose items is not an array locks the list (no add, no export, no import over it) without failing the app.
 // Seed: ld.seed(page, { profile: ld.profile, extra: [['kv', ld.wishesRecord(ld.wishes.items)]] }), now = ld.wishes.now.
 // The list sits in the Kỷ niệm tab behind the segmented control (default "Kỷ niệm"; not remembered between launches).
-// After a successful write #wishList and #wishSheet ignore taps for 400ms — wait ≥500ms before the next click.
+// After a successful write #wishSheet ignores taps for 400ms — wait ≥500ms before the next click there.
+// v1.15 round buttons: a real tap on ANOTHER row while a write is running is queued and written next (two rows tapped 0–120ms
+// apart both end up done); the same row again is dropped; after a write only the spot just tapped (±32px) swallows real taps
+// for 400ms. Keyboard and el.click() are never held back. A failed write (the two-window message included) empties the queue.
 const wi = (id, title, cat, planDate, doneDate, createdAt) => ({ id, title, cat, note: '', planDate: planDate || null, doneDate: doneDate || null, milestoneId: null, createdAt });
 const wishesRecord = items => ({ key: 'wishes', items, updatedAt: 1 });
 const wishNow = '2026-10-13T09:00:00+07:00'; // Thứ ba
@@ -320,13 +335,28 @@ const wishes = {
   // group title → rows as [id, .ms-sub text ('' = no sub line), right side text]
   groups: [
     ['Sắp tới', [['w2', 'Thứ ba, 13/10/2026', 'Hôm nay'], ['w1', 'Chủ nhật, 01/11/2026', '19 ngày nữa'], ['w4', 'Thứ sáu, 01/01/2027', '80 ngày nữa']]],
-    ['Chưa hẹn ngày', [['w5', 'Dự định 10/10/2026 đã qua 3 ngày', ''], ['w3', '', '']]],     // newest createdAt first
+    ['Đã qua ngày dự định', [['w5', 'Dự định 10/10/2026 đã qua 3 ngày', '']]],    // v1.15: its own group, most recently passed first
+    ['Chưa hẹn ngày', [['w3', '', '']]],                                         // newest createdAt first; v1.14 showed [w5, w3] here
     ['Đã làm', [['w6', 'Đã làm 20/09/2026', 'Đã làm']]]
   ],
   // Home "Sắp tới" card: row 1 stays the nearest milestone, row 2 = nearest dated wish; tapping row 2 opens the tab on "Muốn làm"
   home: { row1: 'Sinh nhật Minh Thư', row1Left: '2 ngày nữa', row2: 'Ăn lẩu nấm', row2Date: 'Thứ ba, 13/10/2026', row2Left: 'Hôm nay' },
   timezones: [['America/Los_Angeles', '2026-10-13T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-13T23:30:00+07:00']],   // w2 "Hôm nay", w1 19
-  // setFixedTime(before) → load → setFixedTime(after) → wait 1.2s: w1 18; w2 drops to "Chưa hẹn ngày"; Home row 2 = w1
+  // v1.15 at 2026-10-14T09:00+07 (group titles are upper-cased by CSS: read textContent, not innerText)
+  v115: { now: '2026-10-14T09:00:00+07:00',
+    groups: [
+      ['Sắp tới', [['w1', 'Chủ nhật, 01/11/2026', '18 ngày nữa'], ['w4', 'Thứ sáu, 01/01/2027', '79 ngày nữa']]],
+      ['Đã qua ngày dự định', [['w2', 'Dự định 13/10/2026 đã qua 1 ngày', ''], ['w5', 'Dự định 10/10/2026 đã qua 4 ngày', '']]],
+      ['Chưa hẹn ngày', [['w3', '', '']]],
+      ['Đã làm', [['w6', 'Đã làm 20/09/2026', 'Đã làm']]]
+    ],
+    home: [['Sinh nhật Minh Thư', '1 ngày nữa'], ['Ngắm hoàng hôn Hội An', '18 ngày nữa']],
+    timezones: [['America/Los_Angeles', '2026-10-14T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-14T23:30:00+07:00']],
+    // 14/10 23:59:59 → 15/10 00:00:01: w1 "17 ngày nữa", w2 "Dự định 13/10/2026 đã qua 2 ngày"
+    // quick taps (page.mouse.click at the round buttons' centres): w3 then w2 → both doneDate 2026-10-14 (v1.14: only w3);
+    // twice on w3 → only w3, ONE write (kv wishes.updatedAt = Date.parse(now), not +1)
+    quick: { doneDate: '2026-10-14' } },
+  // setFixedTime(before) → load → setFixedTime(after) → wait 1.2s: w1 18; w2 drops to "Đã qua ngày dự định"; Home row 2 = w1
   rollover: { before: '2026-10-13T23:59:59+07:00', after: '2026-10-14T00:00:01+07:00', w1: '18 ngày nữa', w2: 'Dự định 13/10/2026 đã qua 1 ngày', homeRow2: 'Ngắm hoàng hôn Hội An' },
   toggle: { doneDate: '2026-10-13', toastOn: 'Đã làm ✓', toastOff: 'Đã bỏ đánh dấu' },   // real tap on the round button of w3; a double tap writes once
   toMilestone: { id: 'w6', title: 'Đi Đà Lạt', date: '2026-09-20', emoji: '✈️', linked: 'Đã có trong Kỷ niệm ✓' },   // nothing is created until "Lưu kỷ niệm"

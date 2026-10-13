@@ -500,9 +500,12 @@
   // Each item gains done + daysLeft (null without a planned date), split into:
   // soon (not done, planned today or later, nearest first), open (not done, no
   // date or the date has passed, newest first), done (latest first).
+  // open is also given as its two halves: passed (the planned date is behind,
+  // most recently passed first) and undated (newest first). open keeps its
+  // meaning — the backup dry run adds soon + open + done.
   // Every order ends on id, so the same items always come out the same way.
   function wishView(items, nowMs){
-    var tIdx = todayIdx(nowMs), soon = [], open = [], done = [];
+    var tIdx = todayIdx(nowMs), soon = [], open = [], done = [], passed = [], undated = [];
     function byId(a, b){ return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; }
     (items || []).forEach(function(w){
       var v = { id: w.id, title: w.title, cat: w.cat, note: w.note, planDate: w.planDate, doneDate: w.doneDate,
@@ -510,15 +513,17 @@
                 done: w.doneDate != null, daysLeft: w.planDate == null ? null : dayIdx(w.planDate) - tIdx };
       if(v.done) done.push(v);
       else if(v.daysLeft !== null && v.daysLeft >= 0) soon.push(v);
-      else open.push(v);
+      else { open.push(v); (v.daysLeft === null ? undated : passed).push(v); }
     });
     soon.sort(function(a, b){ return a.daysLeft - b.daysLeft || a.createdAt - b.createdAt || byId(a, b); });
     open.sort(function(a, b){ return b.createdAt - a.createdAt || byId(a, b); });
+    passed.sort(function(a, b){ return b.daysLeft - a.daysLeft || b.createdAt - a.createdAt || byId(a, b); });
+    undated.sort(function(a, b){ return b.createdAt - a.createdAt || byId(a, b); });
     done.sort(function(a, b){
       if(a.doneDate !== b.doneDate) return a.doneDate < b.doneDate ? 1 : -1;
       return b.createdAt - a.createdAt || byId(a, b);
     });
-    return { soon: soon, open: open, done: done, nearest: soon.length ? soon[0] : null };
+    return { soon: soon, open: open, passed: passed, undated: undated, done: done, nearest: soon.length ? soon[0] : null };
   }
 
   // Adds each incoming wish whose id the device doesn't have; the device's own

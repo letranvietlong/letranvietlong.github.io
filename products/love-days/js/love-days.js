@@ -1366,7 +1366,11 @@
   // every save, nothing written at all while the stored record is unreadable.
   // seg = which list the Kỷ niệm tab shows ("ms" | "wishes"); not persisted.
   // undone: done dates just removed by a tap on the circle, so tapping again within a minute puts the same date back.
-  var wish = { seg: "ms", editingId: null, cat: "", saving: false, quiet: false, undone: Object.create(null) };
+  // saving = one write at a time. writingId = the row whose round button is being written; taps on OTHER
+  // rows meanwhile wait in queue ({id, today} — today as of the tap) instead of being dropped.
+  // tap = the last real tap in the list; quiet = that spot, held back for 400ms after the rows moved.
+  var wish = { seg: "ms", editingId: null, cat: "", saving: false, writingId: null, queue: [], tap: null, quiet: null, sheetQuiet: false,
+               undone: Object.create(null) };
   // Set while the milestone form is open from "Thêm vào Kỷ niệm": saving that
   // milestone links it to this wish; closing the form without saving drops it.
   var pendingWishId = null;
@@ -1432,30 +1436,51 @@
     var label = btn ? btn.textContent : "";
     wish.saving = true;
     if(btn){ btn.disabled = true; btn.textContent = "Đang lưu…"; }
+    var toggled = wish.writingId !== null;
     function release(){
       wish.saving = false;
+      wish.writingId = null;
       if(btn){ btn.disabled = false; btn.textContent = label; }
     }
     // Inside a then() so a synchronous throw also releases the flag.
     Promise.resolve().then(function(){ return saveWishes(next); }).then(function(){
       release();
-      // Rows have just moved under the finger: the second tap of a double tap must not land on another row.
-      wish.quiet = true;
-      setTimeout(function(){ wish.quiet = false; }, 400);
+      // Rows have just moved under the finger: the second tap of a double tap must not land on another
+      // row. Only the spot that was tapped is held back, so a quick tap on a different row still counts.
+      if(toggled && wish.tap){
+        var spot = wish.quiet = { x: wish.tap.x, y: wish.tap.y };
+        setTimeout(function(){ if(wish.quiet === spot) wish.quiet = null; }, 400);
+      }
+      wish.sheetQuiet = true;
+      setTimeout(function(){ wish.sheetQuiet = false; }, 400);
       showError("wishErr", null);
       renderWishes();
       renderUpcoming();
       ok();
+      wishDrain();
     }, function(err){
       release();
+      // The list may have been reloaded from another window: taps made on the old one are dropped.
+      wish.queue = [];
       fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
     });
   }
-  ["wishList", "wishSheet"].forEach(function(id){
-    $(id).addEventListener("click", function(e){
-      if(wish.quiet){ e.stopPropagation(); e.preventDefault(); }
-    }, true);
-  });
+  function wishDrain(){
+    while(!wish.saving && wish.queue.length){
+      var q = wish.queue.shift();
+      wishToggle(q.id, q.today);
+    }
+  }
+  // Key presses (detail 0) and .click() from code are never held back.
+  $("wishList").addEventListener("click", function(e){
+    if(!e.isTrusted || !e.detail) return;
+    var q = wish.quiet;
+    if(q && Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32){ e.stopPropagation(); e.preventDefault(); return; }
+    wish.tap = { x: e.clientX, y: e.clientY };
+  }, true);
+  $("wishSheet").addEventListener("click", function(e){
+    if(wish.sheetQuiet){ e.stopPropagation(); e.preventDefault(); }
+  }, true);
 
   function setMsSeg(seg){
     wish.seg = seg === "wishes" ? "wishes" : "ms";
@@ -1518,17 +1543,29 @@
       if(!items.length) return "";
       return '<h3 class="group-title">' + title + '</h3><ul class="ms-group">' + items.map(row).join("") + "</ul>";
     }
-    el.innerHTML = group("Sắp tới", v.soon) + group("Chưa hẹn ngày", v.open) + group("Đã làm", v.done);
+    // An older cached core has no passed/undated: fall back to its single "open" group.
+    el.innerHTML = group("Sắp tới", v.soon) +
+      (v.passed ? group("Đã qua ngày dự định", v.passed) + group("Chưa hẹn ngày", v.undated) : group("Chưa hẹn ngày", v.open)) +
+      group("Đã làm", v.done);
   }
 
-  function wishToggle(id){
+  // today = the VN day of the tap (a queued tap keeps the day it was made on).
+  function wishToggle(id, today){
     var w = wishById(id);
-    if(!w || wish.saving || wishesLocked()) return;
-    var done = !w.doneDate, today = C.todayStr(now()), prev = wish.undone[id];
+    if(!w || wishesLocked()) return;
+    if(!today) today = C.todayStr(now());
+    if(wish.saving){
+      // The same row again is a double tap; another row waits for its turn.
+      var known = wish.writingId === id || wish.queue.some(function(q){ return q.id === id; });
+      if(!known && wish.queue.length < 8) wish.queue.push({ id: id, today: today });
+      return;
+    }
+    var done = !w.doneDate, prev = wish.undone[id];
     var back = done && prev && now() - prev.at < 60000 && prev.date <= today ? prev.date : null;
     var rec = C.validateWish(Object.assign({}, w, { doneDate: done ? back || today : null }));
     if(!rec) return;
     showError("wishErr", null);
+    wish.writingId = id;
     wishWrite(null, state.wishes.map(function(x){ return x.id === id ? rec : x; }), function(){
       if(done) delete wish.undone[id]; else wish.undone[id] = { date: w.doneDate, at: now() };
       toast(done ? "Đã làm ✓" : "Đã bỏ đánh dấu");
@@ -1657,7 +1694,7 @@
     wish.saving = true;
     Promise.resolve().then(function(){
       return saveWishes(state.wishes.map(function(x){ return x.id === wishId ? rec : x; }));
-    }).then(function(){ wish.saving = false; renderWishes(); }, function(){ wish.saving = false; again(); });
+    }).then(function(){ wish.saving = false; renderWishes(); wishDrain(); }, function(){ wish.saving = false; wish.queue = []; again(); });
   }
 
   $("wishDelete").addEventListener("click", function(){
@@ -2107,20 +2144,51 @@
   $("fileAvatarThu").addEventListener("change", function(){ handlePhoto("avatar-thu", this); });
   $("fileCover").addEventListener("change", function(){ handlePhoto("cover", this); });
 
+  // id = the picture the open confirm row is about.
+  var photoRemove = { id: null, busy: false };
+  function closePhotoConfirm(){
+    var id = photoRemove.id;
+    photoRemove.id = null;
+    $("photoConfirm").hidden = true;
+    return id ? document.querySelector('[data-remove="' + id + '"]') : null;
+  }
   Array.prototype.forEach.call(document.querySelectorAll("[data-remove]"), function(btn){
     btn.addEventListener("click", function(){
       var id = btn.getAttribute("data-remove");
-      if(!window.confirm(id === "cover" ? "Gỡ ảnh bìa?" : "Gỡ ảnh đại diện này?")) return;
-      del("blobs", id).then(function(){
-        delete state.blobs[id];
-        setUrl(id);
-        if(id === "cover"){
-          state.profile.hasCover = false;
-          return put("kv", profileRecord(state.profile));
-        }
-      }).then(function(){ dataChanged(); renderPhotoRows(); renderHome(); }, function(){
-        showError("photoError", "Không gỡ được ảnh. Hãy thử lại.");
-      });
+      if(photoRemove.busy || !state.blobs[id]) return;
+      photoRemove.id = id;
+      showError("photoError", null);
+      $("photoConfirmText").textContent = id === "cover" ? "Gỡ ảnh bìa?"
+        : "Gỡ ảnh đại diện của " + state.profile.persons[id === "avatar-long" ? 0 : 1].name + "?";
+      $("photoConfirm").hidden = false;
+      $("photoConfirmNo").focus({ preventScroll: true });
+      $("photoConfirm").scrollIntoView({ block: "nearest" });
+    });
+  });
+  $("photoConfirmNo").addEventListener("click", function(){
+    if(photoRemove.busy) return;
+    var back = closePhotoConfirm();
+    if(back && !back.hidden) back.focus({ preventScroll: true });
+  });
+  $("photoConfirmYes").addEventListener("click", function(){
+    var id = photoRemove.id;
+    if(photoRemove.busy || !id) return;
+    photoRemove.busy = true;
+    del("blobs", id).then(function(){
+      delete state.blobs[id];
+      setUrl(id);
+      if(id === "cover"){
+        state.profile.hasCover = false;
+        return put("kv", profileRecord(state.profile));
+      }
+    }).then(function(){
+      photoRemove.busy = false;
+      closePhotoConfirm();
+      dataChanged(); renderPhotoRows(); renderHome();
+    }, function(){
+      photoRemove.busy = false;
+      closePhotoConfirm();
+      showError("photoError", "Không gỡ được ảnh. Hãy thử lại.");
     });
   });
 
@@ -2422,7 +2490,7 @@
   // ctx "album" = every photo, in the album's order. ctx "ms" = only the photos
   // of milestone msId, opened from the timeline at photo `from`: no delete
   // there (it would delete from the Album, not unlink from the milestone).
-  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false, ctx: "album", msId: null, from: null };
+  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false, deleting: false, ctx: "album", msId: null, from: null };
 
   function lockScroll(){
     viewer.scrollY = window.scrollY;
@@ -2458,6 +2526,7 @@
     if(!viewer.open) return;
     viewer.open = false;
     endCaptionEdit();
+    hideViewerConfirm();
     $("viewer").hidden = true;
     $("viewerImg").removeAttribute("src");
     Object.keys(viewer.urls).forEach(dropFull);
@@ -2498,6 +2567,7 @@
     var id = ids[i], p = photoById(id);
     if(!p) return;
     endCaptionEdit();
+    hideViewerConfirm();
     $("viewerCount").textContent = (i + 1) + " / " + ids.length;
     $("viewerDate").textContent = photoDateText(p);
     renderCaption(p);
@@ -2527,7 +2597,7 @@
 
   function viewerStep(d){
     var k = viewer.index + d;
-    if(k < 0 || k >= viewer.ids.length) return;
+    if(viewer.deleting || k < 0 || k >= viewer.ids.length) return;
     showViewerAt(k);
   }
 
@@ -2576,27 +2646,68 @@
   $("viewerClose").addEventListener("click", closeViewer);
   $("viewerPrev").addEventListener("click", function(){ viewerStep(-1); });
   $("viewerNext").addEventListener("click", function(){ viewerStep(1); });
+  // The confirm row is about the photo on show: stepping to another photo or closing puts it away.
+  function viewerConfirmOpen(){ return !$("viewerConfirm").hidden; }
+  function hideViewerConfirm(){
+    $("viewerConfirm").hidden = true;
+    showError("viewerErr", null);
+  }
   $("viewerDelete").addEventListener("click", function(){
     var id = viewer.ids[viewer.index];
-    if(viewer.ctx !== "album" || !photoById(id) || busy) return;
-    if(!window.confirm("Xoá ảnh này khỏi album? Không thể hoàn tác.")) return;
-    deletePhoto(id).then(function(unlinked){
+    if(viewer.ctx !== "album" || !photoById(id) || busy || viewer.deleting) return;
+    endCaptionEdit();
+    var k = state.milestones.filter(function(m){ return m.photoIds && m.photoIds.indexOf(id) !== -1; }).length;
+    $("viewerConfirmText").textContent = "Xoá ảnh này khỏi Album? Không lấy lại được." + (k ? " Ảnh cũng rời khỏi " + fmtInt(k) + " kỷ niệm." : "");
+    showError("viewerErr", null);
+    $("viewerConfirm").hidden = false;
+    $("viewerConfirmNo").focus({ preventScroll: true });
+  });
+  $("viewerConfirmNo").addEventListener("click", function(){
+    if(viewer.deleting) return;
+    hideViewerConfirm();
+    $("viewerDelete").focus({ preventScroll: true });
+  });
+  $("viewerConfirmYes").addEventListener("click", function(){
+    var id = viewer.ids[viewer.index], btn = this;
+    if(viewer.ctx !== "album" || !photoById(id) || viewer.deleting) return;
+    if(busy){ showError("viewerErr", "Đang sao lưu hoặc nhập — đợi xong rồi xoá."); return; }
+    viewer.deleting = true;
+    showError("viewerErr", null);
+    btn.disabled = true; btn.textContent = "Đang xoá…";
+    function release(){
+      viewer.deleting = false;
+      btn.disabled = false; btn.textContent = "Xoá ảnh";
+    }
+    // Inside a then() so a synchronous throw also releases the flag.
+    Promise.resolve().then(function(){ return deletePhoto(id); }).then(function(unlinked){
+      release();
       state.photos = state.photos.filter(function(p){ return p.id !== id; });
       if(unlinked && state.mode === "app") renderMilestones();
       dropFull(id);
       revokeThumb(id);
-      viewer.ids.splice(viewer.index, 1);
-      viewer.dirty = true;
       dataChanged();
+      // The viewer may have been closed while the delete was on its way.
+      var at = viewer.ids.indexOf(id);
+      if(at !== -1) viewer.ids.splice(at, 1);
+      if(!viewer.open){ if(state.tab === "album") renderAlbum(); return; }
+      viewer.dirty = true;
       if(!viewer.ids.length){ closeViewer(); return; }
       showViewerAt(Math.min(viewer.index, viewer.ids.length - 1));
-    }, function(){ window.alert("Không xoá được ảnh. Hãy thử lại."); });
+      $("viewerClose").focus({ preventScroll: true });
+    }, function(){
+      release();
+      if(viewer.open) showError("viewerErr", "Không xoá được ảnh. Hãy thử lại.");
+    });
   });
 
   function onViewerKey(e){
     if(e.key === "Tab"){ trapTab($("viewer"), e); return; }
     if(viewer.editing){
       if(e.key === "Escape"){ e.preventDefault(); endCaptionEdit(); }
+      return;
+    }
+    if(viewerConfirmOpen()){
+      if(e.key === "Escape"){ e.preventDefault(); if(!viewer.deleting){ hideViewerConfirm(); $("viewerDelete").focus({ preventScroll: true }); } }
       return;
     }
     if(e.key === "Escape"){ e.preventDefault(); closeViewer(); }
@@ -2855,7 +2966,7 @@
   });
 
   // ---------- Backup: import ----------
-  var imp = { phase: "idle", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null };
+  var imp = { phase: "idle", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null, confirm: false };
 
   function localSnapshot(){
     var hasBlob = {};
@@ -2878,7 +2989,7 @@
     var f = input.files && input.files[0];
     input.value = "";
     if(!f) return;
-    imp = { phase: "checking", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null };
+    imp = { phase: "checking", parsed: null, plan: null, mode: "merge", error: null, result: null, done: 0, total: 0, prepMsg: null, confirm: false };
     if(busy){
       imp.phase = "error";
       imp.error = "Đang có việc khác chạy (thêm ảnh hoặc sao lưu). Hãy đợi xong rồi nhập lại.";
@@ -3016,9 +3127,20 @@
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
     else h += '<button type="button" class="btn btn-soft btn-block" data-imp="save">' + (backup.saved ? "Đã lưu ✓ · Lưu lần nữa" : "Lưu file (" + fmtMB(p.size) + ")") + "</button>";
     if(imp.prepMsg && busy !== "backup") h += '<p class="form-error">' + escapeHtml(imp.prepMsg) + "</p>";
-    h += '<p class="import-step">Bước 2 · Thay thế</p>' +
-      '<button type="button" class="btn btn-danger btn-block" data-imp="run"' + (busy ? " disabled" : "") + ">Thay thế bằng bản sao lưu</button>";
+    h += '<p class="import-step">Bước 2 · Thay thế</p>';
+    if(imp.confirm && !busy){
+      h += '<div class="confirm-row" id="impConfirm"><p class="confirm-text">' + escapeHtml(replaceAskText(ps, local)) + "</p>" +
+        (backup.saved ? "" : '<p class="confirm-note">Bạn chưa lưu bản sao lưu dữ liệu hiện tại — thay xong sẽ không lấy lại được.</p>') +
+        '<div class="confirm-btns"><button type="button" class="btn btn-danger-solid" data-imp="run-yes">Thay thế</button>' +
+        '<button type="button" class="btn btn-ghost" data-imp="run-no">Giữ lại</button></div></div>';
+    } else {
+      h += '<button type="button" class="btn btn-danger btn-block" data-imp="run"' + (busy ? " disabled" : "") + ">Thay thế bằng bản sao lưu</button>";
+    }
     return h;
+  }
+  function replaceAskText(ps, l){
+    return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) ? ", " + l.wishes.length + " việc" : "") +
+      (replacesCycles(ps, l) ? ", " + l.cycles.length + " kỳ" : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
   }
 
   // Mirrors planCycles() in love-days-backup.js for the "Thay thế" wording.
@@ -3037,6 +3159,9 @@
     var b = e.target.closest("[data-imp]");
     if(!b || b.disabled) return;
     var act = b.getAttribute("data-imp");
+    // The red row only stands while nothing else was touched since "Thay thế bằng bản sao lưu".
+    var asked = imp.confirm;
+    imp.confirm = false;
     if(act === "close"){ closeSheets(); return; }
     if(act === "mode-merge" || act === "mode-replace"){ imp.mode = act === "mode-merge" ? "merge" : "replace"; renderImport(); return; }
     if(act === "prep"){
@@ -3061,19 +3186,29 @@
       });
       return;
     }
-    if(act === "run") runImport();
+    if(act === "run-no"){
+      renderImport();
+      var again = $("importContent").querySelector('[data-imp="run"]');
+      if(again) again.focus({ preventScroll: true });
+      return;
+    }
+    if(act === "run-yes"){ if(asked) runImport(); return; }
+    if(act === "run"){
+      if(busy || !imp.parsed) return;
+      if(imp.mode !== "replace" || !hasLocalData()){ runImport(); return; }
+      imp.confirm = true;
+      renderImport();
+      var row = $("impConfirm");
+      if(row){
+        row.querySelector('[data-imp="run-no"]').focus({ preventScroll: true });
+        row.scrollIntoView({ block: "nearest" });
+      }
+    }
   });
 
   function runImport(){
     if(busy || !imp.parsed) return;
     var mode = hasLocalData() ? imp.mode : "merge";
-    if(mode === "replace"){
-      var l = localSnapshot();
-      var msg = "Xoá " + l.photos.length + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(imp.parsed, l) ? ", " + l.wishes.length + " việc" : "") + (replacesCycles(imp.parsed, l) ? ", " + l.cycles.length + " kỳ" : "") +
-        " và hồ sơ hiện tại, thay bằng bản sao lưu?" +
-        (backup.saved ? "" : "\n\nBạn CHƯA lưu bản sao lưu dữ liệu hiện tại — sau khi thay sẽ không lấy lại được.");
-      if(!window.confirm(msg)) return;
-    }
     busy = "import";
     imp.mode = mode;
     imp.phase = "importing";

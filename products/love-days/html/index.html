@@ -247,6 +247,13 @@
         <label class="btn btn-soft btn-sm file-btn">Chọn ảnh<input type="file" accept="image/*" id="fileCover"></label>
         <button type="button" class="btn btn-ghost btn-sm" data-remove="cover" hidden>Gỡ</button>
       </div>
+      <div class="confirm-row" id="photoConfirm" hidden>
+        <p class="confirm-text" id="photoConfirmText"></p>
+        <div class="confirm-btns">
+          <button type="button" class="btn btn-danger-solid" id="photoConfirmYes">Gỡ</button>
+          <button type="button" class="btn btn-ghost" id="photoConfirmNo">Giữ lại</button>
+        </div>
+      </div>
       <p class="form-error" id="photoError" role="alert" hidden></p>
       <p class="photo-busy" id="photoBusy" role="status" hidden>Đang xử lý ảnh…</p>
     </section>
@@ -602,6 +609,14 @@
       <input type="text" id="viewerCaptionInput" maxlength="200" placeholder="Viết vài chữ về khoảnh khắc này" autocomplete="off" aria-label="Chú thích ảnh">
       <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
     </form>
+    <div class="confirm-row" id="viewerConfirm" hidden>
+      <p class="confirm-text" id="viewerConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="viewerConfirmYes">Xoá ảnh</button>
+        <button type="button" class="btn btn-ghost" id="viewerConfirmNo">Giữ lại</button>
+      </div>
+    </div>
+    <p class="form-error" id="viewerErr" role="alert" hidden></p>
   </div>
 </div>
 
