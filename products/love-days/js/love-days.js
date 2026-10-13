@@ -218,7 +218,8 @@
 
   function switchTab(name){
     if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
-    if(state.tab === "milestones" && name !== "milestones") releaseTl();
+    // The timeline pool serves the Kỷ niệm tab and the "Ngày này năm xưa" card on Home.
+    if((state.tab === "milestones" || state.tab === "home") && name !== state.tab) releaseTl();
     showError("cycleCardErr", null);
     showError("cycleTabErr", null);
     showError("wishErr", null);
@@ -233,6 +234,7 @@
     }
     window.scrollTo(0, 0);
     if(name === "album") renderAlbum();
+    if(name === "home" && state.mode === "app") renderOnThisDay();
     if(name === "milestones"){ syncTl(); placeSegPill($("msSeg"), true); }
     if(name === "cycle" && C.cycleStats) renderCycleSheet();
   }
@@ -288,7 +290,66 @@
         '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
     renderCycleCard();
+    renderOnThisDay();
   }
+
+  // ---------- "Ngày này năm xưa" ----------
+  // Milestones, done wishes and photos of today's day and month in earlier years (LoveCore.onThisDay).
+  // Read-only: a row opens the form of that record, a tile opens the viewer on that year's photos.
+  var otd = { years: [] };
+  function renderOnThisDay(){
+    var card = $("otdCard");
+    // An older cached love-days-core.js can be paired with this page offline.
+    if(!C.onThisDay || state.mode !== "app"){ card.hidden = true; return; }
+    var v = C.onThisDay({ milestones: state.milestones, wishes: wishesLocked() ? [] : state.wishes, photos: state.photos }, now());
+    otd.years = v.years;
+    card.hidden = !v.years.length;
+    function row(attr, id, emoji, title, sub, said){
+      return '<button type="button" class="up-row" ' + attr + '="' + escapeHtml(id) + '" aria-haspopup="dialog" aria-label="' + escapeHtml(said) + '">' +
+        '<span class="up-emoji" aria-hidden="true">' + escapeHtml(emoji) + "</span>" +
+        '<span class="up-main"><span class="up-title">' + escapeHtml(title) + "</span>" +
+        (sub ? '<span class="otd-sub">' + escapeHtml(sub) + "</span>" : "") + "</span>" + CHEV + "</button>";
+    }
+    $("otdBody").innerHTML = v.years.map(function(g){
+      var when = weekday(g.date) + ", " + fmtDate(g.date), n = g.photos.length, more = n - TL_MAX;
+      var h = '<div class="otd-group"><h3 class="otd-year">' + g.yearsAgo + " năm trước · " + when + "</h3>";
+      g.milestones.forEach(function(m){
+        h += row("data-otd-ms", m.id, m.emoji || "💗", m.title, m.note, m.title + ", " + g.yearsAgo + " năm trước" + (m.note ? ". " + m.note : "") + ". Mở kỷ niệm");
+      });
+      g.wishes.forEach(function(w){
+        h += row("data-otd-wish", w.id, wishEmoji(w.cat), w.title, "Đã làm cùng nhau", w.title + ", đã làm cùng nhau " + g.yearsAgo + " năm trước. Mở việc này");
+      });
+      if(n){
+        h += '<ul class="tl-photos otd-photos" aria-label="' + escapeHtml("Ảnh chụp " + g.yearsAgo + " năm trước") + '">' + g.photos.slice(0, TL_MAX).map(function(p, i){
+          return '<li><button type="button" class="tl-photo" data-otd-photo="' + p.id + '" data-otd-year="' + g.year + '" aria-label="' +
+            escapeHtml("Ảnh " + (i + 1) + " trên " + n + ", chụp " + vnDate(p.takenAt)) + '">' + tlImg(p.id) +
+            (more > 0 && i === TL_MAX - 1 ? '<span class="tl-more" aria-hidden="true">+' + more + "</span>" : "") + "</button></li>";
+        }).join("") + "</ul>";
+      }
+      return h + "</div>";
+    }).join("");
+    syncTl();
+  }
+  $("otdBody").addEventListener("click", function(e){
+    var el = e.target.closest("[data-otd-photo]");
+    if(el){
+      var year = +el.getAttribute("data-otd-year"), ids = null;
+      otd.years.forEach(function(g){ if(g.year === year) ids = g.photos.map(function(p){ return p.id; }); });
+      if(ids){ viewer.otdYear = year; openViewer(el.getAttribute("data-otd-photo"), ids, "home"); }
+      return;
+    }
+    el = e.target.closest("[data-otd-ms]");
+    if(el){
+      var id = el.getAttribute("data-otd-ms"), m = null;
+      state.milestones.forEach(function(x){ if(x.id === id) m = x; });
+      if(m) openMilestoneSheet(m);
+      return;
+    }
+    el = e.target.closest("[data-otd-wish]");
+    var w = el ? wishById(el.getAttribute("data-otd-wish")) : null;
+    if(w) openWishSheet(w);
+  });
+
   // The "Sắp tới" card: the nearest milestone, then the nearest dated wish (if any).
   function renderUpcoming(){
     var u = state.computed.upcoming;
@@ -478,7 +539,7 @@
     }).join("");
   }
 
-  // Thumbnails of the timeline and of the milestone sheet. A pool of its own:
+  // Thumbnails of the timeline, of the milestone sheet and of the Home "Ngày này năm xưa" card. A pool of its own:
   // the album's is tied to the Album tab and emptied on leaving it. A URL
   // lives only while an <img data-tl> that is on show uses it.
   var tlUrls = Object.create(null), tlWanted = [], tlTimer = null;
@@ -495,6 +556,7 @@
     var out = [];
     function add(root){ Array.prototype.push.apply(out, root.querySelectorAll("img[data-tl]")); }
     if(state.mode === "app" && state.tab === "milestones") add($("milestoneList"));
+    if(state.mode === "app" && state.tab === "home") add($("otdCard"));
     if(msSheetOpen()) add($("milestoneSheet"));
     return out;
   }
@@ -1426,6 +1488,7 @@
       applyWishesRec(found);
       renderWishes();
       renderUpcoming();
+      renderOnThisDay();
       throw userErr("Danh sách vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
     });
   }
@@ -1456,6 +1519,7 @@
       showError("wishErr", null);
       renderWishes();
       renderUpcoming();
+      renderOnThisDay();
       ok();
       wishDrain();
     }, function(err){
@@ -1694,7 +1758,7 @@
     wish.saving = true;
     Promise.resolve().then(function(){
       return saveWishes(state.wishes.map(function(x){ return x.id === wishId ? rec : x; }));
-    }).then(function(){ wish.saving = false; renderWishes(); wishDrain(); }, function(){ wish.saving = false; wish.queue = []; again(); });
+    }).then(function(){ wish.saving = false; renderWishes(); renderOnThisDay(); wishDrain(); }, function(){ wish.saving = false; wish.queue = []; again(); });
   }
 
   $("wishDelete").addEventListener("click", function(){
@@ -2481,6 +2545,7 @@
     if(dupes) notes.push((saved ? "bỏ qua " : "Bỏ qua ") + dupes + " ảnh đã có");
     if(notes.length) toast(notes.join(" · "));
     if(state.tab === "album") renderAlbum();
+    if(saved && state.mode === "app") renderOnThisDay();
   }
 
   // ---------- Viewer ----------
@@ -2490,7 +2555,8 @@
   // ctx "album" = every photo, in the album's order. ctx "ms" = only the photos
   // of milestone msId, opened from the timeline at photo `from`: no delete
   // there (it would delete from the Album, not unlink from the milestone).
-  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false, deleting: false, ctx: "album", msId: null, from: null };
+  // ctx "home" = the photos of one year of "Ngày này năm xưa" (otdYear), no delete either.
+  var viewer = { open: false, ids: [], index: 0, urls: {}, scrollY: 0, dirty: false, editing: false, deleting: false, ctx: "album", msId: null, otdYear: null, from: null };
 
   function lockScroll(){
     viewer.scrollY = window.scrollY;
@@ -2507,15 +2573,15 @@
     ids = ids || state.albumOrder;
     var idx = ids.indexOf(id);
     if(idx < 0) return;
-    var ms = ctx === "ms";
+    var where = ctx === "ms" || ctx === "home" ? ctx : "album", noDelete = where !== "album";
     viewer.ids = ids.slice();
-    viewer.ctx = ms ? "ms" : "album";
+    viewer.ctx = where;
     viewer.from = id;
     viewer.open = true;
     viewer.dirty = false;
-    $("viewerDelete").hidden = ms;
-    $("viewer").classList.toggle("no-delete", ms);
-    $("viewerClose").setAttribute("aria-label", ms ? "Đóng, quay lại kỷ niệm" : "Đóng, quay lại album");
+    $("viewerDelete").hidden = noDelete;
+    $("viewer").classList.toggle("no-delete", noDelete);
+    $("viewerClose").setAttribute("aria-label", where === "ms" ? "Đóng, quay lại kỷ niệm" : where === "home" ? "Đóng, quay lại Trang chủ" : "Đóng, quay lại album");
     lockScroll();
     $("viewer").hidden = false;
     showViewerAt(idx);
@@ -2538,6 +2604,13 @@
         if(b.getAttribute("data-tl-ms") === viewer.msId && b.getAttribute("data-tl-open") === viewer.from) back = b;
       });
       if(back) back.focus({ preventScroll: true });
+      return;
+    }
+    if(viewer.ctx === "home"){
+      if(viewer.dirty && state.mode === "app") renderOnThisDay();
+      unlockScroll();
+      var from = $("otdBody").querySelector('[data-otd-photo="' + viewer.from + '"][data-otd-year="' + viewer.otdYear + '"]');
+      if(from) from.focus({ preventScroll: true });
       return;
     }
     if(viewer.dirty) renderAlbum();
@@ -2686,6 +2759,7 @@
       dropFull(id);
       revokeThumb(id);
       dataChanged();
+      if(state.mode === "app") renderOnThisDay();
       // The viewer may have been closed while the delete was on its way.
       var at = viewer.ids.indexOf(id);
       if(at !== -1) viewer.ids.splice(at, 1);

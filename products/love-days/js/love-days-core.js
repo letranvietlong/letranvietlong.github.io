@@ -542,6 +542,61 @@
     return { items: items, added: added, skipped: skipped, over: over };
   }
 
+  // ---------- "Ngày này năm xưa" ----------
+  // What happened on today's day and month in earlier years.
+  // src = { milestones, wishes, photos } (validated records).
+  // → { today, years: [{ year, yearsAgo, date, milestones, wishes, photos }] }, latest year first.
+  // One rule for everything: an item dated d, n years before this year, is in
+  // when addYearsClamp(d, n) is today — so 29/02 shows on 28/02 of a non-leap
+  // year and on 29/02 of a leap one, and 28/02 never shows on 29/02.
+  // milestones: by their stored date. wishes: by doneDate, left out when they
+  // link to a milestone of that same day (it is already listed).
+  // photos: only those with a real taken date, read as a VN day.
+  // date = the earliest original date in the group. Never throws.
+  function onThisDay(src, nowMs){
+    var out = { today: null, years: [] };
+    try{
+      var today = todayStr(nowMs), ty = +today.slice(0, 4), by = Object.create(null);
+      out.today = today;
+      src = src || {};
+      var hit = function(d){
+        if(!isValidDate(d)) return false;
+        var n = ty - (+d.slice(0, 4));
+        return n > 0 && addYearsClamp(d, n) === today;
+      };
+      var group = function(d){
+        var y = d.slice(0, 4), g = by[y];
+        if(!g) g = by[y] = { year: +y, yearsAgo: ty - (+y), date: d, milestones: [], wishes: [], photos: [] };
+        if(d < g.date) g.date = d;
+        return g;
+      };
+      var byId = function(a, b){ return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; };
+      var msDate = Object.create(null);
+      (Array.isArray(src.milestones) ? src.milestones : []).forEach(function(m){
+        if(!m) return;
+        msDate[m.id] = m.date;
+        if(hit(m.date)) group(m.date).milestones.push(m);
+      });
+      (Array.isArray(src.wishes) ? src.wishes : []).forEach(function(w){
+        if(!w || w.doneDate == null || !hit(w.doneDate)) return;
+        if(w.milestoneId != null && msDate[w.milestoneId] === w.doneDate) return;
+        group(w.doneDate).wishes.push(w);
+      });
+      (Array.isArray(src.photos) ? src.photos : []).forEach(function(p){
+        if(!p || !num(p.takenAt)) return;
+        var d = todayStr(p.takenAt);
+        if(hit(d)) group(d).photos.push(p);
+      });
+      out.years = Object.keys(by).map(function(y){ return by[y]; }).sort(function(a, b){ return b.year - a.year; });
+      out.years.forEach(function(g){
+        g.milestones.sort(function(a, b){ return a.createdAt - b.createdAt || byId(a, b); });
+        g.wishes.sort(function(a, b){ return a.createdAt - b.createdAt || byId(a, b); });
+        g.photos.sort(function(a, b){ return a.takenAt - b.takenAt || a.addedAt - b.addedAt || byId(a, b); });
+      });
+    }catch(e){ out.years = []; }
+    return out;
+  }
+
   // ---------- IndexedDB ----------
   // Page and SW MUST both open through this: an indexedDB.open() without a
   // version from the SW before the page ever ran would create an EMPTY v1 DB,
@@ -665,6 +720,7 @@
     monthGrid: monthGrid, cycleDayMarks: cycleDayMarks, REMIND_DAYS: REMIND_DAYS,
     cycleReminder: cycleReminder, reminderLine: reminderLine,
     MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
+    onThisDay: onThisDay,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations
   };

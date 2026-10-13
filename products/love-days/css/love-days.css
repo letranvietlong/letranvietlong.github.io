@@ -249,6 +249,21 @@ h1,h2,h3,p{margin:0}
 .up-left.today{font-size:1.05rem;font-weight:800}
 .up-sep{display:block;height:1px;margin:12px 0;background:var(--line)}
 
+/* "Ngày này năm xưa" on Home: one block per earlier year. */
+.otd-card{padding:14px 18px 16px}
+.otd-card .card-kicker{margin-bottom:8px}
+.otd-group + .otd-group{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.otd-year{font-size:.86rem;font-weight:800;color:var(--text);margin:0 0 4px}
+.otd-card .up-row{min-height:56px}
+.otd-card .up-emoji{width:44px;height:44px;font-size:1.35rem}
+.otd-card .up-title{font-size:.98rem}
+.otd-sub{font-size:.82rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otd-card .ms-chev{margin-left:0}
+/* Four tiles must fit a 375px screen (305px inside the card), so they shrink below 72px instead of overflowing. */
+.otd-card .otd-photos{padding:8px 0 0}
+.otd-card .otd-photos > li{flex:1 1 0;min-width:0;max-width:72px}
+.otd-card .otd-photos .tl-photo{width:100%;height:auto;aspect-ratio:1/1}
+
 /* Birthdays */
 .bday-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .bday-grid > .card{margin-top:0}

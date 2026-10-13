@@ -382,6 +382,68 @@ const wishSel = {
   homeRows: '#upcomingBody .up-row', homeWish: '#upcomingBody .up-row[data-seg="wishes"]'
 };
 
+// ---------- Ngày này năm xưa (v1.16) ----------
+// Home card #otdCard (hidden when nothing matches), between the day count and "Sắp tới". LoveCore.onThisDay(src, nowMs) is pure.
+// Rule: an item dated d, n = thisYear − year(d) > 0 years back, shows when LoveCore.addYearsClamp(d, n) === today (VN day).
+// Photos count only with takenAt (read as a VN day); a done wish linked to a milestone of that same day is left out.
+// Seed: ld.seed(page, { profile: ld.profile, milestones: ld.onThisDay.milestones, extra: [['kv', ld.wishesRecord(ld.onThisDay.wishes)]] });
+//       await ld.seedPhotoList(page, ld.onThisDay.photos); reload. now = ld.onThisDay.now.
+const ms = (id, title, date, emoji, createdAt) => ({ id, title, date, emoji, note: '', repeatYearly: false, createdAt });
+const onThisDay = {
+  now: '2026-10-14T09:00:00+07:00',
+  milestones: milestones.concat([ms('m-otd1', 'Đi Hội An', '2025-10-14', '🏖️', 10), ms('m-otd2', 'Hẹn hò đầu tiên', '2024-10-14', '💗', 11),
+    ms('m-no', 'Hôm qua năm ngoái', '2025-10-13', '💗', 12), ms('m-today', 'Hôm nay', '2026-10-14', '💗', 13)]),
+  wishes: [wi('wO', 'Ăn bún chả', 'eat', null, '2025-10-14', 20)],
+  // [id, takenAt, addedAt]: pB is 01:30 (+07) on 14/10 (still 13/10 in UTC), pC is 00:30 (+07) on 15/10 (still 14/10 in UTC), pD has no taken date
+  photos: [['pA', Date.UTC(2025, 9, 14, 1), 1e12 + 1], ['pB', Date.UTC(2025, 9, 13, 18, 30), 1e12 + 2], ['pC', Date.UTC(2025, 9, 14, 17, 30), 1e12 + 3],
+    ['pD', null, Date.UTC(2024, 9, 14, 3)], ['pE', Date.UTC(2024, 9, 14, 5), 1e12 + 5]],
+  // groups in order: .otd-year text, [data-otd-ms] ids, [data-otd-wish] ids (sub line "Đã làm cùng nhau"), [data-otd-photo] ids
+  groups: [
+    ['1 năm trước · Thứ ba, 14/10/2025', ['m-otd1'], ['wO'], ['pB', 'pA']],
+    ['2 năm trước · Thứ hai, 14/10/2024', ['m-otd2'], [], ['pE']]
+  ],   // never m-no, m-today, pC, pD; code reading the day in UTC or device time loses pB and gains pC
+  // with only ld.milestones: hidden at `now`; [now, the single .otd-year, the single row title]
+  base: [['2026-10-05T09:00:00+07:00', '3 năm trước · Thứ năm, 05/10/2023', 'Ngày gặp nhau'], ['2026-03-08T09:00:00+07:00', '2 năm trước · Thứ sáu, 08/03/2024', 'Lần đầu tặng hoa']],
+  // one milestone dated 2024-02-29: [now, .otd-year or null = card hidden]
+  leap: [['2026-02-28T09:00:00+07:00', '2 năm trước · Thứ năm, 29/02/2024'], ['2026-03-01T09:00:00+07:00', null],
+    ['2028-02-29T09:00:00+07:00', '4 năm trước · Thứ năm, 29/02/2024'], ['2028-02-28T09:00:00+07:00', null]],
+  timezones: [['America/Los_Angeles', '2026-10-14T06:00:00+07:00'], ['Asia/Tokyo', '2026-10-14T23:30:00+07:00']],   // same two groups
+  // setFixedTime(before) → load → setFixedTime(after) → wait 1.5s; a form opened meanwhile keeps its text
+  rollover: { before: '2026-10-13T23:59:59+07:00', after: '2026-10-14T00:00:01+07:00', beforeGroups: [['1 năm trước · Thứ hai, 13/10/2025', ['m-no'], [], []]] },
+  viewer: { tap: 'pA', count: '2 / 2', closeLabel: 'Đóng, quay lại Trang chủ' },   // #viewerDelete hidden; ‹ › stay inside that year's photos
+  // layout at 430×873 with only ld.milestones (card hidden): #dayCount top 253,34 and #upcomingCard top 470,8 — unchanged from v1.15
+  // thumbnails share the timeline pool: 3 live object URLs on Home, 0 after leaving the tab
+  maxTiles: 4   // a 5th photo of the same year turns the 4th tile into "+N" (.tl-more)
+};
+const otdSel = {
+  card: '#otdCard', body: '#otdBody', groups: '#otdCard .otd-group', year: '.otd-year',
+  ms: id => '#otdBody [data-otd-ms="' + id + '"]', wish: id => '#otdBody [data-otd-wish="' + id + '"]',
+  photo: id => '#otdBody [data-otd-photo="' + id + '"]'   // also carries data-otd-year
+};
+// Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
+async function seedPhotoList(page, list) {
+  await page.evaluate(async list => {
+    const db = await LoveCore.openDb();
+    const enc = (c, q) => new Promise(r => c.toBlob(b => b.arrayBuffer().then(r), 'image/jpeg', q));
+    let i = 0;
+    for (const [id, takenAt, addedAt] of list) {
+      i++;
+      const c = document.createElement('canvas'); c.width = 800; c.height = 600;
+      const g = c.getContext('2d');
+      g.fillStyle = 'hsl(' + (i * 67 % 360) + ',65%,60%)'; g.fillRect(0, 0, 800, 600);
+      g.fillStyle = '#fff'; g.font = 'bold 220px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(id, 400, 310);
+      const data = await enc(c, 0.8);
+      const t = document.createElement('canvas'); t.width = 480; t.height = 360; t.getContext('2d').drawImage(c, 0, 0, 480, 360);
+      const thumb = await enc(t, 0.75);
+      const tx = db.transaction(['photos', 'blobs'], 'readwrite');
+      tx.objectStore('blobs').put({ id, gen: 'g1', mime: 'image/jpeg', data, thumb });
+      tx.objectStore('photos').put({ id, gen: 'g1', caption: '', takenAt, addedAt, order: i - 1, w: 800, h: 600, bytes: data.byteLength, sha256: await LoveMedia.sha256(data) });
+      await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    }
+    db.close();
+  }, list);
+}
+
 // Replaces every store's content. blobs: { id: base64 } (ArrayBuffers can't
 // cross page.evaluate). raw: true stores records as-is (for corrupt-data tests).
 async function seed(page, data) {
@@ -437,4 +499,4 @@ function badgeStubScript() {
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
-  wi, wishesRecord, wishes, wishSel };
+  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList };
