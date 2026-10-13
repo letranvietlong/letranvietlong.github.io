@@ -9,4 +9,4 @@
 // Logic thật: products/mini-game-hub/js/sw-core.js
 //
 // ?v= phải bump cùng lúc với CACHE_NAME trong core.
-importScripts('/products/mini-game-hub/js/sw-core.js?v=1');
+importScripts('/products/mini-game-hub/js/sw-core.js?v=2');

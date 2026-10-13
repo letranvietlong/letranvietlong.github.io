@@ -73,6 +73,7 @@ Nếu `git status` có file mà task không nhắc tới, đó có thể là vi�
 - [ ] Màu mới trên nền tối có bão hoà tối đa không? Gradient có nhảy hai họ màu đối nhau không? Chữ trên gradient/lớp chồng đã đo tương phản chưa?
 - [ ] Vùng chạm là cả ô (đo phần tử nhận sự kiện, không phải icon)? Mục menu có icon **kèm** nhãn?
 - [ ] Trạng thái tải là skeleton đúng hình bố cục (không phải màn trắng + vòng xoay), và có đường ra khi fetch lỗi?
+- [ ] App iPhone có còn đủ bốn lớp khoá zoom không (viewport `maximum-scale=1, user-scalable=no`; `html{touch-action:pan-x pan-y}`; huỷ `gesture*`; ô nhập mới ≥16px)? Có ai chặn zoom bằng `preventDefault` trên `touchend` toàn cục không (nuốt chạm nhanh)? Trang web thường thì KHÔNG được khoá zoom (`LongLTV_ios-pwa-pitfalls` §19)
 - [ ] Phông mới: đơn giản, có trên iOS, đủ dấu tiếng Việt?
 - [ ] App iPhone: vùng cuộn mới có lộ thanh cuộn không (khối CSS chuẩn ở `LongLTV_ios-pwa-pitfalls` §18 còn nguyên, không ai "giấu" bằng `overflow:hidden`)? Lớp phủ toàn màn mới có `hidden` khi đóng không (§17)? Header có lặp thông tin / đẩy nội dung chính xuống quá 40% màn đầu không (`LongLTV_ui-craft` §12.5b)?
 

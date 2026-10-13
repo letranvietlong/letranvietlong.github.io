@@ -64,6 +64,9 @@
      Left at the browser default (white) that reads as a stray white gap,
      so paint it the same base color body's gradient starts/ends on. */
   html{scroll-behavior:smooth;height:100%;overflow:hidden;background:var(--bg)}
+  /* App Màn hình chính: không cho phóng to/thu nhỏ trang (chụm hai ngón, chạm đúp). Cuộn vẫn bình thường;
+     phần tử có touch-action riêng (pan-y, none) vẫn giữ nguyên. Xem LongLTV_ios-pwa-pitfalls §19. */
+  html{touch-action:pan-x pan-y}
   body{
     /* Must stay a definite height (not min-height) — .app below depends on
        height:100% to be clipped to exactly one viewport and scroll

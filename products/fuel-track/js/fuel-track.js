@@ -1091,3 +1091,12 @@
     });
   }
 })();
+
+// No page zoom in the Home Screen app (LongLTV_ios-pwa-pitfalls §19): iOS still fires its own pinch
+// gesture events even with user-scalable=no in some contexts. Only gesture* is cancelled — never a
+// global touchend preventDefault (that swallowed rapid taps in GameHub 1.x).
+(function(){
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function(t){
+    document.addEventListener(t, function(e){ e.preventDefault(); }, { passive: false });
+  });
+})();

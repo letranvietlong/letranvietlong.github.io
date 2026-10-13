@@ -208,3 +208,44 @@ window.scrollTo(0, 300); window.scrollY   // > 0 nếu trang cuộn (app dùng v
 ```
 
 **CHƯA KIỂM CHỨNG TRÊN MÁY THẬT**: với app cuộn bằng trang (FuelTrack, LoveDays), vạch cuộn của iOS là của hệ thống; nếu trên iPhone vẫn thấy vạch mảnh bên phải khi vuốt thì chuyển sang mô hình GoldTrack — `body` không cuộn, một vùng `.app{height:100%;overflow-y:auto}` cuộn bên trong (xem `products/gold-track/css/gold-track.css`) — vùng cuộn con thì `::-webkit-scrollbar{display:none}` ẩn được chắc chắn. Đổi mô hình cuộn là việc lớn (đụng mọi phần tử `position:fixed`, §1–§4), phải đi qua pipeline.
+
+## 19. App thì không được zoom (chủ repo yêu cầu 10/2026)
+
+Mọi sản phẩm dùng như app (mở từ icon Màn hình chính) **không cho phóng to/thu nhỏ trang**: chụm hai ngón, chạm đúp, và tự phóng khi chạm vào ô nhập đều không được xảy ra. Bố cục app là cố định theo màn hình; một lần zoom nhầm làm tab bar/sheet lệch khỏi màn và người dùng không biết cách về lại. Cuộn vẫn bình thường.
+
+Phải có ĐỦ bốn lớp (thiếu lớp nào iOS vẫn lọt ở một tình huống) — GoldTrack 1.70, FuelTrack 1.15, PowerTrack 1.3, GameHub 2.1 và LoveDays đã có:
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+```
+```css
+/* ngay sau rule html{…} */
+html{touch-action:pan-x pan-y}
+```
+```js
+// cuối file JS chính của app
+["gesturestart", "gesturechange", "gestureend"].forEach(function(t){
+  document.addEventListener(t, function(e){ e.preventDefault(); }, { passive: false });
+});
+```
+4. **Mọi ô nhập (`input`, `textarea`, `select`) có `font-size ≥ 16px`** — nhỏ hơn thì iOS tự phóng trang khi focus, kể cả khi đã khoá zoom (ui-craft §13 A4).
+
+Lưu ý:
+- `touch-action:manipulation` KHÔNG đủ: nó chỉ tắt chạm đúp, vẫn cho chụm hai ngón. Dùng `pan-x pan-y` trên `html`. Giá trị này giao với `touch-action` của phần tử con, nên vùng tự xử lý cử chỉ (`touch-action:none` ở tay cầm sheet, vùng chơi game, viewer ảnh; `pan-y` ở biểu đồ/lịch) vẫn chạy đúng.
+- **Cấm** chặn zoom bằng `preventDefault` trên `touchend`/`touchstart` toàn cục hay đo khoảng cách giữa hai cú chạm: GameHub 1.x làm vậy và nuốt mất mọi cú chạm nhanh (Tap Race 20 cú chỉ ăn 1). Chỉ huỷ ba sự kiện `gesture*` (riêng của WebKit, không ảnh hưởng cú chạm).
+- Thứ CẦN phóng to (ảnh trong album) thì tự làm zoom trong một vùng riêng (`touch-action:none` + xử lý pointer), không dựa vào zoom của trang.
+- Chỉ áp cho app. Trang web thường (trang chủ, ThubeeFarmery, worldcup-2026, các trang giới thiệu) GIỮ zoom — người đọc cần phóng chữ; khoá zoom ở đó là lỗi truy cập.
+- Vì khoá zoom, app phải tự đọc được: chữ nội dung ≥12px, thân bài ≥15–16px (ui-craft §13 A9), tương phản đạt (§8).
+
+**Kiểm bằng Playwright** (context `hasTouch:true, isMobile:true`):
+```js
+document.querySelector('meta[name=viewport]').content            // có maximum-scale=1 và user-scalable=no
+getComputedStyle(document.documentElement).touchAction            // "pan-x pan-y"
+var e = new Event('gesturestart', {cancelable:true, bubbles:true}); document.dispatchEvent(e); e.defaultPrevented   // true
+[...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select')]
+  .filter(el => parseFloat(getComputedStyle(el).fontSize) < 16)   // rỗng
+// chạm đúp rồi đọc window.visualViewport.scale → vẫn 1; cuộn và chạm tab vẫn chạy
+```
+Đã đo trên cả 5 app (10/2026): đủ bốn điều trên, 0 ô nhập dưới 16px.
+
+**CHƯA KIỂM CHỨNG TRÊN MÁY THẬT**: Chromium không mô phỏng chụm hai ngón của iOS. Cần chủ máy thử chụm hai ngón và chạm đúp nhanh trên từng app sau khi nhận bản mới. Đổi thẻ `viewport` có thể cần đóng hẳn app rồi mở lại; nếu vẫn zoom được thì xoá icon và thêm lại (nhớ sao lưu trước — bộ nhớ app đi theo icon, §14).

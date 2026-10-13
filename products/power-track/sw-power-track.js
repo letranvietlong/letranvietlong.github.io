@@ -9,4 +9,4 @@
 // Logic thật: products/power-track/js/sw-core.js
 //
 // ?v= phải bump cùng lúc với CACHE_NAME trong core.
-importScripts('/products/power-track/js/sw-core.js?v=3');
+importScripts('/products/power-track/js/sw-core.js?v=4');

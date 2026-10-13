@@ -68,6 +68,9 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none !important}
 html{background:var(--bg);-webkit-text-size-adjust:100%}
+/* App Màn hình chính: không cho phóng to/thu nhỏ trang (chụm hai ngón, chạm đúp). Cuộn vẫn bình thường;
+   phần tử có touch-action riêng (pan-y, none) vẫn giữ nguyên. Xem LongLTV_ios-pwa-pitfalls §19. */
+html{touch-action:pan-x pan-y}
 /* Không hiện thanh cuộn ở bất kỳ đâu (app Màn hình chính, không phải trang web); cuộn vẫn hoạt động bình thường.
    scrollbar-width trên html lan ra viewport (Safari 18.2+); ::-webkit-scrollbar cho WebKit/Chromium cũ hơn. */
 html,body,*{scrollbar-width:none;-ms-overflow-style:none}

@@ -1,6 +1,6 @@
 // Logic service worker của GameHub. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/mini-game-hub/sw-mini-game-hub.js.
-var CACHE_NAME = "gamehub-cache-v1";
+var CACHE_NAME = "gamehub-cache-v2";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [

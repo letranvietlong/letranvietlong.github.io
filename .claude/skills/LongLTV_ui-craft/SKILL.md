@@ -271,6 +271,7 @@ Rút từ lần làm lại header LoveDays (v1.7, 10/2026): hàng tên app + huy
 - [ ] Nút xoá màu đỏ, khác hẳn nút chính (C2); trạng thái có huy hiệu màu **và** chữ (C3); không màu bão hoà tối đa trên nền tối (C1); gradient cùng họ màu (C4)
 - [ ] Mục menu có icon + nhãn (N1); vùng chạm là cả ô ≥44px (N2)
 - [ ] Header: nội dung chính trong 40% trên, không lặp thông tin, phiên bản nằm ở Cài đặt, lớp phủ đóng thì `hidden` (H1–H8)
+- [ ] App iPhone: không zoom được trang — viewport khoá, `html{touch-action:pan-x pan-y}`, huỷ `gesture*`, ô nhập ≥16px (ios-pwa §19)
 - [ ] App iPhone: không thanh cuộn nào hiện ra, trang vẫn cuộn được (ios-pwa §18)
 - [ ] Đang tải = skeleton đúng hình, có đường ra khi lỗi (L1–L2)
 
