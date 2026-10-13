@@ -12,7 +12,7 @@
 //   photos     keyPath id    — album metadata { id, gen, caption, takenAt:ms|null, addedAt:ms, order, w, h, bytes, sha256 }
 //   blobs      keyPath id    — { id:'avatar-long'|'avatar-thu'|'cover'|<photoId>, gen, mime:'image/jpeg', data:ArrayBuffer, thumb:ArrayBuffer|null }
 //   kv 'meta'                — { key:'meta', schemaVersion:1, lastBackupAt:ms|null, albumSort:'taken'|'added'|'custom', showCycle:bool,
-//                                cycleRemind:0|1|2|3|5 (default 2), cycleRemindQuiet:bool (default true) } — per device, never in a backup
+//                                cycleRemind:0|1|2|3|5 (default 2), cycleRemindQuiet:bool (default true), dayRemind:bool (default true, v1.17) } — per device, never in a backup
 //
 // Day-count convention: start day = day 1, always UTC+7 regardless of the
 // device timezone. Breakdown = time elapsed since 00:00 (+07) of the start day.
@@ -420,6 +420,48 @@ const otdSel = {
   ms: id => '#otdBody [data-otd-ms="' + id + '"]', wish: id => '#otdBody [data-otd-wish="' + id + '"]',
   photo: id => '#otdBody [data-otd-photo="' + id + '"]'   // also carries data-otd-year
 };
+// ---------- Nhắc trong thông báo sáng (v1.17) ----------
+// The service worker adds up to 3 lines to the ONE daily notification, after the main line and the "🌸 …" period line:
+//   LoveCore.dayReminderLines(LoveCore.dayReminders(rawProfile, rawMilestones, rawWishItems, nowMs), 3)   — pure, never throws
+//   LoveCore.pushBody(mainLine, periodLineOrEmpty, lines)                                                — joined by "\n", ≤ 300 code points
+// Due: user milestones (next yearly occurrence when repeating), birthdays, "Ngày thứ K", the n-year anniversary at 7 / 1 / 0 days left;
+// open wishes with a planDate at 1 / 0. "Ngày thứ K" and the anniversary are left out ON the day (the main line says "Hôm nay tròn …").
+// Order: daysLeft, then birthday < anniversary/hundred < user milestone < wish, then title, then id. More than 3 → 2 + "… và N mục khác".
+// Switch: kv meta dayRemind (boolean, default true; only `false` turns it off) — Cài đặt → Thông báo.
+// Real service worker (clock can't be faked — seed around the REAL date): CDP ServiceWorker.deliverPushMessage with
+// chromium.launch({ channel: 'chromium' }), then registration.getNotifications().
+const dayRemind = {
+  now: '2026-10-14T09:00:00+07:00',
+  // [now, lines] with ld.profile, ld.milestones, ld.wishes.items — the same in every device timezone
+  table: [
+    ['2026-10-14T09:00:00+07:00', ['🎂 Ngày mai: Sinh nhật Minh Thư']], ['2026-10-14T23:30:00+07:00', ['🎂 Ngày mai: Sinh nhật Minh Thư']],
+    ['2026-10-15T00:00:01+07:00', ['🎂 Hôm nay: Sinh nhật Minh Thư']], ['2026-10-08T08:00:00+07:00', ['🎂 Còn 7 ngày: Sinh nhật Minh Thư']],
+    ['2026-10-12T08:00:00+07:00', ['🍜 Ngày mai: Ăn lẩu nấm']],                  // birthday 3 days away: no line; wish w2 is planned for 13/10
+    ['2026-10-11T08:00:00+07:00', []],
+    ['2026-11-02T08:00:00+07:00', ['💯 Còn 7 ngày: Ngày thứ 1.000']], ['2026-11-08T08:00:00+07:00', ['💯 Ngày mai: Ngày thứ 1.000']],
+    ['2026-11-09T08:00:00+07:00', []],                                           // the main line is already "Hôm nay tròn 1.000 ngày …"
+    ['2026-12-17T08:00:00+07:00', ['✈️ Còn 7 ngày: Du lịch Đà Lạt']], ['2026-10-31T08:00:00+07:00', ['✈️ Ngày mai: Ngắm hoàng hôn Hội An']]
+  ],
+  // added to ld.milestones / ld.wishes.items at `now`: 5 due items → 2 lines + the count
+  milestones: [ms('m-r0', 'Ngày nhận nhà', '2026-10-14', '⭐', 20), Object.assign(ms('m-r7', 'Kỷ niệm ngày cầu hôn', '2025-10-21', '💍', 21), { repeatYearly: true }),
+    ms('m-r3', 'Ba ngày nữa', '2026-10-17', '💗', 22)],
+  wishes: [wi('wR1', 'Xem pháo hoa', 'watch', '2026-10-14', null, 30), wi('wR2', 'Ăn lẩu nấm lần hai', 'eat', '2026-10-15', null, 31),
+    wi('wR3', 'Hai ngày nữa', 'go', '2026-10-16', null, 32), wi('wR4', 'Đã làm rồi', 'go', '2026-10-14', '2026-10-14', 33)],
+  order: [['m-r0', 0], ['wR1', 0], ['auto-bday-thu', 1], ['wR2', 1], ['m-r7', 7]],   // [id, daysLeft] from dayReminders
+  lines: ['⭐ Hôm nay: Ngày nhận nhà', '🎬 Hôm nay: Xem pháo hoa', '… và 3 mục khác'],
+  title: '💕 Ngày thứ 974',
+  body: 'Hôm nay là ngày thứ 974 Long & Thư yêu nhau\n⭐ Hôm nay: Ngày nhận nhà\n🎬 Hôm nay: Xem pháo hoa\n… và 3 mục khác',
+  // with a period line (cycles shifted so the predicted start is 2 days away) "🌸 còn 2 ngày" stays line 2, the reminders follow
+  titleMax: 40, bodyMax: 300,   // a longer title is cut on a grapheme boundary + "…"; lines that don't fit are dropped from the end
+  // Cài đặt → Thông báo, with only ld.profile + ld.milestones + ld.wishes.items at `now`
+  preview: 'Sáng nay sẽ nhắc: 🎂 Ngày mai: Sinh nhật Minh Thư',
+  previewNone: 'Sáng nay không có gì để nhắc.',                                  // e.g. now = 2026-10-11T08:00+07; hidden while the switch is off
+  // "Gửi thử trên máy này": the real lines of today; on a day with none, the nearest thing ahead as an example + this sentence in #pushTestNote
+  testBody: 'Thông báo thử trên máy này — hôm nay là ngày thứ 974 Long & Thư yêu nhau\n🌸 còn 2 ngày\n🎂 Ngày mai: Sinh nhật Minh Thư',
+  testExample: { now: '2026-10-11T08:00:00+07:00', line: '🍜 Còn 2 ngày: Ăn lẩu nấm', note: 'Dòng nhắc trong bản thử là ví dụ từ mốc gần nhất.' }
+};
+const dayRemindSel = { box: '#dayRemindBox', toggle: '#dayRemind', preview: '#dayRemindPreview', test: '#btnPushTest', testNote: '#pushTestNote' };
+
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
 async function seedPhotoList(page, list) {
   await page.evaluate(async list => {
@@ -499,4 +541,4 @@ function badgeStubScript() {
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
-  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList };
+  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel };

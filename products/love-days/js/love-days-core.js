@@ -597,6 +597,112 @@
     return out;
   }
 
+  // ---------- Reminders in the morning push ----------
+  var REMIND_AHEAD = [7, 1, 0];   // milestones, birthdays, "Ngày thứ K", yearly anniversary: days left that get a line
+  var WISH_AHEAD = [1, 0];        // open wishes with a planned date
+  var REMIND_MAX_LINES = 3;
+  var REMIND_TITLE_MAX = 40;
+  var PUSH_BODY_MAX = 300;        // code points
+  var REMIND_WISH_EMOJI = { go: "✈️", eat: "🍜", watch: "🎬", other: "✨" };
+  var REMIND_RANK = { birthday: 0, anniversary: 1, hundred: 1, user: 2, wish: 3 };
+
+  // What the morning notification should mention today, most pressing first:
+  // [{ kind: 'birthday'|'anniversary'|'hundred'|'user'|'wish', id, emoji, title, daysLeft }].
+  // Takes everything as stored (the service worker reads straight from
+  // IndexedDB): each record goes through its validator, a bad one or a
+  // repeated id is dropped on its own, an unreadable profile gives [], a list
+  // that is not an array is left out. Never throws.
+  // The round-hundred day and the yearly anniversary are left out ON the day:
+  // the main line of the notification already says "Hôm nay tròn …".
+  function dayReminders(rawProfile, rawMilestones, rawWishItems, nowMs){
+    var out = [];
+    try{
+      if(!num(nowMs)) return out;
+      var profile = validateProfile(rawProfile, nowMs);
+      if(!profile || profile.startStatus !== "ok") return out;
+      var tIdx = todayIdx(nowMs);
+      var add = function(kind, id, emoji, title, date, ahead){
+        var left = dayIdx(date) - tIdx;
+        if(ahead.indexOf(left) !== -1) out.push({ kind: kind, id: id, emoji: emoji, title: title, daysLeft: left });
+      };
+      try{
+        autoMilestones(profile, nowMs).forEach(function(m){
+          if(m.kind !== "birthday" && dayIdx(m.date) === tIdx) return;
+          add(m.kind, m.id, m.emoji, m.title, m.date, REMIND_AHEAD);
+        });
+      }catch(e){}
+      var seen = Object.create(null);
+      (Array.isArray(rawMilestones) ? rawMilestones : []).forEach(function(raw){
+        try{
+          var m = validateMilestone(raw);
+          if(!m || seen[m.id]) return;
+          seen[m.id] = true;
+          var v = userMilestoneView(m, tIdx);
+          add("user", v.id, v.emoji, v.title, v.date, REMIND_AHEAD);
+        }catch(e){}
+      });
+      seen = Object.create(null);
+      (Array.isArray(rawWishItems) ? rawWishItems : []).forEach(function(raw){
+        try{
+          var w = validateWish(raw);
+          if(!w || seen[w.id]) return;
+          seen[w.id] = true;
+          if(w.doneDate != null || w.planDate == null) return;
+          add("wish", w.id, REMIND_WISH_EMOJI[w.cat] || "✨", w.title, w.planDate, WISH_AHEAD);
+        }catch(e){}
+      });
+      // Plain code-unit order for the title: localeCompare differs between engines.
+      out.sort(function(a, b){
+        return a.daysLeft - b.daysLeft || REMIND_RANK[a.kind] - REMIND_RANK[b.kind] ||
+          (a.title < b.title ? -1 : a.title > b.title ? 1 : 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      });
+    }catch(e){}
+    return out;
+  }
+
+  // One line per reminder: "🎂 Hôm nay: …" | "🎂 Ngày mai: …" | "🎂 Còn 7 ngày: …".
+  // More than maxLines items → maxLines − 1 of them + "… và N mục khác".
+  // These show on the lock screen. Never throws.
+  function dayReminderLines(list, maxLines){
+    try{
+      var max = posInt(maxLines) ? maxLines : REMIND_MAX_LINES;
+      var items = (Array.isArray(list) ? list : []).filter(function(x){
+        return x && typeof x === "object" && typeof x.title === "string" && num(x.daysLeft) && x.daysLeft >= 0;
+      });
+      var shown = items.length > max ? items.slice(0, max - 1) : items;
+      var lines = shown.map(function(x){
+        var title = wellFormed(x.title).replace(/\s+/g, " ").trim();
+        if(title.length > REMIND_TITLE_MAX) title = clipGraphemes(title, REMIND_TITLE_MAX).trim() + "…";
+        var when = x.daysLeft === 0 ? "Hôm nay" : x.daysLeft === 1 ? "Ngày mai" : "Còn " + fmtInt(x.daysLeft) + " ngày";
+        var emoji = typeof x.emoji === "string" && x.emoji ? wellFormed(x.emoji) + " " : "";
+        return emoji + when + ": " + title;
+      });
+      if(items.length > max) lines.push("… và " + (items.length - shown.length) + " mục khác");
+      return lines;
+    }catch(e){ return []; }
+  }
+
+  // The notification body: main line, then the period line (if any), then the
+  // reminder lines — as many as fit in PUSH_BODY_MAX code points, dropped from
+  // the end. Counted by code point so an emoji is never cut in half. Never throws.
+  function pushBody(main, cycleLine, lines){
+    var len = function(s){ return Array.from(s).length; };
+    var body = typeof main === "string" ? wellFormed(main) : "";
+    try{
+      if(typeof cycleLine === "string" && cycleLine) body += "\n" + wellFormed(cycleLine);
+      if(len(body) > PUSH_BODY_MAX) return Array.from(body).slice(0, PUSH_BODY_MAX - 1).join("") + "…";
+      var used = len(body), list = Array.isArray(lines) ? lines : [];
+      for(var i = 0; i < list.length; i++){
+        if(typeof list[i] !== "string" || !list[i]) continue;
+        var line = wellFormed(list[i]), n = len(line) + 1;
+        if(used + n > PUSH_BODY_MAX) break;
+        body += "\n" + line;
+        used += n;
+      }
+    }catch(e){}
+    return body;
+  }
+
   // ---------- IndexedDB ----------
   // Page and SW MUST both open through this: an indexedDB.open() without a
   // version from the SW before the page ever ran would create an EMPTY v1 DB,
@@ -721,6 +827,8 @@
     cycleReminder: cycleReminder, reminderLine: reminderLine,
     MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
     onThisDay: onThisDay,
+    REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
+    PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations
   };

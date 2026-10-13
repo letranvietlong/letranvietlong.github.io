@@ -22,9 +22,9 @@
     photos: [], albumOrder: [], arranging: false,
     cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
     wishes: [], wishesBad: [], wishesBroken: false, wishesStamp: null,
-    // cycleRemind (days ahead, 0 = off) and cycleRemindQuiet are read by the
+    // cycleRemind (days ahead, 0 = off), cycleRemindQuiet and dayRemind are read by the
     // service worker's push handler; like the rest of meta they stay on this device.
-    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true }
+    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true, dayRemind: true }
   };
   var REMIND_OPTS = [0, 1, 2, 3, 5];
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
@@ -141,6 +141,7 @@
         if(meta.showCycle === false) state.meta.showCycle = false;
         if(REMIND_OPTS.indexOf(meta.cycleRemind) !== -1) state.meta.cycleRemind = meta.cycleRemind;
         if(meta.cycleRemindQuiet === false) state.meta.cycleRemindQuiet = false;
+        if(meta.dayRemind === false) state.meta.dayRemind = false;
       }
       skipped += applyCyclesRec(r[5]);
       skipped += applyWishesRec(r[6]);
@@ -229,7 +230,7 @@
       if(b.getAttribute("data-tab") === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if(name === "settings"){
-      refreshStorage(); renderDiag(); renderBackupCard(); renderPush(); renderCycleRemind();
+      refreshStorage(); renderDiag(); renderBackupCard(); renderPush(); renderCycleRemind(); renderDayRemind();
       refreshSub().then(function(){ renderPush(); checkPushChanged(); });
     }
     window.scrollTo(0, 0);
@@ -406,6 +407,7 @@
       renderMilestones();
       renderWishes(); // countdowns follow the date; the form in #wishSheet is the user's and is never touched
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
+      renderDayRemind();
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
       if(C.cycleStats) renderCycleSheet();
       if(shareSheetOpen()) renderShare();
@@ -3507,6 +3509,40 @@
     if(sub) $("pushSubJson").value = subJson(sub);
   }
 
+  // ---------- Reminders in the morning notification (kv meta dayRemind) ----------
+  // The same call the service worker makes when the push arrives, on the same records.
+  function dayRemindLines(){
+    if(!C.dayReminders || !C.dayReminderLines || !state.profile) return [];
+    return C.dayReminderLines(C.dayReminders(state.profile, state.milestones, wishesLocked() ? null : state.wishes, now()), C.REMIND_MAX_LINES);
+  }
+  // For "Gửi thử" on a day with nothing due: the nearest thing ahead, worded like a real line.
+  function dayRemindExample(){
+    var best = null;
+    if(!C.dayReminderLines) return [];
+    ((state.computed && state.computed.list) || []).forEach(function(x){
+      if(x.daysLeft > 0 && (!best || x.daysLeft < best.daysLeft)) best = { emoji: x.emoji, title: x.title, daysLeft: x.daysLeft };
+    });
+    var w = wishesLocked() ? null : C.wishView(state.wishes, now()).nearest;
+    if(w && w.daysLeft > 0 && (!best || w.daysLeft < best.daysLeft)) best = { emoji: wishEmoji(w.cat), title: w.title, daysLeft: w.daysLeft };
+    return best ? C.dayReminderLines([best], 1) : [];
+  }
+  function renderDayRemind(){
+    // An older cached love-days-core.js can be paired with this page offline.
+    var ok = !!(C.dayReminders && C.dayReminderLines && C.pushBody), on = state.meta.dayRemind !== false;
+    $("dayRemindBox").hidden = !ok;
+    if(!ok) return;
+    $("dayRemind").checked = on;
+    var lines = on && state.mode === "app" ? dayRemindLines() : null, pre = $("dayRemindPreview");
+    var text = !lines ? "" : lines.length ? "Sáng nay sẽ nhắc: " + lines.join(" · ") : "Sáng nay không có gì để nhắc.";
+    if(pre.textContent !== text) pre.textContent = text;
+    pre.hidden = !text;
+  }
+  $("dayRemind").addEventListener("change", function(){
+    state.meta.dayRemind = this.checked;
+    saveMeta();
+    renderDayRemind();
+  });
+
   function checkPushChanged(){
     var stored = push.rec.lastCopiedEndpointHash;
     if(!stored || !vapidKey() || !pushSupported()){ setBanner("push", null); return; }
@@ -3607,7 +3643,7 @@
   $("btnPushTest").addEventListener("click", function(){
     if(typeof Notification === "undefined" || !state.computed) return;
     showError("pushError", null);
-    var note = $("pushTestNote");
+    var note = $("pushTestNote"), example = false;
     note.hidden = true;
     var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
     Promise.resolve(permP).then(function(perm){
@@ -3617,11 +3653,17 @@
       var n = state.computed.n;
       // The only way to see the reminder line on a real phone without waiting for the day.
       var remind = state.meta.cycleRemind && C.reminderLine
-        ? "\n" + C.reminderLine({ daysLeft: state.meta.cycleRemind }, state.meta.cycleRemindQuiet !== false) : "";
-      return reg.showNotification("💕 Ngày thứ " + fmtInt(n), {
-        body: "Thông báo thử trên máy này — hôm nay là ngày thứ " + fmtInt(n) + " Long & Thư yêu nhau" + remind,
-        tag: "love-days-test", icon: PUSH_ICON
-      }).then(function(){ return n; });
+        ? C.reminderLine({ daysLeft: state.meta.cycleRemind }, state.meta.cycleRemindQuiet !== false) : "";
+      var body = "Thông báo thử trên máy này — hôm nay là ngày thứ " + fmtInt(n) + " Long & Thư yêu nhau";
+      if(C.pushBody){
+        var lines = [];
+        if(state.meta.dayRemind !== false){
+          lines = dayRemindLines();
+          if(!lines.length){ lines = dayRemindExample(); example = lines.length > 0; }
+        }
+        body = C.pushBody(body, remind, lines);
+      } else if(remind) body += "\n" + remind;
+      return reg.showNotification("💕 Ngày thứ " + fmtInt(n), { body: body, tag: "love-days-test", icon: PUSH_ICON }).then(function(){ return n; });
     }).then(function(n){
       var badged = false;
       try{
@@ -3632,7 +3674,7 @@
         }
       }catch(e){}
       note.textContent = "Đã gửi thử ✓ " + (badged ? "Icon hiện số " + fmtInt(n) + ". " : "Máy này không hỗ trợ số trên icon. ") +
-        "Không thấy? Xem Cài đặt iPhone → Thông báo.";
+        "Không thấy? Xem Cài đặt iPhone → Thông báo." + (example ? " Dòng nhắc trong bản thử là ví dụ từ mốc gần nhất." : "");
       note.hidden = false;
       renderPush();
       renderDiag();

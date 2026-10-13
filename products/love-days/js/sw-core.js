@@ -3,9 +3,9 @@
 // love-days-core.js is shared with the page; the push handler opens
 // IndexedDB through LoveCore.openDb() so the DB is never created without its
 // stores. ?v= follows CACHE_NAME.
-importScripts('/products/love-days/js/love-days-core.js?v=14');
+importScripts('/products/love-days/js/love-days-core.js?v=15');
 
-var CACHE_NAME = "lovedays-cache-v14";
+var CACHE_NAME = "lovedays-cache-v15";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
@@ -97,22 +97,31 @@ self.addEventListener("fetch", function(event){
 // The device's own start date in IndexedDB is the source of truth and N is
 // computed when the push ARRIVES (a delayed push still shows the right day);
 // the payload {startDate, n, date} is only a fallback for an empty DB.
-// Exactly ONE notification per push: the period reminder is a second line of
-// the same notification, never one of its own.
+// Exactly ONE notification per push: the period reminder and the milestone /
+// birthday / wish reminders are further lines of the same notification.
 var APP_URL = "/products/love-days/html/index.html";
 var ICON_URL = "/products/love-days/img/love-days-icon-180.png";
 
-// One open, one transaction, closed on both outcomes. The service worker only
-// ever READS here. cycles/meta are handed on as stored (unvalidated).
+// One open, closed on both outcomes. The service worker only ever READS here.
+// Everything but the start date is handed on as stored (unvalidated).
+// milestones (only needed for the reminder lines) are read on their own after
+// the kv transaction: if that read fails the result is just milestones: null,
+// and the day count still comes from this device.
 function readPushData(){
   return LoveCore.openDb().then(function(db){
     return Promise.resolve().then(function(){
       var tx = db.transaction("kv"), st = tx.objectStore("kv"), out = {};
-      ["profile", "cycles", "meta"].forEach(function(k){
+      ["profile", "cycles", "meta", "wishes"].forEach(function(k){
         var rq = st.get(k);
         rq.onsuccess = function(){ out[k] = rq.result; };
       });
       return LoveCore.txDone(tx).then(function(){ return out; });
+    }).then(function(out){
+      out.milestones = null;
+      if(out.meta && out.meta.dayRemind === false) return out;
+      return Promise.resolve().then(function(){
+        return LoveCore.idbGetAll(db, "milestones");
+      }).then(function(list){ out.milestones = list; }, function(){}).then(function(){ return out; });
     }).then(function(out){
       db.close();
       return out;
@@ -122,8 +131,9 @@ function readPushData(){
     });
   }).then(function(out){
     var p = out.profile;
-    return { start: p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null, cycles: out.cycles, meta: out.meta };
-  }).catch(function(){ return { start: null, cycles: null, meta: null }; });
+    return { start: p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null, cycles: out.cycles, meta: out.meta,
+             profileRaw: p, wishes: out.wishes, milestones: out.milestones };
+  }).catch(function(){ return { start: null, cycles: null, meta: null, profileRaw: null, wishes: null, milestones: null }; });
 }
 
 function pushInfo(payload){
@@ -143,15 +153,36 @@ function pushInfo(payload){
 // Cài đặt → Chu kỳ (kv meta: cycleRemind 0|1|2|3|5, default 2;
 // cycleRemindQuiet, default true), else "". Anything unexpected → "": the
 // daily notification must go out unchanged.
-function reminderSuffix(info){
+function cycleLine(info){
   try{
     if(!info || !info.own || !LoveCore.cycleReminder) return "";
     var rec = info.own.cycles, meta = info.own.meta && typeof info.own.meta === "object" ? info.own.meta : {};
     var days = [0, 1, 2, 3, 5].indexOf(meta.cycleRemind) !== -1 ? meta.cycleRemind : 2;
     if(!days || !rec || typeof rec !== "object") return "";
     var r = LoveCore.cycleReminder(rec.items, info.now, days);
-    return r ? "\n" + LoveCore.reminderLine(r, meta.cycleRemindQuiet !== false) : "";
+    return r ? LoveCore.reminderLine(r, meta.cycleRemindQuiet !== false) : "";
   }catch(e){ return ""; }
+}
+
+// Up to three more lines for milestones, birthdays and planned wishes that are
+// due (kv meta: dayRemind, default true), after the period line. Its own
+// try/catch: whatever goes wrong here only costs these lines.
+function dayLines(info){
+  try{
+    if(!info || !info.own || !LoveCore.dayReminders || !LoveCore.dayReminderLines) return [];
+    var d = info.own, meta = d.meta && typeof d.meta === "object" ? d.meta : {};
+    if(meta.dayRemind === false) return [];
+    var wishes = d.wishes && typeof d.wishes === "object" ? d.wishes.items : null;
+    return LoveCore.dayReminderLines(LoveCore.dayReminders(d.profileRaw, d.milestones, wishes, info.now), LoveCore.REMIND_MAX_LINES);
+  }catch(e){ return []; }
+}
+
+function withReminders(body, info){
+  var cyc = cycleLine(info);
+  try{
+    if(LoveCore.pushBody) return LoveCore.pushBody(body, cyc, dayLines(info));
+  }catch(e){}
+  return body + (cyc ? "\n" + cyc : "");
 }
 
 function dailyContent(info){
@@ -177,7 +208,7 @@ self.addEventListener("push", function(event){
   event.waitUntil(
     pushInfo(payload).catch(function(){ return null; }).then(function(info){
       var c = dailyContent(info);
-      c.body += reminderSuffix(info);
+      c.body = withReminders(c.body, info);
       if(info){
         try{
           if(self.navigator.setAppBadge){

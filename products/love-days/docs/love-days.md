@@ -36,7 +36,7 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 | Store | keyPath | Nội dung |
 |---|---|---|
-| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle, cycleRemind, cycleRemindQuiet} (riêng từng máy, **không** nằm trong bản sao lưu; bảng dưới); `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ); `wishes` {items:[{id, title, cat, note, planDate, doneDate, milestoneId, createdAt}], updatedAt} (v1.14, xem Muốn làm) |
+| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle, cycleRemind, cycleRemindQuiet, dayRemind} (riêng từng máy, **không** nằm trong bản sao lưu; bảng dưới); `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ); `wishes` {items:[{id, title, cat, note, planDate, doneDate, milestoneId, createdAt}], updatedAt} (v1.14, xem Muốn làm) |
 | `milestones` | `id` | {id, title, date, emoji, note, repeatYearly, createdAt, photoIds: [id ảnh album]} — `photoIds` có từ v1.13, không nâng `DB_VERSION`; bản ghi cũ thiếu trường này đọc thành `[]` và **không** bị ghi lại lúc nạp |
 | `photos` | `id` | {id, gen, caption, takenAt: ms hoặc null, addedAt, order, w, h, bytes, sha256}; index `gen`/`takenAt`/`addedAt`/`order` |
 | `blobs` | `id` | {id, gen, mime, data: **ArrayBuffer**, thumb}; id `avatar-long`, `avatar-thu`, `cover`, hoặc id ảnh |
@@ -50,6 +50,9 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 | `showCycle` | boolean | true | thẻ Chu kỳ ở Trang chủ |
 | `cycleRemind` | `0` (tắt) \| `1` \| `2` \| `3` \| `5` ngày | `2` | trang (Cài đặt → Chu kỳ, "Gửi thử") **và service worker** lúc nhận push |
 | `cycleRemindQuiet` | boolean — nhắc kín, không ghi chữ "kỳ" | true | như trên |
+| `dayRemind` (v1.17) | boolean — nhắc kỷ niệm, sinh nhật, việc đã hẹn trong thông báo sáng; chỉ đúng `false` mới là tắt | true | trang (Cài đặt → Thông báo, "Gửi thử") **và service worker** lúc nhận push |
+
+`saveMeta()` ghi cả bản ghi theo các khoá mà **bản app đang chạy** biết. Một bản app cũ còn trong cache (≤ 1.16) ghi `meta` (đổi cách sắp xếp Album, lưu bản sao lưu…) sẽ làm rơi `dayRemind` → lần sau đọc lại là mặc định **bật**. Thêm khoá meta mới thì khoá đó cũng chịu đúng giới hạn này.
 
 - Lưu ArrayBuffer, không lưu Blob (lịch sử lỗi Blob-trong-IDB của WebKit).
 - Đổi schema: tăng `DB_VERSION`, thêm `case` trong `upgrade(db, oldVersion)` (switch rơi xuyên, không `break`).
@@ -154,7 +157,7 @@ Không có lượt gửi riêng và **không đổi gì ở server**: câu nhắ
 - Cài đặt → Chu kỳ: "Nhắc trước kỳ" Tắt / 1 / 2 / 3 / 5 ngày (`kv.meta.cycleRemind`, mặc định 2) và công tắc "Nhắc kín" (`cycleRemindQuiet`, mặc định bật). Dòng xem trước ghi đúng chuỗi sẽ hiện.
 - `LoveCore.cycleReminder(items thô, now, days)` → `null` hoặc `{daysLeft, next}`: tự lọc qua `validateCycle` + bỏ id trùng, `null` khi `days` ngoài {1,2,3,5}, không có kỳ, đang trong kỳ, đã trễ (`daysLeft < 0`) hoặc còn xa hơn `days`. Không bao giờ ném lỗi. Trong khoảng nhắc thì **ngày nào cũng nhắc** (đặt 2 ngày → nhắc lúc còn 2, còn 1 và đúng ngày).
 - `LoveCore.reminderLine(r, quiet)`: kín `🌸 còn 2 ngày` / `🌸 hôm nay`; đầy đủ `🌸 Kỳ tới dự kiến còn 2 ngày` / `🌸 Kỳ tới dự kiến hôm nay`.
-- Nút "Gửi thử trên máy này" nối thêm dòng nhắc theo lựa chọn hiện tại (khi không Tắt) — cách duy nhất xem nó trên máy thật mà không chờ đúng ngày.
+- Nút "Gửi thử trên máy này" nối thêm dòng nhắc theo lựa chọn hiện tại (khi không Tắt) — cách duy nhất xem nó trên máy thật mà không chờ đúng ngày. Từ v1.17 dòng 🌸 vẫn là dòng thứ hai; các dòng nhắc kỷ niệm/sinh nhật/việc đứng sau nó (xem Thông báo đẩy → Nhắc kỷ niệm…).
 - **Giới hạn** (phải nói với người dùng khi được hỏi): chỉ nhắc vào giờ thông báo sáng (06:17–11:17, một lần/ngày); chỉ trên máy **có sổ chu kỳ** và **đã bật thông báo** — sổ không đồng bộ nên máy kia không nhắc trừ khi đã nhập bản sao lưu; cài đặt nhắc cũng riêng từng máy; hôm nào workflow không gửi được thì hôm đó không nhắc; máy chưa có ngày bắt đầu trong IndexedDB (thông báo dựng từ payload) thì không nhắc. **Chưa kiểm chứng trên iPhone thật** việc thân thông báo hiện xuống dòng và ký tự 🌸 ở màn hình khoá.
 
 - **Lưu**: cả sổ là MỘT bản ghi `kv` khoá `cycles` (không nâng `DB_VERSION`). Vì mỗi lần ghi là ghi cả mảng: mục không qua `validateCycle` được giữ nguyên văn trong `state.cyclesBad` và nối lại vào `items` ở mọi lần ghi (kể cả khi nhập bản sao lưu); bản ghi tồn tại mà `items` không phải mảng → `state.cyclesBroken`: thẻ và sổ báo "Không đọc được dữ liệu chu kỳ — dữ liệu vẫn còn nguyên", mọi đường ghi bị khoá, bản sao lưu bỏ hẳn khoá `cycles`, nhập cũng không đè. Mục có `id` trùng với một mục đứng trước trong mảng cũng bị coi là mục hỏng (sửa "kỳ đó" sẽ xoá mất kỳ sinh đôi). **Mục hỏng (`cyclesBad`) không đi theo bản sao lưu** — chỉ nằm lại trong bản ghi trên máy. Mọi lần ghi đi qua `saveCycles()` (ghi xong mới gán `state.cycles`); cờ `cyc.saving` chặn bấm đúp, và `cycleWrite` gọi nó bên trong một `then()` để lỗi ném đồng bộ (`db.transaction` trên kết nối đang đóng) cũng nhả nút.
@@ -245,13 +248,17 @@ GitHub Actions (cron "17 23,0-4 * * *" = 06:17–11:17 VN, 6 lượt)
         │  payload {"startDate","n","date"} (startDate/n chỉ có khi đặt LOVE_START_DATE)
         └─ ghi data/push-state.json {lastSentDate, sentAt, delivered, failed} → commit
 SW (js/sw-core.js) nhận "push":
-  readPushData(): MỘT LoveCore.openDb() + một transaction kv đọc profile, cycles, meta; đóng DB ở cả hai nhánh; SW không ghi gì
+  readPushData(): MỘT LoveCore.openDb(); một transaction kv đọc profile, cycles, meta, wishes;
+      rồi MỘT LẦN ĐỌC RIÊNG store milestones (bỏ qua khi meta.dayRemind === false) — lần đọc này lỗi thì chỉ thành milestones: null;
+      đóng DB ở cả hai nhánh; SW không ghi gì
   startDate của máy → N tính LÚC NHẬN
   → không có thì payload.startDate → payload.n (số nguyên 1..100000) → câu chung "Mở app để xem…"
   → ngày tròn trăm / kỷ niệm năm: thân thông báo đổi thành "Hôm nay tròn …🎉"
-  → reminderSuffix() (try/catch riêng, chỉ khi startDate đọc được từ DB của máy):
-      cycleReminder(cycles.items, now, meta.cycleRemind — thiếu/sai thì 2, 0 thì thôi) có kết quả → thân += "\n🌸 còn 2 ngày"
-      mọi lỗi/dữ liệu hỏng ở bước này → bỏ dòng nhắc, thông báo hằng ngày y như cũ
+  → withReminders(thân, info) — chỉ khi startDate đọc được từ DB của máy:
+      cycleLine() (try/catch riêng): cycleReminder(cycles.items, now, meta.cycleRemind — thiếu/sai thì 2, 0 thì thôi) → "🌸 còn 2 ngày"
+      dayLines() (try/catch riêng, v1.17): dayReminderLines(dayReminders(profile, milestones, wishes.items, now), 3) → tối đa 3 dòng
+      thân = LoveCore.pushBody(dòng chính, dòng 🌸, các dòng nhắc) — 🌸 luôn là dòng 2, dòng nhắc theo sau, cả thân ≤ 300 code point
+      mọi lỗi/dữ liệu hỏng ở một bước → chỉ mất dòng của bước đó, thông báo hằng ngày vẫn ra
   → LUÔN đúng MỘT showNotification("💕 Ngày thứ N", tag love-days-daily) + setAppBadge(N)
 "notificationclick": focus cửa sổ LoveDays đang mở, không có thì openWindow(html/index.html)
 ```
@@ -265,6 +272,21 @@ SW (js/sw-core.js) nhận "push":
 - Workflow: bước đầu chỉ xét `LOVE_PUSH_SUBSCRIPTIONS` — trống thì in một dòng thường (không `::notice::`) và dừng xanh, để khỏi báo lỗi 6 lần/ngày trước khi cài đặt. Không xét khoá VAPID vì `PUSH_VAPID_PRIVATE_KEY` dùng chung với GoldTrack/FuelTrack nên có thể có sẵn từ trước khi LoveDays được cài. Đã có subscriptions mà thiếu/hỏng khoá → script exit 2 (đỏ). `workflow_dispatch` có `force` (gửi lại dù hôm nay đã gửi) và `dry_run` (không gửi, không ghi). `pywebpush==2.5.0` (đã kiểm với khoá dạng raw base64url của `web-push generate-vapid-keys`).
 - `data/push-state.json` do bot ghi, app **không** đọc, không nằm trong danh sách cache SW.
 - Chạy tay: `python products/love-days/py/send_push.py [--now 2026-10-01T23:30:00Z] [--force] [--dry-run] [--state path]`.
+
+### Nhắc kỷ niệm, sinh nhật và việc đã hẹn (v1.17)
+
+Không có lượt gửi riêng và **không đổi gì ở server** (`send_push.py`, workflow, payload giữ nguyên): các dòng nhắc nằm trong chính thông báo mỗi sáng, do service worker tự ghép từ IndexedDB của máy lúc nhận push.
+
+- **Cài đặt → Thông báo**: một công tắc "Nhắc kỷ niệm, sinh nhật và việc đã hẹn" (`kv.meta.dayRemind`, mặc định **bật** — tên kỷ niệm/việc vì thế hiện trên màn hình khoá ngay sau khi cập nhật; dòng gợi ý dưới công tắc và changelog đều nói rõ). Dòng `#dayRemindPreview` ghi đúng thứ sáng nay sẽ nhắc ("Sáng nay sẽ nhắc: 🎂 Ngày mai: Sinh nhật Minh Thư", nhiều dòng nối " · ") hoặc "Sáng nay không có gì để nhắc."; ẩn khi công tắc tắt; chỉ ghi lại khi chữ đổi. `renderDayRemind()` chạy khi vào tab Cài đặt, khi gạt công tắc và lúc sang ngày; `visibilitychange` không gọi nó. Core cũ trong cache (chưa có `dayReminders`) → cả khối `#dayRemindBox` ẩn.
+- **Ngưỡng cố định** (`REMIND_AHEAD` = 7 / 1 / 0, `WISH_AHEAD` = 1 / 0 ngày còn lại):
+  - kỷ niệm người dùng (kỷ niệm lặp lại tính theo lần kế tiếp), sinh nhật hai người, "Ngày thứ K", kỷ niệm n năm: còn 7 ngày, còn 1 ngày, đúng ngày;
+  - việc muốn làm **chưa làm** có ngày dự định: còn 1 ngày, đúng ngày;
+  - "Ngày thứ K" và kỷ niệm n năm rơi **đúng hôm nay** không có dòng nhắc — dòng chính đã là "Hôm nay tròn … 🎉".
+- **`LoveCore.dayReminders(profile thô, milestones thô, wishes.items thô, now)`** → `[{ kind: 'birthday'|'anniversary'|'hundred'|'user'|'wish', id, emoji, title, daysLeft }]`. Tự đưa từng bản ghi qua `validateProfile` / `validateMilestone` / `validateWish`, bỏ riêng mục hỏng và id trùng; hồ sơ không đọc được hoặc ngày bắt đầu sai → `[]`; danh sách không phải mảng → bỏ phần đó. Không bao giờ ném lỗi. Thứ tự: `daysLeft` tăng → loại (sinh nhật, kỷ niệm năm / tròn trăm, kỷ niệm người dùng, việc) → tiêu đề (so mã ký tự, không `localeCompare`) → id.
+- **`LoveCore.dayReminderLines(list, 3)`**: `"<emoji> Hôm nay: <tiêu đề>"` / `"<emoji> Ngày mai: …"` / `"<emoji> Còn 7 ngày: …"`; nhiều hơn 3 mục → 2 mục đầu + `"… và N mục khác"`. Emoji: 🎂 sinh nhật, 💯 tròn trăm, 💞 kỷ niệm năm, emoji đã lưu của kỷ niệm (không có thì 💗), ✈️ 🍜 🎬 ✨ theo loại việc. Tiêu đề dài hơn `REMIND_TITLE_MAX` = 40 đơn vị UTF-16 bị cắt theo grapheme (`clipGraphemes`) + "…".
+- **`LoveCore.pushBody(dòng chính, dòng 🌸 hoặc "", các dòng nhắc)`**: nối bằng `"\n"`; cả thân ≤ `PUSH_BODY_MAX` = 300 **code point** — dòng nhắc nào không vừa thì bỏ từ cuối, không bao giờ cắt đôi emoji. Không có dòng nhắc nào thì chuỗi ra **y hệt bản 1.16** (đã so với service worker 1.16 thật).
+- **"Gửi thử trên máy này"** dựng thân bằng cùng `pushBody`: dòng thử + dòng 🌸 mẫu (như trước) + các dòng nhắc thật của hôm nay. Hôm nay không có gì để nhắc thì lấy mốc/việc sắp tới gần nhất (còn ≥ 1 ngày) làm ví dụ và `#pushTestNote` thêm "Dòng nhắc trong bản thử là ví dụ từ mốc gần nhất."; công tắc tắt thì không có dòng nhắc.
+- **Giới hạn** (phải nói với người dùng khi được hỏi): chỉ nhắc vào giờ thông báo sáng, một lần/ngày; chỉ trên máy **có dữ liệu đó** và **đã bật thông báo** — kỷ niệm, việc muốn làm và công tắc đều không đồng bộ giữa hai máy; hôm nào workflow không gửi được thì hôm đó không nhắc (mốc "còn 7 ngày" không được nhắc bù vào hôm sau); máy chưa có ngày bắt đầu trong IndexedDB (thông báo dựng từ payload) thì không nhắc; app bản cũ ghi `meta` làm công tắc về lại "bật" (xem bảng `kv.meta`). **Chưa kiểm chứng trên iPhone thật**: thân thông báo 3–5 dòng ở màn hình khoá (iOS cắt mấy dòng khi thu gọn, emoji 🎂 💯 ⭐ hiển thị ra sao).
 
 ### Secrets (repo → Settings → Secrets and variables → Actions)
 
