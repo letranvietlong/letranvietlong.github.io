@@ -396,6 +396,69 @@
     return out;
   }
 
+  // Whole weeks starting on Monday that cover month m of year y, as
+  // 'YYYY-MM-DD'; always 35 or 42 cells so the grid height changes little.
+  function monthGrid(y, m){
+    var first = dayIdx({ y: y, m: m, d: 1 });
+    var lead = ((first + 3) % 7 + 7) % 7;
+    var n = Math.max(5, Math.ceil((lead + daysInMonth(y, m)) / 7)) * 7, out = [];
+    for(var i = 0; i < n; i++) out.push(idxToStr(first - lead + i));
+    return out;
+  }
+
+  // day → { period: cycle id | null, open, predicted, range } for the calendar.
+  // st = cycleStats(...). A cycle with no end date is drawn up to today only
+  // while it still counts as ongoing; after that just its start day.
+  // isLong (the wait looks like a period that was never logged) drops the prediction.
+  function cycleDayMarks(st, tIdx, isLong){
+    var marks = Object.create(null), list = st.list || [], d;
+    function at(idx){
+      var k = idxToStr(idx);
+      return marks[k] || (marks[k] = { period: null, open: false, predicted: false, range: false });
+    }
+    list.forEach(function(c, i){
+      var s = dayIdx(c.start);
+      var e = c.end != null ? dayIdx(c.end) : i === list.length - 1 && st.inPeriod ? tIdx : s;
+      for(var k = s; k <= e; k++){
+        var m = at(k);
+        m.period = c.id;
+        m.open = c.end == null;
+      }
+    });
+    if(!isLong && st.next){
+      at(dayIdx(st.next)).predicted = true;
+      if(st.nextMin && st.nextMax){
+        for(d = dayIdx(st.nextMin); d <= dayIdx(st.nextMax); d++) at(d).range = true;
+      }
+    }
+    return marks;
+  }
+
+  var REMIND_DAYS = [1, 2, 3, 5];
+
+  // For the daily push: null, or { daysLeft, next } when the predicted start
+  // is 0..days away. Takes the stored items unvalidated (the service worker
+  // reads them straight from IndexedDB) and never throws, whatever it is given.
+  function cycleReminder(rawItems, nowMs, days){
+    try{
+      if(REMIND_DAYS.indexOf(days) === -1 || !Array.isArray(rawItems) || !num(nowMs)) return null;
+      var seen = Object.create(null), items = [];
+      rawItems.forEach(function(it){
+        var v = validateCycle(it);
+        if(v && !seen[v.id]){ seen[v.id] = true; items.push(v); }
+      });
+      if(!items.length) return null;
+      var st = cycleStats(items, nowMs);
+      if(st.inPeriod || st.daysLeft < 0 || st.daysLeft > days) return null;
+      return { daysLeft: st.daysLeft, next: st.next };
+    }catch(e){ return null; }
+  }
+  // quiet = no word that says what the reminder is about (it shows on the lock screen).
+  function reminderLine(r, quiet){
+    var when = r.daysLeft === 0 ? "hôm nay" : "còn " + r.daysLeft + " ngày";
+    return "🌸 " + (quiet ? when : "Kỳ tới dự kiến " + when);
+  }
+
   // ---------- IndexedDB ----------
   // Page and SW MUST both open through this: an indexedDB.open() without a
   // version from the SW before the page ever ran would create an EMPTY v1 DB,
@@ -516,6 +579,8 @@
     CYCLE_OPEN_MAX: CYCLE_OPEN_MAX, CYCLE_MAX_LEN: CYCLE_MAX_LEN, MAX_CYCLES: MAX_CYCLES,
     validateCycle: validateCycle, newCycleId: newCycleId, cycleConflict: cycleConflict,
     mergeCycles: mergeCycles, cycleStats: cycleStats,
+    monthGrid: monthGrid, cycleDayMarks: cycleDayMarks, REMIND_DAYS: REMIND_DAYS,
+    cycleReminder: cycleReminder, reminderLine: reminderLine,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,
     idbPut: idbPut, idbDelete: idbDelete, reqP: reqP, txDone: txDone, cleanupGenerations: cleanupGenerations
   };

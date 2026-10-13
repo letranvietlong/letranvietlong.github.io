@@ -21,8 +21,11 @@
     computed: null, lastIdx: null, timer: null, tab: "home", mode: "loading", editingId: null, loadFailed: false, dbError: null,
     photos: [], albumOrder: [], arranging: false,
     cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
-    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true }
+    // cycleRemind (days ahead, 0 = off) and cycleRemindQuiet are read by the
+    // service worker's push handler; like the rest of meta they stay on this device.
+    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true }
   };
+  var REMIND_OPTS = [0, 1, 2, 3, 5];
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
   // One long job at a time: album add, backup build, import.
   var busy = null;
@@ -134,6 +137,8 @@
         if(typeof meta.lastBackupAt === "number" && isFinite(meta.lastBackupAt)) state.meta.lastBackupAt = meta.lastBackupAt;
         if(SORTS.indexOf(meta.albumSort) !== -1) state.meta.albumSort = meta.albumSort;
         if(meta.showCycle === false) state.meta.showCycle = false;
+        if(REMIND_OPTS.indexOf(meta.cycleRemind) !== -1) state.meta.cycleRemind = meta.cycleRemind;
+        if(meta.cycleRemindQuiet === false) state.meta.cycleRemindQuiet = false;
       }
       skipped += applyCyclesRec(r[5]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
@@ -217,7 +222,7 @@
       if(b.getAttribute("data-tab") === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if(name === "settings"){
-      refreshStorage(); renderDiag(); renderBackupCard(); renderPush();
+      refreshStorage(); renderDiag(); renderBackupCard(); renderPush(); renderCycleRemind();
       refreshSub().then(function(){ renderPush(); checkPushChanged(); });
     }
     window.scrollTo(0, 0);
@@ -628,6 +633,183 @@
       (gaps.some(function(x){ return !x.gapOk; }) ? " · cột nhạt: không tính trung bình" : "") + "</p></div>";
   }
 
+  // ---------- Month calendar on the Chu kỳ tab ----------
+  // ym: "YYYY-MM" on show, null = follow today's month. sel: the tapped day.
+  // Kept outside the render so a rebuild of the tab (day rollover, after a
+  // write) stays on the month being looked at.
+  var cal = { ym: null, sel: null, swiped: false };
+  var CAL_WD = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+  var CAL_MIN_YM = "2000-01";
+  function calArrow(d){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>';
+  }
+  function ymShift(ym, k){
+    var p = C.addMonthsClamp({ y: +ym.slice(0, 4), m: +ym.slice(5, 7), d: 1 }, k);
+    return p.y + "-" + pad2(p.m);
+  }
+  function calCtx(st){
+    var tIdx = C.todayIdx(now()), today = C.idxToStr(tIdx);
+    var isLong = !!st.last && cycleView(st).kind === "long";
+    var far = (!isLong && (st.nextMax || st.next)) || today;
+    var maxYm = ymShift((far > today ? far : today).slice(0, 7), 1);
+    var ym = cal.ym || today.slice(0, 7);
+    if(ym > maxYm) ym = maxYm;
+    if(ym < CAL_MIN_YM) ym = CAL_MIN_YM;
+    return { st: st, today: today, tIdx: tIdx, ym: ym, maxYm: maxYm, marks: C.cycleDayMarks(st, tIdx, isLong) };
+  }
+  // What the line under the grid says about a day, and the one action offered:
+  // "add" (log a period starting that day) or "end" (close the open period `c`).
+  function calDayInfo(day, x){
+    var list = x.st.list, dIdx = C.dayIdx(day), mk = x.marks[day], i, c;
+    var past = dIdx <= x.tIdx, open = null, prev = null;
+    for(i = 0; i < list.length; i++){
+      var s = C.dayIdx(list[i].start);
+      if(list[i].end == null && dIdx > s && dIdx <= s + C.CYCLE_OPEN_MAX - 1) open = list[i];
+      if(s < dIdx) prev = list[i];
+    }
+    var act = past && open ? "end" : null;
+    if(mk && mk.period){
+      c = null;
+      for(i = 0; i < list.length; i++) if(list[i].id === mk.period) c = list[i];
+      return { text: "Kỳ " + fmtCycleRange(c) + " · ngày thứ " + (dIdx - C.dayIdx(c.start) + 1) + (c.end == null ? " · chưa ghi ngày kết thúc" : ""),
+               act: act, c: open };
+    }
+    var text;
+    if(mk && mk.predicted) text = "Dự đoán kỳ tới";
+    else if(mk && mk.range) text = "Có thể rơi vào " + fmtDayMonth(x.st.nextMin) + " – " + fmtDate(x.st.nextMax);
+    else if(!past) text = "Chưa tới ngày này";
+    else if(prev) text = "Ngày thứ " + fmtInt(dIdx - C.dayIdx(prev.start) + 1) + " kể từ kỳ " + (prev.start.slice(0, 4) === day.slice(0, 4) ? fmtDayMonth(prev.start) : fmtDate(prev.start));
+    else text = "Chưa ghi kỳ nào trước ngày này";
+    return { text: text, act: act || (past ? "add" : null), c: open };
+  }
+  function calInfoHtml(x){
+    if(!cal.sel) return '<p class="cal-info-text muted">Chạm một ngày để xem hoặc ghi kỳ.</p>';
+    var info = calDayInfo(cal.sel, x);
+    return '<p class="cal-info-date">' + weekday(cal.sel) + ", " + fmtDate(cal.sel) + '</p><p class="cal-info-text">' + info.text + "</p>" +
+      (info.act === "add" ? '<button type="button" class="btn btn-soft btn-block" data-cy="add-on">Ghi kỳ bắt đầu ngày này</button>' : "") +
+      (info.act === "end" ? '<button type="button" class="btn btn-soft btn-block" data-cy="end-on">Ghi ngày kết thúc ngày này</button>' : "");
+  }
+  function calHtml(x){
+    var y = +x.ym.slice(0, 4), m = +x.ym.slice(5, 7);
+    var h = '<div class="cal-head"><h4 class="cal-title" id="calTitle">Tháng ' + m + "/" + y + "</h4>" +
+      (x.ym !== x.today.slice(0, 7) ? '<button type="button" class="cal-today" data-cal-nav="today">Hôm nay</button>' : "") +
+      '<button type="button" class="cal-nav" data-cal-nav="prev" aria-label="Tháng trước"' + (x.ym <= CAL_MIN_YM ? " disabled" : "") + ">" + calArrow("M15 5l-7 7 7 7") + "</button>" +
+      '<button type="button" class="cal-nav" data-cal-nav="next" aria-label="Tháng sau"' + (x.ym >= x.maxYm ? " disabled" : "") + ">" + calArrow("M9 5l7 7-7 7") + "</button></div>" +
+      '<div class="cal-week" aria-hidden="true">' + CAL_WD.map(function(w){ return "<span>" + w + "</span>"; }).join("") + "</div>" +
+      '<div class="cal-grid" role="group" aria-labelledby="calTitle">';
+    C.monthGrid(y, m).forEach(function(d){
+      var mk = x.marks[d], cls = "cal-day", label = weekday(d) + ", " + fmtDate(d), mark = false;
+      if(d.slice(0, 7) !== x.ym) cls += " is-out";
+      if(d === x.today){ cls += " is-today"; label += ", hôm nay"; }
+      if(mk && mk.period){ cls += " is-period"; label += ", đã ghi" + (mk.open ? ", chưa ghi ngày kết thúc" : ""); }
+      else if(mk){
+        if(mk.predicted){ cls += " is-pred"; label += ", dự đoán kỳ tới"; }
+        if(mk.range){ cls += " is-range"; label += ", có thể rơi vào"; }
+        mark = true;
+      }
+      h += '<button type="button" class="' + cls + '" data-cal-day="' + d + '" aria-pressed="' + (d === cal.sel ? "true" : "false") + '" aria-label="' + label + '">' +
+        '<span class="cal-num">' + (+d.slice(8, 10)) + "</span>" + (mark ? '<i class="cal-mark" aria-hidden="true"></i>' : "") + "</button>";
+    });
+    function key(cls, text, mark){
+      return '<span class="cal-key"><i class="cal-swatch ' + cls + '" aria-hidden="true">' + (mark ? '<i class="cal-mark"></i>' : "") + "</i>" + text + "</span>";
+    }
+    return h + '</div><p class="cal-legend">' + key("is-period", "Đã ghi") + key("is-pred", "Dự đoán", true) + key("is-range", "Có thể rơi vào", true) + key("is-today", "Hôm nay") + "</p>" +
+      '<div class="cal-info" id="calInfo" role="status">' + calInfoHtml(x) + "</div>";
+  }
+  // An older cached love-days-core.js (no monthGrid) can be paired with this page offline.
+  function calWrapHtml(st){
+    return C.monthGrid ? '<div class="cal" id="cycleCal">' + calHtml(calCtx(st)) + "</div>" : "";
+  }
+  function renderCal(){
+    var box = $("cycleCal");
+    if(!box || state.cyclesBroken) return;
+    var a = document.activeElement, nav = a && box.contains(a) ? a.getAttribute("data-cal-nav") : null;
+    box.innerHTML = calHtml(calCtx(C.cycleStats(state.cycles, now())));
+    if(nav){
+      var back = box.querySelector('[data-cal-nav="' + nav + '"]:not([disabled])') || box.querySelector("[data-cal-nav]:not([disabled])");
+      if(back) back.focus({ preventScroll: true });
+    }
+  }
+  function calNav(dir){
+    var x = calCtx(C.cycleStats(state.cycles, now())), thisYm = x.today.slice(0, 7), ym = x.ym;
+    if(dir === "today") ym = thisYm;
+    else if(dir === "prev"){ if(ym > CAL_MIN_YM) ym = ymShift(ym, -1); }
+    else if(ym < x.maxYm) ym = ymShift(ym, 1);
+    cal.ym = ym === thisYm ? null : ym;
+    renderCal();
+  }
+  function calSelect(day){
+    var box = $("cycleCal");
+    if(!box || !C.isValidDate(day)) return;
+    cal.sel = cal.sel === day ? null : day;
+    Array.prototype.forEach.call(box.querySelectorAll("[data-cal-day]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-cal-day") === cal.sel ? "true" : "false");
+    });
+    $("calInfo").innerHTML = calInfoHtml(calCtx(C.cycleStats(state.cycles, now())));
+  }
+  // The two buttons under the grid. What the day allows is worked out again at
+  // the tap; if that no longer matches the button (date rolled over), only refresh.
+  function calAct(kind){
+    var day = cal.sel;
+    if(!day) return;
+    var info = calDayInfo(day, calCtx(C.cycleStats(state.cycles, now())));
+    if(info.act !== kind || (kind === "end" && !cycleById(info.c.id))){ renderCal(); return; }
+    if(kind === "end"){
+      openCycleForm(cycleById(info.c.id));
+      setDateValue("cyEnd", day);
+      cyc.lastDate = "cyEnd";
+    } else {
+      openCycleForm(null);
+      setDateValue("cyStart", day);
+    }
+    openSheet("cycleSheet");
+  }
+  // Horizontal swipe on the grid changes month. No pointer capture: it would
+  // retarget the click of a plain tap away from the day button.
+  (function(){
+    var el = $("cycleList"), sx = 0, sy = 0, active = false;
+    el.addEventListener("pointerdown", function(e){
+      active = !!e.target.closest(".cal-grid") && !(e.pointerType === "mouse" && e.button !== 0);
+      sx = e.clientX; sy = e.clientY;
+    });
+    el.addEventListener("pointerup", function(e){
+      if(!active) return;
+      active = false;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if(Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+      // A mouse drag that ends on the cell it began on still fires a click.
+      cal.swiped = true;
+      setTimeout(function(){ cal.swiped = false; }, 50);
+      calNav(dx < 0 ? "next" : "prev");
+    });
+    el.addEventListener("pointercancel", function(){ active = false; });
+  })();
+
+  function renderCycleRemind(){
+    var ok = !!C.reminderLine, days = state.meta.cycleRemind, quiet = state.meta.cycleRemindQuiet !== false;
+    $("cycleRemindBox").hidden = !ok;
+    if(!ok) return;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-remind]"), function(b){
+      b.setAttribute("aria-pressed", +b.getAttribute("data-remind") === days ? "true" : "false");
+    });
+    $("cycleRemindQuiet").checked = quiet;
+    $("cycleRemindPreview").hidden = !days;
+    if(days) $("cycleRemindPreview").textContent = "Trên thông báo: “" + C.reminderLine({ daysLeft: days }, quiet) + "”";
+    placeSegPill($("cycleRemindSeg"));
+  }
+  $("cycleRemindSeg").addEventListener("click", function(e){
+    var b = e.target.closest("[data-remind]"), days = b ? +b.getAttribute("data-remind") : -1;
+    if(REMIND_OPTS.indexOf(days) === -1 || days === state.meta.cycleRemind) return;
+    state.meta.cycleRemind = days;
+    saveMeta();
+    renderCycleRemind();
+  });
+  $("cycleRemindQuiet").addEventListener("change", function(){
+    state.meta.cycleRemindQuiet = this.checked;
+    saveMeta();
+    renderCycleRemind();
+  });
+
   // Rebuilds the Chu kỳ tab only; the form in the sheet is never re-rendered from here.
   function renderCycleSheet(){
     var el = $("cycleList");
@@ -657,11 +839,13 @@
           (ending ? "Kết thúc hôm nay" : "Bắt đầu hôm nay") + "</button>";
       }
       h += '<button type="button" class="btn btn-soft btn-block" data-cy="add">Thêm kỳ đã qua</button>';
+      h += calWrapHtml(st);
       h += cycleChartHtml(st);
     } else {
       h += '<p class="card-text cycle-empty">Chưa ghi kỳ nào. Ghi ngày bắt đầu mỗi kỳ để app tính khoảng cách và dự đoán kỳ tới.</p>' +
         '<button type="button" class="btn btn-primary btn-block" data-cy="quick" data-act="start">Bắt đầu hôm nay</button>' +
-        '<button type="button" class="btn btn-soft btn-block" data-cy="add">Thêm kỳ đã qua</button>';
+        '<button type="button" class="btn btn-soft btn-block" data-cy="add">Thêm kỳ đã qua</button>' +
+        calWrapHtml(st);
     }
     if(st.list.length){
       h += '<h4 class="import-step">Các kỳ đã ghi</h4><ul class="ms-group">' + st.list.slice().reverse().map(function(x){
@@ -783,6 +967,12 @@
     if(state.cyclesBroken) return;
     var quick = e.target.closest('[data-cy="quick"]');
     if(quick){ cycleQuickAct(quick, "cycleTabErr"); return; }
+    var nav = e.target.closest("[data-cal-nav]");
+    if(nav){ calNav(nav.getAttribute("data-cal-nav")); return; }
+    var dayBtn = e.target.closest("[data-cal-day]");
+    if(dayBtn){ if(!cal.swiped) calSelect(dayBtn.getAttribute("data-cal-day")); return; }
+    if(e.target.closest('[data-cy="add-on"]')){ calAct("add"); return; }
+    if(e.target.closest('[data-cy="end-on"]')){ calAct("end"); return; }
     var item = e.target.closest("[data-cy-id]");
     var c = item ? cycleById(item.getAttribute("data-cy-id")) : null;
     if(!c && !e.target.closest('[data-cy="add"]')) return;
@@ -2390,8 +2580,11 @@
       return swReady();
     }).then(function(reg){
       var n = state.computed.n;
+      // The only way to see the reminder line on a real phone without waiting for the day.
+      var remind = state.meta.cycleRemind && C.reminderLine
+        ? "\n" + C.reminderLine({ daysLeft: state.meta.cycleRemind }, state.meta.cycleRemindQuiet !== false) : "";
       return reg.showNotification("💕 Ngày thứ " + fmtInt(n), {
-        body: "Thông báo thử trên máy này — hôm nay là ngày thứ " + fmtInt(n) + " Long & Thư yêu nhau",
+        body: "Thông báo thử trên máy này — hôm nay là ngày thứ " + fmtInt(n) + " Long & Thư yêu nhau" + remind,
         tag: "love-days-test", icon: PUSH_ICON
       }).then(function(){ return n; });
     }).then(function(n){

@@ -247,6 +247,25 @@
         <span class="switch" aria-hidden="true"></span>
         <span>Hiện thẻ Chu kỳ ở Trang chủ</span>
       </label>
+      <div class="cycle-remind" id="cycleRemindBox">
+        <div class="field">
+          <span class="field-label" id="cycleRemindLabel">Nhắc trước kỳ</span>
+          <div class="segmented seg-5" id="cycleRemindSeg" role="group" aria-labelledby="cycleRemindLabel">
+            <button type="button" class="seg-btn" data-remind="0">Tắt</button>
+            <button type="button" class="seg-btn" data-remind="1">1 ngày</button>
+            <button type="button" class="seg-btn" data-remind="2">2 ngày</button>
+            <button type="button" class="seg-btn" data-remind="3">3 ngày</button>
+            <button type="button" class="seg-btn" data-remind="5">5 ngày</button>
+          </div>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="cycleRemindQuiet" checked>
+          <span class="switch" aria-hidden="true"></span>
+          <span>Nhắc kín (không ghi chữ “kỳ”)</span>
+        </label>
+        <p class="card-hint" id="cycleRemindPreview" hidden></p>
+        <p class="card-hint">Nhắc đi kèm thông báo mỗi sáng, trên máy có ghi chu kỳ và đã bật thông báo.</p>
+      </div>
       <button type="button" class="row-link" id="btnCycleBook">
         <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4zM6 18a2 2 0 0 1 2-2h11M10 8h5"/></svg>
         <span class="row-link-label">Mở tab Chu kỳ</span>

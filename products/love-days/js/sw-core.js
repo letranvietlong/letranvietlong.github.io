@@ -3,9 +3,9 @@
 // love-days-core.js is shared with the page; the push handler opens
 // IndexedDB through LoveCore.openDb() so the DB is never created without its
 // stores. ?v= follows CACHE_NAME.
-importScripts('/products/love-days/js/love-days-core.js?v=8');
+importScripts('/products/love-days/js/love-days-core.js?v=9');
 
-var CACHE_NAME = "lovedays-cache-v8";
+var CACHE_NAME = "lovedays-cache-v9";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
@@ -96,32 +96,61 @@ self.addEventListener("fetch", function(event){
 // The device's own start date in IndexedDB is the source of truth and N is
 // computed when the push ARRIVES (a delayed push still shows the right day);
 // the payload {startDate, n, date} is only a fallback for an empty DB.
+// Exactly ONE notification per push: the period reminder is a second line of
+// the same notification, never one of its own.
 var APP_URL = "/products/love-days/html/index.html";
 var ICON_URL = "/products/love-days/img/love-days-icon-180.png";
 
-function readStoredStart(){
+// One open, one transaction, closed on both outcomes. The service worker only
+// ever READS here. cycles/meta are handed on as stored (unvalidated).
+function readPushData(){
   return LoveCore.openDb().then(function(db){
-    return LoveCore.idbGet(db, "kv", "profile").then(function(p){
+    return Promise.resolve().then(function(){
+      var tx = db.transaction("kv"), st = tx.objectStore("kv"), out = {};
+      ["profile", "cycles", "meta"].forEach(function(k){
+        var rq = st.get(k);
+        rq.onsuccess = function(){ out[k] = rq.result; };
+      });
+      return LoveCore.txDone(tx).then(function(){ return out; });
+    }).then(function(out){
       db.close();
-      return p;
+      return out;
     }, function(err){
       db.close();
       throw err;
     });
-  }).then(function(p){
-    return p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null;
-  }).catch(function(){ return null; });
+  }).then(function(out){
+    var p = out.profile;
+    return { start: p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null, cycles: out.cycles, meta: out.meta };
+  }).catch(function(){ return { start: null, cycles: null, meta: null }; });
 }
 
 function pushInfo(payload){
-  return readStoredStart().then(function(start){
-    var now = Date.now();
+  return readPushData().then(function(data){
+    var now = Date.now(), start = data.start;
+    // The reminder line is only for a device whose own data was read.
+    var own = start ? data : null;
     if(!start && payload && LoveCore.checkStartDate(payload.startDate, now) === "ok") start = payload.startDate;
-    if(start) return { n: LoveCore.dayCount(start, now), start: start, now: now };
+    if(start) return { n: LoveCore.dayCount(start, now), start: start, now: now, own: own };
     var n = payload && payload.n;
-    if(typeof n === "number" && n >= 1 && n <= 100000 && Math.floor(n) === n) return { n: n, start: null, now: now };
+    if(typeof n === "number" && n >= 1 && n <= 100000 && Math.floor(n) === n) return { n: n, start: null, now: now, own: null };
     return null;
   });
+}
+
+// A second line "🌸 …" when the predicted period is within the days chosen in
+// Cài đặt → Chu kỳ (kv meta: cycleRemind 0|1|2|3|5, default 2;
+// cycleRemindQuiet, default true), else "". Anything unexpected → "": the
+// daily notification must go out unchanged.
+function reminderSuffix(info){
+  try{
+    if(!info || !info.own || !LoveCore.cycleReminder) return "";
+    var rec = info.own.cycles, meta = info.own.meta && typeof info.own.meta === "object" ? info.own.meta : {};
+    var days = [0, 1, 2, 3, 5].indexOf(meta.cycleRemind) !== -1 ? meta.cycleRemind : 2;
+    if(!days || !rec || typeof rec !== "object") return "";
+    var r = LoveCore.cycleReminder(rec.items, info.now, days);
+    return r ? "\n" + LoveCore.reminderLine(r, meta.cycleRemindQuiet !== false) : "";
+  }catch(e){ return ""; }
 }
 
 function dailyContent(info){
@@ -147,6 +176,7 @@ self.addEventListener("push", function(event){
   event.waitUntil(
     pushInfo(payload).catch(function(){ return null; }).then(function(info){
       var c = dailyContent(info);
+      c.body += reminderSuffix(info);
       if(info){
         try{
           if(self.navigator.setAppBadge){

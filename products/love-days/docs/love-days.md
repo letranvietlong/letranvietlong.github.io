@@ -36,10 +36,20 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 | Store | keyPath | Nội dung |
 |---|---|---|
-| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle}; `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ) |
+| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle, cycleRemind, cycleRemindQuiet} (riêng từng máy, **không** nằm trong bản sao lưu; bảng dưới); `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ) |
 | `milestones` | `id` | {id, title, date, emoji, note, repeatYearly, createdAt} |
 | `photos` | `id` | {id, gen, caption, takenAt: ms hoặc null, addedAt, order, w, h, bytes, sha256}; index `gen`/`takenAt`/`addedAt`/`order` |
 | `blobs` | `id` | {id, gen, mime, data: **ArrayBuffer**, thumb}; id `avatar-long`, `avatar-thu`, `cover`, hoặc id ảnh |
+
+`kv.meta` — `loadAll` chỉ chép từng khoá đã biết và kiểm kiểu; giá trị thiếu/sai dùng mặc định; `saveMeta()` ghi cả bản ghi:
+
+| Khoá | Giá trị | Mặc định | Ai đọc |
+|---|---|---|---|
+| `lastBackupAt` | ms hoặc null | null | thẻ Sao lưu |
+| `albumSort` | `taken` \| `added` \| `custom` | `taken` | Album |
+| `showCycle` | boolean | true | thẻ Chu kỳ ở Trang chủ |
+| `cycleRemind` | `0` (tắt) \| `1` \| `2` \| `3` \| `5` ngày | `2` | trang (Cài đặt → Chu kỳ, "Gửi thử") **và service worker** lúc nhận push |
+| `cycleRemindQuiet` | boolean — nhắc kín, không ghi chữ "kỳ" | true | như trên |
 
 - Lưu ArrayBuffer, không lưu Blob (lịch sử lỗi Blob-trong-IDB của WebKit).
 - Đổi schema: tăng `DB_VERSION`, thêm `case` trong `upgrade(db, oldVersion)` (switch rơi xuyên, không `break`).
@@ -62,7 +72,35 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 **Từ v1.10 Chu kỳ là một TAB riêng** (`#tab-cycle`, nút thứ ba trên tab bar, 5 tab): `#cycleList` nằm trong tab và do `renderCycleSheet()` dựng (tên hàm giữ từ thời còn là sheet) — dự đoán kỳ tới, dòng "Có thể rơi vào dd/mm – dd/mm/yyyy" (kỳ gần nhất + khoảng cách nhỏ nhất/lớn nhất trong các khoảng đang dùng để tính trung bình, chỉ hiện khi có ≥2 khoảng khác nhau), trung bình, nút "Bắt đầu/Kết thúc hôm nay" (`data-cy="quick"`, chung hàm `cycleQuickAct` với nút ở thẻ Trang chủ), "Thêm kỳ đã qua", biểu đồ cột khoảng cách 12 kỳ gần nhất (`cycleChartHtml`, nét đứt = trung bình, cột nhạt = không tính trung bình) và danh sách các kỳ. Sheet `#cycleSheet` chỉ còn form thêm/sửa; lưu/xoá xong thì đóng sheet và dựng lại tab. Thẻ ở Trang chủ chạm vào là sang tab. `.sheet-head` là `position:sticky` nên tiêu đề + nút đóng của mọi sheet luôn hiện khi cuộn.
 
-Sổ ghi kỳ kinh: thẻ "Chu kỳ" cuối Trang chủ (ẩn được bằng công tắc ở Cài đặt → Chu kỳ, lưu `kv.meta.showCycle`, mặc định bật; "Mở sổ chu kỳ" ở đó vẫn vào được khi thẻ ẩn) và sheet `#cycleSheet` có hai chế độ trong một sheet — danh sách `#cycleList` (JS dựng) và form tĩnh `#cycleForm`. Không có tab riêng.
+Sổ ghi kỳ kinh: thẻ "Chu kỳ" cuối Trang chủ (ẩn được bằng công tắc ở Cài đặt → Chu kỳ, lưu `kv.meta.showCycle`, mặc định bật; "Mở tab Chu kỳ" ở đó vẫn vào được khi thẻ ẩn), tab Chu kỳ, và sheet `#cycleSheet` chứa form tĩnh `#cycleForm`.
+
+### Lịch tháng (v1.11)
+
+`#cycleCal` nằm trong `#cycleList`, sau các nút nhanh và trước biểu đồ (cả khi chưa ghi kỳ nào; **không vẽ** khi `cyclesBroken`). Trạng thái cấp module `cal = { ym, sel }`: `ym` là tháng đang xem (`null` = đi theo tháng của hôm nay), `sel` là ngày đang chạm — nằm ngoài hàm dựng nên sang ngày hoặc sau khi ghi, `renderCycleSheet()` vẫn giữ tháng đang xem. Đổi tháng chỉ dựng lại `#cycleCal` (`renderCal`); chạm một ngày chỉ đổi `aria-pressed` và `#calInfo`.
+
+- Lưới: `LoveCore.monthGrid(y, m)` — tuần bắt đầu **Thứ hai**, luôn 35 hoặc 42 ô (`lead = (dayIdx(ngày 1) + 3) mod 7`; 01/10/2026 là Thứ năm → lead 3 → ô đầu 28/09). Ô ngoài tháng mờ nhưng vẫn mang dấu.
+- Luật tô: `LoveCore.cycleDayMarks(st, hôm nay, isLong)` trả map ngày → `{period, open, predicted, range}`:
+  - kỳ có ngày kết thúc: `start … end`;
+  - kỳ cuối chưa kết thúc và còn "đang trong kỳ" (≤ 10 ngày): `start … hôm nay`;
+  - kỳ chưa kết thúc đã quá 10 ngày (hoặc không phải kỳ cuối): chỉ ngày `start`;
+  - `predicted` = `st.next`; `range` = `nextMin … nextMax`; cả hai bị bỏ khi `cycleView` là `long` (giao diện lúc đó không hiện dự đoán).
+- Mỗi trạng thái khác nhau bằng **hình**, không chỉ màu: đã ghi = nền đặc `--accent` + chữ `--accent-ink` (tương phản đo được 5,87 sáng / 7,85 tối); dự đoán = viền đứt 2px + chấm tròn dưới số; có thể rơi vào = nền `--accent-soft` + gạch chấm dưới số; hôm nay = viền liền `--text` + chữ đậm; ngày đang chạm = vòng kép màu accent. Ngày thuộc kỳ đã ghi thì không vẽ thêm dấu dự đoán. Chú thích dưới lưới dùng lại đúng các ô mẫu đó.
+- Đổi tháng: nút ‹ › (44px), chip "Hôm nay" (chỉ hiện khi đang xem tháng khác), vuốt ngang ≥ 50px trên lưới (`touch-action:pan-y`; **không** `setPointerCapture` — bắt con trỏ sẽ làm cú chạm thường không còn rơi vào ô ngày). Giới hạn: 2000-01 → tháng của `max(hôm nay, nextMax || next)` + 1.
+- `#calInfo` (`role="status"`): dòng ngày đang chạm + một câu (`calDayInfo`): thuộc kỳ → "Kỳ 11/08 – 13/08/2026 · ngày thứ 2" (+ "· chưa ghi ngày kết thúc"); "Dự đoán kỳ tới"; "Có thể rơi vào 24/09 – 08/10/2026"; "Ngày thứ 10 kể từ kỳ 11/08"; "Chưa ghi kỳ nào trước ngày này"; tương lai → "Chưa tới ngày này". Tối đa một nút:
+  - ngày ≤ hôm nay, không thuộc kỳ nào → "Ghi kỳ bắt đầu ngày này" (`data-cy="add-on"`) mở form thêm với ngày bắt đầu điền sẵn;
+  - ngày nằm trong `start+1 … start+9` của một kỳ chưa kết thúc và ≤ hôm nay → "Ghi ngày kết thúc ngày này" (`data-cy="end-on"`) mở form sửa kỳ đó với ngày kết thúc điền sẵn (thay cho nút thêm: thêm kỳ ở đó chắc chắn dính `openOverlap`).
+  Cả hai chỉ **mở form** — việc ghi vẫn qua nút Lưu và `cycleConflict` như mọi đường khác; lỗi hiện tại ô.
+- Lịch nằm trong tab chứ không trong sheet, nên sang ngày chỉ dựng lại lịch phía sau; form đang mở giữ nguyên chữ.
+
+### Nhắc trước kỳ (v1.11)
+
+Không có lượt gửi riêng và **không đổi gì ở server**: câu nhắc là dòng thứ hai của chính thông báo mỗi sáng, do service worker tự tính trên máy lúc nhận push.
+
+- Cài đặt → Chu kỳ: "Nhắc trước kỳ" Tắt / 1 / 2 / 3 / 5 ngày (`kv.meta.cycleRemind`, mặc định 2) và công tắc "Nhắc kín" (`cycleRemindQuiet`, mặc định bật). Dòng xem trước ghi đúng chuỗi sẽ hiện.
+- `LoveCore.cycleReminder(items thô, now, days)` → `null` hoặc `{daysLeft, next}`: tự lọc qua `validateCycle` + bỏ id trùng, `null` khi `days` ngoài {1,2,3,5}, không có kỳ, đang trong kỳ, đã trễ (`daysLeft < 0`) hoặc còn xa hơn `days`. Không bao giờ ném lỗi. Trong khoảng nhắc thì **ngày nào cũng nhắc** (đặt 2 ngày → nhắc lúc còn 2, còn 1 và đúng ngày).
+- `LoveCore.reminderLine(r, quiet)`: kín `🌸 còn 2 ngày` / `🌸 hôm nay`; đầy đủ `🌸 Kỳ tới dự kiến còn 2 ngày` / `🌸 Kỳ tới dự kiến hôm nay`.
+- Nút "Gửi thử trên máy này" nối thêm dòng nhắc theo lựa chọn hiện tại (khi không Tắt) — cách duy nhất xem nó trên máy thật mà không chờ đúng ngày.
+- **Giới hạn** (phải nói với người dùng khi được hỏi): chỉ nhắc vào giờ thông báo sáng (06:17–11:17, một lần/ngày); chỉ trên máy **có sổ chu kỳ** và **đã bật thông báo** — sổ không đồng bộ nên máy kia không nhắc trừ khi đã nhập bản sao lưu; cài đặt nhắc cũng riêng từng máy; hôm nào workflow không gửi được thì hôm đó không nhắc; máy chưa có ngày bắt đầu trong IndexedDB (thông báo dựng từ payload) thì không nhắc. **Chưa kiểm chứng trên iPhone thật** việc thân thông báo hiện xuống dòng và ký tự 🌸 ở màn hình khoá.
 
 - **Lưu**: cả sổ là MỘT bản ghi `kv` khoá `cycles` (không nâng `DB_VERSION`). Vì mỗi lần ghi là ghi cả mảng: mục không qua `validateCycle` được giữ nguyên văn trong `state.cyclesBad` và nối lại vào `items` ở mọi lần ghi (kể cả khi nhập bản sao lưu); bản ghi tồn tại mà `items` không phải mảng → `state.cyclesBroken`: thẻ và sổ báo "Không đọc được dữ liệu chu kỳ — dữ liệu vẫn còn nguyên", mọi đường ghi bị khoá, bản sao lưu bỏ hẳn khoá `cycles`, nhập cũng không đè. Mục có `id` trùng với một mục đứng trước trong mảng cũng bị coi là mục hỏng (sửa "kỳ đó" sẽ xoá mất kỳ sinh đôi). **Mục hỏng (`cyclesBad`) không đi theo bản sao lưu** — chỉ nằm lại trong bản ghi trên máy. Mọi lần ghi đi qua `saveCycles()` (ghi xong mới gán `state.cycles`); cờ `cyc.saving` chặn bấm đúp, và `cycleWrite` gọi nó bên trong một `then()` để lỗi ném đồng bộ (`db.transaction` trên kết nối đang đóng) cũng nhả nút.
 - **Hai cửa sổ**: `updatedAt` của bản ghi là dấu (`state.cyclesStamp`, đặt mỗi lần nạp/ghi; hai lần ghi trong cùng mili-giây vẫn ra dấu khác nhau). `saveCycles` đọc lại bản ghi **trong chính transaction ghi**; dấu khác với lúc nạp → không ghi gì, nạp sổ mới từ DB vào `state`, dựng lại thẻ/danh sách và báo "Sổ vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại." (form đang mở giữ nguyên chữ; bấm Lưu lần nữa là được). Bước nhập bản sao lưu cũng ghi một dấu mới.
@@ -131,10 +169,14 @@ GitHub Actions (cron "17 23,0-4 * * *" = 06:17–11:17 VN, 6 lượt)
         │  payload {"startDate","n","date"} (startDate/n chỉ có khi đặt LOVE_START_DATE)
         └─ ghi data/push-state.json {lastSentDate, sentAt, delivered, failed} → commit
 SW (js/sw-core.js) nhận "push":
-  startDate trong IndexedDB của máy (LoveCore.openDb(), đóng DB ngay) → N tính LÚC NHẬN
+  readPushData(): MỘT LoveCore.openDb() + một transaction kv đọc profile, cycles, meta; đóng DB ở cả hai nhánh; SW không ghi gì
+  startDate của máy → N tính LÚC NHẬN
   → không có thì payload.startDate → payload.n (số nguyên 1..100000) → câu chung "Mở app để xem…"
-  → LUÔN showNotification("💕 Ngày thứ N", tag love-days-daily) + setAppBadge(N)
   → ngày tròn trăm / kỷ niệm năm: thân thông báo đổi thành "Hôm nay tròn …🎉"
+  → reminderSuffix() (try/catch riêng, chỉ khi startDate đọc được từ DB của máy):
+      cycleReminder(cycles.items, now, meta.cycleRemind — thiếu/sai thì 2, 0 thì thôi) có kết quả → thân += "\n🌸 còn 2 ngày"
+      mọi lỗi/dữ liệu hỏng ở bước này → bỏ dòng nhắc, thông báo hằng ngày y như cũ
+  → LUÔN đúng MỘT showNotification("💕 Ngày thứ N", tag love-days-daily) + setAppBadge(N)
 "notificationclick": focus cửa sổ LoveDays đang mở, không có thì openWindow(html/index.html)
 ```
 
