@@ -7,7 +7,7 @@ Tình trạng: **Phase 1A + 1B + 2** (đếm ngày, kỷ niệm, hồ sơ + ản
 ## Cấu trúc đặc thù
 
 - Toàn bộ dữ liệu nằm trong **IndexedDB trên máy** (không localStorage, không server, không Gist). App ở Màn hình chính có bộ nhớ riêng tách với Safari; xoá icon = mất dữ liệu → màn hình đầu và tab Cài đặt đều nói rõ điều này.
-- Script nạp theo thứ tự: `love-days-core.js` → `love-days-media.js` → `love-days-backup.js` → `love-days.js`. `love-days-backup.js` (`self.LoveBackup`) chứa ZIP + xuất/nhập; giao diện sao lưu nằm trong `love-days.js`.
+- Script nạp theo thứ tự: `love-days-core.js` → `love-days-media.js` → `love-days-backup.js` → `love-days-share.js` → `love-days.js`. `love-days-backup.js` (`self.LoveBackup`) chứa ZIP + xuất/nhập; giao diện sao lưu nằm trong `love-days.js`.
 - `js/love-days-core.js` là **classic script dùng chung cho trang và service worker** (`sw-core.js` `importScripts` nó), lộ ra `self.LoveCore`. Không được dùng ES module, DOM hay `window` trong file này.
 - Service worker: vỏ `sw-love-days.js` nằm thẳng trong `products/love-days/` (scope), logic ở `js/sw-core.js`, `CACHE_NAME` tiền tố `lovedays-cache-`, đăng ký bằng đường dẫn tuyệt đối. Bump `CACHE_NAME` thì bump luôn `?v=` ở vỏ **và** `?v=` của `love-days-core.js` trong `sw-core.js`. Cache được khoá theo **đường dẫn chuẩn, bỏ query** (link chia sẻ kiểu `index.html?fbclid=…` vẫn mở được khi offline), và URL thư mục `/products/love-days/html/` được coi là `html/index.html`.
 
@@ -123,6 +123,21 @@ số ngày mỗi kỳ = trung bình (end − start + 1) của 6 kỳ gần nhấ
 - Xoá kỳ: hàng xác nhận ngay trong sheet (nút đỏ đặc "Xoá" + "Giữ lại"), không dùng `window.confirm`.
 - Đồng hồ qua ngày mới: thẻ và nửa danh sách của sổ tự dựng lại; **form đang mở không bao giờ bị đụng** (kể cả `visibilitychange`).
 - **Không đồng bộ giữa hai máy.** Muốn chuyển sổ sang máy kia: xuất bản sao lưu rồi nhập ở chế độ Gộp.
+
+## Ảnh chia sẻ (v1.12)
+
+Một tấm JPEG 1080×1350 (bài đăng 4:5) hoặc 1080×1920 (story 9:16) vẽ bằng canvas từ thứ đang có sẵn trong bộ nhớ trang (`state.blobs`, `state.computed`). **Không ghi gì vào IndexedDB, không gọi `dataChanged()`**; ảnh tạo ra không được lưu lại ở đâu trong app.
+
+- Điểm vào: nút icon `#btnShare` ở góc trái trên thẻ đếm ngày (chế độ `days`); mỗi hàng mốc tự sinh ở tab Kỷ niệm là `<button class="ms-item auto">` (chế độ `milestone`); nút `#msShare` "Tạo ảnh chia sẻ" trong form sửa một kỷ niệm đã lưu — dùng **bản ghi đã lưu**, nếu form đang có chỗ chưa lưu thì báo "Hãy lưu kỷ niệm trước rồi tạo ảnh." và không đóng form.
+- `js/love-days-share.js` (`self.LoveShare`, không trạng thái):
+  - `plan(opts, measure)` — thuần, quyết định **mọi** chuỗi và toạ độ: `{ w, h, template, size, mode, bg, shades, hearts, chips, images: [{ id, box, shape, has, fill, ring }], texts: [{ role, text, x, y, size, weight, align, baseline, maxWidth, color, width }] }`. `measure(text, size, weight)` đo bề ngang; trang luôn truyền `LoveShare.measurer(fontFamily)` (đo bằng canvas), bỏ trống thì dùng ước lượng không cần DOM. Test so chữ qua `texts` vì không đọc ngược được chữ từ ảnh.
+  - `render(plan, sources, fontFamily)` → `Promise<Blob>` JPEG 0.9, chỉ vẽ đúng `plan`. `sources = { cover, avatarLong, avatarThu }` là ArrayBuffer của chính trang (canvas không bị tainted). Giải mã **từng ảnh một** bằng `LoveMedia.decode`, vẽ xong nhả bitmap ngay; xong thì `canvas.width = 0`. Ảnh giải mã lỗi → vẽ nền gradient thay thế, không hỏng cả tấm.
+- Ba mẫu: **Ảnh bìa** (ảnh bìa phủ kín + dải tối phía dưới cho chữ trắng; chưa có ảnh bìa → gradient hồng), **Thiệp** (nền hồng nhạt, ảnh bìa 4:3 bo góc, avatar đè mép dưới ảnh, số màu `#C2185B`), **Tối giản** (gradient `#E8507F → #C2185B`). Mặc định lần mở đầu: có ảnh bìa → Ảnh bìa, chưa có → Tối giản; lựa chọn mẫu/khổ giữ trong phiên (không lưu). Chưa có avatar → vòng tròn chữ cái đầu như ở Trang chủ. Trái tim vẽ bằng `Path2D` (không phụ thuộc phông emoji); emoji của kỷ niệm nằm trên một đĩa trắng (💯 đỏ chìm trên nền hồng).
+- Chữ: `days` → số, "ngày bên nhau", "A & B", "Từ dd/mm/yyyy". `milestone` → emoji, tiêu đề (tối đa 2 dòng, co chữ rồi cắt "…"), "Thứ …, dd/mm/yyyy", "Ngày thứ X bên nhau" với `X = dayIdx(ngày) − dayIdx(bắt đầu) + 1` (bỏ khi X < 1, và bỏ ở mốc "Ngày thứ K" vì tiêu đề đã nói), tên. Kỷ niệm người dùng dùng **ngày đã lưu**, không phải lần lặp kế tiếp. Dòng tên co cỡ chữ tới 70% rồi cắt bớt tên dài hơn bằng `clipGraphemes`.
+- **User activation**: `renderShare()` dựng blob + `File` xong mới bật nút "Lưu / Chia sẻ ảnh"; cú chạm gọi thẳng `shareFile()` (dùng chung với sao lưu) → `navigator.share({files})`, không `await` gì trước đó; không có share thì tải xuống. Đổi mẫu/khổ → nút khoá lại tới khi vẽ xong; `share.seq` loại kết quả của lượt vẽ cũ.
+- Đóng sheet (`closeSheets`) → `resetShare()`: revoke URL xem trước, bỏ blob. `File` đã đưa cho bảng chia sẻ là đối tượng riêng, không bị ảnh hưởng. Sang ngày khi sheet đang mở → vẽ lại (số ngày, `alt`, tên file đổi theo). Đang thêm ảnh / sao lưu / nhập (`busy`) → không vẽ, báo "Đang xử lý việc khác — đợi xong rồi thử lại."
+- Tên file ASCII: `long-thu-<N>-ngay.jpg`, `long-thu-ky-niem.jpg`.
+- **Giới hạn**: phông trên canvas là phông hệ thống của máy (iPhone: `ui-rounded`; nếu canvas không nhận từ khoá này sẽ rơi về San Francisco thường); emoji do máy vẽ nên mỗi máy một kiểu; ảnh bìa lưu tối đa 1600px nên ở khổ story bị phóng ~1,6 lần và cắt hai bên; chữ ở mẫu Ảnh bìa luôn nằm nửa dưới — ảnh bìa có mặt người ở nửa dưới sẽ bị chữ đè. **Chưa kiểm chứng trên iPhone thật**: bảng chia sẻ có mục "Lưu hình ảnh" cho file JPEG này không, `ui-rounded` trên canvas, emoji cỡ lớn.
 
 ## Sao lưu (ZIP STORE)
 

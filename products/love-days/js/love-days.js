@@ -9,7 +9,7 @@
   // Changing it invalidates every existing subscription (see docs/love-days.md).
   var VAPID_PUBLIC_KEY = 'BOiIqG0zhuwGbzvByX4y58FNcP4rV_Qm54q3LkWSQw1Fks2jETdEMPnHBmNUDZFXxOw2ZmiDrNWxJxhArdK0-h0';
 
-  var C = self.LoveCore, M = self.LoveMedia, B = self.LoveBackup;
+  var C = self.LoveCore, M = self.LoveMedia, B = self.LoveBackup, S = self.LoveShare;
   var $ = function(id){ return document.getElementById(id); };
 
   var PHOTO_IDS = ["avatar-long", "avatar-thu", "cover"];
@@ -326,6 +326,7 @@
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
       if(C.cycleStats) renderCycleSheet();
+      if(shareSheetOpen()) renderShare();
       updateBadge();
       return;
     }
@@ -369,7 +370,7 @@
         '<span class="ms-main"><span class="ms-title">' + escapeHtml(x.title) + '</span><span class="ms-sub">' + escapeHtml(sub) + "</span></span>" +
         bigDays(x, "ms-left");
       var today = x.daysLeft === 0 ? " is-today" : "";
-      if(x.auto) return '<li class="ms-item auto' + today + '" data-ms-id="' + x.id + '" aria-label="' + label + '">' + inner + "</li>";
+      if(x.auto) return '<li class="ms-item-wrap"><button type="button" class="ms-item auto' + today + '" data-ms-id="' + x.id + '" aria-haspopup="dialog" aria-label="' + label + '">' + inner + SHARE_ICON + "</button></li>";
       return '<li class="ms-item-wrap"><button type="button" class="ms-item' + today + '" data-ms-id="' + escapeHtml(x.id) + '" aria-label="' + label + '">' + inner +
         '<svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></li>';
     }
@@ -384,9 +385,12 @@
     var btn = e.target.closest("button[data-ms-id]");
     if(!btn) return;
     var id = btn.getAttribute("data-ms-id");
-    var m = null;
+    var m = null, auto = null;
     state.milestones.forEach(function(x){ if(x.id === id) m = x; });
-    if(m) openMilestoneSheet(m);
+    if(m){ openMilestoneSheet(m); return; }
+    state.computed.list.forEach(function(x){ if(x.auto && x.id === id) auto = x; });
+    // "Ngày thứ 1.000" already says the day number — no second line for it.
+    if(auto) openShare("milestone", { title: auto.title, emoji: auto.emoji, date: auto.date, dayNo: auto.kind === "hundred" ? null : undefined });
   });
   $("btnAddMilestone").addEventListener("click", function(){ openMilestoneSheet(null); });
 
@@ -418,6 +422,7 @@
     $("msNote").value = m ? m.note : "";
     $("msRepeat").checked = m ? m.repeatYearly : false;
     $("msDelete").hidden = !m;
+    $("msShare").hidden = !m;
     showError("msError", null);
     openSheet("milestoneSheet");
   }
@@ -444,6 +449,21 @@
     }, function(){ showError("msError", "Không lưu được vào bộ nhớ máy. Hãy thử lại."); });
   });
 
+  // The picture is made from the SAVED record; unsaved edits in the form are
+  // never thrown away by leaving for the share sheet.
+  $("msShare").addEventListener("click", function(){
+    var m = null;
+    state.milestones.forEach(function(x){ if(x.id === state.editingId) m = x; });
+    if(!m) return;
+    if($("msTitle").value.trim() !== m.title || $("msDate").value !== m.date || C.clipGraphemes($("msEmoji").value.trim(), 16) !== (m.emoji || "") ||
+       $("msNote").value.trim() !== (m.note || "") || $("msRepeat").checked !== !!m.repeatYearly){
+      showError("msError", "Hãy lưu kỷ niệm trước rồi tạo ảnh.");
+      return;
+    }
+    closeSheets();
+    openShare("milestone", { title: m.title, emoji: m.emoji || "💗", date: m.date });
+  });
+
   $("msDelete").addEventListener("click", function(){
     var id = state.editingId;
     var m = null;
@@ -464,6 +484,7 @@
   // written at all when the stored record itself was unreadable.
   var cyc = { mode: "list", editingId: null, saving: false, quiet: false, lastDate: null };
   var CYCLE_BROKEN_TEXT = "Không đọc được dữ liệu chu kỳ — dữ liệu vẫn còn nguyên";
+  var SHARE_ICON = '<svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M8 7l4-4 4 4M6 11H5.5A1.5 1.5 0 0 0 4 12.5v6A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5H18"/></svg>';
   var CHEV = '<svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 
   // Identifies the stored record this window last saw; undefined (no record
@@ -2012,11 +2033,11 @@
   // Must run synchronously inside the tap: Safari drops the user activation
   // after a long await and navigator.share() then throws NotAllowedError —
   // that's why preparing and saving are two separate buttons.
-  function saveBackupFile(p, done){
-    var f = p.file;
+  // done(ok, message, "share" | "download")
+  function shareFile(f, name, done){
     try{
       if(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })){
-        navigator.share({ files: [f] }).then(function(){ markBackedUp(); done(true); }, function(err){
+        navigator.share({ files: [f] }).then(function(){ done(true, null, "share"); }, function(err){
           if(err && err.name === "AbortError") done(false, null);
           else done(false, "Không mở được bảng chia sẻ của máy (" + (err && err.name || "lỗi") + "). Hãy thử lại.");
         });
@@ -2025,14 +2046,19 @@
     }catch(e){}
     var url = URL.createObjectURL(f);
     var a = document.createElement("a");
-    a.href = url; a.download = p.name;
+    a.href = url; a.download = name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     // Revoking right away can abort the download on iOS Safari.
     setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
-    markBackedUp();
-    done(true);
+    done(true, null, "download");
+  }
+  function saveBackupFile(p, done){
+    shareFile(p.file, p.name, function(ok, msg){
+      if(ok) markBackedUp();
+      done(ok, msg);
+    });
   }
   function markBackedUp(){
     state.meta.lastBackupAt = now();
@@ -2056,6 +2082,104 @@
     saveBackupFile(backup.prepared, function(ok, msg){
       if(msg) showError("backupError", msg);
       renderBackupCard();
+    });
+  });
+
+  // ---------- Share image ----------
+  // Painted from what is already in memory (state.blobs); nothing here writes
+  // to IndexedDB or marks the data as changed. The picture is always built
+  // BEFORE the save button is enabled, so the tap can call navigator.share()
+  // at once.
+  var share = { mode: "days", milestone: null, template: null, size: "post", blob: null, file: null, url: null, seq: 0 };
+
+  function shareSheetOpen(){ return $("shareSheet").classList.contains("open"); }
+  function sharePressed(attr, value){
+    Array.prototype.forEach.call(document.querySelectorAll("[" + attr + "]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute(attr) === value ? "true" : "false");
+    });
+  }
+  // Drops the finished picture: results of an older run are ignored from here
+  // on and the preview URL is released. A File already handed to the system
+  // share sheet is its own object and stays valid.
+  function resetShare(){
+    share.seq++;
+    if(share.url) URL.revokeObjectURL(share.url);
+    share.url = null; share.blob = null; share.file = null;
+    var img = $("sharePreview");
+    img.removeAttribute("src");
+    img.hidden = true;
+    $("btnShareSave").disabled = true;
+  }
+  function openShare(mode, milestone){
+    if(!S || !state.profile || !state.computed) return;
+    share.mode = mode === "milestone" && milestone ? "milestone" : "days";
+    share.milestone = share.mode === "milestone" ? milestone : null;
+    if(!share.template) share.template = state.blobs.cover ? "cover" : "plain";
+    openSheet("shareSheet");
+    renderShare();
+  }
+  function renderShare(){
+    resetShare();
+    var seq = share.seq, box = $("shareBox"), img = $("sharePreview"), p = state.profile, ms = share.milestone;
+    box.setAttribute("data-size", share.size);
+    sharePressed("data-share-tpl", share.template);
+    sharePressed("data-share-size", share.size);
+    placeSegPill($("shareTplSeg"));
+    placeSegPill($("shareSizeSeg"));
+    showError("shareError", null);
+    img.alt = "Ảnh chia sẻ: " + (ms ? ms.title + ", " + fmtDate(ms.date) : fmtInt(state.computed.n) + " ngày bên nhau");
+    if(busy){
+      box.classList.remove("is-loading");
+      showError("shareError", "Đang xử lý việc khác — đợi xong rồi thử lại.");
+      return;
+    }
+    box.classList.add("is-loading");
+    var name = ms ? "long-thu-ky-niem.jpg" : "long-thu-" + state.computed.n + "-ngay.jpg";
+    var buf = function(id){ return state.blobs[id] ? state.blobs[id].data : null; };
+    var src = { cover: buf("cover"), avatarLong: buf("avatar-long"), avatarThu: buf("avatar-thu") };
+    var font = getComputedStyle(document.body).fontFamily + ',"Helvetica Neue",Arial,sans-serif';
+    Promise.resolve().then(function(){
+      var plan = S.plan({ template: share.template, size: share.size, mode: share.mode, n: state.computed.n, startDate: p.startDate,
+                          names: [p.persons[0].name, p.persons[1].name],
+                          has: { cover: !!src.cover, avatarLong: !!src.avatarLong, avatarThu: !!src.avatarThu }, milestone: ms }, S.measurer(font));
+      return S.render(plan, src, font);
+    }).then(function(blob){
+      if(seq !== share.seq) return;
+      share.blob = blob;
+      share.file = new File([blob], name, { type: "image/jpeg" });
+      share.url = URL.createObjectURL(blob);
+      img.src = share.url;
+      img.hidden = false;
+      box.classList.remove("is-loading");
+      $("btnShareSave").disabled = false;
+    }, function(){
+      if(seq !== share.seq) return;
+      box.classList.remove("is-loading");
+      showError("shareError", "Không tạo được ảnh. Hãy thử lại.");
+    });
+  }
+  $("btnShare").addEventListener("click", function(){ openShare("days", null); });
+  $("shareTplSeg").addEventListener("click", function(e){
+    var b = e.target.closest("[data-share-tpl]");
+    if(!b || b.getAttribute("data-share-tpl") === share.template) return;
+    share.template = b.getAttribute("data-share-tpl");
+    renderShare();
+  });
+  $("shareSizeSeg").addEventListener("click", function(e){
+    var b = e.target.closest("[data-share-size]");
+    if(!b || b.getAttribute("data-share-size") === share.size) return;
+    share.size = b.getAttribute("data-share-size");
+    renderShare();
+  });
+  // Synchronous inside the tap (see shareFile): the File was built when the
+  // picture finished rendering.
+  $("btnShareSave").addEventListener("click", function(){
+    var f = share.file;
+    if(!f) return;
+    showError("shareError", null);
+    shareFile(f, f.name, function(ok, msg, via){
+      if(msg) showError("shareError", msg);
+      else if(ok && via === "download") toast("Đã tải ảnh về máy ✓");
     });
   });
 
@@ -2674,6 +2798,7 @@
     if(imp.phase === "importing") return;
     var open = document.querySelectorAll(".sheet.open");
     if(!open.length) return;
+    if(shareSheetOpen()) resetShare();
     Array.prototype.forEach.call(open, function(s){ s.classList.remove("open"); });
     hideBackdrop($("sheetBackdrop"));
     var back = sheetOpener;

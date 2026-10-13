@@ -94,6 +94,9 @@
 
     <section class="card count-card" aria-labelledby="countLabel">
       <p class="count-label" id="countLabel">Bên nhau</p>
+      <button type="button" class="info-btn share-btn" id="btnShare" aria-haspopup="dialog" aria-label="Tạo ảnh chia sẻ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M8 7l4-4 4 4M6 11H5.5A1.5 1.5 0 0 0 4 12.5v6A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5H18"/></svg>
+      </button>
       <button type="button" class="info-btn" id="btnCountInfo" aria-expanded="false" aria-controls="countInfo" aria-label="Cách đếm ngày">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>
       </button>
@@ -405,6 +408,7 @@
     </label>
     <p class="form-error" id="msError" role="alert" hidden></p>
     <button type="submit" class="btn btn-primary btn-block">Lưu kỷ niệm</button>
+    <button type="button" class="btn btn-soft btn-block" id="msShare" hidden>Tạo ảnh chia sẻ</button>
     <button type="button" class="btn btn-danger btn-block" id="msDelete" hidden>Xoá kỷ niệm này</button>
   </form>
 </div>
@@ -456,6 +460,36 @@
     </button>
   </div>
   <div id="importContent"></div>
+</div>
+
+<div class="sheet" id="shareSheet" role="dialog" aria-modal="true" aria-labelledby="shareSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="shareSheetTitle">Ảnh chia sẻ</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="form">
+    <div class="share-preview" id="shareBox" data-size="post"><img id="sharePreview" alt="" hidden></div>
+    <div class="field">
+      <span class="field-label" id="shareTplLabel">Mẫu</span>
+      <div class="segmented" id="shareTplSeg" role="group" aria-labelledby="shareTplLabel">
+        <button type="button" class="seg-btn" data-share-tpl="cover">Ảnh bìa</button>
+        <button type="button" class="seg-btn" data-share-tpl="card">Thiệp</button>
+        <button type="button" class="seg-btn" data-share-tpl="plain">Tối giản</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="shareSizeLabel">Khổ ảnh</span>
+      <div class="segmented" id="shareSizeSeg" role="group" aria-labelledby="shareSizeLabel">
+        <button type="button" class="seg-btn" data-share-size="post">Bài đăng 4:5</button>
+        <button type="button" class="seg-btn" data-share-size="story">Story 9:16</button>
+      </div>
+    </div>
+    <p class="form-error" id="shareError" role="alert" hidden></p>
+    <button type="button" class="btn btn-primary btn-block" id="btnShareSave" disabled>Lưu / Chia sẻ ảnh</button>
+  </div>
 </div>
 
 <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Xem ảnh" hidden>
@@ -521,6 +555,7 @@
 <script src="../js/love-days-core.js"></script>
 <script src="../js/love-days-media.js"></script>
 <script src="../js/love-days-backup.js"></script>
+<script src="../js/love-days-share.js"></script>
 <script src="../js/love-days.js"></script>
 </body>
 </html>

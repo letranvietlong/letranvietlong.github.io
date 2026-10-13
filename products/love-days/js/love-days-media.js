@@ -208,6 +208,7 @@
     thumbFromJpeg: thumbFromJpeg,
     sha256: sha256,
     parseExifDate: parseExifDate,
-    compress: compress
+    compress: compress,
+    decode: decode
   };
 })(self);

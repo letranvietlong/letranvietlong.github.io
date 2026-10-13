@@ -75,7 +75,7 @@ const sel = {
   tab: name => '.tabbar-btn[data-tab="' + name + '"]',    // home | milestones | cycle | album | settings
   dayCount: '#dayCount', hours: '#hoursCount', clock: '#liveClock',
   upcoming: '#upcomingBody', birthdays: '#birthdays .bday-card',
-  milestoneRows: '#milestoneList .ms-item',               // aria-label = milestoneRows; .ms-title, .ms-sub, .ms-left (.ms-num + .ms-unit); editable rows are <button> with .ms-chev
+  milestoneRows: '#milestoneList .ms-item',               // aria-label = milestoneRows; .ms-title, .ms-sub, .ms-left (.ms-num + .ms-unit); every row is a <button>: user rows open the edit form, .ms-item.auto rows open #shareSheet (v1.12)
   goalText: '#goalText', goalFill: '#goalFill', countInfo: '#btnCountInfo', toast: '#toast',
   addMilestone: '#btnAddMilestone',
   setupView: '#setupView', setupStart: '#setupStart', setupError: '#setupError',
@@ -209,6 +209,46 @@ const reminder = {
   nullItems: ['abc', null, [{}]]   // each → null without throwing; so does days = 0 with valid items
 };
 
+// ---------- Ảnh chia sẻ (v1.12) ----------
+// The picture can't be read back (no OCR): compare the strings in LoveShare.plan(opts, LoveShare.measurer(font)).texts
+// (font = getComputedStyle(document.body).fontFamily + ',"Helvetica Neue",Arial,sans-serif'; without a measurer the plan uses a
+// width estimate). To see the plan the page itself made, wrap it before opening the sheet:
+//   const o = LoveShare.plan; LoveShare.plan = (a, m) => (window.__plan = o(a, m));
+// Every text has { role, text, x, y, size, weight, align, baseline, maxWidth, color, width }; roles: number | label | names |
+// since (days) and emoji | title (1–2 entries) | date | dayNo | names (milestone), plus "initial" per missing avatar.
+// The file goes to navigator.share({files}) inside the tap — stub it with addInitScript before load:
+//   navigator.canShare = () => true; navigator.share = d => { window.__shared = d.files[0]; return Promise.resolve(); };
+// Without navigator.share the file is downloaded (page.waitForEvent('download')) and the toast says "Đã tải ảnh về máy ✓".
+// Nothing is written to IndexedDB; closing the sheet revokes the preview's object URL.
+const shareNow = '2026-10-13T09:00:00+07:00';
+const share = {
+  now: shareNow,
+  sizes: { post: [1080, 1350], story: [1080, 1920] },
+  // texts without the "initial" entries, in order
+  days: { texts: ['973', 'ngày bên nhau', 'Viết Long & Minh Thư', 'Từ 14/02/2024'], alt: 'Ảnh chia sẻ: 973 ngày bên nhau', file: 'long-thu-973-ngay.jpg' },
+  milestoneFile: 'long-thu-ky-niem.jpg',
+  // user milestones use the STORED date (not the next yearly occurrence); "Ngày thứ X bên nhau" is left out when X < 1
+  // and for the auto "Ngày thứ K" row (its title already says it)
+  milestones: {
+    'm-dalat': ['✈️', 'Du lịch Đà Lạt', 'Thứ năm, 24/12/2026', 'Ngày thứ 1.045 bên nhau', 'Viết Long & Minh Thư'],
+    'm-gap': ['💗', 'Ngày gặp nhau', 'Thứ năm, 05/10/2023', 'Viết Long & Minh Thư'],
+    'auto-100': ['💯', 'Ngày thứ 1.000', 'Thứ hai, 09/11/2026', 'Viết Long & Minh Thư'],
+    'auto-anniversary': ['💞', 'Kỷ niệm 3 năm', 'Chủ nhật, 14/02/2027', 'Ngày thứ 1.097 bên nhau', 'Viết Long & Minh Thư']
+  },
+  defaultTemplate: { withCover: 'cover', withoutCover: 'plain' },
+  // setFixedTime(before) → open the sheet → setFixedTime(after) → wait 1.5s: alt and file name follow the new day
+  rollover: { before: '2026-10-13T23:59:59+07:00', after: '2026-10-14T00:00:01+07:00', alt: ['Ảnh chia sẻ: 973 ngày bên nhau', 'Ảnh chia sẻ: 974 ngày bên nhau'], file: 'long-thu-974-ngay.jpg' },
+  timezones: [['America/Los_Angeles', '2026-10-13T06:00:00+07:00', '973']]
+};
+const shareSel = {
+  open: '#btnShare', sheet: '#shareSheet', box: '#shareBox', preview: '#sharePreview', save: '#btnShareSave', error: '#shareError',
+  template: t => '[data-share-tpl="' + t + '"]',        // cover | card | plain
+  size: z => '[data-share-size="' + z + '"]',           // post | story; #shareBox[data-size] follows
+  autoRow: id => '#milestoneList button.ms-item.auto[data-ms-id="' + id + '"]',   // auto-100 | auto-anniversary | auto-bday-long | auto-bday-thu
+  fromMilestoneForm: '#msShare',                         // only while editing a saved milestone; refuses with #msError when the form has unsaved edits
+  ready: '#btnShareSave:not([disabled])'                 // disabled until the picture is built (and again after every change)
+};
+
 // Replaces every store's content. blobs: { id: base64 } (ArrayBuffers can't
 // cross page.evaluate). raw: true stores records as-is (for corrupt-data tests).
 async function seed(page, data) {
@@ -263,4 +303,4 @@ function badgeStubScript() {
 }
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
-  cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder };
+  cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel };
