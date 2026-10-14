@@ -424,6 +424,7 @@
       renderMilestones();
       renderWishes(); // countdowns follow the date; the form in #wishSheet is the user's and is never touched
       renderJournal(); // "today" moved; the open #journalSheet keeps its own day and text (Home card: renderHome above)
+      if(jr.date && journalSheetOpen()) $("jMoodLabel").textContent = jr.date === C.todayStr(t) ? "Hôm nay thế nào?" : "Hôm đó thế nào?";
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
       renderDayRemind();
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
@@ -1542,7 +1543,7 @@
       wish.sheetQuiet = true;
       setTimeout(function(){ wish.sheetQuiet = false; }, 400);
       showError("wishErr", null);
-      renderWishes();
+      if(toggled) markWishRows(); else renderWishes();
       renderUpcoming();
       renderOnThisDay();
       ok();
@@ -1553,6 +1554,19 @@
       wish.queue = [];
       fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
     });
+  }
+  // After a tap on a circle only the circles change at once: re-sorting the list would slide the rows
+  // below under a finger already on its way to the next circle (that ticked the wrong wish). The list
+  // re-sorts 900ms after the last tap.
+  function markWishRows(){
+    Array.prototype.forEach.call($("wishList").querySelectorAll("[data-wish-check]"), function(b){
+      var w = wishById(b.getAttribute("data-wish-check")), done = !!(w && w.doneDate);
+      b.setAttribute("aria-pressed", done ? "true" : "false");
+      var row = b.closest(".wish-row");
+      if(row) row.classList.toggle("is-done", done);
+    });
+    clearTimeout(wish.relayout);
+    wish.relayout = setTimeout(function(){ wish.relayout = null; renderWishes(); }, 900);
   }
   function wishDrain(){
     while(!wish.saving && wish.queue.length){
@@ -1597,6 +1611,7 @@
 
   function renderWishes(){
     var el = $("wishList");
+    if(wish.relayout){ clearTimeout(wish.relayout); wish.relayout = null; }
     syncWishAdd();
     if(wishesLocked()){ el.innerHTML = '<div class="card"><p class="card-text">' + WISH_BROKEN_TEXT + ".</p></div>"; return; }
     if(!state.wishes.length){
@@ -1701,6 +1716,9 @@
   }
   function openWishSheet(w){
     if(wishesLocked()) return;
+    // A tap on this wish's circle is still being written or waiting: the form would show the old state
+    // and "Lưu" would undo the tap.
+    if(w && (wish.writingId === w.id || wish.queue.some(function(q){ return q.id === w.id; }))) return;
     wish.editingId = w ? w.id : null;
     $("wishSheetTitle").textContent = w ? "Sửa việc muốn làm" : "Thêm việc muốn làm";
     $("wTitle").value = w ? w.title : "";
@@ -1879,6 +1897,15 @@
       renderJournal();
       renderJournalCard();
       renderOnThisDay();
+      // The sheet's own day may have been written over there: a mood left empty and an empty text box
+      // take the other window's values, so the second "Lưu" can't wipe them without the user seeing it.
+      var theirs = jr.date && journalSheetOpen() ? journalByDate(jr.date) : null;
+      if(theirs){
+        if(!jr.mood && theirs.mood) setJournalMood(theirs.mood);
+        if(!$("jText").value.trim() && theirs.text){ $("jText").value = theirs.text; renderJournalCount(); }
+        $("journalDelete").hidden = false;
+        throw userErr("Ngày này vừa được ghi ở cửa sổ khác — đã đưa vào đây, xem lại rồi bấm Lưu.");
+      }
       throw userErr("Nhật ký vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
     });
   }
@@ -1940,10 +1967,10 @@
     var rec = C.validateJournal({ date: today, mood: mood, text: "", updatedAt: t });
     if(!rec) return;
     journalWrite(null, state.journal.concat([rec]), function(){
-      if(jr.tap){
-        var spot = jr.quiet = { x: jr.tap.x, y: jr.tap.y };
-        setTimeout(function(){ if(jr.quiet === spot) jr.quiet = null; }, 400);
-      }
+      // The five buttons have just turned into one row under the finger: the whole card rests 700ms,
+      // otherwise the next quick tap opens the sheet.
+      var spot = jr.quiet = { all: true };
+      setTimeout(function(){ if(jr.quiet === spot) jr.quiet = null; }, 700);
       toast("Đã ghi hôm nay ✓");
     }, function(msg){ showError("journalCardErr", msg); });
   }
@@ -1951,7 +1978,7 @@
   $("journalCard").addEventListener("click", function(e){
     if(!e.isTrusted || !e.detail) return;
     var q = jr.quiet;
-    if(q && Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32){ e.stopPropagation(); e.preventDefault(); return; }
+    if(q && (q.all || Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32)){ e.stopPropagation(); e.preventDefault(); return; }
     jr.tap = { x: e.clientX, y: e.clientY };
   }, true);
   $("journalCardBody").addEventListener("click", function(e){
@@ -2079,6 +2106,7 @@
     showError("journalFormErr", null);
   }
   function renderJournalCount(){ $("jCount").textContent = $("jText").value.length + "/" + C.JOURNAL_TEXT_MAX; }
+  function journalSheetOpen(){ return $("journalSheet").classList.contains("open"); }
   function openJournalSheet(date){
     if(journalLocked() || !C.isValidDate(date)) return;
     var e = journalByDate(date);
@@ -3461,7 +3489,7 @@
           if(b){ src["photo" + i] = b.data; has["photo" + i] = true; }
         });
         plan = S.plan({ mode: "recap", size: share.size, names: names, has: has,
-                        recap: { year: rc.year, days: rc.days, asOf: rc.asOf, stats: recapStats(rc), photoCount: rc.topPhotoIds.length } }, S.measurer(font));
+                        recap: { year: rc.year, days: rc.days, asOf: rc.asOf, stats: recapStats(rc), photoCount: Object.keys(has).length } }, S.measurer(font));
       } else {
         plan = S.plan({ template: share.template, size: share.size, mode: share.mode, n: state.computed.n, startDate: p.startDate,
                         names: names,
@@ -3703,9 +3731,9 @@
     return h;
   }
   function replaceAskText(ps, l){
-    return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) ? ", " + l.wishes.length + " việc" : "") +
-      (replacesJournal(ps, l) ? ", " + fmtInt(l.journal.length) + " ngày nhật ký" : "") +
-      (replacesCycles(ps, l) ? ", " + l.cycles.length + " kỳ" : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
+    return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) && l.wishes.length ? ", " + l.wishes.length + " việc" : "") +
+      (replacesJournal(ps, l) && l.journal.length ? ", " + fmtInt(l.journal.length) + " ngày nhật ký" : "") +
+      (replacesCycles(ps, l) && l.cycles.length ? ", " + l.cycles.length + " kỳ" : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
   }
 
   // Mirrors planCycles() in love-days-backup.js for the "Thay thế" wording.
@@ -3811,6 +3839,7 @@
 
   function reloadAll(){
     closeViewer();
+    closePhotoConfirm();
     releaseAlbumThumbs();
     releaseTl();
     Object.keys(state.urls).forEach(function(k){ if(state.urls[k]) URL.revokeObjectURL(state.urls[k]); });

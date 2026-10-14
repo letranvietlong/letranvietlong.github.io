@@ -438,7 +438,9 @@
 
   // planWishes' twin for the journal (kv 'journal'), same rules.
   function planJournal(parsed, local, replace, nowMs){
-    var mine = local.journal || [], bad = local.journalBad || [];
+    // A snapshot without the list comes from an older cached page that can't see it: keep the device's.
+    if(!Array.isArray(local.journal)) return { record: null, added: 0, skipped: 0, over: 0, kept: !!parsed.journal || replace };
+    var mine = local.journal, bad = local.journalBad || [];
     if(!parsed.journal) return { record: null, added: 0, skipped: 0, over: 0, kept: replace && (mine.length > 0 || bad.length > 0 || !!local.journalBroken) };
     if(local.journalBroken) return { record: null, added: 0, skipped: 0, over: 0, kept: true };
     var next, added, skipped = 0, over = 0;
@@ -454,7 +456,8 @@
 
   // planCycles' twin for the "Muốn làm" list (kv 'wishes'), same rules.
   function planWishes(parsed, local, replace, nowMs){
-    var mine = local.wishes || [], bad = local.wishesBad || [];
+    if(!Array.isArray(local.wishes)) return { record: null, added: 0, skipped: 0, over: 0, kept: !!parsed.wishes || replace };
+    var mine = local.wishes, bad = local.wishesBad || [];
     if(!parsed.wishes) return { record: null, added: 0, skipped: 0, over: 0, kept: replace && (mine.length > 0 || bad.length > 0 || !!local.wishesBroken) };
     if(local.wishesBroken) return { record: null, added: 0, skipped: 0, over: 0, kept: true };
     var next, added, skipped = 0, over = 0;

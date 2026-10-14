@@ -82,6 +82,8 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 Hai chốt chống chạm nhầm: (1) bỏ đánh dấu bằng nút tròn rồi đánh dấu lại trong vòng 1 phút trả về **ngày đã làm cũ** (`wish.undone`, chỉ trong phiên) chứ không ghi đè bằng hôm nay; (2) `closeSheets` ghi lại vị trí cú chạm vừa đóng sheet và trong 500ms nuốt cú chạm thật thứ hai ở cùng chỗ (±48px) — trước đó cú thứ hai của một lần chạm đúp vào "Lưu" rơi xuống tab/hàng nằm dưới. Phím bấm (`detail` 0) và `.click()` trong code không bị chặn. Khi gộp bản sao lưu, việc không vào được vì đủ 500 được đếm riêng (`over`), không gọi là "đã có".
 
+Sau một cú chạm nút tròn chỉ các nút tròn đổi ngay (`markWishRows`); danh sách sắp xếp lại 900ms sau cú chạm cuối — nếu sắp lại ngay, các hàng bên dưới trượt lên dưới ngón tay đang tới nút kế và đánh dấu nhầm việc khác. Mở sheet sửa một việc mà cú chạm nút tròn của nó còn đang ghi/đang chờ thì không mở (form sẽ hiện trạng thái cũ và "Lưu" hoàn tác cú chạm).
+
 Danh sách việc muốn làm cùng nhau (nơi muốn đi, món muốn ăn, phim muốn xem…). Nằm **trong tab Kỷ niệm**, sau segmented `#msSeg` "Kỷ niệm / Muốn làm" ngay dưới `.view-head` (`setMsSeg`; mặc định Kỷ niệm, lựa chọn chỉ giữ trong phiên, không lưu). Tiêu đề tab vẫn là "Kỷ niệm"; nút "Thêm" ở góc phải (`#btnAddMilestone`) thêm đúng loại đang xem. Phần kỷ niệm (`#milestoneList`) chỉ bị ẩn khi xem "Muốn làm", không dựng lại.
 
 - **Lưu**: MỘT bản ghi `kv` khoá `wishes`, chép đúng mẫu của `cycles` (không store mới, không nâng `DB_VERSION`; không dùng store `milestones` vì `validateMilestone` bắt buộc `date`). Mục: `{ id ("w…"), title (≤80, không rỗng sau trim), cat: "go" | "eat" | "watch" | "other" | "", note (≤300), planDate, doneDate, milestoneId, createdAt }` — `LoveCore.validateWish` trả object mới chỉ gồm các trường này. Tối đa `MAX_WISHES` = 500.
@@ -117,6 +119,8 @@ Thẻ `#otdCard` ở Trang chủ, ngay dưới thẻ đếm ngày và trên "S�
 - Sang ngày (`tick`) thẻ dựng lại theo ngày mới; form/sheet đang mở không bị đụng. `visibilitychange` không dựng lại gì.
 
 ## Nhật ký (v1.18)
+
+Hai cửa sổ cùng ghi một ngày: khi "Lưu" bị từ chối vì cửa sổ khác vừa ghi và bản mới có mục cho ngày của sheet, sheet nhận tâm trạng của bản kia nếu mình chưa chọn và chữ của bản kia nếu ô chữ đang trống, rồi báo "Ngày này vừa được ghi ở cửa sổ khác — đã đưa vào đây, xem lại rồi bấm Lưu." — để lần lưu thứ hai không xoá âm thầm tâm trạng bên kia. Sau một cú chạm nhanh tâm trạng ở Trang chủ, cả ô nghỉ 700ms (năm nút vừa thành một hàng dưới ngón tay). `planJournal`/`planWishes` gặp ảnh chụp dữ liệu không có danh sách (trang cũ trong cache ghép `love-days-backup.js` mới) thì giữ nguyên danh sách trên máy.
 
 Mỗi ngày một mục: tâm trạng 5 mức và/hoặc vài dòng chữ. Nằm sau nút segmented thứ ba "Nhật ký" của tab Kỷ niệm (`#msSeg`, `setMsSeg` nhận `ms` / `wishes` / `journal`), kèm ô "Hôm nay thế nào?" ở Trang chủ (`#journalCard`, sau "Sắp tới", trước sinh nhật).
 
