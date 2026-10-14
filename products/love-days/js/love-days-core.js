@@ -649,6 +649,76 @@
     return out;
   }
 
+  // ---------- "Tổng kết năm" ----------
+  var RECAP_TOP = 4;
+
+  // This year (VN) down to the start year; [] when the start date is unusable or after today.
+  function recapYears(startDate, nowMs){
+    var out = [];
+    try{
+      if(!isValidDate(startDate) || !num(nowMs)) return out;
+      var ty = +todayStr(nowMs).slice(0, 4);
+      for(var y = ty; y >= +startDate.slice(0, 4); y--) out.push(y);
+    }catch(e){ out = []; }
+    return out;
+  }
+
+  // src = { startDate, milestones, wishes, photos, journal } (validated records).
+  // asOf = the last day counted (today, or 31/12 of a past year); days = day number of asOf,
+  // daysInYear = days together within that year. milestones: user milestones dated in the
+  // year and not after today; wishesDone: doneDate in the year; photos: the VN day of
+  // takenAt, else addedAt (the Album's "Ngày chụp" fallback); journalDays: distinct dates.
+  // topPhotoIds (≤ 4): the first photo of each counted milestone in date order, then evenly
+  // spread picks (index floor(i·n/k)) from the year's other photos in date order.
+  // null when the year is outside recapYears. Never throws.
+  function yearRecap(src, year, nowMs){
+    try{
+      src = src || {};
+      var start = src.startDate, today = todayStr(nowMs);
+      if(!isValidDate(start) || !isValidDate(today) || typeof year !== "number" || Math.floor(year) !== year) return null;
+      var Y = String(year), first = Y + "-01-01", last = Y + "-12-31";
+      if(year < +start.slice(0, 4) || year > +today.slice(0, 4) || start > today) return null;
+      var asOf = today < last ? today : last, from = start > first ? start : first;
+      var list = function(v){ return Array.isArray(v) ? v : []; };
+      var inYear = function(d){ return isValidDate(d) && d.slice(0, 4) === Y; };
+      var key = function(p){ return num(p.takenAt) ? p.takenAt : num(p.addedAt) ? p.addedAt : null; };
+      var byId = function(a, b){ return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; };
+      var byDate = function(a, b){ return key(a) - key(b) || (num(a.addedAt) && num(b.addedAt) ? a.addedAt - b.addedAt : 0) || byId(a, b); };
+
+      var ms = list(src.milestones).filter(function(m){ return m && typeof m.id === "string" && inYear(m.date) && m.date <= today; });
+      ms.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.createdAt || 0) - (b.createdAt || 0) || byId(a, b); });
+      var wishesDone = list(src.wishes).filter(function(w){ return w && inYear(w.doneDate); }).length;
+      var photoById = Object.create(null), yearPhotos = [];
+      list(src.photos).forEach(function(p){
+        if(!p || typeof p.id !== "string" || key(p) === null || photoById[p.id]) return;
+        photoById[p.id] = p;
+        if(inYear(todayStr(key(p)))) yearPhotos.push(p);
+      });
+      yearPhotos.sort(byDate);
+      var days = Object.create(null), journalDays = 0;
+      list(src.journal).forEach(function(e){
+        if(e && inYear(e.date) && !days[e.date]){ days[e.date] = true; journalDays++; }
+      });
+
+      var top = [], taken = Object.create(null);
+      ms.forEach(function(m){
+        if(top.length >= RECAP_TOP) return;
+        var own = list(m.photoIds).map(function(id){ return typeof id === "string" ? photoById[id] : null; })
+          .filter(function(p){ return p && !taken[p.id]; }).sort(byDate);
+        if(own.length){ top.push(own[0].id); taken[own[0].id] = true; }
+      });
+      var rest = yearPhotos.filter(function(p){ return !taken[p.id]; }), n = rest.length, k = Math.min(RECAP_TOP - top.length, n);
+      for(var i = 0; i < k; i++) top.push(rest[Math.floor(i * n / k)].id);
+
+      var out = { year: year, isCurrent: asOf === today, asOf: asOf,
+                  days: dayIdx(asOf) - dayIdx(start) + 1, daysInYear: dayIdx(asOf) - dayIdx(from) + 1,
+                  milestones: ms.length, wishesDone: wishesDone, photos: yearPhotos.length, journalDays: journalDays,
+                  topPhotoIds: top };
+      out.hasData = out.milestones + out.wishesDone + out.photos + out.journalDays > 0;
+      return out;
+    }catch(e){ return null; }
+  }
+
   // ---------- Reminders in the morning push ----------
   var REMIND_AHEAD = [7, 1, 0];   // milestones, birthdays, "Ngày thứ K", yearly anniversary: days left that get a line
   var WISH_AHEAD = [1, 0];        // open wishes with a planned date
@@ -880,7 +950,7 @@
     MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
     MAX_JOURNAL: MAX_JOURNAL, JOURNAL_TEXT_MAX: JOURNAL_TEXT_MAX, MOODS: MOODS,
     validateJournal: validateJournal, journalMonth: journalMonth, mergeJournal: mergeJournal,
-    onThisDay: onThisDay,
+    onThisDay: onThisDay, RECAP_TOP: RECAP_TOP, recapYears: recapYears, yearRecap: yearRecap,
     REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
     PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,
     upgrade: upgrade, openDb: openDb, idbGet: idbGet, idbGetAll: idbGetAll,

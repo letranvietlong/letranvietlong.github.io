@@ -625,6 +625,38 @@
   <div id="importContent"></div>
 </div>
 
+<div class="sheet" id="recapSheet" role="dialog" aria-modal="true" aria-labelledby="recapSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="recapSheetTitle">Tổng kết năm</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="form">
+    <div class="recap-step" role="group" aria-label="Chọn năm">
+      <button type="button" class="cal-nav" id="recapPrev" aria-label="Năm trước">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <p class="recap-year" id="recapYear" aria-live="polite"></p>
+      <button type="button" class="cal-nav" id="recapNext" aria-label="Năm sau">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <div class="recap-hero">
+      <p class="count-big recap-count"><span id="recapDays">0</span><span class="count-unit">ngày bên nhau</span></p>
+      <p class="recap-sub" id="recapSub"></p>
+    </div>
+    <p class="recap-empty" id="recapEmpty" hidden></p>
+    <div class="recap-body" id="recapBody">
+      <dl class="recap-stats" id="recapStats"></dl>
+      <ul class="tl-photos recap-photos" id="recapPhotos" aria-label="Ảnh tiêu biểu trong năm" hidden></ul>
+      <p class="recap-note" id="recapNote" hidden></p>
+    </div>
+    <button type="button" class="btn btn-primary btn-block" id="recapShare">Tạo ảnh chia sẻ</button>
+  </div>
+</div>
+
 <div class="sheet" id="shareSheet" role="dialog" aria-modal="true" aria-labelledby="shareSheetTitle">
   <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
   <div class="sheet-head">
@@ -635,7 +667,7 @@
   </div>
   <div class="form">
     <div class="share-preview" id="shareBox" data-size="post"><img id="sharePreview" alt="" hidden></div>
-    <div class="field">
+    <div class="field" id="shareTplField">
       <span class="field-label" id="shareTplLabel">Mẫu</span>
       <div class="segmented" id="shareTplSeg" role="group" aria-labelledby="shareTplLabel">
         <button type="button" class="seg-btn" data-share-tpl="cover">Ảnh bìa</button>

@@ -521,6 +521,48 @@ const journalSel = {
   show: '#journalShow', otdRow: d => '#otdBody [data-otd-j="' + d + '"]'
 };
 
+// ---------- Tổng kết năm (v1.19) ----------
+// Row #btnRecap at the top of "Dòng thời gian" (tab Kỷ niệm) opens #recapSheet. LoveCore.recapYears(startDate, nowMs) and
+// LoveCore.yearRecap(src, year, nowMs) are pure (same result in every TZ). Read-only: nothing is written to IndexedDB.
+// Seed: ld.seed(page, { profile: ld.profile, milestones: ld.milestones.concat(ld.recap.milestones),
+//         extra: [['kv', ld.wishesRecord(ld.wishes.items.concat(ld.recap.wishes))], ['kv', ld.journalRecord(ld.recap.journal)]] });
+//       await ld.seedPhotos(page, 6); await ld.seedPhotoList(page, ld.recap.photos); reload. now = ld.recap.now.
+// Share picture: LoveShare.plan texts (without "initial") for mode "recap"; a stat of 0 is left out of the picture but shows in the sheet.
+const recap = {
+  now: '2026-10-14T09:00:00+07:00',
+  milestones: [ms('m-a', 'Kỷ niệm A', '2026-01-10', '💗', 30), Object.assign(ms('m-b', 'Kỷ niệm B', '2026-06-01', '💗', 31), { photoIds: ['py3'] }),
+    ms('m-c', 'Kỷ niệm C', '2025-12-31', '💗', 32), ms('m-d', 'Kỷ niệm D', '2026-10-14', '💗', 33)],
+  wishes: [wi('wd1', 'Việc 1', 'go', null, '2026-01-01', 40), wi('wd2', 'Việc 2', 'go', null, '2025-12-31', 41)],
+  // py1 = 23:59:59 (+07) 31/12/2025; py2 = 00:00 (+07) 01/01/2026 (still 2025 in UTC); py4 has no taken date (addedAt counts)
+  photos: [['py1', Date.UTC(2025, 11, 31, 16, 59, 59), 1e12 + 101], ['py2', Date.UTC(2025, 11, 31, 17, 0, 0), 1e12 + 102],
+    ['py3', Date.UTC(2026, 5, 1, 3), 1e12 + 103], ['py4', null, Date.UTC(2026, 9, 13, 2)]],
+  journal: ['2026-10-14', '2026-10-13', '2026-10-01', '2026-09-30', '2026-01-01', '2025-12-31', '2025-10-14'].map((d, i) => j(d, 3, '', i + 1)),
+  years: [2026, 2025, 2024],   // ‹ disabled on 2024, › disabled on 2026; m-gap (2023) counts in no year
+  // [year, days, daysInYear, asOf, milestones, wishesDone, photos, journalDays, topPhotoIds]; 322 + 365 + 287 = 974
+  table: [
+    [2026, 974, 287, '2026-10-14', 3, 2, 3, 5, ['py3', 'py2', 'py4']],    // m-a, m-b, m-d (Đà Lạt 24/12 not yet); w6 20/09 + wd1
+    [2025, 687, 365, '2025-12-31', 1, 1, 1, 2, ['py1']],
+    [2024, 322, 322, '2024-12-31', 1, 0, 6, 0, ['seed001', 'seed002', 'seed004', 'seed005']]
+  ],
+  texts2026: ['Tổng kết năm', '2026', '974', 'ngày bên nhau', 'tính đến 14/10/2026', '3 kỷ niệm', '2 việc đã làm cùng nhau', '3 ảnh', '5 ngày ghi nhật ký', 'Viết Long & Minh Thư'],
+  texts2024: ['Tổng kết năm', '2024', '322', 'ngày bên nhau', 'tính đến 31/12/2024', '1 kỷ niệm', '6 ảnh', 'Viết Long & Minh Thư'],
+  sub2026: '287 ngày trong năm 2026 · tính đến 14/10/2026',
+  file: 'long-thu-tong-ket-2026.jpg', alt: 'Ảnh chia sẻ: tổng kết năm 2026',
+  // profile starting 2022-05-01, nothing recorded: year 2022 → 245, #recapEmpty says this, #recapShare hidden
+  empty: { startDate: '2022-05-01', year: 2022, days: 245, text: 'Năm 2022 chưa ghi kỷ niệm, ảnh hay nhật ký nào.' },
+  // device in America/Los_Angeles at 2027-01-01T00:30+07 (still 31/12 there): years [2027, 2026, 2025, 2024];
+  // 2027 → days 1053, daysInYear 1; 2026 → days 1052, daysInYear 365, milestones 4 (Đà Lạt has passed)
+  newYear: { now: '2027-01-01T00:30:00+07:00', timezoneId: 'America/Los_Angeles', years: [2027, 2026, 2025, 2024], y2027: [1053, 1], y2026: [1052, 365, 4] },
+  // sheet open on 2026: 14/10 23:59:59 → 15/10 00:00:01 → 974 → 975, 287 → 288, year and sheet stay
+  rollover: { before: '2026-10-14T23:59:59+07:00', after: '2026-10-15T00:00:01+07:00', days: ['974', '975'], inYear: [287, 288] }
+};
+const recapSel = {
+  open: '#btnRecap', sheet: '#recapSheet', prev: '#recapPrev', next: '#recapNext', year: '#recapYear', days: '#recapDays', sub: '#recapSub',
+  stats: '#recapStats .recap-stat',   // dt = label, dd = number: kỷ niệm | việc đã làm cùng nhau | ảnh | ngày ghi nhật ký
+  photos: '#recapPhotos img[data-tl]', body: '#recapBody', empty: '#recapEmpty', note: '#recapNote', share: '#recapShare',
+  shareTplField: '#shareTplField'      // hidden while #shareSheet is in recap mode
+};
+
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
 async function seedPhotoList(page, list) {
   await page.evaluate(async list => {
@@ -600,4 +642,4 @@ function badgeStubScript() {
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
-  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel };
+  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel, recap, recapSel };

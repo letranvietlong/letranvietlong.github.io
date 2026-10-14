@@ -132,6 +132,23 @@ Mỗi ngày một mục: tâm trạng 5 mức và/hoặc vài dòng chữ. Nằm
 - **Không đồng bộ giữa hai máy** — chuyển bằng bản sao lưu ở chế độ Gộp.
 - **Chưa kiểm chứng trên iPhone thật**: bàn phím che `textarea` trong sheet (`max-height:88svh`), emoji tâm trạng trong ô lịch 45pt.
 
+## Tổng kết năm (v1.19)
+
+Sheet `#recapSheet` (markup tĩnh). Lối vào: hàng `button.row-link.recap-link#btnRecap` ("Tổng kết năm" + năm nay) ngay dưới tiêu đề "Dòng thời gian" của tab Kỷ niệm, có cả khi dòng thời gian trống (`recapRowHtml()` trong `timelineHtml`, listener trong handler của `#milestoneList`). **Chỉ đọc**: không ghi IndexedDB, không `dataChanged()`.
+
+- **`LoveCore.recapYears(startDate, now)`** → `[năm nay … năm bắt đầu]` (năm theo ngày VN); `[]` khi ngày bắt đầu hỏng hoặc sau hôm nay.
+- **`LoveCore.yearRecap(src, year, now)`** — thuần, không bao giờ ném lỗi, `null` khi năm nằm ngoài `recapYears`. `src = { startDate, milestones, wishes, photos, journal }` đã validate →
+  `{ year, isCurrent, asOf, days, daysInYear, milestones, wishesDone, photos, journalDays, topPhotoIds, hasData }`:
+  - `asOf` = min(hôm nay, 31/12 của năm); `days = dayIdx(asOf) − dayIdx(bắt đầu) + 1` (số ngày bên nhau tính tới `asOf`); `daysInYear = dayIdx(asOf) − dayIdx(max(bắt đầu, 01/01)) + 1`. Cộng `daysInYear` mọi năm = N ở Trang chủ.
+  - `milestones`: kỷ niệm người dùng có ngày gốc trong năm **và ≤ hôm nay** (mốc tự sinh không tính; kỷ niệm lặp lại chỉ tính ở năm gốc). `wishesDone`: `doneDate` trong năm. `journalDays`: số ngày khác nhau trong năm. `photos`: ngày VN của `takenAt`, không có thì `addedAt` (như cách sắp "Ngày chụp" của Album) — ảnh chụp 00:00 ngày 01/01 giờ VN thuộc năm mới dù giờ UTC vẫn là năm cũ.
+  - `topPhotoIds` (tối đa 4, `RECAP_TOP`): (1) ảnh đầu tiên (theo `takenAt ?? addedAt`) của từng kỷ niệm được tính, theo ngày kỷ niệm tăng dần; (2) lấp đủ bằng ảnh còn lại của năm (sắp ngày, `addedAt`, `id`), chỉ số `floor(i·n/k)` để rải đều cả năm.
+  - `hasData` = tổng bốn số > 0.
+  Danh sách Muốn làm / nhật ký không đọc được (`wishesLocked()` / `journalLocked()`) → coi là 0, sheet ghi thêm "… không đọc được nên không tính."
+- **Sheet**: stepper ‹ năm › (`#recapPrev` / `#recapYear` `aria-live` / `#recapNext`, nút 44px, `disabled` ở hai đầu; nút vừa bấm bị khoá thì focus sang nút kia); số lớn `#recapDays` + "ngày bên nhau"; dòng "287 ngày trong năm 2026 · tính đến 14/10/2026"; lưới 2×2 `dl.recap-stats` (kỷ niệm, việc đã làm cùng nhau, ảnh, ngày ghi nhật ký — số 0 vẫn ghi); dải `ul.tl-photos.recap-photos` các ảnh `topPhotoIds` (thumbnail qua bể `tlUrls`: `tlImgs()` tính `#recapSheet` khi sheet mở, đóng sheet → `syncTl()` revoke URL không còn dùng). Năm chưa có gì: vẫn hiện số ngày + "Năm 2022 chưa ghi kỷ niệm, ảnh hay nhật ký nào.", ẩn lưới, ảnh và nút tạo ảnh. Mở sheet luôn bắt đầu ở năm nay.
+- **"Tạo ảnh chia sẻ"** (`#recapShare`) → `closeSheets()` rồi `openShare("recap", năm)` (không chồng hai sheet được).
+- Sang ngày khi sheet mở (`tick`) → `renderRecap()`: chỉ số liệu đổi, sheet không đóng, năm đang chọn giữ nguyên (qua giao thừa thì stepper có thêm năm mới, năm đang xem vẫn vậy).
+- Core cũ trong cache (thiếu `yearRecap`) → không có hàng `#btnRecap`. `LoveShare` cũ (thiếu `MODES` chứa `"recap"`) → ẩn nút tạo ảnh.
+
 ## Album
 
 - Thêm ảnh (`accept="image/*" multiple`): đọc EXIF `DateTimeOriginal` từ **byte gốc** (256KB đầu file, trước khi vẽ canvas — canvas xoá EXIF); có `OffsetTimeOriginal` thì dùng múi giờ đó, không có thì coi là giờ VN; không có EXIF → `takenAt = null`. Không dùng `file.lastModified`.
@@ -211,7 +228,8 @@ Một tấm JPEG 1080×1350 (bài đăng 4:5) hoặc 1080×1920 (story 9:16) v�
 - Chữ: `days` → số, "ngày bên nhau", "A & B", "Từ dd/mm/yyyy". `milestone` → emoji, tiêu đề (tối đa 2 dòng, co chữ rồi cắt "…"), "Thứ …, dd/mm/yyyy", "Ngày thứ X bên nhau" với `X = dayIdx(ngày) − dayIdx(bắt đầu) + 1` (bỏ khi X < 1, và bỏ ở mốc "Ngày thứ K" vì tiêu đề đã nói), tên. Kỷ niệm người dùng dùng **ngày đã lưu**, không phải lần lặp kế tiếp. Dòng tên co cỡ chữ tới 70% rồi cắt bớt tên dài hơn bằng `clipGraphemes`.
 - **User activation**: `renderShare()` dựng blob + `File` xong mới bật nút "Lưu / Chia sẻ ảnh"; cú chạm gọi thẳng `shareFile()` (dùng chung với sao lưu) → `navigator.share({files})`, không `await` gì trước đó; không có share thì tải xuống. Đổi mẫu/khổ → nút khoá lại tới khi vẽ xong; `share.seq` loại kết quả của lượt vẽ cũ.
 - Đóng sheet (`closeSheets`) → `resetShare()`: revoke URL xem trước, bỏ blob. `File` đã đưa cho bảng chia sẻ là đối tượng riêng, không bị ảnh hưởng. Sang ngày khi sheet đang mở → vẽ lại (số ngày, `alt`, tên file đổi theo). Đang thêm ảnh / sao lưu / nhập (`busy`) → không vẽ, báo "Đang xử lý việc khác — đợi xong rồi thử lại."
-- Tên file ASCII: `long-thu-<N>-ngay.jpg`, `long-thu-ky-niem.jpg`.
+- **Mode `recap` (v1.19, "Tổng kết năm")**: nhánh riêng `planRecap` — `days`/`milestone` không đổi một điểm ảnh nào. `opts.recap = { year, days, asOf, stats: [{ n, label }], photoCount }`, `has.photo0…photo3`. Một bố cục (nền gradient `#E8507F → #C2185B` như Tối giản, không avatar); ô "Mẫu" ẩn ở mode này và `share.template` không bị đổi, chỉ còn "Khổ ảnh". Chữ theo thứ tự role: `kicker` "Tổng kết năm" · `year` · `number` (số ngày tới `asOf`) · `label` "ngày bên nhau" · `asOf` "tính đến dd/mm/yyyy" · `stat` cho từng số **> 0** ("3 kỷ niệm", "2 việc đã làm cùng nhau", "3 ảnh", "5 ngày ghi nhật ký") · `names`. Ảnh `photo0..3` (`shape: "round"`) giữa năm và số: 1 ảnh một khung lớn, 2 hai cột, 3 một lớn + hai nhỏ xếp dọc, 4 lưới 2×2; không ảnh → trái tim trắng. Chiều cao vùng ảnh = phần còn lại sau chữ (trần 520px bài đăng / 760px story). `render` vẽ các ảnh `photo*` **tuần tự** sau trái tim trang trí, mỗi ảnh nhả bitmap trước khi giải mã ảnh sau. Trang đọc blob bằng `readBlobs(topPhotoIds)` lúc vẽ (không giữ lại sau khi vẽ); số liệu tính lại mỗi lần vẽ nên sang ngày khi sheet mở vẫn đúng. `alt` "Ảnh chia sẻ: tổng kết năm 2026".
+- Tên file ASCII: `long-thu-<N>-ngay.jpg`, `long-thu-ky-niem.jpg`, `long-thu-tong-ket-<năm>.jpg`.
 - **Giới hạn**: phông trên canvas là phông hệ thống của máy (iPhone: `ui-rounded`; nếu canvas không nhận từ khoá này sẽ rơi về San Francisco thường); emoji do máy vẽ nên mỗi máy một kiểu; ảnh bìa lưu tối đa 1600px nên ở khổ story bị phóng ~1,6 lần và cắt hai bên; chữ ở mẫu Ảnh bìa luôn nằm nửa dưới — ảnh bìa có mặt người ở nửa dưới sẽ bị chữ đè. **Chưa kiểm chứng trên iPhone thật**: bảng chia sẻ có mục "Lưu hình ảnh" cho file JPEG này không, `ui-rounded` trên canvas, emoji cỡ lớn.
 
 ## Sao lưu (ZIP STORE)

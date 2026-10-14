@@ -173,8 +173,87 @@
     return items.reduce(function(sum, it){ return sum + it.gap + it.h; }, 0);
   }
 
+  // "Tổng kết năm": one layout, its own path so the days/milestone pictures stay exactly as they were.
+  // opts.recap = { year, days, asOf, stats: [{ n, label }], photoCount (0–4) }; has.photo0…photo3.
+  // A stat of 0 is left out of the picture.
+  function planRecap(opts, measure){
+    var size = opts.size === "story" ? "story" : "post", story = size === "story";
+    var H = HEIGHTS[size], cx = W / 2, r = opts.recap, has = opts.has || {};
+    var names = [String((opts.names || [])[0] || "").trim(), String((opts.names || [])[1] || "").trim()];
+    var count = Math.max(0, Math.min(4, Math.floor(+r.photoCount) || 0));
+    var p = { w: W, h: H, template: "recap", size: size, mode: "recap",
+              bg: { colors: PINK, dir: "d" }, shades: [], hearts: [], chips: [], images: [], texts: [], textShadow: false };
+    var items = [];
+    function add(role, text, sz, weight, color, gap, h, base){
+      items.push({ role: role, text: text, size: sz, weight: weight, color: color, gap: gap,
+                   h: h == null ? sz : h, base: base == null ? Math.round(sz * 0.8) : base });
+    }
+    add("kicker", "Tổng kết năm", story ? 46 : 40, 800, SOFT_WHITE, 0);
+    var ys = story ? 150 : 124;
+    add("year", String(r.year), ys, 800, WHITE, story ? 20 : 14,Math.round(ys * 0.76), Math.round(ys * 0.74));
+    var slot = items.length, slotGap = story ? 64 : 40;
+    var num = fitLine(C.fmtInt(r.days), story ? 230 : 180, 110, 800, MAXW, measure);
+    add("number", num.text, num.size, 800, WHITE, story ? 64 : 40, Math.round(num.size * 0.8), Math.round(num.size * 0.76));
+    add("label", "ngày bên nhau", story ? 56 : 50, 700, WHITE, 14);
+    add("asOf", "tính đến " + fmtDate(r.asOf), story ? 36 : 32, 600, SOFT_WHITE, 10);
+    (r.stats || []).filter(function(s){ return s && s.n > 0; }).forEach(function(s, i){
+      var t = fitLine(C.fmtInt(s.n) + " " + s.label, story ? 46 : 40, 28, 700, MAXW, measure);
+      add("stat", t.text, t.size, 700, WHITE, i ? (story ? 16 : 10) : (story ? 44 : 28));
+    });
+    var nm = fitNames(names[0], names[1], story ? 44 : 38, 28, 700, MAXW, measure);
+    add("names", nm.text, nm.size, 700, SOFT_WHITE, story ? 48 : 30);
+
+    var margin = story ? 150 : 72, textH = stackHeight(items);
+    var cap = count ? (story ? 760 : 520) : (story ? 340 : 240);
+    var P = Math.max(count ? 200 : 120, Math.min(cap, H - margin * 2 - textH - slotGap));
+    var top = Math.round((H - textH - slotGap - P) / 2);
+
+    deco([[150, H * 0.08, 200], [950, H * 0.16, 110], [940, H * 0.9, 220], [120, H * 0.84, 100]], "rgba(255,255,255,.12)");
+    var y = top;
+    items.forEach(function(it, i){
+      if(i === slot){
+        y += slotGap;
+        placePhotos(y, P);
+        y += P;
+      }
+      y += it.gap;
+      p.texts.push({ role: it.role, text: it.text, x: cx, y: Math.round(y + it.base), size: it.size, weight: it.weight,
+                     align: "center", baseline: "alphabetic", maxWidth: MAXW, color: it.color, width: Math.round(measure(it.text, it.size, it.weight)) });
+      y += it.h;
+    });
+    return p;
+
+    function deco(list, color){
+      list.forEach(function(d){ p.hearts.push({ x: Math.round(d[0]), y: Math.round(d[1]), size: d[2], color: color, chip: null }); });
+    }
+    // 1: one frame · 2: two columns · 3: one large + two stacked · 4: a 2×2 grid.
+    function placePhotos(y0, h){
+      if(!count){
+        deco([[cx, y0 + h * 0.52, Math.round(h * 0.86)]], "rgba(255,255,255,.92)");
+        return;
+      }
+      var g = 18, tw = Math.min(MAXW, Math.round(h * (count === 1 ? 1.34 : 1.5))), x0 = Math.round((W - tw) / 2);
+      var boxes, half = Math.round((tw - g) / 2), halfH = Math.round((h - g) / 2);
+      if(count === 1) boxes = [[x0, y0, tw, h]];
+      else if(count === 2) boxes = [[x0, y0, half, h], [x0 + half + g, y0, tw - half - g, h]];
+      else if(count === 3){
+        var big = Math.round((tw - g) * 0.58);
+        boxes = [[x0, y0, big, h], [x0 + big + g, y0, tw - big - g, halfH], [x0 + big + g, y0 + halfH + g, tw - big - g, h - halfH - g]];
+      } else {
+        boxes = [[x0, y0, half, halfH], [x0 + half + g, y0, tw - half - g, halfH],
+                 [x0, y0 + halfH + g, half, h - halfH - g], [x0 + half + g, y0 + halfH + g, tw - half - g, h - halfH - g]];
+      }
+      boxes.forEach(function(b, i){
+        var id = "photo" + i;
+        p.images.push({ id: id, box: { x: b[0], y: Math.round(b[1]), w: b[2], h: Math.round(b[3]) }, shape: "round", radius: count === 1 ? 40 : 30,
+                        has: !!has[id], fill: COVER_FILL, ring: null });
+      });
+    }
+  }
+
   function plan(opts, measure){
     measure = measure || estimate;
+    if(opts.mode === "recap" && opts.recap) return planRecap(opts, measure);
     var template = STYLES[opts.template] ? opts.template : "plain";
     var size = opts.size === "story" ? "story" : "post";
     var mode = opts.mode === "milestone" && opts.milestone ? "milestone" : "days";
@@ -355,6 +434,11 @@
         ctx.fillRect(s.x, s.y, s.w, s.h);
       });
       p.hearts.forEach(function(h){ if(!h.chip) drawHeart(ctx, h); });
+      // One photo decoded at a time, each released before the next (see drawImage).
+      return p.images.reduce(function(chain, im){
+        return /^photo\d$/.test(im.id) ? chain.then(function(){ return drawImage(ctx, im, sources[im.id]); }) : chain;
+      }, Promise.resolve());
+    }).then(function(){
       return image("avatarLong");
     }).then(function(){
       return image("avatarThu");
@@ -386,5 +470,5 @@
     }).then(function(blob){ free(); return blob; }, function(err){ free(); throw err; });
   }
 
-  root.LoveShare = { plan: plan, render: render, measurer: measurer, SIZES: { post: [W, HEIGHTS.post], story: [W, HEIGHTS.story] } };
+  root.LoveShare = { plan: plan, render: render, measurer: measurer, MODES: ["days", "milestone", "recap"], SIZES: { post: [W, HEIGHTS.post], story: [W, HEIGHTS.story] } };
 })(self);

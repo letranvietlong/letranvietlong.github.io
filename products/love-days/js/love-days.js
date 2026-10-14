@@ -428,6 +428,7 @@
       renderDayRemind();
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
       if(C.cycleStats) renderCycleSheet();
+      if(recapSheetOpen()) renderRecap(); // numbers only; the chosen year stays
       if(shareSheetOpen()) renderShare();
       updateBadge();
       return;
@@ -491,7 +492,7 @@
     var entries = state.milestones.filter(function(m){ return C.dayIdx(m.date) <= tIdx; }).map(function(m){
       return { idx: C.dayIdx(m.date), date: m.date, m: m };
     });
-    var head = '<h3 class="group-title">Dòng thời gian</h3>';
+    var head = '<h3 class="group-title">Dòng thời gian</h3>' + recapRowHtml();
     if(!entries.length){
       return head + '<div class="card empty-state"><p class="empty-text">Chưa có kỷ niệm nào đã qua. Thêm một ngày đáng nhớ và gắn ảnh từ Album.</p></div>';
     }
@@ -578,6 +579,7 @@
     if(state.mode === "app" && state.tab === "milestones") add($("milestoneList"));
     if(state.mode === "app" && state.tab === "home") add($("otdCard"));
     if(msSheetOpen()) add($("milestoneSheet"));
+    if(recapSheetOpen()) add($("recapSheet"));
     return out;
   }
   function wantTl(id){
@@ -635,6 +637,7 @@
   }
 
   $("milestoneList").addEventListener("click", function(e){
+    if(e.target.closest("#btnRecap")){ openRecap(); return; }
     var tile = e.target.closest("[data-tl-open]");
     if(tile){ openMsViewer(tile.getAttribute("data-tl-ms"), tile.getAttribute("data-tl-open")); return; }
     var btn = e.target.closest("button[data-ms-id]");
@@ -3300,12 +3303,91 @@
     });
   });
 
+  // ---------- Tổng kết năm ----------
+  // Read-only: counts come from LoveCore.yearRecap over what is already in memory; nothing is written.
+  var recap = { year: null };
+  var RECAP_ICON = '<svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M8.5 15.5l2 2 4.5-4.5"/></svg>';
+
+  // An older cached love-days-core.js has no yearRecap: no row, nothing breaks.
+  function recapReady(){ return !!(C.yearRecap && C.recapYears && state.profile); }
+  function recapShareReady(){ return !!(S && S.MODES && S.MODES.indexOf("recap") !== -1); }
+  function recapSheetOpen(){ return $("recapSheet").classList.contains("open"); }
+  function recapRowHtml(){
+    if(!recapReady()) return "";
+    var y = C.todayStr(now()).slice(0, 4);
+    return '<button type="button" class="row-link recap-link" id="btnRecap" aria-haspopup="dialog">' + RECAP_ICON +
+      '<span class="row-link-label">Tổng kết năm</span><span class="row-link-value">' + y + "</span>" +
+      '<svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
+  }
+  function recapSrc(){
+    return { startDate: state.profile.startDate, milestones: state.milestones, photos: state.photos,
+             wishes: wishesLocked() ? [] : state.wishes, journal: journalLocked() ? [] : state.journal };
+  }
+  function recapStats(r){
+    return [{ n: r.milestones, label: "kỷ niệm" }, { n: r.wishesDone, label: "việc đã làm cùng nhau" },
+            { n: r.photos, label: "ảnh" }, { n: r.journalDays, label: "ngày ghi nhật ký" }];
+  }
+  function openRecap(){
+    if(!recapReady()) return;
+    recap.year = null;
+    openSheet("recapSheet");
+    renderRecap();
+  }
+  function renderRecap(){
+    if(!recapReady()) return;
+    var years = C.recapYears(state.profile.startDate, now());
+    if(!years.length) return;
+    if(recap.year === null || years.indexOf(recap.year) === -1) recap.year = years[0];
+    var y = recap.year, r = C.yearRecap(recapSrc(), y, now());
+    if(!r) return;
+    $("recapYear").textContent = String(y);
+    $("recapPrev").disabled = y <= years[years.length - 1];
+    $("recapNext").disabled = y >= years[0];
+    $("recapDays").textContent = fmtInt(r.days);
+    $("recapSub").textContent = fmtInt(r.daysInYear) + " ngày trong năm " + y + " · tính đến " + fmtDate(r.asOf);
+    $("recapEmpty").hidden = r.hasData;
+    $("recapEmpty").textContent = r.hasData ? "" : "Năm " + y + " chưa ghi kỷ niệm, ảnh hay nhật ký nào.";
+    $("recapBody").hidden = !r.hasData;
+    $("recapStats").innerHTML = recapStats(r).map(function(s){
+      return '<div class="recap-stat"><dt>' + s.label + "</dt><dd>" + fmtInt(s.n) + "</dd></div>";
+    }).join("");
+    var photos = r.topPhotoIds.map(photoById).filter(Boolean);
+    $("recapPhotos").hidden = !r.hasData || !photos.length;
+    $("recapPhotos").innerHTML = photos.map(function(p){ return '<li class="tl-photo">' + tlImg(p.id) + "</li>"; }).join("");
+    var notes = [];
+    if(wishesLocked()) notes.push("Danh sách Muốn làm không đọc được nên không tính.");
+    if(journalLocked()) notes.push("Nhật ký không đọc được nên không tính.");
+    $("recapNote").textContent = notes.join(" ");
+    $("recapNote").hidden = !notes.length;
+    $("recapShare").hidden = !r.hasData || !recapShareReady();
+    syncTl();
+  }
+  // d = -1 older, +1 newer (years[] runs newest first).
+  function stepRecap(d){
+    if(!recapReady()) return;
+    var years = C.recapYears(state.profile.startDate, now()), i = years.indexOf(recap.year) - d;
+    if(i < 0 || i >= years.length) return;
+    recap.year = years[i];
+    renderRecap();
+    // The button just pressed may now be disabled, which drops keyboard focus out of the sheet.
+    var other = $(d < 0 ? "recapNext" : "recapPrev");
+    if($(d < 0 ? "recapPrev" : "recapNext").disabled && !other.disabled) other.focus({ preventScroll: true });
+  }
+  $("recapPrev").addEventListener("click", function(){ stepRecap(-1); });
+  $("recapNext").addEventListener("click", function(){ stepRecap(1); });
+  $("recapShare").addEventListener("click", function(){
+    var y = recap.year;
+    closeSheets();
+    openShare("recap", y);
+  });
+
   // ---------- Share image ----------
   // Painted from what is already in memory (state.blobs); nothing here writes
   // to IndexedDB or marks the data as changed. The picture is always built
   // BEFORE the save button is enabled, so the tap can call navigator.share()
   // at once.
-  var share = { mode: "days", milestone: null, template: null, size: "post", blob: null, file: null, url: null, seq: 0 };
+  // recapYear: the year of a "recap" picture; its numbers are recomputed on every render (a new day changes them).
+  var share = { mode: "days", milestone: null, recapYear: null, template: null, size: "post", blob: null, file: null, url: null, seq: 0 };
 
   function shareSheetOpen(){ return $("shareSheet").classList.contains("open"); }
   function sharePressed(attr, value){
@@ -3325,10 +3407,17 @@
     img.hidden = true;
     $("btnShareSave").disabled = true;
   }
-  function openShare(mode, milestone){
+  // arg: the milestone for "milestone", the year for "recap".
+  function openShare(mode, arg){
     if(!S || !state.profile || !state.computed) return;
-    share.mode = mode === "milestone" && milestone ? "milestone" : "days";
-    share.milestone = share.mode === "milestone" ? milestone : null;
+    if(mode === "recap"){
+      if(typeof arg !== "number" || !recapReady() || !recapShareReady()) return;
+      share.mode = "recap"; share.milestone = null; share.recapYear = arg;
+    } else {
+      share.mode = mode === "milestone" && arg ? "milestone" : "days";
+      share.milestone = share.mode === "milestone" ? arg : null;
+      share.recapYear = null;
+    }
     if(!share.template) share.template = state.blobs.cover ? "cover" : "plain";
     openSheet("shareSheet");
     renderShare();
@@ -3336,29 +3425,51 @@
   function renderShare(){
     resetShare();
     var seq = share.seq, box = $("shareBox"), img = $("sharePreview"), p = state.profile, ms = share.milestone;
+    var isRecap = share.mode === "recap", rc = isRecap ? C.yearRecap(recapSrc(), share.recapYear, now()) : null;
     box.setAttribute("data-size", share.size);
+    // One layout for the recap: the template choice is hidden and left as it was for the other pictures.
+    $("shareTplField").hidden = isRecap;
     sharePressed("data-share-tpl", share.template);
     sharePressed("data-share-size", share.size);
     placeSegPill($("shareTplSeg"));
     placeSegPill($("shareSizeSeg"));
     showError("shareError", null);
-    img.alt = "Ảnh chia sẻ: " + (ms ? ms.title + ", " + fmtDate(ms.date) : fmtInt(state.computed.n) + " ngày bên nhau");
+    img.alt = "Ảnh chia sẻ: " + (isRecap ? "tổng kết năm " + share.recapYear : ms ? ms.title + ", " + fmtDate(ms.date) : fmtInt(state.computed.n) + " ngày bên nhau");
     if(busy){
       box.classList.remove("is-loading");
       showError("shareError", "Đang xử lý việc khác — đợi xong rồi thử lại.");
       return;
     }
+    if(isRecap && !(rc && rc.hasData)){
+      box.classList.remove("is-loading");
+      showError("shareError", "Năm này chưa có gì để tạo ảnh.");
+      return;
+    }
     box.classList.add("is-loading");
-    var name = ms ? "long-thu-ky-niem.jpg" : "long-thu-" + state.computed.n + "-ngay.jpg";
+    var name = isRecap ? "long-thu-tong-ket-" + share.recapYear + ".jpg" : ms ? "long-thu-ky-niem.jpg" : "long-thu-" + state.computed.n + "-ngay.jpg";
     var buf = function(id){ return state.blobs[id] ? state.blobs[id].data : null; };
-    var src = { cover: buf("cover"), avatarLong: buf("avatar-long"), avatarThu: buf("avatar-thu") };
+    var src = isRecap ? {} : { cover: buf("cover"), avatarLong: buf("avatar-long"), avatarThu: buf("avatar-thu") };
     var font = getComputedStyle(document.body).fontFamily + ',"Helvetica Neue",Arial,sans-serif';
-    Promise.resolve().then(function(){
-      var plan = S.plan({ template: share.template, size: share.size, mode: share.mode, n: state.computed.n, startDate: p.startDate,
-                          names: [p.persons[0].name, p.persons[1].name],
-                          has: { cover: !!src.cover, avatarLong: !!src.avatarLong, avatarThu: !!src.avatarThu }, milestone: ms }, S.measurer(font));
+    var names = [p.persons[0].name, p.persons[1].name];
+    (isRecap ? readBlobs(rc.topPhotoIds) : Promise.resolve(null)).then(function(recs){
+      if(seq !== share.seq) return null;
+      var plan;
+      if(isRecap){
+        var has = {};
+        recs.forEach(function(rec, i){
+          var b = C.validateBlob(rec);
+          if(b){ src["photo" + i] = b.data; has["photo" + i] = true; }
+        });
+        plan = S.plan({ mode: "recap", size: share.size, names: names, has: has,
+                        recap: { year: rc.year, days: rc.days, asOf: rc.asOf, stats: recapStats(rc), photoCount: rc.topPhotoIds.length } }, S.measurer(font));
+      } else {
+        plan = S.plan({ template: share.template, size: share.size, mode: share.mode, n: state.computed.n, startDate: p.startDate,
+                        names: names,
+                        has: { cover: !!src.cover, avatarLong: !!src.avatarLong, avatarThu: !!src.avatarThu }, milestone: ms }, S.measurer(font));
+      }
       return S.render(plan, src, font);
     }).then(function(blob){
+      if(!blob) return;
       if(seq !== share.seq) return;
       share.blob = blob;
       share.file = new File([blob], name, { type: "image/jpeg" });
@@ -4150,7 +4261,9 @@
     if(!open.length) return;
     if(shareSheetOpen()) resetShare();
     if(msSheetOpen()){ pendingWishId = null; setTimeout(cleanMsSheet, 300); }
+    var wasRecap = recapSheetOpen();
     Array.prototype.forEach.call(open, function(s){ s.classList.remove("open"); });
+    if(wasRecap) syncTl(); // its thumbnails' URLs are revoked unless the timeline still shows them
     hideBackdrop($("sheetBackdrop"));
     // The save behind a tap on "Lưu" is asynchronous, so the tap that closed the sheet can be a moment old.
     if(lastTap && Date.now() - lastTap.at < 700){
