@@ -123,6 +123,12 @@
       <div id="upcomingBody"></div>
     </section>
 
+    <section class="card journal-card" id="journalCard" aria-labelledby="journalTitle" hidden>
+      <h2 class="card-kicker" id="journalTitle">Hôm nay thế nào?</h2>
+      <div id="journalCardBody"></div>
+      <p class="form-error" id="journalCardErr" role="alert" hidden></p>
+    </section>
+
     <div class="bday-grid" id="birthdays"></div>
 
     <section class="card cycle-card" id="cycleCard" aria-labelledby="cycleTitle" hidden>
@@ -146,11 +152,16 @@
     <div class="segmented ms-seg" id="msSeg" role="group" aria-label="Danh sách đang xem">
       <button type="button" class="seg-btn" data-ms-seg="ms" aria-pressed="true">Kỷ niệm</button>
       <button type="button" class="seg-btn" data-ms-seg="wishes" aria-pressed="false">Muốn làm</button>
+      <button type="button" class="seg-btn" data-ms-seg="journal" aria-pressed="false" id="msSegJournal">Nhật ký</button>
     </div>
     <div class="ms-list" id="milestoneList"></div>
     <div id="wishPane" hidden>
       <p class="form-error" id="wishErr" role="alert" hidden></p>
       <div class="ms-list wish-list" id="wishList"></div>
+    </div>
+    <div id="journalPane" hidden>
+      <p class="form-error" id="journalErr" role="alert" hidden></p>
+      <div class="ms-list journal-list" id="journalBody"></div>
     </div>
   </section>
 
@@ -263,6 +274,15 @@
       <p class="photo-busy" id="photoBusy" role="status" hidden>Đang xử lý ảnh…</p>
     </section>
 
+    <h3 class="group-title" id="journalSetTitle">Nhật ký</h3>
+    <section class="card" id="journalSetCard" aria-labelledby="journalSetTitle">
+      <label class="check">
+        <input type="checkbox" id="journalShow" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Hiện ô Nhật ký ở Trang chủ</span>
+      </label>
+    </section>
+
     <h3 class="group-title" id="cycleSetTitle">Chu kỳ</h3>
     <section class="card" id="cycleSetCard" aria-labelledby="cycleSetTitle">
       <label class="check">
@@ -305,7 +325,7 @@
         <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
         <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
       </div>
-      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
+      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
       <p class="form-error" id="backupError" role="alert" hidden></p>
     </section>
 
@@ -513,6 +533,44 @@
       <div class="confirm-btns">
         <button type="button" class="btn btn-danger-solid" id="wishConfirmYes">Xoá</button>
         <button type="button" class="btn btn-ghost" id="wishConfirmNo">Giữ lại</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="journalSheet" role="dialog" aria-modal="true" aria-labelledby="journalSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="journalSheetTitle">Nhật ký</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="journalForm" novalidate>
+    <div class="field">
+      <span class="field-label" id="jMoodLabel">Hôm nay thế nào?</span>
+      <div class="j-moods" id="jMoods" role="group" aria-labelledby="jMoodLabel" aria-describedby="jErr">
+        <button type="button" class="j-mood" data-j-mood="1" aria-pressed="false"><span class="j-mood-emoji" aria-hidden="true">😢</span><span class="j-mood-label">Buồn</span></button>
+        <button type="button" class="j-mood" data-j-mood="2" aria-pressed="false"><span class="j-mood-emoji" aria-hidden="true">😕</span><span class="j-mood-label">Hơi chán</span></button>
+        <button type="button" class="j-mood" data-j-mood="3" aria-pressed="false"><span class="j-mood-emoji" aria-hidden="true">😐</span><span class="j-mood-label">Bình thường</span></button>
+        <button type="button" class="j-mood" data-j-mood="4" aria-pressed="false"><span class="j-mood-emoji" aria-hidden="true">🙂</span><span class="j-mood-label">Vui</span></button>
+        <button type="button" class="j-mood" data-j-mood="5" aria-pressed="false"><span class="j-mood-emoji" aria-hidden="true">🥰</span><span class="j-mood-label">Rất vui</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="jText">Vài dòng</label>
+      <textarea id="jText" maxlength="200" rows="3" aria-describedby="jCount jErr"></textarea>
+      <p class="j-count" id="jCount" aria-live="off">0/200</p>
+      <p class="field-error" id="jErr" role="alert" hidden></p>
+    </div>
+    <p class="form-error" id="journalFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="journalSave">Lưu nhật ký</button>
+    <button type="button" class="btn btn-danger btn-block" id="journalDelete" hidden>Xoá nhật ký ngày này</button>
+    <div class="confirm-row" id="journalConfirm" hidden>
+      <p class="confirm-text" id="journalConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="journalConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="journalConfirmNo">Giữ lại</button>
       </div>
     </div>
   </form>

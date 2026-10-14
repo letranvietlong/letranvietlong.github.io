@@ -542,10 +542,58 @@
     return { items: items, added: added, skipped: skipped, over: over };
   }
 
+  // ---------- Journal ("Nhật ký", stored whole in kv 'journal') ----------
+  // One entry per day: { date, mood: 0 (none) | 1..5, text (≤ 200), updatedAt }.
+  var MAX_JOURNAL = 4000;
+  var JOURNAL_TEXT_MAX = 200;
+  var MOODS = [1, 2, 3, 4, 5];
+  var JOURNAL_MIN_DATE = "2000-01-01";
+
+  // No "in the future" check: an entry written while the clock ran ahead must stay readable.
+  function validateJournal(e){
+    if(!e || typeof e !== "object") return null;
+    if(!isValidDate(e.date) || e.date < JOURNAL_MIN_DATE) return null;
+    if(typeof e.mood !== "number" || Math.floor(e.mood) !== e.mood || e.mood < 0 || e.mood > 5) return null;
+    if(e.text != null && !str(e.text, JOURNAL_TEXT_MAX)) return null;
+    var text = e.text ? wellFormed(e.text).trim() : "";
+    if(!e.mood && !text) return null;
+    if(!num(e.updatedAt)) return null;
+    return { date: e.date, mood: e.mood, text: text, updatedAt: e.updatedAt };
+  }
+
+  // The month view: marks for every cell of monthGrid(y, m) (days of the
+  // neighbouring months included), and the entries of that month, latest first.
+  function journalMonth(items, y, m){
+    var grid = monthGrid(y, m), ym = y + "-" + pad2(m), cell = Object.create(null), marks = Object.create(null), list = [];
+    grid.forEach(function(d){ cell[d] = true; });
+    (items || []).forEach(function(e){
+      if(!e || typeof e.date !== "string") return;
+      if(cell[e.date]) marks[e.date] = { mood: e.mood, hasText: !!e.text };
+      if(e.date.slice(0, 7) === ym) list.push(e);
+    });
+    list.sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    return { grid: grid, marks: marks, list: list, count: list.length };
+  }
+
+  // Adds each incoming day the device has no entry for; the device's own entry
+  // always wins. The import preview and the import itself both call this.
+  function mergeJournal(local, incoming){
+    var items = local.slice(), have = Object.create(null), added = 0, skipped = 0, over = 0;
+    items.forEach(function(e){ have[e.date] = true; });
+    incoming.forEach(function(e){
+      if(have[e.date]){ skipped++; return; }
+      if(items.length >= MAX_JOURNAL){ over++; return; }
+      have[e.date] = true;
+      items.push(e);
+      added++;
+    });
+    return { items: items, added: added, skipped: skipped, over: over };
+  }
+
   // ---------- "Ngày này năm xưa" ----------
   // What happened on today's day and month in earlier years.
-  // src = { milestones, wishes, photos } (validated records).
-  // → { today, years: [{ year, yearsAgo, date, milestones, wishes, photos }] }, latest year first.
+  // src = { milestones, wishes, photos, journal } (validated records).
+  // → { today, years: [{ year, yearsAgo, date, milestones, wishes, photos, journal }] }, latest year first.
   // One rule for everything: an item dated d, n years before this year, is in
   // when addYearsClamp(d, n) is today — so 29/02 shows on 28/02 of a non-leap
   // year and on 29/02 of a leap one, and 28/02 never shows on 29/02.
@@ -566,7 +614,7 @@
       };
       var group = function(d){
         var y = d.slice(0, 4), g = by[y];
-        if(!g) g = by[y] = { year: +y, yearsAgo: ty - (+y), date: d, milestones: [], wishes: [], photos: [] };
+        if(!g) g = by[y] = { year: +y, yearsAgo: ty - (+y), date: d, milestones: [], wishes: [], photos: [], journal: [] };
         if(d < g.date) g.date = d;
         return g;
       };
@@ -587,11 +635,15 @@
         var d = todayStr(p.takenAt);
         if(hit(d)) group(d).photos.push(p);
       });
+      (Array.isArray(src.journal) ? src.journal : []).forEach(function(e){
+        if(e && hit(e.date)) group(e.date).journal.push(e);
+      });
       out.years = Object.keys(by).map(function(y){ return by[y]; }).sort(function(a, b){ return b.year - a.year; });
       out.years.forEach(function(g){
         g.milestones.sort(function(a, b){ return a.createdAt - b.createdAt || byId(a, b); });
         g.wishes.sort(function(a, b){ return a.createdAt - b.createdAt || byId(a, b); });
         g.photos.sort(function(a, b){ return a.takenAt - b.takenAt || a.addedAt - b.addedAt || byId(a, b); });
+        g.journal.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
       });
     }catch(e){ out.years = []; }
     return out;
@@ -826,6 +878,8 @@
     monthGrid: monthGrid, cycleDayMarks: cycleDayMarks, REMIND_DAYS: REMIND_DAYS,
     cycleReminder: cycleReminder, reminderLine: reminderLine,
     MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
+    MAX_JOURNAL: MAX_JOURNAL, JOURNAL_TEXT_MAX: JOURNAL_TEXT_MAX, MOODS: MOODS,
+    validateJournal: validateJournal, journalMonth: journalMonth, mergeJournal: mergeJournal,
     onThisDay: onThisDay,
     REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
     PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,

@@ -22,9 +22,11 @@
     photos: [], albumOrder: [], arranging: false,
     cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
     wishes: [], wishesBad: [], wishesBroken: false, wishesStamp: null,
+    journal: [], journalBad: [], journalBroken: false, journalStamp: null,
     // cycleRemind (days ahead, 0 = off), cycleRemindQuiet and dayRemind are read by the
     // service worker's push handler; like the rest of meta they stay on this device.
-    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true, dayRemind: true }
+    meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true, dayRemind: true,
+            showJournal: true }
   };
   var REMIND_OPTS = [0, 1, 2, 3, 5];
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
@@ -97,7 +99,7 @@
   function loadAll(){
     var db = state.db;
     var safe = function(p, fallback){ return p.catch(function(){ return fallback; }); };
-    // A failed read of profile/milestones/photos/meta/cycles/wishes rejects the whole load:
+    // A failed read of profile/milestones/photos/meta/cycles/wishes/journal rejects the whole load:
     // treating it as "nothing stored" would show first-run setup and let the
     // next save overwrite the real data. Only avatar/cover reads may fail soft.
     return Promise.all([
@@ -107,7 +109,8 @@
       C.idbGetAll(db, "photos"),
       C.idbGet(db, "kv", "meta"),
       C.idbGet(db, "kv", "cycles"),
-      C.idbGet(db, "kv", "wishes")
+      C.idbGet(db, "kv", "wishes"),
+      C.idbGet(db, "kv", "journal")
     ]).then(function(r){
       var skipped = 0;
       if(r[0] !== undefined){
@@ -142,9 +145,11 @@
         if(REMIND_OPTS.indexOf(meta.cycleRemind) !== -1) state.meta.cycleRemind = meta.cycleRemind;
         if(meta.cycleRemindQuiet === false) state.meta.cycleRemindQuiet = false;
         if(meta.dayRemind === false) state.meta.dayRemind = false;
+        if(meta.showJournal === false) state.meta.showJournal = false;
       }
       skipped += applyCyclesRec(r[5]);
       skipped += applyWishesRec(r[6]);
+      skipped += applyJournalRec(r[7]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
@@ -209,6 +214,7 @@
     renderHome();
     renderMilestones();
     renderWishes();
+    renderJournal();
     fillProfileForm();
     renderPhotoRows();
     renderBackupCard();
@@ -224,6 +230,8 @@
     showError("cycleCardErr", null);
     showError("cycleTabErr", null);
     showError("wishErr", null);
+    showError("journalErr", null);
+    showError("journalCardErr", null);
     state.tab = name;
     ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -290,6 +298,7 @@
         '<p class="bday-left"><span class="sr-only">còn ' + fmtInt(b.daysLeft) + ' ngày</span><span class="bday-num" aria-hidden="true">' + fmtInt(b.daysLeft) + '</span><span class="bday-unit" aria-hidden="true">ngày</span></p>' +
         '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
+    renderJournalCard();
     renderCycleCard();
     renderOnThisDay();
   }
@@ -302,7 +311,8 @@
     var card = $("otdCard");
     // An older cached love-days-core.js can be paired with this page offline.
     if(!C.onThisDay || state.mode !== "app"){ card.hidden = true; return; }
-    var v = C.onThisDay({ milestones: state.milestones, wishes: wishesLocked() ? [] : state.wishes, photos: state.photos }, now());
+    var v = C.onThisDay({ milestones: state.milestones, wishes: wishesLocked() ? [] : state.wishes, photos: state.photos,
+                          journal: journalLocked() ? [] : state.journal }, now());
     otd.years = v.years;
     card.hidden = !v.years.length;
     function row(attr, id, emoji, title, sub, said){
@@ -319,6 +329,11 @@
       });
       g.wishes.forEach(function(w){
         h += row("data-otd-wish", w.id, wishEmoji(w.cat), w.title, "Đã làm cùng nhau", w.title + ", đã làm cùng nhau " + g.yearsAgo + " năm trước. Mở việc này");
+      });
+      (g.journal || []).forEach(function(e){
+        var mood = e.mood ? MOOD[e.mood].label : "";
+        h += row("data-otd-j", e.date, journalEmoji(e), e.text || mood, "Nhật ký" + (e.text && mood ? " · " + mood : ""),
+          "Nhật ký " + g.yearsAgo + " năm trước" + (mood ? ": " + mood : "") + (e.text ? ". " + e.text : "") + ". Mở nhật ký ngày này");
       });
       if(n){
         h += '<ul class="tl-photos otd-photos" aria-label="' + escapeHtml("Ảnh chụp " + g.yearsAgo + " năm trước") + '">' + g.photos.slice(0, TL_MAX).map(function(p, i){
@@ -346,6 +361,8 @@
       if(m) openMilestoneSheet(m);
       return;
     }
+    el = e.target.closest("[data-otd-j]");
+    if(el){ openJournalSheet(el.getAttribute("data-otd-j")); return; }
     el = e.target.closest("[data-otd-wish]");
     var w = el ? wishById(el.getAttribute("data-otd-wish")) : null;
     if(w) openWishSheet(w);
@@ -406,6 +423,7 @@
       renderHome();
       renderMilestones();
       renderWishes(); // countdowns follow the date; the form in #wishSheet is the user's and is never touched
+      renderJournal(); // "today" moved; the open #journalSheet keeps its own day and text (Home card: renderHome above)
       renderBackupCard(); // "hôm nay"/"N ngày trước" and the stale colour depend on the date
       renderDayRemind();
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
@@ -631,7 +649,9 @@
   });
   // One "Thêm" button for the tab: it adds whichever list is on show.
   $("btnAddMilestone").addEventListener("click", function(){
-    if(wish.seg === "wishes") openWishSheet(null); else openMilestoneSheet(null);
+    if(wish.seg === "wishes") openWishSheet(null);
+    else if(wish.seg === "journal") openJournalSheet(C.todayStr(now()));
+    else openMilestoneSheet(null);
   });
 
   $("emojiPicks").innerHTML = EMOJI_PICKS.map(function(e){
@@ -1548,20 +1568,24 @@
     if(wish.sheetQuiet){ e.stopPropagation(); e.preventDefault(); }
   }, true);
 
+  // seg: "ms" | "wishes" | "journal" (the journal needs a core that knows it).
   function setMsSeg(seg){
-    wish.seg = seg === "wishes" ? "wishes" : "ms";
+    wish.seg = seg === "wishes" || (seg === "journal" && C.validateJournal) ? seg : "ms";
     Array.prototype.forEach.call($("msSeg").querySelectorAll("[data-ms-seg]"), function(b){
       b.setAttribute("aria-pressed", b.getAttribute("data-ms-seg") === wish.seg ? "true" : "false");
     });
     $("milestoneList").hidden = wish.seg !== "ms";
     $("wishPane").hidden = wish.seg !== "wishes";
+    $("journalPane").hidden = wish.seg !== "journal";
     showError("wishErr", null);
+    showError("journalErr", null);
     syncWishAdd();
     placeSegPill($("msSeg"));
   }
   function syncWishAdd(){
-    $("btnAddMilestone").hidden = wish.seg === "wishes" && wishesLocked();
-    $("btnAddMilestone").setAttribute("aria-label", wish.seg === "wishes" ? "Thêm việc muốn làm" : "Thêm kỷ niệm");
+    var s = wish.seg, btn = $("btnAddMilestone");
+    btn.hidden = s === "wishes" ? wishesLocked() : s === "journal" ? journalLocked() : false;
+    btn.setAttribute("aria-label", s === "wishes" ? "Thêm việc muốn làm" : s === "journal" ? "Ghi nhật ký hôm nay" : "Thêm kỷ niệm");
   }
   $("msSeg").addEventListener("click", function(e){
     var b = e.target.closest("[data-ms-seg]");
@@ -1786,6 +1810,337 @@
       closeSheets();
       toast("Đã xoá việc này");
     }, function(msg){ showError("wishFormErr", msg); });
+  });
+
+  // ---------- Journal ("Nhật ký") ----------
+  // Stored like the wish list: one kv record ('journal'), one entry per day. Entries the validator
+  // rejects, and a second entry for a day already read, stay verbatim in state.journalBad and are
+  // written back with every save; nothing is written while the stored record is unreadable or the
+  // cached core is too old to judge it (journalLocked).
+  // jr.date = the day of the open sheet, fixed when it opens: a rollover or a return to the app never moves it.
+  // saving = one write at a time. tap/quiet = the spot of the last real tap on the Home card, held
+  // back for 400ms after a quick mood tap, because the card changes under the finger.
+  var jr = { date: null, mood: 0, saving: false, tap: null, quiet: null };
+  // ym = month on show ("YYYY-MM"; null follows today's month).
+  var jcal = { ym: null, swiped: false };
+  var JOURNAL_BROKEN_TEXT = "Không đọc được nhật ký — dữ liệu vẫn còn nguyên";
+  var MOOD = { 1: { emoji: "😢", label: "Buồn" }, 2: { emoji: "😕", label: "Hơi chán" }, 3: { emoji: "😐", label: "Bình thường" },
+               4: { emoji: "🙂", label: "Vui" }, 5: { emoji: "🥰", label: "Rất vui" } };
+
+  function journalLocked(){ return state.journalBroken || !C.validateJournal; }
+  function journalByDate(d){
+    for(var i = 0; i < state.journal.length; i++) if(state.journal[i].date === d) return state.journal[i];
+    return null;
+  }
+  function journalEmoji(e){ return e.mood ? MOOD[e.mood].emoji : "📝"; }
+  function journalFullText(){ return "Đã đủ " + fmtInt(C.MAX_JOURNAL) + " ngày — xoá bớt rồi ghi tiếp."; }
+
+  function applyJournalRec(rec){
+    var skipped = 0, seen = Object.create(null);
+    state.journal = []; state.journalBad = []; state.journalBroken = false;
+    state.journalStamp = cyclesStampOf(rec);
+    if(rec === undefined) return 0;
+    if(!rec || typeof rec !== "object" || !Array.isArray(rec.items)){ state.journalBroken = true; return 0; }
+    if(!C.validateJournal){ state.journalBad = rec.items.slice(); return 0; }
+    rec.items.forEach(function(it){
+      var v = C.validateJournal(it);
+      if(v && !seen[v.date]){ seen[v.date] = true; state.journal.push(v); }
+      else { state.journalBad.push(it); skipped++; }
+    });
+    return skipped;
+  }
+
+  // saveWishes' twin: the record is re-read inside the write transaction and
+  // nothing is written when another window changed it since this one loaded it.
+  function saveJournal(next){
+    if(state.loadFailed || journalLocked()) return Promise.reject(new Error("journal locked"));
+    if(busy === "import") return Promise.reject(userErr("Đang nhập bản sao lưu. Hãy đợi xong rồi thử lại."));
+    var stamp = now();
+    if(typeof state.journalStamp === "number" && stamp <= state.journalStamp) stamp = state.journalStamp + 1;
+    var rec = { key: "journal", items: next.concat(state.journalBad), updatedAt: stamp };
+    function done(){
+      state.journal = next;
+      state.journalStamp = stamp;
+      dataChanged();
+    }
+    if(!state.db) return put("kv", rec).then(done);
+    var tx = state.db.transaction("kv", "readwrite"), st = tx.objectStore("kv"), stale = false, found;
+    var rq = st.get("journal");
+    rq.onsuccess = function(){
+      found = rq.result;
+      if(cyclesStampOf(found) !== state.journalStamp) stale = true; else st.put(rec);
+    };
+    return C.txDone(tx).then(function(){
+      if(!stale){ done(); return; }
+      applyJournalRec(found);
+      renderJournal();
+      renderJournalCard();
+      renderOnThisDay();
+      throw userErr("Nhật ký vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
+    });
+  }
+
+  // One write at a time; btn (optional) shows "Đang lưu…" meanwhile.
+  function journalWrite(btn, next, ok, fail){
+    if(jr.saving) return;
+    var label = btn ? btn.textContent : "";
+    jr.saving = true;
+    if(btn){ btn.disabled = true; btn.textContent = "Đang lưu…"; }
+    function release(){
+      jr.saving = false;
+      if(btn){ btn.disabled = false; btn.textContent = label; }
+    }
+    // Inside a then() so a synchronous throw also releases the flag.
+    Promise.resolve().then(function(){ return saveJournal(next); }).then(function(){
+      release();
+      renderJournal();
+      renderJournalCard();
+      renderOnThisDay();
+      ok();
+    }, function(err){
+      release();
+      fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.");
+    });
+  }
+
+  // ---- Home card "Hôm nay thế nào?" ----
+  function renderJournalCard(){
+    var card = $("journalCard"), core = !!C.validateJournal;
+    $("journalSetTitle").hidden = !core;
+    $("journalSetCard").hidden = !core;
+    $("msSegJournal").hidden = !core;
+    $("journalShow").checked = state.meta.showJournal !== false;
+    if(state.mode !== "app" || journalLocked() || state.meta.showJournal === false){ card.hidden = true; return; }
+    card.hidden = false;
+    var today = C.todayStr(now()), e = journalByDate(today), body = $("journalCardBody");
+    if(!e){
+      body.innerHTML = '<div class="j-moods" role="group" aria-label="Chọn tâm trạng hôm nay">' + C.MOODS.map(function(n){
+        return '<button type="button" class="j-mood" data-j-quick="' + n + '"><span class="j-mood-emoji" aria-hidden="true">' + MOOD[n].emoji +
+          '</span><span class="j-mood-label">' + MOOD[n].label + "</span></button>";
+      }).join("") + "</div>";
+      return;
+    }
+    var mood = e.mood ? MOOD[e.mood].label : "";
+    body.innerHTML = '<button type="button" class="up-row j-open" id="journalOpen" data-j-day="' + today + '" aria-haspopup="dialog" aria-label="' +
+      escapeHtml("Nhật ký hôm nay" + (mood ? ": " + mood : "") + (e.text ? ". " + e.text : "") + ". Sửa") + '">' +
+      '<span class="up-emoji" aria-hidden="true">' + journalEmoji(e) + "</span>" +
+      '<span class="up-main"><span class="up-title j-line' + (e.text ? "" : " j-placeholder") + '">' + (e.text ? escapeHtml(e.text) : "Thêm vài dòng…") + "</span>" +
+      (mood ? '<span class="up-date">' + mood + "</span>" : "") + "</span>" + CHEV + "</button>";
+  }
+  // The day is the one of the tap. If that day already has an entry (another window, a stale card), nothing is overwritten.
+  function journalQuick(mood){
+    if(jr.saving || journalLocked() || !MOOD[mood]) return;
+    var t = now(), today = C.todayStr(t);
+    showError("journalCardErr", null);
+    if(journalByDate(today)){ renderJournalCard(); return; }
+    if(state.journal.length >= C.MAX_JOURNAL){ showError("journalCardErr", journalFullText()); return; }
+    var rec = C.validateJournal({ date: today, mood: mood, text: "", updatedAt: t });
+    if(!rec) return;
+    journalWrite(null, state.journal.concat([rec]), function(){
+      if(jr.tap){
+        var spot = jr.quiet = { x: jr.tap.x, y: jr.tap.y };
+        setTimeout(function(){ if(jr.quiet === spot) jr.quiet = null; }, 400);
+      }
+      toast("Đã ghi hôm nay ✓");
+    }, function(msg){ showError("journalCardErr", msg); });
+  }
+  // Key presses (detail 0) and .click() from code are never held back.
+  $("journalCard").addEventListener("click", function(e){
+    if(!e.isTrusted || !e.detail) return;
+    var q = jr.quiet;
+    if(q && Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32){ e.stopPropagation(); e.preventDefault(); return; }
+    jr.tap = { x: e.clientX, y: e.clientY };
+  }, true);
+  $("journalCardBody").addEventListener("click", function(e){
+    var q = e.target.closest("[data-j-quick]");
+    if(q){ journalQuick(+q.getAttribute("data-j-quick")); return; }
+    var open = e.target.closest("#journalOpen");
+    if(open) openJournalSheet(open.getAttribute("data-j-day"));
+  });
+  $("journalShow").addEventListener("change", function(){
+    state.meta.showJournal = this.checked;
+    saveMeta();
+    renderJournalCard();
+  });
+
+  // ---- The "Nhật ký" pane of the Kỷ niệm tab: month calendar + that month's entries ----
+  function jcalCtx(){
+    var today = C.todayStr(now()), max = today.slice(0, 7), ym = jcal.ym || max;
+    if(ym > max) ym = max;
+    if(ym < CAL_MIN_YM) ym = CAL_MIN_YM;
+    return { today: today, max: max, ym: ym };
+  }
+  function renderJournal(){
+    var el = $("journalBody");
+    syncWishAdd();
+    if(journalLocked()){ el.innerHTML = '<div class="card"><p class="card-text">' + JOURNAL_BROKEN_TEXT + ".</p></div>"; return; }
+    if(!state.journal.length){
+      el.innerHTML = '<div class="card empty-state"><p class="empty-text">Chưa ghi ngày nào. Mỗi ngày một dòng và một tâm trạng — xem lại theo lịch.</p>' +
+        '<button type="button" class="btn btn-primary empty-action" data-j-add>Ghi hôm nay</button></div>';
+      return;
+    }
+    var a = document.activeElement, nav = a && el.contains(a) ? a.getAttribute("data-jcal-nav") : null;
+    var x = jcalCtx(), y = +x.ym.slice(0, 4), m = +x.ym.slice(5, 7), v = C.journalMonth(state.journal, y, m);
+    var h = '<div class="cal j-cal"><div class="cal-head"><h4 class="cal-title" id="jCalTitle">Tháng ' + m + "/" + y + "</h4>" +
+      (x.ym !== x.max ? '<button type="button" class="cal-today" data-jcal-nav="today">Hôm nay</button>' : "") +
+      '<button type="button" class="cal-nav" data-jcal-nav="prev" aria-label="Tháng trước"' + (x.ym <= CAL_MIN_YM ? " disabled" : "") + ">" + calArrow("M15 5l-7 7 7 7") + "</button>" +
+      '<button type="button" class="cal-nav" data-jcal-nav="next" aria-label="Tháng sau"' + (x.ym >= x.max ? " disabled" : "") + ">" + calArrow("M9 5l7 7-7 7") + "</button></div>" +
+      '<div class="cal-week" aria-hidden="true">' + CAL_WD.map(function(w){ return "<span>" + w + "</span>"; }).join("") + "</div>" +
+      '<div class="cal-grid" role="group" aria-labelledby="jCalTitle">';
+    v.grid.forEach(function(d){
+      var mk = v.marks[d], future = d > x.today, cls = "cal-day j-day", label = weekday(d) + ", " + fmtDate(d);
+      if(d.slice(0, 7) !== x.ym) cls += " is-out";
+      if(d === x.today){ cls += " is-today"; label += ", hôm nay"; }
+      if(future) cls += " is-future";
+      if(mk){
+        cls += " j-logged";
+        if(mk.mood) label += ", " + MOOD[mk.mood].label;
+        if(mk.hasText) label += ", có vài dòng";
+      } else if(!future) label += ", chưa ghi";
+      var inner = mk && mk.mood ? '<span class="j-emoji" aria-hidden="true">' + MOOD[mk.mood].emoji + "</span>"
+        : '<span class="cal-num">' + (+d.slice(8, 10)) + "</span>" + (mk && mk.hasText ? '<i class="j-dot" aria-hidden="true"></i>' : "");
+      h += '<button type="button" class="' + cls + '" data-j-day="' + d + '"' + (future ? ' aria-disabled="true"' : ' aria-haspopup="dialog"') +
+        ' aria-label="' + label + '">' + inner + "</button>";
+    });
+    h += "</div></div>";
+    h += '<h4 class="group-title j-month">Tháng ' + m + "/" + y + " · " + (v.count ? v.count + " ngày đã ghi" : "chưa ghi ngày nào") + "</h4>";
+    if(v.count){
+      h += '<ul class="ms-group" id="journalList">' + v.list.map(function(e){
+        var when = weekday(e.date) + ", " + fmtDate(e.date), mood = e.mood ? MOOD[e.mood].label : "";
+        return '<li class="ms-item-wrap"><button type="button" class="ms-item j-item" data-j-day="' + e.date + '" aria-haspopup="dialog" aria-label="' +
+          escapeHtml(when + (mood ? ", " + mood : "") + (e.text ? ". " + e.text : "") + ". Sửa") + '">' +
+          '<span class="ms-emoji" aria-hidden="true">' + journalEmoji(e) + "</span>" +
+          '<span class="ms-main"><span class="ms-title">' + when + "</span>" + (mood ? '<span class="ms-sub">' + mood + "</span>" : "") +
+          (e.text ? '<span class="tl-note j-text">' + escapeHtml(e.text) + "</span>" : "") + "</span>" + CHEV + "</button></li>";
+      }).join("") + "</ul>";
+    }
+    el.innerHTML = h;
+    if(nav){
+      var back = el.querySelector('[data-jcal-nav="' + nav + '"]:not([disabled])') || el.querySelector("[data-jcal-nav]:not([disabled])");
+      if(back) back.focus({ preventScroll: true });
+    }
+  }
+  function journalNav(dir){
+    var x = jcalCtx(), ym = x.ym;
+    if(dir === "today") ym = x.max;
+    else if(dir === "prev"){ if(ym > CAL_MIN_YM) ym = ymShift(ym, -1); }
+    else if(ym < x.max) ym = ymShift(ym, 1);
+    jcal.ym = ym === x.max ? null : ym;
+    showError("journalErr", null);
+    renderJournal();
+  }
+  $("journalBody").addEventListener("click", function(e){
+    if(journalLocked()) return;
+    if(e.target.closest("[data-j-add]")){ openJournalSheet(C.todayStr(now())); return; }
+    var nav = e.target.closest("[data-jcal-nav]");
+    if(nav){ journalNav(nav.getAttribute("data-jcal-nav")); return; }
+    var day = e.target.closest("[data-j-day]");
+    if(!day || jcal.swiped) return;
+    var d = day.getAttribute("data-j-day");
+    showError("journalErr", null);
+    if(d > C.todayStr(now())){ showError("journalErr", "Chưa ghi được cho ngày ở tương lai."); return; }
+    openJournalSheet(d);
+  });
+  // Same swipe as the Chu kỳ calendar (no pointer capture, see there).
+  (function(){
+    var el = $("journalBody"), sx = 0, sy = 0, active = false;
+    el.addEventListener("pointerdown", function(e){
+      active = !!e.target.closest(".cal-grid") && !(e.pointerType === "mouse" && e.button !== 0);
+      sx = e.clientX; sy = e.clientY;
+    });
+    el.addEventListener("pointerup", function(e){
+      if(!active) return;
+      active = false;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if(Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+      jcal.swiped = true;
+      setTimeout(function(){ jcal.swiped = false; }, 50);
+      journalNav(dx < 0 ? "next" : "prev");
+    });
+    el.addEventListener("pointercancel", function(){ active = false; });
+  })();
+
+  // ---- The sheet: one day's mood + a few lines ----
+  function setJournalMood(m){
+    jr.mood = m;
+    Array.prototype.forEach.call($("jMoods").children, function(b){
+      b.setAttribute("aria-pressed", +b.getAttribute("data-j-mood") === m ? "true" : "false");
+    });
+  }
+  function journalFieldError(msg){
+    showError("jErr", msg);
+    if(msg) $("jText").setAttribute("aria-invalid", "true"); else $("jText").removeAttribute("aria-invalid");
+  }
+  function clearJournalErrors(){
+    journalFieldError(null);
+    showError("journalFormErr", null);
+  }
+  function renderJournalCount(){ $("jCount").textContent = $("jText").value.length + "/" + C.JOURNAL_TEXT_MAX; }
+  function openJournalSheet(date){
+    if(journalLocked() || !C.isValidDate(date)) return;
+    var e = journalByDate(date);
+    jr.date = date;
+    $("journalSheetTitle").textContent = "Nhật ký · " + weekday(date) + ", " + fmtDate(date);
+    $("jMoodLabel").textContent = date === C.todayStr(now()) ? "Hôm nay thế nào?" : "Hôm đó thế nào?";
+    setJournalMood(e ? e.mood : 0);
+    $("jText").value = e ? e.text : "";
+    renderJournalCount();
+    $("journalDelete").hidden = !e;
+    $("journalConfirm").hidden = true;
+    clearJournalErrors();
+    $("journalSheet").scrollTop = 0;
+    openSheet("journalSheet");
+  }
+  $("jMoods").addEventListener("click", function(e){
+    var b = e.target.closest("[data-j-mood]");
+    if(!b) return;
+    var m = +b.getAttribute("data-j-mood");
+    setJournalMood(jr.mood === m ? 0 : m);
+    journalFieldError(null);
+  });
+  $("jText").addEventListener("input", function(){ renderJournalCount(); journalFieldError(null); });
+
+  $("journalForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(jr.saving || !jr.date) return;
+    clearJournalErrors();
+    var t = now(), date = jr.date;
+    if(date > C.todayStr(t)){ journalFieldError("Chưa ghi được cho ngày ở tương lai"); return; }
+    var text = C.clipGraphemes($("jText").value.trim(), C.JOURNAL_TEXT_MAX).trim();
+    if(!jr.mood && !text){ journalFieldError("Hãy chọn tâm trạng hoặc viết vài dòng"); return; }
+    var old = journalByDate(date);
+    if(!old && state.journal.length >= C.MAX_JOURNAL){ showError("journalFormErr", journalFullText()); return; }
+    var rec = C.validateJournal({ date: date, mood: jr.mood, text: text, updatedAt: t });
+    if(!rec){ showError("journalFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    var next = old ? state.journal.map(function(x){ return x.date === date ? rec : x; }) : state.journal.concat([rec]);
+    journalWrite($("journalSave"), next, function(){
+      closeSheets();
+      toast(old ? "Đã lưu nhật ký ✓" : "Đã ghi nhật ký ✓");
+    }, function(msg){ showError("journalFormErr", msg); });
+  });
+
+  $("journalDelete").addEventListener("click", function(){
+    if(!journalByDate(jr.date) || jr.saving) return;
+    $("journalConfirmText").textContent = "Xoá nhật ký ngày " + fmtDate(jr.date) + "?";
+    $("journalDelete").hidden = true;
+    $("journalConfirm").hidden = false;
+    $("journalConfirmNo").focus({ preventScroll: true });
+    $("journalConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("journalConfirmNo").addEventListener("click", function(){
+    if(jr.saving) return;
+    $("journalConfirm").hidden = true;
+    $("journalDelete").hidden = false;
+    $("journalDelete").focus({ preventScroll: true });
+  });
+  $("journalConfirmYes").addEventListener("click", function(){
+    var date = jr.date;
+    if(jr.saving || !journalByDate(date)) return;
+    showError("journalFormErr", null);
+    journalWrite(this, state.journal.filter(function(x){ return x.date !== date; }), function(){
+      closeSheets();
+      toast("Đã xoá nhật ký ngày này");
+    }, function(msg){ showError("journalFormErr", msg); });
   });
 
   // ---------- Date fields + wheel picker ----------
@@ -2841,6 +3196,7 @@
   function backupContents(c){
     var parts = [fmtInt(c.photos) + " ảnh", fmtInt(c.milestones) + " kỷ niệm"];
     if(typeof c.wishes === "number") parts.push(fmtInt(c.wishes) + " việc");
+    if(typeof c.journal === "number") parts.push(fmtInt(c.journal) + " ngày nhật ký");
     if(typeof c.cycles === "number") parts.push(fmtInt(c.cycles) + " kỳ");
     if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
     return parts.join(", ");
@@ -2869,7 +3225,7 @@
     if(busy !== "backup"){
       $("backupStatus").textContent = p
         ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
-        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
+        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -2877,10 +3233,11 @@
     if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
-    // An unreadable cycle or wish record is left out of the file.
+    // An unreadable cycle, wish or journal record is left out of the file.
     return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos,
                            cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles,
-                           wishes: wishesLocked() ? null : state.wishes, readBlob: readBlob },
+                           wishes: wishesLocked() ? null : state.wishes,
+                           journal: journalLocked() ? null : state.journal, readBlob: readBlob },
                          now(), onProgress).then(function(r){
       busy = null;
       if(version === backup.version){ backup.prepared = r; backup.saved = false; }
@@ -3052,13 +3409,14 @@
       profile: state.profile, photos: state.photos, milestones: state.milestones, hasBlob: hasBlob,
       cycles: state.cycles, cyclesBad: state.cyclesBad, cyclesBroken: state.cyclesBroken, cyclesStamp: state.cyclesStamp,
       // An older cached core can't judge the list, so it counts as unreadable: never imported over.
-      wishes: state.wishes, wishesBad: state.wishesBad, wishesBroken: wishesLocked(), wishesStamp: state.wishesStamp
+      wishes: state.wishes, wishesBad: state.wishesBad, wishesBroken: wishesLocked(), wishesStamp: state.wishesStamp,
+      journal: state.journal, journalBad: state.journalBad, journalBroken: journalLocked(), journalStamp: state.journalStamp
     };
   }
   function hasLocalData(){
     var l = localSnapshot();
     return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken ||
-      l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken;
+      l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken || l.journal.length > 0 || l.journalBad.length > 0 || state.journalBroken;
   }
 
   function onImportFile(input){
@@ -3111,18 +3469,23 @@
       var r = imp.result;
       var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm" +
         (r.wishesInFile && !r.wishesKept ? ", " + fmtInt(r.addedWishes) + " việc" : "") +
+        (r.journalInFile && !r.journalKept ? ", " + fmtInt(r.addedJournal) + " ngày nhật ký" : "") +
         (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "");
       // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
       var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
+        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes || r.addedJournal ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
+      var jSkip = (r.skippedJournal || 0) + (r.clashedJournal || 0);
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
         (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") +
         (r.cyclesKept ? "<p>" + cyclesKeptText(r.cyclesInFile) + "</p>" : "") +
         (r.wishesKept ? "<p>" + wishesKeptText(r.wishesInFile) + "</p>" : "") +
+        (r.journalKept ? "<p>" + journalKeptText(r.journalInFile) + "</p>" : "") +
         (r.skippedCycles + r.clashedCycles ? "<p>Bỏ qua " + fmtInt(r.skippedCycles + r.clashedCycles) + " kỳ trùng.</p>" : "") +
         (r.skippedWishes + r.clashedWishes ? "<p>Bỏ qua " + fmtInt(r.skippedWishes + r.clashedWishes) + " việc đã có hoặc trùng.</p>" : "") +
-        (r.overWishes ? "<p>" + fmtInt(r.overWishes) + " việc không được thêm vì danh sách đã đủ " + fmtInt(C.MAX_WISHES) + " việc.</p>" : "") + "</div>" +
+        (r.overWishes ? "<p>" + fmtInt(r.overWishes) + " việc không được thêm vì danh sách đã đủ " + fmtInt(C.MAX_WISHES) + " việc.</p>" : "") +
+        (jSkip ? "<p>Bỏ qua " + fmtInt(jSkip) + " ngày nhật ký đã có trên máy hoặc trùng ngày.</p>" : "") +
+        (r.overJournal ? "<p>" + fmtInt(r.overJournal) + " ngày nhật ký không được thêm vì nhật ký đã đủ " + fmtInt(C.MAX_JOURNAL) + " ngày.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
@@ -3142,6 +3505,11 @@
       : "Việc muốn làm trên máy giữ nguyên (bản sao lưu này không có).";
   }
 
+  function journalKeptText(inFile){
+    return inFile ? "Nhật ký trên máy đang không đọc được nên được giữ nguyên."
+      : "Nhật ký trên máy giữ nguyên (bản sao lưu này không có).";
+  }
+
   function importProgressText(){
     return imp.total ? "Đang nhập " + imp.done + "/" + imp.total + "…" : "Đang nhập…";
   }
@@ -3152,10 +3520,12 @@
     var imgs = Object.keys(ps.images).length;
     var h = '<div class="import-summary"><p class="import-when">' + escapeHtml(when) + "</p><ul>" +
       "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (ps.wishes ? " · " + fmtInt(ps.wishes.length) + " việc" : "") +
+      (ps.journal ? " · " + fmtInt(ps.journal.length) + " ngày nhật ký" : "") +
       (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
       (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
       (ps.cyclesSkipped ? "<li>Bỏ qua " + fmtInt(ps.cyclesSkipped) + " kỳ trùng trong file</li>" : "") +
       (ps.wishesSkipped ? "<li>Bỏ qua " + fmtInt(ps.wishesSkipped) + " việc trùng trong file</li>" : "") +
+      (ps.journalSkipped ? "<li>Bỏ qua " + fmtInt(ps.journalSkipped) + " ngày nhật ký trùng trong file</li>" : "") +
       "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
       "</ul></div>";
     if(!hasLocalData()){
@@ -3168,25 +3538,30 @@
     if(imp.mode === "merge"){
       // Merge only takes avatars/cover the device doesn't have yet.
       var fillImgs = Object.keys(ps.images).filter(function(id){ return !local.hasBlob[id]; }).length;
-      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles + pl.skipWishes;
+      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles + pl.skipWishes + (pl.skipJournal || 0);
       // The device's cycle record is unreadable: the file's cycles are not imported, and must not be reported as "already here".
       var cyBlocked = !!ps.cycles && local.cyclesBroken;
       var wiBlocked = !!ps.wishes && local.wishesBroken;
+      var joBlocked = !!ps.journal && local.journalBroken;
       var blockedNote = (cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "") +
-        (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "");
-      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !fillImgs && local.profileOk){
+        (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "") +
+        (joBlocked ? '<p class="card-text">Nhật ký trong bản sao lưu không được nhập vì nhật ký trên máy đang không đọc được.</p>' : "");
+      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !pl.addJournal && !fillImgs && local.profileOk){
         var kinds = ["ảnh", "kỷ niệm"];
         if(ps.wishes && !wiBlocked) kinds.push("việc muốn làm");
+        if(ps.journal && !joBlocked) kinds.push("ngày nhật ký");
         if(ps.cycles && !cyBlocked) kinds.push("kỳ");
         return h + '<p class="card-text">Không có gì mới — mọi ' + kinds.slice(0, -1).join(", ") + " và " + kinds[kinds.length - 1] + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
           '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
       }
       var adds = [fmtInt(pl.addPhotos) + " ảnh", fmtInt(pl.addMilestones) + " kỷ niệm"];
       if(ps.wishes && !wiBlocked) adds.push(fmtInt(pl.addWishes) + " việc");
+      if(ps.journal && !joBlocked) adds.push(fmtInt(pl.addJournal) + " ngày nhật ký");
       if(ps.cycles && !cyBlocked) adds.push(fmtInt(pl.addCycles) + " kỳ");
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
-      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
         (pl.overWishes ? fmtInt(pl.overWishes) + " việc không được thêm vì danh sách chỉ chứa " + fmtInt(C.MAX_WISHES) + " việc. " : "") +
+        (pl.overJournal ? fmtInt(pl.overJournal) + " ngày nhật ký không được thêm vì nhật ký chỉ chứa " + fmtInt(C.MAX_JOURNAL) + " ngày. " : "") +
         (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" + blockedNote +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
@@ -3194,10 +3569,12 @@
     var p = backup.prepared;
     h += '<div class="import-box import-warn"><p class="import-box-title">Toàn bộ dữ liệu hiện tại sẽ bị xoá</p><p>' +
       fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, " + (replacesWishes(ps, local) ? local.wishes.length + " việc, " : "") +
+      (replacesJournal(ps, local) ? fmtInt(local.journal.length) + " ngày nhật ký, " : "") +
       (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
       "hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p>" +
       (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") +
-      (keepsWishes(ps, local) ? "<p>" + wishesKeptText(!!ps.wishes) + "</p>" : "") + "</div>" +
+      (keepsWishes(ps, local) ? "<p>" + wishesKeptText(!!ps.wishes) + "</p>" : "") +
+      (keepsJournal(ps, local) ? "<p>" + journalKeptText(!!ps.journal) + "</p>" : "") + "</div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -3216,6 +3593,7 @@
   }
   function replaceAskText(ps, l){
     return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) ? ", " + l.wishes.length + " việc" : "") +
+      (replacesJournal(ps, l) ? ", " + fmtInt(l.journal.length) + " ngày nhật ký" : "") +
       (replacesCycles(ps, l) ? ", " + l.cycles.length + " kỳ" : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
   }
 
@@ -3229,6 +3607,12 @@
   function replacesWishes(ps, local){ return !!ps.wishes && !local.wishesBroken; }
   function keepsWishes(ps, local){
     return ps.wishes ? local.wishesBroken : local.wishes.length > 0 || local.wishesBad.length > 0 || local.wishesBroken;
+  }
+
+  // And planJournal().
+  function replacesJournal(ps, local){ return !!ps.journal && !local.journalBroken; }
+  function keepsJournal(ps, local){
+    return ps.journal ? local.journalBroken : local.journal.length > 0 || local.journalBad.length > 0 || local.journalBroken;
   }
 
   $("importContent").addEventListener("click", function(e){
@@ -3322,6 +3706,7 @@
     state.urls = {}; state.blobs = {}; state.photos = []; state.milestones = []; state.profile = null;
     state.cycles = []; state.cyclesBad = []; state.cyclesBroken = false; state.cyclesStamp = null;
     state.wishes = []; state.wishesBad = []; state.wishesBroken = false; state.wishesStamp = null;
+    state.journal = []; state.journalBad = []; state.journalBroken = false; state.journalStamp = null;
     setBanner("skipped", null);
     setBanner("load", null);
     state.loadFailed = false;

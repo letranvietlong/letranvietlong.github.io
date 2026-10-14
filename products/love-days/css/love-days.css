@@ -426,7 +426,35 @@ button.ms-item:active{background:var(--card2)}
 .wish-cat[aria-pressed=true]{border:2px solid var(--accent);background:var(--accent-soft);color:var(--accent-soft-ink)}
 .wish-cat:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wish-linked{font-size:.88rem;font-weight:700;color:var(--accent-soft-ink);background:var(--accent-soft);border-radius:var(--radius-sm);padding:12px 14px;text-align:center}
-.field input[aria-invalid=true]{border-color:var(--err-fg);box-shadow:0 0 0 1px var(--err-fg)}
+.field input[aria-invalid=true],.field textarea[aria-invalid=true]{border-color:var(--err-fg);box-shadow:0 0 0 1px var(--err-fg)}
+
+/* Nhật ký: five moods (emoji + word, never the emoji alone), the month calendar, the Home card */
+.j-moods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+/* Top-aligned: "Bình thường" wraps to two lines on a phone, and every emoji must stay on one row. */
+.j-mood{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;min-width:0;min-height:64px;padding:9px 2px 6px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:.72rem;font-weight:700;line-height:1.15;text-align:center;cursor:pointer;
+  transition:background .15s,border-color .15s}
+.j-mood-emoji{font-size:1.45rem;line-height:1.1}
+.j-mood[aria-pressed=true]{border:2px solid var(--accent);background:var(--accent-soft);color:var(--accent-soft-ink)}
+.j-mood:active{background:var(--accent-soft)}
+.j-mood:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.j-count{margin-top:-2px;font-size:.78rem;color:var(--muted2);text-align:right}
+.journal-card{padding:14px 18px 16px}
+.journal-card .card-kicker{margin-bottom:8px}
+.journal-card .form-error{margin-top:10px}
+.j-open{min-height:56px}
+.j-line{font-size:.98rem;font-weight:700}
+.j-placeholder{color:var(--muted);font-weight:600}
+.j-cal{margin-top:0}
+#journalPane > .form-error{margin-bottom:10px}
+.cal-day.j-logged{background:var(--accent-soft);color:var(--accent-soft-ink)}
+.cal-day.is-future{color:var(--muted2);cursor:default}
+.cal-day.is-future .cal-num{opacity:.5}
+.j-emoji{display:block;font-size:1.3rem;line-height:1}
+.cal-day.is-out .j-emoji{opacity:.45}
+.j-dot{position:absolute;left:50%;bottom:5px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent)}
+.j-month{margin-top:18px}
+.j-item .ms-emoji{font-size:1.35rem}
 
 /* Timeline (past milestones by year) + the photos linked to a milestone */
 .tl-year{font-size:1rem;letter-spacing:0;color:var(--text);margin:14px 16px 8px}
@@ -693,5 +721,5 @@ button.album-thumb:focus-visible{outline:3px solid var(--accent);outline-offset:
 @media (prefers-reduced-motion: reduce){
   .heart-beat svg,.heart-icon.pulse,.heart-icon.beat,.share-preview.is-loading{animation:none}
   .sheet,.sheet-backdrop,.dp-sheet,.dp-sheet.open,.dp-backdrop,.date-field,.btn,.tabbar-btn svg,.switch,.switch::after,.seg-btn,.seg-pill,.viewer-stage img,.viewer-nav,button.album-thumb,
-  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more-chev,.row-link,.cal-nav,button.tl-photo,.wish-ring,.wish-cat{transition:none}
+  .goal-fill,.toast,.info-btn,.up-row,button.ms-item,.emoji-pick,.more-chev,.row-link,.cal-nav,button.tl-photo,.wish-ring,.wish-cat,.j-mood{transition:none}
 }

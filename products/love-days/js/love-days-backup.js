@@ -57,6 +57,21 @@
     return { items: out, skipped: skipped };
   }
 
+  // Same contract for the journal: a malformed list refuses the file, a
+  // second entry for a day already read only drops that one entry.
+  function readJournal(list){
+    if(!Array.isArray(list) || list.length > C.MAX_JOURNAL) return null;
+    var out = [], days = Object.create(null), skipped = 0;
+    for(var i = 0; i < list.length; i++){
+      var v = C.validateJournal(list[i]);
+      if(!v) return null;
+      if(days[v.date]){ skipped++; continue; }
+      days[v.date] = true;
+      out.push(v);
+    }
+    return { items: out, skipped: skipped };
+  }
+
   // ---------- CRC32 ----------
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -151,7 +166,7 @@
   }
 
   // src: { profile, milestones, photos (validated metadata), cycles (validated; null or empty = no "cycles" key),
-  //        wishes (same rule as cycles), readBlob(id) → Promise<record|null> }
+  //        wishes, journal (same rule as cycles), readBlob(id) → Promise<record|null> }
   async function buildBackup(src, nowMs, onProgress){
     if(src.photos.length > MAX_PHOTOS) fail("Album có " + C.fmtInt(src.photos.length) + " ảnh, vượt giới hạn " + C.fmtInt(MAX_PHOTOS) + " ảnh của một bản sao lưu. Hãy xoá bớt ảnh rồi thử lại.");
     if(src.milestones.length > MAX_MILESTONES) fail("Có " + C.fmtInt(src.milestones.length) + " kỷ niệm, vượt giới hạn " + C.fmtInt(MAX_MILESTONES) + " kỷ niệm của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
@@ -169,6 +184,16 @@
         return { id: w.id, title: w.title, cat: w.cat, note: w.note, planDate: w.planDate, doneDate: w.doneDate, milestoneId: w.milestoneId, createdAt: w.createdAt };
       });
     }
+    var journal = null;
+    if(src.journal && src.journal.length){
+      if(src.journal.length > C.MAX_JOURNAL) fail("Nhật ký có " + C.fmtInt(src.journal.length) + " ngày, vượt giới hạn " + C.fmtInt(C.MAX_JOURNAL) + " ngày của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      journal = src.journal.map(function(e){ return { date: e.date, mood: e.mood, text: e.text, updatedAt: e.updatedAt }; });
+    }
+    // The reader refuses a love-days.json over MAX_MANIFEST_BYTES. Checked
+    // here without the photo list (fail before reading every photo) and again
+    // on the finished manifest below.
+    var early = { profile: src.profile, milestones: src.milestones, cycles: cycles, wishes: wishes, journal: journal };
+    if(utf8Bytes(JSON.stringify(early)).byteLength > MAX_MANIFEST_BYTES) failManifest();
     var zip = zipWriter(nowMs);
     var photos = src.photos.slice().sort(function(a, b){ return a.order - b.order; });
     var manifestPhotos = [], images = {}, done = 0;
@@ -211,14 +236,20 @@
     };
     if(cycles) manifest.cycles = cycles;
     if(wishes) manifest.wishes = wishes;
+    if(journal) manifest.journal = journal;
     // Written last because it records the byte size of every image read
     // above; entry order doesn't matter to readZip().
-    zip.add(MANIFEST, utf8Bytes(JSON.stringify(manifest)));
+    var manifestBytes = utf8Bytes(JSON.stringify(manifest));
+    if(manifestBytes.byteLength > MAX_MANIFEST_BYTES) failManifest();
+    zip.add(MANIFEST, manifestBytes);
     var blob = zip.finish();
     var name = "love-days-backup-" + C.todayStr(nowMs) + ".zip";
     return { file: new File([blob], name, { type: "application/zip" }), name: name, size: blob.size,
              counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length,
-                       cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null } };
+                       cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null, journal: journal ? journal.length : null } };
+  }
+  function failManifest(){
+    fail("Phần chữ của bản sao lưu (kỷ niệm, việc muốn làm, nhật ký, chú thích ảnh) vượt " + (MAX_MANIFEST_BYTES / 1048576) + " MB — hãy xoá bớt rồi thử lại.");
   }
 
   // ---------- ZIP reader ----------
@@ -351,6 +382,15 @@
       if(rw.items.length) wishes = rw.items;
       wishesSkipped = rw.skipped;
     }
+    // An older cached love-days-core.js can't judge entries: the key is then
+    // left unread, which keeps the device's journal in both import modes.
+    var journal = null, journalSkipped = 0;
+    if(data.journal != null && C.validateJournal){
+      var rj = readJournal(data.journal);
+      if(!rj) badData("nhật ký sai");
+      if(rj.items.length) journal = rj.items;
+      journalSkipped = rj.skipped;
+    }
 
     // Dry run: the exact derivation the home/milestone screens perform.
     try{
@@ -364,11 +404,15 @@
         var wv = C.wishView(wishes, nowMs);
         if(!wv || wv.soon.length + wv.open.length + wv.done.length !== wishes.length) throw new Error("wishes");
       }
+      if(journal){
+        var y = +journal[0].date.slice(0, 4), mo = +journal[0].date.slice(5, 7);
+        if(!C.journalMonth(journal, y, mo).count) throw new Error("journal");
+      }
     }catch(e){ fail("Dữ liệu trong bản sao lưu không hiển thị được nên không nhập."); }
 
     var exportedAt = Date.parse(data.exportedAt);
     return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images, cycles: cycles, cyclesSkipped: cyclesSkipped,
-             wishes: wishes, wishesSkipped: wishesSkipped,
+             wishes: wishes, wishesSkipped: wishesSkipped, journal: journal, journalSkipped: journalSkipped,
              exportedAt: isFinite(exportedAt) ? exportedAt : null };
   }
 
@@ -386,8 +430,26 @@
     var addM = parsed.milestones.filter(function(m){ return !ids[m.id]; }).length;
     var cy = planCycles(parsed, local, false, nowMs);
     var wi = planWishes(parsed, local, false, nowMs);
+    var jo = planJournal(parsed, local, false, nowMs);
     return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM,
-             addCycles: cy.added, skipCycles: cy.skipped, addWishes: wi.added, skipWishes: wi.skipped, overWishes: wi.over };
+             addCycles: cy.added, skipCycles: cy.skipped, addWishes: wi.added, skipWishes: wi.skipped, overWishes: wi.over,
+             addJournal: jo.added, skipJournal: jo.skipped, overJournal: jo.over };
+  }
+
+  // planWishes' twin for the journal (kv 'journal'), same rules.
+  function planJournal(parsed, local, replace, nowMs){
+    var mine = local.journal || [], bad = local.journalBad || [];
+    if(!parsed.journal) return { record: null, added: 0, skipped: 0, over: 0, kept: replace && (mine.length > 0 || bad.length > 0 || !!local.journalBroken) };
+    if(local.journalBroken) return { record: null, added: 0, skipped: 0, over: 0, kept: true };
+    var next, added, skipped = 0, over = 0;
+    if(replace){ next = parsed.journal; added = next.length; }
+    else {
+      var mg = C.mergeJournal(mine, parsed.journal);
+      next = mg.items; added = mg.added; skipped = mg.skipped; over = mg.over;
+    }
+    var stamp = typeof local.journalStamp === "number" && nowMs <= local.journalStamp ? local.journalStamp + 1 : nowMs;
+    return { record: replace || added ? { key: "journal", items: next.concat(bad), updatedAt: stamp } : null,
+             added: added, skipped: skipped, over: over, kept: false };
   }
 
   // planCycles' twin for the "Muốn làm" list (kv 'wishes'), same rules.
@@ -437,7 +499,7 @@
   //
   // ctx: { db, parsed, mode:'merge'|'replace',
   //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp,
-  //                wishes, wishesBad, wishesBroken, wishesStamp },
+  //                wishes, wishesBad, wishesBroken, wishesStamp, journal, journalBad, journalBroken, journalStamp },
   //        nowMs, onProgress(done,total) }
   async function importBackup(ctx){
     var db = ctx.db, parsed = ctx.parsed, local = ctx.local, replace = ctx.mode === "replace";
@@ -532,11 +594,12 @@
 
     var cy = planCycles(parsed, local, replace, ctx.nowMs);
     var wi = planWishes(parsed, local, replace, ctx.nowMs);
+    var jo = planJournal(parsed, local, replace, ctx.nowMs);
 
     try{
       await finalSwitch(db, {
         replace: replace, staged: staged, records: records, profile: profile,
-        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record
+        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record, journal: jo.record
       });
     }catch(err){
       await discardStaged();
@@ -550,7 +613,9 @@
              cyclesInFile: !!parsed.cycles, addedCycles: cy.added, skippedCycles: cy.skipped, cyclesKept: cy.kept,
              clashedCycles: parsed.cyclesSkipped || 0,
              wishesInFile: !!parsed.wishes, addedWishes: wi.added, skippedWishes: wi.skipped, overWishes: wi.over, wishesKept: wi.kept,
-             clashedWishes: parsed.wishesSkipped || 0 };
+             clashedWishes: parsed.wishesSkipped || 0,
+             journalInFile: !!parsed.journal, addedJournal: jo.added, skippedJournal: jo.skipped, overJournal: jo.over, journalKept: jo.kept,
+             clashedJournal: parsed.journalSkipped || 0 };
   }
 
   function finalSwitch(db, s){
@@ -589,6 +654,7 @@
         tx.objectStore("kv").put(s.profile);
         if(s.cycles) tx.objectStore("kv").put(s.cycles);
         if(s.wishes) tx.objectStore("kv").put(s.wishes);
+        if(s.journal) tx.objectStore("kv").put(s.journal);
       }
       if(!pending){ writeAll(); return; }
       s.staged.forEach(function(id){

@@ -12,7 +12,9 @@
 //   photos     keyPath id    — album metadata { id, gen, caption, takenAt:ms|null, addedAt:ms, order, w, h, bytes, sha256 }
 //   blobs      keyPath id    — { id:'avatar-long'|'avatar-thu'|'cover'|<photoId>, gen, mime:'image/jpeg', data:ArrayBuffer, thumb:ArrayBuffer|null }
 //   kv 'meta'                — { key:'meta', schemaVersion:1, lastBackupAt:ms|null, albumSort:'taken'|'added'|'custom', showCycle:bool,
-//                                cycleRemind:0|1|2|3|5 (default 2), cycleRemindQuiet:bool (default true), dayRemind:bool (default true, v1.17) } — per device, never in a backup
+//                                cycleRemind:0|1|2|3|5 (default 2), cycleRemindQuiet:bool (default true), dayRemind:bool (default true, v1.17),
+//                                showJournal:bool (default true, v1.18) } — per device, never in a backup
+//   kv 'journal'             — v1.18, see "Nhật ký" below
 //
 // Day-count convention: start day = day 1, always UTC+7 regardless of the
 // device timezone. Breakdown = time elapsed since 00:00 (+07) of the start day.
@@ -462,6 +464,63 @@ const dayRemind = {
 };
 const dayRemindSel = { box: '#dayRemindBox', toggle: '#dayRemind', preview: '#dayRemindPreview', test: '#btnPushTest', testNote: '#pushTestNote' };
 
+// ---------- Nhật ký (v1.18) ----------
+// kv 'journal' — { key:'journal', items:[{ date:'YYYY-MM-DD', mood:0..5 (0 = none), text:'' (≤ 200), updatedAt }], updatedAt } — one entry per
+// day, stored and guarded exactly like 'wishes': updatedAt is the two-window stamp, an entry the validator rejects (or a second entry for
+// the same date) stays verbatim in the record across every save, a record whose items is not an array locks the journal (pane says
+// `broken`, Home card and "Thêm" hidden, no export, no import over it) without failing the app. No DB_VERSION bump, no new store.
+// mood 0 AND empty text = invalid. Moods: 1 😢 Buồn · 2 😕 Hơi chán · 3 😐 Bình thường · 4 🙂 Vui · 5 🥰 Rất vui.
+// Seed: ld.seed(page, { profile: ld.profile, milestones: ld.milestones, extra: [['kv', ld.journalRecord(ld.journal.items)]] }), now = ld.journal.now.
+// The pane sits in the Kỷ niệm tab behind the THIRD segmented button "Nhật ký"; "Thêm" there opens today's sheet.
+// The sheet's day is fixed when it opens: a rollover or visibilitychange never moves it or touches its text/mood.
+// Home quick mood tap writes { date: today AS OF THE TAP, mood, text:'' } at once (toast "Đã ghi hôm nay ✓"); a double tap writes once
+// (the spot just tapped swallows real taps for 400ms). Hidden with Cài đặt → Nhật ký → #journalShow (kv meta showJournal, default true).
+const j = (date, mood, text, updatedAt) => ({ date, mood, text: text || '', updatedAt: updatedAt || 1 });
+const journalRecord = items => ({ key: 'journal', items, updatedAt: 1 });
+const journal = {
+  now: '2026-10-14T09:00:00+07:00',
+  items: [j('2026-10-14', 4, 'Đi ăn phở'), j('2026-10-13', 2, ''), j('2026-10-01', 5, 'Kỷ niệm'), j('2026-09-30', 0, 'Chỉ ghi chú'), j('2025-10-14', 3, 'Năm ngoái')],
+  moods: { 1: ['😢', 'Buồn'], 2: ['😕', 'Hơi chán'], 3: ['😐', 'Bình thường'], 4: ['🙂', 'Vui'], 5: ['🥰', 'Rất vui'] },
+  // calendar cells: a day with a mood shows its emoji (.j-emoji) INSTEAD of the number; text only = number + .j-dot; today = .is-today;
+  // days after today carry aria-disabled="true" (.is-future); other months' days .is-out. List title is read with textContent (CSS upper-cases it).
+  months: {
+    '2026-10': { title: 'Tháng 10/2026', cells: 35, first: '2026-09-28', last: '2026-11-01',
+      emoji: { '2026-10-14': '🙂', '2026-10-13': '😕', '2026-10-01': '🥰' }, dot: ['2026-09-30'], today: '2026-10-14',
+      listTitle: 'Tháng 10/2026 · 3 ngày đã ghi', rows: ['2026-10-14', '2026-10-13', '2026-10-01'] },
+    '2026-09': { title: 'Tháng 9/2026', cells: 35, first: '2026-08-31', last: '2026-10-04',
+      emoji: { '2026-10-01': '🥰' }, dot: ['2026-09-30'], listTitle: 'Tháng 9/2026 · 1 ngày đã ghi', rows: ['2026-09-30'] }
+  },
+  // the next month button is disabled on the current month; the earliest month is 2000-01
+  home: { emoji: '🙂', text: 'Đi ăn phở', mood: 'Vui' },
+  // with ld.journal.items, "Ngày này năm xưa" gains: group '1 năm trước · Thứ ba, 14/10/2025', row [data-otd-j="2025-10-14"] 😐 "Năm ngoái"
+  // (sub line "Nhật ký · Bình thường")
+  otd: { year: '1 năm trước · Thứ ba, 14/10/2025', date: '2025-10-14', emoji: '😐', title: 'Năm ngoái', sub: 'Nhật ký · Bình thường' },
+  sheetTitle: 'Nhật ký · Thứ tư, 14/10/2026',
+  label: { today: 'Hôm nay thế nào?', past: 'Hôm đó thế nào?' },
+  empty: 'Chưa ghi ngày nào. Mỗi ngày một dòng và một tâm trạng — xem lại theo lịch.',
+  broken: 'Không đọc được nhật ký — dữ liệu vẫn còn nguyên.',
+  stale: 'Nhật ký vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.',
+  errors: { empty: 'Hãy chọn tâm trạng hoặc viết vài dòng', future: 'Chưa ghi được cho ngày ở tương lai', full: 'Đã đủ 4.000 ngày — xoá bớt rồi ghi tiếp.' },
+  deleteConfirm: 'Xoá nhật ký ngày 14/10/2026?',
+  max: 4000, textMax: 200,
+  // backup: manifest key "journal" [{date, mood, text, updatedAt}] (absent when empty or unreadable; still format 1, older apps ignore it);
+  // a file without it, or with [], leaves the device's journal alone in BOTH modes; merge keeps the device's entry for a date it has
+  // ("bỏ qua"); 4.001 entries or one invalid entry (mood 9, 2026-02-31) refuse the whole file.
+  kept: 'Nhật ký trên máy giữ nguyên (bản sao lưu này không có).',
+  keptBroken: 'Nhật ký trên máy đang không đọc được nên được giữ nguyên.'
+};
+const journalSel = {
+  seg: '#msSeg [data-ms-seg="journal"]', pane: '#journalPane', body: '#journalBody', err: '#journalErr',
+  cal: '#journalBody .j-cal', calTitle: '#jCalTitle', days: '#journalBody [data-j-day].cal-day', day: d => '#journalBody .cal-day[data-j-day="' + d + '"]',
+  nav: k => '#journalBody [data-jcal-nav="' + k + '"]',   // prev | next | today (today only while another month is on show)
+  listTitle: '#journalBody .j-month', rows: '#journalList .j-item', row: d => '#journalList [data-j-day="' + d + '"]', emptyAdd: '#journalBody [data-j-add]',
+  card: '#journalCard', quick: n => '#journalCardBody [data-j-quick="' + n + '"]', open: '#journalOpen', cardErr: '#journalCardErr',
+  sheet: '#journalSheet', title: '#journalSheetTitle', moodLabel: '#jMoodLabel', mood: n => '#jMoods [data-j-mood="' + n + '"]',   // aria-pressed; tap again = none
+  text: '#jText', count: '#jCount', textErr: '#jErr', formErr: '#journalFormErr', save: '#journalSave', del: '#journalDelete',
+  confirm: '#journalConfirm', confirmText: '#journalConfirmText', confirmYes: '#journalConfirmYes', confirmNo: '#journalConfirmNo',
+  show: '#journalShow', otdRow: d => '#otdBody [data-otd-j="' + d + '"]'
+};
+
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
 async function seedPhotoList(page, list) {
   await page.evaluate(async list => {
@@ -541,4 +600,4 @@ function badgeStubScript() {
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
-  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel };
+  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel };
