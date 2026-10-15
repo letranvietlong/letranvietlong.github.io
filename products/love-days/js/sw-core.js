@@ -3,9 +3,9 @@
 // love-days-core.js is shared with the page; the push handler opens
 // IndexedDB through LoveCore.openDb() so the DB is never created without its
 // stores. ?v= follows CACHE_NAME.
-importScripts('/products/love-days/js/love-days-core.js?v=17');
+importScripts('/products/love-days/js/love-days-core.js?v=18');
 
-var CACHE_NAME = "lovedays-cache-v17";
+var CACHE_NAME = "lovedays-cache-v18";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [

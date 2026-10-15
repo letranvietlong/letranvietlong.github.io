@@ -23,10 +23,11 @@
     cycles: [], cyclesBad: [], cyclesBroken: false, cyclesStamp: null,
     wishes: [], wishesBad: [], wishesBroken: false, wishesStamp: null,
     journal: [], journalBad: [], journalBroken: false, journalStamp: null,
-    // cycleRemind (days ahead, 0 = off), cycleRemindQuiet and dayRemind are read by the
+    med: { courses: [], log: [] }, medBad: { courses: [], log: [] }, medBroken: false, medStamp: null,
+    // cycleRemind (days ahead, 0 = off), cycleRemindQuiet, dayRemind, medMorning and medQuiet are read by the
     // service worker's push handler; like the rest of meta they stay on this device.
     meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true, dayRemind: true,
-            showJournal: true }
+            showJournal: true, showMed: true, medMorning: true, medQuiet: true }
   };
   var REMIND_OPTS = [0, 1, 2, 3, 5];
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
@@ -110,7 +111,8 @@
       C.idbGet(db, "kv", "meta"),
       C.idbGet(db, "kv", "cycles"),
       C.idbGet(db, "kv", "wishes"),
-      C.idbGet(db, "kv", "journal")
+      C.idbGet(db, "kv", "journal"),
+      C.idbGet(db, "kv", "med")
     ]).then(function(r){
       var skipped = 0;
       if(r[0] !== undefined){
@@ -146,10 +148,14 @@
         if(meta.cycleRemindQuiet === false) state.meta.cycleRemindQuiet = false;
         if(meta.dayRemind === false) state.meta.dayRemind = false;
         if(meta.showJournal === false) state.meta.showJournal = false;
+        if(meta.showMed === false) state.meta.showMed = false;
+        if(meta.medMorning === false) state.meta.medMorning = false;
+        if(meta.medQuiet === false) state.meta.medQuiet = false;
       }
       skipped += applyCyclesRec(r[5]);
       skipped += applyWishesRec(r[6]);
       skipped += applyJournalRec(r[7]);
+      skipped += applyMedRec(r[8]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
@@ -215,6 +221,8 @@
     renderMilestones();
     renderWishes();
     renderJournal();
+    if(health.seg === null) health.seg = defaultHealthSeg();
+    renderMed();
     fillProfileForm();
     renderPhotoRows();
     renderBackupCard();
@@ -232,6 +240,8 @@
     showError("wishErr", null);
     showError("journalErr", null);
     showError("journalCardErr", null);
+    showError("medErr", null);
+    showError("medCardErr", null);
     state.tab = name;
     ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -245,7 +255,13 @@
     if(name === "album") renderAlbum();
     if(name === "home" && state.mode === "app") renderOnThisDay();
     if(name === "milestones"){ syncTl(); placeSegPill($("msSeg"), true); }
-    if(name === "cycle" && C.cycleStats) renderCycleSheet();
+    // The tab keeps its old id "cycle"; it is labelled "Sức khoẻ" and holds Thuốc + Chu kỳ.
+    if(name === "cycle"){
+      if(health.seg === null) health.seg = defaultHealthSeg();
+      setHealthSeg(health.seg, true);
+      renderMed();
+      if(C.cycleStats) renderCycleSheet();
+    }
   }
   Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
     b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
@@ -299,6 +315,7 @@
         '<p class="bday-meta">' + meta + "</p></div>";
     }).join("");
     renderJournalCard();
+    renderMedCard();
     renderCycleCard();
     renderOnThisDay();
   }
@@ -429,6 +446,8 @@
       renderDayRemind();
       // The Chu kỳ tab follows the date; the form in the sheet is the user's and is never touched.
       if(C.cycleStats) renderCycleSheet();
+      // Thuốc follows the date too; #medSheet and #medNoteSheet (its day fixed in mdn.date) are never touched.
+      renderMed();
       if(recapSheetOpen()) renderRecap(); // numbers only; the chosen year stays
       if(shareSheetOpen()) renderShare();
       updateBadge();
@@ -965,7 +984,8 @@
     // An older cached love-days-core.js can be paired with this page offline.
     if(!C.cycleStats){
       card.hidden = true; $("cycleSetCard").hidden = true; $("cycleSetTitle").hidden = true;
-      document.querySelector('.tabbar-btn[data-tab="cycle"]').hidden = true;
+      // The Sức khoẻ tab still holds Thuốc when the core knows it.
+      document.querySelector('.tabbar-btn[data-tab="cycle"]').hidden = !C.medStats;
       return;
     }
     card.hidden = state.meta.showCycle === false;
@@ -1293,11 +1313,11 @@
     clearCycleErrors();
     showCycleMode("form");
   }
-  // form = true opens the add form; otherwise the Chu kỳ tab is shown.
+  // form = true opens the add form; otherwise the Sức khoẻ tab is shown on Chu kỳ.
   function openCycleSheet(form){
     if(!C.cycleStats) return;
     if(form && !state.cyclesBroken){ openCycleForm(null); openSheet("cycleSheet"); }
-    else switchTab("cycle");
+    else openHealth("cycle");
   }
 
   // One write at a time: the flag goes up before the put and comes down on
@@ -2174,6 +2194,687 @@
     }, function(msg){ showError("journalFormErr", msg); });
   });
 
+  // ---------- Thuốc (tab Sức khoẻ, v1.20) ----------
+  // Stored like the journal: ONE kv record ('med') = { courses, log }. Items the validator rejects (or a
+  // repeated course id / log day) stay verbatim in state.medBad and are written back with every save;
+  // nothing is written while the stored record is unreadable or the cached core is too old (medLocked).
+  // The log is keyed by day only: which course a day belongs to follows from the courses' date ranges.
+  // md.saving = one write at a time. md.tap/md.quiet = the spot of the last real tap on the Thuốc pane or
+  // the Home card, held back 400ms after a tap write, because the button under the finger changes.
+  var md = { saving: false, tap: null, quiet: null, editingId: null, perDay: 1, lastDate: null };
+  // ym = month on show ("YYYY-MM"; null follows today's month); sel = the tapped day.
+  var medcal = { ym: null, sel: null, swiped: false };
+  // The day of the open note sheet, fixed when it opens.
+  var mdn = { date: null };
+  // Which half of the Sức khoẻ tab is on show ("med" | "cycle"); picked once per session, never stored.
+  var health = { seg: null };
+  var MED_BROKEN_TEXT = "Không đọc được dữ liệu thuốc — dữ liệu vẫn còn nguyên";
+  var MED_SAID = { taken: ", đã uống", missed: ", chưa ghi uống", due: ", hôm nay, chưa ghi uống", future: ", trong đợt thuốc, chưa tới", off: ", ngoài đợt thuốc" };
+
+  function medLocked(){ return state.medBroken || !C.medStats; }
+  function medById(id){
+    for(var i = 0; i < state.med.courses.length; i++) if(state.med.courses[i].id === id) return state.med.courses[i];
+    return null;
+  }
+  function medEntry(d){
+    for(var i = 0; i < state.med.log.length; i++) if(state.med.log[i].date === d) return state.med.log[i];
+    return null;
+  }
+  function medLogWith(rec){
+    var found = false, out = state.med.log.map(function(x){
+      if(x.date !== rec.date) return x;
+      found = true;
+      return rec;
+    });
+    if(!found) out.push(rec);
+    return out;
+  }
+  function medLogWithout(date){ return state.med.log.filter(function(x){ return x.date !== date; }); }
+  function medFullText(){ return "Đã đủ " + fmtInt(C.MED_MAX_LOG) + " ngày ghi thuốc, không ghi thêm được."; }
+  function medTimeLabel(){ return C.MED_TIME_LABEL || "8:00"; }
+  function medDayText(d){ return weekday(d) + ", " + fmtDate(d); }
+  function medClock(at){ var w = C.wall(at); return pad2(w.h) + ":" + pad2(w.mi); }
+  // A day ticked late (or merged from another device) has an `at` on another VN day: no time is shown for it.
+  function medAtSameDay(e){ return !!(e && e.taken && typeof e.at === "number" && C.todayStr(e.at) === e.date); }
+  function fmtMedRange(c){
+    if(!c.endDate) return fmtDate(c.startDate) + " – nay";
+    return (c.startDate.slice(0, 4) === c.endDate.slice(0, 4) ? fmtDayMonth(c.startDate) : fmtDate(c.startDate)) + " – " + fmtDate(c.endDate);
+  }
+
+  function applyMedRec(rec){
+    var skipped = 0, ids = Object.create(null), days = Object.create(null);
+    state.med = { courses: [], log: [] }; state.medBad = { courses: [], log: [] }; state.medBroken = false;
+    state.medStamp = cyclesStampOf(rec);
+    if(rec === undefined) return 0;
+    if(!rec || typeof rec !== "object" || !Array.isArray(rec.courses) || !Array.isArray(rec.log)){ state.medBroken = true; return 0; }
+    if(!C.validateMedCourse || !C.validateMedEntry){ state.medBad = { courses: rec.courses.slice(), log: rec.log.slice() }; return 0; }
+    rec.courses.forEach(function(it){
+      var v = C.validateMedCourse(it);
+      if(v && !ids[v.id]){ ids[v.id] = true; state.med.courses.push(v); }
+      else { state.medBad.courses.push(it); skipped++; }
+    });
+    rec.log.forEach(function(it){
+      var v = C.validateMedEntry(it);
+      if(v && !days[v.date]){ days[v.date] = true; state.med.log.push(v); }
+      else { state.medBad.log.push(it); skipped++; }
+    });
+    return skipped;
+  }
+
+  // saveJournal's twin: the record is re-read inside the write transaction and nothing is written when
+  // another window changed it since this one loaded it.
+  function saveMed(nextCourses, nextLog){
+    if(state.loadFailed || medLocked()) return Promise.reject(new Error("med locked"));
+    if(busy === "import") return Promise.reject(userErr("Đang nhập bản sao lưu. Hãy đợi xong rồi thử lại."));
+    var stamp = now();
+    if(typeof state.medStamp === "number" && stamp <= state.medStamp) stamp = state.medStamp + 1;
+    var rec = { key: "med", courses: nextCourses.concat(state.medBad.courses), log: nextLog.concat(state.medBad.log), updatedAt: stamp };
+    function done(){
+      state.med = { courses: nextCourses, log: nextLog };
+      state.medStamp = stamp;
+      dataChanged();
+    }
+    if(!state.db) return put("kv", rec).then(done);
+    var tx = state.db.transaction("kv", "readwrite"), st = tx.objectStore("kv"), stale = false, found;
+    var rq = st.get("med");
+    rq.onsuccess = function(){
+      found = rq.result;
+      if(cyclesStampOf(found) !== state.medStamp) stale = true; else st.put(rec);
+    };
+    return C.txDone(tx).then(function(){
+      if(!stale){ done(); return; }
+      applyMedRec(found);
+      renderMed();
+      renderMedCard();
+      // The note sheet's day may have been written over there: an empty box takes their note, so the
+      // second "Lưu" can't wipe it without the user seeing it.
+      var theirs = mdn.date && medNoteSheetOpen() ? medEntry(mdn.date) : null, err;
+      if(theirs && theirs.note && !$("mdnText").value.trim()){
+        $("mdnText").value = theirs.note;
+        renderMdnCount();
+        err = userErr("Ngày này vừa được ghi ở cửa sổ khác — đã đưa vào đây, xem lại rồi bấm Lưu.");
+      } else err = userErr("Lịch thuốc vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
+      err.stale = true;
+      throw err;
+    });
+  }
+
+  // One write at a time; btn (optional) shows "Đang lưu…" meanwhile. fail(message, error).
+  function medWrite(btn, nextCourses, nextLog, ok, fail){
+    if(md.saving) return;
+    var label = btn ? btn.textContent : "";
+    md.saving = true;
+    if(btn){ btn.disabled = true; btn.textContent = "Đang lưu…"; }
+    function release(){
+      md.saving = false;
+      if(btn){ btn.disabled = false; btn.textContent = label; }
+    }
+    // Inside a then() so a synchronous throw also releases the flag.
+    Promise.resolve().then(function(){ return saveMed(nextCourses, nextLog); }).then(function(){
+      release();
+      renderMed();
+      renderMedCard();
+      ok();
+    }, function(err){
+      release();
+      fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.", err);
+    });
+  }
+  // After a tap write the button under the finger becomes another one: hold that spot back 400ms.
+  function medHold(){
+    var spot = md.tap && now() - md.tap.at < 1000 ? md.tap : null;
+    md.quiet = spot;
+    if(spot) setTimeout(function(){ if(md.quiet === spot) md.quiet = null; }, 400);
+  }
+
+  // "Đã uống hôm nay" (tab and Home card). The day is the one of the tap, not the one drawn.
+  function medTakeToday(errId){
+    if(md.saving || medLocked()) return;
+    showError(errId, null);
+    var t = now(), today = C.todayStr(t), c = C.medCourseAt(state.med.courses, today), old = medEntry(today);
+    if(!c || (old && old.taken)){ renderMed(); renderMedCard(); return; }
+    if(!old && state.med.log.length >= C.MED_MAX_LOG){ showError(errId, medFullText()); return; }
+    var rec = C.validateMedEntry({ date: today, taken: true, note: old ? old.note : "", at: t });
+    if(!rec) return;
+    medWrite(null, state.med.courses, medLogWith(rec), function(){
+      medHold();
+      toast("Đã ghi uống thuốc hôm nay ✓");
+    }, function(msg, err){
+      var e = medEntry(today);
+      if(err && err.stale && e && e.taken){ medHold(); toast("Hôm nay đã được ghi ở cửa sổ khác ✓"); return; }
+      showError(errId, msg);
+    });
+  }
+
+  // Tick (take = true) or untick one day. A day with a note keeps its entry when unticked.
+  function medSetDay(date, take, errId){
+    if(md.saving || medLocked() || !C.isValidDate(date)) return;
+    showError(errId, null);
+    var t = now(), today = C.todayStr(t), old = medEntry(date), next;
+    if(date > today){ showError(errId, "Chưa ghi được cho ngày ở tương lai."); return; }
+    // The button was drawn before this window (or another one) changed the day: just show what it is now.
+    if(!!(old && old.taken) === take){ renderMed(); renderMedCard(); return; }
+    if(take){
+      if(!C.medCourseAt(state.med.courses, date)){ showError(errId, "Ngày này không thuộc đợt thuốc nào."); return; }
+      if(!old && state.med.log.length >= C.MED_MAX_LOG){ showError(errId, medFullText()); return; }
+      var rec = C.validateMedEntry({ date: date, taken: true, note: old ? old.note : "", at: t });
+      if(!rec) return;
+      next = medLogWith(rec);
+    } else if(old.note){
+      next = medLogWith({ date: date, taken: false, note: old.note, at: null });
+    } else next = medLogWithout(date);
+    var a = document.activeElement, refocus = a && $("medBody").contains(a) ? a.getAttribute("data-md") : null;
+    medWrite(null, state.med.courses, next, function(){
+      medHold();
+      toast(take ? (date === today ? "Đã ghi uống thuốc hôm nay ✓" : "Đã ghi uống ngày " + fmtDayMonth(date) + " ✓") : "Đã bỏ đánh dấu ngày " + fmtDayMonth(date));
+      var back = refocus && $("medBody").querySelector('[data-md="' + refocus + '"]');
+      if(back) back.focus({ preventScroll: true });
+    }, function(msg){ showError(errId, msg); });
+  }
+
+  // ---- The Thuốc half of the Sức khoẻ tab ----
+  function medStat(label, value){ return '<div class="med-stat"><dt>' + label + "</dt><dd>" + value + "</dd></div>"; }
+  function medTag(kind, text){ return '<span class="status-tag ' + kind + '">' + text + "</span>"; }
+
+  function medTodayHtml(courses, cur, st, today){
+    var h = '<div class="card med-today"><p class="card-kicker">Hôm nay · ' + medDayText(today) + "</p>";
+    if(!st){
+      return h + '<p class="card-text">Hôm nay không có đợt thuốc nào đang dùng.</p>' +
+        '<button type="button" class="btn btn-soft btn-block med-add" data-md="add">Thêm đợt thuốc mới</button></div>';
+    }
+    if(!st.takenToday){
+      h += '<button type="button" class="btn btn-primary btn-block med-take" id="medTake">Đã uống hôm nay</button>';
+    } else {
+      var e = medEntry(today);
+      h += '<div class="med-done-row"><p class="med-done">✓ Đã uống hôm nay' + (medAtSameDay(e) ? " lúc " + medClock(e.at) : "") + "</p>" +
+        '<button type="button" class="btn btn-ghost btn-sm" id="medUndo" data-md-for="' + today + '">Bỏ đánh dấu</button></div>';
+    }
+    h += '<p class="med-sub"><b>' + escapeHtml(cur.name) + "</b> · " + cur.perDay + " viên</p>" +
+      '<p class="med-sub">Giờ uống: ' + medTimeLabel() + " mỗi sáng</p>";
+    var mo = st.month, m = +today.slice(5, 7), y = today.slice(0, 4);
+    h += '<dl class="med-stats">' +
+      medStat("Còn lại", fmtInt(Math.max(0, st.remaining)) + " viên") +
+      (cur.endDate ? medStat("Đợt kết thúc", medDayText(cur.endDate))
+        : medStat("Dự kiến uống viên cuối", st.lastDay ? medDayText(st.lastDay) : st.out ? "Đã hết" : "—")) +
+      medStat("Chuỗi hiện tại", st.streak ? fmtInt(st.streak) + " ngày liền" : "Chưa có") +
+      medStat("Tháng " + m + "/" + y, mo.expected ? mo.taken + "/" + mo.expected + " ngày · " + mo.pct + "%" : "Chưa có ngày nào") +
+      "</dl>";
+    var v = st.visit;
+    if(v){
+      if(v.daysLeft < 0) h += '<p class="med-visit">Tái khám ' + medDayText(v.date) + " đã qua — thêm đợt mới khi có đơn mới.</p>";
+      else if(v.daysLeft === 0) h += '<p class="med-visit"><span>Tái khám hôm nay · ' + medDayText(v.date) + "</span></p>";
+      else {
+        var tag = st.shortfall > 0 ? medTag("warn", "Hết thuốc trước ngày tái khám " + fmtInt(st.shortfall) + " ngày")
+          : st.surplus > 0 ? medTag("ok", "Đủ thuốc · dư " + fmtInt(st.surplus) + " viên khi tái khám")
+          : st.surplus === 0 ? medTag("ok", "Đủ thuốc tới ngày tái khám") : "";
+        h += '<p class="med-visit"><span>Tái khám ' + medDayText(v.date) + " · còn " + fmtInt(v.daysLeft) + " ngày</span>" + tag + "</p>";
+      }
+    }
+    if(st.out) h += '<p class="med-warn">' + medTag("warn", "Đã hết số viên của đợt này — sửa tổng số viên nếu đã mua thêm.") + "</p>";
+    else if(st.low && !(v && v.daysLeft > 0)) h += '<p class="med-warn">' + medTag("warn", "Sắp hết thuốc: còn " + fmtInt(st.remaining) + " viên") + "</p>";
+    return h + "</div>";
+  }
+
+  // The calendar can go forward to the month of the expected last pill, so that day can be looked at.
+  function medcalCtx(){
+    var t = now(), today = C.todayStr(t), far = today, cur = C.medCourseAt(state.med.courses, today);
+    var st = cur ? C.medStats(cur, state.med.log, t) : null;
+    if(st && st.lastDay && st.lastDay > far) far = st.lastDay;
+    var maxYm = far.slice(0, 7), ym = medcal.ym || today.slice(0, 7);
+    if(ym > maxYm) ym = maxYm;
+    if(ym < CAL_MIN_YM) ym = CAL_MIN_YM;
+    return { t: t, today: today, ym: ym, maxYm: maxYm };
+  }
+  function medInfoHtml(x){
+    var err = '<p class="form-error" id="medDayErr" role="alert" hidden></p>', d = medcal.sel;
+    if(!d) return '<p class="cal-info-text muted">Chạm một ngày để xem, ghi uống bù hoặc thêm ghi chú.</p>' + err;
+    var e = medEntry(d), c = C.medCourseAt(state.med.courses, d), taken = !!(e && e.taken), text;
+    if(taken) text = "Đã uống" + (medAtSameDay(e) ? " · ghi lúc " + medClock(e.at) : "");
+    else if(d > x.today) text = "Chưa tới ngày này";
+    else if(!c) text = "Không thuộc đợt thuốc nào";
+    else text = d === x.today ? "Hôm nay chưa ghi uống" : "Chưa ghi uống";
+    var h = '<p class="cal-info-date">' + medDayText(d) + '</p><p class="cal-info-text">' + text + "</p>" +
+      (e && e.note ? '<p class="med-info-note">' + escapeHtml(e.note) + "</p>" : "");
+    if(d <= x.today){
+      if(taken) h += '<button type="button" class="btn btn-soft btn-block" data-md="toggle" data-act="untake">Bỏ đánh dấu đã uống</button>';
+      else if(c) h += '<button type="button" class="btn btn-primary btn-block" data-md="toggle" data-act="take">Ghi đã uống ngày này</button>';
+      h += '<button type="button" class="btn btn-soft btn-block" data-md="note">' + (e && e.note ? "Sửa ghi chú" : "Thêm ghi chú") + "</button>";
+    }
+    return h + err;
+  }
+  function medCalHtml(x){
+    var y = +x.ym.slice(0, 4), m = +x.ym.slice(5, 7), v = C.medMonth(state.med.courses, state.med.log, y, m, x.t);
+    var h = '<div class="cal-head"><h4 class="cal-title" id="medCalTitle">Tháng ' + m + "/" + y + "</h4>" +
+      (x.ym !== x.today.slice(0, 7) ? '<button type="button" class="cal-today" data-mcal-nav="today">Hôm nay</button>' : "") +
+      '<button type="button" class="cal-nav" data-mcal-nav="prev" aria-label="Tháng trước"' + (x.ym <= CAL_MIN_YM ? " disabled" : "") + ">" + calArrow("M15 5l-7 7 7 7") + "</button>" +
+      '<button type="button" class="cal-nav" data-mcal-nav="next" aria-label="Tháng sau"' + (x.ym >= x.maxYm ? " disabled" : "") + ">" + calArrow("M9 5l7 7-7 7") + "</button></div>" +
+      '<div class="cal-week" aria-hidden="true">' + CAL_WD.map(function(w){ return "<span>" + w + "</span>"; }).join("") + "</div>" +
+      '<div class="cal-grid" role="group" aria-labelledby="medCalTitle">';
+    v.grid.forEach(function(d){
+      var mk = v.marks[d] || { state: "off", note: "" }, s = mk.state, cls = "cal-day med-day is-" + s, label = medDayText(d);
+      if(d.slice(0, 7) !== x.ym) cls += " is-out";
+      if(d === x.today){ cls += " is-today"; if(s !== "due") label += ", hôm nay"; }
+      label += MED_SAID[s] || "";
+      if(mk.note) label += ", có ghi chú";
+      var mark = s === "taken" ? '<i class="med-mark med-tick" aria-hidden="true">✓</i>'
+        : s === "missed" ? '<i class="med-mark med-miss" aria-hidden="true"></i>'
+        : s === "due" ? '<i class="med-mark med-ring" aria-hidden="true"></i>'
+        : s === "future" ? '<i class="med-mark med-dot" aria-hidden="true"></i>' : "";
+      h += '<button type="button" class="' + cls + '" data-md-day="' + d + '" aria-pressed="' + (d === medcal.sel ? "true" : "false") + '" aria-label="' + label + '">' +
+        '<span class="cal-num">' + (+d.slice(8, 10)) + "</span>" + mark + (mk.note ? '<i class="med-note-dot" aria-hidden="true"></i>' : "") + "</button>";
+    });
+    function key(cls, text, inner){
+      return '<span class="cal-key"><i class="cal-swatch ' + cls + '" aria-hidden="true">' + (inner || "") + "</i>" + text + "</span>";
+    }
+    return h + '</div><p class="cal-legend">' + key("is-taken", "Đã uống", '<i class="med-mark med-tick">✓</i>') + key("is-missed", "Chưa ghi") +
+      key("is-today", "Hôm nay") + key("is-future", "Trong đợt", '<i class="med-mark med-dot"></i>') + key("is-off", "Ngoài đợt") + "</p>" +
+      '<p class="med-month">Tháng ' + m + "/" + y + " · " + (v.expected ? "uống " + v.taken + "/" + v.expected + " ngày" : "chưa có ngày nào trong đợt") + "</p>" +
+      '<div class="cal-info" id="medDayInfo" role="status">' + medInfoHtml(x) + "</div>";
+  }
+
+  // Rebuilds the Thuốc half only; the forms in #medSheet / #medNoteSheet are never re-rendered from here.
+  function renderMed(){
+    var el = $("medBody");
+    if(!C.medStats){ el.innerHTML = ""; return; }
+    if(state.medBroken){ el.innerHTML = '<div class="card"><p class="card-text">' + MED_BROKEN_TEXT + ".</p></div>"; return; }
+    var courses = state.med.courses;
+    if(!courses.length){
+      el.innerHTML = '<div class="card empty-state"><p class="empty-text">Chưa có đợt thuốc nào. Thêm đợt thuốc để app nhắc uống mỗi ngày, đếm số viên còn lại và ngày tái khám.</p>' +
+        '<button type="button" class="btn btn-primary empty-action" data-md="add">Thêm đợt thuốc</button></div>';
+      return;
+    }
+    var a = document.activeElement, inside = a && el.contains(a);
+    var nav = inside ? a.getAttribute("data-mcal-nav") : null, act = inside ? a.getAttribute("data-md") : null;
+    var t = now(), today = C.todayStr(t), cur = C.medCourseAt(courses, today), st = cur ? C.medStats(cur, state.med.log, t) : null;
+    var h = medTodayHtml(courses, cur, st, today);
+    h += '<div class="cal med-cal" id="medCal">' + medCalHtml(medcalCtx()) + "</div>";
+    h += '<h4 class="import-step">Các đợt thuốc</h4><ul class="ms-group med-courses" id="medCourses">' + courses.slice().sort(function(p, q){
+      return p.startDate < q.startDate ? 1 : p.startDate > q.startDate ? -1 : p.id < q.id ? 1 : -1;
+    }).map(function(c){
+      var on = !!st && cur.id === c.id, sub = fmtMedRange(c) + " · " + fmtInt(c.totalPills) + " viên · " + c.perDay + " viên/ngày";
+      return '<li class="ms-item-wrap"><button type="button" class="ms-item med-course" data-md-course="' + escapeHtml(c.id) + '" aria-haspopup="dialog" aria-label="' +
+        escapeHtml(c.name + (on ? ", đang dùng" : "") + ". " + sub + (c.visitDate ? ". Tái khám " + fmtDate(c.visitDate) : "") + ". Sửa") + '">' +
+        '<span class="ms-main"><span class="ms-title">' + escapeHtml(c.name) + '</span><span class="ms-sub">' + sub + "</span>" +
+        (c.visitDate ? '<span class="ms-sub">Tái khám ' + fmtDate(c.visitDate) + "</span>" : "") + "</span>" +
+        (on ? '<span class="status-tag ok">Đang dùng</span>' : "") + CHEV + "</button></li>";
+    }).join("") + "</ul>";
+    if(st) h += '<button type="button" class="btn btn-soft btn-block med-add" data-md="add">Thêm đợt thuốc mới</button>' +
+      '<p class="card-hint med-add-hint">Khi có đơn mới sau tái khám — đợt cũ vẫn giữ lịch sử.</p>';
+    el.innerHTML = h;
+    var back = nav ? el.querySelector('[data-mcal-nav="' + nav + '"]:not([disabled])') || el.querySelector("[data-mcal-nav]:not([disabled])")
+      : act ? el.querySelector('[data-md="' + act + '"]') : null;
+    if(back) back.focus({ preventScroll: true });
+  }
+  function renderMedCal(){
+    var box = $("medCal");
+    if(!box) return;
+    var a = document.activeElement, nav = a && box.contains(a) ? a.getAttribute("data-mcal-nav") : null;
+    box.innerHTML = medCalHtml(medcalCtx());
+    if(nav){
+      var back = box.querySelector('[data-mcal-nav="' + nav + '"]:not([disabled])') || box.querySelector("[data-mcal-nav]:not([disabled])");
+      if(back) back.focus({ preventScroll: true });
+    }
+  }
+  function medNav(dir){
+    var x = medcalCtx(), thisYm = x.today.slice(0, 7), ym = x.ym;
+    if(dir === "today") ym = thisYm;
+    else if(dir === "prev"){ if(ym > CAL_MIN_YM) ym = ymShift(ym, -1); }
+    else if(ym < x.maxYm) ym = ymShift(ym, 1);
+    medcal.ym = ym === thisYm ? null : ym;
+    renderMedCal();
+  }
+  // Only the pressed state and the line under the grid change: the grid itself stays where the finger is.
+  function medSelect(day){
+    var box = $("medCal");
+    if(!box || !C.isValidDate(day)) return;
+    medcal.sel = medcal.sel === day ? null : day;
+    Array.prototype.forEach.call(box.querySelectorAll("[data-md-day]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-md-day") === medcal.sel ? "true" : "false");
+    });
+    $("medDayInfo").innerHTML = medInfoHtml(medcalCtx());
+  }
+
+  ["medPane", "medCard"].forEach(function(id){
+    // Key presses (detail 0) and .click() from code are never held back.
+    $(id).addEventListener("click", function(e){
+      if(!e.isTrusted || !e.detail) return;
+      var q = md.quiet;
+      if(q && Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32){ e.stopPropagation(); e.preventDefault(); return; }
+      md.tap = { x: e.clientX, y: e.clientY, at: now() };
+    }, true);
+  });
+  $("medBody").addEventListener("click", function(e){
+    if(medLocked()) return;
+    if(e.target.closest("#medTake")){ medTakeToday("medErr"); return; }
+    var undo = e.target.closest("#medUndo");
+    if(undo){
+      var day = undo.getAttribute("data-md-for");
+      // Only the day the row speaks of: after midnight it is no longer "hôm nay".
+      if(day !== C.todayStr(now())){ renderMed(); return; }
+      medSetDay(day, false, "medErr");
+      return;
+    }
+    var nav = e.target.closest("[data-mcal-nav]");
+    if(nav){ showError("medErr", null); medNav(nav.getAttribute("data-mcal-nav")); return; }
+    var cell = e.target.closest("[data-md-day]");
+    if(cell){ if(!medcal.swiped) medSelect(cell.getAttribute("data-md-day")); return; }
+    var tg = e.target.closest('[data-md="toggle"]');
+    if(tg){ if(medcal.sel) medSetDay(medcal.sel, tg.getAttribute("data-act") === "take", "medDayErr"); return; }
+    if(e.target.closest('[data-md="note"]')){
+      if(!medcal.sel) return;
+      if(medcal.sel > C.todayStr(now())){ showError("medDayErr", "Chưa ghi được cho ngày ở tương lai."); return; }
+      openMedNote(medcal.sel);
+      return;
+    }
+    var item = e.target.closest("[data-md-course]");
+    if(item){
+      var c = medById(item.getAttribute("data-md-course"));
+      if(c) openMedSheet(c);
+      return;
+    }
+    if(e.target.closest('[data-md="add"]')) openMedSheet(null);
+  });
+  // Same swipe as the other calendars (no pointer capture: it would retarget a plain tap's click).
+  (function(){
+    var el = $("medBody"), sx = 0, sy = 0, active = false;
+    el.addEventListener("pointerdown", function(e){
+      active = !!e.target.closest(".cal-grid") && !(e.pointerType === "mouse" && e.button !== 0);
+      sx = e.clientX; sy = e.clientY;
+    });
+    el.addEventListener("pointerup", function(e){
+      if(!active) return;
+      active = false;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if(Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+      medcal.swiped = true;
+      setTimeout(function(){ medcal.swiped = false; }, 50);
+      medNav(dx < 0 ? "next" : "prev");
+    });
+    el.addEventListener("pointercancel", function(){ active = false; });
+  })();
+
+  // ---- Segmented "Thuốc / Chu kỳ" ----
+  function defaultHealthSeg(){
+    if(C.medStats && !state.medBroken && C.medCourseAt(state.med.courses, C.todayStr(now()))) return "med";
+    if(C.cycleStats && !state.cyclesBroken && state.cycles.length) return "cycle";
+    return C.medStats ? "med" : "cycle";
+  }
+  function setHealthSeg(seg, instant){
+    var ok = seg === "med" ? !!C.medStats : !!C.cycleStats;
+    health.seg = ok ? seg : seg === "med" ? "cycle" : "med";
+    Array.prototype.forEach.call($("healthSeg").querySelectorAll("[data-health-seg]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-health-seg") === health.seg ? "true" : "false");
+    });
+    $("medPane").hidden = health.seg !== "med";
+    $("cyclePane").hidden = health.seg !== "cycle";
+    showError("medErr", null);
+    showError("cycleTabErr", null);
+    placeSegPill($("healthSeg"), instant);
+  }
+  // Used by the Home card, Settings and a tapped medication notification. Never closes an open sheet.
+  function openHealth(seg){
+    if(state.mode !== "app") return;
+    setHealthSeg(seg);
+    switchTab("cycle");
+  }
+  $("healthSeg").addEventListener("click", function(e){
+    var b = e.target.closest("[data-health-seg]");
+    if(b) setHealthSeg(b.getAttribute("data-health-seg"));
+  });
+
+  // ---- Home card "Thuốc" ----
+  function renderMedCard(){
+    var card = $("medCard"), core = !!C.medStats;
+    $("medSetTitle").hidden = !core;
+    $("medSetCard").hidden = !core;
+    $("healthSeg").hidden = !(core && C.cycleStats);
+    $("medShow").checked = state.meta.showMed !== false;
+    $("medMorning").checked = state.meta.medMorning !== false;
+    $("medQuiet").checked = state.meta.medQuiet !== false;
+    if(state.mode !== "app" || medLocked() || state.meta.showMed === false){ card.hidden = true; return; }
+    var t = now(), today = C.todayStr(t), c = C.medCourseAt(state.med.courses, today), st = c ? C.medStats(c, state.med.log, t) : null;
+    if(!st){ card.hidden = true; return; }
+    card.hidden = false;
+    var v = st.visit, warn = st.out ? "Đã hết số viên" : st.low ? "Sắp hết thuốc: còn " + fmtInt(st.remaining) + " viên"
+      : st.shortfall > 0 ? "Hết thuốc trước ngày tái khám " + fmtInt(st.shortfall) + " ngày"
+      : v && v.daysLeft >= 0 && v.daysLeft <= 7 ? (v.daysLeft === 0 ? "Tái khám hôm nay" : "Tái khám còn " + v.daysLeft + " ngày") : "";
+    var body = $("medCardBody");
+    if(!st.takenToday){
+      var plain = escapeHtml(c.name) + " · " + c.perDay + " viên";
+      body.innerHTML = '<div class="med-home"><div class="med-home-main"><p class="med-home-title">Hôm nay chưa uống thuốc</p>' +
+        '<p class="med-home-sub">' + (warn ? medTag("warn", warn) : plain) + "</p></div>" +
+        '<button type="button" class="btn btn-primary med-home-take" id="medHomeTake" aria-label="Đã uống thuốc hôm nay">Đã uống</button></div>';
+      return;
+    }
+    var e = medEntry(today), when = medAtSameDay(e) ? " · " + medClock(e.at) : "", left = "Còn " + fmtInt(Math.max(0, st.remaining)) + " viên";
+    body.innerHTML = '<button type="button" class="up-row med-home-open" id="medHomeOpen" aria-label="' +
+      escapeHtml("Đã uống thuốc hôm nay" + (when ? " lúc " + when.slice(3) : "") + ". " + (warn || left) + ". Mở Thuốc") + '">' +
+      '<span class="up-main"><span class="up-title">✓ Đã uống hôm nay' + when + "</span>" +
+      '<span class="up-date">' + (warn ? medTag("warn", warn) : left) + "</span></span>" + CHEV + "</button>";
+  }
+  $("medCardBody").addEventListener("click", function(e){
+    if(e.target.closest("#medHomeTake")){ medTakeToday("medCardErr"); return; }
+    if(e.target.closest("#medHomeOpen")) openHealth("med");
+  });
+  $("medShow").addEventListener("change", function(){
+    state.meta.showMed = this.checked;
+    saveMeta();
+    renderMedCard();
+  });
+  $("medMorning").addEventListener("change", function(){
+    state.meta.medMorning = this.checked;
+    saveMeta();
+  });
+  $("medQuiet").addEventListener("change", function(){
+    state.meta.medQuiet = this.checked;
+    saveMeta();
+  });
+  $("btnMedOpen").addEventListener("click", function(){ openHealth("med"); });
+
+  // ---- Sheet: add / edit / end / delete a course ----
+  function medFieldError(id, msg){
+    showError(id + "Err", msg);
+    var el = $(id + "Btn") || $(id);
+    if(msg) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid");
+  }
+  function clearMedErrors(){
+    ["mdName", "mdStart", "mdPills", "mdVisit", "mdEnd"].forEach(function(id){ medFieldError(id, null); });
+    showError("medFormErr", null);
+  }
+  function setMedPerDay(n){
+    md.perDay = Math.max(1, Math.min(C.MED_PERDAY_MAX || 10, n));
+    $("mdPerDayVal").textContent = md.perDay + " viên";
+    var btns = $("mdPerDay").querySelectorAll("[data-step]");
+    btns[0].disabled = md.perDay <= 1;
+    btns[1].disabled = md.perDay >= (C.MED_PERDAY_MAX || 10);
+  }
+  function medPillsValue(){
+    var s = $("mdPills").value.trim();
+    return /^[0-9]{1,4}$/.test(s) && +s >= 1 && +s <= C.MED_PILLS_MAX ? +s : null;
+  }
+  // The course as the form says it, or null when a field is not usable yet.
+  function medFormCand(){
+    var old = md.editingId ? medById(md.editingId) : null, t = now(), pills = medPillsValue(), start = $("mdStart").value;
+    if(!C.isValidDate(start) || pills === null) return null;
+    return { id: old ? old.id : "rx-form", name: $("mdName").value.trim() || "x", perDay: md.perDay, startDate: start, totalPills: pills,
+             visitDate: $("mdVisit").value || null, endDate: old ? $("mdEnd").value || null : null, note: "", createdAt: old ? old.createdAt : t };
+  }
+  // Read-only preview under the form: what the app will show once saved (uses the days already ticked).
+  function renderMdPreview(){
+    var cand = medFormCand(), pre = $("mdPreview"), close = $("mdCloseNote"), text = "";
+    var st = cand ? C.medStats(cand, state.med.log, now()) : null;
+    if(st && st.lastDay){
+      text = (st.remaining === cand.totalPills ? "Đủ thuốc " : "Còn " + fmtInt(st.remaining) + " viên, đủ thuốc ") + fmtInt(st.supplyDays) + " ngày, tới hết " + medDayText(st.lastDay) + ".";
+      if(st.visit && st.visit.daysLeft > 0) text += st.shortfall > 0 ? " Thiếu " + fmtInt(st.shortfall) + " ngày so với ngày tái khám." : " Đủ tới ngày tái khám.";
+    } else if(st && st.out) text = "Với các ngày đã ghi uống, đợt này đã hết số viên.";
+    pre.textContent = text;
+    pre.hidden = !text;
+    var other = cand && !cand.endDate ? C.medCloses(state.med.courses, cand) : null;
+    close.textContent = other ? "Đợt “" + other.name + "” đang dùng sẽ kết thúc ngày " + fmtDate(C.addDays(cand.startDate, -1)) + "." : "";
+    close.hidden = !other;
+  }
+  function medSheetOpen(){ return $("medSheet").classList.contains("open"); }
+  function openMedSheet(c){
+    if(medLocked()) return;
+    md.editingId = c ? c.id : null;
+    $("medSheetTitle").textContent = c ? "Sửa đợt thuốc" : "Thêm đợt thuốc";
+    $("mdName").value = c ? c.name : "";
+    setDateValue("mdStart", c ? c.startDate : C.todayStr(now()));
+    $("mdPills").value = c ? String(c.totalPills) : "";
+    setMedPerDay(c ? c.perDay : 1);
+    setDateValue("mdVisit", c && c.visitDate ? c.visitDate : "");
+    setDateValue("mdEnd", c && c.endDate ? c.endDate : "");
+    $("mdEndField").hidden = !c;
+    $("mdNote").value = c ? c.note : "";
+    $("medDelete").hidden = !c;
+    $("medConfirm").hidden = true;
+    md.lastDate = null;
+    clearMedErrors();
+    renderMdPreview();
+    $("medSheet").scrollTop = 0;
+    openSheet("medSheet");
+  }
+  function medConflictText(cf){
+    if(cf.code === "future") return "Ngày bắt đầu không được sau hôm nay";
+    if(cf.code === "endFuture") return "Ngày kết thúc không được sau hôm nay";
+    if(cf.code === "endBeforeStart") return "Ngày kết thúc phải từ ngày bắt đầu trở đi";
+    if(cf.code === "visitBeforeStart") return "Ngày tái khám phải sau ngày bắt đầu";
+    if(cf.code === "openBefore") return "Đợt “" + cf.other.name + "” bắt đầu " + fmtDate(cf.other.startDate) + " vẫn đang dùng — ngày bắt đầu phải sau ngày đó.";
+    if(cf.code === "overlap") return "Trùng với đợt “" + cf.other.name + "” (" + fmtMedRange(cf.other) + ")";
+    return "Đã đủ " + fmtInt(C.MED_MAX_COURSES) + " đợt thuốc — xoá bớt đợt cũ rồi thêm tiếp.";
+  }
+  $("mdPerDay").addEventListener("click", function(e){
+    var b = e.target.closest("[data-step]");
+    if(!b || b.disabled) return;
+    setMedPerDay(md.perDay + (+b.getAttribute("data-step")));
+    renderMdPreview();
+  });
+  $("mdName").addEventListener("input", function(){ medFieldError("mdName", null); });
+  $("mdPills").addEventListener("input", function(){ medFieldError("mdPills", null); renderMdPreview(); });
+  ["mdStart", "mdVisit", "mdEnd"].forEach(function(id){
+    $(id).addEventListener("change", function(){
+      md.lastDate = id;
+      ["mdStart", "mdVisit", "mdEnd"].forEach(function(f){ medFieldError(f, null); });
+      showError("medFormErr", null);
+      renderMdPreview();
+    });
+  });
+
+  $("medForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(md.saving || medLocked()) return;
+    clearMedErrors();
+    var t = now(), old = md.editingId ? medById(md.editingId) : null;
+    if(md.editingId && !old){ showError("medFormErr", "Đợt này không còn trong lịch. Đóng lại rồi thử lại."); return; }
+    var name = C.clipGraphemes($("mdName").value.trim(), C.MED_NAME_MAX).trim();
+    if(!name){ medFieldError("mdName", "Hãy ghi tên thuốc"); $("mdNameErr").scrollIntoView({ block: "nearest" }); return; }
+    var start = $("mdStart").value;
+    if(!C.isValidDate(start)){ medFieldError("mdStart", "Hãy chọn ngày bắt đầu"); $("mdStartErr").scrollIntoView({ block: "nearest" }); return; }
+    var pills = medPillsValue();
+    if(pills === null){ medFieldError("mdPills", "Số viên là số nguyên từ 1 đến " + fmtInt(C.MED_PILLS_MAX)); $("mdPillsErr").scrollIntoView({ block: "nearest" }); return; }
+    var visit = $("mdVisit").value || null, end = old ? $("mdEnd").value || null : null;
+    var cand = { id: old ? old.id : C.newMedId(t), name: name, perDay: md.perDay, startDate: start, totalPills: pills, visitDate: visit, endDate: end,
+                 note: C.clipGraphemes($("mdNote").value.trim(), C.MED_NOTE_MAX).trim(), createdAt: old ? old.createdAt : t };
+    // Dates untouched = only the name, numbers or note changed: nothing new to check, and a course that was
+    // already off (clock moved back, old data) stays editable.
+    var datesSame = !!old && old.startDate === start && old.endDate === end && old.visitDate === visit;
+    var cf = datesSame ? null : C.medConflict(state.med.courses, cand, t);
+    if(cf){
+      if(cf.code === "full") showError("medFormErr", medConflictText(cf));
+      else {
+        var startMoved = cf.code === "endBeforeStart" && md.lastDate === "mdStart";
+        var fid = startMoved ? "mdStart" : cf.field === "end" ? "mdEnd" : cf.field === "visit" ? "mdVisit" : "mdStart";
+        medFieldError(fid, startMoved ? "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc" : medConflictText(cf));
+        $(fid + "Err").scrollIntoView({ block: "nearest" });
+      }
+      return;
+    }
+    var rec = C.validateMedCourse(cand);
+    if(!rec){ showError("medFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    // The course in use that starts before this one ends the day before it, in the same write.
+    var closes = datesSame || rec.endDate ? null : C.medCloses(state.med.courses, rec), ended = null;
+    if(closes){
+      ended = C.validateMedCourse(Object.assign({}, closes, { endDate: C.addDays(rec.startDate, -1) }));
+      if(!ended){ showError("medFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    }
+    var next = state.med.courses.filter(function(x){ return x.id !== rec.id && (!ended || x.id !== ended.id); });
+    if(ended) next.push(ended);
+    next.push(rec);
+    medWrite($("medSave"), next, state.med.log, function(){
+      md.editingId = null;
+      closeSheets();
+      toast(old ? "Đã lưu đợt thuốc ✓" : "Đã thêm đợt thuốc");
+    }, function(msg){ showError("medFormErr", msg); });
+  });
+
+  $("medDelete").addEventListener("click", function(){
+    var c = medById(md.editingId);
+    if(!c || md.saving) return;
+    $("medConfirmText").textContent = "Xoá đợt “" + c.name + "”? Các ngày đã ghi uống vẫn còn trên lịch.";
+    $("medDelete").hidden = true;
+    $("medConfirm").hidden = false;
+    $("medConfirmNo").focus({ preventScroll: true });
+    $("medConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("medConfirmNo").addEventListener("click", function(){
+    if(md.saving) return;
+    $("medConfirm").hidden = true;
+    $("medDelete").hidden = false;
+    $("medDelete").focus({ preventScroll: true });
+  });
+  $("medConfirmYes").addEventListener("click", function(){
+    var id = md.editingId;
+    if(md.saving || !medById(id)) return;
+    showError("medFormErr", null);
+    medWrite(this, state.med.courses.filter(function(x){ return x.id !== id; }), state.med.log, function(){
+      md.editingId = null;
+      closeSheets();
+      toast("Đã xoá đợt thuốc");
+    }, function(msg){ showError("medFormErr", msg); });
+  });
+
+  // ---- Sheet: one day's note ----
+  function medNoteSheetOpen(){ return $("medNoteSheet").classList.contains("open"); }
+  function renderMdnCount(){ $("mdnCount").textContent = $("mdnText").value.length + "/" + (C.MED_NOTE_MAX || 200); }
+  function openMedNote(date){
+    if(medLocked() || !C.isValidDate(date)) return;
+    var e = medEntry(date);
+    mdn.date = date;
+    $("medNoteTitle").textContent = "Ghi chú · " + medDayText(date);
+    $("mdnText").value = e ? e.note : "";
+    renderMdnCount();
+    showError("mdnErr", null);
+    $("mdnText").removeAttribute("aria-invalid");
+    showError("mdnFormErr", null);
+    $("medNoteSheet").scrollTop = 0;
+    openSheet("medNoteSheet");
+  }
+  $("mdnText").addEventListener("input", function(){ renderMdnCount(); showError("mdnErr", null); this.removeAttribute("aria-invalid"); });
+  $("medNoteForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(md.saving || medLocked() || !mdn.date) return;
+    showError("mdnFormErr", null);
+    var date = mdn.date, t = now();
+    if(date > C.todayStr(t)){
+      showError("mdnErr", "Chưa ghi được cho ngày ở tương lai");
+      $("mdnText").setAttribute("aria-invalid", "true");
+      return;
+    }
+    var text = C.clipGraphemes($("mdnText").value.trim(), C.MED_NOTE_MAX).trim(), old = medEntry(date), next;
+    if((old ? old.note : "") === text){ closeSheets(); return; }
+    if(old && !old.taken && !text) next = medLogWithout(date);
+    else {
+      if(!old && state.med.log.length >= C.MED_MAX_LOG){ showError("mdnFormErr", medFullText()); return; }
+      var rec = C.validateMedEntry({ date: date, taken: old ? old.taken : false, note: text, at: old ? old.at : null });
+      if(!rec){ showError("mdnFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+      next = medLogWith(rec);
+    }
+    medWrite($("mdnSave"), state.med.courses, next, function(){
+      closeSheets();
+      toast(text ? "Đã lưu ghi chú ✓" : "Đã xoá ghi chú");
+    }, function(msg){ showError("mdnFormErr", msg); });
+  });
+
   // ---------- Date fields + wheel picker ----------
   // Each date is a hidden input (its .value stays 'YYYY-MM-DD' or '') plus a
   // button showing it. Always write through setDateValue so the button never
@@ -2191,7 +2892,10 @@
     cyStart:      { min: "2000-01-01", optional: false },
     cyEnd:        { min: "2000-01-01", optional: true, empty: "Chưa kết thúc", defFrom: "cyStart" },
     wPlan:        { min: "2000-01-01", optional: true, empty: "Chưa hẹn ngày", futureYears: 20 },
-    wDone:        { min: "2000-01-01", optional: true, empty: "Chưa làm" }
+    wDone:        { min: "2000-01-01", optional: true, empty: "Chưa làm" },
+    mdStart:      { min: "2000-01-01", optional: false },
+    mdVisit:      { min: "2000-01-01", optional: true, empty: "Chưa hẹn", futureYears: 5, defFrom: "mdStart" },
+    mdEnd:        { min: "2000-01-01", optional: true, empty: "Đang dùng", defFrom: "mdStart" }
   };
 
   function setDateValue(id, v){
@@ -3229,6 +3933,8 @@
     if(typeof c.wishes === "number") parts.push(fmtInt(c.wishes) + " việc");
     if(typeof c.journal === "number") parts.push(fmtInt(c.journal) + " ngày nhật ký");
     if(typeof c.cycles === "number") parts.push(fmtInt(c.cycles) + " kỳ");
+    if(typeof c.medCourses === "number") parts.push(fmtInt(c.medCourses) + " đợt thuốc");
+    if(typeof c.medDays === "number") parts.push(fmtInt(c.medDays) + " ngày ghi thuốc");
     if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
     return parts.join(", ");
   }
@@ -3256,7 +3962,7 @@
     if(busy !== "backup"){
       $("backupStatus").textContent = p
         ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
-        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.";
+        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -3264,11 +3970,12 @@
     if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
-    // An unreadable cycle, wish or journal record is left out of the file.
+    // An unreadable cycle, wish, journal or medication record is left out of the file.
     return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos,
                            cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles,
                            wishes: wishesLocked() ? null : state.wishes,
-                           journal: journalLocked() ? null : state.journal, readBlob: readBlob },
+                           journal: journalLocked() ? null : state.journal,
+                           med: medLocked() ? null : { courses: state.med.courses, log: state.med.log }, readBlob: readBlob },
                          now(), onProgress).then(function(r){
       busy = null;
       if(version === backup.version){ backup.prepared = r; backup.saved = false; }
@@ -3549,14 +4256,17 @@
       cycles: state.cycles, cyclesBad: state.cyclesBad, cyclesBroken: state.cyclesBroken, cyclesStamp: state.cyclesStamp,
       // An older cached core can't judge the list, so it counts as unreadable: never imported over.
       wishes: state.wishes, wishesBad: state.wishesBad, wishesBroken: wishesLocked(), wishesStamp: state.wishesStamp,
-      journal: state.journal, journalBad: state.journalBad, journalBroken: journalLocked(), journalStamp: state.journalStamp
+      journal: state.journal, journalBad: state.journalBad, journalBroken: journalLocked(), journalStamp: state.journalStamp,
+      med: state.med, medBad: state.medBad, medBroken: medLocked(), medStamp: state.medStamp
     };
   }
   function hasLocalData(){
     var l = localSnapshot();
     return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken ||
-      l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken || l.journal.length > 0 || l.journalBad.length > 0 || state.journalBroken;
+      l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken || l.journal.length > 0 || l.journalBad.length > 0 || state.journalBroken ||
+      medHasData(l) || state.medBroken;
   }
+  function medHasData(l){ return l.med.courses.length > 0 || l.med.log.length > 0 || l.medBad.courses.length > 0 || l.medBad.log.length > 0; }
 
   function onImportFile(input){
     var f = input.files && input.files[0];
@@ -3609,12 +4319,15 @@
       var what = fmtInt(r.addedPhotos) + " ảnh, " + fmtInt(r.addedMilestones) + " kỷ niệm" +
         (r.wishesInFile && !r.wishesKept ? ", " + fmtInt(r.addedWishes) + " việc" : "") +
         (r.journalInFile && !r.journalKept ? ", " + fmtInt(r.addedJournal) + " ngày nhật ký" : "") +
-        (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "");
+        (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "") +
+        (r.medInFile && !r.medKept ? (r.addedMedCourses ? ", " + fmtInt(r.addedMedCourses) + " đợt thuốc" : "") + ", " + fmtInt(r.addedMedDays || 0) + " ngày ghi thuốc" : "");
       // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
       var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes || r.addedJournal ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
+        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes || r.addedJournal || r.addedMedDays || r.addedMedCourses || r.upgradedMedDays
+          ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
       var jSkip = (r.skippedJournal || 0) + (r.clashedJournal || 0);
+      var mdSkip = (r.skippedMedDays || 0) + (r.clashedMedDays || 0), mdClash = (r.clashMedCourses || 0) + (r.clashedMedCourses || 0);
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
         (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") +
         (r.cyclesKept ? "<p>" + cyclesKeptText(r.cyclesInFile) + "</p>" : "") +
@@ -3624,7 +4337,13 @@
         (r.skippedWishes + r.clashedWishes ? "<p>Bỏ qua " + fmtInt(r.skippedWishes + r.clashedWishes) + " việc đã có hoặc trùng.</p>" : "") +
         (r.overWishes ? "<p>" + fmtInt(r.overWishes) + " việc không được thêm vì danh sách đã đủ " + fmtInt(C.MAX_WISHES) + " việc.</p>" : "") +
         (jSkip ? "<p>Bỏ qua " + fmtInt(jSkip) + " ngày nhật ký đã có trên máy hoặc trùng ngày.</p>" : "") +
-        (r.overJournal ? "<p>" + fmtInt(r.overJournal) + " ngày nhật ký không được thêm vì nhật ký đã đủ " + fmtInt(C.MAX_JOURNAL) + " ngày.</p>" : "") + "</div>" +
+        (r.overJournal ? "<p>" + fmtInt(r.overJournal) + " ngày nhật ký không được thêm vì nhật ký đã đủ " + fmtInt(C.MAX_JOURNAL) + " ngày.</p>" : "") +
+        (r.medKept ? "<p>" + medKeptText(r.medInFile) + "</p>" : "") +
+        (r.upgradedMedDays ? "<p>" + fmtInt(r.upgradedMedDays) + " ngày được gộp thành đã uống.</p>" : "") +
+        (mdSkip ? "<p>Bỏ qua " + fmtInt(mdSkip) + " ngày ghi thuốc " + (r.clashedMedDays ? "đã có trên máy hoặc trùng ngày." : "đã có trên máy.") + "</p>" : "") +
+        (r.overMed ? "<p>" + fmtInt(r.overMed) + " ngày ghi thuốc không được thêm vì đã đủ " + fmtInt(C.MED_MAX_LOG) + " ngày.</p>" : "") +
+        (mdClash ? "<p>Bỏ qua " + fmtInt(mdClash) + " đợt thuốc trùng.</p>" : "") +
+        (r.overMedCourses ? "<p>" + fmtInt(r.overMedCourses) + " đợt thuốc không được thêm vì đã đủ " + fmtInt(C.MED_MAX_COURSES) + " đợt.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
@@ -3649,6 +4368,11 @@
       : "Nhật ký trên máy giữ nguyên (bản sao lưu này không có).";
   }
 
+  function medKeptText(inFile){
+    return inFile ? "Lịch thuốc trên máy đang không đọc được nên được giữ nguyên."
+      : "Lịch thuốc trên máy giữ nguyên (bản sao lưu này không có).";
+  }
+
   function importProgressText(){
     return imp.total ? "Đang nhập " + imp.done + "/" + imp.total + "…" : "Đang nhập…";
   }
@@ -3661,10 +4385,13 @@
       "<li>" + fmtInt(ps.photos.length) + " ảnh · " + fmtInt(ps.milestones.length) + " kỷ niệm" + (ps.wishes ? " · " + fmtInt(ps.wishes.length) + " việc" : "") +
       (ps.journal ? " · " + fmtInt(ps.journal.length) + " ngày nhật ký" : "") +
       (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
+      (ps.med ? " · " + fmtInt(ps.med.courses.length) + " đợt thuốc · " + fmtInt(ps.med.log.length) + " ngày ghi thuốc" : "") +
       (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
       (ps.cyclesSkipped ? "<li>Bỏ qua " + fmtInt(ps.cyclesSkipped) + " kỳ trùng trong file</li>" : "") +
       (ps.wishesSkipped ? "<li>Bỏ qua " + fmtInt(ps.wishesSkipped) + " việc trùng trong file</li>" : "") +
       (ps.journalSkipped ? "<li>Bỏ qua " + fmtInt(ps.journalSkipped) + " ngày nhật ký trùng trong file</li>" : "") +
+      (ps.medSkippedCourses ? "<li>Bỏ qua " + fmtInt(ps.medSkippedCourses) + " đợt thuốc trùng trong file</li>" : "") +
+      (ps.medSkippedDays ? "<li>Bỏ qua " + fmtInt(ps.medSkippedDays) + " ngày ghi thuốc trùng trong file</li>" : "") +
       "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
       "</ul></div>";
     if(!hasLocalData()){
@@ -3682,13 +4409,18 @@
       var cyBlocked = !!ps.cycles && local.cyclesBroken;
       var wiBlocked = !!ps.wishes && local.wishesBroken;
       var joBlocked = !!ps.journal && local.journalBroken;
+      var mdBlocked = !!ps.med && local.medBroken;
+      var mdNew = !mdBlocked && !!((pl.addMedDays || 0) + (pl.upgradedMedDays || 0) + (pl.addMedCourses || 0));
+      skipped += mdBlocked ? 0 : pl.sameMedDays || 0;
       var blockedNote = (cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "") +
         (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "") +
-        (joBlocked ? '<p class="card-text">Nhật ký trong bản sao lưu không được nhập vì nhật ký trên máy đang không đọc được.</p>' : "");
-      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !pl.addJournal && !fillImgs && local.profileOk){
+        (joBlocked ? '<p class="card-text">Nhật ký trong bản sao lưu không được nhập vì nhật ký trên máy đang không đọc được.</p>' : "") +
+        (mdBlocked ? '<p class="card-text">Lịch thuốc trong bản sao lưu không được nhập vì lịch thuốc trên máy đang không đọc được.</p>' : "");
+      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !pl.addJournal && !mdNew && !fillImgs && local.profileOk){
         var kinds = ["ảnh", "kỷ niệm"];
         if(ps.wishes && !wiBlocked) kinds.push("việc muốn làm");
         if(ps.journal && !joBlocked) kinds.push("ngày nhật ký");
+        if(ps.med && !mdBlocked) kinds.push("ngày ghi thuốc");
         if(ps.cycles && !cyBlocked) kinds.push("kỳ");
         return h + '<p class="card-text">Không có gì mới — mọi ' + kinds.slice(0, -1).join(", ") + " và " + kinds[kinds.length - 1] + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
           '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
@@ -3697,10 +4429,17 @@
       if(ps.wishes && !wiBlocked) adds.push(fmtInt(pl.addWishes) + " việc");
       if(ps.journal && !joBlocked) adds.push(fmtInt(pl.addJournal) + " ngày nhật ký");
       if(ps.cycles && !cyBlocked) adds.push(fmtInt(pl.addCycles) + " kỳ");
+      if(ps.med && !mdBlocked){
+        if(pl.addMedCourses) adds.push(fmtInt(pl.addMedCourses) + " đợt thuốc");
+        adds.push(fmtInt(pl.addMedDays || 0) + " ngày ghi thuốc" + (pl.upgradedMedDays ? " (" + fmtInt(pl.upgradedMedDays) + " ngày gộp thành đã uống)" : ""));
+      }
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
-      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+      var mdMore = ps.med && !mdBlocked;
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal || (mdMore && pl.sameMedDays) ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
         (pl.overWishes ? fmtInt(pl.overWishes) + " việc không được thêm vì danh sách chỉ chứa " + fmtInt(C.MAX_WISHES) + " việc. " : "") +
         (pl.overJournal ? fmtInt(pl.overJournal) + " ngày nhật ký không được thêm vì nhật ký chỉ chứa " + fmtInt(C.MAX_JOURNAL) + " ngày. " : "") +
+        (mdMore && pl.overMed ? fmtInt(pl.overMed) + " ngày ghi thuốc không được thêm vì lịch thuốc chỉ chứa " + fmtInt(C.MED_MAX_LOG) + " ngày. " : "") +
+        (mdMore && pl.clashMedCourses ? fmtInt(pl.clashMedCourses) + " đợt thuốc trùng ngày với đợt trên máy sẽ bị bỏ qua. " : "") +
         (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" + blockedNote +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
@@ -3710,10 +4449,12 @@
       fmtInt(local.photos.length) + " ảnh, " + local.milestones.length + " kỷ niệm, " + (replacesWishes(ps, local) ? local.wishes.length + " việc, " : "") +
       (replacesJournal(ps, local) ? fmtInt(local.journal.length) + " ngày nhật ký, " : "") +
       (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
+      (replacesMed(ps, local) && medHasData(local) ? medCountText(local) + ", " : "") +
       "hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p>" +
       (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") +
       (keepsWishes(ps, local) ? "<p>" + wishesKeptText(!!ps.wishes) + "</p>" : "") +
-      (keepsJournal(ps, local) ? "<p>" + journalKeptText(!!ps.journal) + "</p>" : "") + "</div>" +
+      (keepsJournal(ps, local) ? "<p>" + journalKeptText(!!ps.journal) + "</p>" : "") +
+      (keepsMed(ps, local) ? "<p>" + medKeptText(!!ps.med) + "</p>" : "") + "</div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -3733,8 +4474,10 @@
   function replaceAskText(ps, l){
     return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) && l.wishes.length ? ", " + l.wishes.length + " việc" : "") +
       (replacesJournal(ps, l) && l.journal.length ? ", " + fmtInt(l.journal.length) + " ngày nhật ký" : "") +
-      (replacesCycles(ps, l) && l.cycles.length ? ", " + l.cycles.length + " kỳ" : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
+      (replacesCycles(ps, l) && l.cycles.length ? ", " + l.cycles.length + " kỳ" : "") +
+      (replacesMed(ps, l) && medHasData(l) ? ", " + medCountText(l) : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
   }
+  function medCountText(l){ return fmtInt(l.med.courses.length) + " đợt thuốc, " + fmtInt(l.med.log.length) + " ngày ghi thuốc"; }
 
   // Mirrors planCycles() in love-days-backup.js for the "Thay thế" wording.
   function replacesCycles(ps, local){ return !!ps.cycles && !local.cyclesBroken; }
@@ -3753,6 +4496,10 @@
   function keepsJournal(ps, local){
     return ps.journal ? local.journalBroken : local.journal.length > 0 || local.journalBad.length > 0 || local.journalBroken;
   }
+
+  // And planMed().
+  function replacesMed(ps, local){ return !!ps.med && !local.medBroken; }
+  function keepsMed(ps, local){ return ps.med ? local.medBroken : medHasData(local) || local.medBroken; }
 
   $("importContent").addEventListener("click", function(e){
     var b = e.target.closest("[data-imp]");
@@ -3847,6 +4594,7 @@
     state.cycles = []; state.cyclesBad = []; state.cyclesBroken = false; state.cyclesStamp = null;
     state.wishes = []; state.wishesBad = []; state.wishesBroken = false; state.wishesStamp = null;
     state.journal = []; state.journalBad = []; state.journalBroken = false; state.journalStamp = null;
+    state.med = { courses: [], log: [] }; state.medBad = { courses: [], log: [] }; state.medBroken = false; state.medStamp = null;
     setBanner("skipped", null);
     setBanner("load", null);
     state.loadFailed = false;
@@ -4186,6 +4934,8 @@
           lines = dayRemindLines();
           if(!lines.length){ lines = dayRemindExample(); example = lines.length > 0; }
         }
+        // Same call and order as the service worker: medication lines first (the 300-character cut drops from the end).
+        if(C.medMorningLines && !medLocked()) lines = C.medMorningLines({ courses: state.med.courses, log: state.med.log }, state.meta, now()).concat(lines);
         body = C.pushBody(body, remind, lines);
       } else if(remind) body += "\n" + remind;
       return reg.showNotification("💕 Ngày thứ " + fmtInt(n), { body: body, tag: "love-days-test", icon: PUSH_ICON }).then(function(){ return n; });
@@ -4206,6 +4956,30 @@
     }).catch(function(err){
       showError("pushError", err && typeof err.userMessage === "string" ? err.userMessage : "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
       renderPush();
+    });
+  });
+
+  // The 8:00 medication reminder exactly as the service worker builds it for today (LoveCore.medPushContent).
+  $("btnMedTest").addEventListener("click", function(){
+    if(typeof Notification === "undefined" || !C.medPushContent){
+      showError("medTestErr", "Mở app từ icon Màn hình chính để gửi thử.");
+      return;
+    }
+    showError("medTestErr", null);
+    var note = $("medTestNote");
+    note.hidden = true;
+    var permP = Notification.permission === "granted" ? Promise.resolve("granted") : Notification.requestPermission();
+    Promise.resolve(permP).then(function(perm){
+      if(perm !== "granted") throw userErr(perm === "denied" ? "Thông báo đang bị chặn — bật lại ở Cài đặt iPhone → Thông báo → Long & Thư." : "Cần cho phép thông báo thì mới gửi thử được.");
+      return swReady();
+    }).then(function(reg){
+      var t = now(), c = C.medPushContent(medLocked() ? null : { courses: state.med.courses, log: state.med.log }, state.meta, C.todayStr(t), t);
+      return reg.showNotification(c.title, { body: c.body, tag: "love-days-med-test", icon: PUSH_ICON, data: { open: "med" } });
+    }).then(function(){
+      note.textContent = "Đã gửi thử ✓ Lần nhắc 8:00 hiện đúng nội dung này nếu tới vào lúc này. Không thấy? Xem Cài đặt iPhone → Thông báo.";
+      note.hidden = false;
+    }).catch(function(err){
+      showError("medTestErr", err && typeof err.userMessage === "string" ? err.userMessage : "Không gửi thử được (" + (err && err.name || "lỗi") + ").");
     });
   });
 
@@ -4378,11 +5152,28 @@
   }).then(render).catch(function(){
     $("loadingView").hidden = true;
     setBanner("render", "Có lỗi khi hiển thị dữ liệu. Dữ liệu vẫn còn trên máy — hãy thử mở lại app.", "error");
-  }).then(initPush);
+  }).then(openFromUrl).then(initPush);
+
+  // A tapped medication notification opens the app at ?open=med (sw-core.js notificationclick).
+  // The query is dropped afterwards so a reload or a Home Screen relaunch doesn't jump there again.
+  function openFromUrl(){
+    try{
+      var m = /[?&]open=([^&#]*)/.exec(location.search);
+      if(!m) return;
+      if(m[1] === "med" && state.mode === "app") openHealth("med");
+      history.replaceState(null, "", location.pathname);
+    }catch(e){}
+  }
 
   // Offline: the shell lives in products/love-days/ (scope). Absolute path —
   // a relative one would resolve against html/, not the shell's folder.
   if("serviceWorker" in navigator){
+    // The same notification while a LoveDays window is open: the SW posts this, then focuses the window.
+    // Only the tab changes — an open sheet and its form stay as they are.
+    navigator.serviceWorker.addEventListener("message", function(e){
+      var d = e.data;
+      if(d && d.type === "open" && d.target === "med" && state.mode === "app") openHealth("med");
+    });
     window.addEventListener("load", function(){
       navigator.serviceWorker.register("/products/love-days/sw-love-days.js").catch(function(){});
     });

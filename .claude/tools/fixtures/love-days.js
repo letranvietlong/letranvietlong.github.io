@@ -563,6 +563,77 @@ const recapSel = {
   shareTplField: '#shareTplField'      // hidden while #shareSheet is in recap mode
 };
 
+// ---------- Thuốc (v1.20) ----------
+// kv 'med' — { key:'med', courses:[{ id, name (≤40), perDay 1..10, startDate, totalPills 1..2000, visitDate|null, endDate|null (null = in use),
+//              note (≤200), createdAt }], log:[{ date, taken:bool, note (≤200), at: ms|null }], updatedAt } — ONE record, guarded exactly like
+// 'journal': updatedAt is the two-window stamp, an item the validator rejects (or a repeated course id / log day) stays verbatim across
+// every save, a record whose courses or log is not an array locks Thuốc (pane says `broken`, Home row hidden, no export, no import over it).
+// The log carries no course id: a day belongs to the course whose date range covers it. Not taken + no note = invalid (unticking such a
+// day removes the entry). One course in use at a time; adding one that starts later ends the open one the day before, in the same write.
+// The Sức khoẻ tab keeps the id #tab-cycle / [data-tab="cycle"]; #healthSeg picks "Thuốc" (default when a course covers today) or "Chu kỳ".
+// Seed: ld.seed(page, { profile: ld.profile, extra: [['kv', ld.medRecord(ld.med.F.courses, ld.med.F.log)]] }); reload; now = ld.med.now.
+// Pure maths (same in every TZ): LoveCore.medStats(course, log, nowMs), LoveCore.medMonth(courses, log, y, m, nowMs).
+// The reminder push is the separate workflow "LoveDays reminder push" (08:07 / 09:07 VN, secret LOVE_REMINDER_PUSH_SUBSCRIPTIONS),
+// payload { kind:'med', date }; its text is LoveCore.medPushContent(rawMed, rawMeta, date, nowMs) — also what "Gửi thử nhắc uống thuốc" shows.
+const md = (id, name, startDate, totalPills, visitDate, endDate) => ({ id, name, perDay: 1, startDate, totalPills, visitDate: visitDate || null, endDate: endDate || null, note: '', createdAt: 1 });
+const me = (date, at) => ({ date, taken: true, note: '', at: at === undefined ? Date.parse(date + 'T07:55:00+07:00') : at });
+const mn = (date, note) => ({ date, taken: false, note, at: null });
+const medRecord = (courses, log) => ({ key: 'med', courses, log, updatedAt: 1 });
+const medDays = (a, b) => { const o = []; for (let t = Date.parse(a + 'T00:00:00Z'); t <= Date.parse(b + 'T00:00:00Z'); t += 864e5) o.push(new Date(t).toISOString().slice(0, 10)); return o; };
+const medF = [md('rx-f1', 'Thuốc A', '2026-10-08', 100, '2027-01-20')];
+const medFlog = [me('2026-10-08'), me('2026-10-09'), me('2026-10-11'), mn('2026-10-12', 'Quên vì đi công tác'), me('2026-10-13'), me('2026-10-14')];
+const med = {
+  now: '2026-10-15T09:00:00+07:00',   // Thứ năm; nothing logged for 10/10, 12/10 has only a note
+  F: { courses: medF, log: medFlog,
+    // 5 taken days → 100 − 5 = 95 (93 = counting calendar days 08–14, 92 = also counting today); first day still to take = today
+    remaining: '95 viên', lastDay: 'Chủ nhật, 17/01/2027', visit: 'Thứ tư, 20/01/2027', visitLeft: 97,
+    shortfall: 2, shortfallTag: 'Hết thuốc trước ngày tái khám 2 ngày',      // (20/01 − 1) − 17/01; also the Home sub line
+    missed: 2, streak: '2 ngày liền', month: '5/7 ngày · 71%', monthLine: 'Tháng 10/2026 · uống 5/7 ngày',   // wrong: 5/8 · 63%
+    // October 2026 grid (35 cells, 28/09 → 01/11): classes is-taken | is-missed | is-due (+ is-today) | is-future | is-off
+    cells: { off: medDays('2026-09-28', '2026-10-07'), taken: ['2026-10-08', '2026-10-09', '2026-10-11', '2026-10-13', '2026-10-14'],
+      missed: ['2026-10-10', '2026-10-12'], due: ['2026-10-15'], future: medDays('2026-10-16', '2026-11-01') },
+    noteLabel: 'Thứ hai, 12/10/2026, chưa ghi uống, có ghi chú',              // aria-label of the 12/10 cell (corner dot = note)
+    // tap 12/10 → #medDayInfo; "Ghi đã uống ngày này" keeps the note → remaining 94, toast "Đã ghi uống ngày 12/10 ✓"
+    tap12: ['Thứ hai, 12/10/2026', 'Chưa ghi uống', 'Quên vì đi công tác', ['Ghi đã uống ngày này', 'Sửa ghi chú']],
+    tap20: ['Thứ ba, 20/10/2026', 'Chưa tới ngày này', []],
+    // › reaches 01/2027 (month of the last pill), never 02/2027; ‹ to 09/2026 → "Tháng 9/2026 · chưa có ngày nào trong đợt"
+    maxMonth: 'Tháng 1/2027', sepLine: 'Tháng 9/2026 · chưa có ngày nào trong đợt',
+    // real tap on #medTake at 09:00 → { date:'2026-10-15', taken:true, at: 09:00 } → 94 viên, lastDay unchanged, streak 3, 6/8 · 75%
+    afterTake: { remaining: '94 viên', lastDay: 'Chủ nhật, 17/01/2027', streak: '3 ngày liền', month: '6/8 ngày · 75%', toast: 'Đã ghi uống thuốc hôm nay ✓',
+      done: '✓ Đã uống hôm nay lúc 09:00', home: ['✓ Đã uống hôm nay · 09:00', 'Hết thuốc trước ngày tái khám 2 ngày'] },
+    home: ['Hôm nay chưa uống thuốc', 'Hết thuốc trước ngày tái khám 2 ngày', 'Đã uống'],   // #medCard title, sub line, button
+    morning13: ['💊 Hôm qua chưa ghi uống thuốc'],                // medMorningLines at 2026-10-13T07:00+07 (13/10 already ticked)
+    morning0113: ['🩺 Còn 7 ngày: tái khám', '💊 8:00 nhớ uống thuốc'],                     // at 2027-01-13T07:00+07, log unchanged
+    push: { title: '💊 Đến giờ uống thuốc', body: 'Hôm nay chưa ghi uống thuốc. Chạm để mở lịch thuốc.',
+      bodyNamed: 'Hôm nay chưa ghi uống Thuốc A (1 viên). Chạm để mở lịch thuốc.' } },   // medPushContent(…, '2026-10-15', now); medQuiet:false
+  // F with totalPills 10: 5 left, 5 days (≤ 7 = low), last pill Thứ hai, 19/10/2026; Home sub "Sắp hết thuốc: còn 5 viên"
+  L: { courses: [md('rx-f1', 'Thuốc A', '2026-10-08', 10, '2027-01-20')], log: medFlog, remaining: '5 viên', lastDay: 'Thứ hai, 19/10/2026', home: 'Sắp hết thuốc: còn 5 viên' },
+  // Form: new course from 15/10/2026, 60 pills, 1 a day → #mdPreview; with F in use → #mdCloseNote, and one write ends F on 14/10
+  form: { preview: 'Đủ thuốc 60 ngày, tới hết Chủ nhật, 13/12/2026.', closeNote: 'Đợt “Thuốc A” đang dùng sẽ kết thúc ngày 14/10/2026.',
+    openBefore: 'Đợt “Thuốc A” bắt đầu 08/10/2026 vẫn đang dùng — ngày bắt đầu phải sau ngày đó.',   // start 08/10 while F is open
+    errors: { name: 'Hãy ghi tên thuốc', pills: 'Số viên là số nguyên từ 1 đến 2.000', visit: 'Ngày tái khám phải sau ngày bắt đầu' } },
+  // Import "Gộp": device A has rx-a "Thuốc A" 08/10 (100) log {08, 09}; file B has rx-b "thuốc a " 08/10, log {09, 11}
+  // → one course (rx-a), log {08, 09, 11}, remaining 97; preview "1 ngày ghi thuốc"; result "Bỏ qua 1 ngày ghi thuốc đã có trên máy."
+  merge: { a: { courses: [md('rx-a', 'Thuốc A', '2026-10-08', 100)], log: [me('2026-10-08'), me('2026-10-09')] },
+    b: { courses: [md('rx-b', 'thuốc a ', '2026-10-08', 100)], log: [me('2026-10-09'), me('2026-10-11')] }, days: ['2026-10-08', '2026-10-09', '2026-10-11'] },
+  broken: { record: { key: 'med', courses: 'x', log: [], updatedAt: 1 }, text: 'Không đọc được dữ liệu thuốc — dữ liệu vẫn còn nguyên.' },
+  stale: 'Lịch thuốc vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.',
+  timezones: [['America/Los_Angeles', '2026-10-15T09:00:00+07:00'], ['Asia/Tokyo', '2026-10-15T23:30:00+07:00']]   // both write date 2026-10-15
+};
+const medSel = {
+  seg: '#healthSeg', segBtn: k => '#healthSeg [data-health-seg="' + k + '"]',   // med | cycle (aria-pressed)
+  pane: '#medPane', body: '#medBody', err: '#medErr', take: '#medTake', undo: '#medUndo', done: '#medBody .med-done', stats: '#medBody .med-stat',
+  visit: '#medBody .med-visit', cal: '#medCal', calTitle: '#medCalTitle', day: d => '#medCal [data-md-day="' + d + '"]',
+  nav: k => '#medCal [data-mcal-nav="' + k + '"]', month: '#medCal .med-month', info: '#medDayInfo', toggle: '#medDayInfo [data-md="toggle"]',
+  note: '#medDayInfo [data-md="note"]', dayErr: '#medDayErr', courses: '#medCourses [data-md-course]', add: '#medBody [data-md="add"]',
+  card: '#medCard', homeTake: '#medHomeTake', homeOpen: '#medHomeOpen', cardErr: '#medCardErr',
+  sheet: '#medSheet', form: '#medForm', name: '#mdName', start: '#mdStart', pills: '#mdPills', perDay: '#mdPerDay [data-step]', perDayVal: '#mdPerDayVal',
+  visitDate: '#mdVisit', end: '#mdEnd', endField: '#mdEndField', preview: '#mdPreview', closeNote: '#mdCloseNote', formErr: '#medFormErr', save: '#medSave',
+  del: '#medDelete', confirm: '#medConfirm', confirmText: '#medConfirmText', confirmYes: '#medConfirmYes', confirmNo: '#medConfirmNo',
+  noteSheet: '#medNoteSheet', noteTitle: '#medNoteTitle', noteText: '#mdnText', noteSave: '#mdnSave',
+  show: '#medShow', morning: '#medMorning', quiet: '#medQuiet', test: '#btnMedTest', testNote: '#medTestNote', open: '#btnMedOpen'
+};
+
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
 async function seedPhotoList(page, list) {
   await page.evaluate(async list => {
@@ -642,4 +713,5 @@ function badgeStubScript() {
 
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
-  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel, recap, recapSel };
+  wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel, recap, recapSel,
+  md, me, mn, medRecord, med, medSel };

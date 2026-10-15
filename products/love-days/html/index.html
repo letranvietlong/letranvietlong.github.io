@@ -123,6 +123,12 @@
       <div id="upcomingBody"></div>
     </section>
 
+    <section class="card med-card" id="medCard" aria-labelledby="medTitle" hidden>
+      <h2 class="card-kicker" id="medTitle">Thuốc</h2>
+      <div id="medCardBody"></div>
+      <p class="form-error" id="medCardErr" role="alert" hidden></p>
+    </section>
+
     <section class="card journal-card" id="journalCard" aria-labelledby="journalTitle" hidden>
       <h2 class="card-kicker" id="journalTitle">Hôm nay thế nào?</h2>
       <div id="journalCardBody"></div>
@@ -165,13 +171,24 @@
     </div>
   </section>
 
-  <!-- Album -->
+  <!-- Sức khoẻ: Thuốc + Chu kỳ. The id keeps its old name "cycle" (tab lists in love-days.js, test fixtures). -->
   <section id="tab-cycle" class="view" hidden>
-    <div class="view-head"><h2 class="view-title">Chu kỳ</h2></div>
-    <p class="form-error" id="cycleTabErr" role="alert" hidden></p>
-    <div class="cycle-list" id="cycleList"></div>
+    <div class="view-head"><h2 class="view-title">Sức khoẻ</h2></div>
+    <div class="segmented health-seg" id="healthSeg" role="group" aria-label="Phần đang xem">
+      <button type="button" class="seg-btn" data-health-seg="med" aria-pressed="true">Thuốc</button>
+      <button type="button" class="seg-btn" data-health-seg="cycle" aria-pressed="false">Chu kỳ</button>
+    </div>
+    <div id="medPane">
+      <p class="form-error" id="medErr" role="alert" hidden></p>
+      <div class="med-body" id="medBody"></div>
+    </div>
+    <div id="cyclePane" hidden>
+      <p class="form-error" id="cycleTabErr" role="alert" hidden></p>
+      <div class="cycle-list" id="cycleList"></div>
+    </div>
   </section>
 
+  <!-- Album -->
   <section id="tab-album" class="view" hidden>
     <div class="view-head">
       <h2 class="view-title">Album</h2>
@@ -283,6 +300,43 @@
       </label>
     </section>
 
+    <h3 class="group-title" id="medSetTitle">Thuốc</h3>
+    <section class="card" id="medSetCard" aria-labelledby="medSetTitle">
+      <label class="check">
+        <input type="checkbox" id="medShow" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Hiện hàng Thuốc ở Trang chủ</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="medMorning" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Thêm dòng thuốc vào thông báo sáng</span>
+      </label>
+      <p class="card-hint med-set-hint">Nhắc khi hôm nay hoặc hôm qua chưa ghi uống, khi sắp hết thuốc và trước ngày tái khám 7 ngày, 1 ngày, đúng ngày. Không ghi tên thuốc.</p>
+      <label class="check">
+        <input type="checkbox" id="medQuiet" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Nhắc kín (không ghi tên thuốc)</span>
+      </label>
+      <button type="button" class="btn btn-soft btn-block med-test" id="btnMedTest">Gửi thử nhắc uống thuốc</button>
+      <p class="card-hint" id="medTestNote" role="status" hidden></p>
+      <p class="form-error" id="medTestErr" role="alert" hidden></p>
+      <button type="button" class="row-link" id="btnMedOpen">
+        <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>
+        <span class="row-link-label">Mở Thuốc</span>
+        <svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <details class="more">
+        <summary><span class="more-head">Nhắc 8:00 mỗi sáng (làm một lần)<svg class="more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+        <ol class="push-steps">
+          <li>Trên máy cần nhắc: Cài đặt → Thông báo → <b>Bật thông báo</b> → <b>Sao chép</b> mã.</li>
+          <li>GitHub → Settings → Secrets → Actions → <code>LOVE_REMINDER_PUSH_SUBSCRIPTIONS</code> = mã vừa sao chép.</li>
+          <li>Nhắc tới khoảng 8:00–9:00 sáng; đã uống thì thông báo chỉ xác nhận.</li>
+          <li>App báo “mã đã đổi” → cập nhật mã ở cả hai secret.</li>
+        </ol>
+      </details>
+    </section>
+
     <h3 class="group-title" id="cycleSetTitle">Chu kỳ</h3>
     <section class="card" id="cycleSetCard" aria-labelledby="cycleSetTitle">
       <label class="check">
@@ -311,7 +365,7 @@
       </div>
       <button type="button" class="row-link" id="btnCycleBook">
         <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4zM6 18a2 2 0 0 1 2-2h11M10 8h5"/></svg>
-        <span class="row-link-label">Mở tab Chu kỳ</span>
+        <span class="row-link-label">Mở Chu kỳ</span>
         <svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
     </section>
@@ -325,7 +379,7 @@
         <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
         <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
       </div>
-      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
+      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
       <p class="form-error" id="backupError" role="alert" hidden></p>
     </section>
 
@@ -371,6 +425,7 @@
           <li><b>Sao chép</b> mã, gửi người giữ repo.</li>
           <li>GitHub → Settings → Secrets → Actions → <code>LOVE_PUSH_SUBSCRIPTIONS</code> = <code>[mã máy anh, mã máy em]</code>.</li>
           <li>App báo “mã đã đổi” → làm lại bước 2–4 trên máy đó.</li>
+          <li>Nhắc uống thuốc lúc 8:00: xem Cài đặt → Thuốc.</li>
         </ol>
       </details>
     </section>
@@ -404,8 +459,8 @@
     <span>Kỷ niệm</span>
   </button>
   <button type="button" class="tabbar-btn" data-tab="cycle">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c3 3.6 5.5 6.7 5.5 9.9a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.3 5.5-9.9z"/><path d="M9.2 13.6a2.9 2.9 0 0 0 2.4 2.7"/></svg>
-    <span>Chu kỳ</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>
+    <span>Sức khoẻ</span>
   </button>
   <button type="button" class="tabbar-btn" data-tab="album">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
@@ -611,6 +666,90 @@
         <button type="button" class="btn btn-ghost" id="cycleConfirmNo">Giữ lại</button>
       </div>
     </div>
+  </form>
+</div>
+
+<div class="sheet" id="medSheet" role="dialog" aria-modal="true" aria-labelledby="medSheetTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="medSheetTitle">Thêm đợt thuốc</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="medForm" novalidate>
+    <div class="field">
+      <label class="field-label" for="mdName">Tên thuốc</label>
+      <input type="text" id="mdName" maxlength="40" autocomplete="off" placeholder="Ví dụ: Thuốc A" aria-describedby="mdNameErr">
+      <p class="field-error" id="mdNameErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="mdStartLabel">Ngày bắt đầu</span>
+      <input type="hidden" id="mdStart">
+      <button type="button" class="date-field is-empty" id="mdStartBtn" data-date-for="mdStart" data-date-title="Ngày bắt đầu uống" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="mdStartLabel mdStartBtn" aria-describedby="mdStartErr"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="mdStartErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="mdPills">Tổng số viên</label>
+      <input type="text" id="mdPills" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="Ví dụ: 60" aria-describedby="mdPillsErr">
+      <p class="field-error" id="mdPillsErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="mdPerDayLabel">Mỗi ngày uống</span>
+      <div class="stepper" id="mdPerDay" role="group" aria-labelledby="mdPerDayLabel">
+        <button type="button" class="stepper-btn" data-step="-1" aria-label="Bớt một viên">−</button>
+        <output class="stepper-val" id="mdPerDayVal" aria-live="polite">1 viên</output>
+        <button type="button" class="stepper-btn" data-step="1" aria-label="Thêm một viên">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="mdVisitLabel">Ngày tái khám <em>(không bắt buộc)</em></span>
+      <input type="hidden" id="mdVisit">
+      <button type="button" class="date-field is-empty" id="mdVisitBtn" data-date-for="mdVisit" data-date-title="Ngày tái khám" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="mdVisitLabel mdVisitBtn" aria-describedby="mdVisitErr"><span class="date-field-text">Chưa hẹn</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="mdVisitErr" role="alert" hidden></p>
+    </div>
+    <div class="field" id="mdEndField" hidden>
+      <span class="field-label" id="mdEndLabel">Ngày kết thúc <em>(không bắt buộc)</em></span>
+      <input type="hidden" id="mdEnd">
+      <button type="button" class="date-field is-empty" id="mdEndBtn" data-date-for="mdEnd" data-date-title="Ngày kết thúc đợt thuốc" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="mdEndLabel mdEndBtn" aria-describedby="mdEndErr"><span class="date-field-text">Đang dùng</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="mdEndErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="mdNote">Ghi chú</label>
+      <textarea id="mdNote" maxlength="200" rows="2"></textarea>
+    </div>
+    <p class="card-hint md-preview" id="mdPreview" role="status" hidden></p>
+    <p class="card-hint md-preview" id="mdCloseNote" hidden></p>
+    <p class="form-error" id="medFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="medSave">Lưu đợt thuốc</button>
+    <button type="button" class="btn btn-danger btn-block" id="medDelete" hidden>Xoá đợt thuốc</button>
+    <div class="confirm-row" id="medConfirm" hidden>
+      <p class="confirm-text" id="medConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="medConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="medConfirmNo">Giữ lại</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="medNoteSheet" role="dialog" aria-modal="true" aria-labelledby="medNoteTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="medNoteTitle">Ghi chú</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="medNoteForm" novalidate>
+    <div class="field">
+      <label class="field-label" for="mdnText">Ghi chú ngày này</label>
+      <textarea id="mdnText" maxlength="200" rows="3" placeholder="Ví dụ: quên vì đi công tác, hơi chóng mặt" aria-describedby="mdnCount mdnErr"></textarea>
+      <p class="j-count" id="mdnCount" aria-live="off">0/200</p>
+      <p class="field-error" id="mdnErr" role="alert" hidden></p>
+    </div>
+    <p class="form-error" id="mdnFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="mdnSave">Lưu ghi chú</button>
   </form>
 </div>
 
