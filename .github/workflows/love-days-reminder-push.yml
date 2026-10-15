@@ -1,0 +1,113 @@
+name: LoveDays reminder push
+
+on:
+  schedule:
+    # 01:07 và 02:07 UTC = 08:07 và 09:07 giờ VN, phút :07 né slot :00/:30 mà
+    # GitHub hay bỏ khi quá tải. Hai lượt để lượt nào lọt cũng gửi được;
+    # send_push.py --kind reminder chỉ gửi 1 lần mỗi ngày VN
+    # (data/reminder-push-state.json) và tự bỏ qua ngoài 07:30–11:00 giờ VN.
+    - cron: "7 1,2 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Gửi kể cả khi hôm nay đã gửi hoặc ngoài khung giờ"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Chạy thử: không gửi, không ghi trạng thái"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: love-days-reminder-push
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      # Only this workflow's own subscriptions secret decides (the VAPID key is
+      # shared with the other apps): until it is set, end green with a plain echo.
+      - name: Check secrets
+        id: cfg
+        env:
+          LOVE_REMINDER_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_REMINDER_PUSH_SUBSCRIPTIONS }}
+        run: |
+          if [ -n "$LOVE_REMINDER_PUSH_SUBSCRIPTIONS" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Lời nhắc LoveDays chưa cấu hình (LOVE_REMINDER_PUSH_SUBSCRIPTIONS trống) — bỏ qua."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.configured == 'true'
+
+      # The 09:07 run can be queued before a late 08:07 run has committed its
+      # state; checking out the queued SHA would then miss it and send twice.
+      # Moving to the newest main first reads the latest state.
+      - name: Refresh state
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          if git fetch origin main; then
+            git reset --hard FETCH_HEAD
+          else
+            echo "Không lấy được main mới nhất — dùng trạng thái của lần checkout."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          python-version: "3.x"
+
+      - run: pip install pywebpush==2.5.0
+        if: steps.cfg.outputs.configured == 'true'
+
+      - name: Send push
+        if: steps.cfg.outputs.configured == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          LOVE_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY || secrets.LOVE_VAPID_PRIVATE_KEY }}
+          LOVE_REMINDER_PUSH_SUBSCRIPTIONS: ${{ secrets.LOVE_REMINDER_PUSH_SUBSCRIPTIONS }}
+          LOVE_VAPID_SUB: ${{ secrets.LOVE_VAPID_SUB }}
+          FORCE: ${{ inputs.force }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=""
+          if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python products/love-days/py/send_push.py --kind reminder $ARGS
+
+      - name: Commit and push state
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          STATE=products/love-days/data/reminder-push-state.json
+          if [ ! -f "$STATE" ]; then
+            echo "No push state yet."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$STATE"
+          if git diff --cached --quiet; then
+            echo "No push state change to commit."
+            exit 0
+          fi
+          DAY=$(python -c "import json; print(json.load(open('$STATE', encoding='utf-8')).get('lastSentDate'))" || echo "?")
+          git commit -m "Love-days reminder push: ${DAY}"
+
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $i failed (branch likely moved), retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Giving up after 5 push attempts."
+          exit 1

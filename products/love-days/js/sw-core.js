@@ -107,18 +107,19 @@ var ICON_URL = "/products/love-days/img/love-days-icon-180.png";
 // milestones (only needed for the reminder lines) are read on their own after
 // the kv transaction: if that read fails the result is just milestones: null,
 // and the day count still comes from this device.
-function readPushData(){
+// ok:false = IndexedDB could not be read at all (not the same as "no data").
+function readPushData(skipMilestones){
   return LoveCore.openDb().then(function(db){
     return Promise.resolve().then(function(){
       var tx = db.transaction("kv"), st = tx.objectStore("kv"), out = {};
-      ["profile", "cycles", "meta", "wishes"].forEach(function(k){
+      ["profile", "cycles", "meta", "wishes", "med"].forEach(function(k){
         var rq = st.get(k);
         rq.onsuccess = function(){ out[k] = rq.result; };
       });
       return LoveCore.txDone(tx).then(function(){ return out; });
     }).then(function(out){
       out.milestones = null;
-      if(out.meta && out.meta.dayRemind === false) return out;
+      if(skipMilestones || (out.meta && out.meta.dayRemind === false)) return out;
       return Promise.resolve().then(function(){
         return LoveCore.idbGetAll(db, "milestones");
       }).then(function(list){ out.milestones = list; }, function(){}).then(function(){ return out; });
@@ -132,8 +133,8 @@ function readPushData(){
   }).then(function(out){
     var p = out.profile;
     return { start: p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null, cycles: out.cycles, meta: out.meta,
-             profileRaw: p, wishes: out.wishes, milestones: out.milestones };
-  }).catch(function(){ return { start: null, cycles: null, meta: null, profileRaw: null, wishes: null, milestones: null }; });
+             profileRaw: p, wishes: out.wishes, milestones: out.milestones, med: out.med, ok: true };
+  }).catch(function(){ return { start: null, cycles: null, meta: null, profileRaw: null, wishes: null, milestones: null, med: null, ok: false }; });
 }
 
 function pushInfo(payload){
@@ -177,10 +178,21 @@ function dayLines(info){
   }catch(e){ return []; }
 }
 
+// Up to two medication lines (kv meta: medMorning, default true), placed
+// before the milestone lines so the 300-character cut never drops them.
+// [] when this device has no course in use today: the body is then exactly as before.
+function medLines(info){
+  try{
+    if(!info || !info.own || !LoveCore.medMorningLines) return [];
+    var lines = LoveCore.medMorningLines(info.own.med, info.own.meta, info.now);
+    return Array.isArray(lines) ? lines : [];
+  }catch(e){ return []; }
+}
+
 function withReminders(body, info){
   var cyc = cycleLine(info);
   try{
-    if(LoveCore.pushBody) return LoveCore.pushBody(body, cyc, dayLines(info));
+    if(LoveCore.pushBody) return LoveCore.pushBody(body, cyc, medLines(info).concat(dayLines(info)));
   }catch(e){}
   return body + (cyc ? "\n" + cyc : "");
 }
@@ -200,11 +212,35 @@ function dailyContent(info){
   return { title: "💕 Ngày thứ " + nTxt, body: body };
 }
 
+// ---------- 8:00 medication reminder (.github/workflows/love-days-reminder-push.yml) ----------
+// Payload { kind: "med", date }: the text is built here from this device's
+// own record, for the day the push was sent (a late one doesn't say "today").
+var MED_FALLBACK_BODY = "Mở app để xem lịch uống thuốc hôm nay.";
+function showMed(title, body){
+  return self.registration.showNotification(title, { body: body, tag: "love-days-med", icon: ICON_URL, data: { open: "med" } });
+}
+function medPush(payload){
+  return readPushData(true).then(function(data){
+    var c = null;
+    try{
+      if(data.ok && LoveCore.medPushContent) c = LoveCore.medPushContent(data.med, data.meta, payload.date, Date.now());
+    }catch(e){ c = null; }
+    if(!c || typeof c.title !== "string" || typeof c.body !== "string") c = { title: "💊 Nhắc uống thuốc", body: MED_FALLBACK_BODY };
+    return showMed(c.title, c.body);
+  }).catch(function(){
+    return showMed("💊 Nhắc uống thuốc", MED_FALLBACK_BODY);
+  });
+}
+
 self.addEventListener("push", function(event){
   var payload = null;
   try{ payload = event.data ? event.data.json() : null; }catch(e){ payload = null; }
   // iOS revokes the subscription of a SW that receives pushes without
   // showing a notification, so every path below ends in showNotification.
+  if(payload && payload.kind === "med"){
+    event.waitUntil(medPush(payload));
+    return;
+  }
   event.waitUntil(
     pushInfo(payload).catch(function(){ return null; }).then(function(info){
       var c = dailyContent(info);
@@ -224,14 +260,22 @@ self.addEventListener("push", function(event){
   );
 });
 
+// A medication notification opens the Thuốc part: an open window gets
+// postMessage({ type: "open", target: "med" }), otherwise the app opens at
+// APP_URL + "?open=med" (the fetch handler drops the query, so it works offline).
 self.addEventListener("notificationclick", function(event){
+  var data = event.notification.data;
+  var med = !!(data && data.open === "med");
   event.notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(list){
       for(var i = 0; i < list.length; i++){
-        if(new URL(list[i].url).pathname.indexOf("/products/love-days/") === 0 && "focus" in list[i]) return list[i].focus();
+        if(new URL(list[i].url).pathname.indexOf("/products/love-days/") === 0 && "focus" in list[i]){
+          if(med){ try{ list[i].postMessage({ type: "open", target: "med" }); }catch(e){} }
+          return list[i].focus();
+        }
       }
-      return self.clients.openWindow(APP_URL);
+      return self.clients.openWindow(med ? APP_URL + "?open=med" : APP_URL);
     })
   );
 });

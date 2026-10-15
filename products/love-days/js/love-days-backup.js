@@ -72,6 +72,32 @@
     return { items: out, skipped: skipped };
   }
 
+  // Same contract for the medication record { courses, log }: anything
+  // malformed refuses the file; a repeated course id, a course overlapping one
+  // read before it, or a second entry for a day only drops that one item.
+  function readMed(obj){
+    if(!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+    if(!Array.isArray(obj.courses) || !Array.isArray(obj.log)) return null;
+    if(obj.courses.length > C.MED_MAX_COURSES || obj.log.length > C.MED_MAX_LOG) return null;
+    var courses = [], ids = Object.create(null), skippedCourses = 0, i, v;
+    for(i = 0; i < obj.courses.length; i++){
+      v = C.validateMedCourse(obj.courses[i]);
+      if(!v) return null;
+      if(ids[v.id] || C.medOverlap(courses, v)){ skippedCourses++; continue; }
+      ids[v.id] = true;
+      courses.push(v);
+    }
+    var log = [], days = Object.create(null), skippedDays = 0;
+    for(i = 0; i < obj.log.length; i++){
+      v = C.validateMedEntry(obj.log[i]);
+      if(!v) return null;
+      if(days[v.date]){ skippedDays++; continue; }
+      days[v.date] = true;
+      log.push(v);
+    }
+    return { courses: courses, log: log, skippedCourses: skippedCourses, skippedDays: skippedDays };
+  }
+
   // ---------- CRC32 ----------
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -166,7 +192,8 @@
   }
 
   // src: { profile, milestones, photos (validated metadata), cycles (validated; null or empty = no "cycles" key),
-  //        wishes, journal (same rule as cycles), readBlob(id) → Promise<record|null> }
+  //        wishes, journal (same rule as cycles), med (null or { courses, log } validated; both empty = no "med" key),
+  //        readBlob(id) → Promise<record|null> }
   async function buildBackup(src, nowMs, onProgress){
     if(src.photos.length > MAX_PHOTOS) fail("Album có " + C.fmtInt(src.photos.length) + " ảnh, vượt giới hạn " + C.fmtInt(MAX_PHOTOS) + " ảnh của một bản sao lưu. Hãy xoá bớt ảnh rồi thử lại.");
     if(src.milestones.length > MAX_MILESTONES) fail("Có " + C.fmtInt(src.milestones.length) + " kỷ niệm, vượt giới hạn " + C.fmtInt(MAX_MILESTONES) + " kỷ niệm của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
@@ -189,10 +216,23 @@
       if(src.journal.length > C.MAX_JOURNAL) fail("Nhật ký có " + C.fmtInt(src.journal.length) + " ngày, vượt giới hạn " + C.fmtInt(C.MAX_JOURNAL) + " ngày của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
       journal = src.journal.map(function(e){ return { date: e.date, mood: e.mood, text: e.text, updatedAt: e.updatedAt }; });
     }
+    var med = null;
+    if(src.med && ((src.med.courses || []).length || (src.med.log || []).length)){
+      var mc = src.med.courses || [], ml = src.med.log || [];
+      if(mc.length > C.MED_MAX_COURSES) fail("Có " + C.fmtInt(mc.length) + " đợt thuốc, vượt giới hạn " + C.fmtInt(C.MED_MAX_COURSES) + " đợt của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      if(ml.length > C.MED_MAX_LOG) fail("Có " + C.fmtInt(ml.length) + " ngày ghi thuốc, vượt giới hạn " + C.fmtInt(C.MED_MAX_LOG) + " ngày của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      med = {
+        courses: mc.map(function(c){
+          return { id: c.id, name: c.name, perDay: c.perDay, startDate: c.startDate, totalPills: c.totalPills,
+                   visitDate: c.visitDate, endDate: c.endDate, note: c.note, createdAt: c.createdAt };
+        }),
+        log: ml.map(function(e){ return { date: e.date, taken: e.taken, note: e.note, at: e.at }; })
+      };
+    }
     // The reader refuses a love-days.json over MAX_MANIFEST_BYTES. Checked
     // here without the photo list (fail before reading every photo) and again
     // on the finished manifest below.
-    var early = { profile: src.profile, milestones: src.milestones, cycles: cycles, wishes: wishes, journal: journal };
+    var early = { profile: src.profile, milestones: src.milestones, cycles: cycles, wishes: wishes, journal: journal, med: med };
     if(utf8Bytes(JSON.stringify(early)).byteLength > MAX_MANIFEST_BYTES) failManifest();
     var zip = zipWriter(nowMs);
     var photos = src.photos.slice().sort(function(a, b){ return a.order - b.order; });
@@ -237,6 +277,7 @@
     if(cycles) manifest.cycles = cycles;
     if(wishes) manifest.wishes = wishes;
     if(journal) manifest.journal = journal;
+    if(med) manifest.med = med;
     // Written last because it records the byte size of every image read
     // above; entry order doesn't matter to readZip().
     var manifestBytes = utf8Bytes(JSON.stringify(manifest));
@@ -246,10 +287,11 @@
     var name = "love-days-backup-" + C.todayStr(nowMs) + ".zip";
     return { file: new File([blob], name, { type: "application/zip" }), name: name, size: blob.size,
              counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length,
-                       cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null, journal: journal ? journal.length : null } };
+                       cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null, journal: journal ? journal.length : null,
+                       medCourses: med ? med.courses.length : null, medDays: med ? med.log.length : null } };
   }
   function failManifest(){
-    fail("Phần chữ của bản sao lưu (kỷ niệm, việc muốn làm, nhật ký, chú thích ảnh) vượt " + (MAX_MANIFEST_BYTES / 1048576) + " MB — hãy xoá bớt rồi thử lại.");
+    fail("Phần chữ của bản sao lưu (kỷ niệm, việc muốn làm, nhật ký, thuốc, chú thích ảnh) vượt " + (MAX_MANIFEST_BYTES / 1048576) + " MB — hãy xoá bớt rồi thử lại.");
   }
 
   // ---------- ZIP reader ----------
@@ -391,6 +433,15 @@
       if(rj.items.length) journal = rj.items;
       journalSkipped = rj.skipped;
     }
+    // Same for medication: an older core leaves the key unread (device's record kept).
+    var med = null, medSkippedCourses = 0, medSkippedDays = 0;
+    if(data.med != null && C.validateMedCourse){
+      var rm = readMed(data.med);
+      if(!rm) badData("dữ liệu thuốc sai");
+      if(rm.courses.length || rm.log.length) med = { courses: rm.courses, log: rm.log };
+      medSkippedCourses = rm.skippedCourses;
+      medSkippedDays = rm.skippedDays;
+    }
 
     // Dry run: the exact derivation the home/milestone screens perform.
     try{
@@ -408,11 +459,22 @@
         var y = +journal[0].date.slice(0, 4), mo = +journal[0].date.slice(5, 7);
         if(!C.journalMonth(journal, y, mo).count) throw new Error("journal");
       }
+      if(med){
+        med.courses.forEach(function(c){
+          var ms = C.medStats(c, med.log, nowMs);
+          if(!ms || !isFinite(ms.remaining)) throw new Error("med");
+        });
+        if(med.log.length){
+          var my = +med.log[0].date.slice(0, 4), mm = +med.log[0].date.slice(5, 7);
+          if(C.medMonth(med.courses, med.log, my, mm, nowMs).grid.length < 35) throw new Error("med");
+        }
+      }
     }catch(e){ fail("Dữ liệu trong bản sao lưu không hiển thị được nên không nhập."); }
 
     var exportedAt = Date.parse(data.exportedAt);
     return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images, cycles: cycles, cyclesSkipped: cyclesSkipped,
              wishes: wishes, wishesSkipped: wishesSkipped, journal: journal, journalSkipped: journalSkipped,
+             med: med, medSkippedCourses: medSkippedCourses, medSkippedDays: medSkippedDays,
              exportedAt: isFinite(exportedAt) ? exportedAt : null };
   }
 
@@ -431,9 +493,46 @@
     var cy = planCycles(parsed, local, false, nowMs);
     var wi = planWishes(parsed, local, false, nowMs);
     var jo = planJournal(parsed, local, false, nowMs);
+    var md = planMed(parsed, local, false, nowMs);
     return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM,
              addCycles: cy.added, skipCycles: cy.skipped, addWishes: wi.added, skipWishes: wi.skipped, overWishes: wi.over,
-             addJournal: jo.added, skipJournal: jo.skipped, overJournal: jo.over };
+             addJournal: jo.added, skipJournal: jo.skipped, overJournal: jo.over,
+             addMedDays: md.addedDays, upgradedMedDays: md.upgradedDays, sameMedDays: md.sameDays, overMed: md.over,
+             addMedCourses: md.addedCourses, sameMedCourses: md.sameCourses, clashMedCourses: md.clashCourses, overMedCourses: md.overCourses };
+  }
+
+  // planJournal's twin for medication (kv 'med'). Merge goes through
+  // C.mergeMed (days joined, "taken" on either side wins). Entries the page
+  // couldn't read (local.medBad) are written back unchanged.
+  function planMed(parsed, local, replace, nowMs){
+    var none = { record: null, addedCourses: 0, sameCourses: 0, clashCourses: 0, overCourses: 0,
+                 addedDays: 0, upgradedDays: 0, sameDays: 0, over: 0, kept: false };
+    var res = function(o){ return Object.assign({}, none, o); };
+    // A snapshot without med comes from an older cached page that can't see it: keep the device's.
+    if(!local.med || typeof local.med !== "object" || !Array.isArray(local.med.courses) || !Array.isArray(local.med.log)){
+      return res({ kept: !!parsed.med || replace });
+    }
+    var mine = local.med, bad = local.medBad && typeof local.medBad === "object" ? local.medBad : {};
+    var badC = Array.isArray(bad.courses) ? bad.courses : [], badL = Array.isArray(bad.log) ? bad.log : [];
+    if(!parsed.med){
+      return res({ kept: replace && (mine.courses.length > 0 || mine.log.length > 0 || badC.length > 0 || badL.length > 0 || !!local.medBroken) });
+    }
+    if(local.medBroken) return res({ kept: true });
+    var next, out;
+    if(replace){
+      next = parsed.med;
+      out = res({ addedCourses: next.courses.length, addedDays: next.log.length });
+    } else {
+      var mg = C.mergeMed(mine, parsed.med);
+      next = mg;
+      out = res({ addedCourses: mg.addedCourses, sameCourses: mg.sameCourses, clashCourses: mg.clashCourses, overCourses: mg.overCourses || 0,
+                  addedDays: mg.addedDays, upgradedDays: mg.upgradedDays, sameDays: mg.sameDays, over: mg.over });
+    }
+    var stamp = typeof local.medStamp === "number" && nowMs <= local.medStamp ? local.medStamp + 1 : nowMs;
+    if(replace || out.addedCourses || out.addedDays || out.upgradedDays){
+      out.record = { key: "med", courses: next.courses.concat(badC), log: next.log.concat(badL), updatedAt: stamp };
+    }
+    return out;
   }
 
   // planWishes' twin for the journal (kv 'journal'), same rules.
@@ -502,7 +601,8 @@
   //
   // ctx: { db, parsed, mode:'merge'|'replace',
   //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp,
-  //                wishes, wishesBad, wishesBroken, wishesStamp, journal, journalBad, journalBroken, journalStamp },
+  //                wishes, wishesBad, wishesBroken, wishesStamp, journal, journalBad, journalBroken, journalStamp,
+  //                med:{courses, log}, medBad:{courses, log}, medBroken, medStamp },
   //        nowMs, onProgress(done,total) }
   async function importBackup(ctx){
     var db = ctx.db, parsed = ctx.parsed, local = ctx.local, replace = ctx.mode === "replace";
@@ -598,11 +698,13 @@
     var cy = planCycles(parsed, local, replace, ctx.nowMs);
     var wi = planWishes(parsed, local, replace, ctx.nowMs);
     var jo = planJournal(parsed, local, replace, ctx.nowMs);
+    var md = planMed(parsed, local, replace, ctx.nowMs);
 
     try{
       await finalSwitch(db, {
         replace: replace, staged: staged, records: records, profile: profile,
-        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record, journal: jo.record
+        milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record, journal: jo.record,
+        med: md.record
       });
     }catch(err){
       await discardStaged();
@@ -618,7 +720,11 @@
              wishesInFile: !!parsed.wishes, addedWishes: wi.added, skippedWishes: wi.skipped, overWishes: wi.over, wishesKept: wi.kept,
              clashedWishes: parsed.wishesSkipped || 0,
              journalInFile: !!parsed.journal, addedJournal: jo.added, skippedJournal: jo.skipped, overJournal: jo.over, journalKept: jo.kept,
-             clashedJournal: parsed.journalSkipped || 0 };
+             clashedJournal: parsed.journalSkipped || 0,
+             medInFile: !!parsed.med, addedMedCourses: md.addedCourses, sameMedCourses: md.sameCourses, clashMedCourses: md.clashCourses,
+             overMedCourses: md.overCourses, addedMedDays: md.addedDays, upgradedMedDays: md.upgradedDays, skippedMedDays: md.sameDays,
+             overMed: md.over, medKept: md.kept,
+             clashedMedCourses: parsed.medSkippedCourses || 0, clashedMedDays: parsed.medSkippedDays || 0 };
   }
 
   function finalSwitch(db, s){
@@ -658,6 +764,7 @@
         if(s.cycles) tx.objectStore("kv").put(s.cycles);
         if(s.wishes) tx.objectStore("kv").put(s.wishes);
         if(s.journal) tx.objectStore("kv").put(s.journal);
+        if(s.med) tx.objectStore("kv").put(s.med);
       }
       if(!pending){ writeAll(); return; }
       s.staged.forEach(function(id){

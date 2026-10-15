@@ -1,11 +1,19 @@
-"""Send LoveDays' daily Web Push to every subscribed iPhone (at most once per
-Vietnam day). Run by .github/workflows/love-days-push.yml.
+"""Send LoveDays' Web Push to every subscribed iPhone (at most once per
+Vietnam day and kind).
+  --kind daily     (default) the morning "Ngày thứ N" push, run by
+                   .github/workflows/love-days-push.yml
+  --kind reminder  the 8:00 medication reminder, run by
+                   .github/workflows/love-days-reminder-push.yml; payload
+                   {"kind":"med","date"} only — the phone builds the text from
+                   its own data. Sent only between 07:30 and 11:00 VN (unless
+                   --force), TTL until 12:00 VN.
 
 Env (GitHub secrets):
   LOVE_VAPID_PRIVATE_KEY   required — raw base64url private key ("privateKey"
                            from `npx web-push generate-vapid-keys --json`)
-  LOVE_PUSH_SUBSCRIPTIONS  required — JSON array of the objects the app's
+  LOVE_PUSH_SUBSCRIPTIONS  required for --kind daily — JSON array of the objects the app's
                            "Sao chép" button produces: {label, endpoint, keys:{p256dh, auth}}
+  LOVE_REMINDER_PUSH_SUBSCRIPTIONS  required for --kind reminder — same format
   LOVE_START_DATE          optional — YYYY-MM-DD, only a fallback in the payload;
                            the phone computes the day from its own data
   LOVE_VAPID_SUB           optional — VAPID "sub" claim (Apple requires mailto: or https:)
@@ -26,11 +34,21 @@ import re
 import sys
 from urllib.parse import urlparse
 
-DEFAULT_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "push-state.json")
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+DEFAULT_STATE = os.path.join(DATA_DIR, "push-state.json")
 DEFAULT_SUB = "https://letranvietlong.github.io"
 TTL_SECONDS = 12 * 3600
 VN = dt.timedelta(hours=7)
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Neutral names on purpose: the Actions log and the state commits are public.
+KINDS = {
+    "daily": {"env": "LOVE_PUSH_SUBSCRIPTIONS", "state": DEFAULT_STATE},
+    "reminder": {"env": "LOVE_REMINDER_PUSH_SUBSCRIPTIONS", "state": os.path.join(DATA_DIR, "reminder-push-state.json")},
+}
+REMINDER_FROM = (7, 30)
+REMINDER_UNTIL = (11, 0)
+REMINDER_TTL_UNTIL_HOUR = 12
+MIN_TTL = 600
 
 
 class ConfigError(Exception):
@@ -87,7 +105,7 @@ def parse_subscriptions(raw):
     return out
 
 
-def load_config(today_vn):
+def load_config(today_vn, kind="daily"):
     key = os.environ.get("LOVE_VAPID_PRIVATE_KEY", "").strip()
     if not key:
         raise ConfigError("thiếu secret LOVE_VAPID_PRIVATE_KEY")
@@ -97,22 +115,23 @@ def load_config(today_vn):
     except Exception:
         raise ConfigError("LOVE_VAPID_PRIVATE_KEY không phải khoá VAPID hợp lệ (cần chuỗi privateKey dạng base64url)")
 
-    raw = os.environ.get("LOVE_PUSH_SUBSCRIPTIONS", "").strip()
+    env_name = KINDS[kind]["env"]
+    raw = os.environ.get(env_name, "").strip()
     if not raw:
-        raise ConfigError("thiếu secret LOVE_PUSH_SUBSCRIPTIONS")
+        raise ConfigError("thiếu secret %s" % env_name)
     try:
         subs = parse_subscriptions(raw)
     except ValueError:
-        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS không phải JSON hợp lệ — dán nguyên mã do nút Sao chép trong app tạo ra (nhiều máy: các mã cách nhau bằng dấu phẩy)")
+        raise ConfigError("%s không phải JSON hợp lệ — dán nguyên mã do nút Sao chép trong app tạo ra (nhiều máy: các mã cách nhau bằng dấu phẩy)" % env_name)
     if not subs:
-        raise ConfigError("LOVE_PUSH_SUBSCRIPTIONS đang rỗng — dán mã do nút Sao chép trong app tạo ra")
+        raise ConfigError("%s đang rỗng — dán mã do nút Sao chép trong app tạo ra" % env_name)
     devices = []
     for i, s in enumerate(subs):
         keys = s.get("keys") if isinstance(s, dict) else None
         endpoint = s.get("endpoint") if isinstance(s, dict) else None
         if not (isinstance(endpoint, str) and endpoint.startswith(("https://", "http://"))
                 and isinstance(keys, dict) and isinstance(keys.get("p256dh"), str) and isinstance(keys.get("auth"), str)):
-            raise ConfigError("mục thứ %d trong LOVE_PUSH_SUBSCRIPTIONS thiếu endpoint hoặc keys.p256dh/keys.auth" % (i + 1))
+            raise ConfigError("mục thứ %d trong %s thiếu endpoint hoặc keys.p256dh/keys.auth" % (i + 1, env_name))
         devices.append({
             "label": clean_label(s.get("label"), i),
             "host": urlparse(endpoint).hostname or "?",
@@ -121,6 +140,9 @@ def load_config(today_vn):
 
     payload = {"date": today_vn.isoformat()}
     start = os.environ.get("LOVE_START_DATE", "").strip()
+    if kind == "reminder":
+        payload = {"kind": "med", "date": today_vn.isoformat()}
+        start = ""
     if start:
         start_date = parse_date(start, "LOVE_START_DATE")
         n = (today_vn - start_date).days + 1
@@ -154,7 +176,7 @@ def write_state(path, state):
     os.replace(tmp, path)
 
 
-def send_all(vapid, devices, payload, sub_claim):
+def send_all(vapid, devices, payload, sub_claim, ttl=TTL_SECONDS, env_name="LOVE_PUSH_SUBSCRIPTIONS"):
     from pywebpush import webpush, WebPushException
 
     data = json.dumps(payload, separators=(",", ":"))
@@ -165,14 +187,14 @@ def send_all(vapid, devices, payload, sub_claim):
             # device needs a fresh one — reusing it would sign Apple's endpoint
             # with another push service's audience (403).
             webpush(d["info"], data=data, vapid_private_key=vapid, vapid_claims={"sub": sub_claim},
-                    ttl=TTL_SECONDS, timeout=30)
+                    ttl=ttl, timeout=30)
             delivered += 1
             log('Đã gửi tới "%s" (%s)' % (d["label"], d["host"]))
         except WebPushException as e:
             failed += 1
             status = e.status_code
             if status in (404, 410):
-                log('::warning::Thiết bị "%s" hết hạn đăng ký (%s) — gỡ khỏi secret LOVE_PUSH_SUBSCRIPTIONS và đăng ký lại trong app' % (d["label"], status))
+                log('::warning::Thiết bị "%s" hết hạn đăng ký (%s) — gỡ khỏi secret %s và đăng ký lại trong app' % (d["label"], status, env_name))
             else:
                 log('::warning::Thiết bị "%s" (%s) lỗi tạm (HTTP %s) — lần chạy sau sẽ thử lại' % (d["label"], d["host"], status if status is not None else "?"))
         except Exception as e:
@@ -188,16 +210,29 @@ def main(argv=None):
     ap.add_argument("--now", help="giờ hiện tại ISO 8601 có múi giờ (để test)")
     ap.add_argument("--force", action="store_true", help="gửi kể cả khi hôm nay đã gửi")
     ap.add_argument("--dry-run", action="store_true", help="chỉ in ra, không gửi, không ghi trạng thái")
-    ap.add_argument("--state", default=DEFAULT_STATE, help="đường dẫn push-state.json")
+    ap.add_argument("--state", default=None, help="đường dẫn file trạng thái (mặc định theo --kind)")
+    ap.add_argument("--kind", choices=sorted(KINDS), default="daily", help="daily = thông báo sáng, reminder = nhắc 8:00")
     args = ap.parse_args(argv)
+    kind = args.kind
+    if args.state is None:
+        args.state = KINDS[kind]["state"]
 
     try:
         now = parse_now(args.now)
         today_vn = (now + VN).date()
-        vapid, devices, payload, sub_claim = load_config(today_vn)
+        vapid, devices, payload, sub_claim = load_config(today_vn, kind)
     except ConfigError as e:
         log("::error::Cấu hình sai: %s" % e)
         return 2
+
+    ttl = TTL_SECONDS
+    if kind == "reminder":
+        local = now + VN
+        if not (REMINDER_FROM <= (local.hour, local.minute) < REMINDER_UNTIL) and not args.force:
+            log("Ngoài khung giờ nhắc uống thuốc (07:30–11:00 giờ Việt Nam), bỏ qua")
+            return 0
+        until = dt.datetime(today_vn.year, today_vn.month, today_vn.day, REMINDER_TTL_UNTIL_HOUR, tzinfo=dt.timezone.utc) - VN
+        ttl = max(MIN_TTL, int((until - now).total_seconds()))
 
     state = read_state(args.state)
     today = today_vn.isoformat()
@@ -206,14 +241,22 @@ def main(argv=None):
         return 0
 
     payload_desc = "ngày thứ %s" % payload["n"] if "n" in payload else "không kèm ngày bắt đầu"
+    if kind == "reminder":
+        if args.dry_run:
+            log("Chạy thử (--dry-run): sẽ gửi lời nhắc %s (TTL %d giây) tới %d thiết bị:" % (today, ttl, len(devices)))
+            for d in devices:
+                log('  - "%s" (%s)' % (d["label"], d["host"]))
+            return 0
+        log("Gửi lời nhắc %s (TTL %d giây) tới %d thiết bị" % (today, ttl, len(devices)))
     if args.dry_run:
         log("Chạy thử (--dry-run): sẽ gửi %s, %s, tới %d thiết bị:" % (today, payload_desc, len(devices)))
         for d in devices:
             log('  - "%s" (%s)' % (d["label"], d["host"]))
         return 0
 
-    log("Gửi thông báo %s (%s) tới %d thiết bị" % (today, payload_desc, len(devices)))
-    delivered, failed = send_all(vapid, devices, payload, sub_claim)
+    if kind == "daily":
+        log("Gửi thông báo %s (%s) tới %d thiết bị" % (today, payload_desc, len(devices)))
+    delivered, failed = send_all(vapid, devices, payload, sub_claim, ttl, KINDS[kind]["env"])
     log("Kết quả: %d thành công, %d lỗi" % (delivered, failed))
     if delivered == 0:
         log("::error::Không gửi được tới thiết bị nào — chưa ghi trạng thái, lần chạy sau sẽ thử lại")

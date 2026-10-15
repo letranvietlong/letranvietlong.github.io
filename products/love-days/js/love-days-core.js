@@ -590,6 +590,350 @@
     return { items: items, added: added, skipped: skipped, over: over };
   }
 
+  // ---------- Medication ("Thuốc", stored whole in kv 'med') ----------
+  // { courses: [Course], log: [Entry] }. One course in use at a time; days
+  // never overlap. The log is keyed by day and carries no course id: which
+  // course a day belongs to follows from the courses' date ranges, so two
+  // devices that typed in the same prescription still merge by day.
+  var MED_MAX_COURSES = 50;
+  var MED_MAX_LOG = 4000;
+  var MED_NAME_MAX = 40;
+  var MED_NOTE_MAX = 200;
+  var MED_PILLS_MAX = 2000;
+  var MED_PERDAY_MAX = 10;
+  var MED_LOW_DAYS = 7;
+  var MED_MIN_DATE = "2000-01-01";
+  // Fixed by the cron of love-days-reminder-push.yml (08:07 / 09:07 VN); the app can't change it.
+  var MED_TIME_LABEL = "8:00";
+  var MED_VISIT_AHEAD = [7, 1, 0];
+
+  function intIn(v, lo, hi){ return typeof v === "number" && Math.floor(v) === v && v >= lo && v <= hi; }
+  function medDate(s){ return isValidDate(s) && s >= MED_MIN_DATE; }
+  function dmy(s){ return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
+  function hhmm(ms){ var w = wall(ms); return pad2(w.h) + ":" + pad2(w.mi); }
+
+  // No "in the future" check: a course saved while the clock ran ahead must stay readable.
+  function validateMedCourse(c){
+    if(!c || typeof c !== "object") return null;
+    if(!str(c.id, 64) || !ID_RE.test(c.id)) return null;
+    if(!str(c.name, MED_NAME_MAX)) return null;
+    var name = wellFormed(c.name).trim();
+    if(!name) return null;
+    if(!intIn(c.perDay, 1, MED_PERDAY_MAX) || !intIn(c.totalPills, 1, MED_PILLS_MAX)) return null;
+    if(!medDate(c.startDate)) return null;
+    if(c.visitDate != null && !medDate(c.visitDate)) return null;
+    if(c.endDate != null && (!medDate(c.endDate) || c.endDate < c.startDate)) return null;
+    if(c.note != null && !str(c.note, MED_NOTE_MAX)) return null;
+    if(!num(c.createdAt)) return null;
+    return { id: c.id, name: name, perDay: c.perDay, startDate: c.startDate, totalPills: c.totalPills,
+             visitDate: c.visitDate == null ? null : c.visitDate, endDate: c.endDate == null ? null : c.endDate,
+             note: c.note ? wellFormed(c.note).trim() : "", createdAt: c.createdAt };
+  }
+
+  // An entry with nothing in it (not taken, no note) is not a valid entry: unticking such a day removes it.
+  function validateMedEntry(e){
+    if(!e || typeof e !== "object") return null;
+    if(!medDate(e.date) || typeof e.taken !== "boolean") return null;
+    if(e.note != null && !str(e.note, MED_NOTE_MAX)) return null;
+    if(e.at != null && !num(e.at)) return null;
+    var note = e.note ? wellFormed(e.note).trim() : "";
+    if(!e.taken && !note) return null;
+    return { date: e.date, taken: e.taken, note: note, at: e.taken && e.at != null ? e.at : null };
+  }
+
+  function newMedId(nowMs){ return "rx" + (num(nowMs) ? nowMs : Date.now()).toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  // Raw lists (as stored, or from a file) → validated, first of a repeated id / day wins.
+  function medCourses(list){
+    var out = [], seen = Object.create(null);
+    (Array.isArray(list) ? list : []).forEach(function(raw){
+      var v = validateMedCourse(raw);
+      if(v && !seen[v.id]){ seen[v.id] = true; out.push(v); }
+    });
+    return out;
+  }
+  function medLogMap(list){
+    var map = Object.create(null);
+    (Array.isArray(list) ? list : []).forEach(function(raw){
+      var v = validateMedEntry(raw);
+      if(v && !map[v.date]) map[v.date] = v;
+    });
+    return map;
+  }
+  function medEnd(c){ return c.endDate == null ? Infinity : dayIdx(c.endDate); }
+
+  // The course that covers `date`. Overlapping (corrupt) data → the latest start, then the larger id.
+  function medCourseAt(courses, date){
+    try{
+      if(!isValidDate(date) || !Array.isArray(courses)) return null;
+      var best = null, i = dayIdx(date);
+      courses.forEach(function(c){
+        if(!c || !isValidDate(c.startDate) || (c.endDate != null && !isValidDate(c.endDate))) return;
+        if(dayIdx(c.startDate) > i || medEnd(c) < i) return;
+        if(!best || c.startDate > best.startDate || (c.startDate === best.startDate && c.id > best.id)) best = c;
+      });
+      return best;
+    }catch(e){ return null; }
+  }
+
+  // The first course in `courses` (other than cand itself) whose days overlap cand's; an open course runs on forever.
+  function medOverlap(courses, cand){
+    var s = dayIdx(cand.startDate), e = medEnd(cand);
+    for(var i = 0; i < courses.length; i++){
+      var o = courses[i];
+      if(o.id === cand.id) continue;
+      if(dayIdx(o.startDate) <= e && medEnd(o) >= s) return o;
+    }
+    return null;
+  }
+
+  // Would saving `cand` (matched by id) break the schedule? null = fine, else
+  // { code, field: 'start'|'end'|'visit', other }. An open course that starts
+  // BEFORE cand is not an error: the caller ends it the day before (medCloses).
+  // nowMs == null skips the "future" checks (reading a backup).
+  function medConflict(courses, cand, nowMs){
+    var s = dayIdx(cand.startDate), e = medEnd(cand);
+    if(nowMs != null){
+      var t = todayIdx(nowMs);
+      if(s > t) return { code: "future", field: "start", other: null };
+      if(e !== Infinity && e > t) return { code: "endFuture", field: "end", other: null };
+    }
+    if(e < s) return { code: "endBeforeStart", field: "end", other: null };
+    if(cand.visitDate != null && cand.visitDate <= cand.startDate) return { code: "visitBeforeStart", field: "visit", other: null };
+    var count = 0, isNew = true, hit = null;
+    for(var i = 0; i < courses.length; i++){
+      var o = courses[i];
+      if(o.id === cand.id){ isNew = false; continue; }
+      count++;
+      if(hit) continue;
+      var os = dayIdx(o.startDate), oe = medEnd(o);
+      if(oe === Infinity){
+        if(os >= s && e >= os) hit = { code: "openBefore", field: "start", other: o };
+      } else if(os <= e && oe >= s) hit = { code: "overlap", field: "start", other: o };
+    }
+    if(hit) return hit;
+    if(isNew && count >= MED_MAX_COURSES) return { code: "full", field: "start", other: null };
+    return null;
+  }
+
+  // The open course that adding `cand` ends on cand.startDate − 1, or null.
+  function medCloses(courses, cand){
+    try{
+      var best = null;
+      (Array.isArray(courses) ? courses : []).forEach(function(o){
+        if(!o || o.id === cand.id || o.endDate != null || !isValidDate(o.startDate) || !(o.startDate < cand.startDate)) return;
+        if(!best || o.startDate > best.startDate) best = o;
+      });
+      return best;
+    }catch(e){ return null; }
+  }
+
+  // Numbers for one course, all in VN days (today = todayStr(nowMs)):
+  //   takenDays  = taken days inside the course, up to today (a future day logged under a wrong clock doesn't count)
+  //   remaining  = totalPills − perDay × takenDays (may go below 0)
+  //   lastDay    = day of the last pill if taken every day from the next day still to take (today, or tomorrow once today is taken)
+  //   visit      = { date, daysLeft } | null
+  //   shortfall  = days between running out and the day before the visit (> 0 = runs out early), when the visit is ahead
+  //   surplus    = pills left over on the visit day, when there is no shortfall
+  //   missed     = course days before today with no "taken"; streak = taken days in a row back from today (yesterday if today isn't taken)
+  //   month      = { taken, expected, pct } for today's month: course days before today, plus today once taken
+  // null for an unusable course. Never throws.
+  function medStats(course, log, nowMs){
+    try{
+      var c = validateMedCourse(course);
+      if(!c || !num(nowMs)) return null;
+      var map = medLogMap(log), t = todayIdx(nowMs), today = idxToStr(t);
+      var s = dayIdx(c.startDate), e = medEnd(c);
+      var inC = function(i){ return i >= s && i <= e; };
+      var isTaken = function(i){ var x = map[idxToStr(i)]; return !!(x && x.taken); };
+      var takenDays = 0, i;
+      Object.keys(map).forEach(function(d){
+        var x = map[d], k = dayIdx(d);
+        if(x.taken && inC(k) && k <= t) takenDays++;
+      });
+      var remaining = c.totalPills - c.perDay * takenDays;
+      var takenToday = isTaken(t);
+      var ended = e !== Infinity && e < t;
+      var first = Math.max(takenToday ? t + 1 : t, s);
+      var supplyDays = remaining > 0 ? Math.floor(remaining / c.perDay) : 0;
+      var lastDay = supplyDays > 0 && !ended ? idxToStr(first + supplyDays - 1) : null;
+      var visit = c.visitDate ? { date: c.visitDate, daysLeft: dayIdx(c.visitDate) - t } : null;
+      var shortfall = visit && lastDay && visit.daysLeft > 0 ? (dayIdx(c.visitDate) - 1) - dayIdx(lastDay) : null;
+      var surplus = shortfall !== null && shortfall <= 0 ? remaining - c.perDay * (dayIdx(c.visitDate) - first) : null;
+      var missed = 0;
+      for(i = s; i < t && i <= e; i++) if(!isTaken(i)) missed++;
+      var streak = 0;
+      for(i = takenToday ? t : t - 1; isTaken(i); i--) streak++;
+      var w = wall(nowMs), m0 = dayIdx({ y: w.y, m: w.m, d: 1 }), m1 = m0 + daysInMonth(w.y, w.m) - 1;
+      var mt = 0, me = 0;
+      for(i = m0; i <= m1; i++){
+        if(!inC(i) || i > t || (i === t && !takenToday)) continue;
+        me++;
+        if(isTaken(i)) mt++;
+      }
+      return { today: today, takenToday: takenToday, takenAt: takenToday ? map[today].at : null,
+               takenDays: takenDays, remaining: remaining, supplyDays: supplyDays, lastDay: lastDay, visit: visit,
+               shortfall: shortfall, surplus: surplus,
+               low: !ended && remaining > 0 && supplyDays <= MED_LOW_DAYS, out: !ended && remaining <= 0, ended: ended,
+               missed: missed, streak: streak,
+               month: { taken: mt, expected: me, pct: me ? Math.round(100 * mt / me) : null } };
+    }catch(err){ return null; }
+  }
+
+  // The month view: one mark per cell of monthGrid(y, m) —
+  // { state: 'taken'|'missed'|'due'|'future'|'off', note, courseId } — and the
+  // month's own counts (cells of the neighbouring months left out), same rule as medStats' month. Never throws.
+  function medMonth(courses, log, y, m, nowMs){
+    var out = { grid: [], marks: Object.create(null), taken: 0, expected: 0, pct: null };
+    try{
+      if(!intIn(y, 1900, 2200) || !intIn(m, 1, 12) || !num(nowMs)) return out;
+      var list = medCourses(courses), map = medLogMap(log), today = todayStr(nowMs), ym = y + "-" + pad2(m);
+      out.grid = monthGrid(y, m);
+      out.grid.forEach(function(d){
+        var c = medCourseAt(list, d), x = map[d], st;
+        if(x && x.taken) st = "taken";
+        else if(!c) st = "off";
+        else st = d < today ? "missed" : d === today ? "due" : "future";
+        out.marks[d] = { state: st, note: x ? x.note : "", courseId: c ? c.id : null };
+        if(d.slice(0, 7) !== ym || !c || d > today || (d === today && st !== "taken")) return;
+        out.expected++;
+        if(st === "taken") out.taken++;
+      });
+      out.pct = out.expected ? Math.round(100 * out.taken / out.expected) : null;
+    }catch(e){
+      out = { grid: [], marks: Object.create(null), taken: 0, expected: 0, pct: null };
+    }
+    return out;
+  }
+
+  // Import "Gộp": days are joined, and a day taken on either device counts as
+  // taken (unlike the journal, where the device's entry wins whole). A course
+  // with the same id, or the same name (trimmed, lower case) and start, is the
+  // same course and the device's copy is kept; a course whose days overlap one
+  // already there is dropped (clashCourses). The import preview and the import
+  // itself both call this, so the two counts cannot differ.
+  // local / incoming = { courses, log } with validated items.
+  function mergeMed(local, incoming){
+    local = local || {}; incoming = incoming || {};
+    var logOf = function(list){ var map = medLogMap(list); return Object.keys(map).map(function(d){ return map[d]; }); };
+    var courses = medCourses(local.courses), log = logOf(local.log);
+    incoming = { courses: medCourses(incoming.courses), log: logOf(incoming.log) };
+    var out = { courses: courses, log: log, addedCourses: 0, sameCourses: 0, clashCourses: 0, overCourses: 0,
+                addedDays: 0, upgradedDays: 0, sameDays: 0, over: 0 };
+    var key = function(c){ return String(c.name).trim().toLowerCase() + "|" + c.startDate; };
+    var ids = Object.create(null), keys = Object.create(null);
+    courses.forEach(function(c){ ids[c.id] = c; keys[key(c)] = true; });
+    incoming.courses.forEach(function(c){
+      var same = ids[c.id];
+      if(keys[key(c)] || (same && key(same) === key(c))){ out.sameCourses++; return; }
+      var cand = Object.assign({}, c);
+      while(ids[cand.id]) cand.id = newMedId(Date.now());
+      if(medOverlap(courses, cand)){ out.clashCourses++; return; }
+      if(courses.length >= MED_MAX_COURSES){ out.overCourses++; return; }
+      ids[cand.id] = cand; keys[key(cand)] = true;
+      courses.push(cand);
+      out.addedCourses++;
+    });
+    var at = Object.create(null);
+    log.forEach(function(x, i){ at[x.date] = i; });
+    incoming.log.forEach(function(f){
+      if(at[f.date] === undefined){
+        if(log.length >= MED_MAX_LOG){ out.over++; return; }
+        at[f.date] = log.length;
+        log.push(f);
+        out.addedDays++;
+        return;
+      }
+      var l = log[at[f.date]];
+      var next = { date: l.date, taken: l.taken || f.taken, note: l.note || f.note, at: l.taken ? l.at : f.at };
+      if(next.taken === l.taken && next.note === l.note && next.at === l.at){ out.sameDays++; return; }
+      log[at[f.date]] = next;
+      out.upgradedDays++;
+    });
+    return out;
+  }
+
+  // Raw record (as stored) → the course in use today and its stats, or null.
+  function medToday(rawMed, nowMs){
+    if(!rawMed || typeof rawMed !== "object" || !Array.isArray(rawMed.courses) || !Array.isArray(rawMed.log)) return null;
+    var courses = medCourses(rawMed.courses), course = medCourseAt(courses, todayStr(nowMs));
+    if(!course) return null;
+    var st = medStats(course, rawMed.log, nowMs);
+    return st ? { courses: courses, course: course, st: st, map: medLogMap(rawMed.log) } : null;
+  }
+
+  // Lines for the morning notification, at most 2, most pressing first:
+  // visit in 7 / 1 / 0 days, out of / low on pills, today not taken yet,
+  // yesterday not logged. No medicine name (lock screen). [] when there is no
+  // course in use today, meta.medMorning is false, or the record is unreadable. Never throws.
+  function medMorningLines(rawMed, rawMeta, nowMs){
+    try{
+      if(!num(nowMs) || (rawMeta && typeof rawMeta === "object" && rawMeta.medMorning === false)) return [];
+      var d = medToday(rawMed, nowMs);
+      if(!d) return [];
+      var st = d.st, out = [];
+      if(st.visit && MED_VISIT_AHEAD.indexOf(st.visit.daysLeft) !== -1){
+        var left = st.visit.daysLeft;
+        out.push("🩺 " + (left === 0 ? "Hôm nay" : left === 1 ? "Ngày mai" : "Còn " + left + " ngày") + ": tái khám");
+      }
+      var visitAhead = st.visit && st.visit.daysLeft > 0;
+      if(st.out) out.push("💊 Đã hết số viên của đợt thuốc");
+      else if(st.low && visitAhead && st.shortfall > 0) out.push("💊 Còn " + fmtInt(st.remaining) + " viên — hết trước ngày tái khám");
+      else if(st.low && !visitAhead) out.push("💊 Thuốc còn đủ " + fmtInt(st.supplyDays) + " ngày");
+      if(!st.takenToday) out.push("💊 " + MED_TIME_LABEL + " nhớ uống thuốc");
+      var y = addDays(st.today, -1), yc = medCourseAt(d.courses, y), yx = d.map[y];
+      if(yc && !(yx && yx.taken)) out.push("💊 Hôm qua chưa ghi uống thuốc");
+      return out.slice(0, 2);
+    }catch(e){ return []; }
+  }
+
+  var MED_FALLBACK = { title: "💊 Nhắc uống thuốc", body: "Mở app để xem lịch uống thuốc hôm nay." };
+
+  // The 8:00 reminder push (payload { kind: "med", date }). targetDate = the
+  // day the push was sent for, so one that arrives a day late doesn't talk
+  // about "today". meta.medQuiet (default true) keeps the medicine name off
+  // the lock screen. Always returns { title, body }; never throws.
+  function medPushContent(rawMed, rawMeta, targetDate, nowMs){
+    try{
+      if(!num(nowMs)) return { title: MED_FALLBACK.title, body: MED_FALLBACK.body };
+      var none = { title: "💊 Nhắc uống thuốc", body: "Không có đợt thuốc nào đang dùng trên máy này." };
+      if(!rawMed || typeof rawMed !== "object" || !Array.isArray(rawMed.courses) || !Array.isArray(rawMed.log)) return none;
+      var today = todayStr(nowMs), day = isValidDate(targetDate) ? targetDate : today;
+      var label = day === today ? "Hôm nay" : day === addDays(today, -1) ? "Hôm qua" : "Ngày " + day.slice(8, 10) + "/" + day.slice(5, 7);
+      var courses = medCourses(rawMed.courses), course = medCourseAt(courses, day);
+      if(!course) return none;
+      var map = medLogMap(rawMed.log), x = map[day];
+      var quiet = !(rawMeta && typeof rawMeta === "object" && rawMeta.medQuiet === false);
+      var stock = "";
+      if(day === today){
+        var st = medStats(course, rawMed.log, nowMs);
+        if(st && !st.ended){
+          var visitAhead = st.visit && st.visit.daysLeft > 0;
+          if(st.out) stock = "Đã hết số viên của đợt này.";
+          else if(st.low && visitAhead && st.shortfall > 0) stock = "Còn " + fmtInt(st.remaining) + " viên — hết trước ngày tái khám " + dmy(st.visit.date) + ".";
+          else if(st.low && !visitAhead) stock = "Còn " + fmtInt(st.remaining) + " viên, đủ " + fmtInt(st.supplyDays) + " ngày.";
+        }
+      }
+      var title, main;
+      if(x && x.taken){
+        var streak = 0;
+        for(var i = dayIdx(day); map[idxToStr(i)] && map[idxToStr(i)].taken; i--) streak++;
+        var tail = streak >= 2 ? " · " + fmtInt(streak) + " ngày liền." : ".";
+        title = "💊 " + label + " đã uống thuốc ✓";
+        main = x.at != null && todayStr(x.at) === day ? "Đã ghi lúc " + hhmm(x.at) + tail : "Đã ghi uống" + tail;
+      } else if(day === today){
+        title = "💊 Đến giờ uống thuốc";
+        var name = clipGraphemes(course.name, MED_NAME_MAX);
+        main = quiet ? "Hôm nay chưa ghi uống thuốc. Chạm để mở lịch thuốc."
+                     : "Hôm nay chưa ghi uống " + name + " (" + course.perDay + " viên). Chạm để mở lịch thuốc.";
+      } else {
+        title = "💊 " + label + " chưa ghi uống thuốc";
+        main = "Nếu đã uống, chạm để ghi bù.";
+      }
+      return { title: title, body: pushBody(main, "", stock ? [stock] : []) };
+    }catch(e){ return { title: MED_FALLBACK.title, body: MED_FALLBACK.body }; }
+  }
+
   // ---------- "Ngày này năm xưa" ----------
   // What happened on today's day and month in earlier years.
   // src = { milestones, wishes, photos, journal } (validated records).
@@ -950,6 +1294,13 @@
     MAX_WISHES: MAX_WISHES, validateWish: validateWish, newWishId: newWishId, wishView: wishView, mergeWishes: mergeWishes,
     MAX_JOURNAL: MAX_JOURNAL, JOURNAL_TEXT_MAX: JOURNAL_TEXT_MAX, MOODS: MOODS,
     validateJournal: validateJournal, journalMonth: journalMonth, mergeJournal: mergeJournal,
+    MED_MAX_COURSES: MED_MAX_COURSES, MED_MAX_LOG: MED_MAX_LOG, MED_NAME_MAX: MED_NAME_MAX, MED_NOTE_MAX: MED_NOTE_MAX,
+    MED_PILLS_MAX: MED_PILLS_MAX, MED_PERDAY_MAX: MED_PERDAY_MAX, MED_LOW_DAYS: MED_LOW_DAYS, MED_MIN_DATE: MED_MIN_DATE,
+    MED_TIME_LABEL: MED_TIME_LABEL, MED_VISIT_AHEAD: MED_VISIT_AHEAD,
+    validateMedCourse: validateMedCourse, validateMedEntry: validateMedEntry, newMedId: newMedId,
+    medCourseAt: medCourseAt, medOverlap: medOverlap, medConflict: medConflict, medCloses: medCloses,
+    medStats: medStats, medMonth: medMonth, mergeMed: mergeMed,
+    medMorningLines: medMorningLines, medPushContent: medPushContent,
     onThisDay: onThisDay, RECAP_TOP: RECAP_TOP, recapYears: recapYears, yearRecap: yearRecap,
     REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
     PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,
