@@ -229,7 +229,7 @@ def main(argv=None):
     if kind == "reminder":
         local = now + VN
         if not (REMINDER_FROM <= (local.hour, local.minute) < REMINDER_UNTIL) and not args.force:
-            log("Ngoài khung giờ nhắc uống thuốc (07:30–11:00 giờ Việt Nam), bỏ qua")
+            log("Ngoài khung giờ gửi lời nhắc (07:30–11:00 giờ Việt Nam), bỏ qua")
             return 0
         until = dt.datetime(today_vn.year, today_vn.month, today_vn.day, REMINDER_TTL_UNTIL_HOUR, tzinfo=dt.timezone.utc) - VN
         ttl = max(MIN_TTL, int((until - now).total_seconds()))
