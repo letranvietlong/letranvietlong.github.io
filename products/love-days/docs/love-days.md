@@ -36,7 +36,7 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 
 | Store | keyPath | Nội dung |
 |---|---|---|
-| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle, cycleRemind, cycleRemindQuiet, dayRemind, showJournal, showMed, medMorning, medQuiet} (riêng từng máy, **không** nằm trong bản sao lưu; bảng dưới); `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ); `wishes` {items:[{id, title, cat, note, planDate, doneDate, milestoneId, createdAt}], updatedAt} (v1.14, xem Muốn làm); `journal` {items:[{date, mood, text, updatedAt}], updatedAt} (v1.18, xem Nhật ký); `med` {courses:[{id, name, perDay, startDate, totalPills, visitDate, endDate, note, createdAt}], log:[{date, taken, note, at}], updatedAt} (v1.20, xem Thuốc) |
+| `kv` | `key` | `profile` {startDate, persons[2]{id,name,dob}, hasCover, activeGen, updatedAt}; `meta` {schemaVersion, lastBackupAt, albumSort, showCycle, cycleRemind, cycleRemindQuiet, dayRemind, showJournal, showMed, medMorning, medQuiet, showWeight, weightMorning} (riêng từng máy, **không** nằm trong bản sao lưu; bảng dưới); `push` {deviceLabel, lastCopiedEndpointHash} (xem Thông báo đẩy); `cycles` {items:[{id, start, end: ngày hoặc null, note, createdAt}], updatedAt} (xem Chu kỳ); `wishes` {items:[{id, title, cat, note, planDate, doneDate, milestoneId, createdAt}], updatedAt} (v1.14, xem Muốn làm); `journal` {items:[{date, mood, text, updatedAt}], updatedAt} (v1.18, xem Nhật ký); `med` {courses:[{id, name, perDay, startDate, totalPills, visitDate, endDate, note, createdAt}], log:[{date, taken, note, at}], updatedAt} (v1.20, xem Thuốc); `weight` {profile: null hoặc {heightCm, goalKg, goalDate, ratePerWeek, startDate}, log:[{date, kg, note, at}], updatedAt} (v1.21, xem Giảm cân) |
 | `milestones` | `id` | {id, title, date, emoji, note, repeatYearly, createdAt, photoIds: [id ảnh album]} — `photoIds` có từ v1.13, không nâng `DB_VERSION`; bản ghi cũ thiếu trường này đọc thành `[]` và **không** bị ghi lại lúc nạp |
 | `photos` | `id` | {id, gen, caption, takenAt: ms hoặc null, addedAt, order, w, h, bytes, sha256}; index `gen`/`takenAt`/`addedAt`/`order` |
 | `blobs` | `id` | {id, gen, mime, data: **ArrayBuffer**, thumb}; id `avatar-long`, `avatar-thu`, `cover`, hoặc id ảnh |
@@ -52,8 +52,10 @@ hours           = floor((now - (Date.UTC(start) - VN)) / 3600000)
 | `cycleRemindQuiet` | boolean — nhắc kín, không ghi chữ "kỳ" | true | như trên |
 | `dayRemind` (v1.17) | boolean — nhắc kỷ niệm, sinh nhật, việc đã hẹn trong thông báo sáng; chỉ đúng `false` mới là tắt | true | trang (Cài đặt → Thông báo, "Gửi thử") **và service worker** lúc nhận push |
 | `showJournal` (v1.18) | boolean — ô "Hôm nay thế nào?" ở Trang chủ; chỉ đúng `false` mới là ẩn | true | trang (Cài đặt → Nhật ký) |
+| `showWeight` (v1.21) | boolean — thẻ "Cân hôm nay" ở Trang chủ; chỉ đúng `false` mới là ẩn | true | trang (Cài đặt → Giảm cân) |
+| `weightMorning` (v1.21) | boolean — dòng "⚖️ Nhớ cân hôm nay" trong thông báo sáng; chỉ đúng `false` mới là tắt | true | trang ("Gửi thử") **và service worker** lúc nhận push |
 
-`saveMeta()` ghi cả bản ghi theo các khoá mà **bản app đang chạy** biết. Một bản app cũ còn trong cache (≤ 1.16; với `showJournal` là ≤ 1.17) ghi `meta` (đổi cách sắp xếp Album, lưu bản sao lưu…) sẽ làm rơi `dayRemind` / `showJournal` → lần sau đọc lại là mặc định **bật**. Thêm khoá meta mới thì khoá đó cũng chịu đúng giới hạn này.
+`saveMeta()` ghi cả bản ghi theo các khoá mà **bản app đang chạy** biết. Một bản app cũ còn trong cache (≤ 1.16; với `showJournal` là ≤ 1.17; với `showWeight` / `weightMorning` là ≤ 1.20) ghi `meta` (đổi cách sắp xếp Album, lưu bản sao lưu…) sẽ làm rơi `dayRemind` / `showJournal` → lần sau đọc lại là mặc định **bật**. Thêm khoá meta mới thì khoá đó cũng chịu đúng giới hạn này.
 
 - Lưu ArrayBuffer, không lưu Blob (lịch sử lỗi Blob-trong-IDB của WebKit).
 - Đổi schema: tăng `DB_VERSION`, thêm `case` trong `upgrade(db, oldVersion)` (switch rơi xuyên, không `break`).
@@ -165,7 +167,7 @@ Sheet `#recapSheet` (markup tĩnh). Lối vào: hàng `button.row-link.recap-lin
 
 ## Thuốc (v1.20) — tab "Sức khoẻ"
 
-Tab "Chu kỳ" đổi tên thành **"Sức khoẻ"** (id nội bộ vẫn `tab-cycle`), đầu tab có segmented `#healthSeg` "Thuốc / Chu kỳ". Mặc định mở Thuốc khi có đợt thuốc đang dùng hôm nay; không có thì mở Chu kỳ nếu đã ghi kỳ; còn lại mở Thuốc. Chu kỳ giữ nguyên hành vi.
+Tab "Chu kỳ" đổi tên thành **"Sức khoẻ"** (id nội bộ vẫn `tab-cycle`), đầu tab có segmented `#healthSeg` "Thuốc / Chu kỳ / Giảm cân" (phần Giảm cân từ v1.21). Phần mặc định chọn một lần mỗi phiên, không lưu: có đợt thuốc đang dùng hôm nay → Thuốc; có dữ liệu cân (mục tiêu hoặc lần cân) mà hôm nay chưa cân → Giảm cân; đã ghi kỳ → Chu kỳ; có dữ liệu cân → Giảm cân; còn lại Thuốc. Phần nào core trong cache chưa biết thì nút của nó ẩn; segmented chỉ hiện khi còn ≥ 2 phần. Chu kỳ giữ nguyên hành vi.
 
 - **Dữ liệu**: một bản ghi `kv` khoá `med` = `{courses, log, updatedAt}`, chép đúng mẫu `journal` (`applyMedRec` giữ mục hỏng nguyên văn trong `medBad` và nối lại ở mọi lần ghi; bản ghi hỏng → `medBroken`, khoá mọi đường ghi/xuất/nhập đè, câu "Không đọc được dữ liệu thuốc — dữ liệu vẫn còn nguyên."; `saveMed` đọc lại trong transaction ghi và so dấu `updatedAt`; chặn khi đang nhập). Không nâng `DB_VERSION`. Giới hạn 50 đợt, 4.000 ngày (xuất = nhập).
 - **Đợt thuốc** `{id, name, perDay, startDate, totalPills, visitDate, endDate, note, createdAt}`: mỗi lúc một đợt đang dùng; thêm đợt mới thì đợt đang mở tự kết thúc vào hôm trước ngày bắt đầu mới (`medCloses`), đợt cũ giữ lịch sử. Ngày tái khám là trường `visitDate` của đợt (KHÔNG tạo kỷ niệm — để không lẫn vào Dòng thời gian/Năm xưa/Tổng kết). Lỗi form theo `medConflict` (`future`, `endFuture`, `endBeforeStart`, `visitBeforeStart`, `openBefore`, `overlap`, `full`) hiện tại ô.
@@ -178,6 +180,25 @@ Tab "Chu kỳ" đổi tên thành **"Sức khoẻ"** (id nội bộ vẫn `tab-c
 - **Cài đặt một lần (chủ app)**: chỉ thêm secret SAU KHI máy cần nhắc đã thấy v1.20 (SW cũ nhận push `kind:"med"` sẽ hiện "💕 Ngày thứ N"). Trên máy đó: Cài đặt → Thông báo → Sao chép mã (cùng mã của thông báo sáng) → GitHub → Settings → Secrets → `LOVE_REMINDER_PUSH_SUBSCRIPTIONS` → Actions → "LoveDays reminder push" chạy `dry_run`, rồi `force`.
 - **Sao lưu**: `kv/med` vào manifest; file không có khoá `med` → dữ liệu máy giữ nguyên ở cả Gộp và Thay thế; máy hỏng → không nhập; Gộp (`mergeMed`): ngày đã uống ở máy nào cũng tính là đã uống, ghi chú giữ bản trên máy; hai đợt là một khi cùng tên (bỏ khoảng trắng, chữ thường) và cùng ngày bắt đầu; đợt chồng ngày trong file bị bỏ. Snapshot của trang cũ (không có `med`) → giữ dữ liệu máy.
 - **Riêng tư**: repo công khai — fixture/docs chỉ dùng thuốc giả ("Thuốc A"); không ghi tên bệnh, tên thuốc, ngày khám thật vào repo. Dữ liệu thật do người dùng tự nhập trong app.
+
+## Giảm cân (v1.21) — tab "Sức khoẻ"
+
+Phần thứ ba của `#healthSeg`. Nhập cân mỗi ngày, BMI theo ngưỡng châu Á, lộ trình tới mục tiêu, biểu đồ, tốc độ, ngày dự kiến, mốc và cảnh báo giảm quá nhanh. Mọi phép tính là hàm thuần trong `love-days-core.js` (`weightStats`, `weightChart`, `mergeWeight`, `weightMorningLines`…), không DOM, dùng chung với SW; nhận bản ghi THÔ và không bao giờ ném lỗi.
+
+- **Dữ liệu**: một bản ghi `kv` khoá `weight` = `{profile, log, updatedAt}`, chép đúng mẫu `med`: `applyWeightRec` giữ mục hỏng (ngày không có thật, `kg` hơn 1 chữ số thập phân, ngày trùng — giữ mục đầu) nguyên văn trong `weightBad` và nối lại sau `log` ở mọi lần ghi; `profile` hỏng giữ nguyên văn qua mọi lần lưu cân, chỉ một lần "Lưu mục tiêu" hợp lệ mới thay nó; bản ghi không đọc được (không phải object, `log` không phải mảng) → `weightBroken`: ẩn ô nhập, câu "Không đọc được dữ liệu cân nặng — dữ liệu vẫn còn nguyên.", khoá mọi đường ghi/xuất/nhập đè. `saveWeight` đọc lại trong transaction ghi và so dấu `updatedAt`; lệch (cửa sổ khác vừa ghi) → không ghi, nạp lại, báo "Cân nặng vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.", chữ đang gõ giữ nguyên. Chặn khi đang nhập bản sao lưu; cờ `wt.saving` + chặn chạm đúp theo vị trí. Core cũ trong cache (thiếu `weightStats`) → ẩn nút Giảm cân, thẻ Trang chủ, nhóm Cài đặt, không ghi `kv/weight`. Không nâng `DB_VERSION`. Giới hạn 4.000 lần cân (xuất = nhập).
+- **Lần cân** `{date, kg, note, at}`: mỗi ngày một số (khoá là `date`, ≥ 2000-01-01), `kg` 20–300 tối đa 1 chữ số thập phân, ghi chú ≤ 100 ký tự, `at` = lúc bấm Lưu (chỉ để hiện "hôm nay · 07:05"). Ô "Cân hôm nay" nhận "80,5" hoặc "80.5"; ngày lấy theo giờ VN **lúc bấm Lưu**; hôm nay đã có số thì nhập lại là sửa (ghi chú cũ giữ). Ngày đã qua thêm/sửa/xoá trong sheet `#wtEntrySheet` (xoá qua hàng xác nhận đỏ, không `window.confirm`; ngày tương lai không ghi được).
+- **Hồ sơ** `{heightCm 100–250, goalKg, goalDate|null, ratePerWeek 0,25/0,5/0,75/1, startDate|null}` (sheet `#wtGoalSheet`). Cân bắt đầu KHÔNG lưu: là lần cân đầu tiên có ngày ≥ `startDate` (null → lần cân đầu trong sổ), nên sửa/xoá lần cân đó thì lộ trình đi theo. Mục tiêu phải thấp hơn cân bắt đầu (chỉ hỗ trợ giảm cân).
+- **BMI** = kg lần cân mới nhất / (cao m)², làm tròn 1 chữ số rồi mới phân loại theo ngưỡng **WHO châu Á – Thái Bình Dương**: < 18,5 Thiếu cân · < 23 Bình thường · < 25 Thừa cân · còn lại Béo phì (WHO/IASO/IOTF 2000, *The Asia-Pacific perspective: redefining obesity and its treatment*). Không hiện ngưỡng quốc tế. "Mức bình thường đến X kg" = kg lớn nhất (1 chữ số) mà BMI làm tròn vẫn ≤ 22,9 (`bmiMaxKg`).
+- **Trung bình 7 ngày** = trung bình các lần cân trong 7 NGÀY LỊCH VN [d−6, d] (không phải 7 lần cân gần nhất), cần ≥ 3 lần, tính trên phần mười nguyên để khỏi lỗi số thực. "Cân theo xu hướng" = TB 7 ngày hôm nay (không đủ thì lần cân mới nhất); "đã giảm", %, dự kiến dùng số này. Đã giảm 7/30 ngày = TB 7 ngày của 7/30 ngày trước − TB hôm nay.
+- **Tốc độ** = hồi quy tuyến tính kg theo ngày trên các lần cân 14 ngày gần nhất (cần ≥ 6 lần, trải ≥ 10 ngày), −7 × hệ số góc = kg/tuần. Ít hơn → "Cần ít nhất 6 lần cân trong 2 tuần để ước tốc độ", không dự kiến, không cảnh báo. **Dự kiến đạt** = hôm nay + ceil(còn lại / (tốc độ/7)) khi tốc độ ≥ 0,05 kg/tuần (quá 730 ngày → "Hơn 2 năm nữa"). **Cảnh báo** khi tốc độ > 1 kg/tuần (cửa sổ 14 ngày = kéo dài 2 tuần): nền vàng nhạt, câu khuyên nhẹ, không đỏ.
+- **Lộ trình** là đường thẳng từ cân bắt đầu: theo tốc độ (`ratePerWeek`/7 mỗi ngày) hoặc theo ngày mục tiêu (`goalDate` có thì bỏ qua tốc độ); không xuống dưới mục tiêu. "Lộ trình hôm nay" so với cân theo xu hướng → "Nhanh hơn / Chậm hơn X kg" (lệch < 0,05 → "Đúng lộ trình"). Mốc dựa trên TB 7 ngày nhỏ nhất từ lúc bắt đầu (một ngày cân lệch không làm "ăn mừng rồi rút lại"): mỗi 1 kg và mỗi 5% cân nặng.
+- **Biểu đồ** SVG tự vẽ, hình học tính trong `weightChart` (viewBox 340×200): chấm = từng lần cân, nét liền = TB 7 ngày (đứt đoạn khi thiếu), nét đứt = lộ trình, nét chấm = mục tiêu; chú thích lặp lại đúng kiểu nét (không chỉ dựa vào màu), màu lấy token nên tự đổi sáng/tối. Khoảng "1 tháng / 3 tháng / Tất cả" (mặc định 1 tháng, không lưu). Ở 1 và 3 tháng trục Y theo dữ liệu (sàn biên độ 2 kg); lộ trình/mục tiêu chỉ được gộp vào trục khi cách dữ liệu ≤ 1,5 lần biên độ — mục tiêu ở xa thì ghim ở mép khung kèm nhãn "Mục tiêu … ↓" và chú thích "thấp hơn khung", **không** kéo dãn trục (UI craft §9). "Tất cả" kéo tới ngày cuối lộ trình nên mục tiêu nằm trong khung. Chạm một điểm → vòng chọn + dòng "Thứ năm, 15/10/2026 · 80,9 kg · TB 7 ngày … · lộ trình …" (không dựng lại SVG); vùng chạm điểm hẹp hơn 44px là chấp nhận được vì danh sách "Các lần cân" là đường chính.
+- **Bố cục**: ô "Cân hôm nay" + "Cân mới nhất" / BMI nằm trong 40% trên của màn hình; dưới là tiến độ, biểu đồ, hàng mục tiêu, danh sách lần cân (31 lần mới nhất, "Xem thêm"). Ô nhập ở tab và ở Trang chủ là markup TĨNH: không lần vẽ lại nào (qua nửa đêm, `visibilitychange`, cửa sổ khác) gán `.value` hay dựng lại form.
+- **Trang chủ**: thẻ `#weightCard` sau thẻ Thuốc — hiện khi đã có mục tiêu hoặc ít nhất một lần cân (máy chưa dùng không thấy); hôm nay chưa cân → ô nhập nhanh + "Lần trước …"; đã cân → hàng "⚖️ 80,8 kg · BMI 27,3" mở phần Giảm cân. Ẩn bằng `meta.showWeight`.
+- **Thông báo sáng**: thêm dòng "⚖️ Nhớ cân hôm nay" khi đã có hồ sơ hợp lệ, hôm đó chưa cân và `meta.weightMorning !== false`; không bao giờ có số cân (màn hình khoá). SW đọc `kv/weight` cùng transaction với các khoá khác; thứ tự dòng: 🌸, thuốc, ⚖️, nhắc kỷ niệm (cắt từ cuối khi quá 300 ký tự). Không workflow/secret mới, nên chỉ nhắc vào giờ thông báo sáng (06:17–11:17, một lần/ngày); cân trước khi thông báo tới thì không có dòng; chỉ máy đã bật thông báo. Không có hồ sơ → thân thông báo giống hệt 1.20.
+- **Sao lưu**: `weight: {profile, log}` vào manifest (liệt kê tay từng trường; không hồ sơ và không lần cân → không ghi khoá); file sai (log không phải mảng, quá 4.000, mục không qua validator, hồ sơ sai) → từ chối cả file "dữ liệu cân nặng sai"; hai mục cùng ngày trong file → bỏ mục sau. Gộp (`mergeWeight`): hợp theo ngày, trùng ngày giữ bản trên máy; hồ sơ trên máy giữ nguyên, máy chưa có thì lấy của file ("Đã lấy mục tiêu giảm cân từ bản sao lưu."). Thay thế → của file khi file mang `weight`; file không có khoá (bản ≤ 1.20) → cân nặng trên máy giữ nguyên ở cả hai chế độ; máy hỏng → không nhập. App 1.20 đọc file 1.21: bỏ qua khoá `weight`.
+- **Riêng tư**: repo công khai — fixture/docs chỉ dùng số giả (172 cm, 82,0 → 70,0 kg); không ghi chiều cao, cân nặng thật vào repo, changelog hay commit message. Dữ liệu chỉ rời máy qua file sao lưu người dùng tự lưu.
+- **Chưa kiểm chứng trên iPhone thật**: bàn phím `inputmode="decimal"` hiện dấu phẩy hay chấm (parser nhận cả hai), bàn phím che ô ở Trang chủ, độ dễ đọc của biểu đồ ở 430pt, dòng ⚖️ trên màn hình khoá.
 
 ## Chu kỳ
 
@@ -254,7 +275,7 @@ Một tấm JPEG 1080×1350 (bài đăng 4:5) hoặc 1080×1920 (story 9:16) v�
 
 ## Sao lưu (ZIP STORE)
 
-File `love-days-backup-YYYY-MM-DD.zip` (ngày VN), không nén (method 0), không zip64 (tối đa 4 GB), tối đa **10.000 ảnh, 2.000 kỷ niệm, 600 kỳ, 500 việc muốn làm, 4.000 ngày nhật ký và 8 MB cho `love-days.json`** — cùng một giới hạn cho xuất và nhập, để app không bao giờ tạo ra file mà chính nó từ chối đọc (10.000 ảnh 1600px đã chạm trần 4 GB). Vượt giới hạn → báo lỗi ngay khi bấm "Chuẩn bị bản sao lưu". Tên mục ASCII:
+File `love-days-backup-YYYY-MM-DD.zip` (ngày VN), không nén (method 0), không zip64 (tối đa 4 GB), tối đa **10.000 ảnh, 2.000 kỷ niệm, 600 kỳ, 500 việc muốn làm, 4.000 ngày nhật ký, 4.000 lần cân và 8 MB cho `love-days.json`** — cùng một giới hạn cho xuất và nhập, để app không bao giờ tạo ra file mà chính nó từ chối đọc (10.000 ảnh 1600px đã chạm trần 4 GB). Vượt giới hạn → báo lỗi ngay khi bấm "Chuẩn bị bản sao lưu". Tên mục ASCII:
 
 ```
 photos/<id>.jpg ...        ảnh album (JPEG 1600px, không kèm thumbnail — tạo lại khi nhập)
@@ -266,7 +287,8 @@ love-days.json             {app:'love-days', format:1, exportedAt (ISO),
                             images:{'avatar-long':'avatars/long.jpg', ...},
                             cycles:[{id, start, end, note, createdAt}],   (từ v1.8; vẫn format 1 — app cũ bỏ qua khoá lạ nên đọc được file mới)
                             wishes:[{id, title, cat, note, planDate, doneDate, milestoneId, createdAt}],   (từ v1.14, cùng quy tắc)
-                            journal:[{date, mood, text, updatedAt}]}   (từ v1.18, cùng quy tắc)
+                            journal:[{date, mood, text, updatedAt}],   (từ v1.18, cùng quy tắc)
+                            weight:{profile:{heightCm, goalKg, goalDate, ratePerWeek, startDate}|null, log:[{date, kg, note, at}]}}   (từ v1.21, cùng quy tắc)
 ```
 
 - **Lưu hai bước**: "Chuẩn bị bản sao lưu" dựng file → "Lưu file (xx MB)" gọi `navigator.share({files})` **ngay trong cú chạm** khi `canShare` (iPhone: "Lưu vào Tệp"), nếu không thì `a.download` + revoke sau 10s. Safari mất "user activation" sau await dài → share ném `NotAllowedError`, nên không gộp hai bước. Mọi thay đổi dữ liệu làm file đã chuẩn bị hết hiệu lực. Lưu xong ghi `kv.meta.lastBackupAt`; thẻ Sao lưu hiện "Lần cuối: hôm nay, 21:30" / "Lần cuối: 31 ngày trước (01/09/2026)" (đếm theo ngày lịch VN), tô màu cảnh báo khi chưa sao lưu lần nào hoặc đã ≥ 30 ngày.
@@ -306,7 +328,7 @@ GitHub Actions (cron "17 23,0-4 * * *" = 06:17–11:17 VN, 6 lượt)
         │  payload {"startDate","n","date"} (startDate/n chỉ có khi đặt LOVE_START_DATE)
         └─ ghi data/push-state.json {lastSentDate, sentAt, delivered, failed} → commit
 SW (js/sw-core.js) nhận "push":
-  readPushData(): MỘT LoveCore.openDb(); một transaction kv đọc profile, cycles, meta, wishes;
+  readPushData(): MỘT LoveCore.openDb(); một transaction kv đọc profile, cycles, meta, wishes, med, weight;
       rồi MỘT LẦN ĐỌC RIÊNG store milestones (bỏ qua khi meta.dayRemind === false) — lần đọc này lỗi thì chỉ thành milestones: null;
       đóng DB ở cả hai nhánh; SW không ghi gì
   startDate của máy → N tính LÚC NHẬN
@@ -315,6 +337,7 @@ SW (js/sw-core.js) nhận "push":
   → withReminders(thân, info) — chỉ khi startDate đọc được từ DB của máy:
       cycleLine() (try/catch riêng): cycleReminder(cycles.items, now, meta.cycleRemind — thiếu/sai thì 2, 0 thì thôi) → "🌸 còn 2 ngày"
       dayLines() (try/catch riêng, v1.17): dayReminderLines(dayReminders(profile, milestones, wishes.items, now), 3) → tối đa 3 dòng
+      medLines() rồi weightLines() (v1.21, try/catch riêng): weightMorningLines(weight, meta, now) → "⚖️ Nhớ cân hôm nay" hoặc không gì; đứng trước dòng của dayLines()
       thân = LoveCore.pushBody(dòng chính, dòng 🌸, các dòng nhắc) — 🌸 luôn là dòng 2, dòng nhắc theo sau, cả thân ≤ 300 code point
       mọi lỗi/dữ liệu hỏng ở một bước → chỉ mất dòng của bước đó, thông báo hằng ngày vẫn ra
   → LUÔN đúng MỘT showNotification("💕 Ngày thứ N", tag love-days-daily) + setAppBadge(N)
