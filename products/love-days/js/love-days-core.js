@@ -934,6 +934,377 @@
     }catch(e){ return { title: MED_FALLBACK.title, body: MED_FALLBACK.body }; }
   }
 
+  // ---------- Weight ("Giảm cân", stored whole in kv 'weight') ----------
+  // { profile: null | { heightCm, goalKg, goalDate, ratePerWeek, startDate },
+  //   log: [{ date, kg, note, at }] } — one weigh-in per VN day. The start
+  // weight is not stored: it is the first weigh-in on/after startDate (or the
+  // first one in the log), so editing that day moves the plan with it.
+  var WEIGHT_MAX_LOG = 4000;
+  var WEIGHT_MIN = 20, WEIGHT_MAX = 300, HEIGHT_MIN = 100, HEIGHT_MAX = 250;
+  var WEIGHT_NOTE_MAX = 100;
+  var WEIGHT_RATES = [0.25, 0.5, 0.75, 1];
+  var WEIGHT_RATE_DEFAULT = 0.5;
+  var WEIGHT_AVG_DAYS = 7, WEIGHT_AVG_MIN = 3;
+  var WEIGHT_TREND_DAYS = 14, WEIGHT_TREND_MIN = 6, WEIGHT_TREND_SPAN = 10;
+  var WEIGHT_FAST = 1.0;
+  var WEIGHT_ETA_MAX_DAYS = 730;
+  // WHO Asia-Pacific cut-offs (WHO/IASO/IOTF 2000), not the international 25/30.
+  var BMI_ASIA = { under: 18.5, over: 23, obese: 25 };
+  var BMI_NORMAL_MAX = 22.9;
+  var WEIGHT_MIN_DATE = "2000-01-01";
+  var WEIGHT_MORNING_LINE = "⚖️ Nhớ cân hôm nay";
+  var WEIGHT_CHART = { W: 340, H: 200, L: 36, R: 8, T: 10, B: 24 };
+
+  function oneDec(x){ return num(x) && Math.abs(x * 10 - Math.round(x * 10)) < 1e-6; }
+  // The 1e-7 nudge keeps x.x5 averages (81.95 stored as 81.9499…) rounding the way they read.
+  function roundKg(x){
+    if(!num(x)) return null;
+    var r = Math.round(Math.abs(x) * 10 + 1e-7) / 10;
+    return x < 0 && r ? -r : r;
+  }
+  function kgText(x){ var r = roundKg(x); return r == null ? "" : Math.abs(r).toFixed(1).replace(".", ","); }
+  function weightDate(s){ return isValidDate(s) && s >= WEIGHT_MIN_DATE; }
+  function ceilDays(x){ return Math.ceil(x - 1e-9); }
+  function r2(x){ return Math.round(x * 100) / 100; }
+
+  // "80", "80,5", "80.5" → { value }; else { error: "empty" | "format" | "range" }.
+  function parseDecimal1(s, lo, hi){
+    s = typeof s === "string" ? s.trim() : s == null ? "" : String(s).trim();
+    if(!s) return { error: "empty" };
+    if(!/^\d{1,3}([.,]\d)?$/.test(s)) return { error: "format" };
+    var v = Math.round(parseFloat(s.replace(",", ".")) * 10) / 10;
+    if(!(v >= lo && v <= hi)) return { error: "range" };
+    return { value: v };
+  }
+
+  // No "in the future" check: a weigh-in saved while the clock ran ahead must stay readable.
+  function validateWeightEntry(e){
+    if(!e || typeof e !== "object" || Array.isArray(e)) return null;
+    if(!weightDate(e.date) || !oneDec(e.kg)) return null;
+    var kg = roundKg(e.kg);
+    if(kg < WEIGHT_MIN || kg > WEIGHT_MAX) return null;
+    if(e.note != null && !str(e.note, WEIGHT_NOTE_MAX)) return null;
+    if(e.at != null && !num(e.at)) return null;
+    return { date: e.date, kg: kg, note: e.note ? wellFormed(e.note).trim() : "", at: e.at == null ? null : e.at };
+  }
+
+  // goal < start is NOT checked here (the start weight can move); the form checks it on save.
+  function validateWeightProfile(p){
+    if(!p || typeof p !== "object" || Array.isArray(p)) return null;
+    if(!oneDec(p.heightCm) || !oneDec(p.goalKg)) return null;
+    var h = roundKg(p.heightCm), g = roundKg(p.goalKg);
+    if(h < HEIGHT_MIN || h > HEIGHT_MAX || g < WEIGHT_MIN || g > WEIGHT_MAX) return null;
+    var rate = p.ratePerWeek == null ? WEIGHT_RATE_DEFAULT : p.ratePerWeek;
+    if(WEIGHT_RATES.indexOf(rate) === -1) return null;
+    if(p.goalDate != null && !weightDate(p.goalDate)) return null;
+    if(p.startDate != null && !weightDate(p.startDate)) return null;
+    return { heightCm: h, goalKg: g, goalDate: p.goalDate == null ? null : p.goalDate,
+             ratePerWeek: rate, startDate: p.startDate == null ? null : p.startDate };
+  }
+
+  // Raw list → validated entries, first of a repeated day wins, oldest first.
+  function weightLog(list){
+    var out = [], seen = Object.create(null);
+    (Array.isArray(list) ? list : []).forEach(function(raw){
+      var v = validateWeightEntry(raw);
+      if(v && !seen[v.date]){ seen[v.date] = true; out.push(v); }
+    });
+    return out.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  }
+
+  function bmiOf(kg, heightCm){
+    if(!num(kg) || !num(heightCm) || heightCm <= 0) return null;
+    var m = heightCm / 100;
+    return kg / (m * m);
+  }
+  // Classified by the ROUNDED number, so the label never contradicts the figure shown.
+  function bmiClass(bmi){
+    if(!num(bmi)) return null;
+    var b = roundKg(bmi);
+    if(b < BMI_ASIA.under) return { key: "under", label: "Thiếu cân", bmi1: b };
+    if(b < BMI_ASIA.over) return { key: "normal", label: "Bình thường", bmi1: b };
+    if(b < BMI_ASIA.obese) return { key: "over", label: "Thừa cân", bmi1: b };
+    return { key: "obese", label: "Béo phì", bmi1: b };
+  }
+  // Highest weight (0.1 kg steps) whose BMI still SHOWS as maxBmi1 — floor(22.9·h²) is one step short.
+  function bmiMaxKg(heightCm, maxBmi1){
+    if(!num(heightCm) || heightCm <= 0) return null;
+    var mx = num(maxBmi1) ? maxBmi1 : BMI_NORMAL_MAX, m = heightCm / 100, h2 = m * m;
+    var t = Math.floor((mx + 0.05) * h2 * 10);
+    while(t > 0 && roundKg(t / 10 / h2) > mx) t--;
+    return t / 10;
+  }
+
+  // Sums in whole tenths of a kg so 81.6 + 82.0 doesn't pick up float dust.
+  function weightTenths(log){
+    var m = Object.create(null);
+    log.forEach(function(e){ m[e.date] = Math.round(e.kg * 10); });
+    return m;
+  }
+  function avgAt(map, idx){
+    var s = 0, n = 0;
+    for(var k = idx - WEIGHT_AVG_DAYS + 1; k <= idx; k++){
+      var v = map[idxToStr(k)];
+      if(v !== undefined){ s += v; n++; }
+    }
+    return n >= WEIGHT_AVG_MIN ? s / n / 10 : null;
+  }
+  // Mean of the weigh-ins in the 7 calendar days ending on `date` (VN days, gaps not filled); null under 3.
+  function weightAvg7(log, date){
+    try{
+      if(!isValidDate(date)) return null;
+      return avgAt(weightTenths(weightLog(log)), dayIdx(date));
+    }catch(e){ return null; }
+  }
+
+  // Least-squares slope over the last 14 days; rate in kg/week, positive = losing.
+  function weightTrend(log, today){
+    try{
+      if(!isValidDate(today)) return null;
+      var t = dayIdx(today), pts = [];
+      weightLog(log).forEach(function(e){
+        var i = dayIdx(e.date);
+        if(i >= t - WEIGHT_TREND_DAYS + 1 && i <= t) pts.push([i, e.kg]);
+      });
+      var n = pts.length;
+      if(n < WEIGHT_TREND_MIN || pts[n - 1][0] - pts[0][0] < WEIGHT_TREND_SPAN) return null;
+      var mx = 0, my = 0, sxy = 0, sxx = 0;
+      pts.forEach(function(p){ mx += p[0]; my += p[1]; });
+      mx /= n; my /= n;
+      pts.forEach(function(p){ sxy += (p[0] - mx) * (p[1] - my); sxx += (p[0] - mx) * (p[0] - mx); });
+      if(!sxx) return null;
+      return { rate: -7 * sxy / sxx, n: n, from: idxToStr(pts[0][0]), to: idxToStr(pts[n - 1][0]) };
+    }catch(e){ return null; }
+  }
+
+  function weightStart(profile, log){
+    for(var i = 0; i < log.length; i++){
+      if(!profile || !profile.startDate || log[i].date >= profile.startDate) return { date: log[i].date, kg: log[i].kg };
+    }
+    return null;
+  }
+
+  // Straight line from the start weight to the goal: by date when goalDate is set, else by ratePerWeek.
+  function weightPlan(profile, log){
+    try{
+      var p = validateWeightProfile(profile);
+      if(!p) return null;
+      var start = weightStart(p, weightLog(log));
+      if(!start || start.kg <= p.goalKg) return null;
+      var drop = Math.round(start.kg * 10) - Math.round(p.goalKg * 10), slope, endDate, mode;
+      if(p.goalDate){
+        var days = dayIdx(p.goalDate) - dayIdx(start.date);
+        if(days <= 0) return null;
+        mode = "date"; slope = drop / 10 / days; endDate = p.goalDate;
+      } else {
+        mode = "rate"; slope = p.ratePerWeek / 7;
+        endDate = addDays(start.date, ceilDays(drop * 7 / (p.ratePerWeek * 10)));
+      }
+      return { start: start, goalKg: p.goalKg, slope: slope, endDate: endDate, mode: mode, needRate: slope * 7 };
+    }catch(e){ return null; }
+  }
+  function weightPlanAt(plan, date){
+    try{
+      if(!plan || !plan.start || !isValidDate(date) || date < plan.start.date) return null;
+      return Math.max(plan.goalKg, plan.start.kg - plan.slope * (dayIdx(date) - dayIdx(plan.start.date)));
+    }catch(e){ return null; }
+  }
+
+  // Everything the pane and the Home card show, from the RAW record. "cur" is
+  // the 7-day average (the latest weigh-in until there are 3 in the week); a
+  // weigh-in dated after today (clock ran ahead) is ignored. null = unreadable.
+  function weightStats(rawWeight, nowMs){
+    try{
+      if(!rawWeight || typeof rawWeight !== "object" || Array.isArray(rawWeight) || !Array.isArray(rawWeight.log) || !num(nowMs)) return null;
+      var all = weightLog(rawWeight.log), t = todayIdx(nowMs), today = idxToStr(t);
+      var log = all.filter(function(e){ return e.date <= today; });
+      var map = weightTenths(log), profile = validateWeightProfile(rawWeight.profile);
+      var latest = log.length ? log[log.length - 1] : null;
+      var todayEntry = latest && latest.date === today ? latest : null;
+      var avg7 = avgAt(map, t);
+      var cur = avg7 != null ? avg7 : latest ? latest.kg : null;
+      var start = weightStart(profile, log);
+      var a7 = avgAt(map, t - 7), a30 = avgAt(map, t - 30);
+      var trend = weightTrend(log, today);
+      var plan = profile ? weightPlan(profile, log) : null;
+      var planToday = plan ? weightPlanAt(plan, today) : null;
+      var bmi = profile && latest ? bmiOf(latest.kg, profile.heightCm) : null;
+      var leftKg = profile && cur != null ? cur - profile.goalKg : null;
+      var goalReached = leftKg != null && leftKg <= 1e-9;
+      var eta = null;
+      if(trend && trend.rate >= 0.05 && leftKg != null && !goalReached){
+        var days = ceilDays(leftKg / (trend.rate / 7));
+        eta = days > WEIGHT_ETA_MAX_DAYS ? "slow" : { date: idxToStr(t + days), days: days };
+      }
+      var pct = null;
+      if(profile && start && cur != null && start.kg > profile.goalKg)
+        pct = Math.max(0, Math.min(100, Math.round(100 * (start.kg - cur) / (start.kg - profile.goalKg))));
+      var marks = null;
+      if(start){
+        var best = Infinity;
+        for(var i = dayIdx(start.date); i <= t; i++){ var v = avgAt(map, i); if(v != null && v < best) best = v; }
+        var bestLost = start.kg - (best === Infinity ? latest.kg : best);
+        var mk = Math.max(0, Math.floor(bestLost + 1e-9));
+        marks = { kg: mk, pct5: Math.max(0, Math.floor(bestLost / start.kg * 20 + 1e-9) * 5),
+                  nextKg: mk + 1, nextKgLeft: mk + 1 - bestLost, bestLost: bestLost };
+      }
+      return { today: today, hasProfile: !!profile, profile: profile, count: all.length,
+               hasToday: !!todayEntry, todayEntry: todayEntry, latest: latest, avg7: avg7, cur: cur,
+               bmi: bmi, bmiClass: bmiClass(bmi), bmiMaxKg: profile ? bmiMaxKg(profile.heightCm) : null,
+               start: start, lostTotal: start && cur != null ? start.kg - cur : null,
+               lost7: a7 != null && avg7 != null ? a7 - avg7 : null,
+               lost30: a30 != null && avg7 != null ? a30 - avg7 : null,
+               trend: trend, plan: plan, planToday: planToday,
+               vsPlan: planToday != null && cur != null ? cur - planToday : null,
+               pct: pct, leftKg: leftKg, goalReached: goalReached, eta: eta,
+               fast: !!trend && trend.rate > WEIGHT_FAST, marks: marks };
+    }catch(err){ return null; }
+  }
+
+  function dm(s){ return s.slice(8, 10) + "/" + s.slice(5, 7); }
+
+  // Chart geometry as plain numbers (viewBox 340×200), so it can be checked in
+  // node. A goal far below the data is pinned to the bottom edge instead of
+  // stretching the Y axis (that would flatten the real day-to-day moves).
+  // range: "30" | "90" | "all". Never throws.
+  function weightChart(rawWeight, range, nowMs){
+    var G = WEIGHT_CHART, fail = { ok: false, W: G.W, H: G.H };
+    try{
+      if(!rawWeight || typeof rawWeight !== "object" || Array.isArray(rawWeight) || !Array.isArray(rawWeight.log) || !num(nowMs)) return fail;
+      var t = todayIdx(nowMs), today = idxToStr(t);
+      var log = weightLog(rawWeight.log).filter(function(e){ return e.date <= today; });
+      if(log.length < 2) return fail;
+      var profile = validateWeightProfile(rawWeight.profile), plan = profile ? weightPlan(profile, log) : null;
+      var map = weightTenths(log), first = dayIdx(log[0].date), all = range === "all";
+      var xMin, xMax;
+      if(all){ xMin = first; xMax = Math.max(t, plan ? dayIdx(plan.endDate) : t); }
+      else { xMin = Math.max(t - (range === "90" ? 89 : 29), first); xMax = t; }
+      if(xMax - xMin < 6) xMin = xMax - 6;
+      var pts = log.filter(function(e){ var i = dayIdx(e.date); return i >= xMin && i <= xMax; });
+      if(pts.length < 2) return fail;
+      var plotW = G.W - G.L - G.R, plotH = G.H - G.T - G.B;
+      var X = function(i){ return r2(G.L + plotW * (i - xMin) / (xMax - xMin)); };
+      var avgs = [], planVals = [], lo = Infinity, hi = -Infinity, i, v;
+      for(i = xMin; i <= xMax; i++){
+        v = avgAt(map, i); avgs.push(v);
+        if(v != null){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        var pv = plan ? weightPlanAt(plan, idxToStr(i)) : null;
+        if(pv != null) planVals.push(pv);
+      }
+      pts.forEach(function(e){ lo = Math.min(lo, e.kg); hi = Math.max(hi, e.kg); });
+      var refs = planVals.slice();
+      if(profile) refs.push(profile.goalKg);
+      if(all) refs.forEach(function(r){ lo = Math.min(lo, r); hi = Math.max(hi, r); });
+      else {
+        var th = 1.5 * Math.max(hi - lo, 2), lo0 = lo, hi0 = hi;
+        refs.forEach(function(r){ if(r >= lo0 - th && r <= hi0 + th){ lo = Math.min(lo, r); hi = Math.max(hi, r); } });
+      }
+      var span = Math.max(hi - lo, 2), mid = (lo + hi) / 2, pad = 0.1 * span;
+      var step = span <= 3 ? 0.5 : span <= 8 ? 1 : 2;
+      var yMin = Math.floor((mid - span / 2 - pad) / step + 1e-9) * step;
+      var yMax = Math.ceil((mid + span / 2 + pad) / step - 1e-9) * step;
+      var Y = function(val){ return r2(G.T + plotH * (yMax - val) / (yMax - yMin)); };
+      var yTicks = [];
+      for(var k = 0; yMin + k * step <= yMax + 1e-9; k++){ v = roundKg(yMin + k * step); yTicks.push({ v: v, y: Y(v) }); }
+      var xTicks = [], tickIdx = [];
+      if(all && xMax - xMin > 120){
+        var perDay = plotW / (xMax - xMin), every = 1;
+        [1, 2, 3, 6, 12, 24, 60].some(function(n){ every = n; return n * 30.4 * perDay >= 44; });
+        var p0 = parseYMD(idxToStr(xMin)), mk = p0.y * 12 + p0.m - 1 + (p0.d > 1 ? 1 : 0);
+        for(; ; mk++){
+          var y = Math.floor(mk / 12), m = mk - y * 12 + 1, di = dayIdx({ y: y, m: m, d: 1 });
+          if(di > xMax) break;
+          if(mk % every === 0) xTicks.push({ date: idxToStr(di), x: X(di), label: pad2(m) + "/" + y });
+        }
+      } else {
+        var gap = range === "30" && !all ? 7 : 14;
+        for(i = xMax; i >= xMin; i -= gap) tickIdx.push(i);
+        tickIdx.reverse().forEach(function(d){ xTicks.push({ date: idxToStr(d), x: X(d), label: dm(idxToStr(d)) }); });
+      }
+      var near = xTicks.reduce(function(best, tk){ return Math.min(best, Math.abs(dayIdx(tk.date) - xMin)); }, Infinity);
+      var nearX = xTicks.reduce(function(best, tk){ return Math.min(best, Math.abs(tk.x - G.L)); }, Infinity);
+      if(near >= 3 && nearX >= 30) xTicks.unshift({ date: idxToStr(xMin), x: X(xMin), label: dm(idxToStr(xMin)) });
+      xTicks.forEach(function(tk){ tk.anchor = tk.x > G.W - G.R - 20 ? "end" : tk.x < G.L + 4 ? "start" : "middle"; });
+      var points = pts.map(function(e){ return { date: e.date, kg: e.kg, x: X(dayIdx(e.date)), y: Y(e.kg) }; });
+      points.forEach(function(p, j){
+        p.hit = { x0: j ? r2((points[j - 1].x + p.x) / 2) : G.L, x1: j < points.length - 1 ? r2((p.x + points[j + 1].x) / 2) : G.W - G.R };
+      });
+      var avgPath = "", pen = false;
+      avgs.forEach(function(a, j){
+        if(a == null){ pen = false; return; }
+        avgPath += (pen ? "L" : "M") + X(xMin + j) + "," + Y(a);
+        pen = true;
+      });
+      var planPath = "", planClip = null;
+      if(plan){
+        var ps = Math.max(xMin, dayIdx(plan.start.date)), pe = dayIdx(plan.endDate);
+        if(ps <= xMax){
+          var at = function(d){ return weightPlanAt(plan, idxToStr(d)); };
+          planPath = "M" + X(ps) + "," + Y(at(ps));
+          if(pe > ps && pe < xMax) planPath += "L" + X(pe) + "," + Y(at(pe));
+          if(xMax > ps) planPath += "L" + X(xMax) + "," + Y(at(xMax));
+          var pmin = Math.min(at(ps), at(xMax)), pmax = Math.max(at(ps), at(xMax));
+          planClip = pmin < yMin - 1e-9 ? "below" : pmax > yMax + 1e-9 ? "above" : null;
+        }
+      }
+      var goal = null;
+      if(profile){
+        var gv = profile.goalKg;
+        goal = gv < yMin - 1e-9 ? { v: gv, y: G.T + plotH, pinned: "below" }
+             : gv > yMax + 1e-9 ? { v: gv, y: G.T, pinned: "above" }
+             : { v: gv, y: Y(gv), pinned: null };
+      }
+      var a1 = idxToStr(xMin), a2 = idxToStr(xMax);
+      var label = "Biểu đồ cân nặng " + (a1.slice(0, 4) === a2.slice(0, 4) ? dm(a1) : dmy(a1)) + " – " + dmy(a2) + ": " +
+                  fmtInt(pts.length) + " lần cân, mới nhất " + kgText(pts[pts.length - 1].kg) + " kg";
+      var lastAvg = avgs[avgs.length - 1];
+      if(xMax >= t && avgAt(map, t) != null) lastAvg = avgAt(map, t);
+      if(lastAvg != null) label += ", trung bình 7 ngày " + kgText(lastAvg) + " kg";
+      var pt = plan ? weightPlanAt(plan, today) : null;
+      if(pt != null) label += ", lộ trình hôm nay " + kgText(pt) + " kg";
+      if(goal) label += ", mục tiêu " + kgText(goal.v) + " kg" + (goal.pinned === "below" ? " (thấp hơn khung)" : goal.pinned === "above" ? " (cao hơn khung)" : "");
+      label += ".";
+      return { ok: true, W: G.W, H: G.H, L: G.L, R: G.R, T: G.T, B: G.B, xMin: idxToStr(xMin), xMax: idxToStr(xMax),
+               yMin: yMin, yMax: yMax, step: step, yTicks: yTicks, xTicks: xTicks, points: points,
+               avgPath: avgPath, planPath: planPath, planClip: planClip, goal: goal, label: label };
+    }catch(err){ return fail; }
+  }
+
+  // Import "Gộp": days are joined, on the same day the device's weigh-in wins;
+  // the device's goal is kept, the file's is taken only when the device has
+  // none. The import preview and the import itself both call this.
+  function mergeWeight(local, incoming){
+    local = local && typeof local === "object" ? local : {};
+    incoming = incoming && typeof incoming === "object" ? incoming : {};
+    var log = weightLog(local.log), seen = Object.create(null);
+    var out = { profile: null, log: log, addedDays: 0, sameDays: 0, over: 0, profileAdded: false, profileKept: false };
+    log.forEach(function(e){ seen[e.date] = true; });
+    weightLog(incoming.log).forEach(function(f){
+      if(seen[f.date]){ out.sameDays++; return; }
+      if(log.length >= WEIGHT_MAX_LOG){ out.over++; return; }
+      seen[f.date] = true;
+      log.push(f);
+      out.addedDays++;
+    });
+    log.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    var lp = validateWeightProfile(local.profile), ip = validateWeightProfile(incoming.profile);
+    if(lp){ out.profile = lp; out.profileKept = true; }
+    else if(ip){ out.profile = ip; out.profileAdded = true; }
+    return out;
+  }
+
+  // The morning notification's reminder: only with a goal set, only when today
+  // has no weigh-in yet, never with a number in it (lock screen). Never throws.
+  function weightMorningLines(rawWeight, rawMeta, nowMs){
+    try{
+      if(!num(nowMs) || (rawMeta && typeof rawMeta === "object" && rawMeta.weightMorning === false)) return [];
+      if(!rawWeight || typeof rawWeight !== "object" || Array.isArray(rawWeight) || !Array.isArray(rawWeight.log)) return [];
+      if(!validateWeightProfile(rawWeight.profile)) return [];
+      var today = todayStr(nowMs);
+      return weightLog(rawWeight.log).some(function(e){ return e.date === today; }) ? [] : [WEIGHT_MORNING_LINE];
+    }catch(e){ return []; }
+  }
+
   // ---------- "Ngày này năm xưa" ----------
   // What happened on today's day and month in earlier years.
   // src = { milestones, wishes, photos, journal } (validated records).
@@ -1301,6 +1672,17 @@
     medCourseAt: medCourseAt, medOverlap: medOverlap, medConflict: medConflict, medCloses: medCloses,
     medStats: medStats, medMonth: medMonth, mergeMed: mergeMed,
     medMorningLines: medMorningLines, medPushContent: medPushContent,
+    WEIGHT_MAX_LOG: WEIGHT_MAX_LOG, WEIGHT_MIN: WEIGHT_MIN, WEIGHT_MAX: WEIGHT_MAX, HEIGHT_MIN: HEIGHT_MIN, HEIGHT_MAX: HEIGHT_MAX,
+    WEIGHT_NOTE_MAX: WEIGHT_NOTE_MAX, WEIGHT_RATES: WEIGHT_RATES, WEIGHT_RATE_DEFAULT: WEIGHT_RATE_DEFAULT,
+    WEIGHT_AVG_DAYS: WEIGHT_AVG_DAYS, WEIGHT_AVG_MIN: WEIGHT_AVG_MIN, WEIGHT_TREND_DAYS: WEIGHT_TREND_DAYS,
+    WEIGHT_TREND_MIN: WEIGHT_TREND_MIN, WEIGHT_TREND_SPAN: WEIGHT_TREND_SPAN, WEIGHT_FAST: WEIGHT_FAST,
+    WEIGHT_ETA_MAX_DAYS: WEIGHT_ETA_MAX_DAYS, BMI_ASIA: BMI_ASIA, BMI_NORMAL_MAX: BMI_NORMAL_MAX,
+    WEIGHT_MIN_DATE: WEIGHT_MIN_DATE, WEIGHT_MORNING_LINE: WEIGHT_MORNING_LINE,
+    parseDecimal1: parseDecimal1, roundKg: roundKg, kgText: kgText,
+    validateWeightEntry: validateWeightEntry, validateWeightProfile: validateWeightProfile, weightLog: weightLog,
+    bmiOf: bmiOf, bmiClass: bmiClass, bmiMaxKg: bmiMaxKg, weightAvg7: weightAvg7, weightTrend: weightTrend,
+    weightPlan: weightPlan, weightPlanAt: weightPlanAt, weightStats: weightStats, weightChart: weightChart,
+    mergeWeight: mergeWeight, weightMorningLines: weightMorningLines,
     onThisDay: onThisDay, RECAP_TOP: RECAP_TOP, recapYears: recapYears, yearRecap: yearRecap,
     REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
     PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,

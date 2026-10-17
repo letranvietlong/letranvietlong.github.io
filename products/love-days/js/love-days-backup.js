@@ -98,6 +98,28 @@
     return { courses: courses, log: log, skippedCourses: skippedCourses, skippedDays: skippedDays };
   }
 
+  // Same contract for the weight record { profile, log }: anything malformed
+  // (a bad profile included) refuses the file; a second weigh-in for a day
+  // only drops that one entry.
+  function readWeight(obj){
+    if(!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+    if(!Array.isArray(obj.log) || obj.log.length > C.WEIGHT_MAX_LOG) return null;
+    var profile = null;
+    if(obj.profile != null){
+      profile = C.validateWeightProfile(obj.profile);
+      if(!profile) return null;
+    }
+    var log = [], days = Object.create(null), skippedDays = 0;
+    for(var i = 0; i < obj.log.length; i++){
+      var v = C.validateWeightEntry(obj.log[i]);
+      if(!v) return null;
+      if(days[v.date]){ skippedDays++; continue; }
+      days[v.date] = true;
+      log.push(v);
+    }
+    return { profile: profile, log: log, skippedDays: skippedDays };
+  }
+
   // ---------- CRC32 ----------
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -193,6 +215,7 @@
 
   // src: { profile, milestones, photos (validated metadata), cycles (validated; null or empty = no "cycles" key),
   //        wishes, journal (same rule as cycles), med (null or { courses, log } validated; both empty = no "med" key),
+  //        weight (null or { profile, log } validated; no profile and an empty log = no "weight" key),
   //        readBlob(id) → Promise<record|null> }
   async function buildBackup(src, nowMs, onProgress){
     if(src.photos.length > MAX_PHOTOS) fail("Album có " + C.fmtInt(src.photos.length) + " ảnh, vượt giới hạn " + C.fmtInt(MAX_PHOTOS) + " ảnh của một bản sao lưu. Hãy xoá bớt ảnh rồi thử lại.");
@@ -229,10 +252,19 @@
         log: ml.map(function(e){ return { date: e.date, taken: e.taken, note: e.note, at: e.at }; })
       };
     }
+    var weight = null;
+    if(src.weight && (src.weight.profile || (src.weight.log || []).length)){
+      var wl = src.weight.log || [], wp = src.weight.profile;
+      if(wl.length > C.WEIGHT_MAX_LOG) fail("Có " + C.fmtInt(wl.length) + " lần cân, vượt giới hạn " + C.fmtInt(C.WEIGHT_MAX_LOG) + " lần cân của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
+      weight = {
+        profile: wp ? { heightCm: wp.heightCm, goalKg: wp.goalKg, goalDate: wp.goalDate, ratePerWeek: wp.ratePerWeek, startDate: wp.startDate } : null,
+        log: wl.map(function(e){ return { date: e.date, kg: e.kg, note: e.note, at: e.at }; })
+      };
+    }
     // The reader refuses a love-days.json over MAX_MANIFEST_BYTES. Checked
     // here without the photo list (fail before reading every photo) and again
     // on the finished manifest below.
-    var early = { profile: src.profile, milestones: src.milestones, cycles: cycles, wishes: wishes, journal: journal, med: med };
+    var early = { profile: src.profile, milestones: src.milestones, cycles: cycles, wishes: wishes, journal: journal, med: med, weight: weight };
     if(utf8Bytes(JSON.stringify(early)).byteLength > MAX_MANIFEST_BYTES) failManifest();
     var zip = zipWriter(nowMs);
     var photos = src.photos.slice().sort(function(a, b){ return a.order - b.order; });
@@ -278,6 +310,7 @@
     if(wishes) manifest.wishes = wishes;
     if(journal) manifest.journal = journal;
     if(med) manifest.med = med;
+    if(weight) manifest.weight = weight;
     // Written last because it records the byte size of every image read
     // above; entry order doesn't matter to readZip().
     var manifestBytes = utf8Bytes(JSON.stringify(manifest));
@@ -288,10 +321,11 @@
     return { file: new File([blob], name, { type: "application/zip" }), name: name, size: blob.size,
              counts: { photos: manifestPhotos.length, milestones: manifest.milestones.length, images: Object.keys(images).length,
                        cycles: cycles ? cycles.length : null, wishes: wishes ? wishes.length : null, journal: journal ? journal.length : null,
-                       medCourses: med ? med.courses.length : null, medDays: med ? med.log.length : null } };
+                       medCourses: med ? med.courses.length : null, medDays: med ? med.log.length : null,
+                       weightDays: weight ? weight.log.length : null } };
   }
   function failManifest(){
-    fail("Phần chữ của bản sao lưu (kỷ niệm, việc muốn làm, nhật ký, thuốc, chú thích ảnh) vượt " + (MAX_MANIFEST_BYTES / 1048576) + " MB — hãy xoá bớt rồi thử lại.");
+    fail("Phần chữ của bản sao lưu (kỷ niệm, việc muốn làm, nhật ký, thuốc, cân nặng, chú thích ảnh) vượt " + (MAX_MANIFEST_BYTES / 1048576) + " MB — hãy xoá bớt rồi thử lại.");
   }
 
   // ---------- ZIP reader ----------
@@ -442,6 +476,14 @@
       medSkippedCourses = rm.skippedCourses;
       medSkippedDays = rm.skippedDays;
     }
+    // Same for weight: an older core leaves the key unread (device's record kept).
+    var weight = null, weightSkippedDays = 0;
+    if(data.weight != null && C.validateWeightEntry){
+      var rwt = readWeight(data.weight);
+      if(!rwt) badData("dữ liệu cân nặng sai");
+      if(rwt.profile || rwt.log.length) weight = { profile: rwt.profile, log: rwt.log };
+      weightSkippedDays = rwt.skippedDays;
+    }
 
     // Dry run: the exact derivation the home/milestone screens perform.
     try{
@@ -469,12 +511,16 @@
           if(C.medMonth(med.courses, med.log, my, mm, nowMs).grid.length < 35) throw new Error("med");
         }
       }
+      if(weight){
+        if(!C.weightStats(weight, nowMs) || typeof C.weightChart(weight, "all", nowMs).ok !== "boolean") throw new Error("weight");
+      }
     }catch(e){ fail("Dữ liệu trong bản sao lưu không hiển thị được nên không nhập."); }
 
     var exportedAt = Date.parse(data.exportedAt);
     return { zip: zip, profile: profile, milestones: milestones, photos: photos, images: images, cycles: cycles, cyclesSkipped: cyclesSkipped,
              wishes: wishes, wishesSkipped: wishesSkipped, journal: journal, journalSkipped: journalSkipped,
              med: med, medSkippedCourses: medSkippedCourses, medSkippedDays: medSkippedDays,
+             weight: weight, weightSkippedDays: weightSkippedDays,
              exportedAt: isFinite(exportedAt) ? exportedAt : null };
   }
 
@@ -494,11 +540,45 @@
     var wi = planWishes(parsed, local, false, nowMs);
     var jo = planJournal(parsed, local, false, nowMs);
     var md = planMed(parsed, local, false, nowMs);
+    var wt = planWeight(parsed, local, false, nowMs);
     return { addPhotos: add, skipPhotos: skip, addMilestones: addM, skipMilestones: parsed.milestones.length - addM,
              addCycles: cy.added, skipCycles: cy.skipped, addWishes: wi.added, skipWishes: wi.skipped, overWishes: wi.over,
              addJournal: jo.added, skipJournal: jo.skipped, overJournal: jo.over,
              addMedDays: md.addedDays, upgradedMedDays: md.upgradedDays, sameMedDays: md.sameDays, overMed: md.over,
-             addMedCourses: md.addedCourses, sameMedCourses: md.sameCourses, clashMedCourses: md.clashCourses, overMedCourses: md.overCourses };
+             addMedCourses: md.addedCourses, sameMedCourses: md.sameCourses, clashMedCourses: md.clashCourses, overMedCourses: md.overCourses,
+             addWeightDays: wt.addedDays, sameWeightDays: wt.sameDays, overWeight: wt.over, weightProfileAdded: wt.profileAdded };
+  }
+
+  // planMed's twin for weight (kv 'weight'). Merge goes through C.mergeWeight
+  // (days joined, the device's weigh-in and goal win). What the page couldn't
+  // read (local.weightBad: a bad profile and bad entries) is written back unchanged.
+  function planWeight(parsed, local, replace, nowMs){
+    var none = { record: null, addedDays: 0, sameDays: 0, over: 0, profileAdded: false, kept: false };
+    var res = function(o){ return Object.assign({}, none, o); };
+    // A snapshot without weight comes from an older cached page that can't see it: keep the device's.
+    if(!local.weight || typeof local.weight !== "object" || !Array.isArray(local.weight.log)){
+      return res({ kept: !!parsed.weight || replace });
+    }
+    var mine = local.weight, bad = local.weightBad && typeof local.weightBad === "object" ? local.weightBad : {};
+    var badP = bad.profile != null ? bad.profile : null, badL = Array.isArray(bad.log) ? bad.log : [];
+    if(!parsed.weight){
+      return res({ kept: replace && (!!mine.profile || mine.log.length > 0 || badP != null || badL.length > 0 || !!local.weightBroken) });
+    }
+    if(local.weightBroken) return res({ kept: true });
+    var next, out;
+    if(replace){
+      next = parsed.weight;
+      out = res({ addedDays: next.log.length, profileAdded: !!next.profile });
+    } else {
+      var mg = C.mergeWeight(mine, parsed.weight);
+      next = mg;
+      out = res({ addedDays: mg.addedDays, sameDays: mg.sameDays, over: mg.over, profileAdded: mg.profileAdded });
+    }
+    var stamp = typeof local.weightStamp === "number" && nowMs <= local.weightStamp ? local.weightStamp + 1 : nowMs;
+    if(replace || out.addedDays || out.profileAdded){
+      out.record = { key: "weight", profile: next.profile || badP || null, log: next.log.concat(badL), updatedAt: stamp };
+    }
+    return out;
   }
 
   // planJournal's twin for medication (kv 'med'). Merge goes through
@@ -602,7 +682,8 @@
   // ctx: { db, parsed, mode:'merge'|'replace',
   //        local:{ profileOk, profile, photos, milestones, hasBlob:{id:bool}, cycles, cyclesBad, cyclesBroken, cyclesStamp,
   //                wishes, wishesBad, wishesBroken, wishesStamp, journal, journalBad, journalBroken, journalStamp,
-  //                med:{courses, log}, medBad:{courses, log}, medBroken, medStamp },
+  //                med:{courses, log}, medBad:{courses, log}, medBroken, medStamp,
+  //                weight:{profile, log}, weightBad:{profile, log}, weightBroken, weightStamp },
   //        nowMs, onProgress(done,total) }
   async function importBackup(ctx){
     var db = ctx.db, parsed = ctx.parsed, local = ctx.local, replace = ctx.mode === "replace";
@@ -699,12 +780,13 @@
     var wi = planWishes(parsed, local, replace, ctx.nowMs);
     var jo = planJournal(parsed, local, replace, ctx.nowMs);
     var md = planMed(parsed, local, replace, ctx.nowMs);
+    var wt = planWeight(parsed, local, replace, ctx.nowMs);
 
     try{
       await finalSwitch(db, {
         replace: replace, staged: staged, records: records, profile: profile,
         milestones: newMilestones, imageBufs: imageBufs, activeGen: activeGen, cycles: cy.record, wishes: wi.record, journal: jo.record,
-        med: md.record
+        med: md.record, weight: wt.record
       });
     }catch(err){
       await discardStaged();
@@ -724,7 +806,9 @@
              medInFile: !!parsed.med, addedMedCourses: md.addedCourses, sameMedCourses: md.sameCourses, clashMedCourses: md.clashCourses,
              overMedCourses: md.overCourses, addedMedDays: md.addedDays, upgradedMedDays: md.upgradedDays, skippedMedDays: md.sameDays,
              overMed: md.over, medKept: md.kept,
-             clashedMedCourses: parsed.medSkippedCourses || 0, clashedMedDays: parsed.medSkippedDays || 0 };
+             clashedMedCourses: parsed.medSkippedCourses || 0, clashedMedDays: parsed.medSkippedDays || 0,
+             weightInFile: !!parsed.weight, addedWeightDays: wt.addedDays, skippedWeightDays: wt.sameDays, overWeight: wt.over,
+             weightKept: wt.kept, weightProfileAdded: wt.profileAdded, clashedWeightDays: parsed.weightSkippedDays || 0 };
   }
 
   function finalSwitch(db, s){
@@ -765,6 +849,7 @@
         if(s.wishes) tx.objectStore("kv").put(s.wishes);
         if(s.journal) tx.objectStore("kv").put(s.journal);
         if(s.med) tx.objectStore("kv").put(s.med);
+        if(s.weight) tx.objectStore("kv").put(s.weight);
       }
       if(!pending){ writeAll(); return; }
       s.staged.forEach(function(id){

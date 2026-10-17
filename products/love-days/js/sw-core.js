@@ -3,9 +3,9 @@
 // love-days-core.js is shared with the page; the push handler opens
 // IndexedDB through LoveCore.openDb() so the DB is never created without its
 // stores. ?v= follows CACHE_NAME.
-importScripts('/products/love-days/js/love-days-core.js?v=18');
+importScripts('/products/love-days/js/love-days-core.js?v=19');
 
-var CACHE_NAME = "lovedays-cache-v18";
+var CACHE_NAME = "lovedays-cache-v19";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
@@ -112,7 +112,7 @@ function readPushData(skipMilestones){
   return LoveCore.openDb().then(function(db){
     return Promise.resolve().then(function(){
       var tx = db.transaction("kv"), st = tx.objectStore("kv"), out = {};
-      ["profile", "cycles", "meta", "wishes", "med"].forEach(function(k){
+      ["profile", "cycles", "meta", "wishes", "med", "weight"].forEach(function(k){
         var rq = st.get(k);
         rq.onsuccess = function(){ out[k] = rq.result; };
       });
@@ -133,8 +133,8 @@ function readPushData(skipMilestones){
   }).then(function(out){
     var p = out.profile;
     return { start: p && LoveCore.checkStartDate(p.startDate, Date.now()) === "ok" ? p.startDate : null, cycles: out.cycles, meta: out.meta,
-             profileRaw: p, wishes: out.wishes, milestones: out.milestones, med: out.med, ok: true };
-  }).catch(function(){ return { start: null, cycles: null, meta: null, profileRaw: null, wishes: null, milestones: null, med: null, ok: false }; });
+             profileRaw: p, wishes: out.wishes, milestones: out.milestones, med: out.med, weight: out.weight, ok: true };
+  }).catch(function(){ return { start: null, cycles: null, meta: null, profileRaw: null, wishes: null, milestones: null, med: null, weight: null, ok: false }; });
 }
 
 function pushInfo(payload){
@@ -189,10 +189,20 @@ function medLines(info){
   }catch(e){ return []; }
 }
 
+// "⚖️ Nhớ cân hôm nay" (kv meta: weightMorning, default true) when a weight
+// goal is set and today has no weigh-in yet; never a number (lock screen).
+function weightLines(info){
+  try{
+    if(!info || !info.own || !LoveCore.weightMorningLines) return [];
+    var lines = LoveCore.weightMorningLines(info.own.weight, info.own.meta, info.now);
+    return Array.isArray(lines) ? lines : [];
+  }catch(e){ return []; }
+}
+
 function withReminders(body, info){
   var cyc = cycleLine(info);
   try{
-    if(LoveCore.pushBody) return LoveCore.pushBody(body, cyc, medLines(info).concat(dayLines(info)));
+    if(LoveCore.pushBody) return LoveCore.pushBody(body, cyc, medLines(info).concat(weightLines(info), dayLines(info)));
   }catch(e){}
   return body + (cyc ? "\n" + cyc : "");
 }
