@@ -129,6 +129,25 @@
       <p class="form-error" id="medCardErr" role="alert" hidden></p>
     </section>
 
+    <!-- Static on purpose: renders only flip hidden/textContent, so what is typed in #wtHomeKg survives any refresh. -->
+    <section class="card wt-card" id="weightCard" aria-labelledby="wtHomeTitle" hidden>
+      <h2 class="card-kicker" id="wtHomeTitle">Cân hôm nay</h2>
+      <form class="wt-home-form" id="wtHomeForm" novalidate>
+        <div class="field">
+          <div class="wt-kg-row">
+            <input type="text" id="wtHomeKg" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="Ví dụ: 80,5" aria-label="Cân hôm nay, kg" aria-describedby="wtHomeErr wtHomeSub">
+            <button type="submit" class="btn btn-primary" id="wtHomeSave">Lưu</button>
+          </div>
+          <p class="field-error" id="wtHomeErr" role="alert" hidden></p>
+        </div>
+        <p class="card-hint" id="wtHomeSub"></p>
+      </form>
+      <button type="button" class="up-row wt-home-open" id="wtHomeOpen" hidden>
+        <span class="up-main"><span class="up-title" id="wtHomeOpenTitle"></span><span class="up-date" id="wtHomeOpenSub"></span></span>
+        <svg class="ms-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </section>
+
     <section class="card journal-card" id="journalCard" aria-labelledby="journalTitle" hidden>
       <h2 class="card-kicker" id="journalTitle">Hôm nay thế nào?</h2>
       <div id="journalCardBody"></div>
@@ -171,12 +190,13 @@
     </div>
   </section>
 
-  <!-- Sức khoẻ: Thuốc + Chu kỳ. The id keeps its old name "cycle" (tab lists in love-days.js, test fixtures). -->
+  <!-- Sức khoẻ: Thuốc + Chu kỳ + Giảm cân. The id keeps its old name "cycle" (tab lists in love-days.js, test fixtures). -->
   <section id="tab-cycle" class="view" hidden>
     <div class="view-head"><h2 class="view-title">Sức khoẻ</h2></div>
     <div class="segmented health-seg" id="healthSeg" role="group" aria-label="Phần đang xem">
       <button type="button" class="seg-btn" data-health-seg="med" aria-pressed="true">Thuốc</button>
       <button type="button" class="seg-btn" data-health-seg="cycle" aria-pressed="false">Chu kỳ</button>
+      <button type="button" class="seg-btn" data-health-seg="weight" aria-pressed="false">Giảm cân</button>
     </div>
     <div id="medPane">
       <p class="form-error" id="medErr" role="alert" hidden></p>
@@ -185,6 +205,22 @@
     <div id="cyclePane" hidden>
       <p class="form-error" id="cycleTabErr" role="alert" hidden></p>
       <div class="cycle-list" id="cycleList"></div>
+    </div>
+    <div id="weightPane" hidden>
+      <p class="form-error" id="weightErr" role="alert" hidden></p>
+      <!-- Static like #weightCard: #wtKg is never rebuilt or given a value by a render. -->
+      <form class="card wt-today" id="wtTodayForm" novalidate>
+        <div class="field">
+          <label class="field-label" id="wtKgLabel" for="wtKg">Cân hôm nay (kg)</label>
+          <div class="wt-kg-row">
+            <input type="text" id="wtKg" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="Ví dụ: 80,5" aria-describedby="wtKgErr">
+            <button type="submit" class="btn btn-primary" id="wtSave">Lưu</button>
+          </div>
+          <p class="field-error" id="wtKgErr" role="alert" hidden></p>
+        </div>
+        <dl class="med-stats wt-now" id="wtNow" hidden></dl>
+      </form>
+      <div class="wt-body" id="wtBody"></div>
     </div>
   </section>
 
@@ -337,6 +373,26 @@
       </details>
     </section>
 
+    <h3 class="group-title" id="wtSetTitle">Giảm cân</h3>
+    <section class="card" id="wtSetCard" aria-labelledby="wtSetTitle">
+      <label class="check">
+        <input type="checkbox" id="wtShow" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Hiện ô Cân hôm nay ở Trang chủ</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="wtMorning" checked>
+        <span class="switch" aria-hidden="true"></span>
+        <span>Nhắc cân trong thông báo sáng</span>
+      </label>
+      <p class="card-hint wt-set-hint">Thêm dòng “⚖️ Nhớ cân hôm nay” khi hôm đó chưa cân. Không ghi số cân.</p>
+      <button type="button" class="row-link" id="btnWtOpen">
+        <svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8.5 10a4.5 4.5 0 0 1 7 0M12 10.5l1.6-2"/></svg>
+        <span class="row-link-label">Mở Giảm cân</span>
+        <svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
     <h3 class="group-title" id="cycleSetTitle">Chu kỳ</h3>
     <section class="card" id="cycleSetCard" aria-labelledby="cycleSetTitle">
       <label class="check">
@@ -379,7 +435,7 @@
         <button type="button" class="btn btn-primary" id="btnSaveBackup" hidden>Lưu file</button>
         <label class="btn btn-ghost file-btn" id="importLabel">Nhập bản sao lưu<input type="file" accept=".zip,application/zip" id="fileImport"></label>
       </div>
-      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
+      <p class="card-hint" id="backupStatus" role="status">File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc, cân nặng và ảnh · iPhone: chọn “Lưu vào Tệp”.</p>
       <p class="form-error" id="backupError" role="alert" hidden></p>
     </section>
 
@@ -750,6 +806,96 @@
     </div>
     <p class="form-error" id="mdnFormErr" role="alert" hidden></p>
     <button type="submit" class="btn btn-primary btn-block" id="mdnSave">Lưu ghi chú</button>
+  </form>
+</div>
+
+<div class="sheet" id="wtGoalSheet" role="dialog" aria-modal="true" aria-labelledby="wtGoalTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="wtGoalTitle">Mục tiêu giảm cân</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="wtGoalForm" novalidate>
+    <div class="field">
+      <label class="field-label" for="wgHeight">Chiều cao (cm)</label>
+      <input type="text" id="wgHeight" inputmode="decimal" maxlength="5" autocomplete="off" placeholder="Ví dụ: 172" aria-describedby="wgHeightErr">
+      <p class="field-error" id="wgHeightErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="wgGoal">Cân mục tiêu (kg)</label>
+      <input type="text" id="wgGoal" inputmode="decimal" maxlength="5" autocomplete="off" placeholder="Ví dụ: 70" aria-describedby="wgGoalErr">
+      <p class="field-error" id="wgGoalErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="wgStartLabel">Ngày bắt đầu lộ trình</span>
+      <input type="hidden" id="wgStart">
+      <button type="button" class="date-field is-empty" id="wgStartBtn" data-date-for="wgStart" data-date-title="Ngày bắt đầu lộ trình" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="wgStartLabel wgStartBtn" aria-describedby="wgStartErr"><span class="date-field-text">Từ lần cân đầu tiên</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="wgStartErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="wgModeLabel">Đặt lộ trình theo</span>
+      <div class="segmented" id="wgMode" role="group" aria-labelledby="wgModeLabel">
+        <button type="button" class="seg-btn" data-wg-mode="rate" aria-pressed="true">Tốc độ</button>
+        <button type="button" class="seg-btn" data-wg-mode="date" aria-pressed="false">Ngày mục tiêu</button>
+      </div>
+    </div>
+    <div class="field" id="wgRateField">
+      <span class="field-label" id="wgRateLabel">Mỗi tuần giảm (kg)</span>
+      <div class="segmented wg-rate" id="wgRate" role="group" aria-labelledby="wgRateLabel">
+        <button type="button" class="seg-btn" data-wg-rate="0.25" aria-pressed="false" aria-label="0,25 kg mỗi tuần">0,25</button>
+        <button type="button" class="seg-btn" data-wg-rate="0.5" aria-pressed="true" aria-label="0,5 kg mỗi tuần">0,5</button>
+        <button type="button" class="seg-btn" data-wg-rate="0.75" aria-pressed="false" aria-label="0,75 kg mỗi tuần">0,75</button>
+        <button type="button" class="seg-btn" data-wg-rate="1" aria-pressed="false" aria-label="1 kg mỗi tuần">1</button>
+      </div>
+    </div>
+    <div class="field" id="wgDateField" hidden>
+      <span class="field-label" id="wgDateLabel">Ngày mục tiêu</span>
+      <input type="hidden" id="wgDate">
+      <button type="button" class="date-field is-empty" id="wgDateBtn" data-date-for="wgDate" data-date-title="Ngày mục tiêu" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="wgDateLabel wgDateBtn" aria-describedby="wgDateErr"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="wgDateErr" role="alert" hidden></p>
+    </div>
+    <p class="card-hint md-preview" id="wgPreview" role="status" hidden></p>
+    <p class="form-error" id="wgFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="wgSave">Lưu mục tiêu</button>
+  </form>
+</div>
+
+<div class="sheet" id="wtEntrySheet" role="dialog" aria-modal="true" aria-labelledby="wtEntryTitle">
+  <div class="sheet-handle-hit"><div class="sheet-handle"></div></div>
+  <div class="sheet-head">
+    <h3 class="sheet-title" id="wtEntryTitle">Thêm lần cân</h3>
+    <button class="icon-btn" data-close-sheet aria-label="Đóng" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <form class="form" id="wtEntryForm" novalidate>
+    <div class="field" id="weDateField">
+      <span class="field-label" id="weDateLabel">Ngày</span>
+      <input type="hidden" id="weDate">
+      <button type="button" class="date-field is-empty" id="weDateBtn" data-date-for="weDate" data-date-title="Ngày cân" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="weDateLabel weDateBtn" aria-describedby="weDateErr"><span class="date-field-text">Chọn ngày</span><svg class="date-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <p class="field-error" id="weDateErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="weKg">Cân nặng (kg)</label>
+      <input type="text" id="weKg" inputmode="decimal" maxlength="5" autocomplete="off" placeholder="Ví dụ: 80,5" aria-describedby="weKgErr">
+      <p class="field-error" id="weKgErr" role="alert" hidden></p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="weNote">Ghi chú</label>
+      <textarea id="weNote" maxlength="100" rows="2" placeholder="Ví dụ: sau bữa tiệc"></textarea>
+    </div>
+    <p class="form-error" id="weFormErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-primary btn-block" id="weSave">Lưu</button>
+    <button type="button" class="btn btn-danger btn-block" id="weDelete" hidden>Xoá lần cân này</button>
+    <div class="confirm-row" id="weConfirm" hidden>
+      <p class="confirm-text" id="weConfirmText"></p>
+      <div class="confirm-btns">
+        <button type="button" class="btn btn-danger-solid" id="weConfirmYes">Xoá</button>
+        <button type="button" class="btn btn-ghost" id="weConfirmNo">Giữ lại</button>
+      </div>
+    </div>
   </form>
 </div>
 

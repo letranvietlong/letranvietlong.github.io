@@ -634,6 +634,85 @@ const medSel = {
   show: '#medShow', morning: '#medMorning', quiet: '#medQuiet', test: '#btnMedTest', testNote: '#medTestNote', open: '#btnMedOpen'
 };
 
+// ---------- Giảm cân (v1.21): kv 'weight' ----------
+// { key:'weight', profile: null | { heightCm, goalKg, goalDate:'YYYY-MM-DD'|null, ratePerWeek: 0.25|0.5|0.75|1, startDate:'YYYY-MM-DD'|null },
+//   log: [{ date:'YYYY-MM-DD', kg (≤ 1 decimal, 20–300), note (≤ 100), at: ms|null }], updatedAt }
+// kv 'meta' adds showWeight (Home card, default true) and weightMorning (morning push line, default true).
+// ALL NUMBERS BELOW ARE MADE UP (public repo): never put a real height or weight here.
+// Pure maths (same in every TZ): LoveCore.weightStats(raw, nowMs), weightChart(raw, '30'|'90'|'all', nowMs), mergeWeight, weightMorningLines.
+const wt = (date, kg, note) => ({ date, kg, note: note || '', at: Date.parse(date + 'T07:05:00+07:00') });
+const weightRecord = (profile, log) => ({ key: 'weight', profile, log, updatedAt: 1 });
+const weightP = { heightCm: 172, goalKg: 70, goalDate: null, ratePerWeek: 0.5, startDate: null };
+// 07/10, 11/10, 14/10 not weighed; 12/10 has a note.
+const weightW = [wt('2026-10-04', 82.0), wt('2026-10-05', 82.2), wt('2026-10-06', 81.6), wt('2026-10-08', 82.0), wt('2026-10-09', 81.2), wt('2026-10-10', 81.5),
+  wt('2026-10-12', 80.8, 'Sau bữa tiệc'), wt('2026-10-13', 81.3), wt('2026-10-15', 80.9), wt('2026-10-16', 80.6), wt('2026-10-17', 80.8)];
+const weight = {
+  now: '2026-10-17T09:00:00+07:00',   // Thứ bảy, today already weighed (80,8 at 07:05)
+  P: weightP, W: weightW,
+  // BMI by the WHO Asia-Pacific cut-offs (18,5 / 23 / 25): 80,8 / 1,72² = 27,31 → "Béo phì" (international cut-offs would say "Thừa cân")
+  expected: {
+    bmi: '27,3', bmiClass: 'Béo phì', bmiMaxKg: '67,8',                       // 67,8 kg still shows BMI 22,9 (floor(22,9·h²) = 67,7 is one step short)
+    avg7: '80,9', latest: '80,8 kg', latestSub: 'hôm nay · 07:05',           // avg over the 7 CALENDAR days 11–17/10 (5 weigh-ins), not the last 7 weigh-ins (81,0)
+    label: 'Đã cân hôm nay: 80,8 kg · nhập lại để sửa', save: 'Sửa',
+    pct: '9% chặng đường · còn 10,9 kg',
+    lost: '1,1 kg', lostSub: ['7 ngày: 0,9 kg', '30 ngày: —'],                  // 82,0 − 80,88; avg7(10/10) 81,75 − 80,88
+    rate: '0,8 kg/tuần', rateRaw: 0.7656,                                   // least squares over 04–17/10 (11 weigh-ins), −7·slope
+    planToday: '81,1 kg', vsPlan: 'Nhanh hơn 0,2 kg',                       // 82 − 13·0,5/7 = 81,07
+    eta: 'Thứ hai, 25/01/2027', etaSub: ['theo tốc độ thực tế', 'lộ trình: 21/03/2027'],   // ceil(10,88 / (0,7656/7)) = 100 days; plan 168 days
+    mark: '🎉 Đã giảm 1 kg · mốc tiếp: 2 kg (còn 0,9 kg)',
+    goalRow: 'Mục tiêu 70,0 kg · 0,5 kg/tuần · cao 172 cm',
+    preview: 'Từ 82,0 kg (04/10/2026) xuống 70,0 kg: giảm 12,0 kg, 0,5 kg/tuần → tới Chủ nhật, 21/03/2027. BMI ở 70,0 kg là 23,7 — vẫn thừa cân theo ngưỡng châu Á; mức bình thường với 172 cm là đến 67,8 kg.',
+    list: 11, listFirst: ['Thứ bảy, 17/10/2026', '80,8 kg', '▲ 0,2'], list16: '▼ 0,3', list15: '▼ 0,4', list12: ['Sau bữa tiệc', '▼ 0,7'],
+    home: ['⚖️ 80,8 kg · BMI 27,3', 'Đã giảm 1,1 kg · còn 10,9 kg'],
+    homeNoProfile: 'TB 7 ngày 80,9 kg',
+    // tap 15/10 on the chart
+    info15: 'Thứ năm, 15/10/2026 · 80,9 kg · TB 7 ngày 81,1 kg · lộ trình 81,2 kg',
+    // "Sửa" with 80,7 → entry 17/10 kg 80.7, note kept; avg7 still 80,9; BMI 27,3; toast below
+    edit807: { avg7: '80,9', bmi: '27,3', toast: 'Đã sửa cân hôm nay ✓' }
+  },
+  // weightChart(W, '30', now): x 04/10 → 17/10 (296/13 per day); goal 70 is 10,6 below the data (> 1,5 × 2,0) → pinned, axis NOT stretched
+  chart30: { xMin: '2026-10-04', xMax: '2026-10-17', yMin: 80, yMax: 83, step: 0.5, points: 11,
+    pts: { '2026-10-04': [36, 65.33], '2026-10-05': [58.77, 54.27], '2026-10-16': [309.23, 142.8], '2026-10-17': [332, 131.73] },
+    avgStart: [81.54, 69.02], avgEnd: [332, 127.31], planPath: 'M36,65.33L332,116.71', goal: { v: 70, y: 176, pinned: 'below' },
+    xTicks: ['04/10', '10/10', '17/10'], hit16: [297.85, 320.62] },
+  chartAll: { xMin: '2026-10-04', xMax: '2027-03-21', yMin: 68, yMax: 84, goal: { v: 70, y: 155.25, pinned: null } },
+  // 14 daily weigh-ins 04→17/10, 82,0 − 0,2·i → 1,4 kg/tuần → .wt-warn
+  fast: Array.from({ length: 14 }, (_, i) => wt(new Date(Date.UTC(2026, 9, 4 + i)).toISOString().slice(0, 10), Math.round((82 - 0.2 * i) * 10) / 10)),
+  fastText: 'Hai tuần qua giảm khoảng 1,4 kg mỗi tuần — nhanh hơn mức thường được khuyên (0,5–1 kg/tuần). Nhớ ăn đủ bữa, đủ đạm và uống đủ nước nhé.',
+  // W without 06, 09, 12, 13, 15, 16 → 5 weigh-ins in 14 days → no rate / ETA / warning
+  few: weightW.filter(e => !['2026-10-06', '2026-10-09', '2026-10-12', '2026-10-13', '2026-10-15', '2026-10-16'].includes(e.date)),
+  fewText: 'Cần ít nhất 6 lần cân trong 2 tuần để ước tốc độ',
+  // At 2026-10-18T00:00:05+07: avg7 80,9, rate 0,7848 → 0,8, ETA Chủ nhật, 24/01/2027, plan 81,0
+  rollover: { now: '2026-10-17T23:59:50+07:00', after: '2026-10-18T00:00:05+07:00', eta: 'Chủ nhật, 24/01/2027', planToday: '81,0 kg', vsPlan: 'Nhanh hơn 0,1 kg' },
+  timezones: [['America/Los_Angeles', '2026-10-17T09:00:00+07:00'], ['Asia/Tokyo', '2026-10-17T23:30:00+07:00']],   // both write date 2026-10-17
+  // Import "Gộp": device = W; file from device B. → 13 weigh-ins, 17/10 stays 80,8, goal stays 172/70; avg7 81,0, 7 ngày 0,8, đã giảm 1,0, ETA Chủ nhật, 24/01/2027
+  mergeB: { profile: { heightCm: 175, goalKg: 72, goalDate: null, ratePerWeek: 0.5, startDate: null },
+    log: [wt('2026-10-07', 81.9), wt('2026-10-11', 81.4), wt('2026-10-17', 80.5)] },
+  broken: { record: { key: 'weight', profile: null, log: 'x', updatedAt: 1 }, text: 'Không đọc được dữ liệu cân nặng — dữ liệu vẫn còn nguyên.' },
+  stale: 'Cân nặng vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.',
+  errors: { empty: 'Hãy nhập số cân', format: 'Ghi số cân dạng 80,5 — tối đa một chữ số sau dấu phẩy', range: 'Số cân từ 20 đến 300 kg',
+    height: 'Chiều cao từ 100 đến 250 cm', goalAbove: 'Cân mục tiêu phải thấp hơn cân bắt đầu (82,0 kg)',
+    dup15: 'Ngày 15/10/2026 đã có số cân 80,9 kg — chạm vào ngày đó trong danh sách để sửa', goalDatePast: 'Ngày mục tiêu phải sau hôm nay' },
+  morningLine: '⚖️ Nhớ cân hôm nay'
+};
+const weightSel = {
+  seg: k => '#healthSeg [data-health-seg="' + k + '"]', pane: '#weightPane', err: '#weightErr', form: '#wtTodayForm', kg: '#wtKg', kgLabel: '#wtKgLabel',
+  save: '#wtSave', kgErr: '#wtKgErr', now: '#wtNow', nowStats: '#wtNow .med-stat', body: '#wtBody', progress: '#wtBody .wt-progress', pct: '#wtBody .wt-pct',
+  stats: '#wtBody .wt-stats .med-stat', mark: '#wtBody .wt-mark', warn: '#wtBody .wt-warn', range: '#wtRange', rangeBtn: k => '#wtRange [data-wt-range="' + k + '"]',
+  chart: '#wtChart', svg: '#wtChart svg', pt: '#wtChart .wt-pt', avg: '#wtChart .wt-avg', plan: '#wtChart .wt-plan', goal: '#wtChart .wt-goal', goalLbl: '#wtChart .wt-goal-lbl',
+  hit: d => '#wtChart rect.wt-hit[data-wt-day="' + d + '"]', sel: '#wtChart .wt-sel', legend: '#wtLegend', info: '#wtChartInfo',
+  goalOpen: '#wtGoalOpen', add: '#wtBody [data-wt="add"]', more: '#wtBody [data-wt="more"]', list: '#wtList', item: d => '#wtList [data-wt-day="' + d + '"]',
+  card: '#weightCard', homeForm: '#wtHomeForm', homeKg: '#wtHomeKg', homeSave: '#wtHomeSave', homeErr: '#wtHomeErr', homeSub: '#wtHomeSub',
+  homeOpen: '#wtHomeOpen', homeOpenTitle: '#wtHomeOpenTitle', homeOpenSub: '#wtHomeOpenSub',
+  goalSheet: '#wtGoalSheet', goalForm: '#wtGoalForm', height: '#wgHeight', heightErr: '#wgHeightErr', goalKg: '#wgGoal', goalErr: '#wgGoalErr',
+  start: '#wgStart', startErr: '#wgStartErr', mode: k => '#wgMode [data-wg-mode="' + k + '"]', rate: k => '#wgRate [data-wg-rate="' + k + '"]',
+  goalDate: '#wgDate', goalDateErr: '#wgDateErr', preview: '#wgPreview', goalFormErr: '#wgFormErr', goalSave: '#wgSave',
+  entrySheet: '#wtEntrySheet', entryTitle: '#wtEntryTitle', entryDate: '#weDate', entryDateErr: '#weDateErr', entryKg: '#weKg', entryKgErr: '#weKgErr',
+  entryNote: '#weNote', entryFormErr: '#weFormErr', entrySave: '#weSave', entryDelete: '#weDelete', confirm: '#weConfirm', confirmText: '#weConfirmText',
+  confirmYes: '#weConfirmYes', confirmNo: '#weConfirmNo',
+  setTitle: '#wtSetTitle', setCard: '#wtSetCard', show: '#wtShow', morning: '#wtMorning', open: '#btnWtOpen'
+};
+
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().
 async function seedPhotoList(page, list) {
   await page.evaluate(async list => {
@@ -714,4 +793,4 @@ function badgeStubScript() {
 module.exports = { path, now, profile, milestones, dayCountTable, rollover, edges, milestoneRows, timelineRows, timeline, timelineSel, birthdays, goal, leap, sel, seed, seedPhotos, badgeStubScript,
   cy, cyclesRecord, cycleNow, cycles, cycleSel, calNow, calendar, reminder, share, shareSel,
   wi, wishesRecord, wishes, wishSel, onThisDay, otdSel, seedPhotoList, dayRemind, dayRemindSel, j, journalRecord, journal, journalSel, recap, recapSel,
-  md, me, mn, medRecord, med, medSel };
+  md, me, mn, medRecord, med, medSel, wt, weightRecord, weight, weightSel };

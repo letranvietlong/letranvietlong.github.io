@@ -24,10 +24,11 @@
     wishes: [], wishesBad: [], wishesBroken: false, wishesStamp: null,
     journal: [], journalBad: [], journalBroken: false, journalStamp: null,
     med: { courses: [], log: [] }, medBad: { courses: [], log: [] }, medBroken: false, medStamp: null,
-    // cycleRemind (days ahead, 0 = off), cycleRemindQuiet, dayRemind, medMorning and medQuiet are read by the
+    weight: { profile: null, log: [] }, weightBad: { profile: null, log: [] }, weightBroken: false, weightStamp: null,
+    // cycleRemind (days ahead, 0 = off), cycleRemindQuiet, dayRemind, medMorning, medQuiet and weightMorning are read by the
     // service worker's push handler; like the rest of meta they stay on this device.
     meta: { key: "meta", schemaVersion: 1, lastBackupAt: null, albumSort: "taken", showCycle: true, cycleRemind: 2, cycleRemindQuiet: true, dayRemind: true,
-            showJournal: true, showMed: true, medMorning: true, medQuiet: true }
+            showJournal: true, showMed: true, medMorning: true, medQuiet: true, showWeight: true, weightMorning: true }
   };
   var REMIND_OPTS = [0, 1, 2, 3, 5];
   var mem = { kv: {}, milestones: {}, blobs: {}, photos: {} };
@@ -100,7 +101,7 @@
   function loadAll(){
     var db = state.db;
     var safe = function(p, fallback){ return p.catch(function(){ return fallback; }); };
-    // A failed read of profile/milestones/photos/meta/cycles/wishes/journal rejects the whole load:
+    // A failed read of profile/milestones/photos/meta/cycles/wishes/journal/med/weight rejects the whole load:
     // treating it as "nothing stored" would show first-run setup and let the
     // next save overwrite the real data. Only avatar/cover reads may fail soft.
     return Promise.all([
@@ -112,7 +113,8 @@
       C.idbGet(db, "kv", "cycles"),
       C.idbGet(db, "kv", "wishes"),
       C.idbGet(db, "kv", "journal"),
-      C.idbGet(db, "kv", "med")
+      C.idbGet(db, "kv", "med"),
+      C.idbGet(db, "kv", "weight")
     ]).then(function(r){
       var skipped = 0;
       if(r[0] !== undefined){
@@ -151,11 +153,14 @@
         if(meta.showMed === false) state.meta.showMed = false;
         if(meta.medMorning === false) state.meta.medMorning = false;
         if(meta.medQuiet === false) state.meta.medQuiet = false;
+        if(meta.showWeight === false) state.meta.showWeight = false;
+        if(meta.weightMorning === false) state.meta.weightMorning = false;
       }
       skipped += applyCyclesRec(r[5]);
       skipped += applyWishesRec(r[6]);
       skipped += applyJournalRec(r[7]);
       skipped += applyMedRec(r[8]);
+      skipped += applyWeightRec(r[9]);
       if(skipped) setBanner("skipped", "Bỏ qua " + skipped + " mục hỏng; phần còn lại vẫn bình thường.", "warn");
       return C.cleanupGenerations(db, gen).catch(function(){});
     });
@@ -223,6 +228,7 @@
     renderJournal();
     if(health.seg === null) health.seg = defaultHealthSeg();
     renderMed();
+    renderWeight();
     fillProfileForm();
     renderPhotoRows();
     renderBackupCard();
@@ -242,6 +248,7 @@
     showError("journalCardErr", null);
     showError("medErr", null);
     showError("medCardErr", null);
+    showError("weightErr", null);
     state.tab = name;
     ["home", "milestones", "cycle", "album", "settings"].forEach(function(t){ $("tab-" + t).hidden = t !== name; });
     Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -255,11 +262,12 @@
     if(name === "album") renderAlbum();
     if(name === "home" && state.mode === "app") renderOnThisDay();
     if(name === "milestones"){ syncTl(); placeSegPill($("msSeg"), true); }
-    // The tab keeps its old id "cycle"; it is labelled "Sức khoẻ" and holds Thuốc + Chu kỳ.
+    // The tab keeps its old id "cycle"; it is labelled "Sức khoẻ" and holds Thuốc + Chu kỳ + Giảm cân.
     if(name === "cycle"){
       if(health.seg === null) health.seg = defaultHealthSeg();
       setHealthSeg(health.seg, true);
       renderMed();
+      renderWeight();
       if(C.cycleStats) renderCycleSheet();
     }
   }
@@ -316,6 +324,8 @@
     }).join("");
     renderJournalCard();
     renderMedCard();
+    renderWeightCard();
+    renderHealthSeg();
     renderCycleCard();
     renderOnThisDay();
   }
@@ -448,6 +458,8 @@
       if(C.cycleStats) renderCycleSheet();
       // Thuốc follows the date too; #medSheet and #medNoteSheet (its day fixed in mdn.date) are never touched.
       renderMed();
+      // So does Giảm cân; the two "Cân hôm nay" boxes keep their text, #wtGoalSheet / #wtEntrySheet (we.date) are never touched.
+      renderWeight();
       if(recapSheetOpen()) renderRecap(); // numbers only; the chosen year stays
       if(shareSheetOpen()) renderShare();
       updateBadge();
@@ -984,8 +996,8 @@
     // An older cached love-days-core.js can be paired with this page offline.
     if(!C.cycleStats){
       card.hidden = true; $("cycleSetCard").hidden = true; $("cycleSetTitle").hidden = true;
-      // The Sức khoẻ tab still holds Thuốc when the core knows it.
-      document.querySelector('.tabbar-btn[data-tab="cycle"]').hidden = !C.medStats;
+      // The Sức khoẻ tab still holds Thuốc / Giảm cân when the core knows them.
+      document.querySelector('.tabbar-btn[data-tab="cycle"]').hidden = !C.medStats && !C.weightStats;
       return;
     }
     card.hidden = state.meta.showCycle === false;
@@ -2206,7 +2218,7 @@
   var medcal = { ym: null, sel: null, swiped: false };
   // The day of the open note sheet, fixed when it opens.
   var mdn = { date: null };
-  // Which half of the Sức khoẻ tab is on show ("med" | "cycle"); picked once per session, never stored.
+  // Which part of the Sức khoẻ tab is on show ("med" | "cycle" | "weight"); picked once per session, never stored.
   var health = { seg: null };
   var MED_BROKEN_TEXT = "Không đọc được dữ liệu thuốc — dữ liệu vẫn còn nguyên";
   var MED_SAID = { taken: ", đã uống", missed: ", chưa ghi uống", due: ", hôm nay, chưa ghi uống", future: ", trong đợt thuốc, chưa tới", off: ", ngoài đợt thuốc" };
@@ -2593,23 +2605,42 @@
     el.addEventListener("pointercancel", function(){ active = false; });
   })();
 
-  // ---- Segmented "Thuốc / Chu kỳ" ----
+  // ---- Segmented "Thuốc / Chu kỳ / Giảm cân" ----
+  // A part whose functions the (possibly older, cached) core lacks is hidden; the control shows from two parts up.
+  var HEALTH_SEGS = ["med", "cycle", "weight"];
+  function healthAvail(seg){ return seg === "med" ? !!C.medStats : seg === "cycle" ? !!C.cycleStats : !!C.weightStats; }
+  function renderHealthSeg(){
+    var n = 0;
+    Array.prototype.forEach.call($("healthSeg").querySelectorAll("[data-health-seg]"), function(b){
+      var ok = healthAvail(b.getAttribute("data-health-seg"));
+      b.hidden = !ok;
+      if(ok) n++;
+    });
+    $("healthSeg").hidden = n < 2;
+  }
   function defaultHealthSeg(){
-    if(C.medStats && !state.medBroken && C.medCourseAt(state.med.courses, C.todayStr(now()))) return "med";
+    var today = C.todayStr(now());
+    if(C.medStats && !state.medBroken && C.medCourseAt(state.med.courses, today)) return "med";
+    var wtData = !weightLocked() && !!(state.weight.profile || state.weight.log.length);
+    if(wtData && !wtEntry(today)) return "weight";
     if(C.cycleStats && !state.cyclesBroken && state.cycles.length) return "cycle";
-    return C.medStats ? "med" : "cycle";
+    if(wtData) return "weight";
+    return HEALTH_SEGS.filter(healthAvail)[0] || "cycle";
   }
   function setHealthSeg(seg, instant){
-    var ok = seg === "med" ? !!C.medStats : !!C.cycleStats;
-    health.seg = ok ? seg : seg === "med" ? "cycle" : "med";
+    health.seg = healthAvail(seg) ? seg : HEALTH_SEGS.filter(healthAvail)[0] || "cycle";
+    renderHealthSeg();
     Array.prototype.forEach.call($("healthSeg").querySelectorAll("[data-health-seg]"), function(b){
       b.setAttribute("aria-pressed", b.getAttribute("data-health-seg") === health.seg ? "true" : "false");
     });
     $("medPane").hidden = health.seg !== "med";
     $("cyclePane").hidden = health.seg !== "cycle";
+    $("weightPane").hidden = health.seg !== "weight";
     showError("medErr", null);
     showError("cycleTabErr", null);
+    showError("weightErr", null);
     placeSegPill($("healthSeg"), instant);
+    if(health.seg === "weight") placeSegPill($("wtRange"), true);
   }
   // Used by the Home card, Settings and a tapped medication notification. Never closes an open sheet.
   function openHealth(seg){
@@ -2627,7 +2658,6 @@
     var card = $("medCard"), core = !!C.medStats;
     $("medSetTitle").hidden = !core;
     $("medSetCard").hidden = !core;
-    $("healthSeg").hidden = !(core && C.cycleStats);
     $("medShow").checked = state.meta.showMed !== false;
     $("medMorning").checked = state.meta.medMorning !== false;
     $("medQuiet").checked = state.meta.medQuiet !== false;
@@ -2875,6 +2905,626 @@
     }, function(msg){ showError("mdnFormErr", msg); });
   });
 
+  // ---------- Giảm cân (kv 'weight', v1.21) ----------
+  // Thuốc's pattern on purpose, not shared code: one record { profile, log }; what the validator rejects
+  // stays verbatim in state.weightBad and is written back with every save; nothing is written while the
+  // record is unreadable or the cached core is too old (weightLocked). The two "Cân hôm nay" boxes (pane
+  // and Home card) are static markup: no render rebuilds them or sets their value, so a day rollover, a
+  // background refresh or another window can't wipe what is being typed. wt.tap/wt.quiet = Thuốc's
+  // double-tap hold (the "Lưu" under the finger turns into another button after a save).
+  var wt = { saving: false, tap: null, quiet: null, listN: 31, range: "30" };
+  // The chart model on show and the tapped day (kept across rebuilds while the day is still drawn).
+  var wtc = { sel: null, chart: null };
+  var wg = { mode: "rate", rate: 0.5 };
+  // The day of the open entry sheet, fixed when it opens (adding = picks its own day).
+  var we = { date: null, adding: false };
+  var WT_BROKEN_TEXT = "Không đọc được dữ liệu cân nặng — dữ liệu vẫn còn nguyên";
+  var WT_RANGES = [["30", "1 tháng"], ["90", "3 tháng"], ["all", "Tất cả"]];
+
+  function weightLocked(){ return state.weightBroken || !C.weightStats; }
+  function wtByDate(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
+  function wtEntry(d){
+    for(var i = 0; i < state.weight.log.length; i++) if(state.weight.log[i].date === d) return state.weight.log[i];
+    return null;
+  }
+  function wtLogWith(rec){
+    var out = state.weight.log.filter(function(x){ return x.date !== rec.date; });
+    out.push(rec);
+    return out.sort(wtByDate);
+  }
+  function wtLogWithout(date){ return state.weight.log.filter(function(x){ return x.date !== date; }); }
+  function wtStats(){ return C.weightStats({ profile: state.weight.profile, log: state.weight.log }, now()); }
+  function kgT(x){ return C.kgText(x); }
+  // 172 → "172", 172.5 → "172,5" (what goes back into a box the user edits).
+  function wtNum(x){ var r = C.roundKg(x); return r === Math.floor(r) ? String(r) : kgT(r); }
+  function wtLost(x, cap){
+    if(x == null) return "—";
+    var r = C.roundKg(x);
+    return r < 0 ? (cap ? "Đã tăng " : "tăng ") + kgT(r) + " kg" : (cap ? "Đã giảm " : "") + kgT(r) + " kg";
+  }
+  function wtRate(rate){ var r = C.roundKg(rate); return r < 0 ? "đang tăng " + kgT(r) + " kg/tuần" : kgT(r) + " kg/tuần"; }
+  function wtRateOpt(x){ return x === 1 ? "1" : String(x).replace(".", ","); }
+  function wtDay(d){ return weekday(d) + ", " + fmtDate(d); }
+  function wtFullText(){ return "Đã đủ " + fmtInt(C.WEIGHT_MAX_LOG) + " lần cân — hãy sao lưu rồi xoá bớt."; }
+  function wtKgErrText(code){
+    return code === "empty" ? "Hãy nhập số cân" : code === "format" ? "Ghi số cân dạng 80,5 — tối đa một chữ số sau dấu phẩy"
+      : "Số cân từ " + C.WEIGHT_MIN + " đến " + C.WEIGHT_MAX + " kg";
+  }
+  function wtFieldError(id, msg){
+    showError(id + "Err", msg);
+    var el = $(id + "Btn") || $(id);
+    if(msg) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid");
+  }
+  // A weigh-in saved on another VN day than its own (added later, merged) shows no time.
+  function wtAtSameDay(e){ return !!(e && typeof e.at === "number" && C.todayStr(e.at) === e.date); }
+  function wtClock(at){ var w = C.wall(at); return pad2(w.h) + ":" + pad2(w.mi); }
+
+  function applyWeightRec(rec){
+    var skipped = 0, days = Object.create(null);
+    state.weight = { profile: null, log: [] }; state.weightBad = { profile: null, log: [] }; state.weightBroken = false;
+    state.weightStamp = cyclesStampOf(rec);
+    if(rec === undefined) return 0;
+    if(!rec || typeof rec !== "object" || Array.isArray(rec) || !Array.isArray(rec.log) || (rec.profile != null && typeof rec.profile !== "object")){
+      state.weightBroken = true;
+      return 0;
+    }
+    if(!C.validateWeightEntry || !C.validateWeightProfile){
+      state.weightBad = { profile: rec.profile == null ? null : rec.profile, log: rec.log.slice() };
+      return 0;
+    }
+    if(rec.profile != null){
+      var p = C.validateWeightProfile(rec.profile);
+      if(p) state.weight.profile = p; else { state.weightBad.profile = rec.profile; skipped++; }
+    }
+    rec.log.forEach(function(it){
+      var v = C.validateWeightEntry(it);
+      if(v && !days[v.date]){ days[v.date] = true; state.weight.log.push(v); }
+      else { state.weightBad.log.push(it); skipped++; }
+    });
+    state.weight.log.sort(wtByDate);
+    return skipped;
+  }
+
+  // saveMed's twin: re-read inside the write transaction, nothing written when another window changed it.
+  // A valid goal saved on purpose replaces an unreadable stored one; any other save carries it back unchanged.
+  function saveWeight(nextProfile, nextLog){
+    if(state.loadFailed || weightLocked()) return Promise.reject(new Error("weight locked"));
+    if(busy === "import") return Promise.reject(userErr("Đang nhập bản sao lưu. Hãy đợi xong rồi thử lại."));
+    var stamp = now();
+    if(typeof state.weightStamp === "number" && stamp <= state.weightStamp) stamp = state.weightStamp + 1;
+    var rec = { key: "weight", profile: nextProfile || state.weightBad.profile || null, log: nextLog.concat(state.weightBad.log), updatedAt: stamp };
+    function done(){
+      state.weight = { profile: nextProfile || null, log: nextLog };
+      if(nextProfile) state.weightBad.profile = null;
+      state.weightStamp = stamp;
+      dataChanged();
+    }
+    if(!state.db) return put("kv", rec).then(done);
+    var tx = state.db.transaction("kv", "readwrite"), st = tx.objectStore("kv"), stale = false, found;
+    var rq = st.get("weight");
+    rq.onsuccess = function(){
+      found = rq.result;
+      if(cyclesStampOf(found) !== state.weightStamp) stale = true; else st.put(rec);
+    };
+    return C.txDone(tx).then(function(){
+      if(!stale){ done(); return; }
+      applyWeightRec(found);
+      renderWeight();
+      renderWeightCard();
+      var err = userErr("Cân nặng vừa được cập nhật ở cửa sổ khác — đã tải lại, hãy thử lại.");
+      err.stale = true;
+      throw err;
+    });
+  }
+
+  function weightWrite(btn, nextProfile, nextLog, ok, fail){
+    if(wt.saving) return;
+    var label = btn ? btn.textContent : "";
+    wt.saving = true;
+    if(btn){ btn.disabled = true; btn.textContent = "Đang lưu…"; }
+    function release(){
+      wt.saving = false;
+      if(btn){ btn.disabled = false; btn.textContent = label; }
+    }
+    Promise.resolve().then(function(){ return saveWeight(nextProfile, nextLog); }).then(function(){
+      release();
+      renderWeight();
+      renderWeightCard();
+      ok();
+    }, function(err){
+      release();
+      fail((err && err.userMessage) || "Không lưu được vào bộ nhớ máy. Hãy thử lại.", err);
+    });
+  }
+  function wtHold(){
+    var spot = wt.tap && now() - wt.tap.at < 1000 ? wt.tap : null;
+    wt.quiet = spot;
+    if(spot) setTimeout(function(){ if(wt.quiet === spot) wt.quiet = null; }, 400);
+  }
+  // A new milestone reached by this save, or "" (the 5% step wins when both are reached at once).
+  function wtMarkToast(before, after){
+    if(!before || !after) return "";
+    if(after.pct5 >= 5 && after.pct5 > before.pct5) return "🎉 Đã giảm " + after.pct5 + "% cân nặng!";
+    if(after.kg >= 1 && after.kg > before.kg) return "🎉 Đã giảm được " + after.kg + " kg so với lúc bắt đầu!";
+    return "";
+  }
+
+  // "Cân hôm nay" in the pane and on Home. The day is the one of the tap, not the one drawn.
+  // Any failure (stale included) leaves the typed number in the box.
+  function weightSaveKg(inputId, errId, btn){
+    if(wt.saving || weightLocked()) return;
+    var input = $(inputId), r = C.parseDecimal1(input.value, C.WEIGHT_MIN, C.WEIGHT_MAX);
+    if(r.error){ showError(errId, wtKgErrText(r.error)); input.setAttribute("aria-invalid", "true"); return; }
+    showError(errId, null);
+    input.removeAttribute("aria-invalid");
+    var t = now(), today = C.todayStr(t), old = wtEntry(today);
+    if(!old && state.weight.log.length >= C.WEIGHT_MAX_LOG){ showError(errId, wtFullText()); return; }
+    var rec = C.validateWeightEntry({ date: today, kg: r.value, note: old ? old.note : "", at: t });
+    if(!rec) return;
+    var before = wtStats();
+    weightWrite(btn, state.weight.profile, wtLogWith(rec), function(){
+      input.value = "";
+      input.blur();
+      wtHold();
+      var after = wtStats();
+      toast(wtMarkToast(before && before.marks, after && after.marks) || (old ? "Đã sửa cân hôm nay ✓" : "Đã lưu cân hôm nay ✓"));
+    }, function(msg){ showError(errId, msg); });
+  }
+  $("wtTodayForm").addEventListener("submit", function(e){ e.preventDefault(); weightSaveKg("wtKg", "wtKgErr", $("wtSave")); });
+  $("wtHomeForm").addEventListener("submit", function(e){ e.preventDefault(); weightSaveKg("wtHomeKg", "wtHomeErr", $("wtHomeSave")); });
+  [["wtKg", "wtKgErr"], ["wtHomeKg", "wtHomeErr"]].forEach(function(x){
+    $(x[0]).addEventListener("input", function(){ showError(x[1], null); this.removeAttribute("aria-invalid"); });
+  });
+
+  // ---- The Giảm cân pane ----
+  // Two short facts under a stat go on their own lines (a " · " join wraps mid-phrase in the 2-column grid).
+  var WT_SUB_BREAK = '</span><span class="wt-sub">';
+  function wtStat(label, value, sub){
+    return '<div class="med-stat"><dt>' + label + "</dt><dd>" + value + (sub ? '<span class="wt-sub">' + sub + "</span>" : "") + "</dd></div>";
+  }
+  function wtNowHtml(st){
+    var l = st.latest, sub = "";
+    if(l) sub = l.date === st.today ? "hôm nay" + (wtAtSameDay(l) ? " · " + wtClock(l.at) : "") : fmtDayMonth(l.date);
+    var bmi = st.bmiClass
+      ? kgT(st.bmi) + ' <span class="status-tag ' + (st.bmiClass.key === "normal" ? "ok" : "warn") + '">' + st.bmiClass.label + "</span>"
+      : "—" + (st.hasProfile ? "" : ' <button type="button" class="wt-link" data-wt="goal">Nhập chiều cao</button>');
+    return wtStat("Cân mới nhất", l ? kgT(l.kg) + " kg" : "Chưa cân", sub) + wtStat("BMI", bmi, "");
+  }
+  function wtProgressHtml(st){
+    var h = '<div class="card wt-progress">', p = st.profile;
+    if(p && st.pct != null){
+      var left = st.goalReached ? "Đã chạm mục tiêu " + kgT(p.goalKg) + " kg 🎉 Giữ vững nhé!" : st.pct + "% chặng đường · còn " + kgT(st.leftKg) + " kg";
+      h += '<span class="goal-bar wt-bar" aria-hidden="true"><span class="goal-fill" style="transform:scaleX(' + (st.pct / 100) + ')"></span></span>' +
+        '<p class="wt-pct">' + left + "</p>";
+    }
+    h += '<dl class="med-stats wt-stats">';
+    h += wtStat("Đã giảm", wtLost(st.lostTotal), "7 ngày: " + wtLost(st.lost7) + WT_SUB_BREAK + "30 ngày: " + wtLost(st.lost30));
+    h += st.trend ? wtStat("Tốc độ", wtRate(st.trend.rate), "theo 2 tuần gần nhất")
+      : wtStat("Tốc độ", "—", "Cần ít nhất " + C.WEIGHT_TREND_MIN + " lần cân trong 2 tuần để ước tốc độ");
+    if(st.plan && st.planToday != null){
+      var v = st.vsPlan, tag = v <= -0.05 ? medTag("ok", "Nhanh hơn " + kgT(v) + " kg") : v >= 0.05 ? medTag("warn", "Chậm hơn " + kgT(v) + " kg") : medTag("ok", "Đúng lộ trình");
+      h += wtStat("Lộ trình hôm nay", kgT(st.planToday) + " kg", tag);
+    }
+    if(p && st.trend && !st.goalReached){
+      var planEnd = st.plan ? WT_SUB_BREAK + "lộ trình: " + fmtDate(st.plan.endDate) : "";
+      if(st.eta === "slow") h += wtStat("Dự kiến đạt", "Hơn 2 năm nữa", "theo tốc độ thực tế" + planEnd);
+      else if(st.eta) h += wtStat("Dự kiến đạt", wtDay(st.eta.date), "theo tốc độ thực tế" + planEnd);
+      else h += wtStat("Dự kiến đạt", "Chưa ước được", "2 tuần qua cân chưa giảm" + planEnd);
+    }
+    h += "</dl>";
+    var m = st.marks;
+    if(m){
+      var mark = m.kg >= 1 ? "🎉 Đã giảm " + m.kg + " kg · mốc tiếp: " + m.nextKg + " kg (còn " + kgT(m.nextKgLeft) + " kg)"
+        : "Mốc đầu tiên: 1 kg (còn " + kgT(m.nextKgLeft) + " kg)";
+      if(m.pct5 >= 5) mark += " · đã giảm " + m.pct5 + "% cân nặng";
+      h += '<p class="wt-mark">' + mark + "</p>";
+    }
+    if(st.fast){
+      h += '<p class="wt-warn">Hai tuần qua giảm khoảng ' + kgT(st.trend.rate) + " kg mỗi tuần — nhanh hơn mức thường được khuyên (0,5–1 kg/tuần). Nhớ ăn đủ bữa, đủ đạm và uống đủ nước nhé.</p>";
+    }
+    return h + "</div>";
+  }
+  function wtGoalRowText(p){
+    if(!p) return "Đặt chiều cao và mục tiêu";
+    return "Mục tiêu " + kgT(p.goalKg) + " kg · " + (p.goalDate ? "đến " + fmtDate(p.goalDate) : wtRateOpt(p.ratePerWeek) + " kg/tuần") + " · cao " + wtNum(p.heightCm) + " cm";
+  }
+  function wtListHtml(){
+    var log = state.weight.log, n = log.length, shown = Math.min(n, wt.listN), h = "";
+    if(!n) return '<p class="card-hint wt-none">Chưa có lần cân nào — cân lần đầu ở ô trên cùng; lộ trình bắt đầu từ lần đó.</p>';
+    h += '<ul class="ms-group wt-list" id="wtList">';
+    for(var i = n - 1; i >= n - shown; i--){
+      var e = log[i], prev = i > 0 ? log[i - 1] : null, d = prev ? C.roundKg(e.kg - prev.kg) : null;
+      var delta = d == null ? "" : d < 0 ? "▼ " + kgT(d) : d > 0 ? "▲ " + kgT(d) : "= 0,0";
+      var said = d == null ? "" : d < 0 ? ", giảm " + kgT(d) + " kg so với lần trước" : d > 0 ? ", tăng " + kgT(d) + " kg so với lần trước" : ", bằng lần trước";
+      h += '<li class="ms-item-wrap"><button type="button" class="ms-item wt-item" data-wt-day="' + e.date + '" aria-haspopup="dialog" aria-label="' +
+        escapeHtml(weekday(e.date) + " " + fmtDate(e.date) + ", " + kgT(e.kg) + " kg" + said + (e.note ? ". " + e.note : "") + ". Sửa") + '">' +
+        '<span class="ms-main"><span class="ms-title">' + wtDay(e.date) + "</span>" + (e.note ? '<span class="ms-sub wt-note">' + escapeHtml(e.note) + "</span>" : "") + "</span>" +
+        '<span class="wt-right" aria-hidden="true"><span class="wt-kg">' + kgT(e.kg) + " kg</span>" + (delta ? '<span class="wt-delta">' + delta + "</span>" : "") + "</span>" + CHEV + "</button></li>";
+    }
+    h += "</ul>";
+    if(n > shown) h += '<button type="button" class="btn btn-ghost btn-block wt-more" data-wt="more">Xem thêm ' + fmtInt(Math.min(31, n - shown)) + " lần cân</button>";
+    return h;
+  }
+
+  // Rebuilds #wtNow and #wtBody only: #wtTodayForm's box keeps its text; the sheets are never touched.
+  function renderWeight(){
+    var body = $("wtBody"), form = $("wtTodayForm"), nowEl = $("wtNow");
+    if(!C.weightStats){ body.innerHTML = ""; form.hidden = true; return; }
+    if(state.weightBroken){
+      form.hidden = true;
+      body.innerHTML = '<div class="card"><p class="card-text">' + WT_BROKEN_TEXT + ".</p></div>";
+      return;
+    }
+    form.hidden = false;
+    var st = wtStats();
+    if(!st){ body.innerHTML = '<div class="card"><p class="card-text">' + WT_BROKEN_TEXT + ".</p></div>"; return; }
+    var te = st.todayEntry;
+    $("wtKgLabel").textContent = te ? "Đã cân hôm nay: " + kgT(te.kg) + " kg · nhập lại để sửa" : "Cân hôm nay (kg)";
+    if(!wt.saving) $("wtSave").textContent = te ? "Sửa" : "Lưu";
+    nowEl.hidden = !st.latest && !st.hasProfile;
+    nowEl.innerHTML = nowEl.hidden ? "" : wtNowHtml(st);
+    var a = document.activeElement, inside = a && body.contains(a);
+    var act = inside ? a.getAttribute("data-wt") || (a.getAttribute("data-wt-range") ? "range-" + a.getAttribute("data-wt-range") : null) || (a.id ? "#" + a.id : null) : null;
+    if(!st.count && !st.hasProfile){
+      body.innerHTML = '<div class="card empty-state"><p class="empty-text">Cân mỗi sáng sau khi thức dậy — app vẽ xu hướng, tính BMI và lộ trình tới mục tiêu.</p>' +
+        '<button type="button" class="btn btn-primary empty-action" data-wt="goal">Đặt mục tiêu</button></div>';
+      wtc.chart = null;
+    } else {
+      var h = st.latest ? wtProgressHtml(st) : "";
+      if(st.count){
+        h += '<div class="card wt-chart-card"><h4 class="import-step">Biểu đồ</h4>' +
+          '<div class="segmented wt-range" id="wtRange" role="group" aria-label="Khoảng thời gian của biểu đồ">' + WT_RANGES.map(function(r){
+            return '<button type="button" class="seg-btn" data-wt-range="' + r[0] + '" aria-pressed="' + (wt.range === r[0]) + '">' + r[1] + "</button>";
+          }).join("") + "</div>" +
+          '<div class="wt-chart" id="wtChart"></div><p class="wt-legend" id="wtLegend"></p>' +
+          '<p class="cal-info-text muted wt-info" id="wtChartInfo" role="status"></p></div>';
+      }
+      h += '<div class="card wt-goal-card"><button type="button" class="row-link" id="wtGoalOpen" aria-haspopup="dialog">' +
+        '<svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>' +
+        '<span class="row-link-label">' + escapeHtml(wtGoalRowText(st.profile)) + "</span>" +
+        '<svg class="row-link-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>';
+      h += '<h4 class="import-step">Các lần cân</h4><button type="button" class="btn btn-soft btn-block wt-add" data-wt="add">Thêm ngày đã qua</button>' + wtListHtml();
+      body.innerHTML = h;
+      if(st.count) renderWtChart();
+      else wtc.chart = null;
+    }
+    if(act){
+      var back = act.charAt(0) === "#" ? $(act.slice(1)) : act.indexOf("range-") === 0 ? body.querySelector('[data-wt-range="' + act.slice(6) + '"]') : body.querySelector('[data-wt="' + act + '"]');
+      if(back && body.contains(back)) back.focus({ preventScroll: true });
+    }
+    if(!$("weightPane").hidden) placeSegPill($("wtRange"), true);
+  }
+
+  function wtAxis(v, step){ return step < 1 ? kgT(v) : String(Math.round(v)); }
+  // Fills #wtChart, the legend and the info line from LoveCore.weightChart (all geometry is computed there).
+  function renderWtChart(){
+    var box = $("wtChart");
+    if(!box) return;
+    var raw = { profile: state.weight.profile, log: state.weight.log }, c = C.weightChart(raw, wt.range, now());
+    wtc.chart = c.ok ? c : null;
+    if(!c.ok){
+      var few = state.weight.log.length < 2;
+      box.innerHTML = '<p class="card-text wt-chart-empty">' + (few ? "Cần ít nhất 2 lần cân để vẽ biểu đồ." : "Khoảng này chưa có đủ 2 lần cân — chọn khoảng dài hơn.") + "</p>";
+      $("wtLegend").innerHTML = "";
+      $("wtChartInfo").textContent = "";
+      wtc.sel = null;
+      return;
+    }
+    var L = c.L, R = c.W - c.R, T = c.T, B = c.T + (c.H - c.T - c.B), s = "";
+    s += '<defs><clipPath id="wtClip"><rect x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"/></clipPath></defs>';
+    c.yTicks.forEach(function(k){
+      s += '<line class="wt-grid" x1="' + L + '" x2="' + R + '" y1="' + k.y + '" y2="' + k.y + '"/>' +
+        '<text class="wt-axis" x="' + (L - 5) + '" y="' + (k.y + 3.5) + '" text-anchor="end">' + wtAxis(k.v, c.step) + "</text>";
+    });
+    c.xTicks.forEach(function(k){
+      s += '<text class="wt-axis" x="' + k.x + '" y="' + (c.H - 7) + '" text-anchor="' + k.anchor + '">' + k.label + "</text>";
+    });
+    if(c.planPath) s += '<path class="wt-plan" d="' + c.planPath + '" clip-path="url(#wtClip)"/>';
+    if(c.goal){
+      s += '<line class="wt-goal" x1="' + L + '" x2="' + R + '" y1="' + c.goal.y + '" y2="' + c.goal.y + '"/>';
+      if(c.goal.pinned) s += '<text class="wt-goal-lbl" x="' + (R - 2) + '" y="' + (c.goal.pinned === "below" ? c.goal.y - 5 : c.goal.y + 12) + '" text-anchor="end">Mục tiêu ' +
+        kgT(c.goal.v) + " kg " + (c.goal.pinned === "below" ? "↓" : "↑") + "</text>";
+    }
+    if(c.avgPath) s += '<path class="wt-avg" d="' + c.avgPath + '"/>';
+    c.points.forEach(function(p){ s += '<circle class="wt-pt" cx="' + p.x + '" cy="' + p.y + '" r="3.5"/>'; });
+    c.points.forEach(function(p){
+      s += '<rect class="wt-hit" data-wt-day="' + p.date + '" x="' + p.hit.x0 + '" y="' + T + '" width="' + Math.max(1, Math.round((p.hit.x1 - p.hit.x0) * 100) / 100) + '" height="' + (B - T) + '"/>';
+    });
+    box.innerHTML = '<svg viewBox="0 0 ' + c.W + " " + c.H + '" role="img" aria-label="' + escapeHtml(c.label) + '">' + s + "</svg>";
+    function key(cls, shape, text){
+      return '<span class="wt-key"><svg viewBox="0 0 18 10" aria-hidden="true">' + (shape === "dot" ? '<circle class="' + cls + '" cx="9" cy="5" r="3.5"/>' : '<line class="' + cls + '" x1="1" x2="17" y1="5" y2="5"/>') + "</svg>" + text + "</span>";
+    }
+    var lg = key("wt-pt", "dot", "Mỗi lần cân") + key("wt-avg", "line", "Trung bình 7 ngày");
+    if(c.planPath) lg += key("wt-plan", "line", "Lộ trình" + (c.planClip === "below" ? " (nằm dưới khung)" : c.planClip === "above" ? " (nằm trên khung)" : ""));
+    if(c.goal) lg += key("wt-goal", "line", "Mục tiêu " + kgT(c.goal.v) + " kg" + (c.goal.pinned === "below" ? " · thấp hơn khung" : c.goal.pinned === "above" ? " · cao hơn khung" : ""));
+    $("wtLegend").innerHTML = lg;
+    var keep = wtc.sel && c.points.some(function(p){ return p.date === wtc.sel; }) ? wtc.sel : null;
+    wtc.sel = null;
+    if(keep) wtSelect(keep); else $("wtChartInfo").textContent = "Chạm vào biểu đồ để xem từng ngày.";
+  }
+  // Only the ring and the line under the chart change: the SVG itself stays.
+  function wtSelect(day){
+    var c = wtc.chart, svg = $("wtChart") && $("wtChart").querySelector("svg"), p = null;
+    if(!c || !svg) return;
+    c.points.forEach(function(x){ if(x.date === day) p = x; });
+    if(!p) return;
+    wtc.sel = day;
+    var ring = svg.querySelector(".wt-sel");
+    if(!ring){
+      ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      ring.setAttribute("class", "wt-sel");
+      ring.setAttribute("r", "6");
+      svg.insertBefore(ring, svg.querySelector(".wt-hit"));
+    }
+    ring.setAttribute("cx", p.x);
+    ring.setAttribute("cy", p.y);
+    var log = state.weight.log, avg = C.weightAvg7(log, day), plan = state.weight.profile ? C.weightPlan(state.weight.profile, log.filter(function(e){ return e.date <= C.todayStr(now()); })) : null;
+    var pl = plan ? C.weightPlanAt(plan, day) : null;
+    $("wtChartInfo").textContent = wtDay(day) + " · " + kgT(p.kg) + " kg" + (avg != null ? " · TB 7 ngày " + kgT(avg) + " kg" : "") + (pl != null ? " · lộ trình " + kgT(pl) + " kg" : "");
+  }
+
+  ["weightPane", "weightCard"].forEach(function(id){
+    $(id).addEventListener("click", function(e){
+      if(!e.isTrusted || !e.detail) return;
+      var q = wt.quiet;
+      if(q && Math.abs(e.clientX - q.x) < 32 && Math.abs(e.clientY - q.y) < 32){ e.stopPropagation(); e.preventDefault(); return; }
+      wt.tap = { x: e.clientX, y: e.clientY, at: now() };
+    }, true);
+  });
+  $("weightPane").addEventListener("click", function(e){
+    if(weightLocked()) return;
+    var hit = e.target.closest("rect.wt-hit");
+    if(hit){ wtSelect(hit.getAttribute("data-wt-day")); return; }
+    var rg = e.target.closest("[data-wt-range]");
+    if(rg){
+      wt.range = rg.getAttribute("data-wt-range");
+      wtc.sel = null;
+      Array.prototype.forEach.call($("wtRange").querySelectorAll("[data-wt-range]"), function(b){
+        b.setAttribute("aria-pressed", b.getAttribute("data-wt-range") === wt.range ? "true" : "false");
+      });
+      renderWtChart();
+      placeSegPill($("wtRange"));
+      return;
+    }
+    var item = e.target.closest("button[data-wt-day]");
+    if(item){ openWtEntry(item.getAttribute("data-wt-day")); return; }
+    if(e.target.closest("#wtGoalOpen") || e.target.closest('[data-wt="goal"]')){ openWtGoal(); return; }
+    if(e.target.closest('[data-wt="add"]')){ openWtEntry(null); return; }
+    if(e.target.closest('[data-wt="more"]')){ wt.listN += 31; renderWeight(); }
+  });
+
+  // ---- Home card "Cân hôm nay" (static markup; only hidden/textContent change here) ----
+  function renderWeightCard(){
+    var card = $("weightCard"), core = !!C.weightStats;
+    $("wtSetTitle").hidden = !core;
+    $("wtSetCard").hidden = !core;
+    $("wtShow").checked = state.meta.showWeight !== false;
+    $("wtMorning").checked = state.meta.weightMorning !== false;
+    if(state.mode !== "app" || weightLocked() || state.meta.showWeight === false){ card.hidden = true; return; }
+    var st = wtStats();
+    // A device that never used it (no goal, no weigh-in) doesn't get the card.
+    if(!st || (!st.hasProfile && !st.count)){ card.hidden = true; return; }
+    card.hidden = false;
+    var te = st.todayEntry;
+    $("wtHomeForm").hidden = !!te;
+    $("wtHomeOpen").hidden = !te;
+    if(te){
+      var title = "⚖️ " + kgT(te.kg) + " kg" + (st.bmiClass ? " · BMI " + kgT(st.bmi) : "");
+      var sub = st.hasProfile && st.lostTotal != null && st.leftKg != null
+        ? wtLost(st.lostTotal, true) + (st.goalReached ? " · đã chạm mục tiêu 🎉" : " · còn " + kgT(st.leftKg) + " kg")
+        : st.avg7 != null ? "TB 7 ngày " + kgT(st.avg7) + " kg" : "";
+      $("wtHomeOpenTitle").textContent = title;
+      $("wtHomeOpenSub").textContent = sub;
+      $("wtHomeOpenSub").hidden = !sub;
+      $("wtHomeOpen").setAttribute("aria-label", "Đã cân hôm nay " + kgT(te.kg) + " kg" + (st.bmiClass ? ", BMI " + kgT(st.bmi) : "") + (sub ? ". " + sub : "") + ". Mở Giảm cân");
+    } else {
+      $("wtHomeSub").textContent = st.latest ? "Lần trước " + kgT(st.latest.kg) + " kg · " + fmtDayMonth(st.latest.date) : "Chưa cân lần nào";
+    }
+  }
+  $("wtHomeOpen").addEventListener("click", function(){ openHealth("weight"); });
+  $("btnWtOpen").addEventListener("click", function(){ openHealth("weight"); });
+  $("wtShow").addEventListener("change", function(){
+    state.meta.showWeight = this.checked;
+    saveMeta();
+    renderWeightCard();
+  });
+  $("wtMorning").addEventListener("change", function(){
+    state.meta.weightMorning = this.checked;
+    saveMeta();
+  });
+
+  // ---- Sheet: height + goal ----
+  function clearWgErrors(){
+    ["wgHeight", "wgGoal", "wgStart", "wgDate"].forEach(function(id){ wtFieldError(id, null); });
+    showError("wgFormErr", null);
+  }
+  function renderWgMode(){
+    Array.prototype.forEach.call($("wgMode").querySelectorAll("[data-wg-mode]"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-wg-mode") === wg.mode ? "true" : "false");
+    });
+    Array.prototype.forEach.call($("wgRate").querySelectorAll("[data-wg-rate]"), function(b){
+      b.setAttribute("aria-pressed", +b.getAttribute("data-wg-rate") === wg.rate ? "true" : "false");
+    });
+    $("wgRateField").hidden = wg.mode !== "rate";
+    $("wgDateField").hidden = wg.mode !== "date";
+    placeSegPill($("wgMode"));
+    placeSegPill($("wgRate"), true);
+  }
+  // Read-only line under the form; hidden until height and goal are both usable.
+  function renderWgPreview(){
+    var pre = $("wgPreview"), t = now(), text = "";
+    var h = C.parseDecimal1($("wgHeight").value, C.HEIGHT_MIN, C.HEIGHT_MAX), g = C.parseDecimal1($("wgGoal").value, C.WEIGHT_MIN, C.WEIGHT_MAX);
+    if(!h.error && !g.error){
+      var cand = { heightCm: h.value, goalKg: g.value, goalDate: wg.mode === "date" ? $("wgDate").value || null : null,
+                   ratePerWeek: wg.rate, startDate: $("wgStart").value || null };
+      var past = state.weight.log.filter(function(e){ return e.date <= C.todayStr(t); });
+      var st = C.weightStats({ profile: cand, log: past }, t), plan = C.weightPlan(cand, past);
+      if(!st || !st.start) text = "Lộ trình bắt đầu từ lần cân đầu tiên.";
+      else if(plan){
+        text = "Từ " + kgT(plan.start.kg) + " kg (" + fmtDate(plan.start.date) + ") xuống " + kgT(g.value) + " kg: giảm " + kgT(plan.start.kg - g.value) + " kg, " +
+          (plan.mode === "rate" ? wtRateOpt(cand.ratePerWeek) : "khoảng " + kgT(plan.needRate)) + " kg/tuần → tới " + wtDay(plan.endDate) + ".";
+      }
+      var bc = C.bmiClass(C.bmiOf(g.value, h.value));
+      if(bc && bc.bmi1 >= C.BMI_ASIA.over){
+        text += " BMI ở " + kgT(g.value) + " kg là " + kgT(bc.bmi1) + " — vẫn " + (bc.key === "obese" ? "béo phì" : "thừa cân") +
+          " theo ngưỡng châu Á; mức bình thường với " + wtNum(h.value) + " cm là đến " + kgT(C.bmiMaxKg(h.value)) + " kg.";
+      } else if(bc && bc.key === "under") text += " BMI ở mục tiêu này là " + kgT(bc.bmi1) + " — dưới mức bình thường.";
+      if(plan && plan.mode === "date" && plan.needRate > 1) text += " Tốc độ cần: " + kgT(plan.needRate) + " kg/tuần — nhanh hơn mức thường khuyên 0,5–1 kg/tuần.";
+    }
+    text = text.trim();
+    pre.textContent = text;
+    pre.hidden = !text;
+  }
+  function openWtGoal(){
+    if(weightLocked()) return;
+    var p = state.weight.profile;
+    $("wgHeight").value = p ? wtNum(p.heightCm) : "";
+    $("wgGoal").value = p ? wtNum(p.goalKg) : "";
+    setDateValue("wgStart", p && p.startDate ? p.startDate : "");
+    setDateValue("wgDate", p && p.goalDate ? p.goalDate : "");
+    wg.mode = p && p.goalDate ? "date" : "rate";
+    wg.rate = p ? p.ratePerWeek : C.WEIGHT_RATE_DEFAULT;
+    clearWgErrors();
+    renderWgPreview();
+    $("wtGoalSheet").scrollTop = 0;
+    openSheet("wtGoalSheet");
+    renderWgMode();
+    placeSegPill($("wgMode"), true);
+  }
+  $("wgMode").addEventListener("click", function(e){
+    var b = e.target.closest("[data-wg-mode]");
+    if(!b) return;
+    wg.mode = b.getAttribute("data-wg-mode");
+    wtFieldError("wgDate", null);
+    renderWgMode();
+    renderWgPreview();
+  });
+  $("wgRate").addEventListener("click", function(e){
+    var b = e.target.closest("[data-wg-rate]");
+    if(!b) return;
+    wg.rate = +b.getAttribute("data-wg-rate");
+    renderWgMode();
+    renderWgPreview();
+  });
+  ["wgHeight", "wgGoal"].forEach(function(id){
+    $(id).addEventListener("input", function(){ wtFieldError(id, null); renderWgPreview(); });
+  });
+  ["wgStart", "wgDate"].forEach(function(id){
+    $(id).addEventListener("change", function(){ wtFieldError(id, null); showError("wgFormErr", null); renderWgPreview(); });
+  });
+  function wgFail(id, msg){ wtFieldError(id, msg); $(id + "Err").scrollIntoView({ block: "nearest" }); }
+  $("wtGoalForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(wt.saving || weightLocked()) return;
+    clearWgErrors();
+    var t = now(), today = C.todayStr(t);
+    var h = C.parseDecimal1($("wgHeight").value, C.HEIGHT_MIN, C.HEIGHT_MAX);
+    if(h.error){
+      wgFail("wgHeight", h.error === "empty" ? "Hãy nhập chiều cao" : h.error === "format" ? "Ghi chiều cao dạng 172 hoặc 172,5" : "Chiều cao từ " + C.HEIGHT_MIN + " đến " + C.HEIGHT_MAX + " cm");
+      return;
+    }
+    var g = C.parseDecimal1($("wgGoal").value, C.WEIGHT_MIN, C.WEIGHT_MAX);
+    if(g.error){ wgFail("wgGoal", wtKgErrText(g.error)); return; }
+    var startDate = $("wgStart").value || null;
+    if(startDate && startDate > today){ wgFail("wgStart", "Ngày bắt đầu không được sau hôm nay"); return; }
+    var st = C.weightStats({ profile: { heightCm: h.value, goalKg: g.value, goalDate: null, ratePerWeek: wg.rate, startDate: startDate }, log: state.weight.log }, t);
+    var start = st && st.start;
+    if(start && g.value >= start.kg){ wgFail("wgGoal", "Cân mục tiêu phải thấp hơn cân bắt đầu (" + kgT(start.kg) + " kg)"); return; }
+    var goalDate = null;
+    if(wg.mode === "date"){
+      goalDate = $("wgDate").value || null;
+      if(!goalDate){ wgFail("wgDate", "Hãy chọn ngày mục tiêu"); return; }
+      if(goalDate <= today){ wgFail("wgDate", "Ngày mục tiêu phải sau hôm nay"); return; }
+      var from = start ? start.date : startDate;
+      if(from && goalDate <= from){ wgFail("wgDate", "Ngày mục tiêu phải sau ngày bắt đầu lộ trình"); return; }
+    }
+    var p = C.validateWeightProfile({ heightCm: h.value, goalKg: g.value, goalDate: goalDate, ratePerWeek: wg.rate, startDate: startDate });
+    if(!p){ showError("wgFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    weightWrite($("wgSave"), p, state.weight.log, function(){
+      closeSheets();
+      toast("Đã lưu mục tiêu ✓");
+    }, function(msg){ showError("wgFormErr", msg); });
+  });
+
+  // ---- Sheet: one weigh-in (edit / delete, or add a past day) ----
+  function clearWeErrors(){
+    ["weDate", "weKg"].forEach(function(id){ wtFieldError(id, null); });
+    showError("weFormErr", null);
+  }
+  function openWtEntry(date){
+    if(weightLocked()) return;
+    var e = date ? wtEntry(date) : null;
+    if(date && !e){ renderWeight(); return; }
+    we.date = date || null;
+    we.adding = !date;
+    $("wtEntryTitle").textContent = date ? "Cân · " + wtDay(date) : "Thêm lần cân";
+    $("weDateField").hidden = !we.adding;
+    setDateValue("weDate", we.adding ? C.addDays(C.todayStr(now()), -1) : "");
+    $("weKg").value = e ? wtNum(e.kg) : "";
+    $("weNote").value = e ? e.note : "";
+    $("weDelete").hidden = !date;
+    $("weConfirm").hidden = true;
+    clearWeErrors();
+    $("wtEntrySheet").scrollTop = 0;
+    openSheet("wtEntrySheet");
+  }
+  function weFail(id, msg){ wtFieldError(id, msg); $(id + "Err").scrollIntoView({ block: "nearest" }); }
+  $("weKg").addEventListener("input", function(){ wtFieldError("weKg", null); });
+  $("weDate").addEventListener("change", function(){ wtFieldError("weDate", null); showError("weFormErr", null); });
+  $("wtEntryForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(wt.saving || weightLocked()) return;
+    clearWeErrors();
+    var t = now(), today = C.todayStr(t), date = we.adding ? $("weDate").value : we.date;
+    if(we.adding){
+      if(!C.isValidDate(date)){ weFail("weDate", "Hãy chọn ngày"); return; }
+      if(date > today){ weFail("weDate", "Chưa ghi được cho ngày ở tương lai"); return; }
+      var ex = wtEntry(date);
+      if(ex){ weFail("weDate", "Ngày " + fmtDate(date) + " đã có số cân " + kgT(ex.kg) + " kg — chạm vào ngày đó trong danh sách để sửa"); return; }
+      if(state.weight.log.length >= C.WEIGHT_MAX_LOG){ showError("weFormErr", wtFullText()); return; }
+    } else if(!wtEntry(date)){ showError("weFormErr", "Lần cân này không còn trong sổ. Đóng lại rồi thử lại."); return; }
+    var r = C.parseDecimal1($("weKg").value, C.WEIGHT_MIN, C.WEIGHT_MAX);
+    if(r.error){ weFail("weKg", wtKgErrText(r.error)); return; }
+    var old = wtEntry(date), note = C.clipGraphemes($("weNote").value.trim(), C.WEIGHT_NOTE_MAX).trim();
+    if(old && old.kg === r.value && old.note === note){ closeSheets(); return; }
+    var rec = C.validateWeightEntry({ date: date, kg: r.value, note: note, at: t });
+    if(!rec){ showError("weFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
+    var before = wtStats();
+    weightWrite($("weSave"), state.weight.profile, wtLogWith(rec), function(){
+      we.date = null;
+      closeSheets();
+      var after = wtStats();
+      toast(wtMarkToast(before && before.marks, after && after.marks) ||
+        (date === today ? (old ? "Đã sửa cân hôm nay ✓" : "Đã lưu cân hôm nay ✓") : "Đã lưu cân ngày " + fmtDayMonth(date) + " ✓"));
+    }, function(msg){ showError("weFormErr", msg); });
+  });
+  $("weDelete").addEventListener("click", function(){
+    var e = we.date ? wtEntry(we.date) : null;
+    if(!e || wt.saving) return;
+    var st = wtStats(), isStart = !!(st && st.plan && st.plan.start.date === e.date);
+    $("weConfirmText").textContent = "Xoá số cân ngày " + fmtDate(e.date) + " (" + kgT(e.kg) + " kg)?" + (isStart ? " Lộ trình sẽ tính từ lần cân kế tiếp." : "");
+    $("weDelete").hidden = true;
+    $("weConfirm").hidden = false;
+    $("weConfirmNo").focus({ preventScroll: true });
+    $("weConfirm").scrollIntoView({ block: "nearest" });
+  });
+  $("weConfirmNo").addEventListener("click", function(){
+    if(wt.saving) return;
+    $("weConfirm").hidden = true;
+    $("weDelete").hidden = false;
+    $("weDelete").focus({ preventScroll: true });
+  });
+  $("weConfirmYes").addEventListener("click", function(){
+    var date = we.date;
+    if(wt.saving || !date || !wtEntry(date)) return;
+    showError("weFormErr", null);
+    weightWrite(this, state.weight.profile, wtLogWithout(date), function(){
+      we.date = null;
+      closeSheets();
+      toast("Đã xoá lần cân ngày " + fmtDayMonth(date));
+    }, function(msg){ showError("weFormErr", msg); });
+  });
+
   // ---------- Date fields + wheel picker ----------
   // Each date is a hidden input (its .value stays 'YYYY-MM-DD' or '') plus a
   // button showing it. Always write through setDateValue so the button never
@@ -2895,7 +3545,10 @@
     wDone:        { min: "2000-01-01", optional: true, empty: "Chưa làm" },
     mdStart:      { min: "2000-01-01", optional: false },
     mdVisit:      { min: "2000-01-01", optional: true, empty: "Chưa hẹn", futureYears: 5, defFrom: "mdStart" },
-    mdEnd:        { min: "2000-01-01", optional: true, empty: "Đang dùng", defFrom: "mdStart" }
+    mdEnd:        { min: "2000-01-01", optional: true, empty: "Đang dùng", defFrom: "mdStart" },
+    wgStart:      { min: "2000-01-01", optional: true, empty: "Từ lần cân đầu tiên" },
+    wgDate:       { min: "2000-01-01", optional: true, empty: "Chọn ngày", futureYears: 5 },
+    weDate:       { min: "2000-01-01", optional: false }
   };
 
   function setDateValue(id, v){
@@ -3935,6 +4588,7 @@
     if(typeof c.cycles === "number") parts.push(fmtInt(c.cycles) + " kỳ");
     if(typeof c.medCourses === "number") parts.push(fmtInt(c.medCourses) + " đợt thuốc");
     if(typeof c.medDays === "number") parts.push(fmtInt(c.medDays) + " ngày ghi thuốc");
+    if(typeof c.weightDays === "number") parts.push(fmtInt(c.weightDays) + " lần cân");
     if(c.images) parts.push(c.images === 1 ? "1 ảnh hồ sơ" : c.images + " ảnh hồ sơ");
     return parts.join(", ");
   }
@@ -3962,7 +4616,7 @@
     if(busy !== "backup"){
       $("backupStatus").textContent = p
         ? (backup.saved ? "Đã lưu ✓ " : "") + p.name + " · " + backupContents(p.counts)
-        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc và ảnh · iPhone: chọn “Lưu vào Tệp”.";
+        : "File .zip gồm hồ sơ, kỷ niệm, việc muốn làm, nhật ký, chu kỳ, thuốc, cân nặng và ảnh · iPhone: chọn “Lưu vào Tệp”.";
     }
   }
 
@@ -3970,12 +4624,13 @@
     if(!state.db) return Promise.reject(userErr("Không mở được bộ nhớ trên máy nên chưa sao lưu, để không tạo ra một bản sao lưu trống. Hãy tải lại app."));
     var version = backup.version;
     busy = "backup";
-    // An unreadable cycle, wish, journal or medication record is left out of the file.
+    // An unreadable cycle, wish, journal, medication or weight record is left out of the file.
     return B.buildBackup({ profile: state.profile, milestones: state.milestones, photos: state.photos,
                            cycles: state.cyclesBroken || !C.cycleStats ? null : state.cycles,
                            wishes: wishesLocked() ? null : state.wishes,
                            journal: journalLocked() ? null : state.journal,
-                           med: medLocked() ? null : { courses: state.med.courses, log: state.med.log }, readBlob: readBlob },
+                           med: medLocked() ? null : { courses: state.med.courses, log: state.med.log },
+                           weight: weightLocked() ? null : { profile: state.weight.profile, log: state.weight.log }, readBlob: readBlob },
                          now(), onProgress).then(function(r){
       busy = null;
       if(version === backup.version){ backup.prepared = r; backup.saved = false; }
@@ -4257,16 +4912,18 @@
       // An older cached core can't judge the list, so it counts as unreadable: never imported over.
       wishes: state.wishes, wishesBad: state.wishesBad, wishesBroken: wishesLocked(), wishesStamp: state.wishesStamp,
       journal: state.journal, journalBad: state.journalBad, journalBroken: journalLocked(), journalStamp: state.journalStamp,
-      med: state.med, medBad: state.medBad, medBroken: medLocked(), medStamp: state.medStamp
+      med: state.med, medBad: state.medBad, medBroken: medLocked(), medStamp: state.medStamp,
+      weight: state.weight, weightBad: state.weightBad, weightBroken: weightLocked(), weightStamp: state.weightStamp
     };
   }
   function hasLocalData(){
     var l = localSnapshot();
     return l.profileOk || l.photos.length > 0 || l.milestones.length > 0 || l.cycles.length > 0 || l.cyclesBad.length > 0 || l.cyclesBroken ||
       l.wishes.length > 0 || l.wishesBad.length > 0 || l.wishesBroken || l.journal.length > 0 || l.journalBad.length > 0 || state.journalBroken ||
-      medHasData(l) || state.medBroken;
+      medHasData(l) || state.medBroken || weightHasData(l) || state.weightBroken;
   }
   function medHasData(l){ return l.med.courses.length > 0 || l.med.log.length > 0 || l.medBad.courses.length > 0 || l.medBad.log.length > 0; }
+  function weightHasData(l){ return !!l.weight.profile || l.weight.log.length > 0 || l.weightBad.profile != null || l.weightBad.log.length > 0; }
 
   function onImportFile(input){
     var f = input.files && input.files[0];
@@ -4320,14 +4977,16 @@
         (r.wishesInFile && !r.wishesKept ? ", " + fmtInt(r.addedWishes) + " việc" : "") +
         (r.journalInFile && !r.journalKept ? ", " + fmtInt(r.addedJournal) + " ngày nhật ký" : "") +
         (r.cyclesInFile && !r.cyclesKept ? ", " + fmtInt(r.addedCycles) + " kỳ" : "") +
-        (r.medInFile && !r.medKept ? (r.addedMedCourses ? ", " + fmtInt(r.addedMedCourses) + " đợt thuốc" : "") + ", " + fmtInt(r.addedMedDays || 0) + " ngày ghi thuốc" : "");
+        (r.medInFile && !r.medKept ? (r.addedMedCourses ? ", " + fmtInt(r.addedMedCourses) + " đợt thuốc" : "") + ", " + fmtInt(r.addedMedDays || 0) + " ngày ghi thuốc" : "") +
+        (r.weightInFile && !r.weightKept ? ", " + fmtInt(r.addedWeightDays || 0) + " lần cân" : "");
       // Merge can also fill missing avatars/cover — the preview counted them, so the result must too.
       var imgs = imp.mode !== "replace" && r.images ? ", " + fmtInt(r.images) + " ảnh hồ sơ" : "";
       var line = imp.mode === "replace" ? "Đã thay toàn bộ dữ liệu: " + what + "."
-        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes || r.addedJournal || r.addedMedDays || r.addedMedCourses || r.upgradedMedDays
+        : r.addedPhotos || r.addedMilestones || r.images || r.addedCycles || r.addedWishes || r.addedJournal || r.addedMedDays || r.addedMedCourses || r.upgradedMedDays || r.addedWeightDays || r.weightProfileAdded
           ? "Đã thêm " + what + imgs + "." : "Không có ảnh hay kỷ niệm mới.";
       var jSkip = (r.skippedJournal || 0) + (r.clashedJournal || 0);
       var mdSkip = (r.skippedMedDays || 0) + (r.clashedMedDays || 0), mdClash = (r.clashMedCourses || 0) + (r.clashedMedCourses || 0);
+      var wtSkip = (r.skippedWeightDays || 0) + (r.clashedWeightDays || 0);
       h = '<div class="import-box import-ok" role="status"><p class="import-box-title">Đã nhập xong 💕</p><p>' + escapeHtml(line) + "</p>" +
         (r.profileKept ? "<p>Hồ sơ hiện tại giữ nguyên.</p>" : "") +
         (r.cyclesKept ? "<p>" + cyclesKeptText(r.cyclesInFile) + "</p>" : "") +
@@ -4343,7 +5002,11 @@
         (mdSkip ? "<p>Bỏ qua " + fmtInt(mdSkip) + " ngày ghi thuốc " + (r.clashedMedDays ? "đã có trên máy hoặc trùng ngày." : "đã có trên máy.") + "</p>" : "") +
         (r.overMed ? "<p>" + fmtInt(r.overMed) + " ngày ghi thuốc không được thêm vì đã đủ " + fmtInt(C.MED_MAX_LOG) + " ngày.</p>" : "") +
         (mdClash ? "<p>Bỏ qua " + fmtInt(mdClash) + " đợt thuốc trùng.</p>" : "") +
-        (r.overMedCourses ? "<p>" + fmtInt(r.overMedCourses) + " đợt thuốc không được thêm vì đã đủ " + fmtInt(C.MED_MAX_COURSES) + " đợt.</p>" : "") + "</div>" +
+        (r.overMedCourses ? "<p>" + fmtInt(r.overMedCourses) + " đợt thuốc không được thêm vì đã đủ " + fmtInt(C.MED_MAX_COURSES) + " đợt.</p>" : "") +
+        (r.weightKept ? "<p>" + weightKeptText(r.weightInFile) + "</p>" : "") +
+        (r.weightProfileAdded && !r.weightKept ? "<p>Đã lấy mục tiêu giảm cân từ bản sao lưu.</p>" : "") +
+        (wtSkip ? "<p>Bỏ qua " + fmtInt(wtSkip) + " lần cân đã có trên máy hoặc trùng ngày.</p>" : "") +
+        (r.overWeight ? "<p>" + fmtInt(r.overWeight) + " lần cân không được thêm vì đã đủ " + fmtInt(C.WEIGHT_MAX_LOG) + " lần cân.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
       h = renderImportReady();
@@ -4373,6 +5036,11 @@
       : "Lịch thuốc trên máy giữ nguyên (bản sao lưu này không có).";
   }
 
+  function weightKeptText(inFile){
+    return inFile ? "Dữ liệu cân nặng trên máy đang không đọc được nên được giữ nguyên."
+      : "Cân nặng trên máy giữ nguyên (bản sao lưu này không có).";
+  }
+
   function importProgressText(){
     return imp.total ? "Đang nhập " + imp.done + "/" + imp.total + "…" : "Đang nhập…";
   }
@@ -4386,12 +5054,14 @@
       (ps.journal ? " · " + fmtInt(ps.journal.length) + " ngày nhật ký" : "") +
       (ps.cycles ? " · " + fmtInt(ps.cycles.length) + " kỳ" : "") +
       (ps.med ? " · " + fmtInt(ps.med.courses.length) + " đợt thuốc · " + fmtInt(ps.med.log.length) + " ngày ghi thuốc" : "") +
+      (ps.weight ? " · " + fmtInt(ps.weight.log.length) + " lần cân" : "") +
       (imgs ? " · " + imgs + " ảnh hồ sơ" : "") + "</li>" +
       (ps.cyclesSkipped ? "<li>Bỏ qua " + fmtInt(ps.cyclesSkipped) + " kỳ trùng trong file</li>" : "") +
       (ps.wishesSkipped ? "<li>Bỏ qua " + fmtInt(ps.wishesSkipped) + " việc trùng trong file</li>" : "") +
       (ps.journalSkipped ? "<li>Bỏ qua " + fmtInt(ps.journalSkipped) + " ngày nhật ký trùng trong file</li>" : "") +
       (ps.medSkippedCourses ? "<li>Bỏ qua " + fmtInt(ps.medSkippedCourses) + " đợt thuốc trùng trong file</li>" : "") +
       (ps.medSkippedDays ? "<li>Bỏ qua " + fmtInt(ps.medSkippedDays) + " ngày ghi thuốc trùng trong file</li>" : "") +
+      (ps.weightSkippedDays ? "<li>Bỏ qua " + fmtInt(ps.weightSkippedDays) + " lần cân trùng trong file</li>" : "") +
       "<li>" + escapeHtml(ps.profile.persons[0].name) + " ♥ " + escapeHtml(ps.profile.persons[1].name) + " · từ " + fmtDate(ps.profile.startDate) + "</li>" +
       "</ul></div>";
     if(!hasLocalData()){
@@ -4412,15 +5082,20 @@
       var mdBlocked = !!ps.med && local.medBroken;
       var mdNew = !mdBlocked && !!((pl.addMedDays || 0) + (pl.upgradedMedDays || 0) + (pl.addMedCourses || 0));
       skipped += mdBlocked ? 0 : pl.sameMedDays || 0;
+      var wtBlocked = !!ps.weight && local.weightBroken;
+      var wtNew = !wtBlocked && !!((pl.addWeightDays || 0) + (pl.weightProfileAdded ? 1 : 0));
+      skipped += wtBlocked ? 0 : pl.sameWeightDays || 0;
       var blockedNote = (cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "") +
         (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "") +
         (joBlocked ? '<p class="card-text">Nhật ký trong bản sao lưu không được nhập vì nhật ký trên máy đang không đọc được.</p>' : "") +
-        (mdBlocked ? '<p class="card-text">Lịch thuốc trong bản sao lưu không được nhập vì lịch thuốc trên máy đang không đọc được.</p>' : "");
-      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !pl.addJournal && !mdNew && !fillImgs && local.profileOk){
+        (mdBlocked ? '<p class="card-text">Lịch thuốc trong bản sao lưu không được nhập vì lịch thuốc trên máy đang không đọc được.</p>' : "") +
+        (wtBlocked ? '<p class="card-text">Cân nặng trong bản sao lưu không được nhập vì dữ liệu cân nặng trên máy đang không đọc được.</p>' : "");
+      if(!pl.addPhotos && !pl.addMilestones && !pl.addCycles && !pl.addWishes && !pl.addJournal && !mdNew && !wtNew && !fillImgs && local.profileOk){
         var kinds = ["ảnh", "kỷ niệm"];
         if(ps.wishes && !wiBlocked) kinds.push("việc muốn làm");
         if(ps.journal && !joBlocked) kinds.push("ngày nhật ký");
         if(ps.med && !mdBlocked) kinds.push("ngày ghi thuốc");
+        if(ps.weight && !wtBlocked) kinds.push("lần cân");
         if(ps.cycles && !cyBlocked) kinds.push("kỳ");
         return h + '<p class="card-text">Không có gì mới — mọi ' + kinds.slice(0, -1).join(", ") + " và " + kinds[kinds.length - 1] + ' đã có trên máy. Hồ sơ hiện tại giữ nguyên.</p>' + blockedNote +
           '<button type="button" class="btn btn-soft btn-block" data-imp="close">Đóng</button>';
@@ -4433,13 +5108,15 @@
         if(pl.addMedCourses) adds.push(fmtInt(pl.addMedCourses) + " đợt thuốc");
         adds.push(fmtInt(pl.addMedDays || 0) + " ngày ghi thuốc" + (pl.upgradedMedDays ? " (" + fmtInt(pl.upgradedMedDays) + " ngày gộp thành đã uống)" : ""));
       }
+      if(ps.weight && !wtBlocked) adds.push(fmtInt(pl.addWeightDays || 0) + " lần cân" + (pl.weightProfileAdded ? " và mục tiêu giảm cân" : ""));
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
-      var mdMore = ps.med && !mdBlocked;
-      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal || (mdMore && pl.sameMedDays) ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+      var mdMore = ps.med && !mdBlocked, wtMore = ps.weight && !wtBlocked;
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal || (mdMore && pl.sameMedDays) || (wtMore && pl.sameWeightDays) ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
         (pl.overWishes ? fmtInt(pl.overWishes) + " việc không được thêm vì danh sách chỉ chứa " + fmtInt(C.MAX_WISHES) + " việc. " : "") +
         (pl.overJournal ? fmtInt(pl.overJournal) + " ngày nhật ký không được thêm vì nhật ký chỉ chứa " + fmtInt(C.MAX_JOURNAL) + " ngày. " : "") +
         (mdMore && pl.overMed ? fmtInt(pl.overMed) + " ngày ghi thuốc không được thêm vì lịch thuốc chỉ chứa " + fmtInt(C.MED_MAX_LOG) + " ngày. " : "") +
         (mdMore && pl.clashMedCourses ? fmtInt(pl.clashMedCourses) + " đợt thuốc trùng ngày với đợt trên máy sẽ bị bỏ qua. " : "") +
+        (wtMore && pl.overWeight ? fmtInt(pl.overWeight) + " lần cân không được thêm vì sổ cân chỉ chứa " + fmtInt(C.WEIGHT_MAX_LOG) + " lần. " : "") +
         (local.profileOk ? "Hồ sơ hiện tại giữ nguyên." : "Hồ sơ lấy từ bản sao lưu.")) + "</p>" + blockedNote +
         '<button type="button" class="btn btn-primary btn-block" data-imp="run">Gộp vào dữ liệu hiện tại</button>';
       return h;
@@ -4450,11 +5127,13 @@
       (replacesJournal(ps, local) ? fmtInt(local.journal.length) + " ngày nhật ký, " : "") +
       (replacesCycles(ps, local) ? local.cycles.length + " kỳ, " : "") +
       (replacesMed(ps, local) && medHasData(local) ? medCountText(local) + ", " : "") +
+      (replacesWeight(ps, local) && weightHasData(local) ? weightCountText(local) + ", " : "") +
       "hồ sơ và ảnh đại diện trên máy này sẽ bị thay.</p>" +
       (keepsCycles(ps, local) ? "<p>" + cyclesKeptText(!!ps.cycles) + "</p>" : "") +
       (keepsWishes(ps, local) ? "<p>" + wishesKeptText(!!ps.wishes) + "</p>" : "") +
       (keepsJournal(ps, local) ? "<p>" + journalKeptText(!!ps.journal) + "</p>" : "") +
-      (keepsMed(ps, local) ? "<p>" + medKeptText(!!ps.med) + "</p>" : "") + "</div>" +
+      (keepsMed(ps, local) ? "<p>" + medKeptText(!!ps.med) + "</p>" : "") +
+      (keepsWeight(ps, local) ? "<p>" + weightKeptText(!!ps.weight) + "</p>" : "") + "</div>" +
       '<p class="import-step">Bước 1 · Sao lưu dữ liệu hiện tại trước</p>';
     if(busy === "backup") h += '<p class="import-status" id="importPrep">' + escapeHtml(imp.prepMsg || "Đang chuẩn bị…") + "</p>";
     else if(!p) h += '<button type="button" class="btn btn-soft btn-block" data-imp="prep">Chuẩn bị bản sao lưu hiện tại</button>';
@@ -4475,9 +5154,11 @@
     return "Xoá " + fmtInt(l.photos.length) + " ảnh, " + l.milestones.length + " kỷ niệm" + (replacesWishes(ps, l) && l.wishes.length ? ", " + l.wishes.length + " việc" : "") +
       (replacesJournal(ps, l) && l.journal.length ? ", " + fmtInt(l.journal.length) + " ngày nhật ký" : "") +
       (replacesCycles(ps, l) && l.cycles.length ? ", " + l.cycles.length + " kỳ" : "") +
-      (replacesMed(ps, l) && medHasData(l) ? ", " + medCountText(l) : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
+      (replacesMed(ps, l) && medHasData(l) ? ", " + medCountText(l) : "") +
+      (replacesWeight(ps, l) && weightHasData(l) ? ", " + weightCountText(l) : "") + " và hồ sơ hiện tại, thay bằng bản sao lưu?";
   }
   function medCountText(l){ return fmtInt(l.med.courses.length) + " đợt thuốc, " + fmtInt(l.med.log.length) + " ngày ghi thuốc"; }
+  function weightCountText(l){ return l.weight.log.length ? fmtInt(l.weight.log.length) + " lần cân" : "mục tiêu giảm cân"; }
 
   // Mirrors planCycles() in love-days-backup.js for the "Thay thế" wording.
   function replacesCycles(ps, local){ return !!ps.cycles && !local.cyclesBroken; }
@@ -4500,6 +5181,10 @@
   // And planMed().
   function replacesMed(ps, local){ return !!ps.med && !local.medBroken; }
   function keepsMed(ps, local){ return ps.med ? local.medBroken : medHasData(local) || local.medBroken; }
+
+  // And planWeight().
+  function replacesWeight(ps, local){ return !!ps.weight && !local.weightBroken; }
+  function keepsWeight(ps, local){ return ps.weight ? local.weightBroken : weightHasData(local) || local.weightBroken; }
 
   $("importContent").addEventListener("click", function(e){
     var b = e.target.closest("[data-imp]");
@@ -4595,6 +5280,7 @@
     state.wishes = []; state.wishesBad = []; state.wishesBroken = false; state.wishesStamp = null;
     state.journal = []; state.journalBad = []; state.journalBroken = false; state.journalStamp = null;
     state.med = { courses: [], log: [] }; state.medBad = { courses: [], log: [] }; state.medBroken = false; state.medStamp = null;
+    state.weight = { profile: null, log: [] }; state.weightBad = { profile: null, log: [] }; state.weightBroken = false; state.weightStamp = null;
     setBanner("skipped", null);
     setBanner("load", null);
     state.loadFailed = false;
@@ -4934,8 +5620,10 @@
           lines = dayRemindLines();
           if(!lines.length){ lines = dayRemindExample(); example = lines.length > 0; }
         }
-        // Same call and order as the service worker: medication lines first (the 300-character cut drops from the end).
-        if(C.medMorningLines && !medLocked()) lines = C.medMorningLines({ courses: state.med.courses, log: state.med.log }, state.meta, now()).concat(lines);
+        // Same calls and order as the service worker: medication, then weight, then the day lines (the 300-character cut drops from the end).
+        var medL = C.medMorningLines && !medLocked() ? C.medMorningLines({ courses: state.med.courses, log: state.med.log }, state.meta, now()) : [];
+        var wtL = C.weightMorningLines && !weightLocked() ? C.weightMorningLines({ profile: state.weight.profile, log: state.weight.log }, state.meta, now()) : [];
+        lines = medL.concat(wtL, lines);
         body = C.pushBody(body, remind, lines);
       } else if(remind) body += "\n" + remind;
       return reg.showNotification("💕 Ngày thứ " + fmtInt(n), { body: body, tag: "love-days-test", icon: PUSH_ICON }).then(function(){ return n; });
