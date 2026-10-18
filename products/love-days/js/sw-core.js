@@ -68,8 +68,12 @@ self.addEventListener("fetch", function(event){
   var key = location.origin + path;
 
   if(NETWORK_FIRST_PATHS.indexOf(path) !== -1){
+    // "no-cache": revalidate with the server instead of taking the browser's HTTP
+    // cache (GitHub Pages sends max-age=600, so a fresh deploy could otherwise be
+    // answered with the old file for 10 minutes). A new Request is built from the
+    // URL because a navigate-mode request can't be re-wrapped with options.
     event.respondWith(
-      fetch(event.request).then(function(res){
+      fetch(new Request(url.href, { cache: "no-cache", credentials: "same-origin" })).then(function(res){
         // Only a good response may replace the offline copy; on a transient
         // 404/5xx serve the last working version if we have one.
         if(res.ok){
