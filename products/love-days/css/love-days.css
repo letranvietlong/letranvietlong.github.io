@@ -578,6 +578,48 @@ button.ms-item:active{background:var(--card2)}
 .wt-goal-card{padding:4px 18px}
 .wt-goal-card .row-link{margin:0 -8px}
 .wt-add{margin-bottom:12px}
+/* "Đánh giá" + "Gợi ý" (v1.23). The BMI bar never relies on colour alone: band names and cut numbers are
+   written under it, Béo phì is hatched, and the now-label is pinned inside the card near either end. */
+.wt-assess,.wt-advice{padding:14px 18px 16px}
+.wt-assess > .import-step:first-child,.wt-advice > .import-step:first-child{margin-top:0}
+.wt-assess-main{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:1.2rem;font-weight:800}
+.wt-assess .status-tag{display:inline-block;padding:2px 8px;font-size:.76rem;vertical-align:1px}
+.wt-assess-main .status-tag{padding:3px 10px;font-size:.8rem}
+.wt-assess-btn{margin-top:12px}
+.wt-scale{position:relative;margin-top:8px}
+.wt-scale-top{position:relative;height:24px}
+.wt-scale-now{position:absolute;bottom:0;width:0;height:0}
+.wt-scale-now::after{content:"";position:absolute;bottom:0;left:-6px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid var(--text)}
+.wt-scale-num{position:absolute;bottom:9px;left:0;transform:translateX(-50%);font-size:.84rem;font-weight:800;line-height:1;white-space:nowrap;color:var(--text)}
+.wt-scale-now.is-start .wt-scale-num{left:-6px;transform:none}
+.wt-scale-now.is-end .wt-scale-num{left:auto;right:-6px;transform:none}
+.wt-scale-bar{position:relative;display:flex;height:12px;margin-top:3px}
+.wt-scale-seg{flex:none;height:100%;border-right:2px solid var(--card)}
+.wt-scale-seg.s-under{border-radius:6px 0 0 6px;background:var(--card2);box-shadow:inset 0 0 0 1px var(--line2)}
+.wt-scale-seg.s-normal{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft-ink)}
+.wt-scale-seg.s-over{background:var(--warn-bg);box-shadow:inset 0 0 0 1px var(--warn-line)}
+.wt-scale-seg.s-obese{border-right:0;border-radius:0 6px 6px 0;background:repeating-linear-gradient(135deg,var(--warn-bg) 0 4px,var(--warn-line) 4px 7px);box-shadow:inset 0 0 0 1px var(--warn-line)}
+.wt-scale-goal{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border:2px solid var(--text);border-radius:50%;background:var(--card)}
+.wt-scale-cuts{position:relative;height:16px;margin-top:3px}
+.wt-scale-cut{position:absolute;top:0;transform:translateX(-50%);font-size:.72rem;font-weight:700;line-height:16px;color:var(--muted)}
+.wt-scale-lbls{display:flex}
+.wt-scale-lbl{flex:none;min-width:0;text-align:center;font-size:.72rem;font-weight:600;line-height:1.3;color:var(--muted)}
+.wt-scale-lbl.is-on{font-weight:800;color:var(--text)}
+.wt-scale-key{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.78rem;font-weight:700;color:var(--muted)}
+.wt-scale-ring{flex:none;width:12px;height:12px;border:2px solid var(--text);border-radius:50%;background:var(--card)}
+.wt-assess-stats,.wt-advice-stats{margin-top:12px}
+.wt-assess-note{margin-top:12px}
+.wt-act-label{display:block;margin-bottom:6px}
+.wt-act-hint{margin:6px 0 0}
+.wt-energy{margin-top:14px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--accent-soft)}
+.wt-energy-label{font-size:.78rem;font-weight:700;color:var(--muted)}
+.wt-energy .wt-energy-label{color:var(--accent-soft-ink)}
+.wt-energy-num{margin-top:2px;font-size:1.5rem;font-weight:800;line-height:1.2;color:var(--text);font-variant-numeric:tabular-nums}
+.wt-energy-none{margin-top:12px}
+.wt-tips-label{margin-top:14px}
+.wt-tips{margin:6px 0 0;padding-left:18px;font-size:.88rem;line-height:1.5;text-align:left;color:var(--text)}
+.wt-tips li + li{margin-top:6px}
+.wt-disclaimer{margin-top:8px}
 .wt-list{box-shadow:none}
 .wt-list > li + li::before{left:14px}
 .wt-item{min-height:56px}

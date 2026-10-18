@@ -2992,6 +2992,15 @@
     wtMemo = { w: w, profile: w.profile, log: w.log, day: day, st: st };
     return st;
   }
+  // The advice also depends on Viết Long's dob, which wtStats doesn't key on; st's identity already follows profile, log and VN day.
+  var wtAdvMemo = { st: undefined, dob: undefined, adv: null };
+  function wtAdvice(){
+    var st = wtStats(), ps = state.profile && state.profile.persons, dob = ps && ps[0] ? ps[0].dob : null;
+    if(wtAdvMemo.st === st && wtAdvMemo.dob === dob) return wtAdvMemo.adv;
+    var adv = st ? C.weightAdvice({ profile: state.weight.profile, log: state.weight.log }, dob, now(), st) : null;
+    wtAdvMemo = { st: st, dob: dob, adv: adv };
+    return adv;
+  }
   function kgT(x){ return C.kgText(x); }
   // 172 → "172", 172.5 → "172,5" (what goes back into a box the user edits).
   function wtNum(x){ var r = C.roundKg(x); return r === Math.floor(r) ? String(r) : kgT(r); }
@@ -3185,6 +3194,97 @@
     }
     return h + "</div>";
   }
+  // [key, label, factor as shown, what it means]
+  var WT_ACT = [["low", "Ít vận động", "1,2", "Ngồi nhiều, hầu như không tập"], ["mid", "Vừa phải", "1,375", "Đi bộ hoặc tập 1–3 buổi mỗi tuần"],
+                ["high", "Nhiều", "1,55", "Tập 3–5 buổi mỗi tuần"]];
+  function wtAct(key){ for(var i = 0; i < WT_ACT.length; i++) if(WT_ACT[i][0] === key) return WT_ACT[i]; return WT_ACT[0]; }
+  function wtBmiTag(key, label){ return '<span class="status-tag ' + (key === "normal" ? "ok" : "warn") + '">' + label + "</span>"; }
+  // Asian BMI bands as a bar: names and cut numbers are written out, so the colours are never the only cue.
+  function wtScaleHtml(a){
+    var s = a.scale, span = s.max - s.min, edges = [s.min].concat(s.cuts, [s.max]);
+    var bands = [["under", "Thiếu"], ["normal", "Bình thường"], ["over", "Thừa"], ["obese", "Béo phì"]];
+    var bar = "", names = "", cuts = "";
+    bands.forEach(function(b, i){
+      var w = Math.round((edges[i + 1] - edges[i]) / span * 100000) / 1000, on = b[0] === a.key ? " is-on" : "";
+      bar += '<span class="wt-scale-seg s-' + b[0] + on + '" style="width:' + w + '%"></span>';
+      names += '<span class="wt-scale-lbl' + on + '" style="width:' + w + '%">' + b[1] + "</span>";
+    });
+    s.cuts.forEach(function(c){
+      cuts += '<span class="wt-scale-cut" style="left:' + Math.round((c - s.min) / span * 100000) / 1000 + '%">' + String(c).replace(".", ",") + "</span>";
+    });
+    var edge = s.pos < 8 ? " is-start" : s.pos > 92 ? " is-end" : "";
+    var h = '<div class="wt-scale" role="img" aria-label="Thang BMI châu Á: ' + kgT(a.bmi1) + ", nhóm " + a.label + '. Bình thường từ 18,5 đến 22,9.">' +
+      '<div class="wt-scale-top" aria-hidden="true"><span class="wt-scale-now' + edge + '" style="left:' + s.pos + '%"><span class="wt-scale-num">' + kgT(a.bmi1) + "</span></span></div>" +
+      '<div class="wt-scale-bar" aria-hidden="true">' + bar +
+      (s.goalPos != null ? '<span class="wt-scale-goal" style="left:' + s.goalPos + '%"></span>' : "") + "</div>" +
+      '<div class="wt-scale-cuts" aria-hidden="true">' + cuts + "</div>" +
+      '<div class="wt-scale-lbls" aria-hidden="true">' + names + "</div>";
+    if(s.goalPos != null) h += '<p class="wt-scale-key" aria-hidden="true"><span class="wt-scale-ring"></span>Mục tiêu ' + kgT(a.goalBmi1) + "</p>";
+    return h + "</div>";
+  }
+  function wtAssessHtml(st, adv){
+    var p = st.profile, a = adv.assess, h = '<div class="card wt-assess" id="wtAssess"><h4 class="import-step">Đánh giá</h4>';
+    if(!p) return h + '<p class="card-text">Nhập chiều cao để xem đánh giá cân nặng.</p><button type="button" class="btn btn-soft wt-assess-btn" data-wt="goal">Nhập chiều cao</button></div>';
+    if(!a) return h + '<p class="card-text">Cân lần đầu để xem đánh giá.</p></div>';
+    var cao = wtNum(p.heightCm), kg = kgT(adv.basis.kg);
+    h += '<p class="wt-assess-main">BMI ' + kgT(a.bmi1) + " " + wtBmiTag(a.key, a.label) + "</p>" + wtScaleHtml(a);
+    h += '<dl class="med-stats wt-assess-stats">';
+    h += wtStat("Mức bình thường", kgT(a.normalMin) + "–" + kgT(a.normalMax) + " kg", "với " + cao + " cm" + WT_SUB_BREAK + "BMI 18,5–22,9");
+    if(a.toOver != null) h += wtStat("Để hết béo phì", "giảm " + kgT(a.toOver) + " kg", "về " + kgT(a.overMax) + " kg");
+    if(a.toNormal != null) h += wtStat("Để về bình thường", "giảm " + kgT(a.toNormal) + " kg", "về " + kgT(a.normalMax) + " kg");
+    if(a.goalBmi1 != null) h += wtStat("BMI ở mục tiêu", kgT(a.goalBmi1) + " " + wtBmiTag(a.goalKey, a.goalLabel), "");
+    h += "</dl>";
+    var note = a.key === "obese" ? "Theo chuẩn châu Á, " + cao + " cm cân " + kg + " kg đang ở nhóm béo phì. Mỗi kg giảm được đều có lợi cho sức khoẻ — về " + kgT(a.overMax) + " kg là sang nhóm thừa cân."
+      : a.key === "over" ? "Theo chuẩn châu Á, " + cao + " cm cân " + kg + " kg đang ở nhóm thừa cân. Về " + kgT(a.normalMax) + " kg là vào mức bình thường."
+      : a.key === "normal" ? "Cân nặng đang trong mức bình thường cho chiều cao " + cao + " cm."
+      : "Cân nặng đang dưới mức bình thường (từ " + kgT(a.normalMin) + " kg cho " + cao + " cm).";
+    h += '<p class="card-text wt-assess-note">' + note + "</p>";
+    return h + '<p class="card-hint">Theo lần cân ' + fmtDayMonth(adv.basis.date) + " · ngưỡng BMI châu Á (WHO).</p></div>";
+  }
+  function wtAdviceHtml(adv){
+    var ps = state.profile && state.profile.persons, name = ps && ps[0] && ps[0].name ? ps[0].name : "Viết Long";
+    var e = adv.energy, cur = adv.activity || "low", act = wtAct(e ? e.activity : cur), b = adv.basis;
+    var h = '<div class="card wt-advice" id="wtAdvice"><h4 class="import-step">Gợi ý cho ' + escapeHtml(name) + "</h4>" +
+      '<span class="field-label wt-act-label" id="wtActLabel">Mức vận động</span>' +
+      '<div class="segmented wt-act" id="wtAct" role="group" aria-labelledby="wtActLabel">' + WT_ACT.map(function(x){
+        return '<button type="button" class="seg-btn" data-wt="act-' + x[0] + '" aria-pressed="' + (x[0] === cur) + '">' + x[1] + "</button>";
+      }).join("") + "</div>" +
+      '<p class="wt-sub wt-act-hint" id="wtActHint">' + wtAct(cur)[3] + "</p>";
+    if(e){
+      var rate = adv.needRate != null ? (adv.capped ? "1" : kgT(adv.rate)) : wtRateOpt(adv.rate);
+      h += '<div class="wt-energy"><p class="wt-energy-label">Mỗi ngày nên ăn khoảng</p><p class="wt-energy-num">' + fmtInt(e.lo) + "–" + fmtInt(e.hi) + " kcal</p>" +
+        '<p class="wt-sub">quanh ' + fmtInt(e.target) + " kcal · " + (e.maintain || e.tooLow ? "để giữ cân" : "để giảm " + rate + " kg/tuần") + "</p></div>";
+    } else if(adv.need === "dob"){
+      h += '<p class="card-text wt-energy-none">Thêm ngày sinh của ' + escapeHtml(name) + " ở Cài đặt → Hồ sơ để tính mức ăn mỗi ngày.</p>";
+    } else if(adv.need === "age"){
+      h += '<p class="card-text wt-energy-none">Cách tính mức ăn này dành cho người lớn từ 18 tuổi.</p>';
+    }
+    h += '<dl class="med-stats wt-advice-stats">';
+    if(e){
+      h += wtStat("Đốt khi nghỉ", fmtInt(e.bmr10) + " kcal", "BMR");
+      h += wtStat("Tiêu hao cả ngày", fmtInt(e.tdee50) + " kcal", act[1] + " × " + act[2]);
+    }
+    if(adv.protein) h += wtStat("Đạm", adv.protein.lo + "–" + adv.protein.hi + " g/ngày", "1,2–1,6 g mỗi kg mục tiêu");
+    if(adv.waterL != null) h += wtStat("Nước", kgT(adv.waterL) + " lít/ngày", "35 ml mỗi kg cân nặng");
+    h += wtStat("Vận động", "150–300 phút", "mỗi tuần, đi bộ nhanh" + WT_SUB_BREAK + "7.000–10.000 bước/ngày");
+    h += wtStat("Ngủ", "7–9 giờ/đêm", "") + "</dl>";
+    if(e && adv.capped) h += '<p class="wt-warn">Lộ trình theo ngày cần khoảng ' + kgT(adv.needRate) + " kg/tuần — mức ăn ở đây tính theo tối đa 1 kg/tuần.</p>";
+    if(e && e.floored) h += '<p class="wt-warn">Không nên ăn dưới ' + fmtInt(C.KCAL_FLOOR) + " kcal mỗi ngày. Muốn giảm nhanh hơn thì vận động thêm thay vì ăn ít đi.</p>";
+    if(e && e.tooLow) h += '<p class="wt-warn">Mức tiêu hao đang thấp — đừng ăn bớt thêm; hãy tăng vận động.</p>';
+    if(adv.tips.length) h += '<p class="wt-energy-label wt-tips-label">Việc nên làm</p><ul class="wt-tips">' + adv.tips.map(function(t){ return "<li>" + escapeHtml(t.text) + "</li>"; }).join("") + "</ul>";
+    if(b.kg != null) h += '<p class="card-hint">Tính theo ' + kgT(b.kg) + " kg · " + wtNum(b.heightCm) + " cm" + (e ? " · " + b.age + " tuổi · nam (công thức Mifflin-St Jeor)." : ".") + "</p>";
+    return h + '<p class="card-hint wt-disclaimer">Số liệu chỉ để tham khảo, không thay lời khuyên của bác sĩ. Nếu đang điều trị bệnh, hãy hỏi bác sĩ trước khi ăn kiêng.</p></div>';
+  }
+  // Saved on tap through saveWeight (re-read + stamp check); the redraw keeps focus on the button via data-wt.
+  function wtSetActivity(key){
+    if(wt.saving || weightLocked() || !C.weightAdvice || !state.weight.profile) return;
+    if(!C.WEIGHT_ACTIVITY_KEYS || C.WEIGHT_ACTIVITY_KEYS.indexOf(key) < 0) return;
+    showError("weightErr", null);
+    if(key === (state.weight.profile.activity || "low")) return;
+    var np = C.validateWeightProfile(Object.assign({}, state.weight.profile, { activity: key }));
+    if(!np || np.activity !== key) return;
+    weightWrite(null, np, state.weight.log, function(){}, function(msg){ showError("weightErr", msg); });
+  }
   function wtGoalRowText(p){
     if(!p) return "Đặt chiều cao và mục tiêu";
     return "Mục tiêu " + kgT(p.goalKg) + " kg · " + (p.goalDate ? "đến " + fmtDate(p.goalDate) : wtRateOpt(p.ratePerWeek) + " kg/tuần") + " · cao " + wtNum(p.heightCm) + " cm";
@@ -3232,7 +3332,10 @@
         '<button type="button" class="btn btn-primary empty-action" data-wt="goal">Đặt mục tiêu</button></div>';
       wtc.chart = null;
     } else {
+      // A 1.22 core left in the cache has no weightAdvice: neither card is built (and its validator would drop activity).
+      var adv = C.weightAdvice ? wtAdvice() : null;
       var h = st.latest ? wtProgressHtml(st) : "";
+      if(adv) h += wtAssessHtml(st, adv);
       if(st.count){
         h += '<div class="card wt-chart-card"><h4 class="import-step">Biểu đồ</h4>' +
           '<div class="segmented wt-range" id="wtRange" role="group" aria-label="Khoảng thời gian của biểu đồ">' + WT_RANGES.map(function(r){
@@ -3241,6 +3344,7 @@
           '<div class="wt-chart" id="wtChart"></div><p class="wt-legend" id="wtLegend"></p>' +
           '<p class="cal-info-text muted wt-info" id="wtChartInfo" role="status"></p></div>';
       }
+      if(adv && adv.need !== "profile") h += wtAdviceHtml(adv);
       h += '<div class="card wt-goal-card"><button type="button" class="row-link" id="wtGoalOpen" aria-haspopup="dialog">' +
         '<svg class="row-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>' +
         '<span class="row-link-label">' + escapeHtml(wtGoalRowText(st.profile)) + "</span>" +
@@ -3254,7 +3358,7 @@
       var back = act.charAt(0) === "#" ? $(act.slice(1)) : act.indexOf("range-") === 0 ? body.querySelector('[data-wt-range="' + act.slice(6) + '"]') : body.querySelector('[data-wt="' + act + '"]');
       if(back && body.contains(back)) back.focus({ preventScroll: true });
     }
-    if(!$("weightPane").hidden) placeSegPill($("wtRange"), true);
+    if(!$("weightPane").hidden){ placeSegPill($("wtRange"), true); placeSegPill($("wtAct"), true); }
   }
 
   function wtAxis(v, step){ return step < 1 ? kgT(v) : String(Math.round(v)); }
@@ -3362,6 +3466,8 @@
       placeSegPill($("wtRange"));
       return;
     }
+    var ab = e.target.closest('[data-wt^="act-"]');
+    if(ab){ wtSetActivity(ab.getAttribute("data-wt").slice(4)); return; }
     var item = e.target.closest("button[data-wt-day]");
     if(item){ openWtEntry(item.getAttribute("data-wt-day")); return; }
     if(e.target.closest("#wtGoalOpen") || e.target.closest('[data-wt="goal"]')){ openWtGoal(); return; }
@@ -3516,7 +3622,8 @@
       var from = start ? start.date : startDate;
       if(from && goalDate <= from){ wgFail("wgDate", "Ngày mục tiêu phải sau ngày bắt đầu lộ trình"); return; }
     }
-    var p = C.validateWeightProfile({ heightCm: h.value, goalKg: g.value, goalDate: goalDate, ratePerWeek: wg.rate, startDate: startDate });
+    var p = C.validateWeightProfile({ heightCm: h.value, goalKg: g.value, goalDate: goalDate, ratePerWeek: wg.rate, startDate: startDate,
+                                      activity: state.weight.profile ? state.weight.profile.activity : null });
     if(!p){ showError("wgFormErr", "Dữ liệu chưa hợp lệ, hãy kiểm tra lại."); return; }
     weightWrite($("wgSave"), p, state.weight.log, function(){
       closeSheets();

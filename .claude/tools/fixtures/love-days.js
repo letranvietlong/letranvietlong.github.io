@@ -710,7 +710,7 @@ const weight = {
     levels: { low: { tdee: '2.100 kcal', sub: 'Ít vận động × 1,2', range: '1.500–1.650 kcal', target: 'quanh 1.550 kcal · để giảm 0,5 kg/tuần' },
               mid: { tdee: '2.400 kcal', sub: 'Vừa phải × 1,375', range: '1.750–1.950 kcal', target: 'quanh 1.850 kcal · để giảm 0,5 kg/tuần' },
               high: { tdee: '2.700 kcal', sub: 'Nhiều × 1,55', range: '2.050–2.250 kcal', target: 'quanh 2.150 kcal · để giảm 0,5 kg/tuần' } },
-    protein: '84–112 g/ngày', water: 'khoảng 2,8 lít/ngày',
+    protein: '84–112 g/ngày', water: '2,8 lít/ngày',
     tip1: 'Đang giảm đều 0,8 kg/tuần — đúng nhịp an toàn. Cứ giữ thói quen hiện tại.',   // trend 05–18/10, rate 0,7848
     habits: { walk: 'Thêm 15 phút đi bộ sau bữa tối — 5 tối là thêm 75 phút vận động mỗi tuần.', drink: 'Đổi nước ngọt, trà sữa sang trà không đường hoặc nước lọc.',
       rice: 'Ăn rau trước, cơm sau; bớt nửa bát cơm buổi tối.', protein: 'Mỗi bữa có một phần đạm cỡ lòng bàn tay: thịt nạc, cá, trứng hoặc đậu phụ.' },
