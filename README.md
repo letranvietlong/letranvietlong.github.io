@@ -138,13 +138,14 @@ Tab **Games** ngay trên `index.html` có 20 mini game dựng sẵn (Cờ Vua, C
 │   │   ├── js/love-days-backup.js # Sao lưu/nhập file .zip (ảnh + dữ liệu), gộp hoặc thay thế
 │   │   ├── js/love-days.js
 │   │   ├── js/sw-core.js     # Logic service worker thật (nạp qua importScripts từ vỏ) + nhận thông báo đẩy
-│   │   ├── py/send_push.py   # Gửi thông báo đẩy hằng ngày — chạy trong GitHub Actions (love-days-push.yml)
+│   │   ├── py/send_push.py   # Gửi thông báo đẩy hằng ngày (love-days-push.yml) và nhắc uống thuốc 8:00 (--kind reminder, love-days-reminder-push.yml) — chạy trong GitHub Actions
 │   │   ├── img/love-days-icon.svg, img/love-days-icon-*.png  # Favicon + apple-touch-icon (32/180)
 │   │   ├── manifest.json     # Web App Manifest
 │   │   ├── docs/love-days.md
 │   │   └── data/
 │   │       ├── changelog.json    # Lịch sử cập nhật hiện trong app
-│   │       └── push-state.json   # Ngày đã gửi thông báo, ghi tự động bởi GitHub Actions (.github/workflows/love-days-push.yml)
+│   │       ├── push-state.json   # Ngày đã gửi thông báo, ghi tự động bởi GitHub Actions (.github/workflows/love-days-push.yml)
+│   │       └── reminder-push-state.json  # Ngày đã gửi nhắc uống thuốc 8:00 (bot tạo ở lần gửi đầu tiên), ghi tự động bởi GitHub Actions (.github/workflows/love-days-reminder-push.yml)
 │   ├── thubee-farmery/       # Đăng nhập nội bộ — subfolder theo loại file
 │   │   ├── html/index.html
 │   │   ├── css/thubee-farmery.css

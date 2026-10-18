@@ -1358,7 +1358,8 @@
     });
   }
 
-  ["cycleCard", "cycleSheet", "tab-cycle"].forEach(function(id){
+  // Only the Chu kỳ part: Thuốc, Giảm cân and the segmented control share the tab and must stay tappable.
+  ["cycleCard", "cycleSheet", "cyclePane"].forEach(function(id){
     $(id).addEventListener("click", function(e){
       if(cyc.quiet){ e.stopPropagation(); e.preventDefault(); }
     }, true);
@@ -2213,7 +2214,7 @@
   // The log is keyed by day only: which course a day belongs to follows from the courses' date ranges.
   // md.saving = one write at a time. md.tap/md.quiet = the spot of the last real tap on the Thuốc pane or
   // the Home card, held back 400ms after a tap write, because the button under the finger changes.
-  var md = { saving: false, tap: null, quiet: null, editingId: null, perDay: 1, lastDate: null };
+  var md = { saving: false, tap: null, quiet: null, editingId: null, perDay: 1, lastDate: null, reopenId: null };
   // ym = month on show ("YYYY-MM"; null follows today's month); sel = the tapped day.
   var medcal = { ym: null, sel: null, swiped: false };
   // The day of the open note sheet, fixed when it opens.
@@ -2769,6 +2770,7 @@
     if(cf.code === "endFuture") return "Ngày kết thúc không được sau hôm nay";
     if(cf.code === "endBeforeStart") return "Ngày kết thúc phải từ ngày bắt đầu trở đi";
     if(cf.code === "visitBeforeStart") return "Ngày tái khám phải sau ngày bắt đầu";
+    if(cf.self) return "Đã có đợt “" + cf.other.name + "” sau đợt này — đợt này cần có ngày kết thúc.";
     if(cf.code === "openBefore") return "Đợt “" + cf.other.name + "” bắt đầu " + fmtDate(cf.other.startDate) + " vẫn đang dùng — ngày bắt đầu phải sau ngày đó.";
     if(cf.code === "overlap") return "Trùng với đợt “" + cf.other.name + "” (" + fmtMedRange(cf.other) + ")";
     return "Đã đủ " + fmtInt(C.MED_MAX_COURSES) + " đợt thuốc — xoá bớt đợt cũ rồi thêm tiếp.";
@@ -2837,10 +2839,25 @@
     }, function(msg){ showError("medFormErr", msg); });
   });
 
+  // Deleting the course whose adding ended the one before it (end = its start − 1, nothing else after that
+  // one) puts the earlier course back in use, in the same write.
+  function medReopens(c){
+    var y = null;
+    state.med.courses.forEach(function(o){ if(o.id !== c.id && o.endDate && o.endDate === C.addDays(c.startDate, -1)) y = o; });
+    if(!y) return null;
+    var later = state.med.courses.some(function(o){ return o.id !== c.id && o.id !== y.id && o.startDate > y.startDate; });
+    return later ? null : y;
+  }
+  function medConfirmText(c, y){
+    if(state.med.courses.length <= 1) return "Xoá đợt “" + c.name + "”? Các ngày đã ghi uống vẫn được giữ; nếu thêm đợt mới trùng những ngày đó, chúng sẽ được tính vào đợt mới.";
+    return "Xoá đợt “" + c.name + "”? Các ngày đã ghi uống vẫn còn trên lịch." + (y ? " Đợt “" + y.name + "” sẽ được dùng tiếp như trước khi thêm đợt này." : "");
+  }
   $("medDelete").addEventListener("click", function(){
     var c = medById(md.editingId);
     if(!c || md.saving) return;
-    $("medConfirmText").textContent = "Xoá đợt “" + c.name + "”? Các ngày đã ghi uống vẫn còn trên lịch.";
+    var y = medReopens(c);
+    md.reopenId = y ? y.id : null;
+    $("medConfirmText").textContent = medConfirmText(c, y);
     $("medDelete").hidden = true;
     $("medConfirm").hidden = false;
     $("medConfirmNo").focus({ preventScroll: true });
@@ -2853,10 +2870,19 @@
     $("medDelete").focus({ preventScroll: true });
   });
   $("medConfirmYes").addEventListener("click", function(){
-    var id = md.editingId;
-    if(md.saving || !medById(id)) return;
+    var id = md.editingId, c = medById(id);
+    if(md.saving || !c) return;
     showError("medFormErr", null);
-    medWrite(this, state.med.courses.filter(function(x){ return x.id !== id; }), state.med.log, function(){
+    // The schedule changed since the question was asked (another window): ask again with what is true now.
+    var y = medReopens(c);
+    if((y ? y.id : null) !== md.reopenId){
+      md.reopenId = y ? y.id : null;
+      $("medConfirmText").textContent = medConfirmText(c, y);
+      return;
+    }
+    var back = y ? C.validateMedCourse(Object.assign({}, y, { endDate: null })) : null;
+    var next = state.med.courses.filter(function(x){ return x.id !== id; }).map(function(x){ return back && x.id === back.id ? back : x; });
+    medWrite(this, next, state.med.log, function(){
       md.editingId = null;
       closeSheets();
       toast("Đã xoá đợt thuốc");
@@ -3092,13 +3118,16 @@
   }
   function wtProgressHtml(st){
     var h = '<div class="card wt-progress">', p = st.profile;
+    if(p && st.pct == null && st.start && p.goalKg >= st.start.kg){
+      h += '<p class="wt-pct">Mục tiêu đang ' + (p.goalKg > st.start.kg ? "cao hơn" : "bằng") + " cân bắt đầu (" + kgT(st.start.kg) + " kg) — chạm Mục tiêu để sửa.</p>";
+    }
     if(p && st.pct != null){
       var left = st.goalReached ? "Đã chạm mục tiêu " + kgT(p.goalKg) + " kg 🎉 Giữ vững nhé!" : st.pct + "% chặng đường · còn " + kgT(st.leftKg) + " kg";
       h += '<span class="goal-bar wt-bar" aria-hidden="true"><span class="goal-fill" style="transform:scaleX(' + (st.pct / 100) + ')"></span></span>' +
         '<p class="wt-pct">' + left + "</p>";
     }
     h += '<dl class="med-stats wt-stats">';
-    h += wtStat("Đã giảm", wtLost(st.lostTotal), "7 ngày: " + wtLost(st.lost7) + WT_SUB_BREAK + "30 ngày: " + wtLost(st.lost30));
+    h += wtStat(st.lostTotal != null && C.roundKg(st.lostTotal) < 0 ? "Thay đổi" : "Đã giảm", wtLost(st.lostTotal), "7 ngày: " + wtLost(st.lost7) + WT_SUB_BREAK + "30 ngày: " + wtLost(st.lost30));
     h += st.trend ? wtStat("Tốc độ", wtRate(st.trend.rate), "theo 2 tuần gần nhất")
       : wtStat("Tốc độ", "—", "Cần ít nhất " + C.WEIGHT_TREND_MIN + " lần cân trong 2 tuần để ước tốc độ");
     if(st.plan && st.planToday != null){
@@ -3434,7 +3463,9 @@
     if(wg.mode === "date"){
       goalDate = $("wgDate").value || null;
       if(!goalDate){ wgFail("wgDate", "Hãy chọn ngày mục tiêu"); return; }
-      if(goalDate <= today){ wgFail("wgDate", "Ngày mục tiêu phải sau hôm nay"); return; }
+      // A saved goal date that has since passed must not block saving the other fields.
+      var p0 = state.weight.profile, keptDate = !!(p0 && p0.goalDate && p0.goalDate === goalDate);
+      if(!keptDate && goalDate <= today){ wgFail("wgDate", "Ngày mục tiêu phải sau hôm nay"); return; }
       var from = start ? start.date : startDate;
       if(from && goalDate <= from){ wgFail("wgDate", "Ngày mục tiêu phải sau ngày bắt đầu lộ trình"); return; }
     }
@@ -5009,7 +5040,7 @@
         (r.overWeight ? "<p>" + fmtInt(r.overWeight) + " lần cân không được thêm vì đã đủ " + fmtInt(C.WEIGHT_MAX_LOG) + " lần cân.</p>" : "") + "</div>" +
         '<button type="button" class="btn btn-primary btn-block" data-imp="close">Xong</button>';
     } else if(imp.phase === "ready"){
-      h = renderImportReady();
+      h = renderImportReady() + (imp.runMsg ? '<p class="form-error" role="alert">' + escapeHtml(imp.runMsg) + "</p>" : "");
     }
     el.innerHTML = h;
     placeSegPill(el.querySelector(".segmented"), true);
@@ -5074,17 +5105,14 @@
     if(imp.mode === "merge"){
       // Merge only takes avatars/cover the device doesn't have yet.
       var fillImgs = Object.keys(ps.images).filter(function(id){ return !local.hasBlob[id]; }).length;
-      var skipped = pl.skipPhotos + pl.skipMilestones + pl.skipCycles + pl.skipWishes + (pl.skipJournal || 0);
       // The device's cycle record is unreadable: the file's cycles are not imported, and must not be reported as "already here".
       var cyBlocked = !!ps.cycles && local.cyclesBroken;
       var wiBlocked = !!ps.wishes && local.wishesBroken;
       var joBlocked = !!ps.journal && local.journalBroken;
       var mdBlocked = !!ps.med && local.medBroken;
       var mdNew = !mdBlocked && !!((pl.addMedDays || 0) + (pl.upgradedMedDays || 0) + (pl.addMedCourses || 0));
-      skipped += mdBlocked ? 0 : pl.sameMedDays || 0;
       var wtBlocked = !!ps.weight && local.weightBroken;
       var wtNew = !wtBlocked && !!((pl.addWeightDays || 0) + (pl.weightProfileAdded ? 1 : 0));
-      skipped += wtBlocked ? 0 : pl.sameWeightDays || 0;
       var blockedNote = (cyBlocked ? '<p class="card-text">Chu kỳ trong bản sao lưu không được nhập vì sổ chu kỳ trên máy đang không đọc được.</p>' : "") +
         (wiBlocked ? '<p class="card-text">Việc muốn làm trong bản sao lưu không được nhập vì danh sách trên máy đang không đọc được.</p>' : "") +
         (joBlocked ? '<p class="card-text">Nhật ký trong bản sao lưu không được nhập vì nhật ký trên máy đang không đọc được.</p>' : "") +
@@ -5111,7 +5139,16 @@
       if(ps.weight && !wtBlocked) adds.push(fmtInt(pl.addWeightDays || 0) + " lần cân" + (pl.weightProfileAdded ? " và mục tiêu giảm cân" : ""));
       if(fillImgs) adds.push(fillImgs + " ảnh hồ sơ còn thiếu");
       var mdMore = ps.med && !mdBlocked, wtMore = ps.weight && !wtBlocked;
-      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + (skipped ? " (" + fmtInt(skipped) + (pl.skipCycles || pl.skipJournal || (mdMore && pl.sameMedDays) || (wtMore && pl.sameWeightDays) ? " đã có hoặc trùng ngày, bỏ qua)" : " đã có, bỏ qua)") : "") + ". " +
+      // One count per kind, worded like the result screen (one sum over kinds read as "2 lần cân bỏ qua").
+      var skips = [];
+      if(pl.skipPhotos) skips.push(fmtInt(pl.skipPhotos) + " ảnh đã có");
+      if(pl.skipMilestones) skips.push(fmtInt(pl.skipMilestones) + " kỷ niệm đã có");
+      if(pl.skipWishes) skips.push(fmtInt(pl.skipWishes) + " việc đã có hoặc trùng");
+      if(pl.skipJournal) skips.push(fmtInt(pl.skipJournal) + " ngày nhật ký đã có trên máy hoặc trùng ngày");
+      if(pl.skipCycles) skips.push(fmtInt(pl.skipCycles) + " kỳ trùng");
+      if(mdMore && pl.sameMedDays) skips.push(fmtInt(pl.sameMedDays) + " ngày ghi thuốc đã có trên máy");
+      if(wtMore && pl.sameWeightDays) skips.push(fmtInt(pl.sameWeightDays) + " lần cân đã có trên máy");
+      h += '<p class="card-text">' + escapeHtml("Sẽ thêm " + adds.join(", ") + ". " + (skips.length ? "Bỏ qua " + skips.join(", ") + ". " : "") +
         (pl.overWishes ? fmtInt(pl.overWishes) + " việc không được thêm vì danh sách chỉ chứa " + fmtInt(C.MAX_WISHES) + " việc. " : "") +
         (pl.overJournal ? fmtInt(pl.overJournal) + " ngày nhật ký không được thêm vì nhật ký chỉ chứa " + fmtInt(C.MAX_JOURNAL) + " ngày. " : "") +
         (mdMore && pl.overMed ? fmtInt(pl.overMed) + " ngày ghi thuốc không được thêm vì lịch thuốc chỉ chứa " + fmtInt(C.MED_MAX_LOG) + " ngày. " : "") +
@@ -5193,6 +5230,7 @@
     // The red row only stands while nothing else was touched since "Thay thế bằng bản sao lưu".
     var asked = imp.confirm;
     imp.confirm = false;
+    imp.runMsg = null;
     if(act === "close"){ closeSheets(); return; }
     if(act === "mode-merge" || act === "mode-replace"){ imp.mode = act === "mode-merge" ? "merge" : "replace"; renderImport(); return; }
     if(act === "prep"){
@@ -5237,8 +5275,15 @@
     }
   });
 
+  // A write still in flight would land on top of (or be lost under) the import's final transaction.
+  function writeInFlight(){ return !!(md.saving || wt.saving || jr.saving || wish.saving || cyc.saving || msDraft.saving); }
   function runImport(){
     if(busy || !imp.parsed) return;
+    if(writeInFlight()){
+      imp.runMsg = "Đang lưu dữ liệu — đợi một chút rồi thử lại.";
+      renderImport();
+      return;
+    }
     var mode = hasLocalData() ? imp.mode : "merge";
     busy = "import";
     imp.mode = mode;

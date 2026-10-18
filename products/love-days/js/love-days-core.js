@@ -701,12 +701,19 @@
     if(e < s) return { code: "endBeforeStart", field: "end", other: null };
     if(cand.visitDate != null && cand.visitDate <= cand.startDate) return { code: "visitBeforeStart", field: "visit", other: null };
     var count = 0, isNew = true, hit = null;
+    var exists = courses.some(function(o){ return o.id === cand.id; });
     for(var i = 0; i < courses.length; i++){
       var o = courses[i];
       if(o.id === cand.id){ isNew = false; continue; }
       count++;
       if(hit) continue;
       var os = dayIdx(o.startDate), oe = medEnd(o);
+      // A saved course re-opened (end date cleared) while a later one exists:
+      // the fix is an end date, so the error belongs to that field (self).
+      if(exists && e === Infinity && os > s && (oe === Infinity || oe >= s)){
+        hit = { code: oe === Infinity ? "openBefore" : "overlap", field: "end", other: o, self: true };
+        continue;
+      }
       if(oe === Infinity){
         if(os >= s && e >= os) hit = { code: "openBefore", field: "start", other: o };
       } else if(os <= e && oe >= s) hit = { code: "overlap", field: "start", other: o };
@@ -754,11 +761,15 @@
       var remaining = c.totalPills - c.perDay * takenDays;
       var takenToday = isTaken(t);
       var ended = e !== Infinity && e < t;
+      // An end date on or before today = no supply to run out of any more:
+      // no low / out / shortfall, and the last pill never goes past the end.
+      var closed = e !== Infinity && e <= t;
       var first = Math.max(takenToday ? t + 1 : t, s);
       var supplyDays = remaining > 0 ? Math.floor(remaining / c.perDay) : 0;
-      var lastDay = supplyDays > 0 && !ended ? idxToStr(first + supplyDays - 1) : null;
+      var lastIdx = supplyDays > 0 && !ended ? Math.min(first + supplyDays - 1, e) : null;
+      var lastDay = lastIdx !== null && lastIdx >= first ? idxToStr(lastIdx) : null;
       var visit = c.visitDate ? { date: c.visitDate, daysLeft: dayIdx(c.visitDate) - t } : null;
-      var shortfall = visit && lastDay && visit.daysLeft > 0 ? (dayIdx(c.visitDate) - 1) - dayIdx(lastDay) : null;
+      var shortfall = !closed && visit && lastDay && visit.daysLeft > 0 ? (dayIdx(c.visitDate) - 1) - dayIdx(lastDay) : null;
       var surplus = shortfall !== null && shortfall <= 0 ? remaining - c.perDay * (dayIdx(c.visitDate) - first) : null;
       var missed = 0;
       for(i = s; i < t && i <= e; i++) if(!isTaken(i)) missed++;
@@ -774,7 +785,8 @@
       return { today: today, takenToday: takenToday, takenAt: takenToday ? map[today].at : null,
                takenDays: takenDays, remaining: remaining, supplyDays: supplyDays, lastDay: lastDay, visit: visit,
                shortfall: shortfall, surplus: surplus,
-               low: !ended && remaining > 0 && supplyDays <= MED_LOW_DAYS, out: !ended && remaining <= 0, ended: ended,
+               // Less than one day's dose left counts as out: "enough for 0 days" is never said.
+               low: !closed && supplyDays > 0 && supplyDays <= MED_LOW_DAYS, out: !closed && supplyDays <= 0, ended: ended, closed: closed,
                missed: missed, streak: streak,
                month: { taken: mt, expected: me, pct: me ? Math.round(100 * mt / me) : null } };
     }catch(err){ return null; }
@@ -897,7 +909,10 @@
     try{
       if(!num(nowMs)) return { title: MED_FALLBACK.title, body: MED_FALLBACK.body };
       var none = { title: "💊 Nhắc uống thuốc", body: "Không có đợt thuốc nào đang dùng trên máy này." };
-      if(!rawMed || typeof rawMed !== "object" || !Array.isArray(rawMed.courses) || !Array.isArray(rawMed.log)) return none;
+      if(rawMed == null) return none;
+      if(typeof rawMed !== "object" || !Array.isArray(rawMed.courses) || !Array.isArray(rawMed.log)){
+        return { title: "💊 Nhắc uống thuốc", body: "Không đọc được lịch thuốc trên máy này — mở app để xem." };
+      }
       var today = todayStr(nowMs), day = isValidDate(targetDate) ? targetDate : today;
       var label = day === today ? "Hôm nay" : day === addDays(today, -1) ? "Hôm qua" : "Ngày " + day.slice(8, 10) + "/" + day.slice(5, 7);
       var courses = medCourses(rawMed.courses), course = medCourseAt(courses, day);
@@ -907,7 +922,7 @@
       var stock = "";
       if(day === today){
         var st = medStats(course, rawMed.log, nowMs);
-        if(st && !st.ended){
+        if(st && !st.closed){
           var visitAhead = st.visit && st.visit.daysLeft > 0;
           if(st.out) stock = "Đã hết số viên của đợt này.";
           else if(st.low && visitAhead && st.shortfall > 0) stock = "Còn " + fmtInt(st.remaining) + " viên — hết trước ngày tái khám " + dmy(st.visit.date) + ".";
@@ -1165,7 +1180,8 @@
 
   // Chart geometry as plain numbers (viewBox 340×200), so it can be checked in
   // node. A goal far below the data is pinned to the bottom edge instead of
-  // stretching the Y axis (that would flatten the real day-to-day moves).
+  // stretching the Y axis (that would flatten the real day-to-day moves) — in
+  // every range, "Tất cả" included.
   // range: "30" | "90" | "all". Never throws.
   function weightChart(rawWeight, range, nowMs){
     var G = WEIGHT_CHART, fail = { ok: false, W: G.W, H: G.H };
@@ -1177,7 +1193,13 @@
       var profile = validateWeightProfile(rawWeight.profile), plan = profile ? weightPlan(profile, log) : null;
       var map = weightTenths(log), first = dayIdx(log[0].date), all = range === "all";
       var xMin, xMax;
-      if(all){ xMin = first; xMax = Math.max(t, plan ? dayIdx(plan.endDate) : t); }
+      // "Tất cả" runs a little past today (≤ max(14 days, a quarter of the data's span)) so a plan
+      // ending years away is cut at the right edge instead of squeezing the real weigh-ins into a corner.
+      if(all){
+        xMin = first; xMax = t;
+        var pe0 = plan ? dayIdx(plan.endDate) : t;
+        if(pe0 > t) xMax = t + Math.min(pe0 - t, Math.max(14, Math.ceil(0.25 * (t - first))));
+      }
       else { xMin = Math.max(t - (range === "90" ? 89 : 29), first); xMax = t; }
       if(xMax - xMin < 6) xMin = xMax - 6;
       var pts = log.filter(function(e){ var i = dayIdx(e.date); return i >= xMin && i <= xMax; });
@@ -1194,11 +1216,8 @@
       pts.forEach(function(e){ lo = Math.min(lo, e.kg); hi = Math.max(hi, e.kg); });
       var refs = planVals.slice();
       if(profile) refs.push(profile.goalKg);
-      if(all) refs.forEach(function(r){ lo = Math.min(lo, r); hi = Math.max(hi, r); });
-      else {
-        var th = 1.5 * Math.max(hi - lo, 2), lo0 = lo, hi0 = hi;
-        refs.forEach(function(r){ if(r >= lo0 - th && r <= hi0 + th){ lo = Math.min(lo, r); hi = Math.max(hi, r); } });
-      }
+      var th = 1.5 * Math.max(hi - lo, 2), lo0 = lo, hi0 = hi;
+      refs.forEach(function(r){ if(r >= lo0 - th && r <= hi0 + th){ lo = Math.min(lo, r); hi = Math.max(hi, r); } });
       var span = Math.max(hi - lo, 2), mid = (lo + hi) / 2, pad = 0.1 * span;
       var step = span <= 3 ? 0.5 : span <= 8 ? 1 : 2;
       var yMin = Math.floor((mid - span / 2 - pad) / step + 1e-9) * step;

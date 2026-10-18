@@ -675,7 +675,9 @@ const weight = {
     pts: { '2026-10-04': [36, 65.33], '2026-10-05': [58.77, 54.27], '2026-10-16': [309.23, 142.8], '2026-10-17': [332, 131.73] },
     avgStart: [81.54, 69.02], avgEnd: [332, 127.31], planPath: 'M36,65.33L332,116.71', goal: { v: 70, y: 176, pinned: 'below' },
     xTicks: ['04/10', '10/10', '17/10'], hit16: [297.85, 320.62] },
-  chartAll: { xMin: '2026-10-04', xMax: '2027-03-21', yMin: 68, yMax: 84, goal: { v: 70, y: 155.25, pinned: null } },
+  // 'all' (v1.22): x runs past today by max(14, 25% of the 13 data days) = 14 days, the plan to 21/03/2027 is cut at the right edge;
+  // same 1,5 × range rule for the Y axis as 30/90 → goal 70 pinned below, plan (82,0 → 80,1 by 31/10) inside the frame
+  chartAll: { xMin: '2026-10-04', xMax: '2026-10-31', yMin: 79.5, yMax: 82.5, goal: { v: 70, y: 176, pinned: 'below' } },
   // 14 daily weigh-ins 04→17/10, 82,0 − 0,2·i → 1,4 kg/tuần → .wt-warn
   fast: Array.from({ length: 14 }, (_, i) => wt(new Date(Date.UTC(2026, 9, 4 + i)).toISOString().slice(0, 10), Math.round((82 - 0.2 * i) * 10) / 10)),
   fastText: 'Hai tuần qua giảm khoảng 1,4 kg mỗi tuần — nhanh hơn mức thường được khuyên (0,5–1 kg/tuần). Nhớ ăn đủ bữa, đủ đạm và uống đủ nước nhé.',

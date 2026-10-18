@@ -29,11 +29,16 @@ var DATA_PATHS = [
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
 var LOVEDAYS_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
 
+// cache.add(url) may be answered from the HTTP cache, so a new version's
+// cache could hold the new index.html next to stale JS/CSS (reproduced
+// 1.20 → 1.21). "reload" forces every install fetch to the network.
+function freshRequest(p){ return new Request(p, { cache: "reload" }); }
+
 self.addEventListener("install", function(event){
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache){
-      return cache.addAll(ICON_PATHS).then(function(){
-        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
+      return cache.addAll(ICON_PATHS.map(freshRequest)).then(function(){
+        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(freshRequest(p)).catch(function(){}); }));
       });
     })
   );
