@@ -382,6 +382,8 @@ h1,h2,h3,p{margin:0}
 .ms-list > .group-title:first-child{margin-top:8px}
 .ms-group{list-style:none;margin:0;padding:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
 .ms-group > li{position:relative}
+/* Hundreds of wishes / a long timeline: rows off screen skip layout and paint until scrolled near (the group already clips its rows). */
+#milestoneList .ms-group > li,#wishList .ms-group > li{content-visibility:auto;contain-intrinsic-size:auto 64px}
 .ms-group > li + li::before{content:"";position:absolute;top:0;left:68px;right:0;height:1px;background:var(--line);z-index:1}
 .ms-item-wrap{display:block}
 .ms-item{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:11px 14px;margin:0;

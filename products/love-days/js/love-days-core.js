@@ -968,7 +968,7 @@
   var BMI_NORMAL_MAX = 22.9;
   var WEIGHT_MIN_DATE = "2000-01-01";
   var WEIGHT_MORNING_LINE = "⚖️ Nhớ cân hôm nay";
-  var WEIGHT_CHART = { W: 340, H: 200, L: 36, R: 8, T: 10, B: 24 };
+  var WEIGHT_CHART = { W: 340, H: 200, L: 36, R: 8, T: 10, B: 24 }, WEIGHT_CHART_DOTS_MAX = 400;
 
   function oneDec(x){ return num(x) && Math.abs(x * 10 - Math.round(x * 10)) < 1e-6; }
   // The 1e-7 nudge keeps x.x5 averages (81.95 stored as 81.9499…) rounding the way they read.
@@ -1064,6 +1064,19 @@
     }
     return n >= WEIGHT_AVG_MIN ? s / n / 10 : null;
   }
+  // avgAt for every day in [from, to] in one pass: a running sum of the same whole tenths, so the
+  // numbers are identical to avgAt's (avgAt per day over 4.000 days cost ~28.000 date conversions).
+  function avgSeries(log, from, to, idxOf){
+    var byIdx = Object.create(null), out = [], s = 0, n = 0, k, v;
+    log.forEach(function(e){ byIdx[idxOf ? idxOf[e.date] : dayIdx(e.date)] = Math.round(e.kg * 10); });
+    for(k = from - WEIGHT_AVG_DAYS + 1; k < from; k++){ v = byIdx[k]; if(v !== undefined){ s += v; n++; } }
+    for(k = from; k <= to; k++){
+      v = byIdx[k]; if(v !== undefined){ s += v; n++; }
+      out.push(n >= WEIGHT_AVG_MIN ? s / n / 10 : null);
+      v = byIdx[k - WEIGHT_AVG_DAYS + 1]; if(v !== undefined){ s -= v; n--; }
+    }
+    return out;
+  }
   // Mean of the weigh-ins in the 7 calendar days ending on `date` (VN days, gaps not filled); null under 3.
   function weightAvg7(log, date){
     try{
@@ -1073,11 +1086,14 @@
   }
 
   // Least-squares slope over the last 14 days; rate in kg/week, positive = losing.
-  function weightTrend(log, today){
+  function weightTrend(log, today){ return trendOf(weightLog(log), today); }
+  // trendOf / planOf take a list weightLog already returned: weightStats and weightChart used to validate
+  // the whole log again inside each of them (4.000 weigh-ins three times per call).
+  function trendOf(vlog, today){
     try{
       if(!isValidDate(today)) return null;
       var t = dayIdx(today), pts = [];
-      weightLog(log).forEach(function(e){
+      vlog.forEach(function(e){
         var i = dayIdx(e.date);
         if(i >= t - WEIGHT_TREND_DAYS + 1 && i <= t) pts.push([i, e.kg]);
       });
@@ -1100,11 +1116,12 @@
   }
 
   // Straight line from the start weight to the goal: by date when goalDate is set, else by ratePerWeek.
-  function weightPlan(profile, log){
+  function weightPlan(profile, log){ return planOf(profile, weightLog(log)); }
+  function planOf(profile, vlog){
     try{
       var p = validateWeightProfile(profile);
       if(!p) return null;
-      var start = weightStart(p, weightLog(log));
+      var start = weightStart(p, vlog);
       if(!start || start.kg <= p.goalKg) return null;
       var drop = Math.round(start.kg * 10) - Math.round(p.goalKg * 10), slope, endDate, mode;
       if(p.goalDate){
@@ -1140,8 +1157,8 @@
       var cur = avg7 != null ? avg7 : latest ? latest.kg : null;
       var start = weightStart(profile, log);
       var a7 = avgAt(map, t - 7), a30 = avgAt(map, t - 30);
-      var trend = weightTrend(log, today);
-      var plan = profile ? weightPlan(profile, log) : null;
+      var trend = trendOf(log, today);
+      var plan = profile ? planOf(profile, log) : null;
       var planToday = plan ? weightPlanAt(plan, today) : null;
       var bmi = profile && latest ? bmiOf(latest.kg, profile.heightCm) : null;
       var leftKg = profile && cur != null ? cur - profile.goalKg : null;
@@ -1157,7 +1174,7 @@
       var marks = null;
       if(start){
         var best = Infinity;
-        for(var i = dayIdx(start.date); i <= t; i++){ var v = avgAt(map, i); if(v != null && v < best) best = v; }
+        avgSeries(log, dayIdx(start.date), t).forEach(function(v){ if(v != null && v < best) best = v; });
         var bestLost = start.kg - (best === Infinity ? latest.kg : best);
         var mk = Math.max(0, Math.floor(bestLost + 1e-9));
         marks = { kg: mk, pct5: Math.max(0, Math.floor(bestLost / start.kg * 20 + 1e-9) * 5),
@@ -1190,8 +1207,11 @@
       var t = todayIdx(nowMs), today = idxToStr(t);
       var log = weightLog(rawWeight.log).filter(function(e){ return e.date <= today; });
       if(log.length < 2) return fail;
-      var profile = validateWeightProfile(rawWeight.profile), plan = profile ? weightPlan(profile, log) : null;
-      var map = weightTenths(log), first = dayIdx(log[0].date), all = range === "all";
+      var profile = validateWeightProfile(rawWeight.profile), plan = profile ? planOf(profile, log) : null;
+      // Day numbers once per weigh-in (parsing the date again at every use was a third of the chart's cost).
+      var idxOf = Object.create(null);
+      log.forEach(function(e){ idxOf[e.date] = dayIdx(e.date); });
+      var map = weightTenths(log), first = idxOf[log[0].date], all = range === "all";
       var xMin, xMax;
       // "Tất cả" runs a little past today (≤ max(14 days, a quarter of the data's span)) so a plan
       // ending years away is cut at the right edge instead of squeezing the real weigh-ins into a corner.
@@ -1202,16 +1222,16 @@
       }
       else { xMin = Math.max(t - (range === "90" ? 89 : 29), first); xMax = t; }
       if(xMax - xMin < 6) xMin = xMax - 6;
-      var pts = log.filter(function(e){ var i = dayIdx(e.date); return i >= xMin && i <= xMax; });
+      var pts = log.filter(function(e){ var i = idxOf[e.date]; return i >= xMin && i <= xMax; });
       if(pts.length < 2) return fail;
       var plotW = G.W - G.L - G.R, plotH = G.H - G.T - G.B;
       var X = function(i){ return r2(G.L + plotW * (i - xMin) / (xMax - xMin)); };
-      var avgs = [], planVals = [], lo = Infinity, hi = -Infinity, i, v;
-      for(i = xMin; i <= xMax; i++){
-        v = avgAt(map, i); avgs.push(v);
-        if(v != null){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
-        var pv = plan ? weightPlanAt(plan, idxToStr(i)) : null;
-        if(pv != null) planVals.push(pv);
+      var avgs = avgSeries(log, xMin, xMax, idxOf), planVals = [], lo = Infinity, hi = -Infinity, i, v;
+      avgs.forEach(function(a){ if(a != null){ lo = Math.min(lo, a); hi = Math.max(hi, a); } });
+      // weightPlanAt's arithmetic on day numbers (no date string per day).
+      if(plan){
+        var ps0 = dayIdx(plan.start.date);
+        for(i = Math.max(xMin, ps0); i <= xMax; i++) planVals.push(Math.max(plan.goalKg, plan.start.kg - plan.slope * (i - ps0)));
       }
       pts.forEach(function(e){ lo = Math.min(lo, e.kg); hi = Math.max(hi, e.kg); });
       var refs = planVals.slice();
@@ -1244,10 +1264,24 @@
       var nearX = xTicks.reduce(function(best, tk){ return Math.min(best, Math.abs(tk.x - G.L)); }, Infinity);
       if(near >= 3 && nearX >= 30) xTicks.unshift({ date: idxToStr(xMin), x: X(xMin), label: dm(idxToStr(xMin)) });
       xTicks.forEach(function(tk){ tk.anchor = tk.x > G.W - G.R - 20 ? "end" : tk.x < G.L + 4 ? "start" : "middle"; });
-      var points = pts.map(function(e){ return { date: e.date, kg: e.kg, x: X(dayIdx(e.date)), y: Y(e.kg) }; });
+      var points = pts.map(function(e){ return { date: e.date, kg: e.kg, x: X(idxOf[e.date]), y: Y(e.kg) }; });
       points.forEach(function(p, j){
         p.hit = { x0: j ? r2((points[j - 1].x + p.x) / 2) : G.L, x1: j < points.length - 1 ? r2((p.x + points[j + 1].x) / 2) : G.W - G.R };
       });
+      // More than WEIGHT_CHART_DOTS_MAX weigh-ins in the frame: one dot per week (Monday–Sunday, mean of that
+      // week's weigh-ins) — thousands of circles made "Tất cả" slow to draw. points still holds every weigh-in.
+      var dots = null;
+      if(points.length > WEIGHT_CHART_DOTS_MAX){
+        dots = [];
+        var wk = null, sx = 0, sk = 0, wn = 0;
+        var flush = function(){ if(wn) dots.push({ x: r2(sx / wn), y: Y(sk / wn / 10), kg: roundKg(sk / wn / 10), n: wn }); };
+        points.forEach(function(p){
+          var w = Math.floor((idxOf[p.date] + 3) / 7);
+          if(w !== wk){ flush(); wk = w; sx = 0; sk = 0; wn = 0; }
+          sx += p.x; sk += Math.round(p.kg * 10); wn++;
+        });
+        flush();
+      }
       var avgPath = "", pen = false;
       avgs.forEach(function(a, j){
         if(a == null){ pen = false; return; }
@@ -1284,7 +1318,7 @@
       if(goal) label += ", mục tiêu " + kgText(goal.v) + " kg" + (goal.pinned === "below" ? " (thấp hơn khung)" : goal.pinned === "above" ? " (cao hơn khung)" : "");
       label += ".";
       return { ok: true, W: G.W, H: G.H, L: G.L, R: G.R, T: G.T, B: G.B, xMin: idxToStr(xMin), xMax: idxToStr(xMax),
-               yMin: yMin, yMax: yMax, step: step, yTicks: yTicks, xTicks: xTicks, points: points,
+               yMin: yMin, yMax: yMax, step: step, yTicks: yTicks, xTicks: xTicks, points: points, dots: dots,
                avgPath: avgPath, planPath: planPath, planClip: planClip, goal: goal, label: label };
     }catch(err){ return fail; }
   }

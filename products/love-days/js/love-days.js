@@ -237,6 +237,24 @@
     updateBadge();
   }
 
+  // The big lists of the Kỷ niệm and Sức khoẻ tabs are drawn only while on show. A redraw asked for while
+  // hidden marks the part "dirty" and it is drawn when it opens (500 wishes, the timeline and the charts were
+  // built at every start and every write, on screen or not). Sheets never depend on these lists.
+  var paneDirty = { ms: true, wishes: true, med: true, cycle: true, weight: true };
+  var PANE_DRAW = { ms: function(){ renderMilestones(); }, wishes: function(){ renderWishes(); }, med: function(){ renderMed(); },
+                    cycle: function(){ if(C.cycleStats) renderCycleSheet(); }, weight: function(){ renderWeight(); } };
+  function paneOnShow(k){
+    if(state.mode !== "app") return false;
+    if(k === "ms" || k === "wishes") return state.tab === "milestones" && wish.seg === k;
+    return state.tab === "cycle" && health.seg === k;
+  }
+  function paneLater(k){
+    if(paneOnShow(k)){ paneDirty[k] = false; return false; }
+    paneDirty[k] = true;
+    return true;
+  }
+  function paneShow(k){ if(paneDirty[k] && paneOnShow(k)) PANE_DRAW[k](); }
+
   function switchTab(name){
     if(state.tab === "album" && name !== "album") releaseAlbumThumbs();
     // The timeline pool serves the Kỷ niệm tab and the "Ngày này năm xưa" card on Home.
@@ -261,14 +279,13 @@
     window.scrollTo(0, 0);
     if(name === "album") renderAlbum();
     if(name === "home" && state.mode === "app") renderOnThisDay();
-    if(name === "milestones"){ syncTl(); placeSegPill($("msSeg"), true); }
+    if(name === "milestones"){ paneShow(wish.seg); syncTl(); placeSegPill($("msSeg"), true); }
     // The tab keeps its old id "cycle"; it is labelled "Sức khoẻ" and holds Thuốc + Chu kỳ + Giảm cân.
+    // Opening it refreshes its three parts as before — the one on show now, the others when picked.
     if(name === "cycle"){
       if(health.seg === null) health.seg = defaultHealthSeg();
+      paneDirty.med = paneDirty.cycle = paneDirty.weight = true;
       setHealthSeg(health.seg, true);
-      renderMed();
-      renderWeight();
-      if(C.cycleStats) renderCycleSheet();
     }
   }
   Array.prototype.forEach.call(document.querySelectorAll(".tabbar-btn"), function(b){
@@ -495,6 +512,7 @@
 
   // ---------- Milestones ----------
   function renderMilestones(){
+    if(paneLater("ms")) return;
     var list = state.computed.list;
     function row(x){
       var sub = fmtDate(x.date);
@@ -1245,6 +1263,7 @@
 
   // Rebuilds the Chu kỳ tab only; the form in the sheet is never re-rendered from here.
   function renderCycleSheet(){
+    if(paneLater("cycle")) return;
     var el = $("cycleList");
     if(state.cyclesBroken){ el.innerHTML = '<p class="card-text">' + CYCLE_BROKEN_TEXT + ".</p>"; return; }
     var st = C.cycleStats(state.cycles, now()), h = "";
@@ -1630,6 +1649,7 @@
     showError("wishErr", null);
     showError("journalErr", null);
     syncWishAdd();
+    paneShow(wish.seg);
     placeSegPill($("msSeg"));
   }
   function syncWishAdd(){
@@ -1646,6 +1666,7 @@
     var el = $("wishList");
     if(wish.relayout){ clearTimeout(wish.relayout); wish.relayout = null; }
     syncWishAdd();
+    if(paneLater("wishes")) return;
     if(wishesLocked()){ el.innerHTML = '<div class="card"><p class="card-text">' + WISH_BROKEN_TEXT + ".</p></div>"; return; }
     if(!state.wishes.length){
       el.innerHTML = '<div class="card empty-state"><p class="empty-text">Chưa có việc nào. Ghi lại nơi muốn đi, món muốn ăn, phim muốn xem cùng nhau.</p>' +
@@ -2487,6 +2508,7 @@
 
   // Rebuilds the Thuốc half only; the forms in #medSheet / #medNoteSheet are never re-rendered from here.
   function renderMed(){
+    if(paneLater("med")) return;
     var el = $("medBody");
     if(!C.medStats){ el.innerHTML = ""; return; }
     if(state.medBroken){ el.innerHTML = '<div class="card"><p class="card-text">' + MED_BROKEN_TEXT + ".</p></div>"; return; }
@@ -2640,6 +2662,7 @@
     showError("medErr", null);
     showError("cycleTabErr", null);
     showError("weightErr", null);
+    paneShow(health.seg);
     placeSegPill($("healthSeg"), instant);
     if(health.seg === "weight") placeSegPill($("wtRange"), true);
   }
@@ -2959,7 +2982,16 @@
     return out.sort(wtByDate);
   }
   function wtLogWithout(date){ return state.weight.log.filter(function(x){ return x.date !== date; }); }
-  function wtStats(){ return C.weightStats({ profile: state.weight.profile, log: state.weight.log }, now()); }
+  // One weightStats per change and VN day, shared by the pane, the Home card and the before/after of a save
+  // (it was computed 3–4 times per save). Every write replaces state.weight or its arrays, never edits them in place.
+  var wtMemo = { w: null, profile: null, log: null, day: null, st: null };
+  function wtStats(){
+    var t = now(), day = C.todayStr(t), w = state.weight;
+    if(wtMemo.w === w && wtMemo.profile === w.profile && wtMemo.log === w.log && wtMemo.day === day) return wtMemo.st;
+    var st = C.weightStats({ profile: w.profile, log: w.log }, t);
+    wtMemo = { w: w, profile: w.profile, log: w.log, day: day, st: st };
+    return st;
+  }
   function kgT(x){ return C.kgText(x); }
   // 172 → "172", 172.5 → "172,5" (what goes back into a box the user edits).
   function wtNum(x){ var r = C.roundKg(x); return r === Math.floor(r) ? String(r) : kgT(r); }
@@ -3179,6 +3211,7 @@
   function renderWeight(){
     var body = $("wtBody"), form = $("wtTodayForm"), nowEl = $("wtNow");
     if(!C.weightStats){ body.innerHTML = ""; form.hidden = true; return; }
+    if(paneLater("weight")) return;
     if(state.weightBroken){
       form.hidden = true;
       body.innerHTML = '<div class="card"><p class="card-text">' + WT_BROKEN_TEXT + ".</p></div>";
@@ -3255,15 +3288,21 @@
         kgT(c.goal.v) + " kg " + (c.goal.pinned === "below" ? "↓" : "↑") + "</text>";
     }
     if(c.avgPath) s += '<path class="wt-avg" d="' + c.avgPath + '"/>';
-    c.points.forEach(function(p){ s += '<circle class="wt-pt" cx="' + p.x + '" cy="' + p.y + '" r="3.5"/>'; });
-    c.points.forEach(function(p){
-      s += '<rect class="wt-hit" data-wt-day="' + p.date + '" x="' + p.hit.x0 + '" y="' + T + '" width="' + Math.max(1, Math.round((p.hit.x1 - p.hit.x0) * 100) / 100) + '" height="' + (B - T) + '"/>';
-    });
+    if(c.dots){
+      // Weekly dots and one hit area over the whole plot (a tap picks the nearest weigh-in by date).
+      c.dots.forEach(function(p){ s += '<circle class="wt-pt" cx="' + p.x + '" cy="' + p.y + '" r="2.5"/>'; });
+      s += '<rect class="wt-hit wt-hit-all" x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"/>';
+    } else {
+      c.points.forEach(function(p){ s += '<circle class="wt-pt" cx="' + p.x + '" cy="' + p.y + '" r="3.5"/>'; });
+      c.points.forEach(function(p){
+        s += '<rect class="wt-hit" data-wt-day="' + p.date + '" x="' + p.hit.x0 + '" y="' + T + '" width="' + Math.max(1, Math.round((p.hit.x1 - p.hit.x0) * 100) / 100) + '" height="' + (B - T) + '"/>';
+      });
+    }
     box.innerHTML = '<svg viewBox="0 0 ' + c.W + " " + c.H + '" role="img" aria-label="' + escapeHtml(c.label) + '">' + s + "</svg>";
     function key(cls, shape, text){
       return '<span class="wt-key"><svg viewBox="0 0 18 10" aria-hidden="true">' + (shape === "dot" ? '<circle class="' + cls + '" cx="9" cy="5" r="3.5"/>' : '<line class="' + cls + '" x1="1" x2="17" y1="5" y2="5"/>') + "</svg>" + text + "</span>";
     }
-    var lg = key("wt-pt", "dot", "Mỗi lần cân") + key("wt-avg", "line", "Trung bình 7 ngày");
+    var lg = key("wt-pt", "dot", c.dots ? "Mỗi chấm = TB 1 tuần" : "Mỗi lần cân") + key("wt-avg", "line", "Trung bình 7 ngày");
     if(c.planPath) lg += key("wt-plan", "line", "Lộ trình" + (c.planClip === "below" ? " (nằm dưới khung)" : c.planClip === "above" ? " (nằm trên khung)" : ""));
     if(c.goal) lg += key("wt-goal", "line", "Mục tiêu " + kgT(c.goal.v) + " kg" + (c.goal.pinned === "below" ? " · thấp hơn khung" : c.goal.pinned === "above" ? " · cao hơn khung" : ""));
     $("wtLegend").innerHTML = lg;
@@ -3292,6 +3331,13 @@
     $("wtChartInfo").textContent = wtDay(day) + " · " + kgT(p.kg) + " kg" + (avg != null ? " · TB 7 ngày " + kgT(avg) + " kg" : "") + (pl != null ? " · lộ trình " + kgT(pl) + " kg" : "");
   }
 
+  function wtSelectAt(rect, clientX){
+    var c = wtc.chart, svg = rect.ownerSVGElement, box = svg && svg.getBoundingClientRect();
+    if(!c || !box || !box.width || !c.points.length) return;
+    var x = (clientX - box.left) * c.W / box.width, best = c.points[0];
+    c.points.forEach(function(p){ if(Math.abs(p.x - x) < Math.abs(best.x - x)) best = p; });
+    wtSelect(best.date);
+  }
   ["weightPane", "weightCard"].forEach(function(id){
     $(id).addEventListener("click", function(e){
       if(!e.isTrusted || !e.detail) return;
@@ -3303,6 +3349,7 @@
   $("weightPane").addEventListener("click", function(e){
     if(weightLocked()) return;
     var hit = e.target.closest("rect.wt-hit");
+    if(hit && hit.classList.contains("wt-hit-all")){ wtSelectAt(hit, e.clientX); return; }
     if(hit){ wtSelect(hit.getAttribute("data-wt-day")); return; }
     var rg = e.target.closest("[data-wt-range]");
     if(rg){
@@ -5744,6 +5791,9 @@
 
   // One pill per segmented control, slid under the pressed button. Measure
   // only while visible: inside display:none every offsetWidth is 0.
+  // Placed in one batch on the next frame, all reads before all writes: measuring right after a big
+  // innerHTML forced a full layout per control (224ms at 4× CPU on a large data set).
+  var segQueue = [], segFrame = 0;
   function placeSegPill(seg, instant){
     if(!seg) return;
     var pill = seg.querySelector(".seg-pill");
@@ -5754,15 +5804,34 @@
       seg.insertBefore(pill, seg.firstChild);
       instant = true;
     }
-    var on = seg.querySelector('[aria-pressed="true"]');
-    if(!on || !on.offsetWidth){ pill.style.opacity = "0"; return; }
-    // Coming out of hiding the pill still holds its old position — sliding from there looks like a glitch.
-    if(pill.style.opacity === "0") instant = true;
-    if(instant) pill.classList.add("no-anim");
-    pill.style.width = on.offsetWidth + "px";
-    pill.style.transform = "translateX(" + on.offsetLeft + "px)";
-    pill.style.opacity = "";
-    if(instant){ void pill.offsetWidth; pill.classList.remove("no-anim"); }
+    // A control inside a hidden tab/pane has nothing to measure; it is placed again when shown.
+    if(seg.closest("[hidden]")){ pill.style.opacity = "0"; return; }
+    var q = null;
+    segQueue.forEach(function(x){ if(x.seg === seg) q = x; });
+    if(q) q.instant = q.instant || !!instant;
+    else segQueue.push({ seg: seg, pill: pill, instant: !!instant });
+    if(!segFrame) segFrame = requestAnimationFrame(flushSegPills);
+  }
+  function flushSegPills(){
+    var list = segQueue;
+    segQueue = []; segFrame = 0;
+    list.forEach(function(x){
+      var on = x.pill.parentNode === x.seg ? x.seg.querySelector('[aria-pressed="true"]') : null;
+      x.w = on ? on.offsetWidth : 0;
+      x.left = on ? on.offsetLeft : 0;
+    });
+    var snap = [];
+    list.forEach(function(x){
+      var pill = x.pill;
+      if(!x.w){ pill.style.opacity = "0"; return; }
+      // Coming out of hiding the pill still holds its old position — sliding from there looks like a glitch.
+      var instant = x.instant || pill.style.opacity === "0";
+      if(instant){ pill.classList.add("no-anim"); snap.push(pill); }
+      pill.style.width = x.w + "px";
+      pill.style.transform = "translateX(" + x.left + "px)";
+      pill.style.opacity = "";
+    });
+    if(snap.length){ void snap[0].offsetWidth; snap.forEach(function(p){ p.classList.remove("no-anim"); }); }
   }
   window.addEventListener("resize", function(){
     Array.prototype.forEach.call(document.querySelectorAll(".segmented"), function(seg){ placeSegPill(seg, true); });

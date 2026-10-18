@@ -702,6 +702,8 @@ const weightSel = {
   save: '#wtSave', kgErr: '#wtKgErr', now: '#wtNow', nowStats: '#wtNow .med-stat', body: '#wtBody', progress: '#wtBody .wt-progress', pct: '#wtBody .wt-pct',
   stats: '#wtBody .wt-stats .med-stat', mark: '#wtBody .wt-mark', warn: '#wtBody .wt-warn', range: '#wtRange', rangeBtn: k => '#wtRange [data-wt-range="' + k + '"]',
   chart: '#wtChart', svg: '#wtChart svg', pt: '#wtChart .wt-pt', avg: '#wtChart .wt-avg', plan: '#wtChart .wt-plan', goal: '#wtChart .wt-goal', goalLbl: '#wtChart .wt-goal-lbl',
+  // hit: one rect per weigh-in only while the frame holds ≤ 400 of them; above that (v1.22) the chart draws weekly dots and ONE
+  // rect.wt-hit.wt-hit-all over the plot — tap at an x and the nearest weigh-in is picked. Lists of hidden tabs/parts are built when shown.
   hit: d => '#wtChart rect.wt-hit[data-wt-day="' + d + '"]', sel: '#wtChart .wt-sel', legend: '#wtLegend', info: '#wtChartInfo',
   goalOpen: '#wtGoalOpen', add: '#wtBody [data-wt="add"]', more: '#wtBody [data-wt="more"]', list: '#wtList', item: d => '#wtList [data-wt-day="' + d + '"]',
   card: '#weightCard', homeForm: '#wtHomeForm', homeKg: '#wtHomeKg', homeSave: '#wtHomeSave', homeErr: '#wtHomeErr', homeSub: '#wtHomeSub',
