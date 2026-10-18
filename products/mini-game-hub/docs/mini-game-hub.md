@@ -208,10 +208,28 @@ Chung: chạy trên `host.loop` 120 bước/giây (vật lý giống nhau ở ch
 | `pong` | Va chạm quét áp mỗi bước 120 Hz. Xoáy: vận tốc thanh (làm mượt ~0,1 s) × 0,25 cộng vào `vx`, góc kẹp ≤ 70° so với phương đứng, độ lớn vận tốc giữ đúng `speed` như cũ. Bóng có vệt 8 vị trí, méo khi chạm; thanh nhún 3px. Tiếng: `whoosh` khi phát, `hit` (cao dần theo tốc độ) + 8 hạt + rung nhẹ khi đỡ, `bounce` ở tường, mỗi 5 lần đỡ `combo` + chữ tốc độ "1,3×". Rơi: `miss`, rung màn, nháy đỏ, 0,35 s rồi kết quả. |
 | `tower` | Hình học/tốc độ/điểm giữ nguyên (cửa sổ perfect ±4px, không nở khối). Phần bị cắt thành mảnh rơi xoay mờ dần 0,9 s; `slice` + `drop` + rung màn 2px; khối vừa đặt lún 90ms. Perfect: `perfect` cao dần theo chuỗi, chữ "Hoàn hảo!"/"Hoàn hảo ×N", 6 tia hai bên, viền sáng. Màu tầng đổi dần giữa `--brand` và `--brand2`. Trượt hẳn: khối rơi khỏi tháp 0,6 s, `crash` nhỏ. `data-state` của canvas có thêm `w` (bề rộng khối đang chạy) cho test. |
 
+### Bốn game nâng sâu + việc nhỏ (2.4)
+
+**Luật điểm không đổi** (mole chạm hụt không trừ điểm, target "Hồng tâm" không cộng thêm). Hoạt cảnh DOM dùng WAAPI chỉ trên `transform`/`opacity`, không `fill: 'forwards'` (style inline luôn là trạng thái cuối, huỷ giữa chừng là nhảy đúng chỗ), bỏ hết khi `host.reducedMotion`.
+
+| Game | Thay đổi |
+|---|---|
+| `snake` | Bỏ `setInterval`: `host.raf` + bộ tích luỹ nhịp (công thức `tickMs` giữ nguyên `max(85, 150 − ⌊điểm/4⌋×8)`), vẽ trễ logic một nhịp và nội suy: đầu trượt từ ô cũ sang ô mới, đuôi trượt từ ô đuôi cũ, thân là đường nét tròn qua tâm các ô; va chạm vẫn theo ô. `host.swipe(root, turn, {live:true, threshold:18})`; hàng đợi 2 hướng giữ. Táo "thở", ăn: `point` (cao dần theo độ dài) + 10 hạt + đầu phồng, tăng tốc hiện "Nhanh hơn!". Chết: `hitstop(90)`, `crash`, rung màn, thân nhấp nháy đỏ 0,45 s rồi kết quả (tiêu đề như cũ). Nền ô cờ vẽ sẵn. |
+| `g2048` | Hàm thuần `logic.moves(grid, dir)` = `moves2048` → `{grid, gained, moved, moves:[{from,to,value,merged}]}` (grid/gained/moved trùng `slide2048`, kiểm 40.000 lượt). 16 ô nền tĩnh + lớp ô số tuyệt đối, vị trí `translate(calc(c×100% + c×8px), …)`. Trượt 110ms, ô gộp nảy 1→1,15→1, ô mới phóng 0→1 sau 110ms. Nước kế tới khi còn trượt → huỷ hoạt cảnh (nhảy về trạng thái cuối), dọn ô đã gộp rồi xử lý, không khoá vuốt. Vuốt live 18px, pad qua `host.tap`. `whoosh` mỗi nước; gộp → `merge` theo ô lớn nhất + "+N" từ ô đó, ô ≥ 128 có hạt; đạt 2048 → `record` + pháo giấy. Thứ tự gọi `Math.random` (ô mới) giữ như cũ: cùng seed + cùng chuỗi phím ra đúng lưới/điểm như 2.3. |
+| `mole` | Chuột là `span` trồi `translateY(70%→0)` 120ms, rút 90ms; `pop` nhỏ khi trồi. Trúng (`host.tap`): `whack` + 12 hạt + "+1" + ô lún 90ms + rung nhẹ. Chạm ô trống: `miss` + ô rung 120ms, ô chỉ số "Trượt" (chỉ đếm khi đồng hồ đã chạy). Thanh thời gian mảnh dưới lưới (`scaleX`), 5 giây cuối `tick` mỗi giây và thanh đổi đỏ. |
+| `target` | Bia phóng 0→1 120ms ở chỗ mới (trúng/hụt xét theo hình tròn ở vị trí bố cục `offsetLeft/Top`, không theo khung đang phóng — chạm đúng chỗ bia vừa hiện vẫn trúng); đứng `max(550, 1000 − điểm×12)` ms (khó dần, trước cố định 1000). Trúng: `hit` + 14 hạt + vòng sáng tại ĐIỂM CHẠM THẬT + "+1"; trong 25% bán kính → thêm `perfect` + chữ "Hồng tâm!". Chạm hụt trong sân: `miss` + dấu × mờ; ô "Chính xác" = trúng/(trúng+hụt), hụt trước cú trúng đầu không đếm. |
+| `reaction` | Mốc bắt đầu = callback `host.raf` đầu tiên sau khi đổi màu (lúc màu thật sự lên màn), mốc chạm = `e.timeStamp` của `pointerdown` (cùng gốc `performance.now`; giá trị lạ thì dùng `performance.now()`). Chạm có mốc trước khung hình màu xanh (sự kiện xếp hàng đúng lúc đổi màu) tính là "Sớm quá" — bản 2.3 ghi thành kỷ lục 1ms. Kết quả có thể nhỏ hơn bản cũ vài ms; kỷ lục cũ giữ nguyên. Dưới `page.clock.install()` của Playwright, `performance.now` là giờ giả còn `e.timeStamp` là giờ thật → số đo vô nghĩa; thử game này bằng giờ thật. |
+| `simon` | Mỗi đèn một nốt `simon0..simon3`, cả lúc máy nháy lẫn lúc bạn chạm; chạm ăn ở `pointerdown` (`host.tap`). |
+| IDLE (5 game) | Nút lớn qua `host.tap`; mỗi cú chạm "+N" bay lên từ chỗ chạm (bàn phím: giữa nút) + emoji nảy. `host.save` vẫn mỗi giây/khi mua. |
+| `colorMatch`, `math`, `memory` | Nút chính chuyển từ `click` sang `host.tap` (ăn ở `pointerdown`). `tictactoe`, `mines`, nút mua/xác nhận giữ `click`. |
+
+`math`, `wordScramble` có `countdown: 3` từ 2.2. `makePad` (rắn, mê cung) dùng `host.tap` với selector.
+
 ## 5. Vỏ — những điểm dễ làm hỏng
 
 - **Không chặn zoom bằng `preventDefault` trên `touchend`** (bản 1.x nuốt mọi cú chạm cách nhau < 320ms). Dùng `touch-action:pan-x pan-y` trên `html` (`manipulation` vẫn cho chụm hai ngón) + huỷ `gesture*` — `LongLTV_ios-pwa-pitfalls` §19.
 - **Âm thanh chỉ mở khoá ở `touchend`/`pointerup`/`click`/`keydown` (sự kiện thật, `isTrusted`)**, không ở `pointerdown`: theo HTML spec `pointerdown`/`touchstart` không phải kích hoạt người dùng, AudioContext tạo/resume ở đó trên iPhone có thể kẹt im lặng. `GameHubFeel.sfx` không bao giờ tự tạo context. Hệ quả: cú chạm ĐẦU TIÊN sau khi mở app có thể không kêu. Ẩn app → `suspend()`; hiện lại không tự kêu, cú chạm kế tiếp mở lại. Một AudioContext cả đời trang; mỗi tiếng tự `disconnect` khi xong.
+- **Nhạc nền** (2.4, Cài đặt → "Nhạc nền", mặc định TẮT, `state.feel.music`): tổng hợp trong `GameHubFeel` — vòng 8 nhịp ngũ cung (bass triangle + arpeggio square lowpass 1,8 kHz), lập lịch nhìn trước 100ms bằng MỘT `setInterval` 25ms của trang. Vỏ gọi `GameHubFeel.music(đangChơi)` qua `syncMusic()` (màn game mở, app hiện, không "Tạm dừng"/sheet đè, ván chưa kết thúc; đếm 3-2-1 vẫn tính là đang chơi); Feel tự xét thêm công tắc Nhạc nền + Âm thanh, không tiết kiệm pin, context đang chạy. Mỗi lượt nhạc có một gain riêng mờ dần 0,4 s rồi `disconnect`; mỗi nốt tự gỡ ở `onended`. Âm lượng theo `feel.vol` (bus nhạc = 0,35 × mức). `stats()` có thêm `music` ('on'/'off') và `musicNotes`.
 - **Lớp hiệu ứng `#fxLayer`** (canvas fixed, z 65: trên sheet, dưới toast) chỉ bỏ `hidden` khi đang có hạt/chữ, hết là `hidden` lại và dừng rAF riêng. Đóng game/chơi lại → `GameHubFeel.clear()`. Không `shadowBlur`/`filter`/tạo gradient trong vòng vẽ; hạt là pool cố định 220.
 - **Bảng kết quả** (tự động cho mọi game): điểm đếm từ 0 lên trong 500ms; kỷ lục mới → tiếng `record` + rung + pháo giấy + huy hiệu nảy; `won:true` → `win`, `won:false` → `lose`, còn lại `end`; không phá kỷ lục ("cao là tốt") → thêm "Còn N nữa là kỷ lục". Giữa ván, lần đầu điểm vượt kỷ lục đã lưu → tiếng `newbest`, ô Kỷ lục đổi nhãn "Kỷ lục!" (giá trị vẫn là kỷ lục đã lưu).
 - **Màn game không khoá nền bằng `position:fixed`** (làm mất vị trí cuộn): `html.game-open{overflow:hidden}` + lưu/trả `scrollY`; `#app` và tab bar bị `inert` khi game mở.
@@ -246,6 +264,7 @@ Màu lấy từ biến CSS của theme (`--brand`, `--brand2`, `--on-brand`, `--
 
 - Fixture: `.claude/tools/fixtures/mini-game-hub.js` (seed 1.x, kết quả chuyển dữ liệu kỳ vọng, selector, `openGame/closeGame/setVisibility`).
 - Core chạy được bằng node: `require('products/mini-game-hub/js/mini-game-hub-core.js')`.
+- Phản xạ nhanh đo bằng `e.timeStamp` (giờ thật): đừng thử nó dưới `page.clock.install()`.
 - Đếm âm thanh: sau khi trang tải, bọc `window.GameHubFeel.sfx` bằng hàm ghi tên (vỏ tra thuộc tính lúc gọi nên bọc sau vẫn ăn). `GameHubFeel.stats()` → `{ctx, rate, voices, particles, texts, haptic, session}`. Đếm AudioContext/nút âm thanh còn sống: `addInitScript` bọc constructor và `AudioNode.prototype.connect/disconnect`. Chromium có `navigator.vibrate` nên `haptic` = `vibrate`.
 - Đồng hồ chơi đếm theo nhịp interval nên `page.clock.setFixedTime` không dừng nó; muốn tua thời gian: `page.clock.install()` rồi `runFor(ms)`.
 - Tab mặc định là Trang chủ; thẻ game nằm ở tab Trò chơi (`#gameGrid [data-open="<id>"]`).
@@ -253,6 +272,8 @@ Màu lấy từ biến CSS của theme (`--brand`, `--brand2`, `--on-brand`, `--
 - Vuốt giả lập bằng `touchMove` dồn dập (không nghỉ giữa các bước) để lại trạng thái quán tính trong Chromium: cú chạm kế tiếp có `touchend` nhưng không có `click`, kể cả chờ 1 giây. Muốn thử nút của game sau cú vuốt thì nghỉ 40ms mỗi bước.
 
 ## 8. Chưa kiểm chứng trên iPhone thật
+
+Từ 2.4: độ trễ vuốt live của Rắn/2048 trên màn cảm ứng thật (18px có quá nhạy khi định chạm pad không), Rắn trượt có mượt ở 120 Hz, hoạt cảnh 2048 khi vuốt rất nhanh liên tiếp, `e.timeStamp` của Safari iOS có cùng gốc với `performance.now()` không (nếu không, Phản xạ nhanh tự quay về `performance.now()`), nhạc nền: có làm nóng máy/tốn pin sau 10 phút, có trộn được với nhạc app khác khi `audioSession` 'ambient', công tắc im lặng có tắt cả nhạc không, nhạc có tự dừng khi kéo Trung tâm điều khiển (blur chỉ tự dừng game realtime).
 
 Từ 2.3: cảm giác tay của Flappy/Runner/Pong/Xếp tháp trên iPhone (Runner giữ lâu/chạm nhanh có phân biệt rõ không, Pong xoáy có dễ cảm nhận không, độ mượt trên màn 120 Hz), tiếng `crash`/`hit` có to quá so với tiếng khác không.
 

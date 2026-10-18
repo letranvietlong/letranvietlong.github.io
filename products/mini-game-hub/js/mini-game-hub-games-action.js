@@ -75,16 +75,14 @@
       b.setAttribute('aria-label', d[2]);
       pad.appendChild(b);
     });
-    onPress(host, pad, function(e){
-      var b = e.target.closest('[data-dir]');
-      if(b) cb(b.getAttribute('data-dir'));
-    });
+    host.tap(pad, function(e, b){ cb(b.getAttribute('data-dir')); }, '[data-dir]');
     return pad;
   }
   // Đồng hồ đếm lùi theo giây; chỉ chạy sau khi gọi start() (cú chạm đầu tiên của người chơi).
-  function countdown(host, secs, stat, onDone){
-    var left = secs, id = 0;
-    function show(){ stat([{ label: 'Còn', value: left + ' giây' }]); }
+  // opts.extra() → các ô chỉ số thêm sau ô "Còn"; opts.onTick(left) gọi mỗi giây.
+  function countdown(host, secs, stat, onDone, opts){
+    var left = secs, id = 0, o = opts || {};
+    function show(){ stat([{ label: 'Còn', value: left + ' giây' }].concat(o.extra ? o.extra() : [])); }
     show();
     return {
       start: function(){
@@ -92,9 +90,13 @@
         id = host.setInterval(function(){
           left--;
           show();
+          if(o.onTick) o.onTick(left);
           if(left <= 0){ host.clearInterval(id); onDone(); }
         }, 1000);
-      }
+      },
+      refresh: show,
+      left: function(){ return left; },
+      running: function(){ return !!id; }
     };
   }
 
@@ -364,8 +366,29 @@
       var stat = statWriter(host);
       var cBody = themeColor(host.root, '--good', '#34D399'), cApple = themeColor(host.root, '--bad', '#FB7185'),
         cText = themeColor(host.root, '--text', '#F8FAFC'), cGrid = themeColor(host.root, '--panel', '#131B2E');
+      var bodyLo = mix(cBody, '#000000', 0.3), bodyHi = mix(cBody, '#FFFFFF', 0.3), still = host.reducedMotion ? 0 : 1;
+      var board = sprite(side, side, function(x){
+        x.fillStyle = BG;
+        x.fillRect(0, 0, side, side);
+        x.fillStyle = cGrid;
+        for(var y = 0; y < N; y++) for(var k = (y % 2); k < N; k += 2) x.fillRect(k * cell, y * cell, cell, cell);
+      });
+      var AS = cell * 1.2;
+      var appleImg = sprite(AS, AS, function(x){
+        var r = cell * 0.38;
+        x.translate(AS / 2, AS / 2 + 1);
+        x.fillStyle = cApple;
+        x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.fill();
+        x.fillStyle = 'rgba(255,255,255,.45)';
+        x.beginPath(); x.ellipse(-r * 0.35, -r * 0.35, r * 0.3, r * 0.2, -0.7, 0, Math.PI * 2); x.fill();
+        x.fillStyle = cBody;
+        x.beginPath(); x.ellipse(r * 0.35, -r * 1.02, r * 0.38, r * 0.18, -0.5, 0, Math.PI * 2); x.fill();
+      });
       var snake = [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }], dir = SNAKE_DIRS.right, queue = [];
-      var apple = null, score = 0, started = false, over = false, loop = 0;
+      // Vẽ trễ logic đúng một nhịp và nội suy giữa hai nhịp: đầu trượt từ ô cũ sang ô mới, đuôi trượt từ tailFrom
+      // về ô đuôi mới, các khúc giữa nằm đúng tâm ô. Va chạm vẫn tính theo ô như cũ.
+      var tailFrom = snake[2], acc = 0, ticked = false;
+      var apple = null, score = 0, started = false, over = false, finished = false, dying = 0, endMsg = '', clock = 0, puff = 0;
 
       function placeApple(){
         var free = [], x, y;
@@ -381,75 +404,107 @@
         var last = queue.length ? queue[queue.length - 1] : dir;
         if(d !== last && !(d.x === -last.x && d.y === -last.y) && queue.length < 2) queue.push(d);
         cv.setAttribute('data-dir', (queue.length ? queue[queue.length - 1] : dir).name);
-        if(!started){ started = true; draw(); }
+        started = true;
       }
       function tickMs(){ return Math.max(85, 150 - Math.floor(score / 4) * 8); }
-      function restartLoop(){
-        host.clearInterval(loop);
-        loop = host.setInterval(tick, tickMs());
+      function at(p){ return host.fx.fromCanvas(cv, (p.x + 0.5) * cell, (p.y + 0.5) * cell); }
+      function die(head, wall){
+        over = true;
+        dying = 0.45;
+        endMsg = wall ? 'Đâm vào tường' : 'Cắn vào thân';
+        host.hitstop(90);
+        host.sfx('crash');
+        host.haptic('heavy');
+        host.fx.shake(200, 6);
+        var p = at({ x: clamp(head.x, 0, N - 1), y: clamp(head.y, 0, N - 1) });
+        host.fx.burst(p.x, p.y, { n: 14, colors: [cApple, cBody, '#FFFFFF'], speed: 220, life: 520, size: 3 });
       }
       function tick(){
-        if(!started || over) return;
         if(queue.length) dir = queue.shift();
         var head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
         var eat = head.x === apple.x && head.y === apple.y;
         // Không ăn thì đuôi rời đi trong chính bước này, nên ô đuôi không tính là va chạm.
         var body = eat ? snake : snake.slice(0, -1);
         var wall = head.x < 0 || head.y < 0 || head.x >= N || head.y >= N;
-        if(wall || body.some(function(p){ return p.x === head.x && p.y === head.y; })){
-          over = true;
-          host.sfx('bad');
-          host.end({ score: score, message: wall ? 'Đâm vào tường' : 'Cắn vào thân' });
-          return;
-        }
+        if(wall || body.some(function(p){ return p.x === head.x && p.y === head.y; })){ die(head, wall); return; }
+        tailFrom = snake[snake.length - 1];
         snake.unshift(head);
+        ticked = true;
         if(eat){
+          var slow = tickMs(), p = at(apple);
           score++;
           host.setScore(score);
-          host.sfx('good');
+          host.sfx('point', { pitch: Math.min(12, (snake.length - 4) * 0.5) });
+          puff = 1;
+          host.fx.burst(p.x, p.y, { n: 10, colors: [cApple, '#FFFFFF', cBody], speed: 170, life: 420, size: 2.6, gravity: 0 });
           stat([{ label: 'Dài', value: String(snake.length) }]);
           if(!placeApple()){
-            over = true;
-            draw();
+            over = finished = true;
             host.end({ score: score, won: true, message: 'Rắn đã kín sân!' });
             return;
           }
-          if(score % 4 === 0) restartLoop();
+          if(tickMs() < slow) host.fx.text(p.x, p.y - 14, 'Nhanh hơn!', { color: cText, size: 17 });
         } else snake.pop();
-        draw();
       }
-      function draw(){
-        ctx.fillStyle = BG;
-        ctx.fillRect(0, 0, side, side);
-        ctx.fillStyle = cGrid;
-        for(var y = 0; y < N; y++) for(var x = (y % 2); x < N; x += 2) ctx.fillRect(x * cell, y * cell, cell, cell);
+      function center(p){ return { x: (p.x + 0.5) * cell, y: (p.y + 0.5) * cell }; }
+      function render(a){
+        ctx.drawImage(board.img, 0, 0, side, side);
         if(apple){
-          ctx.fillStyle = cApple;
-          ctx.beginPath();
-          ctx.arc(apple.x * cell + cell / 2, apple.y * cell + cell / 2, cell * 0.38, 0, Math.PI * 2);
-          ctx.fill();
+          var k = still ? 0.975 + 0.075 * Math.sin(clock * 6) : 1, as = AS * k, ap = center(apple);
+          ctx.drawImage(appleImg.img, ap.x - as / 2, ap.y - as / 2, as, as);
         }
-        ctx.fillStyle = cBody;
-        for(var i = snake.length - 1; i >= 0; i--){
-          var p = snake[i], inset = i === 0 ? 1 : 2;
-          ctx.globalAlpha = i === 0 ? 1 : 0.8;
-          ctx.fillRect(p.x * cell + inset, p.y * cell + inset, cell - inset * 2, cell - inset * 2);
-        }
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = INK;
+        var h0 = center(snake[1]), h1 = center(snake[0]), t0 = center(tailFrom), t1 = center(snake[snake.length - 1]);
+        var hx = lerp(h0.x, h1.x, a), hy = lerp(h0.y, h1.y, a);
+        // Rắn chết nhấp nháy đỏ 3 lần trong 0,45 giây.
+        var red = over && !finished && dying > 0 && Math.floor((0.45 - dying) / 0.075) % 2 === 0;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.arc(snake[0].x * cell + cell / 2 + dir.x * cell * 0.2, snake[0].y * cell + cell / 2 + dir.y * cell * 0.2, Math.max(2, cell * 0.12), 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(hx, hy);
+        for(var i = 1; i < snake.length; i++){ var q = center(snake[i]); ctx.lineTo(q.x, q.y); }
+        ctx.lineTo(lerp(t0.x, t1.x, a), lerp(t0.y, t1.y, a));
+        ctx.strokeStyle = red ? mix(cApple, '#000000', 0.3) : bodyLo;
+        ctx.lineWidth = cell * 0.78;
+        ctx.stroke();
+        ctx.strokeStyle = red ? cApple : cBody;
+        ctx.lineWidth = cell * 0.56;
+        ctx.stroke();
+        var dx = snake[0].x - snake[1].x, dy = snake[0].y - snake[1].y, hr = cell * 0.44 * (1 + 0.22 * puff * still);
+        ctx.fillStyle = red ? cApple : bodyHi;
+        ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+        var ex = -dy * cell * 0.2, ey = dx * cell * 0.2, fx = dx * cell * 0.12, fy = dy * cell * 0.12, er = Math.max(2, cell * 0.13);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(hx + ex + fx, hy + ey + fy, er, 0, Math.PI * 2); ctx.arc(hx - ex + fx, hy - ey + fy, er, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = INK;
+        ctx.beginPath(); ctx.arc(hx + ex + fx * 1.6, hy + ey + fy * 1.6, er * 0.55, 0, Math.PI * 2); ctx.arc(hx - ex + fx * 1.6, hy - ey + fy * 1.6, er * 0.55, 0, Math.PI * 2); ctx.fill();
         if(!started) canvasHint(ctx, 'Vuốt hoặc bấm mũi tên', side / 2, side * 0.3, cText);
       }
+      function frame(dt){
+        clock += dt / 1000;
+        if(puff > 0) puff = Math.max(0, puff - dt / tickMs());
+        if(over){
+          if(dying > 0){
+            dying -= dt / 1000;
+            if(dying <= 0 && !finished){ finished = true; host.end({ score: score, message: endMsg }); return; }
+          }
+          render(1);
+          return;
+        }
+        if(started){
+          acc += dt;
+          for(var n = 0; acc >= tickMs() && n < 3 && !over; n++){ acc -= tickMs(); tick(); }
+          if(acc > tickMs()) acc = tickMs();
+        }
+        render(over || !ticked ? 1 : Math.min(1, acc / tickMs()));
+      }
 
-      host.swipe(host.root, turn);
+      host.swipe(host.root, turn, { live: true, threshold: 18 });
       cv.setAttribute('data-dir', dir.name);
       placeApple();
       host.setScore(0);
       stat([{ label: 'Dài', value: String(snake.length) }]);
-      restartLoop();
-      draw();
+      host.raf(frame);
+      render(1);
       return {};
     }
   });
@@ -1099,34 +1154,58 @@
   // ---------- Đập chuột ----------
   games.push({
     id: 'mole', name: 'Đập chuột', icon: '🔨', desc: 'Chạm thật nhanh trong 30 giây', cat: 'Phản xạ', dur: '1p',
-    help: 'Chạm vào ô có chuột trước khi nó chui sang ô khác. Đồng hồ 30 giây bắt đầu chạy từ cú chạm đầu tiên.',
+    help: 'Chạm vào ô có chuột trước khi nó chui sang ô khác; chạm hụt không bị trừ điểm. Đồng hồ 30 giây bắt đầu chạy từ cú chạm đầu tiên.',
     score: { label: 'Điểm', unit: '', better: 'high' },
     mount: function(host){
-      var grid = el('div', 'g-grid'), holes = [], at = -1, score = 0, started = false, over = false, hideTimer = 0;
+      var grid = el('div', 'g-grid'), holes = [], mice = [], at = -1, score = 0, misses = 0, started = false, over = false, hideTimer = 0, elapsed = 0;
+      var still = !host.reducedMotion, width = clamp(host.size().h - 92, 180, 420) + 'px';
       grid.style.setProperty('--cols', '3');
-      grid.style.maxWidth = clamp(host.size().h - 70, 180, 420) + 'px';
+      grid.style.maxWidth = width;
       grid.setAttribute('role', 'group');
       grid.setAttribute('aria-label', '9 lỗ chuột');
       for(var i = 0; i < 9; i++){
-        var hole = button('g-tile');
+        var hole = button('g-tile'), mouse = el('span', '', '🐭');
         hole.setAttribute('data-i', String(i));
+        hole.style.overflow = 'hidden';
+        mouse.setAttribute('aria-hidden', 'true');
+        mouse.style.cssText = 'display:block;line-height:1;pointer-events:none;transform:translateY(110%);opacity:0';
+        hole.appendChild(mouse);
         holes.push(hole);
+        mice.push(mouse);
         grid.appendChild(hole);
       }
+      // Thanh thời gian mảnh dưới lưới: chỉ đổi transform.
+      var bar = el('div'), fill = el('div');
+      bar.setAttribute('aria-hidden', 'true');
+      bar.style.cssText = 'flex:none;width:100%;height:6px;margin:0 auto;border-radius:3px;overflow:hidden;background-color:var(--panel2);max-width:' + width;
+      fill.style.cssText = 'width:100%;height:100%;background-color:var(--brand);transform-origin:0 50%';
+      bar.appendChild(fill);
       var note = el('p', 'g-note', 'Chạm chú chuột để bắt đầu 30 giây.');
       note.setAttribute('role', 'status');
       host.root.appendChild(grid);
+      host.root.appendChild(bar);
       host.root.appendChild(note);
       var clock = countdown(host, 30, statWriter(host), function(){
         over = true;
         host.clearTimeout(hideTimer);
         host.end({ score: score, message: 'Hết giờ!' });
+      }, {
+        extra: function(){ return [{ label: 'Trượt', value: String(misses) }]; },
+        onTick: function(left){
+          elapsed = (30 - left) * 1000;
+          if(left > 0 && left <= 5){ host.sfx('tick'); fill.style.backgroundColor = 'var(--bad)'; }
+        }
       });
 
+      function anim(node, frames, ms, easing){ if(still && node.animate) node.animate(frames, { duration: ms, easing: easing || 'ease-out' }); }
       function paint(k, on){
-        holes[k].textContent = on ? '🐭' : '';
+        var m = mice[k];
         holes[k].classList.toggle('is-on', on);
         holes[k].setAttribute('aria-label', 'Lỗ ' + (k + 1) + (on ? ': có chuột' : ': trống'));
+        m.style.transform = on ? 'translateY(0)' : 'translateY(110%)';
+        m.style.opacity = on ? '1' : '0';
+        anim(m, on ? [{ transform: 'translateY(70%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }]
+          : [{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(70%)', opacity: 0 }], on ? 120 : 90, on ? 'cubic-bezier(.2,.9,.3,1.3)' : 'ease-in');
       }
       function pop(){
         var next = at < 0 ? rnd(9) : rnd(8);
@@ -1135,12 +1214,21 @@
         at = next;
         paint(at, true);
         host.clearTimeout(hideTimer);
-        if(started) hideTimer = host.setTimeout(pop, Math.max(520, 950 - score * 12));
+        if(started){
+          host.sfx('pop', { vol: 0.5 });
+          hideTimer = host.setTimeout(pop, Math.max(520, 950 - score * 12));
+        }
       }
-      function hit(e){
-        var tile = e.target.closest('.g-tile');
-        if(!tile || over) return;
-        if(Number(tile.getAttribute('data-i')) !== at) return;
+      function hit(e, tile){
+        if(over) return;
+        var p = host.fx.at(tile);
+        if(Number(tile.getAttribute('data-i')) !== at){
+          // Chạm hụt: có tiếng và ô rung, không trừ điểm; chỉ đếm khi đồng hồ đã chạy.
+          host.sfx('miss');
+          if(started){ misses++; clock.refresh(); }
+          anim(tile, [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(-2px)' }, { transform: 'translateX(0)' }], 120);
+          return;
+        }
         if(!started){
           started = true;
           clock.start();
@@ -1148,12 +1236,21 @@
         }
         score++;
         host.setScore(score);
-        host.sfx('good');
+        host.sfx('whack', { pitch: Math.random() * 2 - 1 });
+        host.haptic('light');
+        host.fx.burst(p.x, p.y, { n: 12, colors: ['#FBBF24', '#FFFFFF', '#A78BFA'], speed: 210, life: 420, size: 2.8 });
+        host.fx.text(p.x, p.y - 22, '+1', { color: '#FBBF24' });
+        anim(tile, [{ transform: 'scale(1,1)' }, { transform: 'scale(1.08,.86)' }, { transform: 'scale(1,1)' }], 90);
         pop();
       }
 
       for(var k = 0; k < 9; k++) paint(k, false);
-      onPress(host, grid, hit);
+      host.tap(grid, hit, '.g-tile');
+      host.raf(function(dt){
+        if(!started || over) return;
+        elapsed = Math.min(30000, elapsed + dt);
+        fill.style.transform = 'scaleX(' + (1 - elapsed / 30000).toFixed(4) + ')';
+      });
       host.setScore(0);
       pop();
       return {};
@@ -1171,36 +1268,54 @@
       note.setAttribute('role', 'status');
       host.root.appendChild(btn);
       host.root.appendChild(note);
-      var phase = 'idle', timer = 0, shownAt = 0;
+      var phase = 'idle', timer = 0, goAt = 0, shownAt = 0, stopFrame = null;
 
       function paint(color, text){
         btn.style.backgroundImage = color ? 'none' : '';
         btn.style.backgroundColor = color;
         setText(btn, text);
       }
+      function stopWatch(){ if(stopFrame){ stopFrame(); stopFrame = null; } }
       function arm(){
         phase = 'wait';
         paint('var(--warn)', 'Chờ màu xanh…');
         setText(note, 'Đừng chạm khi nút còn màu vàng.');
         timer = host.setTimeout(function(){
           phase = 'go';
-          shownAt = performance.now();
           paint('var(--good)', 'CHẠM NGAY!');
+          goAt = performance.now();
+          shownAt = 0;
+          // Màu xanh chỉ thật sự lên màn ở khung hình kế tiếp: mốc bắt đầu đo là callback raf đầu tiên
+          // sau khi đổi màu, không phải lúc đổi style (sớm hơn tới một khung).
+          stopFrame = host.raf(function(){
+            if(!shownAt) shownAt = performance.now();
+            stopWatch();
+          });
         }, 1200 + Math.random() * 2300);
       }
-      function press(){
+      function early(){
+        host.clearTimeout(timer);
+        stopWatch();
+        phase = 'early';
+        host.sfx('bad');
+        paint('var(--bad)', 'Sớm quá! Chạm để thử lại');
+        setText(note, 'Bạn chạm trước khi nút chuyển xanh — lần này không tính.');
+      }
+      function press(e){
         if(phase === 'idle' || phase === 'early'){
           host.sfx('tap');
           arm();
         } else if(phase === 'wait'){
-          host.clearTimeout(timer);
-          phase = 'early';
-          host.sfx('bad');
-          paint('var(--bad)', 'Sớm quá! Chạm để thử lại');
-          setText(note, 'Bạn chạm trước khi nút chuyển xanh — lần này không tính.');
+          early();
         } else if(phase === 'go'){
-          var ms = Math.max(1, Math.round(performance.now() - shownAt));
+          // Mốc chạm = lúc ngón tay chạm (e.timeStamp, cùng gốc với performance.now), không phải lúc code chạy tới đây.
+          var now = performance.now(), ts = e && typeof e.timeStamp === 'number' ? e.timeStamp : 0;
+          var t = ts > 0 && ts <= now + 1 && ts >= goAt - 50 ? ts : now;
+          // Chạm trước khung hình có màu xanh (sự kiện xếp hàng ngay lúc đổi màu) là đoán trước, không phải phản xạ.
+          if(!shownAt || t < shownAt){ early(); return; }
+          var ms = Math.max(1, Math.round(t - shownAt));
           phase = 'done';
+          stopWatch();
           paint('', ms + ' ms');
           host.end({ score: ms, message: ms < 250 ? 'Nhanh như chớp!' : ms < 400 ? 'Khá nhanh!' : 'Đo xong' });
         }
@@ -1211,6 +1326,7 @@
         pause: function(){
           if(phase !== 'wait' && phase !== 'go') return;
           host.clearTimeout(timer);
+          stopWatch();
           phase = 'idle';
           paint('', 'Chạm để đo lại');
           setText(note, 'Lượt đo vừa rồi bị gián đoạn nên không tính.');
@@ -1222,10 +1338,10 @@
   // ---------- Bắn mục tiêu ----------
   games.push({
     id: 'target', name: 'Bắn mục tiêu', icon: '🎯', desc: 'Chạm mục tiêu di chuyển', cat: 'Phản xạ', dur: '1p',
-    help: 'Chạm trúng bia để ghi điểm; bia tự đổi chỗ mỗi giây. Đồng hồ 30 giây bắt đầu chạy từ lần trúng đầu tiên.',
+    help: 'Chạm trúng bia để ghi điểm; càng nhiều điểm bia đổi chỗ càng nhanh. Chạm hụt không bị trừ điểm nhưng làm giảm độ chính xác. Đồng hồ 30 giây bắt đầu chạy từ lần trúng đầu tiên.',
     score: { label: 'Điểm', unit: '', better: 'high' },
     mount: function(host){
-      var SIZE = 68;
+      var SIZE = 68, still = !host.reducedMotion;
       var area = el('div', 'g-fill');
       area.style.position = 'relative';
       area.style.overflow = 'hidden';
@@ -1239,34 +1355,70 @@
       bia.style.height = SIZE + 'px';
       bia.style.borderRadius = '50%';
       bia.style.fontSize = '32px';
+      // Vòng sáng khi trúng và dấu × khi hụt: mỗi thứ một phần tử dùng lại, không tạo mới mỗi cú chạm.
+      var ring = el('div'), cross = el('div', '', '×');
+      ring.style.cssText = 'position:absolute;left:0;top:0;width:68px;height:68px;margin:-34px 0 0 -34px;border-radius:50%;border:3px solid #FBBF24;pointer-events:none;opacity:0';
+      cross.style.cssText = 'position:absolute;left:0;top:0;width:40px;height:40px;margin:-20px 0 0 -20px;display:grid;place-items:center;font-size:32px;font-weight:800;line-height:1;color:var(--muted);pointer-events:none;opacity:0';
+      ring.setAttribute('aria-hidden', 'true');
+      cross.setAttribute('aria-hidden', 'true');
       area.appendChild(bia);
+      area.appendChild(ring);
+      area.appendChild(cross);
       var note = el('p', 'g-note', 'Chạm trúng bia để bắt đầu 30 giây.');
       note.setAttribute('role', 'status');
       host.root.appendChild(area);
       host.root.appendChild(note);
-      var score = 0, started = false, over = false, moveTimer = 0;
+      var score = 0, misses = 0, started = false, over = false, moveTimer = 0;
       var clock = countdown(host, 30, statWriter(host), function(){
         over = true;
         host.clearTimeout(moveTimer);
         host.end({ score: score, message: 'Hết giờ!' });
-      });
+      }, { extra: function(){ return [{ label: 'Chính xác', value: started ? Math.round(score / (score + misses) * 100) + '%' : '—' }]; } });
 
+      // Khó dần theo điểm: bia đứng 1000ms lúc đầu, mỗi điểm bớt 12ms, tối thiểu 550ms.
+      function standMs(){ return Math.max(550, 1000 - score * 12); }
       function move(){
         bia.style.left = rnd(Math.max(1, area.clientWidth - SIZE)) + 'px';
         bia.style.top = rnd(Math.max(1, area.clientHeight - SIZE)) + 'px';
+        if(still && bia.animate) bia.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 120, easing: 'cubic-bezier(.2,.9,.3,1.25)' });
         host.clearTimeout(moveTimer);
-        if(started) moveTimer = host.setTimeout(move, 1000);
+        if(started) moveTimer = host.setTimeout(move, standMs());
       }
-      onPress(host, bia, function(){
+      function mark(node, x, y, frames, ms){
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+        if(node.animate) node.animate(still ? frames : [frames[0], frames[frames.length - 1]], { duration: still ? ms : 250, easing: 'ease-out' });
+      }
+      host.tap(area, function(e){
         if(over) return;
+        var r = area.getBoundingClientRect(), root = host.root.getBoundingClientRect();
+        // Tâm bia theo vị trí bố cục (offsetLeft/Top), không theo khung đang phóng to dần: chạm đúng chỗ bia vừa
+        // hiện trong 120ms đầu vẫn là trúng. click từ bàn phím (detail 0) không có toạ độ chạm: lấy tâm bia.
+        var bx = r.left + area.clientLeft + bia.offsetLeft + SIZE / 2, by = r.top + area.clientTop + bia.offsetTop + SIZE / 2;
+        var real = e.type === 'pointerdown', px = real ? e.clientX : bx, py = real ? e.clientY : by;
+        var dist = Math.hypot(px - bx, py - by);
+        if(!(e.target === bia || bia.contains(e.target) || dist <= SIZE / 2)){
+          host.sfx('miss');
+          if(started){ misses++; clock.refresh(); }
+          mark(cross, px - r.left, py - r.top, [{ opacity: 0.9, transform: 'scale(.6)' }, { opacity: 0.6, transform: 'scale(1)', offset: 0.4 }, { opacity: 0, transform: 'scale(1)' }], 450);
+          return;
+        }
         if(!started){
           started = true;
           clock.start();
-          setText(note, 'Bia đổi chỗ mỗi giây — nhanh tay lên!');
+          setText(note, 'Bia đổi chỗ nhanh dần — nhanh tay lên!');
         }
         score++;
         host.setScore(score);
-        host.sfx('good');
+        clock.refresh();
+        // Hồng tâm (trong 25% bán kính) chỉ là lời khen, không cộng thêm điểm.
+        var bull = real && dist <= SIZE / 2 * 0.25;
+        host.sfx('hit', { pitch: Math.min(6, score * 0.15) });
+        if(bull) host.sfx('perfect');
+        host.haptic('light');
+        host.fx.burst(px - root.left, py - root.top, { n: 14, colors: ['#FBBF24', '#FB7185', '#FFFFFF'], speed: 230, life: 450, size: 2.8 });
+        host.fx.text(px - root.left, py - root.top - 26, bull ? 'Hồng tâm!' : '+1', { color: bull ? '#FBBF24' : '#F8FAFC', size: bull ? 22 : 20 });
+        mark(ring, px - r.left, py - r.top, [{ opacity: 0.95, transform: 'scale(.3)' }, { opacity: 0, transform: 'scale(1.6)' }], 360);
         move();
       });
       host.setScore(0);
@@ -1329,10 +1481,7 @@
         next();
       }
       rows.forEach(function(row){
-        host.on(row, 'click', function(e){
-          var b = e.target.closest('[data-i]');
-          if(b) pick(Number(b.getAttribute('data-i')));
-        });
+        host.tap(row, function(e, b){ pick(Number(b.getAttribute('data-i'))); }, '[data-i]');
       });
       host.setScore(0);
       next();

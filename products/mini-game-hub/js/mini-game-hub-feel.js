@@ -19,7 +19,7 @@
   // touchend/pointerup/click/keydown: theo HTML spec pointerdown/touchstart không phải "kích hoạt người
   // dùng", context mở ở đó trên iPhone có thể kẹt 'suspended'. sfx() không bao giờ tự tạo context.
   var ctx = null, sfxBus = null, musicBus = null, comp = null, noiseBuf = null, voices = 0, lastPlay = {}, resumingUntil = 0;
-  var MAX_VOICES = 12, PRIORITY = { crash: 1, record: 1, win: 1, lose: 1 };
+  var MAX_VOICES = 12, PRIORITY = { crash: 1, record: 1, win: 1, lose: 1 }, MUSIC_LEVEL = .35;
   // Safari 17+: 'ambient' = tôn trọng công tắc im lặng và không dừng nhạc của app khác.
   try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
 
@@ -31,7 +31,7 @@
     sfxBus.gain.value = VOL[cfg.vol] || VOL.mid;
     sfxBus.connect(comp);
     musicBus = ctx.createGain();
-    musicBus.gain.value = .35;
+    musicBus.gain.value = MUSIC_LEVEL * (VOL[cfg.vol] || VOL.mid);
     musicBus.connect(comp);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     var d = noiseBuf.getChannelData(0);
@@ -53,10 +53,12 @@
         s.onended = function(){ try{ s.disconnect(); }catch(e){} };
         s.start(0);
       }
+      if(wantMusic) startMusic();
     }catch(e){}
   }
   function suspend(){
     resumingUntil = 0;
+    stopMusic();
     try{
       if(ctx && ctx.state === 'running'){
         var p = ctx.suspend();
@@ -227,6 +229,78 @@
       if(v) closeVoice(v);
       return false;
     }
+  }
+
+  // ---------- Nhạc nền (tuỳ chọn, mặc định tắt) ----------
+  // Vòng 8 nhịp ngũ cung: bass triangle mỗi 2 nhịp + arpeggio square qua lowpass 1,8 kHz mỗi nửa nhịp.
+  // Lập lịch nhìn trước 100ms bằng MỘT setInterval 25ms của trang (vỏ, không phải timer của game). Chỉ chạy khi
+  // vỏ báo đang chơi (music(true)) VÀ công tắc Nhạc nền + Âm thanh bật, không tiết kiệm pin, app đang hiện.
+  var EIGHTH = 30 / 100;
+  var BASS = [110, 130.81, 146.83, 98];
+  var ARP = [[440, 523.25, 659.25, 523.25], [392, 523.25, 659.25, 783.99], [587.33, 440, 587.33, 659.25], [392, 587.33, 783.99, 587.33]];
+  var wantMusic = false, musicOut = null, musicTimer = 0, musicStep = 0, musicNext = 0, musicNotes = 0;
+  function musicAllowed(){ return wantMusic && cfg.music && cfg.sound && !cfg.saver && !pageHidden() && canPlay(); }
+  function musicNote(type, f, t, dur, peak, lp){
+    var osc = ctx.createOscillator(), g = ctx.createGain(), fl = null, last = osc;
+    osc.type = type;
+    osc.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t + .01);
+    g.gain.setTargetAtTime(0, t + .01, dur / 3);
+    if(lp){ fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = lp; osc.connect(fl); last = fl; }
+    last.connect(g);
+    g.connect(musicOut);
+    musicNotes++;
+    osc.onended = function(){
+      musicNotes--;
+      try{ osc.disconnect(); if(fl) fl.disconnect(); g.disconnect(); }catch(e){}
+    };
+    osc.start(t);
+    osc.stop(t + dur + .05);
+  }
+  function musicTick(){
+    if(!musicAllowed()){ stopMusic(); return; }
+    try{
+      while(musicNext < ctx.currentTime + .1){
+        var s = musicStep % 16, chord = s >> 2;
+        if(s % 4 === 0) musicNote('triangle', BASS[chord], musicNext, EIGHTH * 3.6, .16);
+        musicNote('square', ARP[chord][s % 4], musicNext, EIGHTH * .9, .035, 1800);
+        musicNext += EIGHTH;
+        musicStep++;
+      }
+    }catch(e){ stopMusic(); }
+  }
+  function startMusic(){
+    if(musicTimer || !musicAllowed()) return;
+    try{
+      musicOut = ctx.createGain();
+      musicOut.gain.setValueAtTime(0, ctx.currentTime);
+      musicOut.gain.linearRampToValueAtTime(1, ctx.currentTime + .4);
+      musicOut.connect(musicBus);
+      musicStep = 0;
+      musicNext = ctx.currentTime + .05;
+      musicTimer = setInterval(musicTick, 25);
+      musicTick();
+    }catch(e){ stopMusic(); }
+  }
+  function stopMusic(){
+    if(musicTimer){ clearInterval(musicTimer); musicTimer = 0; }
+    var out = musicOut;
+    if(!out) return;
+    musicOut = null;
+    try{
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setTargetAtTime(0, ctx.currentTime, .05);
+    }catch(e){}
+    // Nốt đã xếp lịch tự gỡ khi kêu xong (onended); bus riêng của lượt nhạc này gỡ sau khi đã lặng hẳn.
+    setTimeout(function(){ try{ out.disconnect(); }catch(e){} }, 400);
+  }
+  function music(on){
+    try{
+      wantMusic = !!on;
+      if(musicAllowed()) startMusic();
+      else stopMusic();
+    }catch(e){}
   }
 
   // ---------- Rung ----------
@@ -455,8 +529,12 @@
       var o = opts && typeof opts === 'object' ? opts : {};
       ['sound', 'music', 'haptics', 'shake', 'saver'].forEach(function(k){ if(typeof o[k] === 'boolean') cfg[k] = o[k]; });
       if(own(VOL, o.vol)) cfg.vol = o.vol;
-      if(ctx && sfxBus) sfxBus.gain.setValueAtTime(VOL[cfg.vol], ctx.currentTime);
+      if(ctx && sfxBus){
+        sfxBus.gain.setValueAtTime(VOL[cfg.vol], ctx.currentTime);
+        musicBus.gain.setValueAtTime(MUSIC_LEVEL * VOL[cfg.vol], ctx.currentTime);
+      }
       if(!cfg.sound) suspend();
+      else music(wantMusic);
     }catch(e){}
   }
   function stats(){
@@ -465,14 +543,15 @@
       if(ctx){ st = ctx.state; rate = ctx.sampleRate; }
       if(navigator.audioSession && navigator.audioSession.type) session = String(navigator.audioSession.type);
     }catch(e){}
-    return { ctx: st, rate: rate, voices: voices, particles: alive, texts: texts.length, haptic: hapMode, session: session };
+    return { ctx: st, rate: rate, voices: voices, particles: alive, texts: texts.length, haptic: hapMode, session: session,
+      music: musicTimer ? 'on' : 'off', musicNotes: musicNotes };
   }
 
   window.GameHubFeel = {
     SOUNDS: Object.keys(RECIPES),
     configure: configure, unlock: unlock, suspend: suspend, sfx: sfx, haptic: haptic,
     burst: burst, text: text, flash: flash, shake: shake, pulse: pulse, clear: clear,
-    music: function(){},   // nhạc nền: đợt sau
+    music: music,          // music(true) = vỏ báo đang chơi; chỉ kêu khi cài đặt cho phép
     reducedMotion: reducedMotion,
     systemReducedMotion: function(){ return !!(mq && mq.matches); },
     stats: stats

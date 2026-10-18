@@ -151,7 +151,7 @@
   var NOFEEL = { configure: noop, unlock: noop, suspend: noop, sfx: function(){ return false; }, haptic: function(){ return false; },
     burst: function(){ return 0; }, text: noop, flash: noop, shake: noop, pulse: noop, clear: noop, music: noop,
     reducedMotion: function(){ return false; }, systemReducedMotion: function(){ return false; },
-    stats: function(){ return { ctx: 'none', rate: 0, voices: 0, particles: 0, texts: 0, haptic: 'none', session: 'none' }; } };
+    stats: function(){ return { ctx: 'none', rate: 0, voices: 0, particles: 0, texts: 0, haptic: 'none', session: 'none', music: 'off', musicNotes: 0 }; } };
   function FX(){ return window.GameHubFeel || NOFEEL; }
   function sfx(name, opts){ return state.sound ? FX().sfx(name, opts) : false; }
   // Chỉ mở khoá âm thanh ở cú chạm/phím "thật" (touchend/pointerup/click/keydown), không ở pointerdown:
@@ -744,10 +744,17 @@
   }
   // Một nguồn sự thật cho tạm dừng: lớp "Tạm dừng" đang hiện, có sheet đè lên game, hoặc đang đếm 3-2-1.
   function syncPause(g){
+    syncMusic();
     if(g !== game || g.ended || g.failed || !g.host) return;
     var want = g.autoPaused || g.holds > 0 || g.counting;
     if(want && !g.paused){ g.paused = true; callInst(g, 'pause'); if(g.host) g.host.freeze(); }
     else if(!want && g.paused){ g.paused = false; g.host.unfreeze(); callInst(g, 'resume'); }
+  }
+  // Nhạc nền chỉ khi đang thật sự chơi: màn game mở, app hiện, không "Tạm dừng"/sheet đè, ván chưa kết thúc.
+  // Đếm 3-2-1 vẫn tính là đang chơi. Công tắc Nhạc nền/Âm thanh/Tiết kiệm pin do GameHubFeel tự xét.
+  function syncMusic(){
+    var g = game;
+    FX().music(!!g && !g.ended && !g.failed && !g.autoPaused && !(g.holds > 0) && document.visibilityState === 'visible');
   }
   // Đếm "3, 2, 1, Bắt đầu!" (mỗi bước 600ms) trong khi ván đang tạm dừng; xong mới thả game chạy.
   // def.countdown: đếm ngay sau mount, nội dung game ẩn đi (không đọc trước được câu hỏi đầu).
@@ -794,6 +801,7 @@
     g.autoPaused = true;
     $('pauseLayer').hidden = false;
     syncPause(g);
+    syncMusic();
   }
   function lowBetter(g){ return !!g.info.score && g.info.score.better === 'low'; }
   function saveBest(g, v){
@@ -828,6 +836,7 @@
       g.inst = g.def.mount(g.host.api) || {};
     }catch(e){ failGame(g, e); }
     if(g.def.countdown && !g.failed) startCount(g, countFrom(g.def), true);
+    syncMusic();
   }
   function failGame(g, err){
     if(g !== game || g.failed) return;
@@ -835,6 +844,7 @@
     stopCount(g);
     g.counting = false;
     FX().clear();
+    syncMusic();
     console.error('GameHub: game "' + g.id + '" gặp lỗi', err);
     ['resultSheet', 'helpSheet'].forEach(closeSheet);
     if(confirmResolve) settleConfirm(false);
@@ -851,6 +861,7 @@
     if(typeof result.score === 'number' && isFinite(result.score)) g.score = result.score;
     var inf = g.info, old = C.own(state.best, g.id) ? state.best[g.id].v : null;
     g.ended = true;
+    syncMusic();
     // Đóng băng mọi timer/raf của ván: không gì chạy tiếp phía sau bảng kết quả.
     if(g.host) g.host.freeze();
     // Game "càng thấp càng tốt" chỉ có kết quả khi ván không thua (mines trúng mìn ở giây 3 không phải kỷ lục 3 giây).
@@ -953,6 +964,7 @@
     clearInterval(playClock);
     playClock = 0;
     game = null;
+    syncMusic();
     $('gameScreen').hidden = true;
     $('pauseLayer').hidden = true;
     $('errorLayer').hidden = true;
@@ -1015,6 +1027,8 @@
     $('swHaptics').hidden = fx.haptic === 'none';
     $('swHaptics').setAttribute('aria-checked', state.feel.haptics ? 'true' : 'false');
     $('hapticHint').textContent = fx.haptic === 'switch' ? 'Rung nhẹ khi chạm (thử nghiệm)' : 'Rung nhẹ khi trúng và khi thua';
+    $('swMusic').setAttribute('aria-checked', state.feel.music ? 'true' : 'false');
+    $('swMusic').disabled = !state.sound;
     $('swShake').setAttribute('aria-checked', state.feel.shake && !sysReduced ? 'true' : 'false');
     $('swShake').disabled = sysReduced;
     $('shakeHint').textContent = sysReduced ? 'Đang tắt theo cài đặt Giảm chuyển động của máy' : 'Hiệu ứng hình khi trúng, khi thua và khi lập kỷ lục';
@@ -1053,6 +1067,12 @@
     applyPrefs();
     renderSettings();
     sfx('good');
+  });
+  $('swMusic').addEventListener('click', function(){
+    if(!state.sound) return;
+    update(function(s){ s.feel.music = !s.feel.music; });
+    applyPrefs();
+    renderSettings();
   });
   $('swHaptics').addEventListener('click', function(){
     update(function(s){ s.feel.haptics = !s.feel.haptics; });
@@ -1107,6 +1127,7 @@
       'lưu ' + (corrupt ? 'lỗi' : saveFailed ? 'bị chặn' : 'ổn'),
       'hôm nay (giờ VN) ' + fmtDate(C.vnToday()),
       'âm thanh ' + fx.ctx + (fx.rate ? '/' + fx.rate : ''),
+      'nhạc nền ' + (fx.music === 'on' ? 'đang phát' : 'tắt'),
       'audioSession ' + (fx.session === 'none' ? 'không' : fx.session),
       'rung ' + (fx.haptic === 'none' ? 'không' : fx.haptic),
       'giảm chuyển động ' + (FX().systemReducedMotion() ? 'có' : 'không')
@@ -1334,11 +1355,12 @@
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'hidden'){
       autoPause(game);
+      syncMusic();
       FX().suspend();
     } else refreshFromStore();   // cũng để "hôm nay" sang ngày mới khi quay lại app
   });
   // pagehide: iOS có lúc đóng băng trang mà không kịp báo visibilitychange.
-  window.addEventListener('pagehide', function(){ autoPause(game); FX().suspend(); });
+  window.addEventListener('pagehide', function(){ autoPause(game); FX().music(false); FX().suspend(); });
   // Game thời gian thực cũng dừng khi cửa sổ mất focus (kéo Trung tâm điều khiển, cuộc gọi đến…).
   window.addEventListener('blur', function(){ if(game && game.def.realtime) autoPause(game); });
   window.addEventListener('storage', function(e){ if(e.key === KEY || e.key === null) refreshFromStore(); });

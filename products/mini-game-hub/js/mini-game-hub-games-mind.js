@@ -169,9 +169,8 @@
         cells[k].classList.toggle('is-good', !!matched[k]);
         cells[k].setAttribute('aria-label', 'Thẻ ' + (k + 1) + ': ' + (up ? deck[k] : 'đang úp'));
       }
-      host.on(grid, 'click', function(e){
-        var cell = e.target.closest('.g-tile');
-        if(!cell || lock) return;
+      host.tap(grid, function(e, cell){
+        if(lock) return;
         var k = Number(cell.getAttribute('data-i'));
         if(matched[k] || open.indexOf(k) !== -1) return;
         open.push(k);
@@ -201,7 +200,7 @@
           }, 700);
         }
         stats();
-      });
+      }, '.g-tile');
       stats();
       return {};
     }
@@ -255,9 +254,8 @@
           o.classList.remove('is-good', 'is-bad');
         });
       }
-      host.on(grid, 'click', function(e){
-        var cell = e.target.closest('.g-tile');
-        if(!cell || lock) return;
+      host.tap(grid, function(e, cell){
+        if(lock) return;
         var pick = q.options[Number(cell.getAttribute('data-i'))], right = opts[q.options.indexOf(q.answer)];
         lock = true;
         right.classList.add('is-good');
@@ -274,7 +272,7 @@
           setText(note, 'Sai rồi: ' + q.text + ' = ' + q.answer);
           host.setTimeout(next, 900);
         }
-      });
+      }, '.g-tile');
       host.setInterval(function(){
         left--;
         stats();
@@ -307,6 +305,35 @@
     }
     return { grid: out, gained: gained, moved: moved };
   }
+  // Như slide2048 (grid/gained/moved phải trùng từng số — test node so 40.000 lượt) nhưng kể thêm từng ô đi đâu
+  // để vẽ hoạt cảnh: moves = [{from, to, value, merged}] cho MỌI ô khác 0, kể cả ô đứng yên (from === to).
+  // Hai ô gộp cùng có merged:true và cùng `to`.
+  function moves2048(grid, dir){
+    var out = grid.slice(), gained = 0, moved = false, moves = [], across = dir === 'left' || dir === 'right', back = dir === 'right' || dir === 'down';
+    for(var i = 0; i < 4; i++){
+      var idx = [], line = [], vals = [], j;
+      for(j = 0; j < 4; j++) idx.push(across ? i * 4 + j : j * 4 + i);
+      if(back) idx.reverse();
+      for(j = 0; j < 4; j++) if(grid[idx[j]]) line.push({ v: grid[idx[j]], from: idx[j] });
+      for(j = 0; j < line.length; j++){
+        var to = idx[vals.length];
+        if(j + 1 < line.length && line[j].v === line[j + 1].v){
+          moves.push({ from: line[j].from, to: to, value: line[j].v, merged: true }, { from: line[j + 1].from, to: to, value: line[j + 1].v, merged: true });
+          vals.push(line[j].v * 2);
+          gained += line[j].v * 2;
+          j++;
+        } else {
+          moves.push({ from: line[j].from, to: to, value: line[j].v, merged: false });
+          vals.push(line[j].v);
+        }
+      }
+      for(j = 0; j < 4; j++){
+        out[idx[j]] = vals[j] || 0;
+        if(out[idx[j]] !== grid[idx[j]]) moved = true;
+      }
+    }
+    return { grid: out, gained: gained, moved: moved, moves: moves };
+  }
   function canMove2048(grid){
     for(var k = 0; k < 16; k++){
       if(!grid[k]) return true;
@@ -322,19 +349,25 @@
     id: 'g2048', name: '2048 mini', icon: '🔢', desc: 'Gộp số để đạt điểm cao', cat: 'Trí tuệ', dur: '15p',
     help: 'Vuốt (hoặc bấm mũi tên) để dồn tất cả ô về một phía. Hai ô cùng số chạm nhau sẽ gộp thành số gấp đôi. Hết chỗ và không gộp được nữa là hết ván.',
     score: { label: 'Điểm', unit: '', better: 'high' },
-    logic: { slide: slide2048, canMove: canMove2048 },
+    logic: { slide: slide2048, moves: moves2048, canMove: canMove2048 },
     mount: function(host){
-      var grid = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], shown = [], cells = [], score = 0, top = 0, over = false, hit2048 = false;
+      var grid = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], tiles = [], dead = [], anims = [], score = 0, top = 0, over = false, hit2048 = false;
+      var still = !host.reducedMotion, SLIDE = 110, EASE = 'cubic-bezier(.2,.8,.2,1)';
       var board = el('div', 'g-grid');
       board.style.setProperty('--cols', '4');
       board.style.maxWidth = fit(host, 4, 4, 290) + 'px';
+      board.style.position = 'relative';
       board.setAttribute('role', 'img');
       for(var i = 0; i < 16; i++){
-        var c = el('div', 'g-tile is-dim');
-        shown.push(0);
-        cells.push(c);
-        board.appendChild(c);
+        board.appendChild(el('div', 'g-tile is-dim'));
+        tiles.push(null);
       }
+      // Ô số nằm trên một lớp tuyệt đối đè lên 16 ô nền; vị trí là transform tính bằng % kích thước chính ô + khe 8px,
+      // nên không cần đo bàn cờ và trượt chỉ tốn transform.
+      var layer = el('div');
+      layer.setAttribute('aria-hidden', 'true');
+      layer.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none';
+      board.appendChild(layer);
       var note = el('p', 'g-note', 'Vuốt trên màn hình hoặc bấm mũi tên.');
       note.setAttribute('role', 'status');
       var pad = el('div', 'g-pad');
@@ -346,24 +379,48 @@
       });
       [board, note, pad].forEach(function(n){ host.root.appendChild(n); });
 
+      function pos(k){
+        var c = k % 4, r = (k - c) / 4;
+        return 'translate(calc(' + c * 100 + '% + ' + c * 8 + 'px),calc(' + r * 100 + '% + ' + r * 8 + 'px))';
+      }
+      function colorOf(v){
+        var lv = Math.round(Math.log(v) / Math.LN2);
+        return lv <= 11 ? TILE_BG[lv - 1] : TILE_BG_BIG[(lv - 12) % TILE_BG_BIG.length];
+      }
+      function make(v, k){
+        var t = el('div', 'g-tile', String(v));
+        t.style.cssText = 'position:absolute;left:0;top:0;width:calc((100% - 24px) / 4);height:calc((100% - 24px) / 4);min-width:0;min-height:0;border-color:transparent';
+        t.style.transform = pos(k);
+        t.style.backgroundColor = colorOf(v);
+        t.style.color = v <= 64 ? '#F8FAFC' : '#0B1020';
+        t.style.fontSize = v >= 10000 ? '20px' : v >= 1000 ? '24px' : '';
+        layer.appendChild(t);
+        return t;
+      }
+      // Mọi hoạt cảnh không giữ trạng thái (không fill forwards): style inline luôn là trạng thái cuối, nên huỷ
+      // giữa chừng = nhảy ngay về đúng chỗ. Nước kế tiếp tới khi còn trượt thì chốt ngay rồi xử lý, không khoá vuốt.
+      function play(t, frames, opts){ if(still && t.animate) anims.push(t.animate(frames, opts)); }
+      function settle(){
+        anims.forEach(function(a){ a.cancel(); });
+        anims = [];
+        dead.forEach(function(t){ t.remove(); });
+        dead = [];
+      }
       function spawn(){
         var free = [];
         grid.forEach(function(v, k){ if(!v) free.push(k); });
-        if(free.length) grid[free[randInt(free.length)]] = Math.random() < 0.9 ? 2 : 4;
+        if(!free.length) return -1;
+        var k = free[randInt(free.length)];
+        grid[k] = Math.random() < 0.9 ? 2 : 4;
+        return k;
+      }
+      function appear(k, delay){
+        var t = tiles[k] = make(grid[k], k);
+        play(t, [{ opacity: 0, transform: pos(k) + ' scale(0)' }, { opacity: 1, transform: pos(k) + ' scale(1)' }], { duration: 110, delay: delay, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1.2)' });
       }
       function paint(){
         var max = 0, rows = [];
-        grid.forEach(function(v, k){
-          max = Math.max(max, v);
-          if(shown[k] === v) return;
-          shown[k] = v;
-          var cell = cells[k], lv = v ? Math.round(Math.log(v) / Math.LN2) : 0;
-          setText(cell, v ? String(v) : '');
-          cell.classList.toggle('is-dim', !v);
-          cell.style.backgroundColor = !v ? '' : lv <= 11 ? TILE_BG[lv - 1] : TILE_BG_BIG[(lv - 12) % TILE_BG_BIG.length];
-          cell.style.color = !v ? '' : lv <= 6 ? '#F8FAFC' : '#0B1020';
-          cell.style.fontSize = v >= 10000 ? '20px' : v >= 1000 ? '24px' : '';
-        });
+        grid.forEach(function(v){ max = Math.max(max, v); });
         for(var r = 0; r < 4; r++) rows.push(grid.slice(r * 4, r * 4 + 4).map(function(v){ return v || 'trống'; }).join(' '));
         board.setAttribute('aria-label', 'Bàn 4 nhân 4: ' + rows.join('; '));
         if(max !== top){
@@ -373,19 +430,54 @@
       }
       function move(dir){
         if(over) return;
-        var r = slide2048(grid, dir);
+        var r = moves2048(grid, dir);
         if(!r.moved) return;
+        settle();
+        var next = [], best = 0, bestAt = -1, k;
+        for(k = 0; k < 16; k++) next.push(null);
+        r.moves.forEach(function(m){
+          var t = tiles[m.from];
+          if(m.merged){
+            // Hai ô gộp cùng trượt vào đích rồi biến mất; ô mới mang số gấp đôi nảy lên ngay sau đó.
+            t.style.transform = pos(m.to);
+            t.style.opacity = '0';
+            play(t, [{ transform: pos(m.from), opacity: 1 }, { transform: pos(m.to), opacity: 1 }], { duration: SLIDE, easing: EASE });
+            dead.push(t);
+            if(!next[m.to]){
+              var v = m.value * 2, nt = next[m.to] = make(v, m.to), at = pos(m.to);
+              play(nt, [{ opacity: 0, transform: at + ' scale(1)' }, { opacity: 1, transform: at + ' scale(1)', offset: 0.01 }, { opacity: 1, transform: at + ' scale(1.15)', offset: 0.5 }, { opacity: 1, transform: at + ' scale(1)' }],
+                { duration: 120, delay: SLIDE, fill: 'backwards', easing: 'ease-out' });
+              if(v > best){ best = v; bestAt = m.to; }
+            }
+          } else {
+            next[m.to] = t;
+            if(m.from !== m.to){
+              t.style.transform = pos(m.to);
+              play(t, [{ transform: pos(m.from) }, { transform: pos(m.to) }], { duration: SLIDE, easing: EASE });
+            }
+          }
+        });
+        if(!still) settle();
+        tiles = next;
         grid = r.grid;
-        spawn();
+        var born = spawn();
+        if(born >= 0) appear(born, SLIDE);
+        host.sfx('whoosh');
         if(r.gained){
           score += r.gained;
           host.setScore(score);
-          host.sfx('good');
-        } else host.sfx('tap');
+          host.sfx('merge', { value: best });
+          var p = host.fx.at(board.children[bestAt]);
+          host.fx.text(p.x, p.y - 8, '+' + r.gained, { color: '#FBBF24', size: 20 });
+          if(best >= 128) host.fx.burst(p.x, p.y, { n: 10, colors: [colorOf(best), '#FFFFFF'], speed: 180, life: 420, size: 2.6 });
+        }
         paint();
         if(!hit2048 && top >= 2048){
           hit2048 = true;
-          host.sfx('win');
+          host.sfx('record');
+          host.haptic('success');
+          var c = host.fx.at(board);
+          host.fx.burst(c.x, c.y, { n: 36, shape: 'confetti', speed: 420, life: 1300, size: 5, gravity: 520, angle: -Math.PI / 2, spread: 1.6 });
           setText(note, 'Bạn đã đạt 2048! Cứ chơi tiếp để phá kỷ lục.');
         }
         if(!canMove2048(grid)){
@@ -394,12 +486,11 @@
           host.setTimeout(function(){ host.end({ score: score, won: hit2048 ? true : undefined, message: hit2048 ? 'Đạt 2048!' : 'Hết nước đi' }); }, 700);
         }
       }
-      host.swipe(host.root, move);
-      host.on(pad, 'click', function(e){
-        var b = e.target.closest('[data-dir]');
-        if(b) move(b.getAttribute('data-dir'));
-      });
-      spawn(); spawn();
+      host.swipe(host.root, move, { live: true, threshold: 18 });
+      host.tap(pad, function(e, b){ move(b.getAttribute('data-dir')); }, '[data-dir]');
+      var first = spawn(), second = spawn();
+      appear(first, 0);
+      appear(second, 0);
       host.setScore(0);
       paint();
       return {};
@@ -786,7 +877,7 @@
           }
           var k = seq[i++];
           light(k, true);
-          host.sfx('tap');
+          host.sfx('simon' + k);
           host.setTimeout(function(){
             light(k, false);
             host.setTimeout(step, SIMON_GAP);
@@ -794,9 +885,9 @@
         }
         host.setTimeout(step, 500);
       }
-      host.on(grid, 'click', function(e){
-        var cell = e.target.closest('.g-tile');
-        if(!cell || showing || over) return;
+      // Mỗi đèn một nốt riêng như Simon thật (simon0..simon3), cả lúc máy nháy lẫn lúc bạn chạm.
+      host.tap(grid, function(e, cell){
+        if(showing || over) return;
         var k = Number(cell.getAttribute('data-i'));
         if(k !== seq[pos]){
           over = true;
@@ -809,7 +900,7 @@
           return;
         }
         light(k, true);
-        host.sfx('tap');
+        host.sfx('simon' + k);
         host.clearTimeout(offTimers[k]);
         offTimers[k] = host.setTimeout(function(){ light(k, false); }, 160);
         pos++;
@@ -821,7 +912,7 @@
         setText(note, 'Đúng! Thêm một đèn nữa…');
         seq.push(randInt(4));
         host.setTimeout(playSeq, 400);
-      });
+      }, '.g-tile');
       host.setScore(0);
       playSeq();
       return {};
@@ -1134,11 +1225,19 @@
           refresh();
         }
 
-        host.on(tapBtn, 'click', function(){
+        // "+N" bay lên từ chỗ chạm (bàn phím: giữa nút), emoji nảy theo mỗi cú chạm.
+        host.tap(tapBtn, function(e){
           earn(s.power);
           dirty = true;
           host.sfx('tap');
           refresh();
+          var p = host.fx.at(tapBtn);
+          if(e.type === 'pointerdown'){
+            var r = host.root.getBoundingClientRect();
+            p = { x: e.clientX - r.left, y: e.clientY - r.top };
+          }
+          host.fx.text(p.x, p.y - 18, '+' + short(s.power), { color: '#FBBF24', size: 22 });
+          host.fx.pulse(emoji, { scale: 1.1, ms: 140 });
         });
         host.on(levelBtn, 'click', function(){ buy(costs().level, function(){ s.lvl++; s.power++; }); });
         host.on(toolBtn, 'click', function(){ buy(costs().tool, function(){ s.power++; }); });
