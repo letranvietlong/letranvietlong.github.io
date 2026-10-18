@@ -41,6 +41,9 @@
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1l.8-12"/><path d="M10 11v5M14 11v5"/></symbol>
   <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/></symbol>
+  <symbol id="i-vibrate" viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="9" height="17" rx="2"/><path d="M11 17.5h2"/><path d="M4 9v6M2 10.5v3M20 9v6M22 10.5v3"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9Z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5.5l10-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
 </svg>
 <div class="safe-probe" id="safeProbe" aria-hidden="true"></div>
 
@@ -101,7 +104,27 @@
       <div class="card list">
         <button type="button" class="row" id="swSound" role="switch" aria-checked="true">
           <svg class="icon" aria-hidden="true"><use href="#i-sound"/></svg>
-          <span class="row-label">Âm thanh</span><span class="switch" aria-hidden="true"></span>
+          <span class="row-label">Âm thanh<small id="soundHint" hidden>Gạt nút im lặng của iPhone thì game không kêu</small></span><span class="switch" aria-hidden="true"></span>
+        </button>
+        <div class="subrow">
+          <span class="row-label" id="volLabel">Âm lượng</span>
+          <div class="seg" id="volSeg" role="group" aria-labelledby="volLabel">
+            <button type="button" data-vol="low" aria-pressed="false">Nhỏ</button>
+            <button type="button" data-vol="mid" aria-pressed="true">Vừa</button>
+            <button type="button" data-vol="high" aria-pressed="false">To</button>
+          </div>
+        </div>
+        <button type="button" class="row" id="swMusic" role="switch" aria-checked="false" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-music"/></svg>
+          <span class="row-label">Nhạc nền<small>Chỉ khi đang chơi, tắt khi tiết kiệm pin</small></span><span class="switch" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="row" id="swHaptics" role="switch" aria-checked="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-vibrate"/></svg>
+          <span class="row-label">Rung khi chơi<small id="hapticHint">Rung nhẹ khi trúng và khi thua</small></span><span class="switch" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="row" id="swShake" role="switch" aria-checked="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>
+          <span class="row-label">Rung màn hình, pháo giấy<small id="shakeHint">Hiệu ứng hình khi trúng, khi thua và khi lập kỷ lục</small></span><span class="switch" aria-hidden="true"></span>
         </button>
         <button type="button" class="row" id="swSaver" role="switch" aria-checked="false">
           <svg class="icon" aria-hidden="true"><use href="#i-battery"/></svg>
@@ -159,6 +182,10 @@
             <svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg>
           </summary>
           <p class="diag-line" id="diagLine"></p>
+          <div class="diag-actions">
+            <button type="button" class="btn small" id="btnHapticNow">Thử rung</button>
+            <button type="button" class="btn small" id="btnHapticLater">Thử rung sau 0,5 giây</button>
+          </div>
         </details>
       </div>
     </section>
@@ -181,6 +208,8 @@
   <div class="game-stats" id="gameStats"></div>
   <div class="game-stage" id="gameStage">
     <div class="game-root" id="gameRoot"></div>
+    <div class="fx-flash" id="fxFlash" aria-hidden="true" hidden></div>
+    <div class="count-layer" id="countLayer" aria-live="assertive" hidden></div>
     <div class="game-layer" id="pauseLayer" hidden>
       <p class="layer-title">Tạm dừng</p>
       <button type="button" class="btn primary" id="btnResume">Chơi tiếp</button>
@@ -245,8 +274,10 @@
 
 <div class="toast" id="toast" role="status" hidden></div>
 <input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden />
+<canvas class="fx-layer" id="fxLayer" aria-hidden="true" hidden></canvas>
 
 <script src="/products/mini-game-hub/js/mini-game-hub-core.js"></script>
+<script src="/products/mini-game-hub/js/mini-game-hub-feel.js"></script>
 <script src="/products/mini-game-hub/js/mini-game-hub-games-action.js"></script>
 <script src="/products/mini-game-hub/js/mini-game-hub-games-mind.js"></script>
 <script src="/products/mini-game-hub/js/mini-game-hub.js"></script>

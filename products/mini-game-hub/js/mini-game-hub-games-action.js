@@ -103,6 +103,7 @@
     id: 'flappy', name: 'Flappy mini', icon: '🐦', desc: 'Bay qua khe giữa các cột', cat: 'Arcade', dur: '1p',
     help: 'Chạm vào màn hình để chim vỗ cánh bay lên, thả tay thì chim rơi. Lách qua khe giữa các cột; chạm cột hoặc rơi xuống đất là hết ván.',
     score: { label: 'Điểm', unit: '', better: 'high' },
+    realtime: true,
     mount: function(host){
       var size = host.size();
       var W = Math.max(240, Math.min(size.w, 460)), H = Math.max(280, Math.min(size.h, Math.round(W * 1.6)));
@@ -213,6 +214,7 @@
     id: 'snake', name: 'Rắn săn mồi', icon: '🐍', desc: 'Ăn táo và tránh va chạm', cat: 'Arcade', dur: '5p',
     help: 'Vuốt trên màn hình hoặc bấm mũi tên để đổi hướng. Ăn táo để dài ra và chạy nhanh dần; đâm vào tường hoặc vào thân là hết ván.',
     score: { label: 'Điểm', unit: '', better: 'high' },
+    realtime: true,
     mount: function(host){
       var size = host.size(), N = 15;
       var cell = Math.floor(clamp(Math.min(size.w, size.h - 204), 150, 420) / N), side = cell * N;
@@ -316,6 +318,7 @@
     id: 'pong', name: 'Pong mini', icon: '🏓', desc: 'Giữ bóng không rơi', cat: 'Arcade', dur: '5p',
     help: 'Đặt ngón tay lên sân rồi kéo ngang để di chuyển thanh đỡ. Mỗi lần đỡ được bóng là 1 điểm và bóng bay nhanh hơn; để bóng rơi là hết ván.',
     score: { label: 'Điểm', unit: '', better: 'high' },
+    realtime: true,
     mount: function(host){
       var size = host.size();
       var W = clamp(size.w, 240, 440), H = clamp(Math.round(W * 1.55), 300, Math.max(300, size.h));
@@ -416,6 +419,7 @@
     id: 'runner', name: 'Runner', icon: '🏃', desc: 'Nhảy qua vật cản', cat: 'Arcade', dur: '1p',
     help: 'Chạm nút Nhảy (hoặc chạm vào sân) để nhảy qua vật cản. Càng chạy càng nhanh; đụng vật cản là hết ván.',
     score: { label: 'Điểm', unit: '', better: 'high' },
+    realtime: true,
     mount: function(host){
       var size = host.size();
       var W = clamp(size.w, 240, 460), H = clamp(Math.round(W * 0.72), 220, Math.max(220, size.h - 144));
@@ -504,6 +508,7 @@
     id: 'tower', name: 'Xếp tháp', icon: '🏗️', desc: 'Thả khối đúng nhịp', cat: 'Arcade', dur: '5p',
     help: 'Khối trên cùng chạy qua lại — chạm để thả nó xuống tháp. Phần thò ra ngoài bị cắt mất nên khối nhỏ dần; thả trượt hẳn ra ngoài là hết ván.',
     score: { label: 'Tầng', unit: '', better: 'high' },
+    realtime: true,
     mount: function(host){
       var size = host.size();
       var W = clamp(size.w, 240, 440), H = clamp(size.h - 64, 300, Math.round(W * 1.5));

@@ -145,30 +145,22 @@
     toastTimer = setTimeout(function(){ t.hidden = true; t.textContent = ''; }, 2600);
   }
 
-  // ---------- Âm thanh (Web Audio, chỉ tạo sau cú chạm đầu tiên) ----------
-  var audioCtx = null, gestured = false;
-  var TONES = { tap: [[440, .05]], good: [[660, .09]], bad: [[170, .18]], win: [[523, .09], [784, .16]] };
-  function sfx(name){
-    if(!state.sound || !gestured || !C.own(TONES, name)) return;
-    try{
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if(!AC) return;
-      audioCtx = audioCtx || new AC();
-      if(audioCtx.state === 'suspended') audioCtx.resume();
-      var at = audioCtx.currentTime;
-      TONES[name].forEach(function(n){
-        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.frequency.value = n[0];
-        g.gain.setValueAtTime(.05, at);
-        g.gain.exponentialRampToValueAtTime(.0001, at + n[1]);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(at); o.stop(at + n[1]);
-        at += n[1];
-      });
-    }catch(e){}
-  }
-  function markGesture(){ gestured = true; }
-  document.addEventListener('pointerdown', markGesture, { capture: true, passive: true });
+  // ---------- Cảm giác chơi: âm thanh, rung, hiệu ứng (mini-game-hub-feel.js) ----------
+  // Tra window.GameHubFeel lúc gọi (không giữ tham chiếu hàm) để test bọc được; thiếu file thì mọi thứ im lặng.
+  function noop(){}
+  var NOFEEL = { configure: noop, unlock: noop, suspend: noop, sfx: function(){ return false; }, haptic: function(){ return false; },
+    burst: function(){ return 0; }, text: noop, flash: noop, shake: noop, pulse: noop, clear: noop, music: noop,
+    reducedMotion: function(){ return false; }, systemReducedMotion: function(){ return false; },
+    stats: function(){ return { ctx: 'none', rate: 0, voices: 0, particles: 0, texts: 0, haptic: 'none', session: 'none' }; } };
+  function FX(){ return window.GameHubFeel || NOFEEL; }
+  function sfx(name, opts){ return state.sound ? FX().sfx(name, opts) : false; }
+  // Chỉ mở khoá âm thanh ở cú chạm/phím "thật" (touchend/pointerup/click/keydown), không ở pointerdown:
+  // trên màn cảm ứng pointerdown không phải kích hoạt người dùng, context mở ở đó có thể kẹt im lặng trên iPhone.
+  ['touchend', 'pointerup', 'click', 'keydown'].forEach(function(t){
+    document.addEventListener(t, function(e){ if(e.isTrusted && state.sound) FX().unlock(); }, { capture: true, passive: true });
+  });
+  // iOS chỉ áp :active (hiệu ứng nhấn của nút) khi trang có listener touchstart.
+  document.addEventListener('touchstart', noop, { passive: true });
 
   // ---------- Sheet + backdrop ----------
   // Đóng = hidden (display:none). Gỡ .open rồi mới đặt hidden sau CLOSE_MS (CSS trượt xuống trong 100ms);
@@ -469,7 +461,7 @@
   function gameActive(g){ return !!g && g === game && !g.paused && !g.ended && !g.failed; }
 
   function createHost(g){
-    var dead = false, frozen = false, timers = {}, nextId = 1, loops = [], rafHandle = 0, lastTs = 0, offs = [], swipes = [];
+    var dead = false, frozen = false, timers = {}, nextId = 1, loops = [], rafHandle = 0, lastTs = 0, offs = [], swipes = [], hitUntil = 0;
     function guard(fn){
       return function(){
         if(dead) return undefined;
@@ -504,6 +496,8 @@
       if(dead || frozen) return;
       // Tiết kiệm pin: bỏ khung tới sớm hơn 30ms → khoảng 30 khung hình/giây.
       if(lastTs && state.batterySaver && ts - lastTs < 30){ kick(); return; }
+      // hitstop: khung hình vẫn chạy nhưng game đứng yên (timer không đứng).
+      if(ts < hitUntil){ lastTs = ts; kick(); return; }
       var dt = lastTs ? Math.max(0, Math.min(50, ts - lastTs)) : 16;
       lastTs = ts;
       loops = loops.filter(function(l){ return l.on; });
@@ -540,6 +534,16 @@
         if(dead || typeof n !== 'number' || !isFinite(n) || n === g.score) return;
         g.score = n;
         if(g.peak === null || n > g.peak) g.peak = n;
+        // Vượt kỷ lục giữa ván (một lần/ván): ô vẫn hiện kỷ lục ĐÃ LƯU, chỉ nhãn đổi thành "Kỷ lục!".
+        var best = g.info.score && !lowBetter(g) && C.own(state.best, g.id) ? state.best[g.id].v : 0;
+        if(!g.passedBest && best > 0 && n > best){
+          g.passedBest = true;
+          renderGameStats();
+          sfx('newbest');
+          FX().haptic('light');
+          FX().pulse($('gameStats').querySelector('.gstat.beat'));
+          return;
+        }
         renderGameStats();
       },
       end: function(result){ if(!dead) endRound(g, result || {}); },
@@ -555,20 +559,75 @@
         return function(){ l.on = false; };
       },
       on: on,
-      swipe: function(el, cb){
-        var sx = 0, sy = 0, down = false, safe = guard(cb);
+      // opts.live: quyết định hướng ngay trong pointermove khi vượt ngưỡng (một lần mỗi cú vuốt), không chờ nhấc tay.
+      swipe: function(el, cb, opts){
+        var sx = 0, sy = 0, down = false, decided = false, safe = guard(cb), live = !!(opts && opts.live);
+        var min = opts && typeof opts.threshold === 'number' && opts.threshold > 0 ? opts.threshold : live ? 18 : 24;
         swipes.push(safe);
-        on(el, 'pointerdown', function(e){ down = true; sx = e.clientX; sy = e.clientY; });
+        function dirOf(e){
+          var dx = e.clientX - sx, dy = e.clientY - sy;
+          if(Math.max(Math.abs(dx), Math.abs(dy)) < min) return null;
+          return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        }
+        on(el, 'pointerdown', function(e){ down = true; decided = false; sx = e.clientX; sy = e.clientY; });
         on(el, 'pointercancel', function(){ down = false; });
+        if(live) on(el, 'pointermove', function(e){
+          if(!down || decided) return;
+          var d = dirOf(e);
+          if(d){ decided = true; safe(d); }
+        });
         on(el, 'pointerup', function(e){
           if(!down) return;
           down = false;
-          var dx = e.clientX - sx, dy = e.clientY - sy;
-          if(Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-          safe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+          if(decided) return;
+          var d = dirOf(e);
+          if(d) safe(d);
         });
       },
-      sfx: function(name){ if(!dead) sfx(name); },
+      // Tên lạ bị bỏ qua. 'bad' kèm rung vừa + rung màn nhẹ, 'win' kèm rung "thành công" (tap/good không rung:
+      // Tap Race và IDLE chạm liên tục).
+      sfx: function(name, opts){
+        if(dead) return;
+        sfx(name, opts);
+        if(name === 'bad'){ FX().haptic('medium'); fxApi.shake(120, 4); }
+        else if(name === 'win') FX().haptic('success');
+      },
+      haptic: function(kind){ if(!dead) FX().haptic(kind); },
+      // Ăn ở pointerdown (không chờ click); click với detail 0 là bàn phím/trình đọc màn hình.
+      // selector: uỷ quyền — fn(e, phần tử khớp) chỉ khi chạm trúng phần tử khớp nằm trong el.
+      tap: function(el, fn, selector){
+        if(dead) return function(){};
+        function fire(e){
+          var m = el;
+          if(typeof selector === 'string'){
+            m = e.target && e.target.closest ? e.target.closest(selector) : null;
+            if(!m || !el.contains(m) || m.disabled) return;
+          }
+          fn(e, m);
+        }
+        var a = on(el, 'pointerdown', function(e){ if(!e.button) fire(e); });
+        var b = on(el, 'click', function(e){ if(e.detail === 0) fire(e); });
+        return function(){ a(); b(); };
+      },
+      // Bước cố định: update(giây mỗi bước) đúng hz lần/giây (tối đa 6 bước một khung), render(alpha 0..1) mỗi khung.
+      // Tiết kiệm pin vẽ ~30 khung/giây nhưng vẫn đủ hz bước → vật lý như nhau ở hai chế độ.
+      loop: function(update, render, opts){
+        if(dead || typeof update !== 'function') return function(){};
+        var hz = opts && typeof opts.hz === 'number' && opts.hz >= 10 && opts.hz <= 240 ? opts.hz : 120, step = 1 / hz, acc = 0;
+        return api.raf(function(dt){
+          acc += dt / 1000;
+          var n = 0;
+          while(acc >= step && n < 6){ update(step); acc -= step; n++; if(dead || frozen) return; }
+          if(n === 6 && acc > step) acc = step;
+          if(typeof render === 'function') render(acc / step);
+        });
+      },
+      hitstop: function(ms){
+        if(dead) return;
+        var t = performance.now() + Math.max(0, Math.min(150, Number(ms) || 0));
+        if(t > hitUntil) hitUntil = t;
+      },
+      fx: null,
       load: function(){
         var v = C.own(state.idle, g.id) ? state.idle[g.id] : null;
         return v ? JSON.parse(JSON.stringify(v)) : null;
@@ -593,7 +652,32 @@
         }));
       }
     };
+    // Hiệu ứng: toạ độ px CSS tính từ góc trên-trái host.root. Lỗi trong hiệu ứng bị nuốt tại đây —
+    // không bao giờ thành "Game gặp lỗi".
+    function rootBox(){ return $('gameRoot').getBoundingClientRect(); }
+    function quiet(fn, fallback){
+      return function(){
+        if(dead) return fallback;
+        try{ return fn.apply(null, arguments); }catch(e){ return fallback; }
+      };
+    }
+    var fxApi = api.fx = {
+      burst: quiet(function(x, y, opts){ var r = rootBox(); return FX().burst(r.left + Number(x), r.top + Number(y), opts); }, 0),
+      text: quiet(function(x, y, str, opts){ var r = rootBox(); FX().text(r.left + Number(x), r.top + Number(y), str, opts); }),
+      flash: quiet(function(opts){ FX().flash($('fxFlash'), opts); }),
+      shake: quiet(function(ms, px){ FX().shake($('gameStage'), ms || 180, px || 6); }),
+      pulse: quiet(function(el, opts){ if(el && $('gameRoot').contains(el)) FX().pulse(el, opts); }),
+      at: quiet(function(el){
+        var r = rootBox(), b = el.getBoundingClientRect();
+        return { x: b.left - r.left + b.width / 2, y: b.top - r.top + b.height / 2 };
+      }, { x: 0, y: 0 }),
+      fromCanvas: quiet(function(cv, x, y){
+        var r = rootBox(), b = cv.getBoundingClientRect(), cssW = parseFloat(cv.style.width) || b.width, cssH = parseFloat(cv.style.height) || b.height;
+        return { x: b.left - r.left + Number(x) * (b.width / cssW), y: b.top - r.top + Number(y) * (b.height / cssH) };
+      }, { x: 0, y: 0 })
+    };
     Object.defineProperty(api, 'saver', { enumerable: true, get: function(){ return !!state.batterySaver; } });
+    Object.defineProperty(api, 'reducedMotion', { enumerable: true, get: function(){ return FX().reducedMotion(); } });
     return {
       api: api,
       freeze: function(){
@@ -636,7 +720,7 @@
     var inf = g.info, best = C.own(state.best, g.id) ? state.best[g.id].v : null, items = [];
     if(inf.score){
       items.push({ label: inf.score.label || 'Điểm', value: g.score === null ? '—' : fmtScore(inf, g.score) });
-      items.push({ label: 'Kỷ lục', value: best === null ? '—' : fmtScore(inf, best) });
+      items.push({ label: g.passedBest ? 'Kỷ lục!' : 'Kỷ lục', value: best === null ? '—' : fmtScore(inf, best), beat: !!g.passedBest });
     }
     items = items.concat(g.custom);
     var box = $('gameStats'), sig = items.map(function(x){ return x.label; }).join('\u0001');
@@ -645,7 +729,7 @@
       box.classList.toggle('tight', items.length > 3);
       box.textContent = '';
       items.forEach(function(x){
-        box.appendChild(h('div', { class: 'gstat' }, [h('div', { class: 'gstat-label', text: x.label }), h('div', { class: 'gstat-value', text: x.value })]));
+        box.appendChild(h('div', { class: 'gstat' + (x.beat ? ' beat' : '') }, [h('div', { class: 'gstat-label', text: x.label }), h('div', { class: 'gstat-value', text: x.value })]));
       });
       return;
     }
@@ -658,12 +742,58 @@
     if(!g.inst || typeof g.inst[name] !== 'function') return;
     try{ g.inst[name](); }catch(e){ failGame(g, e); }
   }
-  // Một nguồn sự thật cho tạm dừng: lớp "Tạm dừng" đang hiện, hoặc có sheet đè lên game.
+  // Một nguồn sự thật cho tạm dừng: lớp "Tạm dừng" đang hiện, có sheet đè lên game, hoặc đang đếm 3-2-1.
   function syncPause(g){
     if(g !== game || g.ended || g.failed || !g.host) return;
-    var want = g.autoPaused || g.holds > 0;
+    var want = g.autoPaused || g.holds > 0 || g.counting;
     if(want && !g.paused){ g.paused = true; callInst(g, 'pause'); if(g.host) g.host.freeze(); }
     else if(!want && g.paused){ g.paused = false; g.host.unfreeze(); callInst(g, 'resume'); }
+  }
+  // Đếm "3, 2, 1, Bắt đầu!" (mỗi bước 600ms) trong khi ván đang tạm dừng; xong mới thả game chạy.
+  // def.countdown: đếm ngay sau mount, nội dung game ẩn đi (không đọc trước được câu hỏi đầu).
+  // def.realtime: đếm lại sau mỗi lần "Chơi tiếp", sân chơi vẫn hiện để người chơi định thần.
+  var COUNT_STEP = 600;
+  function stopCount(g){
+    clearTimeout(g.countTimer);
+    g.countTimer = 0;
+    g.countToken = (g.countToken || 0) + 1;
+    $('countLayer').hidden = true;
+    $('countLayer').textContent = '';
+    $('gameStage').classList.remove('count-hide');
+  }
+  function startCount(g, from, hide){
+    stopCount(g);
+    var token = g.countToken, n = Math.max(1, Math.min(5, Math.floor(from) || 3));
+    g.counting = true;
+    g.countPending = false;
+    g.countHide = !!hide;
+    $('gameStage').classList.toggle('count-hide', g.countHide);
+    syncPause(g);
+    var layer = $('countLayer');
+    function show(i){
+      if(g !== game || g.countToken !== token || g.ended || g.failed) return;
+      if(i > n){
+        stopCount(g);
+        g.counting = false;
+        syncPause(g);
+        return;
+      }
+      layer.textContent = '';
+      layer.appendChild(h('span', { text: i < n ? String(n - i) : 'Bắt đầu!', class: i < n ? '' : 'go' }));
+      layer.hidden = false;
+      sfx(i < n ? 'tick' : 'go');
+      g.countTimer = setTimeout(function(){ show(i + 1); }, COUNT_STEP);
+    }
+    show(0);
+  }
+  function countFrom(def){ return typeof def.countdown === 'number' && def.countdown >= 1 ? def.countdown : 3; }
+  // App xuống nền / mất focus: hiện lớp "Tạm dừng", im tiếng. Đang đếm dở thì "Chơi tiếp" đếm lại từ đầu.
+  function autoPause(g){
+    if(!g || g.ended || g.failed || g.autoPaused) return;
+    if(g.counting){ stopCount(g); g.countPending = true; }
+    g.autoPaused = true;
+    $('pauseLayer').hidden = false;
+    syncPause(g);
   }
   function lowBetter(g){ return !!g.info.score && g.info.score.better === 'low'; }
   function saveBest(g, v){
@@ -676,13 +806,18 @@
     // Bỏ dở giữa ván: game "càng cao càng tốt" giữ điểm cao nhất đã đạt trong ván; game "càng thấp
     // càng tốt" không ghi gì (số đang đếm dở sẽ thành kỷ lục không bao giờ phá được).
     if(!g.ended && !g.failed && !lowBetter(g)) saveBest(g, g.peak);
+    stopCount(g);
+    g.counting = false; g.countPending = false;
+    stopCountUp();
     if(g.inst && typeof g.inst.destroy === 'function'){ try{ g.inst.destroy(); }catch(e){ console.error(e); } }
     if(g.host) g.host.destroy();
     g.inst = null; g.host = null;
     $('gameRoot').textContent = '';
+    FX().clear();
   }
   function startRound(g){
     g.ended = false; g.failed = false; g.paused = false; g.autoPaused = false; g.holds = 0; g.helpOpen = false; g.score = null; g.peak = null; g.custom = [];
+    g.passedBest = false; g.counting = false; g.countPending = false;
     $('pauseLayer').hidden = true;
     $('errorLayer').hidden = true;
     $('gameRoot').textContent = '';
@@ -692,10 +827,14 @@
     try{
       g.inst = g.def.mount(g.host.api) || {};
     }catch(e){ failGame(g, e); }
+    if(g.def.countdown && !g.failed) startCount(g, countFrom(g.def), true);
   }
   function failGame(g, err){
     if(g !== game || g.failed) return;
     g.failed = true;
+    stopCount(g);
+    g.counting = false;
+    FX().clear();
     console.error('GameHub: game "' + g.id + '" gặp lỗi', err);
     ['resultSheet', 'helpSheet'].forEach(closeSheet);
     if(confirmResolve) settleConfirm(false);
@@ -726,18 +865,48 @@
     var hasScore = !!inf.score && g.score !== null && counted;
     $('resultScore').hidden = !hasScore;
     $('resultScore').textContent = '';
+    stopCountUp();
     if(hasScore){
-      $('resultScore').appendChild(document.createTextNode(fmtNum(g.score)));
+      var num = document.createTextNode(fmtNum(g.score));
+      $('resultScore').appendChild(num);
       $('resultScore').appendChild(h('small', { text: ' ' + (inf.score.unit || (inf.score.label || 'điểm').toLowerCase()) }));
+      countUp(num, g.score);
     }
     $('resultBadge').hidden = !isNew;
-    var sub = !hasScore ? '' : isNew ? (old === null ? '' : 'Kỷ lục cũ: ' + fmtScore(inf, old)) : (old === null ? '' : 'Kỷ lục: ' + fmtScore(inf, old));
+    var sub = !hasScore || old === null ? '' : isNew ? 'Kỷ lục cũ: ' + fmtScore(inf, old) : 'Kỷ lục: ' + fmtScore(inf, old);
+    if(hasScore && !isNew && !lowBetter(g) && old !== null && g.score > 0 && g.score < old) sub += ' · Còn ' + fmtNum(old - g.score) + ' nữa là kỷ lục';
     $('resultSub').textContent = sub;
     $('resultSub').hidden = !sub;
     $('resultXp').textContent = '+' + g.roundXp + ' XP';
     $('resultXp').hidden = !g.roundXp;
-    sfx(isNew || result.won === true ? 'win' : result.won === false ? 'bad' : 'good');
+    if(isNew){ sfx('record'); FX().haptic('success'); }
+    else if(result.won === true){ sfx('win'); FX().haptic('success'); }
+    else if(result.won === false){ sfx('lose'); FX().haptic('error'); }
+    else sfx('end');
     openSheet('resultSheet');
+    if(isNew) confetti($('resultSheet'));
+  }
+  // Điểm ở bảng kết quả đếm từ 0 lên trong 500ms (chỉ đổi text node); giảm chuyển động thì hiện ngay.
+  var countUpRaf = 0;
+  function stopCountUp(){ if(countUpRaf){ cancelAnimationFrame(countUpRaf); countUpRaf = 0; } }
+  function countUp(node, target){
+    if(FX().reducedMotion() || !(Math.abs(target) >= 2)) return;
+    var t0 = 0;
+    node.nodeValue = fmtNum(0);
+    function step(ts){
+      if(!t0) t0 = ts;
+      var k = Math.min(1, (ts - t0) / 500), e = 1 - Math.pow(1 - k, 3);
+      node.nodeValue = k >= 1 ? fmtNum(target) : fmtNum(Math.round(target * e));
+      countUpRaf = k >= 1 ? 0 : requestAnimationFrame(step);
+    }
+    countUpRaf = requestAnimationFrame(step);
+  }
+  // Pháo giấy bắn lên từ mép trên của bảng kết quả (vị trí cuối, sheet còn đang trượt lên).
+  function confetti(sheet){
+    var r = sheet.getBoundingClientRect(), top = window.innerHeight - sheet.offsetHeight;
+    [.25, .75].forEach(function(f){
+      FX().burst(r.left + r.width * f, top, { n: 30, shape: 'confetti', speed: 520, life: 1500, size: 5, gravity: 520, angle: -Math.PI / 2, spread: 1.3 });
+    });
   }
   function openGame(id){
     if(game || !DEFS[id]) return;
@@ -811,7 +980,8 @@
     if(!g) return;
     g.autoPaused = false;
     $('pauseLayer').hidden = true;
-    syncPause(g);
+    if(!g.ended && !g.failed && (g.countPending || g.def.realtime)) startCount(g, 3, g.countPending && g.countHide);
+    else syncPause(g);
   });
   function closeHelp(){
     closeSheet('helpSheet');
@@ -831,9 +1001,23 @@
   function applyPrefs(){
     html.setAttribute('data-theme', state.theme);
     html.classList.toggle('saver', !!state.batterySaver);
+    FX().configure({ sound: !!state.sound, vol: state.feel.vol, music: state.feel.music, haptics: state.feel.haptics, shake: state.feel.shake, saver: !!state.batterySaver });
   }
+  var IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   function renderSettings(){
+    var fx = FX().stats(), sysReduced = FX().systemReducedMotion();
     $('swSound').setAttribute('aria-checked', state.sound ? 'true' : 'false');
+    $('soundHint').hidden = !IS_IOS;
+    Array.prototype.forEach.call(document.querySelectorAll('#volSeg [data-vol]'), function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-vol') === state.feel.vol ? 'true' : 'false');
+      b.disabled = !state.sound;
+    });
+    $('swHaptics').hidden = fx.haptic === 'none';
+    $('swHaptics').setAttribute('aria-checked', state.feel.haptics ? 'true' : 'false');
+    $('hapticHint').textContent = fx.haptic === 'switch' ? 'Rung nhẹ khi chạm (thử nghiệm)' : 'Rung nhẹ khi trúng và khi thua';
+    $('swShake').setAttribute('aria-checked', state.feel.shake && !sysReduced ? 'true' : 'false');
+    $('swShake').disabled = sysReduced;
+    $('shakeHint').textContent = sysReduced ? 'Đang tắt theo cài đặt Giảm chuyển động của máy' : 'Hiệu ứng hình khi trúng, khi thua và khi lập kỷ lục';
     $('swSaver').setAttribute('aria-checked', state.batterySaver ? 'true' : 'false');
     var grid = $('themeGrid');
     grid.textContent = '';
@@ -854,8 +1038,33 @@
   }
   $('swSound').addEventListener('click', function(){
     update(function(s){ s.sound = !s.sound; });
+    applyPrefs();
+    renderSettings();
+    // Vừa bật lại trong cú chạm này: listener mở khoá ở pha capture đã chạy lúc âm thanh còn tắt.
+    if(state.sound) FX().unlock();
+    sfx('good');
+  });
+  $('volSeg').addEventListener('click', function(e){
+    var b = e.target.closest('[data-vol]');
+    if(!b || b.disabled) return;
+    var v = b.getAttribute('data-vol');
+    if(C.FEEL_VOLS.indexOf(v) === -1) return;
+    update(function(s){ s.feel.vol = v; });
+    applyPrefs();
     renderSettings();
     sfx('good');
+  });
+  $('swHaptics').addEventListener('click', function(){
+    update(function(s){ s.feel.haptics = !s.feel.haptics; });
+    applyPrefs();
+    renderSettings();
+    FX().haptic('medium');
+  });
+  $('swShake').addEventListener('click', function(){
+    if(FX().systemReducedMotion()) return;
+    update(function(s){ s.feel.shake = !s.feel.shake; });
+    applyPrefs();
+    renderSettings();
   });
   $('swSaver').addEventListener('click', function(){
     update(function(s){ s.batterySaver = !s.batterySaver; });
@@ -881,7 +1090,7 @@
     return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   }
   function renderDiag(){
-    var probe = getComputedStyle($('safeProbe')), bar = $('tabbar').getBoundingClientRect();
+    var probe = getComputedStyle($('safeProbe')), bar = $('tabbar').getBoundingClientRect(), fx = FX().stats();
     // Lớp fixed có nền chạm mép trên có thể nhuộm dải thanh trạng thái iOS; không mở gì thì phải là 0.
     var topFixed = Array.prototype.filter.call(document.querySelectorAll('body *'), function(el){
       var cs = getComputedStyle(el);
@@ -896,10 +1105,17 @@
       'offline ' + (navigator.serviceWorker && navigator.serviceWorker.controller ? 'sẵn sàng' : 'chưa'),
       'game ' + Object.keys(DEFS).length + '/' + C.GAME_IDS.length,
       'lưu ' + (corrupt ? 'lỗi' : saveFailed ? 'bị chặn' : 'ổn'),
-      'hôm nay (giờ VN) ' + fmtDate(C.vnToday())
+      'hôm nay (giờ VN) ' + fmtDate(C.vnToday()),
+      'âm thanh ' + fx.ctx + (fx.rate ? '/' + fx.rate : ''),
+      'audioSession ' + (fx.session === 'none' ? 'không' : fx.session),
+      'rung ' + (fx.haptic === 'none' ? 'không' : fx.haptic),
+      'giảm chuyển động ' + (FX().systemReducedMotion() ? 'có' : 'không')
     ].join(' · ');
   }
   $('diagBox').addEventListener('toggle', function(){ if(this.open) renderDiag(); });
+  // Hai nút đo trên iPhone thật: rung trong cú chạm và rung ngoài cú chạm (timer) có chạy không.
+  $('btnHapticNow').addEventListener('click', function(){ FX().haptic('medium', true); });
+  $('btnHapticLater').addEventListener('click', function(){ setTimeout(function(){ FX().haptic('medium', true); }, 500); });
 
   // ---------- Sao lưu / khôi phục ----------
   function backupFile(){
@@ -1086,7 +1302,6 @@
   // ---------- Bàn phím, hiển thị, nhiều tab ----------
   var ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   document.addEventListener('keydown', function(e){
-    markGesture();
     var top = topSheet(), active = document.activeElement;
     if(e.key === 'Escape'){
       // Blur ô đang gõ: Esc xong Enter không được kích lại hành động cũ.
@@ -1118,14 +1333,14 @@
   }
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'hidden'){
-      var g = game;
-      if(g && !g.ended && !g.failed && !g.autoPaused){
-        g.autoPaused = true;
-        $('pauseLayer').hidden = false;
-        syncPause(g);
-      }
+      autoPause(game);
+      FX().suspend();
     } else refreshFromStore();   // cũng để "hôm nay" sang ngày mới khi quay lại app
   });
+  // pagehide: iOS có lúc đóng băng trang mà không kịp báo visibilitychange.
+  window.addEventListener('pagehide', function(){ autoPause(game); FX().suspend(); });
+  // Game thời gian thực cũng dừng khi cửa sổ mất focus (kéo Trung tâm điều khiển, cuộc gọi đến…).
+  window.addEventListener('blur', function(){ if(game && game.def.realtime) autoPause(game); });
   window.addEventListener('storage', function(e){ if(e.key === KEY || e.key === null) refreshFromStore(); });
 
   // Chỉ vẽ lại thẻ và danh sách; không đụng ô tìm kiếm hay ô dán mã đang gõ dở.

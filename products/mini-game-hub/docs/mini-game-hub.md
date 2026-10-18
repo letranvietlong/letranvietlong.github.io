@@ -9,6 +9,7 @@
 | `html/index.html` | Markup: 3 tab (Trang chủ / Trò chơi / Cài đặt), màn game, các sheet. Không có `onclick` inline. |
 | `css/mini-game-hub.css` | Vỏ app + bộ class dùng chung cho game `.g-*` (mục 6). Chỉ có theme tối (cố ý); 5 bộ màu nhấn đổi qua `html[data-theme]`. |
 | `js/mini-game-hub-core.js` | Logic thuần, không DOM, không localStorage. UMD: `window.GameHubCore` / `require()` trong node. |
+| `js/mini-game-hub-feel.js` | Lớp "cảm giác chơi" (2.2): âm thanh tổng hợp Web Audio (không file âm thanh), rung, hạt/chữ bay trên canvas `#fxLayer`, rung màn, nháy màn. `window.GameHubFeel`. Không đọc/ghi localStorage, không biết gì về game; vỏ cấu hình (`configure`) và gọi, game chỉ dùng qua `host`. |
 | `js/mini-game-hub-games-action.js` | 15 game: snake, pong, flappy, runner, tower, maze, mole, reaction, target, colorMatch, tapRace, breath, rps, diceDuel, coinFlip. |
 | `js/mini-game-hub-games-mind.js` | 15 game: tictactoe, memory, math, g2048, guessNumber, wordScramble, blackjack, simon, mines, slider, idleMine, idleFarm, idleCafe, idleSpace, idleDragon. Có sẵn bộ máy IDLE `makeIdle(cfg)`. |
 | `js/mini-game-hub.js` | Vỏ: lưu trữ, tab, danh sách, host chạy game, cài đặt, sao lưu, đăng ký service worker. Nạp cuối cùng. |
@@ -16,7 +17,7 @@
 | `manifest.json`, `img/mini-game-hub-icon*.{svg,png}` | PWA. PNG 180 có nền đặc kín góc (render từ SVG bằng Playwright, bỏ `rx` của nền). |
 | `data/changelog.json` | Lịch sử cập nhật hiện trong Cài đặt. |
 
-Thứ tự nạp `<script>`: core → games-action → games-mind → vỏ. File game chỉ làm `(window.GameHubGames = window.GameHubGames || []).push(def)`.
+Thứ tự nạp `<script>`: core → feel → games-action → games-mind → vỏ. File game chỉ làm `(window.GameHubGames = window.GameHubGames || []).push(def)`.
 
 **Thêm file app nạp lúc chạy** → thêm vào `APP_CODE_PATHS` / `ICON_PATHS` / `DATA_PATHS` trong `js/sw-core.js` và bump `CACHE_NAME` + `?v=`.
 
@@ -28,8 +29,12 @@ Thứ tự nạp `<script>`: core → games-action → games-mind → vỏ. File
 { version:3, xp /* XP TRONG cấp hiện tại */, level, plays, seconds, theme, unlockedThemes[], sound, batterySaver,
   achievements:{id:ms}, best:{gameId:{v,at}}, stats:{gameId:{plays,seconds,last}},
   favorites:[gameId], days:{'YYYY-MM-DD' (giờ VN):{plays,seconds,idle,claimed:{open3|play5|idleTap:true}}},   // giữ 60 ngày gần nhất
-  streakBest, idle:{gameId:{…số hữu hạn ≥ 0}}, updatedAt }
+  streakBest, idle:{gameId:{…số hữu hạn ≥ 0}},
+  feel:{ vol:'low'|'mid'|'high', music, haptics, shake },   // 2.2: cài đặt cảm giác chơi
+  updatedAt }
 ```
+
+- `feel` (2.2): bản lưu/file sao lưu không có `feel` → mặc định `{vol:'mid', music:false, haptics:true, shake:true}`; có thì phải đúng 4 khoá đúng kiểu, sai hoặc khoá lạ → lỗi "cài đặt cảm giác chơi không hợp lệ" (nghiêm như mọi trường). `sound` vẫn là công tắc tổng (không đổi tên, bản 1.x và file cũ vẫn khớp). `music` chưa dùng (nhạc nền làm sau). Hệ quả đã biết: tab còn chạy JS cũ (trước khi service worker cập nhật) gọi `update()` sẽ làm rơi `feel` về mặc định — chỉ mất cài đặt âm thanh, không mất tiến trình.
 
 - Mọi lần ghi đi qua `update(fn)` trong vỏ: đọc lại localStorage → `validateState` → áp `fn` → ghi. Nhờ vậy hai tab cùng mở không ghi đè nhau; tab kia tự vẽ lại qua sự kiện `storage` (khi không có game đang mở).
 - **Đọc hỏng ≠ chưa có dữ liệu.** JSON sai hoặc `validateState` rớt → cờ `corrupt`: KHÔNG ghi gì lên khoá, hiện banner "Không đọc được tiến trình" (Lưu bản lỗi ra file / Khôi phục từ file / Bắt đầu lại), game vẫn chơi được bằng trạng thái tạm không lưu, nút "Lưu file" bị khoá (không cho xuất bản tạm trông như bản thật).
@@ -78,6 +83,8 @@ Thứ tự nạp `<script>`: core → games-action → games-mind → vỏ. File
   help: '1–3 câu cách chơi',
   score: { label:'Điểm', unit:'', better:'high'|'low' } | null,     // null = không có kỷ lục
   logic: { … },                                  // tuỳ chọn: hàm thuần của game để test bằng node; vỏ bỏ qua
+  countdown: 3,                                  // tuỳ chọn (2.2): vỏ đếm "3, 2, 1, Bắt đầu!" sau mount rồi mới thả game chạy
+  realtime: true,                                // tuỳ chọn (2.2): sau "Chơi tiếp" đếm 3-2-1; tự tạm dừng cả khi cửa sổ mất focus
   mount(host) /* dựng MỘT ván mới trong host.root */ → { pause(), resume(), destroy() } }
 
 host = { root,                                   // <div> rỗng do vỏ cấp, đã có kích thước
@@ -85,8 +92,14 @@ host = { root,                                   // <div> rỗng do vỏ cấp, 
   setStats([{label,value}]), setScore(n),        // vỏ vẽ hàng chỉ số; chỉ gọi khi số đổi
   end({score, won, message}),                    // vỏ hiện bảng kết quả: điểm, "Kỷ lục mới", XP nhận, [Chơi lại] [Game khác]
   setInterval, setTimeout, clearInterval, clearTimeout, raf,   // vỏ tự huỷ khi destroy, tự đứng khi pause (raf nhận dt đã kẹp)
-  on(el,type,fn,opts), swipe(el,cb /* 'up'|'down'|'left'|'right', ngưỡng 24px */),   // vỏ tự gỡ khi destroy
-  sfx('tap'|'good'|'bad'|'win'),                 // im lặng khi tắt âm thanh
+  on(el,type,fn,opts), swipe(el,cb /* 'up'|'down'|'left'|'right' */, {live, threshold}?),   // vỏ tự gỡ khi destroy
+  sfx(name, opts?),                              // im lặng khi tắt âm thanh; tên xem bảng bên dưới
+  haptic('light'|'medium'|'heavy'|'success'|'error'),
+  tap(el, fn, selector?) → off,                  // ăn ở pointerdown, fn(e, phần tử khớp)
+  loop(update, render, {hz}) → stop,             // bước cố định
+  hitstop(ms),                                   // đứng hình 0–150ms
+  fx: { burst, text, flash, shake, pulse, at, fromCanvas },
+  reducedMotion,                                 // getter
   load(), save(obj),                             // trạng thái riêng của game (idle) → state.idle[id]
   best(),                                        // kỷ lục hiện tại của game này (số) hoặc null
   saver,                                         // true = tiết kiệm pin (vỏ giới hạn raf ~30fps)
@@ -109,13 +122,27 @@ host = { root,                                   // <div> rỗng do vỏ cấp, 
 | `setTimeout / setInterval` | Trả id (số); `clearTimeout`/`clearInterval` dùng chung. Khi tạm dừng, thời gian còn lại được giữ và chạy tiếp khi chơi lại. Interval tối thiểu 16ms. |
 | `raf(fn)` | Đăng ký **vòng lặp**: `fn(dt)` được gọi mỗi khung hình cho tới khi huỷ ván; `dt` là mili giây từ khung trước, kẹp 0–50 (khung đầu và khung sau tạm dừng = 16). Trả về hàm dừng vòng lặp. Tiết kiệm pin: ~30 khung/giây (dt ≈ 33). Viết chuyển động theo `dt`, không theo "mỗi khung". |
 | `on(el, type, fn, opts)` | Chỉ nhận phần tử của game; truyền `document`/`window`/`body` sẽ ném lỗi. Sự kiện bị bỏ qua khi đang tạm dừng. Trả về hàm gỡ. |
-| `swipe(el, cb)` | Dùng pointer events; `cb(dir)`. Trên máy tính, phím mũi tên cũng gọi `cb` với hướng tương ứng. |
-| `sfx(name)` | Tên lạ bị bỏ qua. Chỉ kêu sau cú chạm đầu tiên của người dùng. |
+| `swipe(el, cb, opts?)` | Dùng pointer events; `cb(dir)`. Không truyền `opts`: quyết định lúc nhấc tay, ngưỡng 24px (như 2.0). `{live:true, threshold:18}`: quyết định ngay trong `pointermove` khi ngón tay vượt ngưỡng, một lần mỗi cú vuốt — dùng cho game cần đổi hướng tức thì. Trên máy tính, phím mũi tên cũng gọi `cb` với hướng tương ứng. |
+| `sfx(name, opts?)` | Âm tổng hợp, không file. Tên lạ bị bỏ qua. `opts`: `pitch` (nửa cung −12..12), `vol` (0..1), `level` (số nguyên ≥ 0, cho `combo`/`perfect`), `value` (giá trị ô, cho `merge`). Tên: `tap click good point combo perfect bad miss hit bounce jump flap land drop slice whoosh merge pop whack flip roll crash tick go win lose end newbest record simon0 simon1 simon2 simon3`. Tự động: `bad` kèm rung vừa + rung màn 120ms/4px, `win` kèm rung "thành công"; `tap`/`good` không rung. Cùng một tên lặp trong 25ms bị bỏ; tối đa 12 tiếng cùng lúc. Chỉ kêu sau cú chạm đầu tiên (xem mục 5), không kêu khi app ẩn. |
+| `haptic(kind)` | `light`/`medium`/`heavy`/`success`/`error`. Tắt trong Cài đặt hoặc máy không hỗ trợ → im lặng, không bao giờ ném lỗi. Android: `navigator.vibrate`. iPhone: thử nghiệm (một kiểu rung duy nhất, xem mục 8). |
+| `tap(el, fn, selector?)` | Ăn ở `pointerdown` (nút chính của chuột/ngón tay) + `click` có `detail 0` (bàn phím, trình đọc màn hình). `selector` = uỷ quyền: `fn(e, phần tử khớp)` chỉ khi chạm trúng phần tử khớp (bỏ qua nút `disabled`). Trả hàm gỡ. Thay cho cặp `pointerdown`+`click` tự viết. |
+| `loop(update, render, opts?)` | Bước cố định: `update(giâyMỗiBước)` đúng `hz` lần/giây (mặc định 120, tối đa 6 bước/khung — chậm hơn thì bỏ phần dồn), `render(alpha 0..1)` mỗi khung để nội suy. Đứng khi tạm dừng/kết thúc/`hitstop` như `raf`. Tiết kiệm pin vẽ ~30 khung/giây nhưng vẫn đủ `hz` bước → vật lý như nhau. Trả hàm dừng. |
+| `hitstop(ms)` | Kẹp 0–150ms: `raf`/`loop` bỏ cập nhật trong khoảng đó (timer KHÔNG đứng). Dùng ngay lúc va chạm để cú va "có lực". |
+| `fx.burst(x, y, opts?)` | Hạt bắn ra từ (x, y) — **px CSS tính từ góc trên-trái `host.root`**. `opts {n:14 (≤40), colors:[…] hoặc color, speed:220, life:520 (ms), size:3, gravity:500, angle:0, spread:2π, shape:'dot'/'spark'/'confetti'}`. Tiết kiệm pin ×0,5, giảm chuyển động ×0,3. Trả số hạt đã tạo. |
+| `fx.text(x, y, str, opts?)` | Chữ bay lên 36px trong 650ms rồi mờ (`+1`, `Hoàn hảo!`). `opts {color, size:20, weight:800}`. |
+| `fx.flash(opts?)` | Phủ màu vùng chơi `{color:'#fff', alpha:.22, ms:110}`. Tắt khi giảm chuyển động. |
+| `fx.shake(ms?, px?)` | Rung vùng chơi (mặc định 180ms / 6px, giảm dần, chỉ `transform`). Tắt khi giảm chuyển động hoặc công tắc "Rung màn hình, pháo giấy" tắt. |
+| `fx.pulse(el, opts?)` | Nảy `scale 1→1.12→1` trong 160ms; `el` phải nằm trong `host.root`. |
+| `fx.at(el)` / `fx.fromCanvas(cv, x, y)` | Đổi sang hệ toạ độ của `host.root`: tâm một phần tử / một điểm (px CSS) trong canvas. |
+| `reducedMotion` | Getter: máy bật Giảm chuyển động HOẶC người dùng tắt "Rung màn hình, pháo giấy". Game tự vẽ chuyển động lớn thì đọc cờ này. |
+| `def.countdown` | Số (thường 3): sau `mount` vỏ đếm "3, 2, 1, Bắt đầu!" (600ms mỗi bước), nội dung game ẩn đi; trong lúc đếm game ở trạng thái **tạm dừng** (nhận `pause()` rồi `resume()`, timer/raf đứng, sự kiện bị bỏ qua). Ẩn app giữa lúc đếm → Tạm dừng, "Chơi tiếp" đếm lại từ 3. Game "bắt đầu từ cú chạm đầu" không cần cái này. Đang dùng: `math`, `wordScramble`. |
+| `def.realtime` | `true`: sau "Chơi tiếp" vỏ đếm 3-2-1 (sân vẫn hiện) rồi mới thả; cửa sổ mất focus (`blur`) cũng tự tạm dừng như khi ẩn app. Đang dùng: `flappy`, `snake`, `pong`, `runner`, `tower`. |
+| Lỗi trong hiệu ứng | `fx.*`, `sfx`, `haptic` nuốt lỗi của chính chúng — hiệu ứng hỏng không bao giờ thành "Game gặp lỗi". |
 | `load()` | Bản sao của `state.idle[id]` hoặc `null`. |
 | `save(obj)` | `obj` phải là object phẳng, tối đa 24 khoá, mọi giá trị là **số hữu hạn ≥ 0**; sai thì ném lỗi. Mỗi lần gọi là một lần ghi localStorage — đừng gọi mỗi khung hình (IDLE: mỗi giây + khi mua + khi `pause`/`destroy`). |
 | `saver` | Getter, đọc lúc cần. |
 | `confirm(opts)` | Mở sheet xác nhận của vỏ; trong lúc sheet mở game bị tạm dừng (`pause()` → `resume()`). Ván bị huỷ trong lúc hỏi thì trả `false`. Lỗi ném trong `.then()`/`.catch()` nối vào promise này cũng rơi vào lớp "Game gặp lỗi" (đừng dùng `await` — lỗi sau `await` không đi qua `.then` đã bọc). |
-| Tạm dừng | Khi app xuống nền (`visibilitychange` hidden), khi mở "Cách chơi", khi `host.confirm` đang mở: vỏ gọi `pause()` rồi đóng băng timer/raf; chơi tiếp thì rã băng rồi gọi `resume()`. Game dùng `host.*` thì thường để `pause/resume` rỗng. |
+| Tạm dừng | Khi app xuống nền (`visibilitychange` hidden hoặc `pagehide`), khi mở "Cách chơi", khi `host.confirm` đang mở, trong lúc đếm 3-2-1: vỏ gọi `pause()` rồi đóng băng timer/raf; chơi tiếp thì rã băng rồi gọi `resume()`. Game dùng `host.*` thì thường để `pause/resume` rỗng. |
 | Huỷ ván | Đóng game, "Chơi lại", hoặc lỗi: vỏ gọi `destroy()` (host còn dùng được trong lúc này, ví dụ `save`), rồi gỡ timer/raf/listener và xoá `host.root`. Sau đó mọi lời gọi `host.*` là vô hiệu. |
 
 ### Cách viết một game
@@ -172,7 +199,10 @@ Ba game mẫu để tham khảo: `flappy` (canvas + `raf` + `end`), `tictactoe` 
 
 ## 5. Vỏ — những điểm dễ làm hỏng
 
-- **Không chặn zoom bằng `preventDefault` trên `touchend`** (bản 1.x nuốt mọi cú chạm cách nhau < 320ms). Dùng `touch-action:manipulation` trên `html`.
+- **Không chặn zoom bằng `preventDefault` trên `touchend`** (bản 1.x nuốt mọi cú chạm cách nhau < 320ms). Dùng `touch-action:pan-x pan-y` trên `html` (`manipulation` vẫn cho chụm hai ngón) + huỷ `gesture*` — `LongLTV_ios-pwa-pitfalls` §19.
+- **Âm thanh chỉ mở khoá ở `touchend`/`pointerup`/`click`/`keydown` (sự kiện thật, `isTrusted`)**, không ở `pointerdown`: theo HTML spec `pointerdown`/`touchstart` không phải kích hoạt người dùng, AudioContext tạo/resume ở đó trên iPhone có thể kẹt im lặng. `GameHubFeel.sfx` không bao giờ tự tạo context. Hệ quả: cú chạm ĐẦU TIÊN sau khi mở app có thể không kêu. Ẩn app → `suspend()`; hiện lại không tự kêu, cú chạm kế tiếp mở lại. Một AudioContext cả đời trang; mỗi tiếng tự `disconnect` khi xong.
+- **Lớp hiệu ứng `#fxLayer`** (canvas fixed, z 65: trên sheet, dưới toast) chỉ bỏ `hidden` khi đang có hạt/chữ, hết là `hidden` lại và dừng rAF riêng. Đóng game/chơi lại → `GameHubFeel.clear()`. Không `shadowBlur`/`filter`/tạo gradient trong vòng vẽ; hạt là pool cố định 220.
+- **Bảng kết quả** (tự động cho mọi game): điểm đếm từ 0 lên trong 500ms; kỷ lục mới → tiếng `record` + rung + pháo giấy + huy hiệu nảy; `won:true` → `win`, `won:false` → `lose`, còn lại `end`; không phá kỷ lục ("cao là tốt") → thêm "Còn N nữa là kỷ lục". Giữa ván, lần đầu điểm vượt kỷ lục đã lưu → tiếng `newbest`, ô Kỷ lục đổi nhãn "Kỷ lục!" (giá trị vẫn là kỷ lục đã lưu).
 - **Màn game không khoá nền bằng `position:fixed`** (làm mất vị trí cuộn): `html.game-open{overflow:hidden}` + lưu/trả `scrollY`; `#app` và tab bar bị `inert` khi game mở.
 - **Sheet, backdrop, toast, màn game đều `hidden` khi đóng** (lớp fixed phủ kín màn có thể nhuộm dải thanh trạng thái iOS — `LongLTV_ios-pwa-pitfalls` §17). Mở/đóng qua `openSheet`/`closeSheet`; Esc đóng lớp trên cùng rồi mới tới màn game; Tab bị giữ trong lớp trên cùng.
 - **Sheet đóng trong 100ms và thôi chặn chạm ngay lúc bắt đầu đóng**: backdrop có `pointer-events:none` khi không có `.open`; nút trong sheet đang trượt xuống bị bỏ qua. Trước đây backdrop còn chặn 260ms nên sau "Chơi lại" cú chạm đầu vào game bị mất. Mở vẫn 240ms.
@@ -197,12 +227,15 @@ Ba game mẫu để tham khảo: `flappy` (canvas + `raf` + `end`), `tictactoe` 
 | `.g-big` | Chữ/emoji lớn căn giữa (44px). Trên `button`: nút hành động chính cỡ lớn (cao ≥ 132px, nền thương hiệu). |
 | `.g-fill` | Phần tử chiếm hết chiều cao còn lại của `host.root`. |
 
+Nhấn: `.g-btn`, `button.g-tile`, `button.g-big` lún `scale(.96)` khi `:active` (80ms, chỉ transform; trên iPhone cần listener `touchstart` rỗng của vỏ). Cài đặt dùng `.seg` (segmented, mỗi nút ≥ 44px, `aria-pressed`) cho 3 mức âm lượng — không slider, không `<select>`.
+
 Màu lấy từ biến CSS của theme (`--brand`, `--brand2`, `--on-brand`, `--good`, `--bad`, `--warn`, `--text`, `--muted`, `--panel`, `--panel2`, `--panel3`, `--line2`); canvas đọc bằng `getComputedStyle(host.root).getPropertyValue('--good')`. Hai bậc bo góc: `--radius` 22px, `--radius-sm` 14px.
 
 ## 7. Kiểm thử
 
 - Fixture: `.claude/tools/fixtures/mini-game-hub.js` (seed 1.x, kết quả chuyển dữ liệu kỳ vọng, selector, `openGame/closeGame/setVisibility`).
 - Core chạy được bằng node: `require('products/mini-game-hub/js/mini-game-hub-core.js')`.
+- Đếm âm thanh: sau khi trang tải, bọc `window.GameHubFeel.sfx` bằng hàm ghi tên (vỏ tra thuộc tính lúc gọi nên bọc sau vẫn ăn). `GameHubFeel.stats()` → `{ctx, rate, voices, particles, texts, haptic, session}`. Đếm AudioContext/nút âm thanh còn sống: `addInitScript` bọc constructor và `AudioNode.prototype.connect/disconnect`. Chromium có `navigator.vibrate` nên `haptic` = `vibrate`.
 - Đồng hồ chơi đếm theo nhịp interval nên `page.clock.setFixedTime` không dừng nó; muốn tua thời gian: `page.clock.install()` rồi `runFor(ms)`.
 - Tab mặc định là Trang chủ; thẻ game nằm ở tab Trò chơi (`#gameGrid [data-open="<id>"]`).
 - Cú chạm thật: bật `Emulation.setTouchEmulationEnabled` qua CDP rồi `Input.dispatchTouchEvent` (harness mặc định không có `hasTouch`).
@@ -210,4 +243,6 @@ Màu lấy từ biến CSS của theme (`--brand`, `--brand2`, `--on-brand`, `--
 
 ## 8. Chưa kiểm chứng trên iPhone thật
 
-Chromium không tái hiện được: nút của vỏ phản hồi ở `touchend` (trên iPhone có còn bị nuốt chạm sau cú vuốt không, và nút do game tự dựng có bị không), chạm nhanh liên tiếp sau khi bỏ chặn zoom (có bị double-tap zoom không), `navigator.share` với file sao lưu, âm thanh Web Audio sau cú chạm đầu, màu dải thanh trạng thái, safe-area ở đáy tab bar/màn game, vạch cuộn hệ thống. Khi cần, chụp dòng "Thông tin chẩn đoán" cuối tab Cài đặt (standalone, màn hình/viewport, safe-area, đáy tab bar, lớp phủ chạm mép trên, offline, số game, trạng thái lưu, hôm nay giờ VN).
+Chromium không tái hiện được (2.2): âm thanh có kêu từ cú chạm thứ mấy sau khi mở app từ icon; công tắc im lặng (kỳ vọng: im, vì `audioSession` 'ambient') và nhạc Spotify/Apple Music có bị dừng không (kỳ vọng: không); rung trên iPhone bằng `<input type=checkbox switch>` ẩn (thử nghiệm — Cài đặt → Thông tin chẩn đoán → "Thử rung" trong cú chạm và "Thử rung sau 0,5 giây" ngoài cú chạm: cái nào rung?); hiệu ứng nhấn `:active` có lún không; iOS trạng thái `interrupted` sau cuộc gọi. Dòng chẩn đoán có thêm "âm thanh <trạng thái>/<sampleRate>", "audioSession", "rung", "giảm chuyển động".
+
+Từ 2.0: nút của vỏ phản hồi ở `touchend` (trên iPhone có còn bị nuốt chạm sau cú vuốt không, và nút do game tự dựng có bị không), chạm nhanh liên tiếp sau khi bỏ chặn zoom (có bị double-tap zoom không), `navigator.share` với file sao lưu, âm thanh Web Audio sau cú chạm đầu, màu dải thanh trạng thái, safe-area ở đáy tab bar/màn game, vạch cuộn hệ thống. Khi cần, chụp dòng "Thông tin chẩn đoán" cuối tab Cài đặt (standalone, màn hình/viewport, safe-area, đáy tab bar, lớp phủ chạm mép trên, offline, số game, trạng thái lưu, hôm nay giờ VN).

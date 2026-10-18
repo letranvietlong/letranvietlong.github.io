@@ -227,6 +227,7 @@
     id: 'math', name: 'Tính nhanh', icon: '➕', desc: 'Trả lời phép tính trong 60 giây', cat: 'Trí tuệ', dur: '1p',
     help: 'Chọn đáp án đúng trong bốn ô. Mỗi câu đúng được 1 điểm, câu sai không bị trừ nhưng mất thời gian. Bạn có 60 giây.',
     score: { label: 'Điểm', unit: '', better: 'high' },
+    countdown: 3,
     logic: { question: mathQuestion },
     mount: function(host){
       var score = 0, left = 60, q = null, lock = false, opts = [];
@@ -501,6 +502,7 @@
     id: 'wordScramble', name: 'Xếp chữ', icon: '🔤', desc: 'Sắp lại chữ cái thành từ đúng', cat: 'Trí tuệ', dur: '5p',
     help: 'Chạm các chữ ở hàng dưới để xếp thành từ đúng theo gợi ý; chạm chữ đã xếp để trả lại. Xếp được nhiều từ nhất trong 60 giây (tối đa 10 từ).',
     score: { label: 'Từ đúng', unit: '', better: 'high' },
+    countdown: 3,
     logic: { words: WORDS, scramble: scrambleWord },
     mount: function(host){
       var queue = [], cur = null, letters = [], placed = [], used = [], score = 0, left = 60, lock = false, slots = [], pool = [];

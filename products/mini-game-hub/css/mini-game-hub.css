@@ -182,6 +182,15 @@ textarea,input{font:inherit;color:inherit}
 .about p{font-size:14px;line-height:1.5;color:var(--muted)}
 .about p + p{margin-top:8px}
 .diag-line{padding:0 0 12px;font-size:13px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere;-webkit-user-select:text;user-select:text}
+.diag-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px}
+/* Dòng con của "Âm thanh" (không có viền trên, thụt theo mép chữ của dòng cha). */
+.subrow{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 0 10px 34px;font-size:16px;font-weight:600}
+.seg{flex:none;display:flex;gap:3px;padding:3px;border-radius:var(--radius-sm);background:var(--panel2)}
+.seg button{min-width:58px;min-height:44px;padding:0 10px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:15px;font-weight:700}
+.seg button:active{background-color:var(--panel3)}
+.seg button[aria-pressed="true"]{background-color:var(--brand);color:var(--on-brand)}
+.seg button:disabled{color:var(--muted2);opacity:.55}
+.seg button[aria-pressed="true"]:disabled{background-color:var(--panel3);color:var(--muted)}
 
 /* ---------- Tab bar ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-tabbar);display:flex;justify-content:center;background:rgba(9,13,26,.96);border-top:1px solid var(--line);padding:4px 0 calc(3px + var(--safe-bottom));transform:translateZ(0)}
@@ -197,12 +206,23 @@ textarea,input{font:inherit;color:inherit}
 .gstat{flex:1 1 0;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 10px}
 .gstat-label{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gstat-value{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gstat.beat{border-color:var(--warn)}
+.gstat.beat .gstat-label{color:var(--warn);font-weight:700}
 .game-stats.tight{gap:6px;padding-left:10px;padding-right:10px}
 .game-stats.tight .gstat{padding:5px 7px}
 .game-stats.tight .gstat-value{font-size:15px}
 /* touch-action:none: vuốt trong vùng chơi là của game, không cuộn/zoom trang. */
 .game-stage{position:relative;flex:1;min-height:0;padding:4px 12px calc(12px + var(--safe-bottom));touch-action:none}
 .game-root{width:100%;height:100%;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:12px;min-height:0}
+/* Đếm 3-2-1: chữ to giữa sân, không nền đặc, không chặn chạm (game đang đứng nên không nhận chạm). */
+.count-layer{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;background:rgba(7,11,22,.45);border-radius:var(--radius-sm);color:var(--text);font-size:96px;font-weight:800;line-height:1;text-shadow:0 2px 0 rgba(7,11,22,.6),0 0 24px rgba(7,11,22,.7)}
+.count-layer span{animation:count-pop .6s cubic-bezier(.2,.8,.2,1) both}
+.count-layer span.go{font-size:52px;color:var(--brand)}
+@keyframes count-pop{0%{opacity:0;transform:scale(.6)}25%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.04)}}
+.game-stage.count-hide .game-root{visibility:hidden}
+.fx-flash{position:absolute;inset:0;pointer-events:none;opacity:0;border-radius:var(--radius-sm)}
+/* Hạt, chữ bay, pháo giấy: trên sheet (60), dưới toast (70). hidden khi không có hạt (ios-pwa §17). */
+.fx-layer{position:fixed;inset:0;width:100%;height:100%;z-index:65;pointer-events:none}
 .game-layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;background:rgba(7,11,22,.92)}
 .game-layer .btn{min-width:200px}
 .layer-title{font-size:22px;font-weight:800}
@@ -212,13 +232,15 @@ textarea,input{font:inherit;color:inherit}
 .g-fill{flex:1 1 0;min-height:0}
 .g-grid{--cols:3;display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:8px;width:100%;max-width:420px;margin:0 auto}
 .g-tile{display:grid;place-items:center;aspect-ratio:1;min-width:44px;min-height:44px;padding:0;border:1px solid var(--line2);border-radius:var(--radius-sm);background-color:var(--panel);color:var(--text);font-size:clamp(18px,7vw,40px);font-weight:800;line-height:1}
-button.g-tile:active{background-color:var(--panel2)}
+button.g-tile:active{background-color:var(--panel2);transform:scale(.96)}
 .g-tile.is-on{border-color:transparent;background-color:var(--brand);color:var(--on-brand)}
 .g-tile.is-good{border-color:transparent;background-color:var(--good);color:var(--on-brand)}
 .g-tile.is-bad{border-color:transparent;background-color:var(--bad);color:var(--on-brand)}
 .g-tile.is-dim{background-color:var(--bg);color:var(--muted)}
+/* Nhấn = lún nhẹ (chỉ transform). */
+.g-btn,button.g-tile,button.g-big{transition:transform 80ms ease-out}
 .g-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:6px 16px;border:1px solid var(--line2);border-radius:var(--radius-sm);background-color:var(--panel2);color:var(--text);font-size:16px;font-weight:700;text-align:center;line-height:1.25}
-.g-btn:active{background-color:var(--panel3)}
+.g-btn:active{background-color:var(--panel3);transform:scale(.96)}
 .g-btn.primary{border-color:transparent;background-color:var(--brand);background-image:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--on-brand)}
 .g-btn.danger{border-color:rgba(251,113,133,.4);color:var(--bad)}
 .g-btn.primary:active{filter:brightness(.9)}
@@ -226,7 +248,7 @@ button.g-tile:active{background-color:var(--panel2)}
 .g-btn small{display:block;font-size:13px;font-weight:600;opacity:1}
 .g-big{font-size:44px;font-weight:800;line-height:1.1;text-align:center}
 button.g-big{min-height:132px;border:0;border-radius:var(--radius);background-color:var(--brand);background-image:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--on-brand);font-size:26px}
-button.g-big:active{transform:scale(.98);filter:brightness(.92)}
+button.g-big:active{transform:scale(.96);filter:brightness(.92)}
 .g-row{display:flex;gap:10px;flex-wrap:wrap}
 .g-row > *{flex:1 1 0;min-width:0}
 .g-pad{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(3,60px);gap:6px;justify-content:center;margin:0 auto}
@@ -254,7 +276,8 @@ button.g-big:active{transform:scale(.98);filter:brightness(.92)}
 .result{text-align:center}
 .result-score{font-size:46px;font-weight:800;line-height:1.1;margin-top:8px}
 .result-score small{font-size:16px;font-weight:600;color:var(--muted)}
-.result-badge{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:100px;background:var(--warn);color:var(--on-brand);font-size:13px;font-weight:800}
+.result-badge{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:100px;background:var(--warn);color:var(--on-brand);font-size:13px;font-weight:800;animation:badge-pop .5s cubic-bezier(.3,1.6,.5,1) .3s both}
+@keyframes badge-pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
 .result-sub{font-size:14px;color:var(--muted);margin-top:8px}
 .result-xp{font-size:15px;font-weight:700;color:var(--good);margin-top:8px}
 .log-entry{padding:12px 0;border-top:1px solid var(--line)}

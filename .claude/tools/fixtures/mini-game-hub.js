@@ -1,4 +1,4 @@
-// Standard GameHub Offline (mini-game-hub) test scenario with hand-computed expectations (v2.0).
+// Standard GameHub Offline (mini-game-hub) test scenario with hand-computed expectations (v2.0; feel settings since 2.2).
 // Pair with harness.open({ path: gh.path, now: gh.now.main, localStorage: gh.seedV2 }).
 //
 // Data shapes:
@@ -6,7 +6,8 @@
 //     { version:3, xp (XP inside the current level), level, plays, seconds, theme, unlockedThemes[], sound, batterySaver,
 //       achievements:{id:ms}, best:{gameId:{v,at}}, stats:{gameId:{plays,seconds,last}}, favorites:[gameId],
 //       days:{'YYYY-MM-DD' (VN date):{plays,seconds,idle,claimed:{open3|play5|idleTap:true}}} (last 60 days),
-//       streakBest, idle:{gameId:{flat object of finite numbers ≥ 0}}, updatedAt }
+//       streakBest, idle:{gameId:{flat object of finite numbers ≥ 0}},
+//       feel:{vol:'low'|'mid'|'high', music, haptics, shake} (2.2+, optional on read → defaults), updatedAt }
 //   Legacy 1.x keys (read once by the migration, never written or removed): gamehub_profile_v2, hs_<gameId>,
 //     bestReaction, save_idle*, activeCat, activeDur. The site's root index.js shares hs_snake / hs_flappy / hs_react.
 //   Backup file: { app:'mini-game-hub', kind:'progress', version:1, exportedAt, state }, name game-hub-YYYY-MM-DD.json (VN date).
@@ -14,6 +15,9 @@
 // Pure logic lives in window.GameHubCore (node: require('<repo>/products/mini-game-hub/js/mini-game-hub-core.js')).
 // XP: xpNeed(level) = 100 + level*55 (L1→2 155, L2→3 210, L3→4 265, L4→5 320); +5 per game open, +3 per 15 s played,
 // missions 40/60/50, achievements 35 each.
+//
+// Sound/haptics/effects live in window.GameHubFeel (js/mini-game-hub-feel.js); the shell looks the object up at call
+// time, so a test can wrap GameHubFeel.sfx after load to log sound names (F.stats() → {ctx, voices, particles, haptic}).
 //
 // The play clock counts 1-second interval ticks (not Date.now), so `now` (page.clock.setFixedTime) does not stop it;
 // use page.clock.install() + page.clock.runFor(ms) to move game time deterministically.
@@ -43,6 +47,7 @@ const seedV2 = {
   activeCat: 'Arcade'
 };
 // gamehub_v3 right after the one-time migration (compare with strip()).
+const feelDefault = { vol: 'mid', music: false, haptics: true, shake: true };
 const migrated = {
   version: 3, xp: 90, level: 3, plays: 12, seconds: 600, theme: 'ocean', unlockedThemes: ['default', 'ocean'], sound: false, batterySaver: false,
   achievements: { first_game: 1791733915757 },
@@ -50,11 +55,13 @@ const migrated = {
   stats: {}, favorites: [],
   days: { '2026-10-11': { plays: 0, seconds: 0, idle: true, claimed: { open3: true } } },
   streakBest: 0, streakN: 0, streakDay: '',
-  idle: { idleMine: { coins: 10, lvl: 6, power: 2, auto: 1, last: IDLE_LAST } }
+  idle: { idleMine: { coins: 10, lvl: 6, power: 2, auto: 1, last: IDLE_LAST } },
+  feel: feelDefault
 };
 const fresh = {
   version: 3, xp: 0, level: 1, plays: 0, seconds: 0, theme: 'default', unlockedThemes: ['default'], sound: true, batterySaver: false,
-  achievements: {}, best: {}, stats: {}, favorites: [], days: {}, streakBest: 0, streakN: 0, streakDay: '', idle: {}
+  achievements: {}, best: {}, stats: {}, favorites: [], days: {}, streakBest: 0, streakN: 0, streakDay: '', idle: {},
+  feel: feelDefault
 };
 // A valid v3 profile with two played days (10/10 and 11/10) and every achievement already earned (no toasts while testing).
 function v3(extra){
@@ -93,7 +100,8 @@ const sel = {
   backup: '#btnBackup', restore: '#btnRestore', restoreFile: '#restoreFile', dataError: '#dataError', reset: '#btnReset',
   legacyBox: '#legacyBox', legacyText: '#legacyText', legacyRead: '#btnLegacy', legacyError: '#legacyError',
   banner: '#corruptBanner', brokenSave: '#btnBrokenSave', brokenRestore: '#btnBrokenRestore', brokenReset: '#btnBrokenReset',
-  sound: '#swSound', saver: '#swSaver', theme: id => '[data-theme-id="' + id + '"]', changelog: '#btnChangelog', version: '#versionText', diag: '#diagLine',
+  sound: '#swSound', saver: '#swSaver', vol: v => '#volSeg [data-vol="' + v + '"]', haptics: '#swHaptics', shake: '#swShake',
+  countLayer: '#countLayer', fxLayer: '#fxLayer', fxFlash: '#fxFlash', hapticNow: '#btnHapticNow', hapticLater: '#btnHapticLater', theme: id => '[data-theme-id="' + id + '"]', changelog: '#btnChangelog', version: '#versionText', diag: '#diagLine',
   toast: '#toast'
 };
 
@@ -131,4 +139,4 @@ async function setVisibility(page, v){
   }, v);
 }
 
-module.exports = { path, now, vnDay, IDLE_LAST, legacyProfile, seedV2, migrated, fresh, v3, expected, sel, state, strip, goTab, openGame, closeGame, setVisibility };
+module.exports = { path, now, vnDay, IDLE_LAST, legacyProfile, seedV2, feelDefault, migrated, fresh, v3, expected, sel, state, strip, goTab, openGame, closeGame, setVisibility };

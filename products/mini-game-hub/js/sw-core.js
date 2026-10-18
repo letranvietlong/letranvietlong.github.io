@@ -1,12 +1,13 @@
 // Logic service worker của GameHub. KHÔNG đăng ký trực tiếp file này —
 // nó được nạp qua importScripts từ products/mini-game-hub/sw-mini-game-hub.js.
-var CACHE_NAME = "gamehub-cache-v2";
+var CACHE_NAME = "gamehub-cache-v3";
 
 // Code hay đổi, không có hash trong URL → network-first, cache chỉ để offline.
 var APP_CODE_PATHS = [
   "/products/mini-game-hub/html/index.html",
   "/products/mini-game-hub/css/mini-game-hub.css",
   "/products/mini-game-hub/js/mini-game-hub-core.js",
+  "/products/mini-game-hub/js/mini-game-hub-feel.js",
   "/products/mini-game-hub/js/mini-game-hub-games-action.js",
   "/products/mini-game-hub/js/mini-game-hub-games-mind.js",
   "/products/mini-game-hub/js/mini-game-hub.js"
@@ -23,11 +24,15 @@ var DATA_PATHS = [
 var NETWORK_FIRST_PATHS = APP_CODE_PATHS.concat(DATA_PATHS);
 var GAMEHUB_PATHS = APP_CODE_PATHS.concat(ICON_PATHS).concat(DATA_PATHS);
 
+// cache.add(url) có thể lấy từ HTTP cache của trình duyệt, khiến cache bản mới chứa index.html mới
+// cạnh JS/CSS cũ (đã gặp ở LoveDays 1.20 → 1.21). "reload" buộc mọi lượt tải lúc cài đi ra mạng.
+function freshRequest(p){ return new Request(p, { cache: "reload" }); }
+
 self.addEventListener("install", function(event){
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache){
-      return cache.addAll(ICON_PATHS).then(function(){
-        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(p).catch(function(){}); }));
+      return cache.addAll(ICON_PATHS.map(freshRequest)).then(function(){
+        return Promise.all(NETWORK_FIRST_PATHS.map(function(p){ return cache.add(freshRequest(p)).catch(function(){}); }));
       });
     })
   );
@@ -62,8 +67,10 @@ self.addEventListener("fetch", function(event){
   if(GAMEHUB_PATHS.indexOf(key) === -1) return;
 
   if(NETWORK_FIRST_PATHS.indexOf(key) !== -1){
+    // "no-cache": hỏi lại máy chủ thay vì lấy HTTP cache (GitHub Pages gửi max-age=600, bản mới có thể bị
+    // trả bằng file cũ suốt 10 phút). Dựng Request mới từ URL vì request navigate không bọc lại được với options.
     event.respondWith(
-      fetch(event.request).then(function(res){
+      fetch(new Request(url.href, { cache: "no-cache", credentials: "same-origin" })).then(function(res){
         // Only a good response may replace the offline copy — caching a
         // transient 404/5xx would overwrite the last working version.
         if(res.ok){

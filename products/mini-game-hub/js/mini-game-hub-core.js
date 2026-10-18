@@ -106,10 +106,11 @@
   }
 
   // ---------- Trạng thái ----------
+  var FEEL_VOLS = ['low', 'mid', 'high'];
   function defaultState(){
     return { version: 3, xp: 0, level: 1, plays: 0, seconds: 0, theme: 'default', unlockedThemes: ['default'],
       sound: true, batterySaver: false, achievements: {}, best: {}, stats: {}, favorites: [], days: {},
-      streakBest: 0, streakN: 0, streakDay: '', idle: {}, updatedAt: 0 };
+      streakBest: 0, streakN: 0, streakDay: '', idle: {}, feel: { vol: 'mid', music: false, haptics: true, shake: true }, updatedAt: 0 };
   }
   function themeUnlocked(state, id){
     var t = findBy(THEMES, id);
@@ -148,6 +149,13 @@
     if(raw.streakN !== undefined || raw.streakDay !== undefined){
       if(!isInt(raw.streakN, 0) || !(raw.streakDay === '' || isDay(raw.streakDay))) return { error: 'chuỗi ngày không hợp lệ' };
       s.streakN = raw.streakN; s.streakDay = raw.streakDay;
+    }
+    // feel có từ 2.2: bản lưu và file sao lưu cũ hơn không có thì dùng mặc định.
+    if(raw.feel !== undefined){
+      var f = raw.feel;
+      if(!isObj(f) || Object.keys(f).length !== 4 || FEEL_VOLS.indexOf(f.vol) === -1 || typeof f.music !== 'boolean' ||
+        typeof f.haptics !== 'boolean' || typeof f.shake !== 'boolean') return { error: 'cài đặt cảm giác chơi không hợp lệ' };
+      s.feel = { vol: f.vol, music: f.music, haptics: f.haptics, shake: f.shake };
     }
 
     if(!Array.isArray(raw.unlockedThemes)) return { error: 'danh sách giao diện không hợp lệ' };
@@ -444,7 +452,7 @@
 
   return {
     CATALOG: CATALOG, GAME_IDS: GAME_IDS, CATS: CATS, DUR_LABEL: DUR_LABEL, THEMES: THEMES, MISSIONS: MISSIONS,
-    ACHIEVEMENTS: ACHIEVEMENTS, XP_OPEN: XP_OPEN, XP_PER_15S: XP_PER_15S, XP_ACHIEVEMENT: XP_ACHIEVEMENT,
+    ACHIEVEMENTS: ACHIEVEMENTS, FEEL_VOLS: FEEL_VOLS, XP_OPEN: XP_OPEN, XP_PER_15S: XP_PER_15S, XP_ACHIEVEMENT: XP_ACHIEVEMENT,
     own: own, catalogOf: catalogOf, vnToday: vnToday, dayAdd: dayAdd, isDay: isDay,
     xpNeed: xpNeed, addXp: addXp, defaultState: defaultState, validateState: validateState, checkState: checkState,
     hasProgress: hasProgress, themeUnlocked: themeUnlocked, cleanSave: cleanSave,
