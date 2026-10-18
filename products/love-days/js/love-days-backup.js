@@ -257,7 +257,8 @@
       var wl = src.weight.log || [], wp = src.weight.profile;
       if(wl.length > C.WEIGHT_MAX_LOG) fail("Có " + C.fmtInt(wl.length) + " lần cân, vượt giới hạn " + C.fmtInt(C.WEIGHT_MAX_LOG) + " lần cân của một bản sao lưu. Hãy xoá bớt rồi thử lại.");
       weight = {
-        profile: wp ? { heightCm: wp.heightCm, goalKg: wp.goalKg, goalDate: wp.goalDate, ratePerWeek: wp.ratePerWeek, startDate: wp.startDate } : null,
+        profile: wp ? { heightCm: wp.heightCm, goalKg: wp.goalKg, goalDate: wp.goalDate, ratePerWeek: wp.ratePerWeek, startDate: wp.startDate,
+                     activity: wp.activity == null ? null : wp.activity } : null,
         log: wl.map(function(e){ return { date: e.date, kg: e.kg, note: e.note, at: e.at }; })
       };
     }

@@ -635,7 +635,8 @@ const medSel = {
 };
 
 // ---------- Giảm cân (v1.21): kv 'weight' ----------
-// { key:'weight', profile: null | { heightCm, goalKg, goalDate:'YYYY-MM-DD'|null, ratePerWeek: 0.25|0.5|0.75|1, startDate:'YYYY-MM-DD'|null },
+// { key:'weight', profile: null | { heightCm, goalKg, goalDate:'YYYY-MM-DD'|null, ratePerWeek: 0.25|0.5|0.75|1, startDate:'YYYY-MM-DD'|null,
+//                                   activity: 'low'|'mid'|'high'|null (v1.23; anything else reads as null, the profile stays valid) },
 //   log: [{ date:'YYYY-MM-DD', kg (≤ 1 decimal, 20–300), note (≤ 100), at: ms|null }], updatedAt }
 // kv 'meta' adds showWeight (Home card, default true) and weightMorning (morning push line, default true).
 // ALL NUMBERS BELOW ARE MADE UP (public repo): never put a real height or weight here.
@@ -695,7 +696,29 @@ const weight = {
   errors: { empty: 'Hãy nhập số cân', format: 'Ghi số cân dạng 80,5 — tối đa một chữ số sau dấu phẩy', range: 'Số cân từ 20 đến 300 kg',
     height: 'Chiều cao từ 100 đến 250 cm', goalAbove: 'Cân mục tiêu phải thấp hơn cân bắt đầu (82,0 kg)',
     dup15: 'Ngày 15/10/2026 đã có số cân 80,9 kg — chạm vào ngày đó trong danh sách để sửa', goalDatePast: 'Ngày mục tiêu phải sau hôm nay' },
-  morningLine: '⚖️ Nhớ cân hôm nay'
+  morningLine: '⚖️ Nhớ cân hôm nay',
+  // v1.23 "Đánh giá" + "Gợi ý cho Viết Long" (LoveCore.weightAdvice(raw, dob, nowMs, pre)). now 18/10 (NOT weighed yet → latest 17/10),
+  // profile P, log W, Viết Long's made-up dob 1998-05-20 → 28 tuổi. Same numbers in every TZ.
+  advice: {
+    now: '2026-10-18T09:00:00+07:00',
+    assess: { main: 'BMI 27,3 Béo phì', pos: 70.6, goalPos: 48.1, normal: '54,6–67,8 kg', toOver: 'giảm 7,0 kg', overMax: 'về 73,8 kg',
+      toNormal: 'giảm 13,0 kg', normalMax: 'về 67,8 kg', goalBmi: '23,7 Thừa cân', basis: 'Theo lần cân 17/10 · ngưỡng BMI châu Á (WHO).',
+      note: 'Theo chuẩn châu Á, 172 cm cân 80,8 kg đang ở nhóm béo phì. Mỗi kg giảm được đều có lợi cho sức khoẻ — về 73,8 kg là sang nhóm thừa cân.',
+      aria: 'Thang BMI châu Á: 27,3, nhóm Béo phì. Bình thường từ 18,5 đến 22,9.' },
+    // BMR 10·80,8 + 6,25·172 − 5·28 + 5 = 1748; deficit 0,5 kg/tuần = 550 kcal/ngày; floor 1.500
+    bmr: '1.750 kcal',
+    levels: { low: { tdee: '2.100 kcal', sub: 'Ít vận động × 1,2', range: '1.500–1.650 kcal', target: 'quanh 1.550 kcal · để giảm 0,5 kg/tuần' },
+              mid: { tdee: '2.400 kcal', sub: 'Vừa phải × 1,375', range: '1.750–1.950 kcal', target: 'quanh 1.850 kcal · để giảm 0,5 kg/tuần' },
+              high: { tdee: '2.700 kcal', sub: 'Nhiều × 1,55', range: '2.050–2.250 kcal', target: 'quanh 2.150 kcal · để giảm 0,5 kg/tuần' } },
+    protein: '84–112 g/ngày', water: 'khoảng 2,8 lít/ngày',
+    tip1: 'Đang giảm đều 0,8 kg/tuần — đúng nhịp an toàn. Cứ giữ thói quen hiện tại.',   // trend 05–18/10, rate 0,7848
+    habits: { walk: 'Thêm 15 phút đi bộ sau bữa tối — 5 tối là thêm 75 phút vận động mỗi tuần.', drink: 'Đổi nước ngọt, trà sữa sang trà không đường hoặc nước lọc.',
+      rice: 'Ăn rau trước, cơm sau; bớt nửa bát cơm buổi tối.', protein: 'Mỗi bữa có một phần đạm cỡ lòng bàn tay: thịt nạc, cá, trứng hoặc đậu phụ.' },
+    basis: 'Tính theo 80,8 kg · 172 cm · 28 tuổi · nam (công thức Mifflin-St Jeor).',
+    disclaimer: 'Số liệu chỉ để tham khảo, không thay lời khuyên của bác sĩ. Nếu đang điều trị bệnh, hãy hỏi bác sĩ trước khi ăn kiêng.',
+    floorWarn: 'Không nên ăn dưới 1.500 kcal mỗi ngày. Muốn giảm nhanh hơn thì vận động thêm thay vì ăn ít đi.',   // ratePerWeek 0,75 / 1
+    noDob: 'Thêm ngày sinh của Viết Long ở Cài đặt → Hồ sơ để tính mức ăn mỗi ngày.', noProfile: 'Nhập chiều cao để xem đánh giá cân nặng.'
+  }
 };
 const weightSel = {
   seg: k => '#healthSeg [data-health-seg="' + k + '"]', pane: '#weightPane', err: '#weightErr', form: '#wtTodayForm', kg: '#wtKg', kgLabel: '#wtKgLabel',
@@ -714,7 +737,12 @@ const weightSel = {
   entrySheet: '#wtEntrySheet', entryTitle: '#wtEntryTitle', entryDate: '#weDate', entryDateErr: '#weDateErr', entryKg: '#weKg', entryKgErr: '#weKgErr',
   entryNote: '#weNote', entryFormErr: '#weFormErr', entrySave: '#weSave', entryDelete: '#weDelete', confirm: '#weConfirm', confirmText: '#weConfirmText',
   confirmYes: '#weConfirmYes', confirmNo: '#weConfirmNo',
-  setTitle: '#wtSetTitle', setCard: '#wtSetCard', show: '#wtShow', morning: '#wtMorning', open: '#btnWtOpen'
+  setTitle: '#wtSetTitle', setCard: '#wtSetCard', show: '#wtShow', morning: '#wtMorning', open: '#btnWtOpen',
+  // v1.23: both cards are built only when LoveCore.weightAdvice exists (a 1.22 core left in the cache shows neither)
+  assess: '#wtAssess', assessMain: '#wtAssess .wt-assess-main', scale: '#wtAssess .wt-scale', scaleNow: '#wtAssess .wt-scale-now',
+  assessStats: '#wtAssess .med-stat', assessNote: '#wtAssess .wt-assess-note', advice: '#wtAdvice', act: k => '#wtAct [data-wt="act-' + k + '"]',
+  energyNum: '#wtAdvice .wt-energy-num', adviceStats: '#wtAdvice .med-stat', tips: '#wtAdvice .wt-tips li', adviceWarn: '#wtAdvice .wt-warn',
+  basis: '#wtAdvice .card-hint:not(.wt-disclaimer)', disclaimer: '#wtAdvice .wt-disclaimer'
 };
 
 // Adds album photos with chosen ids and dates: list of [id, takenAt (ms or null), addedAt (ms)]. Call after seed().

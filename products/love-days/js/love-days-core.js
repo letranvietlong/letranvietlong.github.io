@@ -950,7 +950,7 @@
   }
 
   // ---------- Weight ("Giảm cân", stored whole in kv 'weight') ----------
-  // { profile: null | { heightCm, goalKg, goalDate, ratePerWeek, startDate },
+  // { profile: null | { heightCm, goalKg, goalDate, ratePerWeek, startDate, activity },
   //   log: [{ date, kg, note, at }] } — one weigh-in per VN day. The start
   // weight is not stored: it is the first weigh-in on/after startDate (or the
   // first one in the log), so editing that day moves the plan with it.
@@ -969,6 +969,15 @@
   var WEIGHT_MIN_DATE = "2000-01-01";
   var WEIGHT_MORNING_LINE = "⚖️ Nhớ cân hôm nay";
   var WEIGHT_CHART = { W: 340, H: 200, L: 36, R: 8, T: 10, B: 24 }, WEIGHT_CHART_DOTS_MAX = 400;
+  // "Đánh giá" / "Gợi ý" (v1.23). Activity is stored as a key, not the factor, so a float never becomes an unknown value.
+  var WEIGHT_ACTIVITY = { low: 1.2, mid: 1.375, high: 1.55 };
+  var WEIGHT_ACTIVITY_KEYS = ["low", "mid", "high"];
+  var KCAL_PER_KG = 7700, KCAL_FLOOR = 1500, KCAL_STEP = 50, KCAL_SPREAD = 100;
+  var PROTEIN_G = [1.2, 1.6], WATER_ML = 35, WATER_L = [1.5, 4.0];
+  var BMI_SCALE = { min: 16, max: 32 }, BMI_OVER_MAX = 24.9;
+  var WEIGHT_PLATEAU_KG = 0.3, WEIGHT_SWING_TENTHS = 10, WEIGHT_SWING_MIN = 2;
+  var WEIGHT_GAIN_RATE = 0.2, WEIGHT_SLOW_RATE = 0.25, WEIGHT_NEAR_KG = 2, WEIGHT_NEW_DAYS = 10;
+  var WEIGHT_AGE = [18, 100];
 
   function oneDec(x){ return num(x) && Math.abs(x * 10 - Math.round(x * 10)) < 1e-6; }
   // The 1e-7 nudge keeps x.x5 averages (81.95 stored as 81.9499…) rounding the way they read.
@@ -1004,6 +1013,7 @@
   }
 
   // goal < start is NOT checked here (the start weight can move); the form checks it on save.
+  // A bad activity becomes null instead of rejecting the profile: a display option must not push the goal into weightBad.
   function validateWeightProfile(p){
     if(!p || typeof p !== "object" || Array.isArray(p)) return null;
     if(!oneDec(p.heightCm) || !oneDec(p.goalKg)) return null;
@@ -1014,7 +1024,8 @@
     if(p.goalDate != null && !weightDate(p.goalDate)) return null;
     if(p.startDate != null && !weightDate(p.startDate)) return null;
     return { heightCm: h, goalKg: g, goalDate: p.goalDate == null ? null : p.goalDate,
-             ratePerWeek: rate, startDate: p.startDate == null ? null : p.startDate };
+             ratePerWeek: rate, startDate: p.startDate == null ? null : p.startDate,
+             activity: WEIGHT_ACTIVITY_KEYS.indexOf(p.activity) >= 0 ? p.activity : null };
   }
 
   // Raw list → validated entries, first of a repeated day wins, oldest first.
@@ -1156,7 +1167,17 @@
       var avg7 = avgAt(map, t);
       var cur = avg7 != null ? avg7 : latest ? latest.kg : null;
       var start = weightStart(profile, log);
-      var a7 = avgAt(map, t - 7), a30 = avgAt(map, t - 30);
+      var a7 = avgAt(map, t - 7), a30 = avgAt(map, t - 30), a14 = avgAt(map, t - 14);
+      // Weigh-ins in the trend window [t-13, t] and next-day jumps of ≥ 1 kg there, in one pass.
+      var days14 = 0, swings = 0, prevIdx = null, prevTenths = null;
+      for(var li = log.length - 1; li >= 0; li--){
+        var ix = dayIdx(log[li].date);
+        if(ix < t - WEIGHT_TREND_DAYS + 1) break;
+        var tn = Math.round(log[li].kg * 10);
+        days14++;
+        if(prevIdx !== null && prevIdx - ix === 1 && Math.abs(prevTenths - tn) >= WEIGHT_SWING_TENTHS) swings++;
+        prevIdx = ix; prevTenths = tn;
+      }
       var trend = trendOf(log, today);
       var plan = profile ? planOf(profile, log) : null;
       var planToday = plan ? weightPlanAt(plan, today) : null;
@@ -1189,7 +1210,8 @@
                trend: trend, plan: plan, planToday: planToday,
                vsPlan: planToday != null && cur != null ? cur - planToday : null,
                pct: pct, leftKg: leftKg, goalReached: goalReached, eta: eta,
-               fast: !!trend && trend.rate > WEIGHT_FAST, marks: marks };
+               fast: !!trend && trend.rate > WEIGHT_FAST, marks: marks,
+               a7: a7, a14: a14, days14: days14, swings: swings, firstDate: log.length ? log[0].date : null };
     }catch(err){ return null; }
   }
 
@@ -1356,6 +1378,127 @@
       var today = todayStr(nowMs);
       return weightLog(rawWeight.log).some(function(e){ return e.date === today; }) ? [] : [WEIGHT_MORNING_LINE];
     }catch(e){ return []; }
+  }
+
+  // ---------- Weight: "Đánh giá" and "Gợi ý" (v1.23; formulas and sources in docs/love-days.md) ----------
+  function round1(x){ return Math.round(x * 10) / 10; }
+  function round50(x){ return Math.round(x / KCAL_STEP) * KCAL_STEP; }
+  // Lowest weight (0.1 kg steps) whose BMI SHOWS as at least minBmi1 — bmiMaxKg's mirror.
+  function bmiMinKg(heightCm, minBmi1){
+    try{
+      if(!num(heightCm) || heightCm <= 0) return null;
+      var mn = num(minBmi1) ? minBmi1 : BMI_ASIA.under, m = heightCm / 100, h2 = m * m;
+      var t = Math.max(0, Math.ceil((mn - 0.05) * h2 * 10) - 2);
+      while(roundKg(t / 10 / h2) < mn) t++;
+      return t / 10;
+    }catch(e){ return null; }
+  }
+  function weightAge(dob, nowMs){
+    try{
+      if(!isValidDate(dob) || !num(nowMs)) return null;
+      var t = todayIdx(nowMs);
+      return dayIdx(dob) > t ? null : ageOn(dob, t);
+    }catch(e){ return null; }
+  }
+  function bmiPos(b){ return round1(Math.max(0, Math.min(1, (b - BMI_SCALE.min) / (BMI_SCALE.max - BMI_SCALE.min))) * 100); }
+  function weightAssess(heightCm, kg, goalKg){
+    try{
+      var c = bmiClass(bmiOf(kg, heightCm));
+      if(!c) return null;
+      var normalMin = bmiMinKg(heightCm, BMI_ASIA.under), normalMax = bmiMaxKg(heightCm, BMI_NORMAL_MAX), overMax = bmiMaxKg(heightCm, BMI_OVER_MAX);
+      var g = num(goalKg) ? bmiClass(bmiOf(goalKg, heightCm)) : null;
+      return { bmi1: c.bmi1, key: c.key, label: c.label, normalMin: normalMin, normalMax: normalMax, overMax: overMax,
+               toOver: c.key === "obese" ? roundKg(kg - overMax) : null,
+               toNormal: c.key === "obese" || c.key === "over" ? roundKg(kg - normalMax) : null,
+               goalBmi1: g ? g.bmi1 : null, goalKey: g ? g.key : null, goalLabel: g ? g.label : null,
+               scale: { min: BMI_SCALE.min, max: BMI_SCALE.max, cuts: [BMI_ASIA.under, BMI_ASIA.over, BMI_ASIA.obese],
+                        pos: bmiPos(c.bmi1), goalPos: g ? bmiPos(g.bmi1) : null } };
+    }catch(e){ return null; }
+  }
+  // Mifflin-St Jeor for a man (the Giảm cân pane is Viết Long's). rate in kg/week, already capped at 1 by the caller.
+  function weightEnergy(kg, heightCm, age, activity, rate, maintain){
+    try{
+      if(!num(kg) || kg <= 0 || !num(heightCm) || heightCm <= 0 || !num(age) || age < WEIGHT_AGE[0] || age > WEIGHT_AGE[1]) return null;
+      var set = WEIGHT_ACTIVITY_KEYS.indexOf(activity) >= 0, key = set ? activity : "low", factor = WEIGHT_ACTIVITY[key];
+      var bmr = 10 * kg + 6.25 * heightCm - 5 * age + 5, tdee = bmr * factor;
+      var r = num(rate) && rate > 0 ? Math.min(rate, 1) : 0;
+      var deficit = maintain ? 0 : r * KCAL_PER_KG / 7, target, lo, hi, floored = false, tooLow = false;
+      if(tdee <= KCAL_FLOOR){
+        target = round50(tdee); deficit = 0; tooLow = true;
+        lo = target - KCAL_SPREAD; hi = target + KCAL_SPREAD;
+      } else {
+        target = round50(tdee - deficit);
+        if(target < KCAL_FLOOR){ target = KCAL_FLOOR; floored = true; }
+        lo = Math.max(KCAL_FLOOR, target - KCAL_SPREAD); hi = target + KCAL_SPREAD;
+      }
+      return { bmr: bmr, bmr10: Math.round(bmr / 10) * 10, activity: key, activitySet: set, factor: factor,
+               tdee: tdee, tdee50: round50(tdee), deficit: deficit, target: target, lo: lo, hi: hi,
+               floored: floored, tooLow: tooLow, maintain: !!maintain };
+    }catch(e){ return null; }
+  }
+  // Exactly 4 lines: up to 2 picked from the recent weigh-ins (fixed priority), then fixed habits. No randomness.
+  function weightTips(st, activity, assessKey){
+    try{
+      if(!st || typeof st !== "object") return [];
+      var out = [], key = assessKey || (st.bmiClass ? st.bmiClass.key : null), tr = st.trend;
+      function add(k, text){ out.push({ key: k, text: text }); }
+      if(!st.latest){
+        add("none", "Cân lần đầu vào sáng mai, sau khi đi vệ sinh và trước khi ăn sáng.");
+      } else if(key === "under"){
+        add("under", "Cân nặng đang dưới mức bình thường — không nên giảm thêm. Nếu sụt cân không rõ lý do, hãy đi khám.");
+      } else {
+        var reached = !!st.goalReached, t = dayIdx(st.today), sit = [];
+        var avgs = [st.avg7, st.a7, st.a14];
+        var plateau = !reached && avgs.every(num) && Math.max.apply(null, avgs) - Math.min.apply(null, avgs) < WEIGHT_PLATEAU_KG - 1e-9;
+        var near = !reached && num(st.leftKg) && st.leftKg <= WEIGHT_NEAR_KG + 1e-9;
+        var isNew = !tr && !reached && !!st.firstDate && dayIdx(st.firstDate) > t - WEIGHT_NEW_DAYS;
+        if(reached) sit.push(["reached", "Đã chạm mục tiêu 🎉 Giờ là giữ cân: ăn quanh mức tiêu hao cả ngày và vẫn cân 2–3 lần mỗi tuần."]);
+        if(st.fast) sit.push(["fast", "Đang giảm hơn 1 kg/tuần — đừng bỏ bữa; thêm một bữa phụ có đạm (sữa chua không đường, trứng luộc) để giữ cơ."]);
+        if(tr && tr.rate <= -WEIGHT_GAIN_RATE) sit.push(["gaining", "2 tuần qua cân nhích lên khoảng " + kgText(-tr.rate) + " kg/tuần. Xem lại đồ uống có đường và các bữa ăn sau 21:00."]);
+        if(plateau) sit.push(["plateau", "TB 7 ngày đứng quanh " + kgText(st.avg7) + " kg suốt 2 tuần — chuyện thường gặp khi giảm cân. Tuần này thử thêm 15 phút đi bộ mỗi ngày hoặc bớt nửa bát cơm buổi tối."]);
+        if(st.swings >= WEIGHT_SWING_MIN) sit.push(["noisy", "Có " + st.swings + " lần cân lệch từ 1 kg so với hôm trước — thường do nước và muối, không phải mỡ. Cân cùng giờ mỗi sáng và nhìn đường TB 7 ngày thay vì từng ngày."]);
+        if(isNew) sit.push(["new", "Mới cân " + st.days14 + " ngày — cân đều mỗi sáng thêm khoảng 2 tuần là app ước được tốc độ giảm."]);
+        if(!tr && !reached && !isNew) sit.push(["sparse", st.days14
+          ? "2 tuần qua mới cân " + st.days14 + " ngày. Cân mỗi sáng cùng giờ (để cân cạnh chỗ đánh răng cho dễ nhớ) để thấy xu hướng thật."
+          : "2 tuần qua chưa cân lần nào. Cân mỗi sáng cùng giờ (để cân cạnh chỗ đánh răng cho dễ nhớ) để thấy xu hướng thật."]);
+        if(near) sit.push(["near", "Còn " + kgText(st.leftKg) + " kg nữa là chạm mục tiêu — giữ nhịp hiện tại, đừng siết thêm."]);
+        if(tr && !reached && !plateau && !near){
+          if(tr.rate >= 0.05 && tr.rate < WEIGHT_SLOW_RATE) sit.push(["slow", "Đang giảm chậm (" + kgText(tr.rate) + " kg/tuần) nhưng đúng hướng — thêm một chút vận động mỗi ngày sẽ nhanh hơn."]);
+          else if(tr.rate >= WEIGHT_SLOW_RATE && tr.rate <= WEIGHT_FAST) sit.push(["onTrack", "Đang giảm đều " + kgText(tr.rate) + " kg/tuần — đúng nhịp an toàn. Cứ giữ thói quen hiện tại."]);
+        }
+        sit.slice(0, 2).forEach(function(s){ add(s[0], s[1]); });
+      }
+      var habits = [];
+      if(activity !== "mid" && activity !== "high") habits.push(["walk", "Thêm 15 phút đi bộ sau bữa tối — 5 tối là thêm 75 phút vận động mỗi tuần."]);
+      habits.push(["drink", "Đổi nước ngọt, trà sữa sang trà không đường hoặc nước lọc."]);
+      if(!st.goalReached && key !== "under" && key !== "normal" && !st.fast) habits.push(["rice", "Ăn rau trước, cơm sau; bớt nửa bát cơm buổi tối."]);
+      habits.push(["protein", "Mỗi bữa có một phần đạm cỡ lòng bàn tay: thịt nạc, cá, trứng hoặc đậu phụ."]);
+      habits.push(["sleep", "Ngủ trước 23:00 — thiếu ngủ làm dễ thèm đồ ngọt."]);
+      for(var i = 0; i < habits.length && out.length < 4; i++) add(habits[i][0], habits[i][1]);
+      return out;
+    }catch(e){ return []; }
+  }
+  // pre = weightStats of the same record on the same VN day (the page passes its memo), so nothing heavy runs twice.
+  function weightAdvice(rawWeight, dob, nowMs, pre){
+    try{
+      if(!num(nowMs)) return null;
+      var today = todayStr(nowMs);
+      var st = pre && typeof pre === "object" && pre.today === today ? pre : weightStats(rawWeight, nowMs);
+      if(!st) return null;
+      var p = st.profile, latest = st.latest, age = weightAge(dob, nowMs);
+      var need = !p ? "profile" : !latest ? "weigh" : age == null ? "dob" : age < WEIGHT_AGE[0] || age > WEIGHT_AGE[1] ? "age" : null;
+      var assess = p && latest ? weightAssess(p.heightCm, latest.kg, p.goalKg) : null;
+      var needRate = st.plan && st.plan.mode === "date" && num(st.plan.needRate) ? st.plan.needRate : null;
+      var rate = p ? (needRate != null ? Math.min(needRate, 1) : p.ratePerWeek) : null;
+      var maintain = !!(st.goalReached || (assess && (assess.key === "under" || assess.key === "normal")));
+      var energy = need === null ? weightEnergy(latest.kg, p.heightCm, age, p.activity, rate, maintain) : null;
+      var waterL = latest ? Math.max(WATER_L[0], Math.min(WATER_L[1], Math.round(WATER_ML * latest.kg / 100) / 10)) : null;
+      return { today: today, need: need, assess: assess, energy: energy, rate: rate, needRate: needRate,
+               capped: needRate != null && needRate > 1 + 1e-9, maintain: maintain, activity: p ? p.activity : null,
+               protein: p ? { lo: Math.round(PROTEIN_G[0] * p.goalKg), hi: Math.round(PROTEIN_G[1] * p.goalKg) } : null,
+               waterL: waterL, tips: weightTips(st, p ? p.activity : null, assess ? assess.key : null),
+               basis: { kg: latest ? latest.kg : null, date: latest ? latest.date : null, heightCm: p ? p.heightCm : null, age: age } };
+    }catch(e){ return null; }
   }
 
   // ---------- "Ngày này năm xưa" ----------
@@ -1736,6 +1879,9 @@
     bmiOf: bmiOf, bmiClass: bmiClass, bmiMaxKg: bmiMaxKg, weightAvg7: weightAvg7, weightTrend: weightTrend,
     weightPlan: weightPlan, weightPlanAt: weightPlanAt, weightStats: weightStats, weightChart: weightChart,
     mergeWeight: mergeWeight, weightMorningLines: weightMorningLines,
+    WEIGHT_ACTIVITY: WEIGHT_ACTIVITY, WEIGHT_ACTIVITY_KEYS: WEIGHT_ACTIVITY_KEYS, KCAL_FLOOR: KCAL_FLOOR,
+    bmiMinKg: bmiMinKg, weightAge: weightAge, weightAssess: weightAssess, weightEnergy: weightEnergy,
+    weightTips: weightTips, weightAdvice: weightAdvice,
     onThisDay: onThisDay, RECAP_TOP: RECAP_TOP, recapYears: recapYears, yearRecap: yearRecap,
     REMIND_AHEAD: REMIND_AHEAD, WISH_AHEAD: WISH_AHEAD, REMIND_MAX_LINES: REMIND_MAX_LINES, REMIND_TITLE_MAX: REMIND_TITLE_MAX,
     PUSH_BODY_MAX: PUSH_BODY_MAX, dayReminders: dayReminders, dayReminderLines: dayReminderLines, pushBody: pushBody,
