@@ -195,7 +195,18 @@ games.push(makeIdle({ id: 'idleFarm', name: 'IDLE Nông trại', icon: '🌾', d
 
 Trạng thái IDLE lưu trong `state.idle[id] = {coins,lvl,power,auto,last}`; thu nhập lúc vắng mặt = `min(7200, giây kể từ last) × auto` — **trần 2 giờ**, có ghi trong `help` của mọi game IDLE.
 
-Ba game mẫu để tham khảo: `flappy` (canvas + `raf` + `end`), `tictactoe` (lưới DOM + `setTimeout`), `idleMine` (`load/save`, `confirm`, `pause/resume`).
+Ba game mẫu để tham khảo: `flappy` (canvas + `loop` + hiệu ứng `fx` + `end`), `tictactoe` (lưới DOM + `setTimeout`), `idleMine` (`load/save`, `confirm`, `pause/resume`).
+
+### Bốn game canvas nâng sâu (2.3)
+
+Chung: chạy trên `host.loop` 120 bước/giây (vật lý giống nhau ở chế độ tiết kiệm pin), vẽ nội suy theo `alpha`; sprite/nền vẽ sẵn một lần lúc mount bằng helper `sprite()`, `hillStrip()`, `starStrip()`, `drawStrip()` ở đầu file action (không gradient/`shadowBlur` trong vòng vẽ). Nền trượt parallax đứng yên khi `host.reducedMotion`. Thua thì phát hiệu ứng va chạm, game chạy thêm một nhịp ngắn (chim rơi, người ngã, khối rơi) rồi mới `end({won:false})` → vỏ phát `lose` (hoặc `record` nếu là kỷ lục mới). **Luật điểm không đổi** ở cả bốn game (kỷ lục cũ vẫn so được).
+
+| Game | Thay đổi |
+|---|---|
+| `flappy` | Khó dần theo điểm: tốc độ cột `150 + min(điểm,40)×1,5` px/s, khe `max(120, khe0 − min(điểm,30)×1,5)` (khe lưu theo từng cột lúc sinh ra). Va chạm hình tròn (bán kính 13 − 2) với thân cột thay cho hộp vuông. Chim xoay theo vận tốc (−25°…70°), cánh 2 khung, nền sao ×0,15 + đồi ×0,4, số điểm lớn nảy giữa trên. Tiếng: `flap` (+ rung nhẹ), `point`, mỗi 10 điểm `combo` + nháy nhẹ. Va chạm: `hitstop(80)`, `crash`, nháy trắng, rung màn 260ms/8px, 24 hạt → chim rơi xoay tới đất (≤ 0,7 s) → kết quả. |
+| `runner` | Nhảy theo độ dài chạm: thả tay khi đang lên (sau tối thiểu 0,06 s) → `vy × 0,45`; nghe `pointerup/pointercancel` trên sân và nút Nhảy (có `setPointerCapture`), `keyup` cho phím. Giữ đủ lâu ≈ 117px, chạm nhanh ≈ 55px (vẫn cao hơn vật cản cao nhất 54px). Tăng tốc `+9/s` (trước 6), tối đa 520. Sân cao `clamp(h − 156, 220, W×1,05)`. Người chạy có chân/tay đánh theo quãng đường, co giãn khi bật/tiếp đất, bụi + `land` khi tiếp đất, `jump` khi bật. Mỗi 10 vật cản `combo` + chữ "10!". Va chạm: `hitstop(70)`, `crash`, rung màn, hạt đỏ, ngã 0,4 s. |
+| `pong` | Va chạm quét áp mỗi bước 120 Hz. Xoáy: vận tốc thanh (làm mượt ~0,1 s) × 0,25 cộng vào `vx`, góc kẹp ≤ 70° so với phương đứng, độ lớn vận tốc giữ đúng `speed` như cũ. Bóng có vệt 8 vị trí, méo khi chạm; thanh nhún 3px. Tiếng: `whoosh` khi phát, `hit` (cao dần theo tốc độ) + 8 hạt + rung nhẹ khi đỡ, `bounce` ở tường, mỗi 5 lần đỡ `combo` + chữ tốc độ "1,3×". Rơi: `miss`, rung màn, nháy đỏ, 0,35 s rồi kết quả. |
+| `tower` | Hình học/tốc độ/điểm giữ nguyên (cửa sổ perfect ±4px, không nở khối). Phần bị cắt thành mảnh rơi xoay mờ dần 0,9 s; `slice` + `drop` + rung màn 2px; khối vừa đặt lún 90ms. Perfect: `perfect` cao dần theo chuỗi, chữ "Hoàn hảo!"/"Hoàn hảo ×N", 6 tia hai bên, viền sáng. Màu tầng đổi dần giữa `--brand` và `--brand2`. Trượt hẳn: khối rơi khỏi tháp 0,6 s, `crash` nhỏ. `data-state` của canvas có thêm `w` (bề rộng khối đang chạy) cho test. |
 
 ## 5. Vỏ — những điểm dễ làm hỏng
 
@@ -242,6 +253,8 @@ Màu lấy từ biến CSS của theme (`--brand`, `--brand2`, `--on-brand`, `--
 - Vuốt giả lập bằng `touchMove` dồn dập (không nghỉ giữa các bước) để lại trạng thái quán tính trong Chromium: cú chạm kế tiếp có `touchend` nhưng không có `click`, kể cả chờ 1 giây. Muốn thử nút của game sau cú vuốt thì nghỉ 40ms mỗi bước.
 
 ## 8. Chưa kiểm chứng trên iPhone thật
+
+Từ 2.3: cảm giác tay của Flappy/Runner/Pong/Xếp tháp trên iPhone (Runner giữ lâu/chạm nhanh có phân biệt rõ không, Pong xoáy có dễ cảm nhận không, độ mượt trên màn 120 Hz), tiếng `crash`/`hit` có to quá so với tiếng khác không.
 
 Chromium không tái hiện được (2.2): âm thanh có kêu từ cú chạm thứ mấy sau khi mở app từ icon; công tắc im lặng (kỳ vọng: im, vì `audioSession` 'ambient') và nhạc Spotify/Apple Music có bị dừng không (kỳ vọng: không); rung trên iPhone bằng `<input type=checkbox switch>` ẩn (thử nghiệm — Cài đặt → Thông tin chẩn đoán → "Thử rung" trong cú chạm và "Thử rung sau 0,5 giây" ngoài cú chạm: cái nào rung?); hiệu ứng nhấn `:active` có lún không; iOS trạng thái `interrupted` sau cuộc gọi. Dòng chẩn đoán có thêm "âm thanh <trạng thái>/<sampleRate>", "audioSession", "rung", "giảm chuyển động".
 
